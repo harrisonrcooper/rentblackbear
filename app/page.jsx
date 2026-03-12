@@ -399,8 +399,17 @@ function Chat(){
 }
 
 function Screening(){
-  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",income:"",reason:""});
+  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",income:"",source:"",reason:""});
+  const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");
   const answer=v=>{if(v!==SCREEN_QS[step].pass){setStep(8);return;}if(step<SCREEN_QS.length-1)setStep(step+1);else setStep(7);};
+  const submitApp=async()=>{
+    if(!form.name||!form.email||!form.phone){setSubError("Please fill in name, email, and phone.");return;}
+    setSubmitting(true);setSubError("");
+    try{const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
+      const d=await res.json();if(d.ok)setStep(10);else setSubError(d.error||"Something went wrong. Try again.");}
+    catch{setSubError("Connection error. Try again or email "+S_INFO.email);}
+    setSubmitting(false);
+  };
   return(
     <section className="scr-sec" id="apply"><div className="scr-wrap"><div className="scr-card">
       {step<7&&<><div className="scr-hd"><h2>Quick Pre-Screen</h2><p>7 quick questions to see if you qualify. Takes 30 seconds.</p></div>
@@ -414,9 +423,11 @@ function Screening(){
         <input className="sinp" placeholder="Email *" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
         <select className="ssel" value={form.property} onChange={e=>setForm({...form,property:e.target.value})}><option value="">Property interested in?</option>{PROPS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>
         <div className="sform-row"><input className="sinp" type="date" placeholder="Move-in date" value={form.moveIn} onChange={e=>setForm({...form,moveIn:e.target.value})}/><input className="sinp" placeholder="Gross monthly income" value={form.income} onChange={e=>setForm({...form,income:e.target.value})}/></div>
+        <select className="ssel" value={form.source} onChange={e=>setForm({...form,source:e.target.value})}><option value="">How did you hear about us?</option><option>Google Search</option><option>Facebook / Instagram</option><option>Friend / Referral</option><option>Zillow / Apartments.com</option><option>Craigslist</option><option>Drive-by / Sign</option><option>Military / Contractor Network</option><option>Other</option></select>
         <textarea className="stxt" placeholder="Why are you leaving your current residence? (optional)" value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})}/>
-        <button className="scr-sub" onClick={()=>setStep(10)}>Submit →</button></div></div>}
-      {step===10&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Started!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We'll reach out within 24 hours.</p></div>}
+        {subError&&<div style={{background:"rgba(168,58,46,.08)",color:"#a83a2e",padding:"10px 14px",borderRadius:8,fontSize:13,marginBottom:8}}>{subError}</div>}
+        <button className="scr-sub" disabled={submitting} onClick={submitApp}>{submitting?"Submitting...":"Submit Application →"}</button></div></div>}
+      {step===10&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
     </div></div></section>
   );
 }
