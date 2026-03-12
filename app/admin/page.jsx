@@ -167,7 +167,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
         <button className="btn btn-out btn-sm" onClick={addRoom}>+ {(p.rentalMode||"byRoom")==="byRoom"?"Room":"Unit"}</button>
       </div>
       {p.rooms.map((r,i)=>{const locked=isOcc(r);return(
-        <div key={r.id} style={{padding:12,border:`1px solid ${locked?"rgba(0,0,0,.06)":"rgba(0,0,0,.05)"}`,borderRadius:8,marginBottom:8,background:locked?"#f0efec":"#faf9f7",opacity:locked?.7:1,position:"relative"}}>
+        <div key={r.id} style={{padding:12,border:`1px solid ${locked?"rgba(0,0,0,.06)":"rgba(0,0,0,.05)"}`,borderRadius:8,marginBottom:8,background:locked?"#f0efec":"#faf9f7",opacity:locked?0.7:1,position:"relative"}}>
           {locked&&<div style={{position:"absolute",top:6,right:8}}><span className="badge b-green" style={{fontSize:8}}>{"🔗"} {r.tenant.name}</span></div>}
           <div className="fr3">
             <div className="fld"><label>Name</label><input value={r.name} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"name",e.target.value)} onClick={()=>{if(locked)setWarning(r.tenant.name);}}/></div>
@@ -293,7 +293,7 @@ const S=`
 .notif-dot{width:8px;height:8px;border-radius:50%;background:#c45c4a;display:inline-block;margin-left:4px}
 
 /* Pipeline columns */
-.pipeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.pipeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;overflow-x:auto}
 .pipe-col{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,.03);overflow:hidden}
 .pipe-hd{padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.03);display:flex;justify-content:space-between;align-items:center}
 .pipe-hd h4{font-size:12px;font-weight:800}.pipe-cnt{font-size:10px;color:#999;background:rgba(0,0,0,.04);padding:1px 7px;border-radius:100px}
@@ -348,6 +348,9 @@ export default function Page(){
   const[newCatInput,setNewCatInput]=useState("");
   const[showNewCat,setShowNewCat]=useState(false);
   const[savedThemes,setSavedThemes]=useState([]);
+  const[appSearch,setAppSearch]=useState("");
+  const[appView,setAppView]=useState("pipeline");
+  const[bulkSel,setBulkSel]=useState([]);
   const[maint,setMaint]=useState(DEF_MAINT);
   const[apps,setApps]=useState(DEF_APPS);
   const[docs,setDocs]=useState(DEF_DOCS);
@@ -386,7 +389,7 @@ export default function Page(){
     props.forEach(pr=>pr.rooms.forEach(r=>{
       total++;full+=r.rent;
       if(r.st==="occupied"){occ++;proj+=r.rent;due+=r.rent;
-        const pd=payments[r.id]?.[MO]||0;coll+=pd;
+        const pd=(payments[r.id]&&payments[r.id][MO])||0;coll+=pd;
         if(pd)paid.push({...r,propName:pr.name,paidAmt:pd});else unpaid.push({...r,propName:pr.name});
         if(r.le){const dl=Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24));if(dl<=90)expiring.push({...r,propName:pr.name,daysLeft:dl});}
       }else vacs.push({...r,propName:pr.name});
@@ -396,7 +399,7 @@ export default function Page(){
     const unreadNotifs=notifs.filter(x=>!x.read).length;
     const propBreakdown=props.map(pr=>{const rooms=pr.rooms;const occR=rooms.filter(r=>r.st==="occupied");const vacR=rooms.filter(r=>r.st!=="occupied");
       const prjR=occR.reduce((s,r)=>s+r.rent,0);const fullR=rooms.reduce((s,r)=>s+r.rent,0);
-      const collR=occR.reduce((s,r)=>s+(payments[r.id]?.[MO]||0),0);
+      const collR=occR.reduce((s,r)=>s+((payments[r.id]&&payments[r.id][MO])||0),0);
       return{...pr,occCount:occR.length,vacCount:vacR.length,projected:prjR,fullOcc:fullR,collected:collR,occRooms:occR,vacRooms:vacR};
     });
     return{total,occ,full,proj,coll,due,vacs,expiring,unpaid,paid,openMaint,activeApps,unreadNotifs,propBreakdown,
@@ -407,7 +410,7 @@ export default function Page(){
   useEffect(()=>{
     if(!loaded||!m)return;
     const lastSnap=scorecard.length?scorecard[scorecard.length-1]:null;
-    const lastWeek=lastSnap?.weekNum||0;
+    const lastWeek=(lastSnap&&lastSnap.weekNum)||0;
     if(CUR_WEEK>lastWeek){
       // Snapshot current metrics as the closing data for the current week
       setScorecard(p=>[...p,{weekNum:CUR_WEEK,label:getWeekLabel(TODAY),occ:m.occRate,coll:m.collRate,vacancy:m.lost,leads:0}].slice(-13));// keep 13 weeks (quarter)
@@ -418,7 +421,7 @@ export default function Page(){
   useEffect(()=>{
     if(!loaded||!m)return;
     const lastMonthSnap=monthly.length?monthly[monthly.length-1]:null;
-    const lastSnapMonth=lastMonthSnap?.month||"";
+    const lastSnapMonth=(lastMonthSnap&&lastMonthSnap.month)||"";
     // If we don't have a snapshot for last month yet, create one with current data
     if(PREV_MONTH_KEY>lastSnapMonth){
       const prevDate=new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1);
@@ -462,8 +465,8 @@ export default function Page(){
   const recordPayment=(chargeId,payData)=>{
     setCharges(p=>p.map(c=>{if(c.id!==chargeId)return c;const newPaid=c.amountPaid+payData.amount;return{...c,amountPaid:Math.min(newPaid,c.amount),payments:[...c.payments,{id:uid(),...payData}]};}));
     // Update quick-lookup for backwards compat
-    const ch=charges.find(c=>c.id===chargeId);if(ch){setPayments(p=>({...p,[ch.roomId]:{...p[ch.roomId],[MO]:(p[ch.roomId]?.[MO]||0)+payData.amount}}));}
-    setTxns(p=>[{id:uid(),date:payData.date,type:"income",desc:`${ch?.tenantName||""} - ${ch?.category} (${payData.method})`,amount:payData.amount,propId:props.find(pr=>pr.rooms.some(r=>r.id===ch?.roomId))?.id,cat:ch?.category||"Rent"},...p]);
+    const ch=charges.find(c=>c.id===chargeId);if(ch){setPayments(p=>({...p,[ch.roomId]:{...p[ch.roomId],[MO]:((p[ch.roomId]&&p[ch.roomId][MO])||0)+payData.amount}}));}
+    setTxns(p=>[{id:uid(),date:payData.date,type:"income",desc:`${(ch&&ch.tenantName)||""} - ${(ch&&ch.category)} (${payData.method})`,amount:payData.amount,propId:(props.find(pr=>pr.rooms.some(r=>r.id===(ch&&ch.roomId)))||{}).id,cat:(ch&&ch.category)||"Rent"},...p]);
   };
   const waiveCharge=(chargeId,reason)=>setCharges(p=>p.map(c=>c.id===chargeId?{...c,waived:true,waivedReason:reason}:c));
   // Auto-generate rent charges:
@@ -475,7 +478,7 @@ export default function Page(){
     const genForMonth=(targetDate)=>{
       const mk=`${targetDate.getFullYear()}-${(targetDate.getMonth()+1).toString().padStart(2,"0")}`;
       const moLabel=targetDate.toLocaleString("default",{month:"long",year:"numeric"});
-      const existing=new Set(charges.filter(c=>c.category==="Rent"&&c.dueDate?.startsWith(mk)).map(c=>c.roomId));
+      const existing=new Set(charges.filter(c=>c.category==="Rent"&&(c.dueDate&&c.dueDate.startsWith)(mk)).map(c=>c.roomId));
       props.forEach(pr=>pr.rooms.forEach(r=>{
         if(r.st==="occupied"&&r.tenant&&!existing.has(r.id)){
           const moveIn=r.tenant.moveIn?new Date(r.tenant.moveIn+"T00:00:00"):null;
@@ -501,7 +504,7 @@ export default function Page(){
   // Backwards compat: openPayForm still works from existing buttons
   const openPayForm=(rid)=>{const unpaidCh=charges.filter(c=>c.roomId===rid&&chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
     if(unpaidCh.length)setModal({type:"recordPay",step:2,selRoom:rid,selCharge:unpaidCh[0].id,payAmount:unpaidCh[0].amount-unpaidCh[0].amountPaid,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});
-    else{const r=props.flatMap(p=>p.rooms).find(x=>x.id===rid);setModal({type:"createCharge",roomId:rid,category:"Rent",desc:`${MO} Rent`,amount:r?.rent||0,dueDate:TODAY.toISOString().split("T")[0],notes:"No existing charge — creating new"});}};
+    else{const r=props.flatMap(p=>p.rooms).find(x=>x.id===rid);setModal({type:"createCharge",roomId:rid,category:"Rent",desc:`${MO} Rent`,amount:(r&&r.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:"No existing charge — creating new"});}};
 
   const cycleRock=id=>setRocks(p=>p.map(r=>{if(r.id!==id)return r;const o=["on-track","off-track","not-started","done"];return{...r,status:o[(o.indexOf(r.status)+1)%o.length]};}));
   const saveProp=p=>{if(isNewProp)setProps(prev=>[...prev,p]);else setProps(prev=>prev.map(x=>x.id===p.id?p:x));setEditProp(null);};
@@ -561,7 +564,7 @@ export default function Page(){
 
     {/* Main */}
     <div className="mn">
-      <div className="tbar"><div><h1>{tabs.find(t=>t.id===tab)?.i} {tabs.find(t=>t.id===tab)?.l}</h1><div className="tbar-sub">{MO}</div></div></div>
+      <div className="tbar"><div><h1>{(tabs.find(t=>t.id===tab)||{}).i} {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>
       <div className="cnt">
 
       {/* ═══ DASHBOARD ═══ */}
@@ -584,18 +587,18 @@ export default function Page(){
         {drill==="coll"&&<div className="card" style={{marginBottom:16,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Collection: {fmtS(m.coll)} / {fmtS(m.due)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
           {m.unpaid.length>0&&<><div style={{fontSize:10,fontWeight:700,color:"#c45c4a",marginBottom:8}}>UNPAID ({m.unpaid.length})</div>
-            {m.unpaid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.tenant?.name}</div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Mark Paid</button></div>)}</>}
+            {m.unpaid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Mark Paid</button></div>)}</>}
           {m.paid.length>0&&<><div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginTop:12,marginBottom:8}}>PAID ({m.paid.length})</div>
-            {m.paid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{r.tenant?.name}</div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
+            {m.paid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
         </div></div>}
 
         {/* Expiring leases */}
         {m.expiring.length>0&&<div className="sec-hd"><div><h2>⚠️ Leases Expiring</h2></div></div>}
-        {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setDrill(r.id);}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{r.tenant?.name}</div><div className="row-s">{r.propName} · {r.name} · Ends {fmtD(r.le)}</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}
+        {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setDrill(r.id);}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · Ends {fmtD(r.le)}</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}
 
         {/* Recent activity */}
         <div className="sec-hd" style={{marginTop:16}}><div><h2>Recent Activity</h2></div></div>
-        {notifs.slice(0,5).map(n=><div key={n.id} className="row" style={{opacity:n.read?.7:1}} onClick={()=>setNotifs(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}><span style={{fontSize:14}}>{n.type==="lease"?"📋":n.type==="payment"?"💰":n.type==="maint"?"🔧":"📝"}</span><div className="row-i"><div className="row-t" style={{fontWeight:n.read?500:700}}>{n.msg}</div><div className="row-s">{n.date}</div></div>{!n.read&&<div className="notif-dot"/>}{n.urgent&&<span className="badge b-red">Urgent</span>}</div>)}
+        {notifs.slice(0,5).map(n=><div key={n.id} className="row" style={{opacity:n.read?0.7:1}} onClick={()=>setNotifs(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}><span style={{fontSize:14}}>{n.type==="lease"?"📋":n.type==="payment"?"💰":n.type==="maint"?"🔧":"📝"}</span><div className="row-i"><div className="row-t" style={{fontWeight:n.read?500:700}}>{n.msg}</div><div className="row-s">{n.date}</div></div>{!n.read&&<div className="notif-dot"/>}{n.urgent&&<span className="badge b-red">Urgent</span>}</div>)}
       </>}
 
       {/* ═══ TENANTS ═══ */}
@@ -606,7 +609,7 @@ export default function Page(){
 
         {/* Current tenants */}
         {drill!=="archive"&&<>{allTenants.map(r=>{
-          const pd=payments[r.id]?.[MO]||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+          const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
           return(
             <div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:r})}>
               <div className="row-dot" style={{background:pd?"#4a7c59":"#c45c4a"}}/>
@@ -772,7 +775,7 @@ export default function Page(){
                   <button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>💰 Record Payment</button>
                   <button className="btn btn-dk btn-sm" onClick={e=>{e.stopPropagation();setNotifs(p=>[{id:uid(),type:"payment",msg:`Reminder sent to ${c.tenantName}: ${c.category} ${fmtS(rem)} due ${fmtD(c.dueDate)}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);alert(`Reminder sent to ${c.tenantName}`);}}>📧 Send Reminder</button>
                   <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"createCharge",roomId:c.roomId,category:c.category,desc:c.desc,amount:c.amount,dueDate:c.dueDate,notes:"Editing #"+c.id.slice(0,6)});}}>✏️ Edit</button>
-                  <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();if(confirm(`Delete this ${c.category} charge for ${c.tenantName}?`)){setCharges(p=>p.filter(x=>x.id!==c.id));setExpCharge(null);}}}> 🗑 Delete</button>
+                  <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category});}}> 🗑 Delete</button>
                   {st==="pastdue"&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"waiveCharge",chargeId:c.id,reason:""});}}> ⏹ Stop Late Fees</button>}
                 </div>}
 
@@ -808,7 +811,7 @@ export default function Page(){
 
           // SD section
           const sdTenants=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
-          const totalSD=sdTenants.reduce((s,r)=>{const sd=sdLedger.find(x=>x.roomId===r.id);return s+(sd?.amountHeld||r.rent);},0);
+          const totalSD=sdTenants.reduce((s,r)=>{const sd=sdLedger.find(x=>x.roomId===r.id);return s+((sd&&sd.amountHeld)||r.rent);},0);
 
           return(<>
           {/* KPIs */}
@@ -874,7 +877,7 @@ export default function Page(){
                 <td>{r.propName}</td>
                 <td>{r.name}</td>
                 <td>{r.le?<span style={{color:dl&&dl<=90?dl<=30?"#c45c4a":"#d4a853":"inherit"}}>{fmtD(r.le)}{dl&&dl<=90?` (${dl}d)`:""}</span>:"—"}</td>
-                <td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(sd?.amountHeld||r.rent)}</td>
+                <td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</td>
               </tr>);}):
             <tr><td colSpan={5} style={{textAlign:"center",padding:20,color:"#999"}}>No security deposits</td></tr>}
             {sdTenants.length>0&&<tr style={{borderTop:"2px solid rgba(0,0,0,.06)"}}><td colSpan={4} style={{fontWeight:800}}>Total Held</td><td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalSD)}</td></tr>}
@@ -897,34 +900,117 @@ export default function Page(){
       })()}
 
       {/* ═══ APPLICATIONS ═══ */}
-      {tab==="applications"&&<>
-        <div className="sec-hd"><div><h2>Application Pipeline ({apps.length})</h2><p>Track applicants from pre-screen to move-in</p></div></div>
-        <div className="pipeline">
-          {["pre-screened","screening","approved","move-in"].map(stage=>{
-            const stageApps=apps.filter(a=>a.status===stage);
-            const labels={"pre-screened":"Pre-Screened","screening":"Screening","approved":"Approved","move-in":"Moving In"};
-            const colors={"pre-screened":"b-blue","screening":"b-gold","approved":"b-green","move-in":"b-green"};
-            return(
-              <div key={stage} className="pipe-col">
-                <div className="pipe-hd"><h4>{labels[stage]}</h4><span className="pipe-cnt">{stageApps.length}</span></div>
-                <div className="pipe-bd">{stageApps.map(a=>(
-                  <div key={a.id} className="pipe-card" onClick={()=>setModal({type:"app",data:a})}>
-                    <div className="pipe-nm">{a.name}</div>
-                    <div className="pipe-sub">{a.property} · {a.room}</div>
-                    <div className="pipe-meta">
-                      <span className={`badge ${colors[stage]}`}>{labels[stage]}</span>
-                      <span className="badge b-gray">Move-in {fmtD(a.moveIn)}</span>
-                    </div>
-                  </div>
-                ))}{stageApps.length===0&&<div style={{textAlign:"center",padding:16,color:"#ccc",fontSize:11}}>No applicants</div>}</div>
-              </div>);
-          })}
+      {tab==="applications"&&(()=>{
+        const STAGES=["pre-screened","called","invited","applied","reviewing","approved","move-in"];
+        const STAGE_LABELS={"pre-screened":"Pre-Screened","called":"Called","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
+        const STAGE_COLORS={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","approved":"b-green","move-in":"b-green","denied":"b-red"};
+        const STAGE_ICONS={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
+        const moveApp=(id,newStatus)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;const history=[...(a.history||[]),{from:a.status,to:newStatus,date:TODAY.toISOString().split("T")[0]}];return{...a,status:newStatus,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history};}));};
+        const denyApp=(id,reason)=>{setApps(p=>p.map(a=>a.id===id?{...a,status:"denied",deniedReason:reason,deniedDate:TODAY.toISOString().split("T")[0],prevStage:a.status,lastContact:TODAY.toISOString().split("T")[0],history:[...(a.history||[]),{from:a.status,to:"denied",date:TODAY.toISOString().split("T")[0],note:reason}]}:a));};
+        const restoreApp=(id)=>{setApps(p=>p.map(a=>a.id===id?{...a,status:a.prevStage||"pre-screened",deniedReason:null,deniedDate:null,lastContact:TODAY.toISOString().split("T")[0],history:[...(a.history||[]),{from:"denied",to:a.prevStage||"pre-screened",date:TODAY.toISOString().split("T")[0],note:"Restored"}]}:a));};
+        const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
+        const scoreApp=(a)=>{let s=50;if(a.income){const n=parseInt(a.income.replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(a.bgCheck==="passed")s+=15;if(a.creditScore&&a.creditScore!=="—"){const c=parseInt(a.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(a.refs==="verified")s+=10;if(a.status==="applied"||a.status==="reviewing")s+=5;return Math.min(s,100);};
+        const findMatches=(a)=>{if(!a.property)return[];const pr=props.find(p=>p.name===a.property);if(!pr)return[];return pr.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:pr.name}));};
+        const searchFilter=(a)=>{if(!appSearch)return true;const q=appSearch.toLowerCase();return(a.name||"").toLowerCase().includes(q)||(a.email||"").toLowerCase().includes(q)||(a.phone||"").includes(q)||(a.property||"").toLowerCase().includes(q)||(a.source||"").toLowerCase().includes(q);};
+
+        const activeApps=apps.filter(a=>a.status!=="denied"&&searchFilter(a));
+        const deniedApps=apps.filter(a=>a.status==="denied"&&searchFilter(a));
+        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in"].includes(a.status));
+
+        return(<>
+        {/* Follow-up alerts */}
+        {staleApps.length>0&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:6}}>🔔 Follow Up Needed ({staleApps.length})</div>
+          {staleApps.map(a=>{const d=daysSince(a.lastContact||a.submitted);return(
+            <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.03)"}}>
+              <span><strong>{a.name}</strong> — {STAGE_LABELS[a.status]} · <span style={{color:d>=5?"#c45c4a":"#d4a853",fontWeight:700}}>{d}d</span> since last contact</span>
+              <button className="btn btn-out btn-sm" style={{fontSize:8}} onClick={()=>setModal({type:"app",data:a})}>Open →</button>
+            </div>);})}
+        </div>}
+
+        {/* KPIs */}
+        <div className="kgrid" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
+          <div className="kpi"><div className="kl">Pipeline</div><div className="kv">{activeApps.length}</div><div className="ks">active applicants</div></div>
+          <div className="kpi"><div className="kl">Avg Score</div><div className="kv" style={{color:"#4a7c59"}}>{activeApps.length?Math.round(activeApps.reduce((s,a)=>s+scoreApp(a),0)/activeApps.length):0}</div><div className="ks">out of 100</div></div>
+          <div className="kpi"><div className="kl">Stale</div><div className="kv" style={{color:staleApps.length?"#c45c4a":"#4a7c59"}}>{staleApps.length}</div><div className="ks">need follow-up</div></div>
+          <div className="kpi"><div className="kl">Denied</div><div className="kv">{deniedApps.length}</div></div>
         </div>
-        <div className="sec-hd" style={{marginTop:20}}><div><h2>All Applications</h2></div></div>
-        <div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Name</th><th>Property</th><th>Room</th><th>Move-in</th><th>Status</th><th>BG Check</th></tr></thead><tbody>
-          {apps.map(a=><tr key={a.id} style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}><td style={{fontWeight:700}}>{a.name}</td><td>{a.property}</td><td>{a.room}</td><td>{fmtD(a.moveIn)}</td><td><span className={`badge ${a.status==="approved"?"b-green":a.status==="screening"?"b-gold":"b-blue"}`}>{a.status}</span></td><td><span className={`badge ${a.bgCheck==="passed"?"b-green":a.bgCheck==="pending"?"b-gold":"b-gray"}`}>{a.bgCheck}</span></td></tr>)}
-        </tbody></table></div></div>
-      </>}
+
+        {/* Controls */}
+        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+          <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search applicants..." style={{flex:1,minWidth:180,padding:"8px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+          {["pipeline","list","analytics"].map(v=><button key={v} className={`btn ${appView===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(v)}>{v==="pipeline"?"📋 Pipeline":v==="list"?"📝 List":"📊 Analytics"}</button>)}
+        </div>
+
+        {/* ── Pipeline View ── */}
+        {appView==="pipeline"&&<div className="pipeline" style={{gridTemplateColumns:`repeat(${STAGES.length},1fr)`}}>
+          {STAGES.map(stage=>{const stageApps=activeApps.filter(a=>a.status===stage);const si=STAGES.indexOf(stage);return(
+            <div key={stage} className="pipe-col">
+              <div className="pipe-hd"><h4>{STAGE_ICONS[stage]} {STAGE_LABELS[stage]}</h4><span className="pipe-cnt">{stageApps.length}</span></div>
+              <div className="pipe-bd">{stageApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const score=scoreApp(a);const days=daysSince(a.lastContact||a.submitted);const matches=findMatches(a);return(
+                <div key={a.id} className="pipe-card" style={{borderLeft:`3px solid ${score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a"}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div className="pipe-nm">{a.name}</div>
+                    <div style={{fontSize:8,fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a",background:score>=70?"rgba(74,124,89,.08)":score>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"2px 6px",borderRadius:4}}>{score}</div>
+                  </div>
+                  <div className="pipe-sub">{a.property||"No pref"} · {a.source||""}</div>
+                  <div className="pipe-meta">
+                    <span className={`badge ${STAGE_COLORS[stage]}`}>{STAGE_LABELS[stage]}</span>
+                    {days>0&&<span style={{fontSize:8,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999"}}>{days}d ago</span>}
+                    {matches.length>0&&<span style={{fontSize:8,color:"#4a7c59"}}>🏠 {matches.length} match{matches.length>1?"es":""}</span>}
+                  </div>
+                  <div style={{display:"flex",gap:3,marginTop:6}}>
+                    {si>0&&<button className="btn btn-out btn-sm" style={{fontSize:8,flex:1}} onClick={e=>{e.stopPropagation();moveApp(a.id,STAGES[si-1]);}}>← Back</button>}
+                    <button className="btn btn-green btn-sm" style={{fontSize:8,flex:2}} onClick={e=>{e.stopPropagation();if(si<STAGES.length-1)moveApp(a.id,STAGES[si+1]);}}>{si<STAGES.length-1?`→ ${STAGE_LABELS[STAGES[si+1]]}`:"✓ Done"}</button>
+                  </div>
+                  <div style={{display:"flex",gap:3,marginTop:3}}>
+                    <button className="btn btn-out btn-sm" style={{fontSize:8,flex:1}} onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>Open</button>
+                    {stage==="called"&&<button className="btn btn-dk btn-sm" style={{fontSize:8,flex:1}} onClick={e=>{e.stopPropagation();moveApp(a.id,"invited");}}>✉️ Invite</button>}
+                    <button className="btn btn-out btn-sm" style={{fontSize:8,color:"#c45c4a"}} onClick={e=>{e.stopPropagation();setModal({type:"denyApp",appId:a.id,reason:""});}}>✕</button>
+                  </div>
+                </div>);})}
+              {stageApps.length===0&&<div style={{textAlign:"center",padding:16,color:"#ccc",fontSize:10}}>Empty</div>}
+            </div>);})}
+        </div>}
+
+        {/* ── List View ── */}
+        {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th>Move-in</th></tr></thead><tbody>
+          {activeApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const score=scoreApp(a);const days=daysSince(a.lastContact||a.submitted);return(
+            <tr key={a.id} style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
+              <td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
+              <td><span style={{fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a"}}>{score}</span></td>
+              <td><span className={`badge ${STAGE_COLORS[a.status]}`}>{STAGE_LABELS[a.status]}</span></td>
+              <td style={{color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999",fontWeight:600}}>{days}d</td>
+              <td style={{fontSize:10}}>{a.source||"—"}</td><td>{fmtD(a.moveIn)}</td>
+            </tr>);})}
+        </tbody></table></div></div>}
+
+        {/* ── Analytics View ── */}
+        {appView==="analytics"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          <div className="card"><div className="card-hd"><h3>Source Breakdown</h3></div><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Source</th><th>Total</th><th>Approved</th><th>Rate</th></tr></thead><tbody>
+            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const srcApps=apps.filter(a=>(a.source||"Unknown")===src);const approved=srcApps.filter(a=>["approved","move-in"].includes(a.status)).length;const rate=srcApps.length?Math.round(approved/srcApps.length*100):0;return(
+              <tr key={src}><td style={{fontWeight:500}}>{src}</td><td>{srcApps.length}</td><td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>
+            );})}
+          </tbody></table></div></div>
+          <div className="card"><div className="card-hd"><h3>Pipeline Funnel</h3></div><div className="card-bd">
+            {STAGES.map(stage=>{const count=activeApps.filter(a=>a.status===stage).length;const pct=activeApps.length?Math.round(count/activeApps.length*100):0;return(
+              <div key={stage} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}><span>{STAGE_ICONS[stage]} {STAGE_LABELS[stage]}</span><strong>{count}</strong></div>
+                <div style={{height:6,background:"rgba(0,0,0,.04)",borderRadius:3}}><div style={{height:"100%",background:"#d4a853",borderRadius:3,width:`${pct}%`,transition:"width .3s"}}/></div>
+              </div>);})}
+          </div></div>
+        </div>}
+
+        {/* Denied section */}
+        {deniedApps.length>0&&<><div className="sec-hd" style={{marginTop:16}}><div><h2>Denied ({deniedApps.length})</h2></div></div>
+          {deniedApps.map(a=><div key={a.id} className="row">
+            <div className="row-dot" style={{background:"#c45c4a"}}/>
+            <div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · Denied {fmtD(a.deniedDate)}{a.deniedReason?` · ${a.deniedReason}`:""}</div></div>
+            <button className="btn btn-out btn-sm" onClick={()=>restoreApp(a.id)}>Restore</button>
+          </div>)}
+        </>}
+
+        </>);
+      })()}
 
       {/* ═══ MAINTENANCE ═══ */}
       {tab==="maintenance"&&<>
@@ -980,7 +1066,7 @@ export default function Page(){
           <button className="btn btn-gold" onClick={()=>setTxns(p=>[{id:uid(),date:TODAY.toISOString().split("T")[0],type:"expense",desc:"New Expense",amount:0,propId:"p1",cat:"Other"},...p])}>+ Add Transaction</button></div>
         <div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Date</th><th>Description</th><th>Property</th><th>Category</th><th style={{textAlign:"right"}}>Amount</th></tr></thead><tbody>
           {txns.map(t=>{const pr=props.find(p=>p.id===t.propId);return(
-            <tr key={t.id}><td>{t.date}</td><td style={{fontWeight:600}}>{t.desc}</td><td>{pr?.name||"—"}</td><td><span className={`badge ${t.type==="income"?"b-green":"b-red"}`}>{t.cat}</span></td>
+            <tr key={t.id}><td>{t.date}</td><td style={{fontWeight:600}}>{t.desc}</td><td>{(pr&&pr.name)||"—"}</td><td><span className={`badge ${t.type==="income"?"b-green":"b-red"}`}>{t.cat}</span></td>
               <td style={{textAlign:"right",fontWeight:800,color:t.type==="income"?"#4a7c59":"#c45c4a"}}>{t.type==="income"?"+":"-"}{fmtS(t.amount)}</td></tr>);})}
         </tbody></table></div></div>
 
@@ -997,7 +1083,7 @@ export default function Page(){
         <div className="sec-hd"><div><h2>Notifications</h2><p>{m.unreadNotifs} unread</p></div>
           <button className="btn btn-out btn-sm" onClick={()=>setNotifs(p=>p.map(x=>({...x,read:true})))}>Mark All Read</button></div>
         {notifs.map(n=>(
-          <div key={n.id} className="row" style={{opacity:n.read?.6:1,cursor:"pointer"}} onClick={()=>setNotifs(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}>
+          <div key={n.id} className="row" style={{opacity:n.read?0.6:1,cursor:"pointer"}} onClick={()=>setNotifs(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}>
             <span style={{fontSize:16}}>{n.type==="lease"?"📋":n.type==="payment"?"💰":n.type==="maint"?"🔧":"📝"}</span>
             <div className="row-i"><div className="row-t" style={{fontWeight:n.read?500:700}}>{n.msg}</div><div className="row-s">{n.date}</div></div>
             {!n.read&&<div className="notif-dot"/>}{n.urgent&&<span className="badge b-red">Urgent</span>}
@@ -1020,15 +1106,15 @@ export default function Page(){
           {m.propBreakdown.map(pr=>{const pct=pr.occCount/(pr.occCount+pr.vacCount)*100;return(<div key={pr.id} style={{marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><div style={{fontWeight:700,fontSize:13}}>{pr.name} <span style={{fontSize:11,color:"#999"}}>{pr.type}</span></div><span className={`badge ${pr.vacCount?"b-red":"b-green"}`}>{pr.occCount}/{pr.rooms.length} · {Math.round(pct)}%</span></div>
             <div style={{height:5,borderRadius:3,background:"#e5e3df",marginBottom:6}}><div style={{height:"100%",borderRadius:3,background:pct>=100?"#4a7c59":pct>=75?"#d4a853":"#c45c4a",width:`${pct}%`}}/></div>
-            {pr.rooms.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:r.tenant?"pointer":"default"}} onClick={()=>{if(r.tenant)setModal({type:"tenant",data:{...r,propName:pr.name,propUtils:pr.utils,propClean:pr.clean}});}}><div className="row-dot" style={{background:r.st==="vacant"?"#c45c4a":"#4a7c59"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:r.tenant?"#999":"#c45c4a"}}>{r.tenant?.name||"Vacant"}{r.tenant&&<span style={{color:"#c4a882",marginLeft:4}}>→ view</span>}</div></div><div style={{fontSize:12,fontWeight:700}}>{fmtS(r.rent)}</div></div>)}
+            {pr.rooms.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:r.tenant?"pointer":"default"}} onClick={()=>{if(r.tenant)setModal({type:"tenant",data:{...r,propName:pr.name,propUtils:pr.utils,propClean:pr.clean}});}}><div className="row-dot" style={{background:r.st==="vacant"?"#c45c4a":"#4a7c59"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:r.tenant?"#999":"#c45c4a"}}>{(r.tenant&&r.tenant.name)||"Vacant"}{r.tenant&&<span style={{color:"#c4a882",marginLeft:4}}>→ view</span>}</div></div><div style={{fontSize:12,fontWeight:700}}>{fmtS(r.rent)}</div></div>)}
           </div>);})}
         </div></div>}
 
         {/* Drill: Collection */}
         {drill==="sc-coll"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Collection: {fmtS(m.coll)} / {fmtS(m.due)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
-          {m.unpaid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#c45c4a",marginBottom:6}}>UNPAID ({m.unpaid.length})</div>{m.unpaid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:props.find(p=>p.rooms.some(x=>x.id===r.id))?.utils,propClean:props.find(p=>p.rooms.some(x=>x.id===r.id))?.clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.tenant?.name} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();openPayForm(r.id);}}>Pay</button></div>)}</>}
-          {m.paid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#4a7c59",margin:"10px 0 6px"}}>PAID ({m.paid.length})</div>{m.paid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:props.find(p=>p.rooms.some(x=>x.id===r.id))?.utils,propClean:props.find(p=>p.rooms.some(x=>x.id===r.id))?.clean}})}><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{r.tenant?.name} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
+          {m.unpaid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#c45c4a",marginBottom:6}}>UNPAID ({m.unpaid.length})</div>{m.unpaid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();openPayForm(r.id);}}>Pay</button></div>)}</>}
+          {m.paid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#4a7c59",margin:"10px 0 6px"}}>PAID ({m.paid.length})</div>{m.paid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
           <div style={{marginTop:12,padding:14,background:"rgba(0,0,0,.02)",borderRadius:10}}>
             <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}><span>Total Due</span><strong>{fmtS(m.due)}</strong></div>
             <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}><span>Collected</span><strong style={{color:"#4a7c59"}}>{fmtS(m.coll)}</strong></div>
@@ -1117,14 +1203,14 @@ export default function Page(){
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
                 <div>
                   <div style={{fontSize:9,color:"#999",marginBottom:4}}>Occupancy & Collection %</div>
-                  <ResponsiveContainer width="100%" height={160}><LineChart data={allMonths.map(mo=>({month:mo.label?.split(" ")[0]?.slice(0,3)||mo.month,Occupancy:mo.occ,Collection:mo.collRate}))}>
+                  <ResponsiveContainer width="100%" height={160}><LineChart data={allMonths.map(mo=>({month:((mo.label||"").split(" ")[0]||"").slice(0,3)||mo.month,Occupancy:mo.occ,Collection:mo.collRate}))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee"/><XAxis dataKey="month" tick={{fontSize:9}}/><YAxis tick={{fontSize:9}} domain={[0,100]}/><Tooltip formatter={v=>`${v}%`}/>
                     <Line type="monotone" dataKey="Occupancy" stroke="#4a7c59" strokeWidth={2} dot={{r:3}}/><Line type="monotone" dataKey="Collection" stroke="#3b82f6" strokeWidth={2} dot={{r:3}}/>
                   </LineChart></ResponsiveContainer>
                 </div>
                 <div>
                   <div style={{fontSize:9,color:"#999",marginBottom:4}}>Revenue</div>
-                  <ResponsiveContainer width="100%" height={160}><BarChart data={allMonths.map(mo=>({month:mo.label?.split(" ")[0]?.slice(0,3)||mo.month,Collected:mo.collected,Vacancy:mo.vacancy}))}>
+                  <ResponsiveContainer width="100%" height={160}><BarChart data={allMonths.map(mo=>({month:((mo.label||"").split(" ")[0]||"").slice(0,3)||mo.month,Collected:mo.collected,Vacancy:mo.vacancy}))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee"/><XAxis dataKey="month" tick={{fontSize:9}}/><YAxis tick={{fontSize:9}} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`}/><Tooltip formatter={v=>fmtS(v)}/>
                     <Bar dataKey="Collected" fill="#4a7c59" radius={[3,3,0,0]}/><Bar dataKey="Vacancy" fill="#c45c4a" radius={[3,3,0,0]}/>
                   </BarChart></ResponsiveContainer>
@@ -1149,7 +1235,7 @@ export default function Page(){
 
         {/* Scorecard row drill-down */}
         {scDrill&&<div className="card" style={{animation:"fadeIn .2s",marginBottom:14}}><div className="card-bd">
-          <div className="sec-hd"><div><h2>{scorecard.find(s=>s.id===scDrill)?.label}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setScDrill(null)}>✕</button></div>
+          <div className="sec-hd"><div><h2>{(scorecard.find(s=>s.id===scDrill)||{}).label}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setScDrill(null)}>✕</button></div>
 
           {scDrill==="occ"&&<div>
             <p style={{fontSize:12,color:"#5c4a3a",marginBottom:10}}>Occupancy = occupied rooms / total rooms. Goal: 100%. Currently <strong>{m.occRate}%</strong> ({m.occ}/{m.total}).</p>
@@ -1160,7 +1246,7 @@ export default function Page(){
 
           {scDrill==="coll"&&<div>
             <p style={{fontSize:12,color:"#5c4a3a",marginBottom:10}}>Collection = rent collected / rent due. Goal: 100%. Currently <strong>{m.collRate}%</strong>.</p>
-            {m.unpaid.length>0?<>{m.unpaid.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:props.find(p=>p.rooms.some(x=>x.id===r.id))?.utils,propClean:props.find(p=>p.rooms.some(x=>x.id===r.id))?.clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.tenant?.name} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div style={{fontSize:9,color:"#c45c4a"}}>{r.propName} · {r.name} · {fmtS(r.rent)} unpaid</div></div></div>)}
+            {m.unpaid.length>0?<>{m.unpaid.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div style={{fontSize:9,color:"#c45c4a"}}>{r.propName} · {r.name} · {fmtS(r.rent)} unpaid</div></div></div>)}
               <div style={{fontSize:12,color:"#c45c4a",fontWeight:600,marginTop:8}}>Outstanding: {fmtS(m.due-m.coll)} from {m.unpaid.length} tenant{m.unpaid.length>1?"s":""}</div></>
             :<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>✓ All rent collected for {MO}!</div>}
           </div>}
@@ -1179,7 +1265,7 @@ export default function Page(){
           </div>}
         </div></div>}
         {m.expiring.length>0&&<><div className="sec-hd" style={{marginTop:16}}><div><h2>⚠️ Leases Expiring</h2></div></div>
-          {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setModal({type:"tenant",data:{...r,propUtils:props.find(p=>p.rooms.some(x=>x.id===r.id))?.utils,propClean:props.find(p=>p.rooms.some(x=>x.id===r.id))?.clean}});}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{r.tenant?.name}</div><div className="row-s">{r.propName} · {r.name} · {r.daysLeft} days</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}</>}
+          {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean}});}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · {r.daysLeft} days</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}</>}
       </>}
 
       {/* ═══ ROCKS ═══ */}
@@ -1243,7 +1329,7 @@ export default function Page(){
               </div>
               {/* Room list */}
               <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Rooms</div>
-              {p.rooms.map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=payments[r.id]?.[MO]||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+              {p.rooms.map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
                 return(<div key={r.id} className="row" style={{cursor:occ?"pointer":"default",padding:"8px 12px",marginBottom:3}} onClick={()=>{if(occ)setModal({type:"tenant",data:{...r,propName:p.name,propUtils:p.utils,propClean:p.clean}});}}>
                   <div className="row-dot" style={{background:occ?"#4a7c59":"#c45c4a"}}/>
                   <div className="row-i">
@@ -1443,7 +1529,7 @@ export default function Page(){
   </div>
 
   {/* ═══ MODALS ═══ */}
-  {modal?.type==="tenant"&&(()=>{const r=modal.data;const pd=payments[r.id]?.[MO]||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;const months=dl?Math.max(0,Math.ceil(dl/30)):null;
+  {modal&&modal.type==="tenant"&&(()=>{const r=modal.data;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;const months=dl?Math.max(0,Math.ceil(dl/30)):null;
     const prop=props.find(p=>p.rooms.some(x=>x.id===r.id));
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:580}}>
@@ -1516,7 +1602,7 @@ export default function Page(){
       </div>}
 
       {/* Room Move - Step 2: Details */}
-      {modal.moveStep===2&&(()=>{const target=(modal.moveAllVacant||[]).find(x=>x.id===modal.moveTarget);if(!target)return null;const sdDiff=target.rent-r.rent;const utilChange=target.propUtils!==(r.propUtils||prop?.utils);return(
+      {modal.moveStep===2&&(()=>{const target=(modal.moveAllVacant||[]).find(x=>x.id===modal.moveTarget);if(!target)return null;const sdDiff=target.rent-r.rent;const utilChange=target.propUtils!==(r.propUtils||r.utils);return(
         <div style={{background:"rgba(59,130,246,.04)",border:"2px solid rgba(59,130,246,.15)",borderRadius:10,padding:16,marginTop:10,animation:"fadeIn .2s"}}>
           <h3 style={{fontSize:14,fontWeight:800,color:"#3b82f6",marginBottom:10}}>Move Room — Step 2: Details</h3>
           <div className="fld"><label>New Rent (defaults to room price, editable for negotiation)</label><input type="number" value={modal.moveNewRent||target.rent} onChange={e=>setModal(prev=>({...prev,moveNewRent:Number(e.target.value)}))}/></div>
@@ -1533,7 +1619,7 @@ export default function Page(){
           <div className="fld"><label>Reason for Move (required)</label><textarea value={modal.moveNotes||""} onChange={e=>setModal(prev=>({...prev,moveNotes:e.target.value}))} placeholder="e.g. Tenant requested upgrade to private bath, roommate conflict, etc." rows={2}/></div>
           <div style={{display:"flex",gap:6,marginTop:10}}>
             <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,moveStep:1}))}>← Back</button>
-            <button className="btn btn-dk" style={{flex:1}} disabled={!modal.moveNotes?.trim()} onClick={()=>setModal(prev=>({...prev,moveStep:3}))}>Review →</button>
+            <button className="btn btn-dk" style={{flex:1}} disabled={!(modal.moveNotes||"").trim()} onClick={()=>setModal(prev=>({...prev,moveStep:3}))}>Review →</button>
           </div>
         </div>);})()}
 
@@ -1578,7 +1664,7 @@ export default function Page(){
         <div className="fld"><label>Reason / Notes (required)</label><textarea value={modal.termNotes||""} onChange={e=>setModal(prev=>({...prev,termNotes:e.target.value}))} placeholder="e.g. Tenant gave 30-day notice, relocating for work..." rows={3}/></div>
         <div style={{display:"flex",gap:6,marginTop:10}}>
           <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,termStep:undefined}))}>Cancel</button>
-          <button className="btn btn-red" style={{flex:1}} disabled={!modal.termNotes?.trim()} onClick={()=>setModal(prev=>({...prev,termStep:2}))}>Continue →</button>
+          <button className="btn btn-red" style={{flex:1}} disabled={!(modal.termNotes||"").trim()} onClick={()=>setModal(prev=>({...prev,termStep:2}))}>Continue →</button>
         </div>
       </div>}
 
@@ -1610,29 +1696,29 @@ export default function Page(){
 
   {/* Record Payment Modal */}
   {/* Save Theme Modal */}
-  {modal?.type==="saveTheme"&&(
+  {modal&&modal.type==="saveTheme"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
       <h2>Save Theme</h2>
       <div style={{display:"flex",gap:3,marginBottom:12}}>{[theme.bg,theme.card,theme.accent,theme.text,theme.green,theme.muted].map((c,i)=><div key={i} style={{width:24,height:24,borderRadius:4,background:c,border:"1px solid rgba(0,0,0,.1)"}}/>)}</div>
-      <div className="fld"><label>Theme Name</label><input value={modal.themeName||""} onChange={e=>setModal(prev=>({...prev,themeName:e.target.value}))} placeholder="e.g. Spring 2026, Dark Mode, Client Pitch..." autoFocus onKeyDown={e=>{if(e.key==="Enter"&&modal.themeName?.trim()){setSavedThemes(p=>[...p,{id:uid(),name:modal.themeName.trim(),colors:{...theme},savedDate:TODAY.toISOString().split("T")[0]}]);setModal(null);}}}/></div>
+      <div className="fld"><label>Theme Name</label><input value={modal.themeName||""} onChange={e=>setModal(prev=>({...prev,themeName:e.target.value}))} placeholder="e.g. Spring 2026, Dark Mode, Client Pitch..." autoFocus onKeyDown={e=>{if(e.key==="Enter"&&(modal.themeName||"").trim()){setSavedThemes(p=>[...p,{id:uid(),name:modal.themeName.trim(),colors:{...theme},savedDate:TODAY.toISOString().split("T")[0]}]);setModal(null);}}}/></div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-gold" disabled={!modal.themeName?.trim()} onClick={()=>{setSavedThemes(p=>[...p,{id:uid(),name:modal.themeName.trim(),colors:{...theme},savedDate:TODAY.toISOString().split("T")[0]}]);setModal(null);}}>Save</button></div>
+        <button className="btn btn-gold" disabled={!(modal.themeName||"").trim()} onClick={()=>{setSavedThemes(p=>[...p,{id:uid(),name:modal.themeName.trim(),colors:{...theme},savedDate:TODAY.toISOString().split("T")[0]}]);setModal(null);}}>Save</button></div>
     </div></div>
   )}
 
   {/* Waive Charge Modal */}
-  {modal?.type==="waiveCharge"&&(
+  {modal&&modal.type==="waiveCharge"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
       <h2>Waive Charge</h2>
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:12}}>This will stop late fees and mark the charge as waived. This cannot be undone.</p>
       <div className="fld"><label>Reason (required)</label><textarea value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value}))} placeholder="e.g. Tenant hardship, billing error, goodwill gesture..." rows={2} autoFocus/></div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-red" disabled={!modal.reason?.trim()} onClick={()=>{waiveCharge(modal.chargeId,modal.reason);setExpCharge(null);setModal(null);}}>Waive Charge</button></div>
+        <button className="btn btn-red" disabled={!(modal.reason||"").trim()} onClick={()=>{waiveCharge(modal.chargeId,modal.reason);setExpCharge(null);setModal(null);}}>Waive Charge</button></div>
     </div></div>
   )}
 
   {/* New Idea Modal */}
-  {modal?.type==="newIdea"&&(()=>{
+  {modal&&modal.type==="newIdea"&&(()=>{
     const cats=[...new Set(ideas.map(i=>i.cat))];
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
@@ -1642,7 +1728,7 @@ export default function Page(){
         <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:4}}>
           {cats.map(c=><button key={c} className={`btn ${modal.cat===c?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,cat:c}))}>{c}</button>)}
           <button className="btn btn-out btn-sm" style={{borderStyle:"dashed"}} onClick={()=>setModal(prev=>({...prev,showCatInput:true}))}>+ New Category</button>
-          {modal.showCatInput&&<div style={{display:"flex",gap:3,marginTop:4}}><input value={modal.newCatName||""} onChange={e=>setModal(prev=>({...prev,newCatName:e.target.value}))} placeholder="Category name..." onKeyDown={e=>{if(e.key==="Enter"&&modal.newCatName?.trim())setModal(prev=>({...prev,cat:prev.newCatName.trim(),showCatInput:false,newCatName:""}));}} style={{flex:1,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}} autoFocus/><button className="btn btn-gold btn-sm" disabled={!modal.newCatName?.trim()} onClick={()=>setModal(prev=>({...prev,cat:prev.newCatName.trim(),showCatInput:false,newCatName:""}))}>Set</button></div>}
+          {modal.showCatInput&&<div style={{display:"flex",gap:3,marginTop:4}}><input value={modal.newCatName||""} onChange={e=>setModal(prev=>({...prev,newCatName:e.target.value}))} placeholder="Category name..." onKeyDown={e=>{if(e.key==="Enter"&&(modal.newCatName||"").trim())setModal(prev=>({...prev,cat:prev.newCatName.trim(),showCatInput:false,newCatName:""}));}} style={{flex:1,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}} autoFocus/><button className="btn btn-gold btn-sm" disabled={!(modal.newCatName||"").trim()} onClick={()=>setModal(prev=>({...prev,cat:prev.newCatName.trim(),showCatInput:false,newCatName:""}))}>Set</button></div>}
         </div>
         {modal.cat&&!cats.includes(modal.cat)&&<div style={{fontSize:10,color:"#d4a853",marginTop:2}}>New category: <strong>{modal.cat}</strong></div>}
       </div>
@@ -1664,11 +1750,11 @@ export default function Page(){
       </div>
       <div className="mft">
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-gold" disabled={!modal.title?.trim()||!modal.cat} onClick={()=>{setIdeas(p=>[{id:uid(),title:modal.title.trim(),cat:modal.cat,priority:modal.priority||"medium",status:modal.status||"Idea"},...p]);setModal(null);}}>Add Idea</button>
+        <button className="btn btn-gold" disabled={!(modal.title||"").trim()||!modal.cat} onClick={()=>{setIdeas(p=>[{id:uid(),title:modal.title.trim(),cat:modal.cat,priority:modal.priority||"medium",status:modal.status||"Idea"},...p]);setModal(null);}}>Add Idea</button>
       </div>
     </div></div>);})()}
 
-  {modal?.type==="recordPay"&&(()=>{
+  {modal&&modal.type==="recordPay"&&(()=>{
     const occRooms=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
     const selRoom=occRooms.find(r=>r.id===modal.selRoom);
     const roomCharges=charges.filter(c=>c.roomId===modal.selRoom&&chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
@@ -1683,7 +1769,7 @@ export default function Page(){
             <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:600}}>{c.category}: {c.desc}</span><span className={`badge ${st==="pastdue"?"b-red":"b-blue"}`}>{st}</span></div>
             <div style={{fontSize:10,color:"#999"}}>Due {fmtD(c.dueDate)} - {fmtS(c.amount-c.amountPaid)} remaining</div>
           </div>);})}</div>}
-        {modal.selRoom&&roomCharges.length===0&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:12,color:"#9a7422",marginBottom:10}}>No unpaid charges. <button className="btn btn-gold btn-sm" style={{marginLeft:6}} onClick={()=>setModal({type:"createCharge",roomId:modal.selRoom,category:"Rent",desc:"",amount:selRoom?.rent||0,dueDate:TODAY.toISOString().split("T")[0],notes:""})}>Create Charge</button></div>}
+        {modal.selRoom&&roomCharges.length===0&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:12,color:"#9a7422",marginBottom:10}}>No unpaid charges. <button className="btn btn-gold btn-sm" style={{marginLeft:6}} onClick={()=>setModal({type:"createCharge",roomId:modal.selRoom,category:"Rent",desc:"",amount:(selRoom&&selRoom.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:""})}>Create Charge</button></div>}
         <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-dk" disabled={!modal.selCharge} onClick={()=>setModal(prev=>({...prev,step:2}))}>Next</button></div>
       </>}
       {modal.step===2&&selCh&&<>
@@ -1698,7 +1784,7 @@ export default function Page(){
     </div></div>);})()}
 
   {/* Create Charge Modal */}
-  {modal?.type==="createCharge"&&(()=>{
+  {modal&&modal.type==="createCharge"&&(()=>{
     const occRooms=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
     const selRoom=occRooms.find(r=>r.id===modal.roomId);
     return(
@@ -1710,12 +1796,12 @@ export default function Page(){
       <div className="fr"><div className="fld"><label>Amount</label><input type="number" step=".01" value={modal.amount} onChange={e=>setModal(prev=>({...prev,amount:Number(e.target.value)}))}/></div><div className="fld"><label>Due Date</label><input type="date" value={modal.dueDate} onChange={e=>setModal(prev=>({...prev,dueDate:e.target.value}))}/></div></div>
       <div className="fld"><label>Notes</label><input value={modal.notes||""} onChange={e=>setModal(prev=>({...prev,notes:e.target.value}))}/></div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-gold" disabled={!modal.roomId||!modal.amount} onClick={()=>{createCharge({roomId:modal.roomId,tenantName:selRoom?.tenant?.name||"",propName:selRoom?.propName||"",roomName:selRoom?.name||"",category:modal.category,desc:modal.desc||modal.category,amount:modal.amount,dueDate:modal.dueDate});setModal(null);}}>Create Charge</button></div>
+        <button className="btn btn-gold" disabled={!modal.roomId||!modal.amount} onClick={()=>{createCharge({roomId:modal.roomId,tenantName:(selRoom&&selRoom.tenant&&selRoom.tenant.name)||"",propName:(selRoom&&selRoom.propName)||"",roomName:(selRoom&&selRoom.name)||"",category:modal.category,desc:modal.desc||modal.category,amount:modal.amount,dueDate:modal.dueDate});setModal(null);}}>Create Charge</button></div>
     </div></div>);})()}
 
 
   {/* Add Credit */}
-  {modal?.type==="addCredit"&&(()=>{
+  {modal&&modal.type==="addCredit"&&(()=>{
     const occRooms=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
@@ -1725,14 +1811,14 @@ export default function Page(){
       <div className="fld"><label>Amount</label><input type="number" step=".01" value={modal.amount} onChange={e=>setModal(prev=>({...prev,amount:Number(e.target.value)}))}/></div>
       <div className="fld"><label>Reason</label><input value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value}))} placeholder="e.g. Overpayment, SD credit..."/></div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-green" disabled={!modal.roomId||!modal.amount} onClick={()=>{const rm=occRooms.find(r=>r.id===modal.roomId);setCredits(p=>[{id:uid(),roomId:modal.roomId,tenantName:rm?.tenant?.name||"",amount:modal.amount,reason:modal.reason,date:TODAY.toISOString().split("T")[0],applied:false},...p]);setModal(null);}}>Add Credit</button></div>
+        <button className="btn btn-green" disabled={!modal.roomId||!modal.amount} onClick={()=>{const rm=occRooms.find(r=>r.id===modal.roomId);setCredits(p=>[{id:uid(),roomId:modal.roomId,tenantName:(rm&&rm.tenant&&rm.tenant.name)||"",amount:modal.amount,reason:modal.reason,date:TODAY.toISOString().split("T")[0],applied:false},...p]);setModal(null);}}>Add Credit</button></div>
     </div></div>);})()}
 
   {/* Return SD */}
-  {modal?.type==="returnSD"&&(()=>{
+  {modal&&modal.type==="returnSD"&&(()=>{
     const tenantList=[...archive.map(a=>({id:a.id,name:a.name,roomName:a.roomName,propName:a.propName,rent:a.rent,type:"past"})),...props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({id:r.id,name:r.tenant.name,roomName:r.name,propName:pr.name,rent:r.rent,type:"current"})))];
     const sel=tenantList.find(t=>t.id===modal.roomId);
-    const sdHeld=sel?.rent||0;
+    const sdHeld=(sel&&sel.rent)||0;
     const deductions=modal.deductions||[];
     const totalDed=deductions.reduce((s,d)=>s+d.amount,0);
     const returnAmt=Math.max(0,sdHeld-totalDed);
@@ -1758,45 +1844,119 @@ export default function Page(){
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
         <button className="btn btn-green" disabled={!sel} onClick={()=>{setSdLedger(p=>[{id:uid(),roomId:modal.roomId,tenantName:sel.name,propName:sel.propName,roomName:sel.roomName,amountHeld:sdHeld,deductions,returned:returnAmt,returnDate:TODAY.toISOString().split("T")[0]},...p]);setModal(null);}}>Confirm Return {fmtS(returnAmt)}</button></div>
     </div></div>);})()}
-  {modal?.type==="app"&&(()=>{const a=modal.data;
-    // Find vacant rooms for conversion
-    const targetProp=props.find(p=>p.name===a.property);
-    const targetRoom=targetProp?.rooms.find(r=>r.name===a.room&&r.st==="vacant");
+  {modal&&modal.type==="denyApp"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
+      <h2>Deny Application</h2>
+      <div className="fld"><label>Reason (required)</label><textarea value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value}))} placeholder="e.g. Failed background check, insufficient income..." rows={3} autoFocus/></div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-red" disabled={!(modal.reason||"").trim()} onClick={()=>{setApps(p=>p.map(a=>a.id===modal.appId?{...a,status:"denied",deniedReason:modal.reason,deniedDate:TODAY.toISOString().split("T")[0],prevStage:a.status,lastContact:TODAY.toISOString().split("T")[0],history:[...(a.history||[]),{from:a.status,to:"denied",date:TODAY.toISOString().split("T")[0],note:modal.reason}]}:a));setModal(null);}}>Deny</button></div>
+    </div></div>
+  )}
+
+  {modal&&modal.type==="app"&&(()=>{const a=modal.data;
+    const STAGES=["pre-screened","called","invited","applied","reviewing","approved","move-in"];
+    const STAGE_LABELS={"pre-screened":"Pre-Screened","called":"Called","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
+    const STAGE_ICONS={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
+    const si=STAGES.indexOf(a.status);
+    const scoreApp=(a)=>{let s=50;if(a.income){const n=parseInt((a.income+"").replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(a.bgCheck==="passed")s+=15;if(a.creditScore&&a.creditScore!=="—"){const c=parseInt(a.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(a.refs==="verified")s+=10;return Math.min(s,100);};
+    const score=scoreApp(a);
+    const daysSince=(d)=>{if(!d)return 0;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
+    const days=daysSince(a.lastContact||a.submitted);
     const allVacant=props.flatMap(p=>p.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
+    const targetProp=props.find(p=>p.name===a.property);
+    const targetRoom=(targetProp&&targetProp.rooms).find(r=>r.name===a.room&&r.st==="vacant");
     const convertToTenant=(roomId,propId)=>{
       const moveIn=a.moveIn||TODAY.toISOString().split("T")[0];
       const leaseEnd=new Date(moveIn+"T00:00:00");leaseEnd.setFullYear(leaseEnd.getFullYear()+1);
       setProps(p=>p.map(pr=>pr.id===propId?{...pr,rooms:pr.rooms.map(rm=>rm.id===roomId?{...rm,st:"occupied",le:leaseEnd.toISOString().split("T")[0],tenant:{name:a.name,email:a.email,phone:a.phone,moveIn}}:rm)}:pr));
       setApps(p=>p.filter(x=>x.id!==a.id));
-      setNotifs(p=>[{id:uid(),type:"lease",msg:`${a.name} converted to tenant — assigned to ${props.find(pr=>pr.id===propId)?.rooms.find(rm=>rm.id===roomId)?.name||"room"}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+      setNotifs(p=>[{id:uid(),type:"lease",msg:`${a.name} converted to tenant`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
       setModal(null);
     };
+    const reqs=[
+      {key:"bgCheck",label:"Background Check"},
+      {key:"creditScore",label:"Credit Check"},
+      {key:"incomeVerified",label:"Income Verification"},
+      {key:"refs",label:"References"},
+      {key:"idVerified",label:"ID Verified"},
+    ];
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:580}}>
-      <h2>Application: {a.name}</h2>
-      <div className="tp-card"><h3>👤 Applicant</h3><div className="tp-row"><span className="tp-label">Name</span><strong>{a.name}</strong></div><div className="tp-row"><span className="tp-label">Email</span><strong>{a.email}</strong></div><div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone}</strong></div><div className="tp-row"><span className="tp-label">Income</span><strong>{a.income}</strong></div></div>
-      <div className="tp-card"><h3>🏠 Request</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{a.property}</strong></div><div className="tp-row"><span className="tp-label">Room</span><strong>{a.room}</strong></div><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">Submitted</span><strong>{a.submitted}</strong></div></div>
-      <div className="tp-card"><h3>🔍 Screening</h3><div className="tp-row"><span className="tp-label">Background Check</span><span className={`badge ${a.bgCheck==="passed"?"b-green":a.bgCheck==="pending"?"b-gold":"b-gray"}`}>{a.bgCheck}</span></div><div className="tp-row"><span className="tp-label">Credit Score</span><strong>{a.creditScore}</strong></div><div className="tp-row"><span className="tp-label">References</span><span className={`badge ${a.refs==="verified"?"b-green":a.refs==="pending"?"b-gold":"b-gray"}`}>{a.refs}</span></div></div>
-      <div style={{display:"flex",gap:6,marginTop:12}}>
-        <select value={a.status} onChange={e=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:e.target.value}:x))} style={{flex:1,padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontFamily:"inherit",fontSize:12}}>
-          <option value="pre-screened">Pre-Screened</option><option value="screening">Screening</option><option value="approved">Approved</option><option value="move-in">Move-in</option>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <h2>{a.name}</h2>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a",background:score>=70?"rgba(74,124,89,.08)":score>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"3px 8px",borderRadius:5}}>Score: {score}</span>
+          {days>0&&<span style={{fontSize:10,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999"}}>{days}d ago</span>}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{display:"flex",gap:2,marginBottom:16}}>
+        {STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}>
+          <div style={{height:4,borderRadius:2,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:3,transition:"background .3s"}}/>
+          <div style={{fontSize:7,color:i<=si?"#d4a853":"#999"}}>{STAGE_ICONS[s]}</div>
+        </div>)}
+      </div>
+
+      {/* Info cards */}
+      <div className="tp-card"><h3>👤 Applicant</h3>
+        <div className="tp-row"><span className="tp-label">Email</span><strong>{a.email}</strong></div>
+        <div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone}</strong></div>
+        <div className="tp-row"><span className="tp-label">Income</span><strong>{a.income||"—"}</strong></div>
+        {a.source&&<div className="tp-row"><span className="tp-label">Source</span><strong>{a.source}</strong></div>}
+        {a.reason&&<div className="tp-row"><span className="tp-label">Why moving</span><strong>{a.reason}</strong></div>}
+      </div>
+      <div className="tp-card"><h3>🏠 Request</h3>
+        <div className="tp-row"><span className="tp-label">Property</span><strong>{a.property||"No preference"}</strong></div>
+        {a.room&&<div className="tp-row"><span className="tp-label">Room</span><strong>{a.room}</strong></div>}
+        <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)||"Flexible"}</strong></div>
+        <div className="tp-row"><span className="tp-label">Submitted</span><strong>{fmtD(a.submitted)}</strong></div>
+      </div>
+
+      {/* Requirements checklist */}
+      <div className="tp-card"><h3>📋 Requirements</h3>
+        {reqs.map(r=>{const val=a[r.key]||"not-started";const stColor=val==="passed"?"#4a7c59":val==="pending"?"#d4a853":val==="failed"?"#c45c4a":"#999";return(
+          <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}>
+            <span style={{fontSize:12}}>{r.label}</span>
+            <select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}} style={{padding:"3px 8px",borderRadius:5,border:`1px solid ${stColor}33`,fontSize:10,fontFamily:"inherit",color:stColor,fontWeight:600}}>
+              <option value="not-started">Not Started</option><option value="pending">Pending</option><option value="passed">Passed</option><option value="failed">Failed</option><option value="waived">Waived</option>
+            </select>
+          </div>);})}
+      </div>
+
+      {/* Notes */}
+      <div className="tp-card"><h3>📝 Notes</h3>
+        <textarea value={a.notes||""} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,notes:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,notes:e.target.value}}));}} placeholder="Internal notes about this applicant..." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+      </div>
+
+      {/* History */}
+      {(a.history||[]).length>0&&<div className="tp-card"><h3>📅 History</h3>
+        {(a.history||[]).slice(-5).reverse().map((h,i)=><div key={i} style={{fontSize:10,padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.02)",color:"#999"}}>
+          {fmtD(h.date)} — {h.from} → {h.to}{h.note?` · ${h.note}`:""}
+        </div>)}
+      </div>}
+
+      {/* Stage controls */}
+      <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
+        <select value={a.status} onChange={e=>{const ns=e.target.value;setApps(p=>p.map(x=>x.id===a.id?{...x,status:ns,lastContact:TODAY.toISOString().split("T")[0],history:[...(x.history||[]),{from:x.status,to:ns,date:TODAY.toISOString().split("T")[0]}]}:x));setModal(prev=>({...prev,data:{...prev.data,status:ns}}));}} style={{flex:1,padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontFamily:"inherit",fontSize:12}}>
+          {["pre-screened","called","invited","applied","reviewing","approved","move-in"].map(s=><option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
         </select>
-        <button className="btn btn-green" onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"approved"}:x));setModal(null);}}>Approve</button>
-        <button className="btn btn-red" onClick={()=>{setApps(p=>p.filter(x=>x.id!==a.id));setModal(null);}}>Deny</button>
+        {a.status==="called"&&<button className="btn btn-dk" onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],history:[...(x.history||[]),{from:"called",to:"invited",date:TODAY.toISOString().split("T")[0]}]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"invited"}}));}}>✉️ Invite to Apply</button>}
+        <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,reason:""})}>Deny</button>
       </div>
 
       {/* Convert to Tenant */}
       {(a.status==="approved"||a.status==="move-in")&&<div className="tp-card" style={{marginTop:12,borderColor:"rgba(74,124,89,.2)",background:"rgba(74,124,89,.03)"}}><h3>🔑 Convert to Tenant</h3>
-        <p style={{fontSize:11,color:"#5c4a3a",marginBottom:10}}>Assign a room and create the lease. This moves {a.name} from applicant to active tenant.</p>
+        <p style={{fontSize:11,color:"#5c4a3a",marginBottom:10}}>Assign a room and create the lease.</p>
         {targetRoom?<button className="btn btn-green" style={{width:"100%"}} onClick={()=>convertToTenant(targetRoom.id,targetProp.id)}>Assign to {a.room} at {a.property} →</button>
-        :<>{allVacant.length>0?<div><div style={{fontSize:10,color:"#999",marginBottom:6}}>Requested room is occupied. Choose a vacant room:</div>{allVacant.map(vr=><button key={vr.id} className="btn btn-out btn-sm" style={{marginRight:4,marginBottom:4}} onClick={()=>convertToTenant(vr.id,vr.propId)}>{vr.name} at {vr.propName} ({fmtS(vr.rent)})</button>)}</div>
-        :<div style={{fontSize:11,color:"#c45c4a"}}>No vacant rooms available. A room must be vacated first.</div>}</>}
+        :<>{allVacant.length>0?<div><div style={{fontSize:10,color:"#999",marginBottom:6}}>Choose a vacant room:</div>{allVacant.map(vr=><button key={vr.id} className="btn btn-out btn-sm" style={{marginRight:4,marginBottom:4}} onClick={()=>convertToTenant(vr.id,vr.propId)}>{vr.name} at {vr.propName} ({fmtS(vr.rent)})</button>)}</div>
+        :<div style={{fontSize:11,color:"#c45c4a"}}>No vacant rooms available.</div>}</>}
       </div>}
 
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
     </div></div>);})()}
 
-  {modal?.type==="archived"&&(()=>{const a=modal.data;const payMonths=Object.keys(a.payments||{});const totalPaid=Object.values(a.payments||{}).reduce((s,v)=>s+(typeof v==="object"?Object.values(v).reduce((ss,vv)=>ss+vv,0):v),0);
+  {modal&&modal.type==="archived"&&(()=>{const a=modal.data;const payMonths=Object.keys(a.payments||{});const totalPaid=Object.values(a.payments||{}).reduce((s,v)=>s+(typeof v==="object"?Object.values(v).reduce((ss,vv)=>ss+vv,0):v),0);
     const moveIn=a.moveIn?new Date(a.moveIn+"T00:00:00"):null;const termDate=a.terminatedDate?new Date(a.terminatedDate+"T00:00:00"):null;
     const tenureDays=moveIn&&termDate?Math.ceil((termDate-moveIn)/(1e3*60*60*24)):null;const tenureMonths=tenureDays?Math.round(tenureDays/30):null;
     return(
@@ -1809,7 +1969,7 @@ export default function Page(){
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
     </div></div>);})()}
 
-  {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:props.find(p=>p.rooms.some(x=>x.id===r.id))?.utils||r.utils,propClean:props.find(p=>p.rooms.some(x=>x.id===r.id))?.clean||r.clean}});}}/>}
+  {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean||r.clean}});}}/>}
 
   </>);
 }
