@@ -14,7 +14,7 @@ function uid() {
 export async function POST(request) {
   try {
     const form = await request.json();
-    const { name, email, phone, property, moveIn, income, source, reason } = form;
+    const { name, email, phone, property, moveIn, source, reason } = form;
 
     if (!name || !email || !phone) {
       return Response.json({ ok: false, error: "Name, email, and phone are required." }, { status: 400 });
@@ -29,7 +29,7 @@ export async function POST(request) {
       property: property || "No preference",
       room: "",
       moveIn: moveIn || "Flexible",
-      income: income || "Not provided",
+      income: "N/A",
       source: source || "Not provided",
       reason: reason || "",
       status: "pre-screened",
@@ -100,7 +100,7 @@ export async function POST(request) {
         body: JSON.stringify({
           from: "Black Bear Rentals <notifications@rentblackbear.com>",
           to: notifyEmail,
-          subject: `🐻 New Application: ${name}`,
+          subject: `🐻 NEW APPLICATION: ${name} — ${phone} — ${property || "No preference"}`,
           html: `
             <h2>New Application Received</h2>
             <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px;">
@@ -109,7 +109,6 @@ export async function POST(request) {
               <tr><td style="padding:6px 12px;color:#666;">Phone</td><td style="padding:6px 12px;">${phone}</td></tr>
               <tr><td style="padding:6px 12px;color:#666;">Property</td><td style="padding:6px 12px;">${property || "No preference"}</td></tr>
               <tr><td style="padding:6px 12px;color:#666;">Move-in</td><td style="padding:6px 12px;">${moveIn || "Flexible"}</td></tr>
-              <tr><td style="padding:6px 12px;color:#666;">Income</td><td style="padding:6px 12px;">${income || "Not provided"}</td></tr>
               <tr><td style="padding:6px 12px;color:#666;">Source</td><td style="padding:6px 12px;">${source || "Not provided"}</td></tr>
               ${reason ? `<tr><td style="padding:6px 12px;color:#666;">Reason for moving</td><td style="padding:6px 12px;">${reason}</td></tr>` : ""}
             </table>

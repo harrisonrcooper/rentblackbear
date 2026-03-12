@@ -10,7 +10,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 const S_INFO = { company:"Black Bear Rentals", legal:"Oak & Main Development LLC", phone:"(256) 555-0192", email:"info@rentblackbear.com", city:"Huntsville, Alabama" };
 
 const PROPS = [
-  { id:"p1",name:"The Holmes House",address:"Corner of Holmes & Lee, Huntsville, AL",type:"SFH",typeTag:"SFH",baths:3,sqft:2400,status:"Available",utils:"first100",clean:"Weekly",
+  { id:"p1",name:"The Holmes House",address:"Corner of Holmes & Lee, Huntsville, AL",lat:34.7285,lng:-86.5920,type:"SFH",typeTag:"SFH",baths:3,sqft:2400,status:"Available",utils:"first100",clean:"Weekly",
     desc:"A spacious 5-bedroom single family home in our flagship mixed-use neighborhood. Walking distance to coffee shops, salons, and neighborhood amenities.",
     imgs:["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80","https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80","https://images.unsplash.com/photo-1600566753190-17f0baa2a6c0?w=800&q=80"],
     rooms:[
@@ -20,7 +20,7 @@ const PROPS = [
       {id:"r4",name:"Bedroom 4",rent:650,bed:"Full",tv:'42"',pb:false,sqft:175,feat:["Shared bath","Backyard view"],st:"vacant",le:null},
       {id:"r5",name:"Bedroom 5",rent:600,bed:"Twin XL",tv:'32"',pb:false,sqft:160,feat:["Shared bath","Cozy layout"],st:"occupied",le:"2026-10-31"},
     ]},
-  { id:"p2",name:"Lee Drive East",address:"Lee Drive, Huntsville, AL",type:"Townhome",typeTag:"Townhome",baths:2,sqft:1200,status:"Available",utils:"allIncluded",clean:"Biweekly",
+  { id:"p2",name:"Lee Drive East",address:"Lee Drive, Huntsville, AL",lat:34.7280,lng:-86.5935,type:"Townhome",typeTag:"Townhome",baths:2,sqft:1200,status:"Available",utils:"allIncluded",clean:"Biweekly",
     desc:"Brand-new construction townhome. Modern finishes throughout with an open floor plan and full kitchen.",
     imgs:["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80","https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80","https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80"],
     rooms:[
@@ -28,7 +28,7 @@ const PROPS = [
       {id:"r7",name:"Bedroom 2",rent:650,bed:"Full",tv:'42"',pb:false,sqft:170,feat:["Shared bath","Good closet"],st:"occupied",le:"2026-07-31"},
       {id:"r8",name:"Bedroom 3",rent:600,bed:"Twin XL",tv:'42"',pb:false,sqft:155,feat:["Shared bath","USB outlets"],st:"vacant",le:null},
     ]},
-  { id:"p3",name:"Lee Drive West",address:"Lee Drive, Huntsville, AL",type:"Townhome",typeTag:"Townhome",baths:2,sqft:1200,status:"Coming Soon",utils:"allIncluded",clean:"Biweekly",
+  { id:"p3",name:"Lee Drive West",address:"Lee Drive, Huntsville, AL",lat:34.7280,lng:-86.5940,type:"Townhome",typeTag:"Townhome",baths:2,sqft:1200,status:"Coming Soon",utils:"allIncluded",clean:"Biweekly",
     desc:"Mirror unit to Lee Drive East with the same premium finishes. Reserve a room now for priority move-in.",
     imgs:["https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800&q=80","https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&q=80","https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80"],
     rooms:[
@@ -39,14 +39,20 @@ const PROPS = [
 ];
 
 const POIS=[
-  {name:"Redstone Arsenal Gate 9",icon:"🪖",cat:"Military",drive:"12 min",url:"https://www.google.com/maps/place/Redstone+Arsenal+Gate+9"},
-  {name:"Downtown Huntsville",icon:"🏙️",cat:"Entertainment",drive:"5 min",url:"https://www.downtownhuntsville.org"},
-  {name:"Von Braun Center",icon:"🎭",cat:"Entertainment",drive:"6 min",url:"https://www.vonbrauncenter.com"},
-  {name:"Stovehouse",icon:"🍽️",cat:"Food & Drink",drive:"8 min",url:"https://www.stovehouse.com"},
-  {name:"Bridge Street Town Centre",icon:"🛍️",cat:"Shopping",drive:"14 min",url:"https://www.bridgestreethuntsville.com"},
-  {name:"UAH Campus",icon:"🎓",cat:"Education",drive:"10 min",url:"https://www.uah.edu"},
-  {name:"MidCity District",icon:"🎯",cat:"Entertainment",drive:"12 min",url:"https://www.midcityhuntsville.com"},
-  {name:"Huntsville Hospital",icon:"🏥",cat:"Healthcare",drive:"6 min",url:"https://www.huntsvillehospital.org"},
+  {name:"Redstone Arsenal Gate 9",icon:"🪖",cat:"Redstone Arsenal",drive:"12 min",lat:34.6860,lng:-86.5860,desc:"Main contractor & visitor gate",url:"https://www.google.com/maps/place/Redstone+Arsenal+Gate+9"},
+  {name:"Redstone Arsenal Gate 1",icon:"🪖",cat:"Redstone Arsenal",drive:"8 min",lat:34.6620,lng:-86.5530,desc:"Martin Rd — closest gate to our properties",url:"https://www.google.com/maps/place/Gate+1+Redstone+Arsenal"},
+  {name:"Downtown Huntsville",icon:"🏙️",cat:"Entertainment",drive:"5 min",lat:34.7304,lng:-86.5861,desc:"Courthouse Square, restaurants, nightlife",url:"https://www.downtownhuntsville.org"},
+  {name:"Von Braun Center",icon:"🎭",cat:"Entertainment",drive:"6 min",lat:34.7265,lng:-86.5893,desc:"Concerts, expos, conventions",url:"https://www.vonbrauncenter.com"},
+  {name:"Stovehouse",icon:"🍽️",cat:"Food & Drink",drive:"8 min",lat:34.7227,lng:-86.5651,desc:"Food hall, live music, cocktail bars",url:"https://www.stovehouse.com"},
+  {name:"Bridge Street Town Centre",icon:"🛍️",cat:"Shopping",drive:"14 min",lat:34.7155,lng:-86.6730,desc:"Outdoor mall, movie theater, restaurants",url:"https://www.bridgestreethuntsville.com"},
+  {name:"UAH Campus",icon:"🎓",cat:"Education",drive:"10 min",lat:34.7254,lng:-86.6408,desc:"University of Alabama in Huntsville",url:"https://www.uah.edu"},
+  {name:"MidCity District",icon:"🎯",cat:"Entertainment",drive:"12 min",lat:34.7186,lng:-86.6168,desc:"Dave & Buster's, Top Golf, Camp",url:"https://www.midcityhuntsville.com"},
+  {name:"Huntsville Hospital",icon:"🏥",cat:"Healthcare",drive:"6 min",lat:34.7243,lng:-86.5826,desc:"Level 1 trauma center, emergency",url:"https://www.huntsvillehospital.org"},
+  {name:"Walmart Supercenter",icon:"🛒",cat:"Grocery & Retail",drive:"7 min",lat:34.7372,lng:-86.6136,desc:"Full grocery, pharmacy, general merchandise",url:"https://www.walmart.com/store/1098-huntsville-al"},
+  {name:"Target",icon:"🎯",cat:"Grocery & Retail",drive:"7 min",lat:34.7378,lng:-86.6095,desc:"Grocery, clothing, home goods",url:"https://www.target.com/sl/huntsville-south/2781"},
+  {name:"Costco",icon:"🛒",cat:"Grocery & Retail",drive:"12 min",lat:34.7315,lng:-86.6545,desc:"Bulk grocery, gas station, pharmacy",url:"https://www.costco.com/warehouse-locations/huntsville-al-1198.html"},
+  {name:"Kroger",icon:"🛒",cat:"Grocery & Retail",drive:"5 min",lat:34.7050,lng:-86.5870,desc:"Grocery, deli, pharmacy",url:"https://www.kroger.com/stores"},
+  {name:"ALDI",icon:"🛒",cat:"Grocery & Retail",drive:"6 min",lat:34.7365,lng:-86.6020,desc:"Budget-friendly grocery",url:"https://stores.aldi.us/al/huntsville"},
 ];
 
 const SCREEN_QS=[
@@ -58,6 +64,11 @@ const SCREEN_QS=[
   {id:"income",q:"Is your gross monthly income at least 3x your expected rent?",pass:"Yes"},
   {id:"refs",q:"Can you provide professional references and verifiable landlord history?",pass:"Yes"},
 ];
+
+// ─── Supabase (read-only for public site) ───────────────────────────
+const SUPA_URL="https://vxysaclhucdjxzcknoar.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
+async function supaGet(key){try{const r=await fetch(`${SUPA_URL}/rest/v1/app_data?key=eq.${key}&select=value`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${SUPA_KEY}`}});const d=await r.json();return d?.[0]?.value||null;}catch{return null;}}
 
 const AMENITIES=[
   {icon:"📶",t:"Google Fiber WiFi",d:"High-speed internet in every property."},
@@ -113,12 +124,12 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 .hst{text-align:center}.hst-n{font-family:var(--fd);font-size:32px;color:var(--ac)}.hst-l{font-size:11px;color:rgba(196,168,130,.5);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px}
 
 /* Proof strip */
-.proof{padding:28px 40px;background:#fff;border-bottom:1px solid rgba(0,0,0,.04)}
+.proof{padding:28px 40px;background:#fff}
 .proof-in{max-width:960px;margin:0 auto;display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:20px}
 .proof-i{text-align:center;min-width:120px}.proof-n{font-family:var(--fd);font-size:30px;color:var(--dk)}.proof-l{font-size:11px;color:var(--wm);margin-top:3px}
 
 /* Sections */
-.sec{padding:100px 40px}.sec-dk{background:var(--dk);padding:100px 40px}.sec-cr{background:#faf8f4;padding:100px 40px}
+.sec{padding:100px 40px;position:relative}.sec-dk{background:var(--dk);padding:100px 40px;position:relative}.sec-cr{background:#faf8f4;padding:100px 40px;position:relative}
 .sec-inner{max-width:1200px;margin:0 auto}
 .sh{text-align:center;max-width:620px;margin:0 auto 56px}
 .sl{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ac);margin-bottom:12px}
@@ -206,10 +217,11 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 
 /* Map POIs */
 .map-c{border-radius:18px;overflow:hidden;border:1px solid rgba(0,0,0,.05)}.map-if{width:100%;height:420px;border:none}
+.map-live{height:420px}
 .poi-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-top:20px}
-.poi{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#fff;border-radius:10px;border:1px solid rgba(0,0,0,.04);text-decoration:none;color:inherit;transition:all .2s}.poi:hover{border-color:var(--ac);transform:translateY(-2px)}
-.poi-ic{font-size:20px;width:40px;height:40px;border-radius:8px;background:var(--cr);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.poi-inf{flex:1}.poi-nm{font-size:12px;font-weight:700}.poi-ct{font-size:10px;color:var(--wm)}
+.poi{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid rgba(255,255,255,.08);text-decoration:none;color:inherit;transition:all .2s}.poi:hover{border-color:var(--ac);transform:translateY(-2px);background:rgba(255,255,255,.08)}
+.poi-ic{font-size:20px;width:40px;height:40px;border-radius:8px;background:rgba(212,168,83,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.poi-inf{flex:1}.poi-nm{font-size:12px;font-weight:700;color:var(--cr)}.poi-ct{font-size:10px;color:var(--mt)}
 .poi-lk{font-size:8px;color:var(--ac);font-weight:600;margin-top:1px}
 .poi-dr{font-size:12px;font-weight:800;color:var(--ac);white-space:nowrap}
 
@@ -295,7 +307,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 .faq-a{padding:0 20px 16px;font-size:12px;line-height:1.8;color:var(--wm);animation:fadeIn .2s}
 
 /* Screening */
-.scr-sec{background:linear-gradient(165deg,var(--cd),var(--dk));padding:100px 40px}
+.scr-sec{background:#1a1714;padding:100px 40px}
 .scr-wrap{max-width:600px;margin:0 auto}
 .scr-card{background:#fff;border-radius:18px;padding:40px}
 .scr-hd{text-align:center;margin-bottom:32px}.scr-hd h2{font-family:var(--fd);font-size:clamp(24px,3vw,36px);margin-bottom:10px}.scr-hd p{font-size:14px;color:var(--wm);line-height:1.6}
@@ -342,20 +354,157 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 .stk-x{background:none;border:none;color:rgba(245,240,232,.3);font-size:16px;cursor:pointer;padding:2px 6px}
 
 /* Footer */
-.ftr{background:var(--dk);border-top:1px solid rgba(196,168,130,.08);padding:40px;text-align:center}
+.ftr{background:var(--dk);padding:40px;text-align:center}
 .ftr p{color:rgba(196,168,130,.3);font-size:12px}
 
 /* Range inputs */
 input[type=range]{width:100%;height:5px;border-radius:3px;-webkit-appearance:none;outline:none;cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--ac);cursor:pointer;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)}
 
-@media(max-width:768px){.nav{padding:0 16px}.nlinks{display:none}.sec,.sec-dk,.sec-cr{padding:60px 16px}.scr-sec{padding:60px 16px}
-.hero{padding:60px 16px}.hstats{gap:20px;flex-wrap:wrap}.pgrid,.cal-grid{grid-template-columns:1fr}
-.agrid,.per-g,.hs-g,.rev-g,.steps-g{grid-template-columns:1fr}.poi-g{grid-template-columns:1fr}
-.mgal{grid-template-columns:1fr;height:200px}.mside{display:none}.mbody{padding:24px}.mtp{flex-direction:column}
-.calc-grid{grid-template-columns:1fr}.cwin{right:10px;left:10px;width:auto;bottom:84px}
-.scr-card{padding:28px 20px}.sform-row{flex-direction:column}.proof-in{gap:12px}.proof-n{font-size:24px}
-.stk{padding:8px 14px;gap:10px}.stk-txt{font-size:11px}}
+/* ─── Mobile Nav Toggle ─── */
+.nav-tog{display:none;background:none;border:none;color:var(--cr);font-size:24px;cursor:pointer;padding:8px}
+.mob-menu{display:none;position:fixed;top:68px;left:0;right:0;background:rgba(26,23,20,.98);backdrop-filter:blur(16px);padding:20px 24px;flex-direction:column;gap:16px;z-index:99;border-bottom:1px solid rgba(196,168,130,.1);animation:fadeIn .2s}
+.mob-menu.open{display:flex}
+.mob-menu a{color:var(--cr);text-decoration:none;font-size:16px;font-weight:500;padding:12px 0;border-bottom:1px solid rgba(196,168,130,.08);cursor:pointer}
+.mob-menu a:last-child{border-bottom:none}
+
+/* ─── Tablet (max 1024px) ─── */
+@media(max-width:1024px){
+.calc-grid{grid-template-columns:1fr}
+.mgal{grid-template-columns:1fr;height:220px}.mside{display:none}
+.cmp-w{max-width:100%}
+}
+
+/* ─── Mobile (max 768px) ─── */
+@media(max-width:768px){
+/* Nav */
+.nav{padding:0 16px;height:60px}.nlinks{display:none}.nav-tog{display:block}
+.nlogo{font-size:18px}
+
+/* Hero */
+.hero{padding:100px 16px 60px;min-height:auto}
+.hbadge{font-size:10px;padding:6px 14px;margin-bottom:20px}
+.hero h1{font-size:32px;margin-bottom:14px}
+.hero>div>p{font-size:14px;margin-bottom:28px;line-height:1.6}
+.hbtns{flex-direction:column;gap:10px;align-items:center}
+.bp,.bs{width:100%;max-width:300px;text-align:center;padding:14px 24px}
+.hstats{gap:24px;flex-wrap:wrap;margin-top:36px;padding-top:28px}
+.hst-n{font-size:26px}.hst-l{font-size:9px}
+
+/* Proof strip */
+.proof{padding:20px 16px}.proof-in{gap:16px}.proof-n{font-size:22px}.proof-i{min-width:80px}
+
+/* Sections */
+.sec,.sec-dk,.sec-cr{padding:50px 16px}
+.sh{margin-bottom:36px}.sl{font-size:10px}.st{font-size:26px}.ss{font-size:13px}
+.sec-inner{max-width:100%}
+
+/* Property cards */
+.pgrid{grid-template-columns:1fr;gap:16px}.pimg{height:180px}
+.pnm{font-size:17px}.pad{font-size:11px}
+.pftr{flex-direction:column;gap:8px;align-items:flex-start}
+
+/* Modal */
+.mo{padding:0;align-items:flex-end}
+.modal{margin:0;border-radius:18px 18px 0 0;max-height:92vh;overflow-y:auto}
+.mx{top:12px;right:12px;width:36px;height:36px;font-size:16px}
+.mgal{grid-template-columns:1fr;height:200px}.mside{display:none}
+.mbody{padding:20px 16px}
+.mtp{flex-direction:column;gap:16px}
+.mib{min-width:80px;padding:10px 14px}.mib .v{font-size:22px}
+.mdesc{font-size:13px}
+.istrip{gap:6px}.ii{font-size:10px;padding:5px 10px}
+.rgrid{grid-template-columns:1fr;gap:8px}
+.rc{flex-direction:column;gap:10px;padding:14px}.rprice{text-align:left;font-size:20px}
+.rn{font-size:13px}.rd{font-size:10px}
+
+/* Compare / Filters */
+.flt-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;gap:6px}
+.fp{white-space:nowrap;padding:8px 14px;font-size:11px}
+.flt-lb{display:none}
+.cmp-w{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px}
+.cmp{font-size:11px;min-width:600px}
+.cmp th,.cmp td{padding:8px 10px;font-size:10px}
+.cmp th:first-child{min-width:100px}
+
+/* Amenities */
+.agrid{grid-template-columns:1fr;gap:12px}
+.ac{padding:20px}
+.ac h3{font-size:14px}.ac p{font-size:12px}
+
+/* Calendar */
+.cal-grid{grid-template-columns:1fr;gap:12px}
+.cal-hd{font-size:16px}.cal-nav{gap:8px}
+.cal-dy{width:32px;height:32px;font-size:11px}
+
+/* Map */
+.map-c{border-radius:12px}
+.map-live{height:280px}
+.poi-g{grid-template-columns:1fr;gap:8px}
+.poi{padding:10px 12px}
+.poi-ic{width:34px;height:34px;font-size:17px}
+.poi-nm{font-size:11px}.poi-ct{font-size:9px}.poi-dr{font-size:11px}
+.tabs{flex-wrap:wrap;gap:4px}
+.tab{padding:6px 12px;font-size:10px}
+
+/* Savings */
+.calc-grid{grid-template-columns:1fr;gap:16px}
+.calc-card{padding:20px}
+.calc-res{flex-direction:column;gap:16px}
+.sav-n{font-size:36px}
+
+/* Steps */
+.steps-g{grid-template-columns:1fr;gap:14px}
+
+/* Persuasion */
+.per-g{grid-template-columns:1fr;gap:10px}
+
+/* House Standards */
+.hs-g{grid-template-columns:1fr 1fr;gap:8px}
+.hs-c{padding:14px;font-size:11px}
+
+/* Reviews */
+.rev-g{grid-template-columns:1fr;gap:12px}
+.rev-c{padding:16px}
+
+/* FAQ */
+.faq-list{max-width:100%}
+.faq-q{font-size:13px;padding:14px 16px}
+.faq-a{padding:0 16px 14px;font-size:12px}
+
+/* Screening */
+.scr-sec{padding:50px 16px}
+.scr-card{padding:24px 18px;border-radius:16px}
+.scr-qt{font-size:15px}
+.scr-btns{flex-direction:column;gap:8px}
+.scr-btn{padding:14px;font-size:14px;width:100%}
+.sform-row{flex-direction:column;gap:0}
+.sinp,.ssel,.stxt{font-size:14px;padding:12px 14px}
+.scr-sub{font-size:14px;padding:14px}
+
+/* Chat */
+.cwin{right:10px;left:10px;width:auto;bottom:80px;max-height:70vh}
+.ctog{width:52px;height:52px;font-size:20px;bottom:16px;right:16px}
+.cinp{font-size:14px}
+
+/* Sticky bar */
+.stk{padding:10px 14px;gap:8px;flex-wrap:nowrap}
+.stk-txt{font-size:11px;white-space:nowrap}
+.stk-btn{font-size:11px;padding:8px 16px;white-space:nowrap}
+.stk-x{width:28px;height:28px;font-size:12px}
+
+/* Footer */
+.ftr{padding:24px 16px}.ftr p{font-size:10px}
+}
+
+/* ─── Small phones (max 380px) ─── */
+@media(max-width:380px){
+.hero h1{font-size:26px}
+.hst-n{font-size:22px}
+.hs-g{grid-template-columns:1fr}
+.scr-card{padding:20px 14px}
+.proof-n{font-size:20px}
+}
 `;
 
 // ─── Components ─────────────────────────────────────────────────────
@@ -379,6 +528,74 @@ function PropertyModal({p,onClose}){
     </div></div></div>);
 }
 
+// ─── Interactive Map ────────────────────────────────────────────────
+function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav}){
+  const mapRef=useRef(null);const mapInst=useRef(null);const markersRef=useRef([]);
+  const[highlight,setHighlight]=useState(null);
+  const catColors={"Redstone Arsenal":"#b8956a",Entertainment:"#c4a882","Grocery & Retail":"#a8b882","Food & Drink":"#c4a070",Education:"#82a8a8",Healthcare:"#82a88c",property:"#d4a853"};
+
+  useEffect(()=>{
+    if(mapInst.current||!mapRef.current)return;
+    // Load Leaflet
+    const link=document.createElement("link");link.rel="stylesheet";link.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";document.head.appendChild(link);
+    const script=document.createElement("script");script.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.onload=()=>{
+      const L=window.L;
+      const map=L.map(mapRef.current,{scrollWheelZoom:false}).setView([34.72,-86.59],12);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:'© OpenStreetMap'}).addTo(map);
+      mapInst.current=map;
+      // Add markers
+      const addMarkers=()=>{
+        markersRef.current.forEach(m=>m.remove());markersRef.current=[];
+        // Property pins (gold, larger) — pulled from PROPS data
+        PROPS.filter(p=>p.lat&&p.lng).forEach(p=>{
+          const icon=L.divIcon({className:"",html:`<div style="width:32px;height:32px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">🐻</div>`,iconSize:[32,32],iconAnchor:[16,32],popupAnchor:[0,-32]});
+          const vacRooms=p.rooms.filter(r=>r.st==="vacant").length;const minR=Math.min(...p.rooms.map(r=>r.rent));
+          const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;text-align:center;padding:4px"><strong style="font-size:14px">${p.name}</strong><br/><span style="color:#666">${p.address}</span><br/><span style="color:#d4a853;font-weight:700">${vacRooms} room${vacRooms!==1?"s":""} available · From $${minR}/mo</span></div>`);
+          markersRef.current.push(m);
+        });
+        // POI pins
+        const pins=mapCat==="all"?POIS:POIS.filter(p=>p.cat===mapCat);
+        pins.forEach(p=>{
+          const color=catColors[p.cat]||"#666";
+          const icon=L.divIcon({className:"",html:`<div style="width:26px;height:26px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer">${p.icon}</div>`,iconSize:[26,26],iconAnchor:[13,26],popupAnchor:[0,-26]});
+          const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;padding:4px"><strong>${p.name}</strong><br/><span style="color:#666">${p.desc} · 🚗 ${p.drive}</span></div>`);
+          markersRef.current.push(m);
+        });
+      };
+      addMarkers();
+      map._addMarkersForFilter=addMarkers;
+    };
+    document.head.appendChild(script);
+    return()=>{if(mapInst.current){mapInst.current.remove();mapInst.current=null;}};
+  },[]);
+
+  // Update markers when filter changes
+  useEffect(()=>{
+    if(mapInst.current&&mapInst.current._addMarkersForFilter)mapInst.current._addMarkersForFilter();
+  },[mapCat]);
+
+  const scrollToPin=(p)=>{
+    if(mapInst.current&&p.lat){mapInst.current.setView([p.lat,p.lng],14,{animate:true});
+      const marker=markersRef.current.find(m=>{const ll=m.getLatLng();return Math.abs(ll.lat-p.lat)<0.001&&Math.abs(ll.lng-p.lng)<0.001;});
+      if(marker)marker.openPopup();
+    }
+    setHighlight(p.name);setTimeout(()=>setHighlight(null),2000);
+  };
+
+  return(<>
+    <div ref={mapRef} className="map-live" style={{borderRadius:18,overflow:"hidden",border:"1px solid rgba(255,255,255,.06)",marginBottom:20}}/>
+    <div className="tabs" style={{marginTop:0,marginBottom:16}}><button className={`tab ${mapCat==="all"?"on":""}`} onClick={()=>setMapCat("all")}>All</button>{mapCats.map(c=><button key={c} className={`tab ${mapCat===c?"on":""}`} onClick={()=>setMapCat(c)}>{c}</button>)}</div>
+    {/* Property pins */}
+    <div className="poi-g">
+      {PROPS.filter(p=>p.lat&&p.lng).map(p=>{const vac=p.rooms.filter(r=>r.st==="vacant").length;const minR=Math.min(...p.rooms.map(r=>r.rent));return(
+        <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.04)",cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none"}} onClick={()=>scrollToPin(p)}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>📍</div></div>);})}
+      {/* POI list */}
+      {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer" style={{cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",background:highlight===p.name?"rgba(255,255,255,.08)":"rgba(255,255,255,.05)"}} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.desc}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}
+    </div>
+  </>);
+}
+
 function Chat(){
   const[open,setOpen]=useState(false);const[msgs,setMsgs]=useState([{r:"bot",t:"Hey! 👋 Ask me about rooms, pricing, policies, or anything!"}]);
   const[inp,setInp]=useState("");const[loading,setLoading]=useState(false);const[showS,setShowS]=useState(true);const ref=useRef(null);
@@ -399,35 +616,64 @@ function Chat(){
 }
 
 function Screening(){
-  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",income:"",source:"",reason:""});
-  const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");
-  const answer=v=>{if(v!==SCREEN_QS[step].pass){setStep(8);return;}if(step<SCREEN_QS.length-1)setStep(step+1);else setStep(7);};
+  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",source:"",sourceOther:"",reason:""});
+  const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});
+  const[qs,setQs]=useState(SCREEN_QS);
+  useEffect(()=>{supaGet("hq-screen-qs").then(d=>{if(d&&Array.isArray(d)&&d.length>0)setQs(d);});},[]);
+  const PASS=qs.length,FAIL=qs.length+1,FORM=qs.length+2,DONE=qs.length+3;
+  const answer=v=>{if(v!==qs[step].pass){setStep(FAIL);return;}if(step<qs.length-1)setStep(step+1);else setStep(PASS);};
+  // Phone auto-format: (256) 555-1234
+  const fmtPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(d.length===0)return"";if(d.length<=3)return`(${d}`;if(d.length<=6)return`(${d.slice(0,3)}) ${d.slice(3)}`;return`(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;};
+  const isValidEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const isValidPhone=p=>p.replace(/\D/g,"").length===10;
+  const errs={};
+  if(touched.name&&!form.name.trim())errs.name="Full name is required";
+  if(touched.email&&!form.email)errs.email="Email is required";
+  else if(touched.email&&!isValidEmail(form.email))errs.email="Enter a valid email address";
+  if(touched.phone&&!form.phone)errs.phone="Phone is required";
+  else if(touched.phone&&!isValidPhone(form.phone))errs.phone="Enter a valid 10-digit phone number";
+  if(touched.property&&!form.property)errs.property="Select a property";
+  if(touched.moveIn&&!form.moveIn)errs.moveIn="Select a preferred move-in date";
+  if(touched.source&&!form.source)errs.source="Tell us how you heard about us";
+  if(touched.sourceOther&&form.source==="Other"&&!form.sourceOther?.trim())errs.sourceOther="Please tell us how you heard about us";
+  if(touched.reason&&!form.reason)errs.reason="This field is required";
+  else if(touched.reason&&form.reason.length<10)errs.reason="Please provide at least 10 characters";
+  const canSubmit=form.name.trim()&&isValidEmail(form.email)&&isValidPhone(form.phone)&&form.property&&form.moveIn&&form.source&&(form.source!=="Other"||form.sourceOther?.trim())&&form.reason.length>=10;
+  const touchAll=()=>setTouched({name:true,email:true,phone:true,property:true,moveIn:true,source:true,sourceOther:true,reason:true});
   const submitApp=async()=>{
-    if(!form.name||!form.email||!form.phone){setSubError("Please fill in name, email, and phone.");return;}
+    touchAll();if(!canSubmit){setSubError("Please complete all required fields.");return;}
     setSubmitting(true);setSubError("");
-    try{const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
-      const d=await res.json();if(d.ok)setStep(10);else setSubError(d.error||"Something went wrong. Try again.");}
+    try{const submitData={...form,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(submitData)});
+      const d=await res.json();if(d.ok)setStep(DONE);else setSubError(d.error||"Something went wrong. Try again.");}
     catch{setSubError("Connection error. Try again or email "+S_INFO.email);}
     setSubmitting(false);
   };
+  const fldStyle=(f)=>({border:errs[f]?"1.5px solid #c45c4a":undefined});
+  const errMsg=(f)=>errs[f]?<div style={{color:"#c45c4a",fontSize:11,marginTop:2,marginBottom:4}}>{errs[f]}</div>:null;
   return(
     <section className="scr-sec" id="apply"><div className="scr-wrap"><div className="scr-card">
-      {step<7&&<><div className="scr-hd"><h2>Quick Pre-Screen</h2><p>7 quick questions to see if you qualify. Takes 30 seconds.</p></div>
-        <div className="scr-prog">{SCREEN_QS.map((_,i)=><div key={i} className={`scr-dot ${i<step?"done":i===step?"act":""}`}/>)}</div>
-        <div key={step} style={{animation:"fadeUp .3s"}}><div className="scr-qn">Question {step+1} of {SCREEN_QS.length}</div><div className="scr-qt">{SCREEN_QS[step].q}</div>
+      {step<qs.length&&<><div className="scr-hd"><h2>Quick Pre-Screen</h2><p>{qs.length} quick questions to see if you qualify. Takes 30 seconds.</p></div>
+        <div className="scr-prog">{qs.map((_,i)=><div key={i} className={`scr-dot ${i<step?"done":i===step?"act":""}`}/>)}</div>
+        <div key={step} style={{animation:"fadeUp .3s"}}><div className="scr-qn">Question {step+1} of {qs.length}</div><div className="scr-qt">{qs[step]?.q}</div>
         <div className="scr-btns"><button className="scr-btn y" onClick={()=>answer("Yes")}>Yes</button><button className="scr-btn n" onClick={()=>answer("No")}>No</button></div></div></>}
-      {step===7&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(45,106,63,.1)",color:"var(--gn)"}}>✓</div><h3>You Pre-Qualify!</h3><p>Fill out your info and we'll be in touch within 24 hours.</p><button className="bp" style={{width:"100%"}} onClick={()=>setStep(9)}>Continue →</button></div>}
-      {step===8&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(168,58,46,.08)",color:"var(--rd)"}}>✕</div><h3>Thanks for Your Interest</h3><p>Based on your answers, our properties may not be the right fit at this time. Questions? Email <strong>{S_INFO.email}</strong></p><button className="bo" style={{width:"100%",marginTop:12}} onClick={()=>setStep(0)}>Start Over</button></div>}
-      {step===9&&<div style={{animation:"fadeUp .3s"}}><div className="scr-hd" style={{marginBottom:20}}><h2>Almost There</h2><p>Tell us about yourself.</p></div>
-        <div className="sform"><div className="sform-row"><input className="sinp" placeholder="Full Name *" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/><input className="sinp" placeholder="Phone *" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/></div>
-        <input className="sinp" placeholder="Email *" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
-        <select className="ssel" value={form.property} onChange={e=>setForm({...form,property:e.target.value})}><option value="">Property interested in?</option>{PROPS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>
-        <div className="sform-row"><input className="sinp" type="date" placeholder="Move-in date" value={form.moveIn} onChange={e=>setForm({...form,moveIn:e.target.value})}/><input className="sinp" placeholder="Gross monthly income" value={form.income} onChange={e=>setForm({...form,income:e.target.value})}/></div>
-        <select className="ssel" value={form.source} onChange={e=>setForm({...form,source:e.target.value})}><option value="">How did you hear about us?</option><option>Google Search</option><option>Facebook / Instagram</option><option>Friend / Referral</option><option>Zillow / Apartments.com</option><option>Craigslist</option><option>Drive-by / Sign</option><option>Military / Contractor Network</option><option>Other</option></select>
-        <textarea className="stxt" placeholder="Why are you leaving your current residence? (optional)" value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})}/>
-        {subError&&<div style={{background:"rgba(168,58,46,.08)",color:"#a83a2e",padding:"10px 14px",borderRadius:8,fontSize:13,marginBottom:8}}>{subError}</div>}
-        <button className="scr-sub" disabled={submitting} onClick={submitApp}>{submitting?"Submitting...":"Submit Application →"}</button></div></div>}
-      {step===10&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
+      {step===PASS&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(45,106,63,.1)",color:"var(--gn)"}}>✓</div><h3>You Pre-Qualify!</h3><p>Fill out your info and we'll be in touch within 24 hours.</p><button className="bp" style={{width:"100%"}} onClick={()=>setStep(FORM)}>Continue →</button></div>}
+      {step===FAIL&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(168,58,46,.08)",color:"var(--rd)"}}>✕</div><h3>Thanks for Your Interest</h3><p>Based on your answers, our properties may not be the right fit at this time. Questions? Email <strong>{S_INFO.email}</strong></p><button className="bo" style={{width:"100%",marginTop:12}} onClick={()=>setStep(0)}>Start Over</button></div>}
+      {step===FORM&&<div style={{animation:"fadeUp .3s"}}><div className="scr-hd" style={{marginBottom:20}}><h2>Almost There</h2><p>All fields are required.</p></div>
+        <div className="sform">
+          <div className="sform-row">
+            <div style={{flex:1}}><input className="sinp" placeholder="Full Name *" style={fldStyle("name")} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} onBlur={()=>setTouched({...touched,name:true})}/>{errMsg("name")}</div>
+            <div style={{flex:1}}><input className="sinp" placeholder="Phone *" type="tel" style={fldStyle("phone")} value={form.phone} onChange={e=>setForm({...form,phone:fmtPhone(e.target.value)})} onBlur={()=>setTouched({...touched,phone:true})}/>{errMsg("phone")}</div>
+          </div>
+          <div><input className="sinp" placeholder="Email *" type="email" style={fldStyle("email")} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onBlur={()=>setTouched({...touched,email:true})}/>{errMsg("email")}</div>
+          <div><select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}><option value="">Property interested in? *</option>{PROPS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>{errMsg("property")}</div>
+          <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label><input className="sinp" type="date" style={fldStyle("moveIn")} value={form.moveIn} onChange={e=>{setForm({...form,moveIn:e.target.value});setTouched({...touched,moveIn:true});}} onBlur={()=>setTouched({...touched,moveIn:true})}/>{errMsg("moveIn")}</div>
+          <div><select className="ssel" style={fldStyle("source")} value={form.source} onChange={e=>{setForm({...form,source:e.target.value,sourceOther:""});setTouched({...touched,source:true});}} onBlur={()=>setTouched({...touched,source:true})}><option value="">How did you hear about us? *</option><option>Google Search</option><option>Facebook / Instagram</option><option>Friend / Referral</option><option>Zillow / Apartments.com</option><option>Craigslist</option><option>Drive-by / Sign</option><option>Military / Contractor Network</option><option>Other</option></select>{errMsg("source")}
+          {form.source==="Other"&&<><input className="sinp" placeholder="Please specify *" style={{marginTop:6,...fldStyle("sourceOther")}} value={form.sourceOther||""} onChange={e=>setForm({...form,sourceOther:e.target.value})} onBlur={()=>setTouched({...touched,sourceOther:true})}/>{touched.sourceOther&&!form.sourceOther?.trim()&&<div style={{color:"#c45c4a",fontSize:11,marginTop:2}}>Please tell us how you heard about us</div>}</>}</div>
+          <div><textarea className="stxt" placeholder="Why are you leaving your current residence? *" style={fldStyle("reason")} value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} onBlur={()=>setTouched({...touched,reason:true})}/>{errMsg("reason")}{touched.reason&&form.reason.length>0&&form.reason.length<10&&<div style={{fontSize:10,color:"#999"}}>{form.reason.length}/10 characters</div>}</div>
+          {subError&&<div style={{background:"rgba(168,58,46,.08)",color:"#a83a2e",padding:"10px 14px",borderRadius:8,fontSize:13,marginBottom:8}}>{subError}</div>}
+          <button className="scr-sub" disabled={submitting} onClick={submitApp}>{submitting?"Submitting...":"Submit Application →"}</button>
+        </div></div>}
+      {step===DONE&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
     </div></div></section>
   );
 }
@@ -436,17 +682,18 @@ function StickyBar(){
   const[vis,setVis]=useState(false);const[dismissed,setDismissed]=useState(false);
   useEffect(()=>{const h=()=>{if(!dismissed)setVis(window.scrollY>500);};window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[dismissed]);
   if(dismissed)return null;
-  return(<div className={`stk ${vis?"vis":""}`}><div className="stk-txt">Rooms from <strong>$600/mo</strong> · Everything included</div><button className="stk-btn" onClick={()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"})}>Apply Now →</button><button className="stk-x" onClick={()=>setDismissed(true)}>✕</button></div>);
+  const minRent=Math.min(...PROPS.flatMap(p=>p.rooms.map(r=>r.rent)));
+  return(<div className={`stk ${vis?"vis":""}`}><div className="stk-txt">Rooms from <strong>${minRent}/mo</strong> · Everything included</div><button className="stk-btn" onClick={()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"})}>Apply Now →</button><button className="stk-x" onClick={()=>setDismissed(true)}>✕</button></div>);
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function Page(){
-  const[scrolled,setScrolled]=useState(false);const[sel,setSel]=useState(null);
+  const[scrolled,setScrolled]=useState(false);const[sel,setSel]=useState(null);const[mobMenu,setMobMenu]=useState(false);
   const[calProp,setCalProp]=useState("all");const[calRoom,setCalRoom]=useState(null);const[mOff,setMOff]=useState(0);
   const[mapCat,setMapCat]=useState("all");
   const[showFlt,setShowFlt]=useState(false);
   const[flt,setFlt]=useState({available:false,openingSoon:false,privateBath:false,sharedBath:false,queen:false,full:false,twin:false,allUtils:false,first100:false,weekly:false,biweekly:false,holmes:false,leeEast:false,leeWest:false});
-  const[calcV,setCalcV]=useState({rent:1100,electric:120,water:40,gas:30,trash:25,internet:60,furniture:200});const[bbRoom,setBbRoom]=useState(650);
+  const[calcV,setCalcV]=useState({rent:1100,electric:120,water:40,gas:30,trash:25,internet:60,furniture:200});const allRents=PROPS.flatMap(p=>p.rooms.map(r=>r.rent));const globalMin=Math.min(...allRents);const globalMax=Math.max(...allRents);const[bbRoom,setBbRoom]=useState(globalMin);
   const[faqOpen,setFaqOpen]=useState(null);
 
   useEffect(()=>{const h=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[]);
@@ -516,18 +763,20 @@ export default function Page(){
 
   // Personas
   const personas=[
-    {i:"🪖",t:"Military & DoD",d:"Quick PCS moves or temp assignments at Redstone. Settled in a day."},
-    {i:"💼",t:"Traveling Professionals",d:"Engineers and consultants on contract. Focus on the job, not logistics."},
     {i:"🎓",t:"Interns & New Grads",d:"Save money. Live with professionals, not random strangers."},
+    {i:"💼",t:"Traveling Professionals",d:"Engineers and consultants on contract. Focus on the job, not logistics."},
     {i:"🏥",t:"Travel Nurses",d:"13-week assignments. Furnished, flexible, minutes from hospitals."},
-    {i:"🔄",t:"People in Transition",d:"Between homes? A furnished room buys you time without the stress."},
     {i:"💻",t:"Remote Workers",d:"Google Fiber, dedicated workspace, professional community."},
+    {i:"🔄",t:"People in Transition",d:"Between homes? A furnished room buys you time without the stress."},
+    {i:"🪖",t:"Military & DoD",d:"Quick PCS moves or temp assignments at Redstone. Settled in a day."},
   ];
 
   return(<><style>{CSS}</style>
     {/* NAV */}
     <nav className={`nav ${scrolled?"sc":""}`}><div className="nlogo" onClick={()=>nav("hero")}>🐻 Black Bear <span>Rentals</span></div>
-      <div className="nlinks"><a onClick={()=>nav("properties")}>Properties</a><a onClick={()=>nav("compare")}>Compare</a><a onClick={()=>nav("availability")}>Availability</a><a onClick={()=>nav("location")}>Location</a><a onClick={()=>nav("apply")} className="ncta">Apply Now</a></div></nav>
+      <div className="nlinks"><a onClick={()=>nav("properties")}>Properties</a><a onClick={()=>nav("compare")}>Compare</a><a onClick={()=>nav("availability")}>Availability</a><a onClick={()=>nav("location")}>Location</a><a onClick={()=>nav("apply")} className="ncta">Apply Now</a></div>
+      <button className="nav-tog" onClick={()=>setMobMenu(!mobMenu)}>{mobMenu?"✕":"☰"}</button></nav>
+    <div className={`mob-menu ${mobMenu?"open":""}`}><a onClick={()=>{nav("properties");setMobMenu(false);}}>Properties</a><a onClick={()=>{nav("compare");setMobMenu(false);}}>Compare</a><a onClick={()=>{nav("availability");setMobMenu(false);}}>Availability</a><a onClick={()=>{nav("location");setMobMenu(false);}}>Location</a><a onClick={()=>{nav("apply");setMobMenu(false);}} style={{color:"var(--ac)",fontWeight:700}}>Apply Now</a></div>
 
     {/* HERO */}
     <section className="hero" id="hero"><div className="hc">
@@ -606,15 +855,12 @@ export default function Page(){
     </div></section>
 
     {/* MAP */}
-    <section className="sec-dk" id="location"><div className="sec-inner"><div className="sh"><div className="sl">Location</div><h2 className="st" style={{color:"var(--cr)"}}>Minutes From Everything</h2><p className="ss" style={{color:"var(--mt)"}}>Click any location for more info.</p></div>
-      <div className="map-c"><iframe className="map-if" src="https://www.openstreetmap.org/export/embed.html?bbox=-86.72%2C34.69%2C-86.55%2C34.76&layer=mapnik&marker=34.7285%2C-86.5920" loading="lazy"/></div>
-      <div className="tabs" style={{marginTop:20}}><button className={`tab ${mapCat==="all"?"on":""}`} onClick={()=>setMapCat("all")}>All</button>{mapCats.map(c=><button key={c} className={`tab ${mapCat===c?"on":""}`} onClick={()=>setMapCat(c)}>{c}</button>)}</div>
-      <div className="poi-g">{PROPS.map(p=><div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.03)",cursor:"default"}}><div className="poi-ic" style={{background:"#d4a853"}}>🐻</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">Your Property · {p.typeTag}</div></div><div className="poi-dr" style={{color:"var(--gn)"}}>🏠</div></div>)}
-        {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer"><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.cat}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}</div>
+    <section className="sec-dk" id="location"><div className="sec-inner"><div className="sh"><div className="sl">Location</div><h2 className="st" style={{color:"var(--cr)"}}>Minutes From Everything</h2><p className="ss" style={{color:"var(--mt)"}}>Our properties are centrally located in Huntsville. Click any pin for details.</p></div>
+      <MapSection mapCat={mapCat} setMapCat={setMapCat} mapCats={mapCats} mapFiltered={mapFiltered} nav={nav}/>
     </div></section>
 
     {/* SAVINGS */}
-    <section className="sec" style={{background:"linear-gradient(180deg,#1a1714,#2c2520)",padding:"80px 40px"}} id="savings"><div className="sec-inner"><div className="sh"><div className="sl">Save Money</div><h2 className="st" style={{color:"var(--cr)"}}>See How Much You'd Save</h2><p className="ss" style={{color:"var(--mt)"}}>Compare a traditional apartment vs. a Black Bear room.</p></div>
+    <section className="sec-dk" id="savings" style={{padding:"80px 40px"}}><div className="sec-inner"><div className="sh"><div className="sl">Save Money</div><h2 className="st" style={{color:"var(--cr)"}}>See How Much You'd Save</h2><p className="ss" style={{color:"var(--mt)"}}>Compare a traditional apartment vs. a Black Bear room.</p></div>
       <div className="calc-grid">
         <div className="calc-card"><div className="calc-hd"><div className="calc-ic" style={{background:"rgba(168,58,46,.08)"}}>🏢</div><div><div style={{fontWeight:800}}>Traditional Apartment</div><div style={{fontSize:10,color:"#999"}}>Everything separate</div></div></div>
           <Sl lb="Rent" id="rent" val={calcV.rent} mn={500} mx={2000} note="Avg 1BR Huntsville: ~$1,100"/>
@@ -628,7 +874,7 @@ export default function Page(){
         </div>
         <div>
           <div className="calc-card" style={{border:"2px solid #d4a853"}}><div className="calc-hd"><div className="calc-ic" style={{background:"rgba(212,168,83,.1)"}}>🐻</div><div><div style={{fontWeight:800}}>Black Bear Room</div><div style={{fontSize:10,color:"#999"}}>Everything included</div></div></div>
-            <Sl lb="Your Room" id="bb" val={bbRoom} mn={500} mx={900} step={50} note="Rooms $600–$850/mo"/>
+            <Sl lb="Your Room" id="bb" val={bbRoom} mn={globalMin} mx={globalMax} step={50} note={`Rooms $${globalMin}–$${globalMax}/mo`}/>
             {["WiFi (Google Fiber)","Utilities (varies)","Furnished bedroom","TV in room","Parking","Common area cleaning","Pro management"].map((x,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 0",borderBottom:i<6?"1px solid rgba(0,0,0,.03)":"none",fontSize:12,color:"var(--gn)",fontWeight:500}}><span style={{fontWeight:800}}>✓</span>{x}<span style={{marginLeft:"auto",color:"#999",fontSize:10}}>$0</span></div>)}
             <div className="calc-total" style={{borderColor:"rgba(212,168,83,.2)"}}><span style={{fontWeight:800}}>Total</span><span style={{fontSize:22,fontWeight:800,color:"var(--gn)"}}>${bbRoom.toLocaleString()}</span></div>
           </div>
