@@ -18,7 +18,7 @@ const TODAY=new Date();const MO=TODAY.toLocaleString("default",{month:"long",yea
 
 // ─── Sample Data ────────────────────────────────────────────────────
 const DEF_PROPS=[
-  {id:"p1",name:"The Holmes House",addr:"Holmes & Lee, Huntsville",type:"SFH",baths:3,utils:"first100",clean:"Weekly",
+  {id:"p1",name:"The Holmes House",addr:"Holmes & Lee, Huntsville",lat:34.7285,lng:-86.5920,type:"SFH",baths:3,utils:"first100",clean:"Weekly",
     rooms:[
       {id:"r1",name:"Primary Suite",rent:850,pb:true,st:"occupied",le:"2026-07-31",tenant:{name:"Marcus Johnson",email:"marcus@email.com",phone:"(256) 555-1001",moveIn:"2025-08-01"}},
       {id:"r2",name:"Bedroom 2",rent:750,pb:true,st:"occupied",le:"2026-08-31",tenant:{name:"Sarah Chen",email:"sarah@email.com",phone:"(256) 555-1002",moveIn:"2025-09-01"}},
@@ -26,13 +26,13 @@ const DEF_PROPS=[
       {id:"r4",name:"Bedroom 4",rent:650,pb:false,st:"vacant",le:null,tenant:null},
       {id:"r5",name:"Bedroom 5",rent:600,pb:false,st:"occupied",le:"2026-10-31",tenant:{name:"Amy Rodriguez",email:"amy@email.com",phone:"(256) 555-1005",moveIn:"2025-11-01"}},
     ]},
-  {id:"p2",name:"Lee Drive East",addr:"Lee Drive, Huntsville",type:"Townhome",baths:2,utils:"allIncluded",clean:"Biweekly",
+  {id:"p2",name:"Lee Drive East",addr:"Lee Drive, Huntsville",lat:34.7280,lng:-86.5935,type:"Townhome",baths:2,utils:"allIncluded",clean:"Biweekly",
     rooms:[
       {id:"r6",name:"Primary Suite",rent:750,pb:true,st:"occupied",le:"2026-06-30",tenant:{name:"James Williams",email:"james@email.com",phone:"(256) 555-2001",moveIn:"2025-07-01"}},
       {id:"r7",name:"Bedroom 2",rent:650,pb:false,st:"occupied",le:"2026-07-31",tenant:{name:"Lisa Thompson",email:"lisa@email.com",phone:"(256) 555-2002",moveIn:"2025-08-01"}},
       {id:"r8",name:"Bedroom 3",rent:600,pb:false,st:"vacant",le:null,tenant:null},
     ]},
-  {id:"p3",name:"Lee Drive West",addr:"Lee Drive, Huntsville",type:"Townhome",baths:2,utils:"allIncluded",clean:"Biweekly",
+  {id:"p3",name:"Lee Drive West",addr:"Lee Drive, Huntsville",lat:34.7280,lng:-86.5940,type:"Townhome",baths:2,utils:"allIncluded",clean:"Biweekly",
     rooms:[
       {id:"r9",name:"Primary Suite",rent:750,pb:true,st:"occupied",le:"2026-12-31",tenant:{name:"Kevin Brown",email:"kevin@email.com",phone:"(256) 555-3001",moveIn:"2026-01-01"}},
       {id:"r10",name:"Bedroom 2",rent:650,pb:false,st:"occupied",le:"2026-12-31",tenant:{name:"Michelle Davis",email:"michelle@email.com",phone:"(256) 555-3002",moveIn:"2026-01-01"}},
@@ -156,6 +156,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
   return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:720,maxHeight:"90vh",overflowY:"auto"}}>
     <h2>{isNew?"Add Property":`Edit: ${p.name}`}</h2>
     <div className="fr"><div className="fld"><label>Name</label><input value={p.name} onChange={e=>setP({...p,name:e.target.value})}/></div><div className="fld"><label>Address</label><input value={p.addr} onChange={e=>setP({...p,addr:e.target.value})}/></div></div>
+    <div className="fr3"><div className="fld"><label>Latitude</label><input type="number" step="0.0001" value={p.lat||""} onChange={e=>setP({...p,lat:Number(e.target.value)})}/></div><div className="fld"><label>Longitude</label><input type="number" step="0.0001" value={p.lng||""} onChange={e=>setP({...p,lng:Number(e.target.value)})}/></div><div className="fld"><label style={{fontSize:8,color:"#999"}}>💡 Get from Google Maps</label><a href={`https://www.google.com/maps/search/${encodeURIComponent(p.addr||"")}`} target="_blank" rel="noopener" style={{fontSize:10,color:"#3b82f6",cursor:"pointer"}}>Look up →</a></div></div>
     <div className="fr3"><div className="fld"><label>Type</label><select value={p.type} onChange={e=>setP({...p,type:e.target.value})}><option>SFH</option><option>Townhome</option><option>Duplex</option></select></div><div className="fld"><label>Utilities</label><select value={p.utils} onChange={e=>setP({...p,utils:e.target.value})}><option value="allIncluded">All Included</option><option value="first100">First $100</option></select></div><div className="fld"><label>Cleaning</label><select value={p.clean} onChange={e=>setP({...p,clean:e.target.value})}><option>Weekly</option><option>Biweekly</option></select></div></div>
     <div className="fr"><div className="fld"><label>Baths</label><input type="number" value={p.baths} onChange={e=>setP({...p,baths:Number(e.target.value)})}/></div><div className="fld"><label>Rental Mode</label><select value={p.rentalMode||"byRoom"} onChange={e=>setP({...p,rentalMode:e.target.value})}><option value="byRoom">Rent by Bedroom</option><option value="wholeHouse">Whole House</option></select></div></div>
     <div className="fld"><label>Property Description</label><textarea value={p.desc||""} onChange={e=>setP({...p,desc:e.target.value})} placeholder="Describe the property - shows on the public site..." rows={3}/></div>
@@ -900,117 +901,30 @@ export default function Page(){
       })()}
 
       {/* ═══ APPLICATIONS ═══ */}
-      {tab==="applications"&&(()=>{
-        const STAGES=["pre-screened","called","invited","applied","reviewing","approved","move-in"];
-        const STAGE_LABELS={"pre-screened":"Pre-Screened","called":"Called","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
-        const STAGE_COLORS={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","approved":"b-green","move-in":"b-green","denied":"b-red"};
-        const STAGE_ICONS={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
-        const moveApp=(id,newStatus)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;const history=[...(a.history||[]),{from:a.status,to:newStatus,date:TODAY.toISOString().split("T")[0]}];return{...a,status:newStatus,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history};}));};
-        const denyApp=(id,reason)=>{setApps(p=>p.map(a=>a.id===id?{...a,status:"denied",deniedReason:reason,deniedDate:TODAY.toISOString().split("T")[0],prevStage:a.status,lastContact:TODAY.toISOString().split("T")[0],history:[...(a.history||[]),{from:a.status,to:"denied",date:TODAY.toISOString().split("T")[0],note:reason}]}:a));};
-        const restoreApp=(id)=>{setApps(p=>p.map(a=>a.id===id?{...a,status:a.prevStage||"pre-screened",deniedReason:null,deniedDate:null,lastContact:TODAY.toISOString().split("T")[0],history:[...(a.history||[]),{from:"denied",to:a.prevStage||"pre-screened",date:TODAY.toISOString().split("T")[0],note:"Restored"}]}:a));};
-        const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
-        const scoreApp=(a)=>{let s=50;if(a.income){const n=parseInt(a.income.replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(a.bgCheck==="passed")s+=15;if(a.creditScore&&a.creditScore!=="—"){const c=parseInt(a.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(a.refs==="verified")s+=10;if(a.status==="applied"||a.status==="reviewing")s+=5;return Math.min(s,100);};
-        const findMatches=(a)=>{if(!a.property)return[];const pr=props.find(p=>p.name===a.property);if(!pr)return[];return pr.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:pr.name}));};
-        const searchFilter=(a)=>{if(!appSearch)return true;const q=appSearch.toLowerCase();return(a.name||"").toLowerCase().includes(q)||(a.email||"").toLowerCase().includes(q)||(a.phone||"").includes(q)||(a.property||"").toLowerCase().includes(q)||(a.source||"").toLowerCase().includes(q);};
-
-        const activeApps=apps.filter(a=>a.status!=="denied"&&searchFilter(a));
-        const deniedApps=apps.filter(a=>a.status==="denied"&&searchFilter(a));
-        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in"].includes(a.status));
-
-        return(<>
-        {/* Follow-up alerts */}
-        {staleApps.length>0&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:6}}>🔔 Follow Up Needed ({staleApps.length})</div>
-          {staleApps.map(a=>{const d=daysSince(a.lastContact||a.submitted);return(
-            <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.03)"}}>
-              <span><strong>{a.name}</strong> — {STAGE_LABELS[a.status]} · <span style={{color:d>=5?"#c45c4a":"#d4a853",fontWeight:700}}>{d}d</span> since last contact</span>
-              <button className="btn btn-out btn-sm" style={{fontSize:8}} onClick={()=>setModal({type:"app",data:a})}>Open →</button>
-            </div>);})}
-        </div>}
-
-        {/* KPIs */}
-        <div className="kgrid" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
-          <div className="kpi"><div className="kl">Pipeline</div><div className="kv">{activeApps.length}</div><div className="ks">active applicants</div></div>
-          <div className="kpi"><div className="kl">Avg Score</div><div className="kv" style={{color:"#4a7c59"}}>{activeApps.length?Math.round(activeApps.reduce((s,a)=>s+scoreApp(a),0)/activeApps.length):0}</div><div className="ks">out of 100</div></div>
-          <div className="kpi"><div className="kl">Stale</div><div className="kv" style={{color:staleApps.length?"#c45c4a":"#4a7c59"}}>{staleApps.length}</div><div className="ks">need follow-up</div></div>
-          <div className="kpi"><div className="kl">Denied</div><div className="kv">{deniedApps.length}</div></div>
-        </div>
-
-        {/* Controls */}
-        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-          <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search applicants..." style={{flex:1,minWidth:180,padding:"8px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-          {["pipeline","list","analytics"].map(v=><button key={v} className={`btn ${appView===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(v)}>{v==="pipeline"?"📋 Pipeline":v==="list"?"📝 List":"📊 Analytics"}</button>)}
-        </div>
-
-        {/* ── Pipeline View ── */}
-        {appView==="pipeline"&&<div className="pipeline" style={{gridTemplateColumns:`repeat(${STAGES.length},1fr)`}}>
-          {STAGES.map(stage=>{const stageApps=activeApps.filter(a=>a.status===stage);const si=STAGES.indexOf(stage);return(
-            <div key={stage} className="pipe-col">
-              <div className="pipe-hd"><h4>{STAGE_ICONS[stage]} {STAGE_LABELS[stage]}</h4><span className="pipe-cnt">{stageApps.length}</span></div>
-              <div className="pipe-bd">{stageApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const score=scoreApp(a);const days=daysSince(a.lastContact||a.submitted);const matches=findMatches(a);return(
-                <div key={a.id} className="pipe-card" style={{borderLeft:`3px solid ${score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a"}`}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      {tab==="applications"&&<>
+        <div className="sec-hd"><div><h2>Application Pipeline ({apps.length})</h2><p>Track applicants from pre-screen to move-in</p></div></div>
+        <div className="pipeline">
+          {["pre-screened","screening","approved","move-in"].map(stage=>{
+            const stageApps=apps.filter(a=>a.status===stage);
+            const labels={"pre-screened":"Pre-Screened","screening":"Screening","approved":"Approved","move-in":"Moving In"};
+            const colors={"pre-screened":"b-blue","screening":"b-gold","approved":"b-green","move-in":"b-green"};
+            return(
+              <div key={stage} className="pipe-col">
+                <div className="pipe-hd"><h4>{labels[stage]}</h4><span className="pipe-cnt">{stageApps.length}</span></div>
+                <div className="pipe-bd">{stageApps.map(a=>(
+                  <div key={a.id} className="pipe-card" onClick={()=>setModal({type:"app",data:a})}>
                     <div className="pipe-nm">{a.name}</div>
-                    <div style={{fontSize:8,fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a",background:score>=70?"rgba(74,124,89,.08)":score>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"2px 6px",borderRadius:4}}>{score}</div>
+                    <div className="pipe-sub">{a.property} · {a.room}</div>
+                    <div className="pipe-meta">
+                      <span className={`badge ${colors[stage]}`}>{labels[stage]}</span>
+                      <span className="badge b-gray">Move-in {fmtD(a.moveIn)}</span>
+                    </div>
                   </div>
-                  <div className="pipe-sub">{a.property||"No pref"} · {a.source||""}</div>
-                  <div className="pipe-meta">
-                    <span className={`badge ${STAGE_COLORS[stage]}`}>{STAGE_LABELS[stage]}</span>
-                    {days>0&&<span style={{fontSize:8,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999"}}>{days}d ago</span>}
-                    {matches.length>0&&<span style={{fontSize:8,color:"#4a7c59"}}>🏠 {matches.length} match{matches.length>1?"es":""}</span>}
-                  </div>
-                  <div style={{display:"flex",gap:3,marginTop:6}}>
-                    {si>0&&<button className="btn btn-out btn-sm" style={{fontSize:8,flex:1}} onClick={e=>{e.stopPropagation();moveApp(a.id,STAGES[si-1]);}}>← Back</button>}
-                    <button className="btn btn-green btn-sm" style={{fontSize:8,flex:2}} onClick={e=>{e.stopPropagation();if(si<STAGES.length-1)moveApp(a.id,STAGES[si+1]);}}>{si<STAGES.length-1?`→ ${STAGE_LABELS[STAGES[si+1]]}`:"✓ Done"}</button>
-                  </div>
-                  <div style={{display:"flex",gap:3,marginTop:3}}>
-                    <button className="btn btn-out btn-sm" style={{fontSize:8,flex:1}} onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>Open</button>
-                    {stage==="called"&&<button className="btn btn-dk btn-sm" style={{fontSize:8,flex:1}} onClick={e=>{e.stopPropagation();moveApp(a.id,"invited");}}>✉️ Invite</button>}
-                    <button className="btn btn-out btn-sm" style={{fontSize:8,color:"#c45c4a"}} onClick={e=>{e.stopPropagation();setModal({type:"denyApp",appId:a.id,reason:""});}}>✕</button>
-                  </div>
-                </div>);})}
-              {stageApps.length===0&&<div style={{textAlign:"center",padding:16,color:"#ccc",fontSize:10}}>Empty</div>}
-            </div>);})}
-        </div>}
-
-        {/* ── List View ── */}
-        {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th>Move-in</th></tr></thead><tbody>
-          {activeApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const score=scoreApp(a);const days=daysSince(a.lastContact||a.submitted);return(
-            <tr key={a.id} style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
-              <td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
-              <td><span style={{fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a"}}>{score}</span></td>
-              <td><span className={`badge ${STAGE_COLORS[a.status]}`}>{STAGE_LABELS[a.status]}</span></td>
-              <td style={{color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999",fontWeight:600}}>{days}d</td>
-              <td style={{fontSize:10}}>{a.source||"—"}</td><td>{fmtD(a.moveIn)}</td>
-            </tr>);})}
-        </tbody></table></div></div>}
-
-        {/* ── Analytics View ── */}
-        {appView==="analytics"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-          <div className="card"><div className="card-hd"><h3>Source Breakdown</h3></div><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Source</th><th>Total</th><th>Approved</th><th>Rate</th></tr></thead><tbody>
-            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const srcApps=apps.filter(a=>(a.source||"Unknown")===src);const approved=srcApps.filter(a=>["approved","move-in"].includes(a.status)).length;const rate=srcApps.length?Math.round(approved/srcApps.length*100):0;return(
-              <tr key={src}><td style={{fontWeight:500}}>{src}</td><td>{srcApps.length}</td><td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>
-            );})}
-          </tbody></table></div></div>
-          <div className="card"><div className="card-hd"><h3>Pipeline Funnel</h3></div><div className="card-bd">
-            {STAGES.map(stage=>{const count=activeApps.filter(a=>a.status===stage).length;const pct=activeApps.length?Math.round(count/activeApps.length*100):0;return(
-              <div key={stage} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}><span>{STAGE_ICONS[stage]} {STAGE_LABELS[stage]}</span><strong>{count}</strong></div>
-                <div style={{height:6,background:"rgba(0,0,0,.04)",borderRadius:3}}><div style={{height:"100%",background:"#d4a853",borderRadius:3,width:`${pct}%`,transition:"width .3s"}}/></div>
-              </div>);})}
-          </div></div>
-        </div>}
-
-        {/* Denied section */}
-        {deniedApps.length>0&&<><div className="sec-hd" style={{marginTop:16}}><div><h2>Denied ({deniedApps.length})</h2></div></div>
-          {deniedApps.map(a=><div key={a.id} className="row">
-            <div className="row-dot" style={{background:"#c45c4a"}}/>
-            <div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · Denied {fmtD(a.deniedDate)}{a.deniedReason?` · ${a.deniedReason}`:""}</div></div>
-            <button className="btn btn-out btn-sm" onClick={()=>restoreApp(a.id)}>Restore</button>
-          </div>)}
-        </>}
-
-        </>);
-      })()}
+                ))}{stageApps.length===0&&<div style={{textAlign:"center",padding:16,color:"#ccc",fontSize:11}}>No applicants</div>}</div>
+              </div>);
+          })}
+        </div>
+      </>}
 
       {/* ═══ MAINTENANCE ═══ */}
       {tab==="maintenance"&&<>

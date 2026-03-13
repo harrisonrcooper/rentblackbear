@@ -529,7 +529,8 @@ function PropertyModal({p,onClose}){
 }
 
 // ─── Interactive Map ────────────────────────────────────────────────
-function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav}){
+function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
+  const PROPS=properties||[];
   const mapRef=useRef(null);const mapInst=useRef(null);const markersRef=useRef([]);
   const[highlight,setHighlight]=useState(null);
   const catColors={"Redstone Arsenal":"#b8956a",Entertainment:"#c4a882","Grocery & Retail":"#a8b882","Food & Drink":"#c4a070",Education:"#82a8a8",Healthcare:"#82a88c",property:"#d4a853"};
@@ -615,7 +616,8 @@ function Chat(){
     </div>}</>);
 }
 
-function Screening(){
+function Screening({properties}){
+  const PROPS=properties||[];
   const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",source:"",sourceOther:"",reason:""});
   const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});
   const[qs,setQs]=useState(SCREEN_QS);
@@ -678,11 +680,11 @@ function Screening(){
   );
 }
 
-function StickyBar(){
+function StickyBar({properties}){
   const[vis,setVis]=useState(false);const[dismissed,setDismissed]=useState(false);
   useEffect(()=>{const h=()=>{if(!dismissed)setVis(window.scrollY>500);};window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[dismissed]);
   if(dismissed)return null;
-  const minRent=Math.min(...PROPS.flatMap(p=>p.rooms.map(r=>r.rent)));
+  const minRent=properties&&properties.length?Math.min(...properties.flatMap(p=>p.rooms.map(r=>r.rent))):600;
   return(<div className={`stk ${vis?"vis":""}`}><div className="stk-txt">Rooms from <strong>${minRent}/mo</strong> · Everything included</div><button className="stk-btn" onClick={()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"})}>Apply Now →</button><button className="stk-x" onClick={()=>setDismissed(true)}>✕</button></div>);
 }
 
@@ -693,7 +695,44 @@ export default function Page(){
   const[mapCat,setMapCat]=useState("all");
   const[showFlt,setShowFlt]=useState(false);
   const[flt,setFlt]=useState({available:false,openingSoon:false,privateBath:false,sharedBath:false,queen:false,full:false,twin:false,allUtils:false,first100:false,weekly:false,biweekly:false,holmes:false,leeEast:false,leeWest:false});
-  const[calcV,setCalcV]=useState({rent:1100,electric:120,water:40,gas:30,trash:25,internet:60,furniture:200});const allRents=PROPS.flatMap(p=>p.rooms.map(r=>r.rent));const globalMin=Math.min(...allRents);const globalMax=Math.max(...allRents);const[bbRoom,setBbRoom]=useState(globalMin);
+  const[calcV,setCalcV]=useState({rent:1100,electric:120,water:40,gas:30,trash:25,internet:60,furniture:200});
+  const[faqOpen,setFaqOpen]=useState(null);
+
+  // Dynamic data from Supabase (falls back to hardcoded)
+  const[liveProps,setLiveProps]=useState(null);
+  const[liveSettings,setLiveSettings]=useState(null);
+  useEffect(()=>{
+    const SUPA="https://vxysaclhucdjxzcknoar.supabase.co/rest/v1";
+    const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
+    const hdr={"apikey":KEY,"Authorization":"Bearer "+KEY};
+    Promise.all([
+      fetch(SUPA+"/app_data?key=eq.hq-props&select=value",{headers:hdr}).then(r=>r.json()),
+      fetch(SUPA+"/app_data?key=eq.hq-settings&select=value",{headers:hdr}).then(r=>r.json()),
+    ]).then(([p,s])=>{
+      if(p&&p[0]&&p[0].value&&Array.isArray(p[0].value)&&p[0].value.length>0)setLiveProps(p[0].value);
+      if(s&&s[0]&&s[0].value&&s[0].value.companyName)setLiveSettings(s[0].value);
+    }).catch(()=>{});
+  },[]);
+
+  // Use Supabase data if available, otherwise hardcoded
+  const P=useMemo(()=>{
+    if(!liveProps||liveProps.length===0)return PROPS;
+    // Map admin data format to public site format
+    return liveProps.map(p=>({
+      id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,typeTag:p.type==="SFH"?"SFH":"Townhome",
+      baths:p.baths||2,sqft:p.sqft||0,status:p.rooms.some(r=>r.st==="vacant")?"Available":p.status||"Coming Soon",
+      utils:p.utils,clean:p.clean,desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
+      imgs:p.photos&&p.photos.length>0?p.photos:PROPS.find(x=>x.id===p.id)?.imgs||[],
+      rooms:p.rooms.map(r=>({
+        id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'42"',pb:r.pb,sqft:r.sqft||0,
+        feat:r.feat||[],st:r.st,le:r.le,
+      })),
+    }));
+  },[liveProps]);
+  const SI=liveSettings||S_INFO;
+
+  const allRents=P.flatMap(p=>p.rooms.map(r=>r.rent));const globalMin=Math.min(...allRents);const globalMax=Math.max(...allRents);const[bbRoom,setBbRoom]=useState(0);
+  useEffect(()=>{if(allRents.length&&!bbRoom)setBbRoom(globalMin);},[allRents]);
   const[faqOpen,setFaqOpen]=useState(null);
 
   useEffect(()=>{const h=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[]);
@@ -702,14 +741,14 @@ export default function Page(){
   // Calendar
   const vd=new Date(TODAY.getFullYear(),TODAY.getMonth()+mOff,1);const vY=vd.getFullYear();const vM=vd.getMonth();
   const dIM=getDIM(vY,vM);const fD=getFD(vY,vM);const mLbl=vd.toLocaleString("default",{month:"long",year:"numeric"});
-  const calProps=calProp==="all"?PROPS:PROPS.filter(p=>p.id===calProp);
+  const calProps=calProp==="all"?P:P.filter(p=>p.id===calProp);
 
   // Map
   const mapCats=[...new Set(POIS.map(p=>p.cat))];
   const mapFiltered=mapCat==="all"?POIS:POIS.filter(p=>p.cat===mapCat);
 
   // Compare
-  const allRooms=PROPS.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propType:p.type,utils:p.utils,cleaning:p.clean})));
+  const allRooms=P.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propType:p.type,utils:p.utils,cleaning:p.clean})));
   const togFlt=k=>setFlt(f=>({...f,[k]:!f[k]}));const hasAnyFlt=Object.values(flt).some(v=>v);const fltCount=Object.values(flt).filter(v=>v).length;
   const resetFlt=()=>setFlt(Object.fromEntries(Object.keys(flt).map(k=>[k,false])));
   const filtRooms=useMemo(()=>{if(!hasAnyFlt)return allRooms;return allRooms.filter(r=>{
@@ -784,7 +823,7 @@ export default function Page(){
       <h1 className="fu fu1">Your Room Is Ready.<br/><em>Everything's Included.</em></h1>
       <p className="fu fu2">Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled. Just move in.</p>
       <div className="hbtns fu fu3"><button className="bp" onClick={()=>nav("properties")}>Browse Rooms</button><button className="bs" onClick={()=>nav("apply")}>Check If You Qualify</button></div>
-      <div className="hstats fu fu4"><div className="hst"><div className="hst-n">${Math.min(...PROPS.flatMap(p=>p.rooms.map(r=>r.rent)))}</div><div className="hst-l">Rooms From</div></div><div className="hst"><div className="hst-n">0</div><div className="hst-l">Hidden Fees</div></div><div className="hst"><div className="hst-n">24/7</div><div className="hst-l">AI Support</div></div></div>
+      <div className="hstats fu fu4"><div className="hst"><div className="hst-n">${Math.min(...P.flatMap(p=>p.rooms.map(r=>r.rent)))}</div><div className="hst-l">Rooms From</div></div><div className="hst"><div className="hst-n">0</div><div className="hst-l">Hidden Fees</div></div><div className="hst"><div className="hst-n">24/7</div><div className="hst-l">AI Support</div></div></div>
     </div></section>
 
     {/* SOCIAL PROOF */}
@@ -798,7 +837,7 @@ export default function Page(){
 
     {/* PROPERTIES */}
     <section className="sec" id="properties"><div className="sec-inner"><div className="sh"><div className="sl">Our Portfolio</div><h2 className="st">Find Your Room</h2><p className="ss">Browse by house, compare pricing, and pick the bedroom that fits you.</p></div>
-      <div className="pgrid">{PROPS.map(p=>{const pr=p.rooms.map(r=>r.rent);return(
+      <div className="pgrid">{P.map(p=>{const pr=p.rooms.map(r=>r.rent);return(
         <div key={p.id} className="pcard" onClick={()=>setSel(p)}><img src={p.imgs[0]} alt={p.name} className="pimg"/><div className="pinfo"><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr"><span className="ppr">${Math.min(...pr)}–${Math.max(...pr)}<small>/mo per room</small></span><span className="pbc">{p.rooms.length} rooms</span></div></div></div>);})}</div>
     </div></section>
 
@@ -838,7 +877,7 @@ export default function Page(){
 
     {/* AVAILABILITY */}
     <section className="sec" id="availability"><div className="sec-inner"><div className="sh"><div className="sl">Availability</div><h2 className="st">Room Availability</h2><p className="ss">Rooms available now are ready for immediate move-in. Click upcoming openings to see the calendar.</p></div>
-      <div className="tabs"><button className={`tab ${calProp==="all"?"on":""}`} onClick={()=>{setCalProp("all");setCalRoom(null);}}>All</button>{PROPS.map(p=><button key={p.id} className={`tab ${calProp===p.id?"on":""}`} onClick={()=>{setCalProp(p.id);setCalRoom(null);}}>{p.name}</button>)}</div>
+      <div className="tabs"><button className={`tab ${calProp==="all"?"on":""}`} onClick={()=>{setCalProp("all");setCalRoom(null);}}>All</button>{P.map(p=><button key={p.id} className={`tab ${calProp===p.id?"on":""}`} onClick={()=>{setCalProp(p.id);setCalRoom(null);}}>{p.name}</button>)}</div>
       <div className="cal-grid">{calProps.map(prop=>(
         <div key={prop.id} className="cal-card"><div className="cal-hd"><h3>{prop.name}</h3><span>{prop.type} · {prop.rooms.length} rooms</span></div><div className="cal-bd">
           {prop.rooms.map(r=>{const isV=r.st==="vacant";const le=r.le?new Date(r.le+"T00:00:00"):null;const dl=le?Math.ceil((le-TODAY)/(1e3*60*60*24)):null;const isSoon=!isV&&dl&&dl<=90;const isExp=calRoom===r.id;
@@ -856,7 +895,7 @@ export default function Page(){
 
     {/* MAP */}
     <section className="sec-dk" id="location"><div className="sec-inner"><div className="sh"><div className="sl">Location</div><h2 className="st" style={{color:"var(--cr)"}}>Minutes From Everything</h2><p className="ss" style={{color:"var(--mt)"}}>Our properties are centrally located in Huntsville. Click any pin for details.</p></div>
-      <MapSection mapCat={mapCat} setMapCat={setMapCat} mapCats={mapCats} mapFiltered={mapFiltered} nav={nav}/>
+      <MapSection mapCat={mapCat} setMapCat={setMapCat} mapCats={mapCats} mapFiltered={mapFiltered} nav={nav} properties={P}/>
     </div></section>
 
     {/* SAVINGS */}
@@ -926,14 +965,14 @@ export default function Page(){
     </div></section>
 
     {/* SCREENING */}
-    <Screening/>
+    <Screening properties={P}/>
 
     {/* FOOTER */}
-    <footer className="ftr"><p>© {new Date().getFullYear()} {S_INFO.company} — {S_INFO.legal}. All rights reserved.</p></footer>
+    <footer className="ftr"><p>© {new Date().getFullYear()} {SI.company} — {SI.legal}. All rights reserved.</p></footer>
 
     {/* OVERLAYS */}
     {sel&&<PropertyModal p={sel} onClose={()=>setSel(null)}/>}
     <Chat/>
-    <StickyBar/>
+    <StickyBar properties={P}/>
   </>);
 }
