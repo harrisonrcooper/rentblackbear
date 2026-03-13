@@ -733,7 +733,6 @@ export default function Page(){
 
   const allRents=P.flatMap(p=>p.rooms.map(r=>r.rent));const globalMin=Math.min(...allRents);const globalMax=Math.max(...allRents);const[bbRoom,setBbRoom]=useState(0);
   useEffect(()=>{if(allRents.length&&!bbRoom)setBbRoom(globalMin);},[allRents]);
-  const[faqOpen,setFaqOpen]=useState(null);
 
   useEffect(()=>{const h=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[]);
   const nav=id=>document.getElementById(id)?.scrollIntoView({behavior:"smooth"});
