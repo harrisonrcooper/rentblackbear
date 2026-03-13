@@ -406,6 +406,10 @@ export default function Page(){
   const[appSearch,setAppSearch]=useState("");
   const[appView,setAppView]=useState("pipeline");
   const[bulkSel,setBulkSel]=useState([]);
+  const[screenQs,setScreenQs]=useState([]);
+  const[prevStep,setPrevStep]=useState(0);
+  const[prevResult,setPrevResult]=useState(null);
+  const[appFields,setAppFields]=useState([]);
   const[showConfetti,setShowConfetti]=useState(false);
   const[leadToast,setLeadToast]=useState(null);
   const[toastDismissing,setToastDismissing]=useState(false);
@@ -436,11 +440,11 @@ export default function Page(){
   const[scDrill,setScDrill]=useState(null);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY)]);
-    setProps(p);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setLoaded(true);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[])]);
+    setProps(p);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,loaded]);
+  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,loaded]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   const m=useMemo(()=>{
@@ -978,32 +982,229 @@ export default function Page(){
       })()}
 
       {/* ═══ APPLICATIONS ═══ */}
-      {tab==="applications"&&<>
-        <div className="sec-hd"><div><h2>Application Pipeline ({apps.length})</h2><p>Track applicants from pre-screen to move-in</p></div></div>
-        <div className="pipeline">
-          {["pre-screened","screening","approved","move-in"].map(stage=>{
-            const stageApps=apps.filter(a=>a.status===stage);
-            const labels={"pre-screened":"Pre-Screened","screening":"Screening","approved":"Approved","move-in":"Moving In"};
-            const colors={"pre-screened":"b-blue","screening":"b-gold","approved":"b-green","move-in":"b-green"};
-            return(
-              <div key={stage} className="pipe-col">
-                <div className="pipe-hd"><h4>{labels[stage]}</h4><span className="pipe-cnt">{stageApps.length}</span></div>
-                <div className="pipe-bd">{stageApps.map(a=>(
-                  <div key={a.id} className="pipe-card" onClick={()=>setModal({type:"app",data:a})}>
-                    <div className="pipe-nm">{a.name}</div>
-                    <div className="pipe-sub">{a.property} · {a.room}</div>
-                    <div className="pipe-meta">
-                      <span className={`badge ${colors[stage]}`}>{labels[stage]}</span>
-                      <span className="badge b-gray">Move-in {fmtD(a.moveIn)}</span>
-                    </div>
-                  </div>
-                ))}{stageApps.length===0&&<div style={{textAlign:"center",padding:16,color:"#ccc",fontSize:11}}>No applicants</div>}</div>
-              </div>);
-          })}
-        </div>
-      </>}
+      {tab==="applications"&&(()=>{
+        const STAGES=["pre-screened","called","invited","applied","reviewing","approved","move-in"];
+        const SL={"pre-screened":"Pre-Screened","called":"Called","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
+        const SC2={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","approved":"b-green","move-in":"b-green","denied":"b-red"};
+        const SI2={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
+        const moveApp=(id,ns)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));};
+        const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
+        const scoreApp=(a)=>{let s=50;if(a.income){const n=parseInt(String(a.income).replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(a.bgCheck==="passed")s+=15;if(a.creditScore&&a.creditScore!=="—"){const c=parseInt(a.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(a.refs==="verified")s+=10;return Math.min(s,100);};
+        const activeApps=apps.filter(a=>a.status!=="denied"&&(appSearch?[a.name,a.email,a.phone,a.property,a.source].some(v=>(v||"").toLowerCase().includes(appSearch.toLowerCase())):true));
+        const deniedApps=apps.filter(a=>a.status==="denied");
+        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in"].includes(a.status));
+        const DEF_APP_FIELDS=[
+          {id:uid(),label:"Full Legal Name",type:"text",section:"Personal",required:true,active:true},
+          {id:uid(),label:"Date of Birth",type:"date",section:"Personal",required:true,active:true},
+          {id:uid(),label:"Photo ID Upload",type:"file",section:"Verification",required:true,active:true},
+          {id:uid(),label:"Current Employer",type:"text",section:"Employment",required:true,active:true},
+          {id:uid(),label:"Monthly Income",type:"number",section:"Employment",required:true,active:true},
+          {id:uid(),label:"Proof of Income Upload",type:"file",section:"Employment",required:true,active:true},
+          {id:uid(),label:"Employer Reference (name + phone)",type:"text",section:"Employment",required:true,active:true},
+          {id:uid(),label:"Previous Landlord Name + Phone",type:"text",section:"Rental History",required:true,active:true},
+          {id:uid(),label:"Have you been evicted?",type:"yes-no",section:"Background",required:true,active:true},
+          {id:uid(),label:"Do you have any felonies?",type:"yes-no",section:"Background",required:true,active:true},
+          {id:uid(),label:"Emergency Contact (name + phone + relation)",type:"text",section:"Emergency",required:true,active:true},
+          {id:uid(),label:"Desired Move-In Date",type:"date",section:"Move-In",required:true,active:true},
+          {id:uid(),label:"How many occupants?",type:"number",section:"Move-In",required:true,active:true},
+        ];
 
-      {/* ═══ MAINTENANCE ═══ */}
+        return(<>
+        {/* Follow-up alerts */}
+        {staleApps.length>0&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:6}}>🔔 Follow Up ({staleApps.length})</div>
+          {staleApps.map(a=><div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.03)"}}><span><strong>{a.name}</strong> — {SL[a.status]} · <span style={{color:daysSince(a.lastContact||a.submitted)>=5?"#c45c4a":"#d4a853",fontWeight:700}}>{daysSince(a.lastContact||a.submitted)}d</span></span><button className="btn btn-out btn-sm" style={{fontSize:8}} onClick={()=>setModal({type:"app",data:a})}>Open</button></div>)}
+        </div>}
+
+        {/* KPIs + controls */}
+        <div className="kgrid" style={{gridTemplateColumns:"repeat(4,1fr)",marginBottom:10}}>
+          <div className="kpi"><div className="kl">Pipeline</div><div className="kv">{activeApps.length}</div></div>
+          <div className="kpi"><div className="kl">Avg Score</div><div className="kv" style={{color:"#4a7c59"}}>{activeApps.length?Math.round(activeApps.reduce((s,a)=>s+scoreApp(a),0)/activeApps.length):0}</div></div>
+          <div className="kpi"><div className="kl">Stale</div><div className="kv" style={{color:staleApps.length?"#c45c4a":"#4a7c59"}}>{staleApps.length}</div></div>
+          <div className="kpi"><div className="kl">Denied</div><div className="kv">{deniedApps.length}</div></div>
+        </div>
+        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+          <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search applicants..." style={{flex:1,minWidth:160,padding:"8px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+          {["pipeline","list"].map(v=><button key={v} className={`btn ${appView===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(v)}>{v==="pipeline"?"📋 Pipeline":"📝 List"}</button>)}
+        </div>
+
+        {/* Pipeline */}
+        {appView==="pipeline"&&<div className="pipeline" style={{gridTemplateColumns:"repeat(7,1fr)"}}>
+          {STAGES.map((stage,si)=>{const sa=activeApps.filter(a=>a.status===stage);return(
+            <div key={stage} className="pipe-col">
+              <div className="pipe-hd"><h4 style={{fontSize:10}}>{SI2[stage]} {SL[stage]}</h4><span className="pipe-cnt">{sa.length}</span></div>
+              <div className="pipe-bd">{sa.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const sc=scoreApp(a);const d=daysSince(a.lastContact||a.submitted);return(
+                <div key={a.id} className="pipe-card" style={{borderLeft:"3px solid "+(sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a")}}>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><div className="pipe-nm" style={{fontSize:10}}>{a.name}</div><span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 4px",borderRadius:3}}>{sc}</span></div>
+                  <div className="pipe-sub" style={{fontSize:8}}>{a.property||"No pref"}{d>0?<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999"}}> · {d}d</span>:""}</div>
+                  <div style={{display:"flex",gap:2,marginTop:4}}>
+                    {si>0&&<button className="btn btn-out btn-sm" style={{fontSize:7,flex:1,padding:"3px"}} onClick={e=>{e.stopPropagation();moveApp(a.id,STAGES[si-1]);}}>←</button>}
+                    <button className="btn btn-green btn-sm" style={{fontSize:7,flex:2,padding:"3px"}} onClick={e=>{e.stopPropagation();if(si<6)moveApp(a.id,STAGES[si+1]);}}>{si<6?"→ "+SL[STAGES[si+1]].split(" ")[0]:"✓"}</button>
+                  </div>
+                  <div style={{display:"flex",gap:2,marginTop:2}}>
+                    <button className="btn btn-out btn-sm" style={{fontSize:7,flex:1,padding:"3px"}} onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>Open</button>
+                    {(stage==="pre-screened"||stage==="called")&&<button className="btn btn-dk btn-sm" style={{fontSize:7,flex:1,padding:"3px"}} onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>✉️</button>}
+                    <button className="btn btn-out btn-sm" style={{fontSize:7,padding:"3px",color:"#c45c4a"}} onClick={e=>{e.stopPropagation();setModal({type:"denyApp",appId:a.id,reason:""});}}>✕</button>
+                  </div>
+                </div>);})}
+              {sa.length===0&&<div style={{textAlign:"center",padding:12,color:"#ccc",fontSize:9}}>Empty</div>}
+            </div>);})}
+        </div>}
+
+        {/* List */}
+        {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th></tr></thead><tbody>
+          {activeApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const sc=scoreApp(a);const d=daysSince(a.lastContact||a.submitted);return(
+            <tr key={a.id} style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}><td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
+              <td><span style={{fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a"}}>{sc}</span></td>
+              <td><span className={"badge "+SC2[a.status]}>{SL[a.status]}</span></td>
+              <td style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:600}}>{d}d</td>
+              <td style={{fontSize:10}}>{a.source||"—"}</td></tr>);})}
+        </tbody></table></div></div>}
+
+        {/* Denied */}
+        {deniedApps.length>0&&<div style={{marginTop:14}}><div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:6}}>DENIED ({deniedApps.length})</div>
+          {deniedApps.map(a=><div key={a.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · {fmtD(a.deniedDate)}{a.deniedReason?" · "+a.deniedReason:""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:x.prevStage||"pre-screened",deniedReason:null,deniedDate:null}:x))}>Restore</button></div>)}
+        </div>}
+
+        {/* ── Screening Questions Editor ── */}
+        <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,screenEditor:!p.screenEditor}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📋 Pre-Screen Questions</div><div style={{fontSize:9,color:"#999"}}>{screenQs.length} questions · Edit what prospects answer before applying</div></div></div>
+            <div style={{display:"flex",gap:4,alignItems:"center"}}>
+              <span style={{fontSize:10,color:screenQs.filter(q=>q.active).length===screenQs.length?"#4a7c59":"#d4a853",fontWeight:600}}>{screenQs.filter(q=>q.active).length}/{screenQs.length} active</span>
+              {screenQs.length===0&&<button className="btn btn-gold btn-sm" onClick={e=>{e.stopPropagation();setScreenQs([
+                {id:uid(),q:"Are you a non-smoker? We have a strict no-smoking policy (including vapes).",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Do you agree to our zero-tolerance drug policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Are you comfortable with our no-pets policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Can you pass a background check with no criminal record?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Is your credit score 650 or above?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Is your gross monthly income at least 3x your expected rent?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Can you provide professional references and verifiable landlord history?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+              ]);}}>Load Default Questions</button>}
+            </div>
+          </div>
+          {expanded.screenEditor&&<div style={{padding:16,background:"#fff"}}>
+            {screenQs.length===0&&<div style={{textAlign:"center",padding:24,color:"#999"}}><p style={{fontSize:12,marginBottom:8}}>No screening questions configured.</p><button className="btn btn-gold" onClick={()=>setScreenQs([
+              {id:uid(),q:"Are you a non-smoker? We have a strict no-smoking policy (including vapes).",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+              {id:uid(),q:"Do you agree to our zero-tolerance drug policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+              {id:uid(),q:"Are you comfortable with our no-pets policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+              {id:uid(),q:"Can you pass a background check with no criminal record?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+              {id:uid(),q:"Is your credit score 650 or above?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+              {id:uid(),q:"Is your gross monthly income at least 3x your expected rent?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+              {id:uid(),q:"Can you provide professional references and verifiable landlord history?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+            ])}>Load 7 Default Questions</button></div>}
+            {screenQs.map((q,i)=>(
+              <div key={q.id} style={{padding:12,border:"1px solid rgba(0,0,0,.04)",borderRadius:8,marginBottom:8,background:q.active?"#fff":"#f8f7f4",opacity:q.active?1:0.6}}>
+                <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:8}}>
+                  <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:4}}>
+                    {i>0&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#999"}} onClick={()=>{const n=[...screenQs];[n[i-1],n[i]]=[n[i],n[i-1]];setScreenQs(n);}}>▲</button>}
+                    {i<screenQs.length-1&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#999"}} onClick={()=>{const n=[...screenQs];[n[i],n[i+1]]=[n[i+1],n[i]];setScreenQs(n);}}>▼</button>}
+                  </div>
+                  <div style={{flex:1}}>
+                    <textarea value={q.q} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,q:e.target.value}:x))} rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:12,fontFamily:"inherit",resize:"vertical"}}/>
+                  </div>
+                  <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:14,marginTop:4}} onClick={()=>setScreenQs(p=>p.filter((_,j)=>j!==i))}>✕</button>
+                </div>
+                <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",fontSize:11}}>
+                  <label style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><input type="checkbox" checked={q.required} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,required:e.target.checked}:x))}/> Required</label>
+                  <label style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><input type="checkbox" checked={q.active} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,active:e.target.checked}:x))}/> Active</label>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#999"}}>Type:</span><select value={q.type||"yes-no"} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,type:e.target.value}:x))} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="yes-no">Yes / No</option><option value="text">Text</option><option value="number">Number</option></select></div>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#999"}}>Pass:</span><select value={q.pass||"Yes"} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,pass:e.target.value}:x))} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="Yes">Yes</option><option value="No">No</option><option value="">Any</option></select></div>
+                  {(q.type==="text"||q.type==="number")&&<div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#999"}}>Min chars:</span><input type="number" value={q.minChars||0} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,minChars:Number(e.target.value)}:x))} style={{width:50,padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10}}/></div>}
+                </div>
+              </div>
+            ))}
+            {screenQs.length>0&&<button className="btn btn-out" style={{width:"100%",marginTop:8}} onClick={()=>setScreenQs(p=>[...p,{id:uid(),q:"New question...",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"}])}>+ Add Question</button>}
+            {screenQs.length>0&&<div style={{display:"flex",gap:8,marginTop:12}}>
+              <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-screen-qs",screenQs);setNotifs(p=>[{id:uid(),type:"app",msg:`Pre-screen questions published (${screenQs.filter(q=>q.active).length} active)`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);alert("Pre-screen questions saved and published! The public site will use these questions.");}}>🚀 Save & Publish to Site</button>
+              <button className="btn btn-out" onClick={()=>{if(window.confirm&&typeof window.confirm==="function"){setScreenQs([
+                {id:uid(),q:"Are you a non-smoker? We have a strict no-smoking policy (including vapes).",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Do you agree to our zero-tolerance drug policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Are you comfortable with our no-pets policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Can you pass a background check with no criminal record?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Is your credit score 650 or above?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Is your gross monthly income at least 3x your expected rent?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+                {id:uid(),q:"Can you provide professional references and verifiable landlord history?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
+              ]);}}}> Reset to Defaults</button>
+            </div>}
+            <div style={{fontSize:9,color:"#999",marginTop:8,textAlign:"center"}}>Saves to Supabase · Click "Save & Publish" to push changes live</div>
+          </div>}
+        </div>
+
+        {/* ── Pre-Screen Preview ── */}
+        {screenQs.length>0&&<div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,screenPreview:!p.screenPreview}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>👁 Pre-Screen Preview</div><div style={{fontSize:9,color:"#999"}}>See what tenants see on the public site</div></div></div>
+          </div>
+          {expanded.screenPreview&&(()=>{
+            const activeQs=screenQs.filter(q=>q.active);
+            const answerPreview=(v)=>{
+              const q=activeQs[prevStep];
+              if(q.pass&&v!==q.pass){setPrevResult("fail");return;}
+              if(prevStep<activeQs.length-1)setPrevStep(prevStep+1);
+              else setPrevResult("pass");
+            };
+            const resetPreview=()=>{setPrevStep(0);setPrevResult(null);};
+            return(
+            <div style={{padding:20,background:"linear-gradient(165deg,#1a1714,#2c2520)",borderRadius:0}}>
+              <div style={{maxWidth:480,margin:"0 auto"}}>
+                <div style={{background:"rgba(255,255,255,.06)",borderRadius:14,padding:24,border:"1px solid rgba(255,255,255,.08)"}}>
+                  {prevResult===null&&<>
+                    <div style={{textAlign:"center",marginBottom:16}}><div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#d4a853",marginBottom:8}}>Quick Pre-Screen</div><div style={{fontSize:10,color:"rgba(196,168,130,.6)"}}>{activeQs.length} questions · Takes 30 seconds</div></div>
+                    <div style={{display:"flex",gap:4,justifyContent:"center",marginBottom:16}}>{activeQs.map((_,i)=><div key={i} style={{width:i===prevStep?24:8,height:8,borderRadius:4,background:i<prevStep?"#4a7c59":i===prevStep?"#d4a853":"rgba(255,255,255,.1)",transition:"all .2s"}}/>)}</div>
+                    <div style={{fontSize:10,color:"rgba(196,168,130,.5)",marginBottom:6}}>Question {prevStep+1} of {activeQs.length}</div>
+                    <div style={{fontSize:15,color:"#f5f0e8",fontWeight:600,lineHeight:1.5,marginBottom:20}}>{activeQs[prevStep].q}</div>
+                    <div style={{display:"flex",gap:10}}>
+                      {activeQs[prevStep].type==="yes-no"?<>
+                        <button onClick={()=>answerPreview("Yes")} style={{flex:1,padding:"12px 20px",borderRadius:8,border:"none",background:"#4a7c59",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Yes</button>
+                        <button onClick={()=>answerPreview("No")} style={{flex:1,padding:"12px 20px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#f5f0e8",fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>No</button>
+                      </>:<div style={{width:"100%"}}><input placeholder="Type your answer..." style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"rgba(255,255,255,.05)",color:"#f5f0e8",fontSize:13,fontFamily:"inherit"}}/><button onClick={()=>answerPreview("Yes")} style={{marginTop:8,width:"100%",padding:"10px",borderRadius:8,border:"none",background:"#d4a853",color:"#1a1714",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Next →</button></div>}
+                    </div>
+                  </>}
+                  {prevResult==="pass"&&<div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:"50%",background:"rgba(74,124,89,.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#4a7c59"}}>✓</div><div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>You Pre-Qualify!</div><div style={{fontSize:12,color:"rgba(196,168,130,.6)",marginBottom:16}}>This is where they fill out the contact form.</div><button onClick={resetPreview} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#d4a853",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button></div>}
+                  {prevResult==="fail"&&<div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:"50%",background:"rgba(196,92,74,.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#c45c4a"}}>✕</div><div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>Didn't Qualify</div><div style={{fontSize:12,color:"rgba(196,168,130,.6)",marginBottom:16}}>This is what they see when they fail a question.</div><button onClick={resetPreview} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#d4a853",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button></div>}
+                </div>
+                <div style={{textAlign:"center",marginTop:10,fontSize:9,color:"rgba(196,168,130,.3)"}}>Preview only — this is how it appears on rentblackbear.com</div>
+              </div>
+            </div>);
+          })()}
+        </div>}
+
+        {/* ── Application Fields Editor ── */}
+        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appFieldsEditor:!p.appFieldsEditor}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appFieldsEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📝 Application Fields</div><div style={{fontSize:9,color:"#999"}}>{appFields.length} fields · Customize what tenants fill out after being invited</div></div></div>
+            <div style={{display:"flex",gap:4,alignItems:"center"}}>
+              <span style={{fontSize:10,color:appFields.filter(f=>f.active).length===appFields.length?"#4a7c59":"#d4a853",fontWeight:600}}>{appFields.filter(f=>f.active).length}/{appFields.length} active</span>
+              {appFields.length===0&&<button className="btn btn-gold btn-sm" onClick={e=>{e.stopPropagation();setAppFields(DEF_APP_FIELDS);}}>Load Defaults</button>}
+            </div>
+          </div>
+          {expanded.appFieldsEditor&&<div style={{padding:16,background:"#fff"}}>
+            {appFields.length===0&&<div style={{textAlign:"center",padding:24,color:"#999"}}><p style={{fontSize:12,marginBottom:8}}>No application fields configured.</p><button className="btn btn-gold" onClick={()=>setAppFields(DEF_APP_FIELDS)}>Load 13 Default Fields</button></div>}
+            {(()=>{const sections=[...new Set(appFields.map(f=>f.section))];return sections.map(sec=>(
+              <div key={sec} style={{marginBottom:12}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:1,marginBottom:6,paddingBottom:4,borderBottom:"1px solid rgba(212,168,83,.15)"}}>{sec}</div>
+                {appFields.filter(f=>f.section===sec).map((f,fi)=>{const gi=appFields.indexOf(f);return(
+                  <div key={f.id} style={{display:"flex",gap:8,alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:f.active?1:0.5}}>
+                    <div style={{display:"flex",flexDirection:"column",gap:1}}>
+                      {gi>0&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:9,color:"#999"}} onClick={()=>{const n=[...appFields];[n[gi-1],n[gi]]=[n[gi],n[gi-1]];setAppFields(n);}}>▲</button>}
+                      {gi<appFields.length-1&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:9,color:"#999"}} onClick={()=>{const n=[...appFields];[n[gi],n[gi+1]]=[n[gi+1],n[gi]];setAppFields(n);}}>▼</button>}
+                    </div>
+                    <input value={f.label} onChange={e=>{const n=[...appFields];n[gi]={...n[gi],label:e.target.value};setAppFields(n);}} style={{flex:1,padding:"6px 10px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}}/>
+                    <select value={f.type} onChange={e=>{const n=[...appFields];n[gi]={...n[gi],type:e.target.value};setAppFields(n);}} style={{padding:"4px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:9,fontFamily:"inherit"}}><option value="text">Text</option><option value="email">Email</option><option value="phone">Phone</option><option value="date">Date</option><option value="number">Number</option><option value="yes-no">Yes/No</option><option value="file">File Upload</option><option value="long-text">Long Text</option><option value="dropdown">Dropdown</option></select>
+                    <select value={f.section} onChange={e=>{const n=[...appFields];n[gi]={...n[gi],section:e.target.value};setAppFields(n);}} style={{padding:"4px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:9,fontFamily:"inherit",width:90}}>{sections.map(s=><option key={s}>{s}</option>)}<option value="Custom">Custom</option></select>
+                    <label style={{display:"flex",alignItems:"center",gap:3,fontSize:9,whiteSpace:"nowrap"}}><input type="checkbox" checked={f.required} onChange={e=>{const n=[...appFields];n[gi]={...n[gi],required:e.target.checked};setAppFields(n);}}/> Req</label>
+                    <label style={{display:"flex",alignItems:"center",gap:3,fontSize:9,whiteSpace:"nowrap"}}><input type="checkbox" checked={f.active} onChange={e=>{const n=[...appFields];n[gi]={...n[gi],active:e.target.checked};setAppFields(n);}}/> On</label>
+                    <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:12}} onClick={()=>setAppFields(p=>p.filter((_,j)=>j!==gi))}>✕</button>
+                  </div>);})}
+              </div>));})()}
+            {appFields.length>0&&<div style={{display:"flex",gap:6,marginTop:10}}>
+              <button className="btn btn-out" style={{flex:1}} onClick={()=>setAppFields(p=>[...p,{id:uid(),label:"New Field",type:"text",section:"Custom",required:false,active:true}])}>+ Add Field</button>
+              <button className="btn btn-green" onClick={()=>{save("hq-app-fields",appFields);alert("Application fields published! The /apply page will use these fields.");}}>🚀 Save & Publish</button>
+            </div>}
+          </div>}
+        </div>
+      </>);})()}
       {tab==="maintenance"&&<>
         <div className="sec-hd"><div><h2>Maintenance Requests</h2><p>{m.openMaint} open</p></div>
           <button className="btn btn-gold" onClick={()=>setMaint(p=>[{id:uid(),roomId:"",propId:"",tenant:"",title:"New Request",desc:"",status:"open",priority:"medium",created:TODAY.toISOString().split("T")[0],photos:0},...p])}>+ New Request</button></div>
@@ -1835,6 +2036,35 @@ export default function Page(){
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
         <button className="btn btn-green" disabled={!sel} onClick={()=>{setSdLedger(p=>[{id:uid(),roomId:modal.roomId,tenantName:sel.name,propName:sel.propName,roomName:sel.roomName,amountHeld:sdHeld,deductions,returned:returnAmt,returnDate:TODAY.toISOString().split("T")[0]},...p]);setModal(null);}}>Confirm Return {fmtS(returnAmt)}</button></div>
     </div></div>);})()}
+  {/* Invite to Apply Modal */}
+  {modal&&modal.type==="inviteApp"&&(()=>{const a=modal.data;
+    const reqs=["Background Check","Credit Check","Income Verification","References","Photo ID","Proof of Income"];
+    const waived=modal.waived||[];
+    const toggleReq=r=>{const w=waived.includes(r)?waived.filter(x=>x!==r):[...waived,r];setModal(prev=>({...prev,waived:w}));};
+    const selFields=(modal.selFields||appFields.filter(f=>f.active).map(f=>f.id));
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
+      <h2>Invite {a.name} to Apply</h2>
+      <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}><strong>{a.email}</strong> · {a.phone} · {a.property||"No preference"}</div>
+      <div className="tp-card"><h3>Requirements</h3><p style={{fontSize:10,color:"#999",marginBottom:8}}>Uncheck any you want to waive for this applicant.</p>
+        {reqs.map(r=><label key={r} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={!waived.includes(r)} onChange={()=>toggleReq(r)}/><span style={{textDecoration:waived.includes(r)?"line-through":"none",color:waived.includes(r)?"#999":"inherit"}}>{r}</span></label>)}
+      </div>
+      {waived.length>0&&<div className="fld"><label>Waiver Reason (required)</label><input value={modal.waiverReason||""} onChange={e=>setModal(prev=>({...prev,waiverReason:e.target.value}))} placeholder="e.g. NASA intern with security clearance..."/></div>}
+      <div className="tp-card"><h3>Application Fields ({appFields.filter(f=>f.active).length} active)</h3>
+        <div style={{fontSize:10,color:"#999",marginBottom:6}}>These fields will be on their application form. Edit in the fields editor below.</div>
+        <div style={{maxHeight:120,overflowY:"auto"}}>{appFields.filter(f=>f.active).map(f=><div key={f.id} style={{fontSize:10,padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.02)"}}>✓ {f.label} <span style={{color:"#999"}}>({f.type})</span></div>)}</div>
+      </div>
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-green" disabled={waived.length>0&&!(modal.waiverReason||"").trim()} onClick={()=>{
+          setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],waived,waiverReason:modal.waiverReason||"",history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:waived.length?"Waived: "+waived.join(", ")+" — "+(modal.waiverReason||""):""}]}:x));
+          setNotifs(p=>[{id:uid(),type:"app",msg:"Invite sent to "+a.name+" ("+a.email+")",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+          setModal(null);
+        }}>Send Invite</button>
+      </div>
+    </div></div>);})()}
+
+  {/* Deny Modal */}
   {modal&&modal.type==="denyApp"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
       <h2>Deny Application</h2>
