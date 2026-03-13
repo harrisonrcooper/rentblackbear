@@ -52,8 +52,16 @@ const DEF_MAINT=[ // maintenance requests
   {id:uid(),roomId:"r7",propId:"p2",tenant:"Lisa Thompson",title:"Bedroom door lock sticking",desc:"Have to jiggle the handle to get it to unlock. Getting worse.",status:"in-progress",priority:"low",created:"2026-03-05",photos:1},
 ];
 const DEF_APPS=[ // applications in pipeline
-  {id:uid(),name:"Taylor Morgan",email:"taylor@email.com",phone:"(256) 555-9001",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-04-01",income:"$4,200",status:"screening",submitted:"2026-03-09",bgCheck:"pending",creditScore:"—",refs:"pending"},
-  {id:uid(),name:"Jordan Lee",email:"jordan@email.com",phone:"(256) 555-9002",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-15",income:"$3,800",status:"pre-screened",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started"},
+  {id:"a1",name:"Taylor Morgan",email:"taylor@email.com",phone:"(256) 555-9001",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-04-01",income:"$4,200",status:"reviewing",submitted:"2026-03-09",bgCheck:"pending",creditScore:"710",refs:"pending",source:"Google Search",lastContact:"2026-03-11",history:[{from:"pre-screened",to:"called",date:"2026-03-09"},{from:"called",to:"invited",date:"2026-03-10"},{from:"invited",to:"applied",date:"2026-03-10"},{from:"applied",to:"reviewing",date:"2026-03-11"}]},
+  {id:"a2",name:"Jordan Lee",email:"jordan@email.com",phone:"(256) 555-9002",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-15",income:"$3,800",status:"pre-screened",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Friend / Referral",lastContact:"2026-03-10"},
+  {id:"a3",name:"Rachel Kim",email:"rachel.k@email.com",phone:"(256) 555-9003",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-05-15",income:"$5,500",status:"called",submitted:"2026-03-08",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-09",notes:"NASA summer intern. Has security clearance — can skip BG check.",waived:["Background Check"],waiverReason:"NASA intern with security clearance"},
+  {id:"a4",name:"David Park",email:"david.p@email.com",phone:"(256) 555-9004",property:"Lee Drive West",room:"Bedroom 3",moveIn:"2026-04-01",income:"$3,200",status:"denied",submitted:"2026-03-05",bgCheck:"failed",creditScore:"520",refs:"not-started",source:"Craigslist",deniedReason:"Failed background check",deniedDate:"2026-03-08",prevStage:"reviewing"},
+  {id:"a5",name:"Alex Rivera",email:"alex.r@email.com",phone:"(256) 555-9005",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-01",income:"$4,800",status:"approved",submitted:"2026-03-01",bgCheck:"passed",creditScore:"740",refs:"verified",source:"Zillow",lastContact:"2026-03-12",history:[{from:"pre-screened",to:"called",date:"2026-03-02"},{from:"called",to:"invited",date:"2026-03-03"},{from:"invited",to:"applied",date:"2026-03-05"},{from:"applied",to:"reviewing",date:"2026-03-06"},{from:"reviewing",to:"approved",date:"2026-03-12"}]},
+  {id:"a6",name:"Sam Patel",email:"sam.p@email.com",phone:"(256) 555-9006",property:"The Holmes House",room:"Bedroom 5",moveIn:"2026-06-01",income:"$6,200",status:"invited",submitted:"2026-03-07",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-11",notes:"Toyota intern, summer rotation",waived:["Background Check"],waiverReason:"Corporate intern with employer verification"},
+  {id:"a7",name:"David Park",email:"david.park2@email.com",phone:"(256) 555-9007",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-05-01",income:"$4,100",status:"pre-screened",submitted:"2026-03-12",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Google Search",lastContact:"2026-03-12",notes:"Same name as previously denied applicant"},
+  {id:"a8",name:"Chris Walker",email:"chris.w@email.com",phone:"(256) 555-8001",property:"Lee Drive West",room:"Bedroom 3",moveIn:"2026-05-01",income:"$3,600",status:"pre-screened",submitted:"2026-03-12",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Drive-by / Sign",lastContact:"2026-03-12",notes:""},
+  {id:"a9",name:"Priya Sharma",email:"priya.s@email.com",phone:"(256) 555-9009",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-01",income:"$4,500",status:"pre-screened",submitted:"2026-03-11",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Roomies.com",lastContact:"2026-03-11",notes:"Found us on Roomies.com listing"},
+  {id:"a10",name:"Derek Owens",email:"derek.o@email.com",phone:"(256) 555-9010",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-05-01",income:"$3,900",status:"called",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Roomies.com",lastContact:"2026-03-11",notes:""},
 ];
 const DEF_DOCS=[
   {id:uid(),name:"Lease Template - Standard 12mo",type:"lease",property:"All",uploaded:"2026-01-15",size:"245 KB"},
@@ -75,7 +83,10 @@ const DEF_NOTIFS=[
   {id:uid(),type:"maint",msg:"New maintenance request from Marcus Johnson",date:"2026-03-08",read:true,urgent:false},
   {id:uid(),type:"app",msg:"New application from Taylor Morgan for Holmes Bedroom 4",date:"2026-03-09",read:true,urgent:false},
 ];
-const DEF_ARCHIVE=[];// past tenants: [{id,name,email,phone,roomName,propName,rent,moveIn,leaseEnd,terminatedDate,reason,payments:{}}]
+const DEF_ARCHIVE=[
+  {id:uid(),name:"Chris Walker",email:"chris.w@email.com",phone:"(256) 555-8001",roomName:"Bedroom 3",propName:"Lee Drive East",rent:600,moveIn:"2025-06-01",leaseEnd:"2026-03-01",terminatedDate:"2025-12-15",reason:"Broke lease early — noise complaints"},
+  {id:uid(),name:"David Park",email:"david.p@email.com",phone:"(256) 555-9004",roomName:"Bedroom 2",propName:"Lee Drive West",rent:650,moveIn:"2025-01-01",leaseEnd:"2025-12-31",terminatedDate:"2025-11-30",reason:"Previously denied — failed BG check"},
+];
 const DEF_ROCKS=[{id:uid(),title:"Fill Holmes House Bedroom 4",owner:"Harrison",status:"on-track",due:"2026-06-30",notes:"Listed on site"},{id:uid(),title:"Capture Insta360 tours for all properties",owner:"Harrison",status:"off-track",due:"2026-06-30",notes:"Need to schedule"},{id:uid(),title:"Deploy rentblackbear.com live",owner:"Harrison",status:"on-track",due:"2026-04-15",notes:"Packaged, push to Vercel"},{id:uid(),title:"Set up Stripe rent collection",owner:"Harrison",status:"not-started",due:"2026-06-30",notes:""}];
 const DEF_ISSUES=[{id:uid(),title:"David Park lease expiring March 31 — renew or find replacement",priority:"high",created:"2026-03-01"},{id:uid(),title:"Need real photos to replace stock images",priority:"medium",created:"2026-03-05"},{id:uid(),title:"Password protection for admin before adding real data",priority:"high",created:"2026-03-08"}];
 // Scorecard: history of weekly snapshots. Current week is always calculated live.
@@ -201,6 +212,8 @@ const S=`
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-3px)}30%{transform:translateX(3px)}45%{transform:translateX(-2px)}60%{transform:translateX(2px)}75%{transform:translateX(-1px)}90%{transform:translateX(1px)}}
+@keyframes redFlash{0%{box-shadow:none}50%{box-shadow:inset 0 0 0 2px rgba(196,92,74,.15)}100%{box-shadow:none}}
 @keyframes toastIn{from{opacity:0;transform:translateY(-30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}}
 .confetti-wrap{position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden}
@@ -598,6 +611,7 @@ export default function Page(){
     {id:"rocks",i:"🪨",l:"Rocks"},
     {id:"issues",i:"⚠️",l:"Issues"},
     {id:"tenants",i:"👥",l:"Tenants"},
+    {id:"portal",i:"🏡",l:"Tenant Portal"},
     {id:"payments",i:"💰",l:"Payments",badge:pastDueCount||m.unpaid.length||null},
     {id:"applications",i:"📋",l:"Applications",badge:m.activeApps||null},
     {id:"maintenance",i:"🔧",l:"Maintenance",badge:m.openMaint||null},
@@ -630,15 +644,15 @@ export default function Page(){
       <div className="s-lbl">Traction</div>
       {tabs.slice(1,4).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">Tenants</div>
-      {tabs.slice(4,6).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      {tabs.slice(4,7).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">Leasing</div>
-      {tabs.slice(6,7).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      {tabs.slice(7,8).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">Operations</div>
-      {tabs.slice(7,10).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      {tabs.slice(8,11).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">Website</div>
-      {tabs.slice(10,14).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      {tabs.slice(11,15).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">System</div>
-      {tabs.slice(14).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      {tabs.slice(15).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-ft">
         <a href="#">🌐 View Public Site</a>
       </div>
@@ -719,6 +733,213 @@ export default function Page(){
             </div>
           ))}</>}
       </>}
+
+      {/* ═══ TENANT PORTAL (Admin Preview) ═══ */}
+      {tab==="portal"&&(()=>{
+        const[portalTenant,setPortalTenant]=useState(allTenants[0]||null);
+        const[portalTab,setPortalTab]=useState("home");
+        const[maintForm,setMaintForm]=useState({title:"",desc:"",priority:"medium",submitted:false});
+        const tRoom=portalTenant;
+        const tProp=tRoom?props.find(p=>p.rooms.some(r=>r.id===tRoom.id)):null;
+        const tCharges=tRoom?charges.filter(c=>c.roomId===tRoom.id):[];
+        const tMaint=tRoom?maint.filter(m=>m.roomId===tRoom.id):[];
+        const submitMaint=()=>{if(!maintForm.title.trim())return;setMaint(p=>[...p,{id:uid(),roomId:tRoom.id,propId:tProp&&tProp.id,tenant:tRoom.tenant.name,title:maintForm.title,desc:maintForm.desc,status:"open",priority:maintForm.priority,created:TODAY.toISOString().split("T")[0],photos:0}]);setMaintForm({title:"",desc:"",priority:"medium",submitted:true});};
+        const utilDesc=tProp&&tProp.utils==="allIncluded"?"All utilities included (electric, water, gas, WiFi)":"First $100 in utilities included. Overage split equally. WiFi always included.";
+        const cleanDesc=tProp&&tProp.clean==="Weekly"?"Common areas cleaned weekly":"Common areas cleaned biweekly";
+        const houseRules=[{icon:"🚭",rule:"No smoking or vaping anywhere on the property, including outdoors"},
+          {icon:"🐾",rule:"No pets allowed"},
+          {icon:"👟",rule:"No shoes inside — please remove at the door"},
+          {icon:"🔇",rule:"Quiet hours: 10pm–7am weekdays, 11pm–10am weekends"},
+          {icon:"🧹",rule:"Clean up after yourself in shared common areas"},
+          {icon:"🔑",rule:"Do not duplicate keys or grant property access to unauthorized guests"},
+          {icon:"🚗",rule:"Parking in designated spots only"},
+          {icon:"🔥",rule:"No open flames, candles, or grills inside"},
+        ];
+        return(<>
+          <div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:"10px 16px",marginBottom:16,fontSize:12,color:"#9a7422",display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:16}}>👁️</span>
+            <span><strong>Admin Preview Mode</strong> — This is what your tenants will see when the portal is live. Select a tenant to preview their view.</span>
+          </div>
+
+          {/* Tenant selector */}
+          <div className="card" style={{marginBottom:14}}><div className="card-bd" style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#999",whiteSpace:"nowrap"}}>Previewing as:</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",flex:1}}>
+              {allTenants.map(t=>(
+                <button key={t.id} className={`btn btn-sm ${portalTenant&&portalTenant.id===t.id?"btn-dk":"btn-out"}`} onClick={()=>{setPortalTenant(t);setPortalTab("home");}}>
+                  {t.tenant.name} <span style={{opacity:.6,fontSize:9}}>· {t.propName}</span>
+                </button>
+              ))}
+              {allTenants.length===0&&<span style={{fontSize:12,color:"#999"}}>No active tenants.</span>}
+            </div>
+          </div></div>
+
+          {!tRoom&&<div style={{textAlign:"center",padding:40,color:"#999"}}><div style={{fontSize:40,marginBottom:8}}>🏡</div><p>Select a tenant above to preview their portal.</p></div>}
+
+          {tRoom&&<div style={{background:"#f9f8f5",borderRadius:14,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+            {/* Portal Header */}
+            <div style={{background:"#1a1714",padding:"18px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:800,color:"#f5f0e8"}}>🐻 Black Bear Rentals</div>
+                <div style={{fontSize:10,color:"#c4a882",marginTop:2}}>Welcome back, {tRoom.tenant.name.split(" ")[0]}!</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#d4a853"}}>{tRoom.propName}</div>
+                <div style={{fontSize:9,color:"#c4a882"}}>{tRoom.name}</div>
+              </div>
+            </div>
+
+            {/* Portal Nav */}
+            <div style={{display:"flex",background:"#fff",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+              {[["home","🏠","Home"],["payments","💳","Payments"],["maintenance","🔧","Maintenance"],["rules","📋","House Rules"]].map(([id,icon,label])=>(
+                <button key={id} onClick={()=>setPortalTab(id)} style={{flex:1,padding:"11px 4px",border:"none",background:portalTab===id?"#faf9f7":"#fff",borderBottom:portalTab===id?"2px solid #d4a853":"2px solid transparent",cursor:"pointer",fontSize:10,fontWeight:portalTab===id?800:500,color:portalTab===id?"#1a1714":"#999",fontFamily:"inherit",transition:"all .15s"}}>
+                  <div style={{fontSize:16,marginBottom:2}}>{icon}</div>{label}
+                </button>
+              ))}
+            </div>
+
+            {/* ── HOME ── */}
+            {portalTab==="home"&&<div style={{padding:18}}>
+              <div className="tp-card">
+                <h3>📄 Your Lease</h3>
+                {[
+                  ["Room",`${tRoom.name} · ${tRoom.pb?"Private bathroom":"Shared bathroom"}`],
+                  ["Property",`${tRoom.propName} — ${tProp&&tProp.addr}`],
+                  ["Monthly Rent",`$${tRoom.rent.toLocaleString()}/mo`],
+                  ["Move-In Date",fmtD(tRoom.tenant.moveIn)],
+                  ["Lease Ends",tRoom.le?fmtD(tRoom.le):"Month-to-Month"],
+                  ["Utilities",utilDesc],
+                  ["Cleaning",cleanDesc],
+                  ["WiFi","Google Fiber — always included"],
+                ].map(([l,v])=><div key={l} className="tp-row"><span className="tp-label">{l}</span><span style={{fontWeight:600,fontSize:12,textAlign:"right",maxWidth:"60%"}}>{v}</span></div>)}
+              </div>
+
+              <div className="tp-card" style={{marginTop:10}}>
+                <h3>💳 Payment Summary</h3>
+                {(()=>{
+                  const upcoming=tCharges.filter(c=>chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
+                  const recentPaid=tCharges.filter(c=>chargeStatus(c)==="paid").slice(-3);
+                  const totalDue=upcoming.reduce((s,c)=>s+c.amount,0);
+                  return(<>
+                    <div style={{background:totalDue>0?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:8,padding:12,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div><div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Amount Due</div><div style={{fontSize:22,fontWeight:800,color:totalDue>0?"#c45c4a":"#4a7c59"}}>{totalDue>0?`$${totalDue.toLocaleString()}`:"All clear ✓"}</div></div>
+                      {upcoming.length>0&&<button className="btn btn-gold btn-sm">Pay Now →</button>}
+                    </div>
+                    {upcoming.length>0&&upcoming.map(c=><div key={c.id} className="tp-row"><span style={{fontSize:11}}>{c.category} — {c.desc}<div style={{fontSize:9,color:"#999"}}>Due {fmtD(c.dueDate)}</div></span><span style={{fontWeight:800,color:chargeStatus(c)==="pastdue"?"#c45c4a":"#5c4a3a"}}>${c.amount.toLocaleString()}</span></div>)}
+                    {recentPaid.length>0&&<><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginTop:8,marginBottom:4}}>Recent Payments</div>
+                      {recentPaid.map(c=><div key={c.id} className="tp-row"><span style={{fontSize:11,color:"#4a7c59"}}>✓ {c.category}<div style={{fontSize:9,color:"#999"}}>{fmtD(c.dueDate)}</div></span><span style={{fontWeight:700,color:"#4a7c59"}}>${c.amount.toLocaleString()}</span></div>)}</>}
+                    {tCharges.length===0&&<div style={{fontSize:12,color:"#999",textAlign:"center",padding:8}}>No charges on file yet. Rent invoices appear here on the 20th of each month.</div>}
+                  </>);
+                })()}
+              </div>
+
+              <div className="tp-card" style={{marginTop:10}}>
+                <h3>🔧 Open Maintenance Requests</h3>
+                {tMaint.filter(x=>x.status!=="resolved").length===0
+                  ?<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>✓ No open requests</div>
+                  :tMaint.filter(x=>x.status!=="resolved").map(r=><div key={r.id} className="tp-row">
+                    <span style={{fontSize:11}}>{r.title}<div style={{fontSize:9,color:"#999"}}>Submitted {fmtD(r.created)}</div></span>
+                    <span className={`badge ${r.status==="open"?"b-red":r.status==="in-progress"?"b-gold":"b-green"}`}>{r.status}</span>
+                  </div>)}
+                <button className="btn btn-out btn-sm" style={{marginTop:8,width:"100%"}} onClick={()=>setPortalTab("maintenance")}>Submit New Request →</button>
+              </div>
+            </div>}
+
+            {/* ── PAYMENTS ── */}
+            {portalTab==="payments"&&<div style={{padding:18}}>
+              <div className="tp-card">
+                <h3>💳 Payment History</h3>
+                <div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginBottom:12,fontSize:12,color:"#9a7422"}}>
+                  💡 Rent is due on the <strong>1st of each month</strong>. A $50 late fee applies after the 3rd. You'll receive an invoice on the 20th of the prior month.
+                </div>
+                {tCharges.length===0&&<div style={{textAlign:"center",padding:16,color:"#999",fontSize:12}}>No charge history yet.</div>}
+                {tCharges.map(c=>{const st=chargeStatus(c);return(
+                  <div key={c.id} style={{padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600}}>{c.category} — {c.desc}</div>
+                      <div style={{fontSize:9,color:"#999",marginTop:1}}>Due {fmtD(c.dueDate)}</div>
+                      {c.payments&&c.payments.length>0&&<div style={{fontSize:9,color:"#4a7c59"}}>✓ Paid {fmtD(c.payments[c.payments.length-1].date)} via {c.payments[c.payments.length-1].method}</div>}
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:14,fontWeight:800}}>${c.amount.toLocaleString()}</div>
+                      <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="partial"?"b-gold":"b-gray"}`}>{st}</span>
+                    </div>
+                  </div>
+                );})}
+                <div style={{marginTop:14,background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#5c4a3a"}}>
+                  <strong>Payment Methods Accepted:</strong> Zelle, Venmo, CashApp, Check, or ACH (coming soon via Stripe).<br/>
+                  Send to: <strong>blackbearhousing@gmail.com</strong>
+                </div>
+              </div>
+            </div>}
+
+            {/* ── MAINTENANCE ── */}
+            {portalTab==="maintenance"&&<div style={{padding:18}}>
+              <div className="tp-card" style={{marginBottom:10}}>
+                <h3>🔧 Submit a Maintenance Request</h3>
+                {maintForm.submitted
+                  ?<div style={{background:"rgba(74,124,89,.08)",borderRadius:8,padding:14,textAlign:"center"}}>
+                    <div style={{fontSize:24,marginBottom:4}}>✅</div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#4a7c59"}}>Request Submitted!</div>
+                    <div style={{fontSize:11,color:"#999",marginTop:4}}>We typically respond within 24–48 hours.</div>
+                    <button className="btn btn-out btn-sm" style={{marginTop:10}} onClick={()=>setMaintForm({title:"",desc:"",priority:"medium",submitted:false})}>Submit Another</button>
+                  </div>
+                  :<div>
+                    <div className="fld"><label>Issue Title *</label><input placeholder="e.g. Faucet dripping, Heater not working..." value={maintForm.title} onChange={e=>setMaintForm(p=>({...p,title:e.target.value}))}/></div>
+                    <div className="fld"><label>Description</label><textarea placeholder="Please describe the issue in detail. When did it start? How bad is it?" value={maintForm.desc} onChange={e=>setMaintForm(p=>({...p,desc:e.target.value}))} rows={3}/></div>
+                    <div className="fld"><label>Priority</label>
+                      <div style={{display:"flex",gap:6}}>
+                        {[["low","🟢 Low — not urgent"],["medium","🟡 Medium — soon"],["high","🔴 High — urgent"]].map(([v,l])=>(
+                          <button key={v} className={`btn btn-sm ${maintForm.priority===v?"btn-dk":"btn-out"}`} style={{fontSize:9,flex:1}} onClick={()=>setMaintForm(p=>({...p,priority:v}))}>{l}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <button className="btn btn-gold" style={{width:"100%",marginTop:4}} disabled={!maintForm.title.trim()} onClick={submitMaint}>Submit Request</button>
+                    <div style={{fontSize:9,color:"#999",textAlign:"center",marginTop:6}}>You'll receive a confirmation email when we acknowledge your request.</div>
+                  </div>}
+              </div>
+
+              <div className="tp-card">
+                <h3>📋 Your Request History</h3>
+                {tMaint.length===0&&<div style={{fontSize:12,color:"#999",textAlign:"center",padding:8}}>No requests on file.</div>}
+                {tMaint.map(r=>(
+                  <div key={r.id} style={{padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600}}>{r.title}</div>
+                      <div style={{fontSize:10,color:"#999"}}>{r.desc}</div>
+                      <div style={{fontSize:9,color:"#999",marginTop:2}}>Submitted {fmtD(r.created)}</div>
+                    </div>
+                    <span className={`badge ${r.status==="resolved"?"b-green":r.status==="in-progress"?"b-gold":"b-red"}`}>{r.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>}
+
+            {/* ── HOUSE RULES ── */}
+            {portalTab==="rules"&&<div style={{padding:18}}>
+              <div className="tp-card" style={{marginBottom:10}}>
+                <h3>📋 House Standards</h3>
+                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10}}>By living here, you've agreed to these standards. They exist to keep everyone comfortable and the home in great shape.</div>
+                {houseRules.map((r,i)=><div key={i} style={{display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.03)",alignItems:"flex-start"}}>
+                  <span style={{fontSize:18,flexShrink:0}}>{r.icon}</span>
+                  <span style={{fontSize:12,color:"#3c3228",lineHeight:1.5}}>{r.rule}</span>
+                </div>)}
+              </div>
+              <div className="tp-card">
+                <h3>📞 Contact & Emergency</h3>
+                {[
+                  ["Property Manager","Harrison Cooper"],
+                  ["Email","blackbearhousing@gmail.com"],
+                  ["Emergency Maintenance","(256) 555-0192"],
+                  ["After Hours","Text first, call if urgent"],
+                  ["Non-Emergency Tip","For non-urgent items, use the Maintenance tab above"],
+                ].map(([l,v])=><div key={l} className="tp-row"><span className="tp-label">{l}</span><span style={{fontSize:12,fontWeight:600}}>{v}</span></div>)}
+              </div>
+            </div>}
+
+          </div>}
+        </>);
+      })()}
 
       {/* ═══ PAYMENTS ═══ */}
       {tab==="payments"&&(()=>{
@@ -990,9 +1211,29 @@ export default function Page(){
         const moveApp=(id,ns)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));};
         const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
         const scoreApp=(a)=>{let s=50;if(a.income){const n=parseInt(String(a.income).replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(a.bgCheck==="passed")s+=15;if(a.creditScore&&a.creditScore!=="—"){const c=parseInt(a.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(a.refs==="verified")s+=10;return Math.min(s,100);};
-        const activeApps=apps.filter(a=>a.status!=="denied"&&(appSearch?[a.name,a.email,a.phone,a.property,a.source].some(v=>(v||"").toLowerCase().includes(appSearch.toLowerCase())):true));
+        const activeApps=apps.filter(a=>{
+          if(a.status==="denied")return false;
+          if(appSearch&&![a.name,a.email,a.phone,a.property,a.source].some(v=>(v||"").toLowerCase().includes(appSearch.toLowerCase())))return false;
+          if(appView==="thisMonth"&&a.submitted){const sm=a.submitted.slice(0,7);const cm=TODAY.toISOString().slice(0,7);if(sm!==cm)return false;}
+          if(appView==="lastMonth"&&a.submitted){const sm=a.submitted.slice(0,7);const pm=new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1);const lm=pm.getFullYear()+"-"+(pm.getMonth()+1).toString().padStart(2,"0");if(sm!==lm)return false;}
+          return true;
+        });
         const deniedApps=apps.filter(a=>a.status==="denied");
         const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in"].includes(a.status));
+        // Duplicate / returning detection
+        const allTenantsList=props.flatMap(p=>p.rooms.filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
+        const archiveList=archive.map(a=>({name:a.name||"",email:a.email||"",phone:a.phone||"",propName:a.propName,roomName:a.roomName,reason:a.reason,type:"past"}));
+        const getFlags=(a)=>{
+          const flags=[];
+          var nm=(a.name||"").toLowerCase(),em=(a.email||"").toLowerCase(),ph=a.phone||"";
+          // Check current tenants
+          allTenantsList.forEach(t=>{if((t.name&&nm&&t.name.toLowerCase()===nm)||(t.email&&em&&t.email.toLowerCase()===em)||(t.phone&&ph&&t.phone===ph))flags.push({type:"current",label:"Current tenant at "+t.propName,data:t});});
+          // Check archive
+          archiveList.forEach(t=>{if((t.name&&nm&&t.name.toLowerCase()===nm)||(t.email&&em&&t.email.toLowerCase()===em)||(t.phone&&ph&&t.phone===ph))flags.push({type:"past",label:"Past tenant — "+t.propName+(t.reason?" ("+t.reason+")":""),data:t});});
+          // Check other apps
+          apps.filter(x=>x.id!==a.id).forEach(x=>{if((x.name&&nm&&x.name.toLowerCase()===nm)||(x.email&&em&&x.email.toLowerCase()===em)||(x.phone&&ph&&x.phone===ph))flags.push({type:"dup",label:"Duplicate — also "+x.status,data:x});});
+          return flags;
+        };
         const DEF_APP_FIELDS=[
           {id:uid(),label:"Full Legal Name",type:"text",section:"Personal",required:true,active:true},
           {id:uid(),label:"Date of Birth",type:"date",section:"Personal",required:true,active:true},
@@ -1025,30 +1266,30 @@ export default function Page(){
         </div>
         <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
           <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search applicants..." style={{flex:1,minWidth:160,padding:"8px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-          {["pipeline","list"].map(v=><button key={v} className={`btn ${appView===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(v)}>{v==="pipeline"?"📋 Pipeline":"📝 List"}</button>)}
+          {[{v:"pipeline",l:"📋 Pipeline"},{v:"list",l:"📝 List"},{v:"thisMonth",l:"This Month"},{v:"lastMonth",l:"Last Month"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
         </div>
 
         {/* Pipeline */}
-        {appView==="pipeline"&&<div className="pipeline" style={{gridTemplateColumns:"repeat(7,1fr)"}}>
-          {STAGES.map((stage,si)=>{const sa=activeApps.filter(a=>a.status===stage);return(
+        {(appView==="pipeline"||appView==="thisMonth"||appView==="lastMonth")&&<div className="pipeline" style={{gridTemplateColumns:"repeat(7,1fr)"}}>
+          {STAGES.map(function(stage,si){var sa=activeApps.filter(function(a){return a.status===stage;});return(
             <div key={stage} className="pipe-col">
               <div className="pipe-hd"><h4 style={{fontSize:10}}>{SI2[stage]} {SL[stage]}</h4><span className="pipe-cnt">{sa.length}</span></div>
-              <div className="pipe-bd">{sa.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const sc=scoreApp(a);const d=daysSince(a.lastContact||a.submitted);return(
-                <div key={a.id} className="pipe-card" style={{borderLeft:"3px solid "+(sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a")}}>
-                  <div style={{display:"flex",justifyContent:"space-between"}}><div className="pipe-nm" style={{fontSize:10}}>{a.name}</div><span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 4px",borderRadius:3}}>{sc}</span></div>
-                  <div className="pipe-sub" style={{fontSize:8}}>{a.property||"No pref"}{d>0?<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999"}}> · {d}d</span>:""}</div>
-                  <div style={{display:"flex",gap:2,marginTop:4}}>
-                    {si>0&&<button className="btn btn-out btn-sm" style={{fontSize:7,flex:1,padding:"3px"}} onClick={e=>{e.stopPropagation();moveApp(a.id,STAGES[si-1]);}}>←</button>}
-                    <button className="btn btn-green btn-sm" style={{fontSize:7,flex:2,padding:"3px"}} onClick={e=>{e.stopPropagation();if(si<6)moveApp(a.id,STAGES[si+1]);}}>{si<6?"→ "+SL[STAGES[si+1]].split(" ")[0]:"✓"}</button>
-                  </div>
-                  <div style={{display:"flex",gap:2,marginTop:2}}>
-                    <button className="btn btn-out btn-sm" style={{fontSize:7,flex:1,padding:"3px"}} onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>Open</button>
-                    {(stage==="pre-screened"||stage==="called")&&<button className="btn btn-dk btn-sm" style={{fontSize:7,flex:1,padding:"3px"}} onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>✉️</button>}
-                    <button className="btn btn-out btn-sm" style={{fontSize:7,padding:"3px",color:"#c45c4a"}} onClick={e=>{e.stopPropagation();setModal({type:"denyApp",appId:a.id,reason:""});}}>✕</button>
-                  </div>
-                </div>);})}
-              {sa.length===0&&<div style={{textAlign:"center",padding:12,color:"#ccc",fontSize:9}}>Empty</div>}
-            </div>);})}
+              <div className="pipe-bd">
+                {sa.sort(function(a,b){return scoreApp(b)-scoreApp(a);}).map(function(a){var sc=scoreApp(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);return(
+                  <div key={a.id} className="pipe-card" style={{borderLeft:sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",cursor:"pointer"}} onClick={function(){setModal({type:"app",data:a});}}>
+                    {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600}}>{flags[0].type==="current"?"⚠️ Current Tenant":flags[0].type==="past"?"🔄 Returning":"⚠️ Duplicate"}</div>}
+                    <div style={{display:"flex",justifyContent:"space-between"}}><div className="pipe-nm" style={{fontSize:10}}>{a.name}</div><span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 4px",borderRadius:3}}>{sc}</span></div>
+                    <div className="pipe-sub" style={{fontSize:8}}>{a.property||"—"}{a.room?" · "+a.room:""}</div>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:"#999",marginTop:2}}>
+                      <span>{a.source||""}</span>
+                      {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:600}}>{d}d</span>}
+                    </div>
+                  </div>);
+                })}
+                {sa.length===0&&<div style={{textAlign:"center",padding:12,color:"#ccc",fontSize:9}}>Empty</div>}
+              </div>
+            </div>);
+          })}
         </div>}
 
         {/* List */}
@@ -1056,7 +1297,7 @@ export default function Page(){
           {activeApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const sc=scoreApp(a);const d=daysSince(a.lastContact||a.submitted);return(
             <tr key={a.id} style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}><td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
               <td><span style={{fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a"}}>{sc}</span></td>
-              <td><span className={"badge "+SC2[a.status]}>{SL[a.status]}</span></td>
+              <td><span className={`badge ${SC2[a.status]}`}>{SL[a.status]}</span></td>
               <td style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:600}}>{d}d</td>
               <td style={{fontSize:10}}>{a.source||"—"}</td></tr>);})}
         </tbody></table></div></div>}
@@ -1065,6 +1306,54 @@ export default function Page(){
         {deniedApps.length>0&&<div style={{marginTop:14}}><div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:6}}>DENIED ({deniedApps.length})</div>
           {deniedApps.map(a=><div key={a.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · {fmtD(a.deniedDate)}{a.deniedReason?" · "+a.deniedReason:""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:x.prevStage||"pre-screened",deniedReason:null,deniedDate:null}:x))}>Restore</button></div>)}
         </div>}
+
+        {/* ── Source Analytics ── */}
+        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,sourceAnalytics:!p.sourceAnalytics}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.sourceAnalytics?"▼":"▶"}</span><div style={{fontSize:13,fontWeight:700}}>📊 Lead Source Analytics</div></div>
+          </div>
+          {expanded.sourceAnalytics&&<div style={{padding:16,background:"#fff"}}><table className="tbl"><thead><tr><th>Source</th><th>Leads</th><th>Active</th><th>Approved</th><th>Denied</th><th>Conv %</th></tr></thead><tbody>
+            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const all=apps.filter(a=>(a.source||"Unknown")===src);const active=all.filter(a=>a.status!=="denied");const approved=all.filter(a=>["approved","move-in"].includes(a.status));const denied=all.filter(a=>a.status==="denied");const rate=all.length?Math.round(approved.length/all.length*100):0;return(
+              <tr key={src}><td style={{fontWeight:600}}>{src}</td><td>{all.length}</td><td>{active.length}</td><td style={{color:approved.length?"#4a7c59":"#999"}}>{approved.length}</td><td style={{color:denied.length?"#c45c4a":"#999"}}>{denied.length}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>);})}
+          </tbody></table></div>}
+        </div>
+
+        {/* ── Waitlist ── */}
+        {(()=>{const totalVacant=props.reduce((s,p)=>s+p.rooms.filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status));
+          if(totalVacant===0&&waitlistApps.length>0)return(
+            <div style={{marginTop:8,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:14,background:"rgba(212,168,83,.03)"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#9a7422",marginBottom:8}}>📋 Waitlist — No Vacant Rooms</div>
+              <div style={{fontSize:10,color:"#999",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
+              {waitlistApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>({scoreApp(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
+            </div>);
+          return null;})()}
+
+        {/* ── Source Analytics ── */}
+        <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,sourceAnalytics:!p.sourceAnalytics}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.sourceAnalytics?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📊 Source Analytics</div><div style={{fontSize:9,color:"#999"}}>Which channels are converting</div></div></div>
+          </div>
+          {expanded.sourceAnalytics&&<div style={{padding:0}}>
+            <table className="tbl"><thead><tr><th>Source</th><th>Leads</th><th>In Pipeline</th><th>Approved</th><th>Denied</th><th>Conv %</th></tr></thead><tbody>
+            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const sa=apps.filter(a=>(a.source||"Unknown")===src);const inPipe=sa.filter(a=>a.status!=="denied"&&a.status!=="approved"&&a.status!=="move-in").length;const approved=sa.filter(a=>a.status==="approved"||a.status==="move-in").length;const denied=sa.filter(a=>a.status==="denied").length;const rate=sa.length?Math.round(approved/sa.length*100):0;return(
+              <tr key={src}><td style={{fontWeight:600}}>{src}</td><td>{sa.length}</td><td>{inPipe}</td><td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td><td style={{color:denied?"#c45c4a":"#999"}}>{denied}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>);})}
+            </tbody></table>
+          </div>}
+        </div>
+
+        {/* ── Waitlist ── */}
+        {(()=>{const totalVacant=props.reduce((s,p)=>s+p.rooms.filter(r=>r.st==="vacant").length,0);
+          if(totalVacant>0)return null;
+          const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status)).sort((a,b)=>scoreApp(b)-scoreApp(a));
+          return waitlistApps.length>0?<div style={{marginTop:16,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:16,background:"rgba(212,168,83,.03)"}}>
+            <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>📋 Waitlist — No Vacancies</div>
+            <div style={{fontSize:10,color:"#999",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
+            {waitlistApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
+              <div style={{width:20,fontSize:11,fontWeight:700,color:"#d4a853"}}>#{i+1}</div>
+              <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>Score: {scoreApp(a)}</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div>
+            </div>)}
+          </div>:null;
+        })()}
 
         {/* ── Screening Questions Editor ── */}
         <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
@@ -2038,30 +2327,103 @@ export default function Page(){
     </div></div>);})()}
   {/* Invite to Apply Modal */}
   {modal&&modal.type==="inviteApp"&&(()=>{const a=modal.data;
-    const reqs=["Background Check","Credit Check","Income Verification","References","Photo ID","Proof of Income"];
-    const waived=modal.waived||[];
-    const toggleReq=r=>{const w=waived.includes(r)?waived.filter(x=>x!==r):[...waived,r];setModal(prev=>({...prev,waived:w}));};
-    const selFields=(modal.selFields||appFields.filter(f=>f.active).map(f=>f.id));
+    const reqList=[["bgCheck","Background Check"],["creditCheck","Credit Check"],["incomeAnalysis","Income Analysis (RentPrep)"],["incomeVerify","Income Verification"],["refCheck","Reference Check"],["idVerify","ID Verification"],["proofOfIncome","Proof of Income Upload"]];
+    const reqs=modal.reqs||{};const roomMode=modal.roomMode||"locked";
+    const selPropId=modal.selPropId||(()=>{const mp=props.find(p=>p.name===a.property);return mp?mp.id:"";})();
+    const selProp=props.find(p=>p.id===selPropId);const availRooms=selProp?selProp.rooms.filter(r=>r.st==="vacant"):[];
+    const selRoomId=modal.selRoomId||"";const selRoom=availRooms.find(r=>r.id===selRoomId);
+    const anyWaived=reqList.some(([k])=>reqs[k]===false);
+    const baseFee=reqs.incomeAnalysis!==false?45:0;const procFee=(reqs.bgCheck!==false||reqs.creditCheck!==false||reqs.incomeAnalysis!==false)?10:0;const totalFee=baseFee+procFee;
+    const doShake=()=>{const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .6s ease";}};
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
       <h2>Invite {a.name} to Apply</h2>
-      <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}><strong>{a.email}</strong> · {a.phone} · {a.property||"No preference"}</div>
-      <div className="tp-card"><h3>Requirements</h3><p style={{fontSize:10,color:"#999",marginBottom:8}}>Uncheck any you want to waive for this applicant.</p>
-        {reqs.map(r=><label key={r} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:12,cursor:"pointer"}}><input type="checkbox" checked={!waived.includes(r)} onChange={()=>toggleReq(r)}/><span style={{textDecoration:waived.includes(r)?"line-through":"none",color:waived.includes(r)?"#999":"inherit"}}>{r}</span></label>)}
+      <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}><strong>{a.email}</strong> · {a.phone}</div>
+
+      <div className="tp-card"><h3>🏠 Room Assignment</h3>
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          <button className={`btn ${roomMode==="locked"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"locked"}))}>Lock to room</button>
+          <button className={`btn ${roomMode==="choice"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"choice"}))}>Let tenant choose</button>
+        </div>
+        {roomMode==="locked"&&<div className="fr">
+          <div className="fld"><label>Property</label><select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,selRoomId:""}))} style={{width:"100%"}}><option value="">Select...</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+          <div className="fld"><label>Room</label><select value={selRoomId} onChange={e=>setModal(prev=>({...prev,selRoomId:e.target.value}))} style={{width:"100%"}}><option value="">Select...</option>{availRooms.map(r=><option key={r.id} value={r.id}>{r.name} — {fmtS(r.rent)}/mo</option>)}</select></div>
+        </div>}
+        {roomMode==="choice"&&<p style={{fontSize:10,color:"#999"}}>Tenant will see available rooms and pick which one they want.</p>}
       </div>
-      {waived.length>0&&<div className="fld"><label>Waiver Reason (required)</label><input value={modal.waiverReason||""} onChange={e=>setModal(prev=>({...prev,waiverReason:e.target.value}))} placeholder="e.g. NASA intern with security clearance..."/></div>}
-      <div className="tp-card"><h3>Application Fields ({appFields.filter(f=>f.active).length} active)</h3>
-        <div style={{fontSize:10,color:"#999",marginBottom:6}}>These fields will be on their application form. Edit in the fields editor below.</div>
-        <div style={{maxHeight:120,overflowY:"auto"}}>{appFields.filter(f=>f.active).map(f=><div key={f.id} style={{fontSize:10,padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.02)"}}>✓ {f.label} <span style={{color:"#999"}}>({f.type})</span></div>)}</div>
+
+      <div className="tp-card"><h3>📋 Requirements</h3>
+        {reqList.map(([k,l])=><label key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:12,cursor:"pointer",opacity:reqs[k]===false?0.5:1,textDecoration:reqs[k]===false?"line-through":"none"}}><input type="checkbox" checked={reqs[k]!==false} onChange={e=>setModal(prev=>({...prev,reqs:{...reqs,[k]:e.target.checked}}))}/>{l}{k==="incomeAnalysis"&&reqs[k]!==false&&<span style={{fontSize:9,color:"#d4a853",fontWeight:600}}>$45 (tenant pays)</span>}</label>)}
       </div>
+
+      {totalFee>0&&<div className="tp-card" style={{background:"rgba(0,0,0,.02)"}}><h3>💳 Application Fee</h3>
+        <div style={{fontSize:11}}>
+          {reqs.incomeAnalysis!==false&&<div style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}><span>RentPrep BG / Credit / Income</span><span>${baseFee}</span></div>}
+          {procFee>0&&<div style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}><span>Black Bear processing</span><span>${procFee}</span></div>}
+          <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid rgba(0,0,0,.06)",fontWeight:700,marginTop:4}}><span>Total (tenant pays)</span><span>${totalFee}</span></div>
+        </div>
+      </div>}
+
+      {anyWaived&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:12,marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:6}}>Why are you waiving? (required)</div>
+        <textarea value={modal.waiverReason||""} onChange={e=>setModal(prev=>({...prev,waiverReason:e.target.value}))} placeholder="e.g. NASA intern with existing security clearance" style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit",resize:"vertical",minHeight:50}}/>
+      </div>}
+
+      {modal.sendErrors&&modal.sendErrors.length>0&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,padding:10,marginBottom:8,animation:"fadeIn .2s"}}>{modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:10,color:"#c45c4a",padding:"1px 0"}}>⚠ {e}</div>)}</div>}
+
       <div className="mft">
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-green" disabled={waived.length>0&&!(modal.waiverReason||"").trim()} onClick={()=>{
-          setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],waived,waiverReason:modal.waiverReason||"",history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:waived.length?"Waived: "+waived.join(", ")+" — "+(modal.waiverReason||""):""}]}:x));
-          setNotifs(p=>[{id:uid(),type:"app",msg:"Invite sent to "+a.name+" ("+a.email+")",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+        <button className="btn btn-green" onClick={()=>{
+          const errors=[];
+          if(roomMode==="locked"&&!selPropId)errors.push("Select a property");
+          if(roomMode==="locked"&&selPropId&&!selRoomId)errors.push("Select a room");
+          if(anyWaived&&!(modal.waiverReason||"").trim())errors.push("Provide a waiver reason");
+          if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return;}
+          const waived=reqList.filter(([k])=>reqs[k]===false).map(([,l])=>l);
+          setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],waived,waiverReason:modal.waiverReason||"",property:selProp?selProp.name:a.property,room:selRoom?selRoom.name:a.room,appFee:totalFee,history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:waived.length?"Waived: "+waived.join(", ")+" — "+(modal.waiverReason||""):""}]}:x));
+          setNotifs(p=>[{id:uid(),type:"app",msg:"Invite sent to "+a.name+" ("+a.email+")"+(totalFee?" · Fee: $"+totalFee:""),date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
           setModal(null);
-        }}>Send Invite</button>
+        }}>✉️ Send Invite</button>
       </div>
+    </div></div>);})()}
+
+  {/* Approval Confirmation Modal — double confirm + auto-charges */}
+  {modal&&modal.type==="approveConfirm"&&(()=>{const a=modal.data;
+    const incReqs=modal.incompleteReqs||[];
+    const targetProp=props.find(p=>p.name===a.property);
+    const targetRoom=targetProp?targetProp.rooms.find(r=>r.name===a.room):null;
+    const rent=targetRoom?targetRoom.rent:0;
+    const existingLeases=targetRoom&&targetRoom.st==="occupied"?[{tenant:(targetRoom.tenant&&targetRoom.tenant.name)||"Unknown",leaseEnd:targetRoom.le}]:[];
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
+      {!modal.confirmed?<>
+        <h2>Approve {a.name}?</h2>
+        {incReqs.length>0&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginBottom:12,fontSize:11,color:"#9a7422"}}>⚠️ <strong>Incomplete requirements:</strong> {incReqs.map(r=>r.label).join(", ")}<div style={{marginTop:4,fontSize:10}}>Are you sure you want to approve without completing these?</div></div>}
+        <div className="tp-card"><h3>Verify Details</h3>
+          <div className="tp-row"><span className="tp-label">Property</span><strong>{a.property||"—"}</strong></div>
+          <div className="tp-row"><span className="tp-label">Room</span><strong>{a.room||"—"}</strong></div>
+          <div className="tp-row"><span className="tp-label">Rent</span><strong>{rent?fmtS(rent)+"/mo":"—"}</strong></div>
+          <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)||"—"}</strong></div>
+          <div className="tp-row"><span className="tp-label">Income</span><strong>{a.income||"—"}</strong></div>
+        </div>
+        {existingLeases.length>0&&<div style={{background:"rgba(196,92,74,.06)",borderRadius:8,padding:10,marginBottom:10,fontSize:11,color:"#c45c4a"}}>⚠️ <strong>Lease overlap:</strong> {existingLeases[0].tenant} currently in this room (lease ends {fmtD(existingLeases[0].leaseEnd)})</div>}
+        <div style={{background:"rgba(74,124,89,.04)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#4a7c59"}}>✅ Approving will: send approval notification, generate 1st month rent charge ({fmtS(rent)}), generate security deposit charge ({fmtS(rent)})</div>
+        <div className="mft"><button className="btn btn-out" onClick={()=>setModal({type:"app",data:a})}>← Back</button><button className="btn btn-green" onClick={()=>setModal(prev=>({...prev,confirmed:true}))}>Yes, Approve →</button></div>
+      </>:<>
+        <h2 style={{textAlign:"center"}}>⚠️ Final Confirmation</h2>
+        <div style={{textAlign:"center",padding:16,fontSize:14,color:"#5c4a3a"}}>You are about to <strong>approve {a.name}</strong> for <strong>{a.room}</strong> at <strong>{a.property}</strong> at <strong>{fmtS(rent)}/mo</strong> starting <strong>{fmtD(a.moveIn)}</strong>.</div>
+        <div style={{textAlign:"center",fontSize:11,color:"#999",marginBottom:16}}>This will send an email/text notification and generate charges.</div>
+        <div className="mft"><button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,confirmed:false}))}>← Go Back</button><button className="btn btn-green" onClick={()=>{
+          const roomObj=targetRoom;const rent2=roomObj?roomObj.rent:0;
+          setApps(p=>p.map(x=>x.id===a.id?{...x,status:"approved",lastContact:TODAY.toISOString().split("T")[0],history:[...(x.history||[]),{from:"reviewing",to:"approved",date:TODAY.toISOString().split("T")[0]}]}:x));
+          if(rent2>0){setCharges(p=>[
+            {id:uid(),roomId:a.room,tenantName:a.name,category:"Rent",desc:"First Month Rent",amount:rent2,amountPaid:0,dueDate:a.moveIn||TODAY.toISOString().split("T")[0],payments:[],notes:"Auto-generated on approval"},
+            {id:uid(),roomId:a.room,tenantName:a.name,category:"Security Deposit",desc:"Security Deposit",amount:rent2,amountPaid:0,dueDate:a.moveIn||TODAY.toISOString().split("T")[0],payments:[],notes:"Auto-generated on approval"},
+            ...p]);}
+          setNotifs(p=>[{id:uid(),type:"app",msg:a.name+" approved for "+a.room+" at "+a.property+" — charges generated",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+          setModal(null);
+        }}>✅ Confirm & Approve</button></div>
+      </>}
     </div></div>);})()}
 
   {/* Deny Modal */}
@@ -2076,105 +2438,106 @@ export default function Page(){
 
   {modal&&modal.type==="app"&&(()=>{const a=modal.data;
     const STAGES=["pre-screened","called","invited","applied","reviewing","approved","move-in"];
-    const STAGE_LABELS={"pre-screened":"Pre-Screened","called":"Called","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
-    const STAGE_ICONS={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
+    const SL2={"pre-screened":"Pre-Screened","called":"Called","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
+    const SI3={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
     const si=STAGES.indexOf(a.status);
-    const scoreApp=(a)=>{let s=50;if(a.income){const n=parseInt((a.income+"").replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(a.bgCheck==="passed")s+=15;if(a.creditScore&&a.creditScore!=="—"){const c=parseInt(a.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(a.refs==="verified")s+=10;return Math.min(s,100);};
-    const score=scoreApp(a);
-    const daysSince=(d)=>{if(!d)return 0;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
-    const days=daysSince(a.lastContact||a.submitted);
+    const sc2=(x)=>{let s=50;if(x.income){const n=parseInt((x.income+"").replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(x.bgCheck==="passed")s+=15;if(x.creditScore&&x.creditScore!=="—"){const c=parseInt(x.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(x.refs==="verified")s+=10;return Math.min(s,100);};
+    const score=sc2(a);
+    const ds2=(d)=>{if(!d)return 0;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
+    const days=ds2(a.lastContact||a.submitted);
     const allVacant=props.flatMap(p=>p.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
     const targetProp=props.find(p=>p.name===a.property);
-    const targetRoom=(targetProp&&targetProp.rooms).find(r=>r.name===a.room&&r.st==="vacant");
+    const targetRoom=targetProp?targetProp.rooms.find(r=>r.name===a.room&&r.st==="vacant"):null;
+    const mf=[];var nm3=(a.name||"").toLowerCase();
+    archive.forEach(t=>{if(((t.name||"").toLowerCase()===nm3)||((t.email||"").toLowerCase()===(a.email||"").toLowerCase()))mf.push({type:"past",label:"🔄 Previously at "+(t.propName||"unknown")+(t.reason?" — "+t.reason:"")});});
+    apps.filter(x=>x.id!==a.id&&x.status==="denied").forEach(x=>{if(((x.name||"").toLowerCase()===nm3)||((x.email||"").toLowerCase()===(a.email||"").toLowerCase()))mf.push({type:"denied",label:"⚠️ Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});});
+    const reqs=[{key:"bgCheck",label:"Background Check"},{key:"creditScore",label:"Credit Check"},{key:"incomeVerified",label:"Income Verification"},{key:"refs",label:"References"},{key:"idVerified",label:"ID Verified"}];
+    const waived=a.waived||[];
+    const incompleteReqs=reqs.filter(r=>!waived.includes(r.label)&&a[r.key]!=="passed"&&a[r.key]!=="verified");
     const convertToTenant=(roomId,propId)=>{
-      const moveIn=a.moveIn||TODAY.toISOString().split("T")[0];
-      const leaseEnd=new Date(moveIn+"T00:00:00");leaseEnd.setFullYear(leaseEnd.getFullYear()+1);
-      setProps(p=>p.map(pr=>pr.id===propId?{...pr,rooms:pr.rooms.map(rm=>rm.id===roomId?{...rm,st:"occupied",le:leaseEnd.toISOString().split("T")[0],tenant:{name:a.name,email:a.email,phone:a.phone,moveIn}}:rm)}:pr));
-      setApps(p=>p.filter(x=>x.id!==a.id));
-      setNotifs(p=>[{id:uid(),type:"lease",msg:`${a.name} converted to tenant`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
-      setModal(null);
+      const mi=a.moveIn||TODAY.toISOString().split("T")[0];const le=new Date(mi+"T00:00:00");le.setFullYear(le.getFullYear()+1);
+      setProps(p=>p.map(pr=>pr.id===propId?{...pr,rooms:pr.rooms.map(rm=>rm.id===roomId?{...rm,st:"occupied",le:le.toISOString().split("T")[0],tenant:{name:a.name,email:a.email,phone:a.phone,moveIn:mi}}:rm)}:pr));
+      setApps(p=>p.filter(x=>x.id!==a.id));setNotifs(p=>[{id:uid(),type:"lease",msg:a.name+" converted to tenant",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);setModal(null);
     };
-    const reqs=[
-      {key:"bgCheck",label:"Background Check"},
-      {key:"creditScore",label:"Credit Check"},
-      {key:"incomeVerified",label:"Income Verification"},
-      {key:"refs",label:"References"},
-      {key:"idVerified",label:"ID Verified"},
-    ];
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
         <h2>{a.name}</h2>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <span style={{fontSize:11,fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a",background:score>=70?"rgba(74,124,89,.08)":score>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"3px 8px",borderRadius:5}}>Score: {score}</span>
-          {days>0&&<span style={{fontSize:10,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999"}}>{days}d ago</span>}
+          {days>0&&<span style={{fontSize:10,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999"}}>{days}d</span>}
         </div>
       </div>
-
-      {/* Progress bar */}
-      <div style={{display:"flex",gap:2,marginBottom:16}}>
-        {STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}>
-          <div style={{height:4,borderRadius:2,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:3,transition:"background .3s"}}/>
-          <div style={{fontSize:7,color:i<=si?"#d4a853":"#999"}}>{STAGE_ICONS[s]}</div>
-        </div>)}
-      </div>
-
-      {/* Info cards */}
-      <div className="tp-card"><h3>👤 Applicant</h3>
-        <div className="tp-row"><span className="tp-label">Email</span><strong>{a.email}</strong></div>
-        <div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone}</strong></div>
-        <div className="tp-row"><span className="tp-label">Income</span><strong>{a.income||"—"}</strong></div>
-        {a.source&&<div className="tp-row"><span className="tp-label">Source</span><strong>{a.source}</strong></div>}
-        {a.reason&&<div className="tp-row"><span className="tp-label">Why moving</span><strong>{a.reason}</strong></div>}
-      </div>
-      <div className="tp-card"><h3>🏠 Request</h3>
-        <div className="tp-row"><span className="tp-label">Property</span><strong>{a.property||"No preference"}</strong></div>
-        {a.room&&<div className="tp-row"><span className="tp-label">Room</span><strong>{a.room}</strong></div>}
-        <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)||"Flexible"}</strong></div>
-        <div className="tp-row"><span className="tp-label">Submitted</span><strong>{fmtD(a.submitted)}</strong></div>
-      </div>
-
-      {/* Requirements checklist */}
-      <div className="tp-card"><h3>📋 Requirements</h3>
-        {reqs.map(r=>{const val=a[r.key]||"not-started";const stColor=val==="passed"?"#4a7c59":val==="pending"?"#d4a853":val==="failed"?"#c45c4a":"#999";return(
-          <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}>
-            <span style={{fontSize:12}}>{r.label}</span>
-            <select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}} style={{padding:"3px 8px",borderRadius:5,border:`1px solid ${stColor}33`,fontSize:10,fontFamily:"inherit",color:stColor,fontWeight:600}}>
-              <option value="not-started">Not Started</option><option value="pending">Pending</option><option value="passed">Passed</option><option value="failed">Failed</option><option value="waived">Waived</option>
-            </select>
+      <div style={{display:"flex",gap:2,marginBottom:12}}>{STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}><div style={{height:4,borderRadius:2,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:2}}/><div style={{fontSize:7,color:i<=si?"#d4a853":"#999"}}>{SI3[s]}</div></div>)}</div>
+      {mf.length>0&&<div style={{marginBottom:10}}>{mf.map((f,i)=><div key={i} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,background:f.type==="denied"?"rgba(196,92,74,.06)":"rgba(212,168,83,.06)",color:f.type==="denied"?"#c45c4a":"#9a7422"}}>{f.label}</div>)}</div>}
+      <div className="tp-card"><h3>👤 Applicant</h3><div className="tp-row"><span className="tp-label">Email</span><strong>{a.email}</strong></div><div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone}</strong></div><div className="tp-row"><span className="tp-label">Income</span><strong>{a.income||"—"}</strong></div>{a.source&&<div className="tp-row"><span className="tp-label">Source</span><strong>{a.source}</strong></div>}</div>
+      <div className="tp-card"><h3>🏠 Request</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{a.property||"No preference"}</strong></div>{a.room&&<div className="tp-row"><span className="tp-label">Bedroom</span><strong>{a.room}</strong></div>}<div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)||"Flexible"}</strong></div></div>
+      {a.status==="reviewing"&&<div className="tp-card"><h3>📋 Review Checklist</h3>
+        {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"not-started";return(
+          <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1}}>
+            <span style={{fontSize:12,textDecoration:isW?"line-through":"none"}}>{r.label}{isW&&<span style={{fontSize:9,color:"#999",marginLeft:6}}>Waived</span>}</span>
+            {!isW&&<select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}} style={{padding:"3px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}}><option value="not-started">Not Started</option><option value="pending">In Progress</option><option value="passed">Passed</option><option value="failed">Failed</option></select>}
           </div>);})}
-      </div>
-
-      {/* Notes */}
-      <div className="tp-card"><h3>📝 Notes</h3>
-        <textarea value={a.notes||""} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,notes:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,notes:e.target.value}}));}} placeholder="Internal notes about this applicant..." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
-      </div>
-
-      {/* History */}
-      {(a.history||[]).length>0&&<div className="tp-card"><h3>📅 History</h3>
-        {(a.history||[]).slice(-5).reverse().map((h,i)=><div key={i} style={{fontSize:10,padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.02)",color:"#999"}}>
-          {fmtD(h.date)} — {h.from} → {h.to}{h.note?` · ${h.note}`:""}
-        </div>)}
+        {a.waiverReason&&<div style={{fontSize:10,color:"#999",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
+      </div>}
+      {(a.status==="approved"||a.status==="move-in")&&<div className="tp-card"><h3>📋 Summary</h3>{reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"—";return(<div key={r.key} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:11,opacity:isW?0.4:1}}><span style={{textDecoration:isW?"line-through":"none"}}>{r.label}</span><span style={{fontWeight:600,color:isW?"#999":val==="passed"||val==="verified"?"#4a7c59":"#d4a853"}}>{isW?"Waived":val}</span></div>);})}</div>}
+      {/* Roommate Compatibility */}
+      {a.property&&<div className="tp-card"><h3>🏠 Housemates at {a.property}</h3>
+        {(function(){var pr=props.find(function(p){return p.name===a.property;});if(!pr)return null;return pr.rooms.map(function(r){return(
+          <div key={r.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}>
+            <div><strong>{r.name}</strong>{" — "}{r.st==="occupied"&&r.tenant?(r.tenant.name||"Occupied"):<span style={{color:"#4a7c59",fontWeight:600}}>Vacant</span>}</div>
+            <div style={{color:"#999"}}>{fmtS(r.rent)}/mo</div>
+          </div>);});})()}
       </div>}
 
-      {/* Stage controls */}
+      {/* Communication Log */}
+      <div className="tp-card"><h3>📞 Comm Log</h3>
+        <div style={{display:"flex",gap:4,marginBottom:8}}>
+          {["Call","Text","Email","Note"].map(function(tp){return(
+            <button key={tp} className="btn btn-out btn-sm" style={{flex:1,fontSize:9}} onClick={function(){setModal(function(prev){return Object.assign({},prev,{showCommInput:tp,commText:""});});}}>{tp==="Call"?"📞":tp==="Text"?"💬":tp==="Email"?"✉️":"📝"}{" "+tp}</button>);})}
+        </div>
+        {modal.showCommInput&&<div style={{display:"flex",gap:4,marginBottom:8}}>
+          <input value={modal.commText||""} onChange={function(e){setModal(function(prev){return Object.assign({},prev,{commText:e.target.value});});}} placeholder={"Log this "+modal.showCommInput+"..."} style={{flex:1,padding:"6px 10px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}} autoFocus/>
+          <button className="btn btn-green btn-sm" disabled={!(modal.commText||"").trim()} onClick={function(){var log={type:modal.showCommInput,text:modal.commText,date:TODAY.toISOString().split("T")[0],time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})};setApps(function(p){return p.map(function(x){return x.id===a.id?Object.assign({},x,{commLog:[log].concat(x.commLog||[]),lastContact:TODAY.toISOString().split("T")[0]}):x;});});setModal(function(prev){return Object.assign({},prev,{showCommInput:null,commText:"",data:Object.assign({},prev.data,{commLog:[log].concat(prev.data.commLog||[]),lastContact:TODAY.toISOString().split("T")[0]})});});}}>Save</button>
+        </div>}
+        {(a.commLog||[]).length>0?<div style={{maxHeight:120,overflowY:"auto"}}>{(a.commLog||[]).map(function(c,i){return(
+          <div key={i} style={{display:"flex",gap:6,padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.02)",fontSize:10}}>
+            <span style={{width:20,textAlign:"center"}}>{c.type==="Call"?"📞":c.type==="Text"?"💬":c.type==="Email"?"✉️":"📝"}</span>
+            <div style={{flex:1}}><div style={{color:"#333"}}>{c.text}</div><div style={{color:"#999",fontSize:9}}>{c.date}{" "}{c.time}</div></div>
+          </div>);})}</div>:<div style={{fontSize:10,color:"#ccc",textAlign:"center",padding:8}}>No communication logged</div>}
+      </div>
+
+      <div className="tp-card"><h3>📝 Notes</h3><textarea value={a.notes||""} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,notes:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,notes:e.target.value}}));}} placeholder="Internal notes..." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
       <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
-        <select value={a.status} onChange={e=>{const ns=e.target.value;setApps(p=>p.map(x=>x.id===a.id?{...x,status:ns,lastContact:TODAY.toISOString().split("T")[0],history:[...(x.history||[]),{from:x.status,to:ns,date:TODAY.toISOString().split("T")[0]}]}:x));setModal(prev=>({...prev,data:{...prev.data,status:ns}}));}} style={{flex:1,padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontFamily:"inherit",fontSize:12}}>
-          {["pre-screened","called","invited","applied","reviewing","approved","move-in"].map(s=><option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
-        </select>
-        {a.status==="called"&&<button className="btn btn-dk" onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],history:[...(x.history||[]),{from:"called",to:"invited",date:TODAY.toISOString().split("T")[0]}]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"invited"}}));}}>✉️ Invite to Apply</button>}
+        {a.status==="pre-screened"&&<><button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"called",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(null);}}>📞 Mark as Called</button><button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>✉️ Invite</button></>}
+        {a.status==="called"&&<button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>✉️ Invite to Apply</button>}
+        {a.status==="invited"&&<div style={{flex:1,textAlign:"center",padding:"10px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:12,color:"#9a7422"}}>⏳ Waiting for {a.name} to submit...</div>}
+        {a.status==="applied"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"reviewing",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"reviewing"}}));}}>🔍 Start Review</button>}
+        {a.status==="reviewing"&&<>{incompleteReqs.length>0&&<div style={{width:"100%",padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:4}}>⚠️ {incompleteReqs.map(r=>r.label).join(", ")} still pending</div>}<button className="btn btn-green" style={{flex:1}} onClick={()=>{setModal({type:"approveConfirm",data:a,incomplete:incompleteReqs,step:incompleteReqs.length>0?1:2});}}>✅ Approve</button></>}
+        {a.status==="approved"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{if(targetRoom)convertToTenant(targetRoom.id,targetProp.id);else if(allVacant.length>0)alert("Requested room taken. Open Properties to assign.");else alert("No vacant rooms.");}}>🔑 Convert to Tenant</button>}
+        {a.status==="move-in"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.filter(x=>x.id!==a.id));setModal(null);}}>🏠 Finalize</button>}
         <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,reason:""})}>Deny</button>
       </div>
-
-      {/* Convert to Tenant */}
-      {(a.status==="approved"||a.status==="move-in")&&<div className="tp-card" style={{marginTop:12,borderColor:"rgba(74,124,89,.2)",background:"rgba(74,124,89,.03)"}}><h3>🔑 Convert to Tenant</h3>
-        <p style={{fontSize:11,color:"#5c4a3a",marginBottom:10}}>Assign a room and create the lease.</p>
-        {targetRoom?<button className="btn btn-green" style={{width:"100%"}} onClick={()=>convertToTenant(targetRoom.id,targetProp.id)}>Assign to {a.room} at {a.property} →</button>
-        :<>{allVacant.length>0?<div><div style={{fontSize:10,color:"#999",marginBottom:6}}>Choose a vacant room:</div>{allVacant.map(vr=><button key={vr.id} className="btn btn-out btn-sm" style={{marginRight:4,marginBottom:4}} onClick={()=>convertToTenant(vr.id,vr.propId)}>{vr.name} at {vr.propName} ({fmtS(vr.rent)})</button>)}</div>
-        :<div style={{fontSize:11,color:"#c45c4a"}}>No vacant rooms available.</div>}</>}
-      </div>}
-
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
+    </div></div>);})()}
+
+  {/* Approve Confirmation */}
+  {modal&&modal.type==="approveConfirm"&&(()=>{const a=modal.data;const inc=modal.incomplete||[];
+    const tp=props.find(p=>p.name===a.property);const rm=tp?tp.rooms.find(r=>r.name===a.room):null;const rent=rm?rm.rent:0;
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+      {modal.step===1&&<><h2>⚠️ Incomplete Requirements</h2>
+        <div style={{padding:12,background:"rgba(212,168,83,.06)",borderRadius:8,marginBottom:12}}><div style={{fontSize:12,fontWeight:600,color:"#9a7422",marginBottom:6}}>Still pending:</div>{inc.map(r=><div key={r.key} style={{fontSize:11,padding:"3px 0",color:"#9a7422"}}>• {r.label}</div>)}</div>
+        <p style={{fontSize:12,marginBottom:12}}>Approve anyway?</p>
+        <div className="mft"><button className="btn btn-out" onClick={()=>setModal({type:"app",data:a})}>← Back</button><button className="btn btn-gold" onClick={()=>setModal(prev=>({...prev,step:2}))}>Approve Anyway →</button></div></>}
+      {modal.step===2&&<><h2>✅ Confirm Approval</h2>
+        <div className="tp-card"><div className="tp-row"><span className="tp-label">Applicant</span><strong>{a.name}</strong></div><div className="tp-row"><span className="tp-label">Property</span><strong>{a.property}</strong></div><div className="tp-row"><span className="tp-label">Bedroom</span><strong>{a.room||"TBD"}</strong></div><div className="tp-row"><span className="tp-label">Rent</span><strong>{fmtS(rent)}/mo</strong></div><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">1st Month + SD</span><strong style={{color:"#4a7c59"}}>{fmtS(rent*2)}</strong></div></div>
+        <p style={{fontSize:11,color:"#5c4a3a",marginBottom:12}}>This will approve {a.name}, generate charges for 1st month ({fmtS(rent)}) + SD ({fmtS(rent)}), and notify them.</p>
+        <div className="mft"><button className="btn btn-out" onClick={()=>setModal({type:"app",data:a})}>← Back</button><button className="btn btn-green" onClick={()=>{
+          if(rent>0){setCharges(p=>[{id:uid(),roomId:rm?rm.id:"",tenantName:a.name,category:"Rent",desc:"First Month Rent",amount:rent,amountPaid:0,dueDate:a.moveIn||TODAY.toISOString().split("T")[0],payments:[],waived:false},{id:uid(),roomId:rm?rm.id:"",tenantName:a.name,category:"Security Deposit",desc:"Security Deposit",amount:rent,amountPaid:0,dueDate:a.moveIn||TODAY.toISOString().split("T")[0],payments:[],waived:false},...p]);}
+          setApps(p=>p.map(x=>x.id===a.id?{...x,status:"approved",lastContact:TODAY.toISOString().split("T")[0]}:x));
+          setNotifs(p=>[{id:uid(),type:"app",msg:a.name+" approved! Charges: "+fmtS(rent)+" rent + "+fmtS(rent)+" SD",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);setModal(null);
+        }}>✅ Confirm & Approve</button></div></>}
     </div></div>);})()}
 
   {modal&&modal.type==="archived"&&(()=>{const a=modal.data;const payMonths=Object.keys(a.payments||{});const totalPaid=Object.values(a.payments||{}).reduce((s,v)=>s+(typeof v==="object"?Object.values(v).reduce((ss,vv)=>ss+vv,0):v),0);
