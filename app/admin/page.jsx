@@ -1,6 +1,6 @@
 "use client";
 // ADMIN HQ — rentblackbear.com/admin
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
 
 // ─── Storage ────────────────────────────────────────────────────────
@@ -200,6 +200,13 @@ const S=`
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#f4f3f0;color:#1a1714}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes toastIn{from{opacity:0;transform:translateY(-30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}}
+.confetti-wrap{position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden}
+.confetti-piece{position:absolute;width:10px;height:10px;border-radius:2px;animation:confettiFall linear forwards}
+.lead-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9998;background:#1a1714;border:2px solid #d4a853;border-radius:14px;padding:20px 28px;box-shadow:0 12px 40px rgba(0,0,0,.4);animation:toastIn .4s ease-out;max-width:420px;width:90%}
+.lead-toast.out{animation:toastOut .3s ease-in forwards}
 
 /* Layout */
 .app{display:flex;height:100vh;overflow:hidden}
@@ -320,16 +327,63 @@ const S=`
 .st-pill{font-size:9px;font-weight:700;padding:3px 10px;border-radius:100px;display:inline-flex;align-items:center;gap:4px}
 
 /* Responsive */
+/* Tablet */
+@media(max-width:1024px){
+  .side{width:200px}.cnt{margin-left:200px}
+  .kgrid{grid-template-columns:1fr 1fr}
+  .pipeline{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));overflow-x:auto}
+  .fr3{grid-template-columns:1fr 1fr}
+}
+
+/* Phone */
 @media(max-width:768px){
-  .side{position:fixed;left:-240px;top:0;bottom:0;z-index:100;transition:left .25s;width:240px}
+  .side{position:fixed;left:-260px;top:0;bottom:0;z-index:100;transition:left .25s;width:260px;box-shadow:4px 0 24px rgba(0,0,0,.3)}
   .side.open{left:0}
   .mob-header{display:flex}
-  .kgrid{grid-template-columns:1fr 1fr}
-  .pipeline{grid-template-columns:1fr}
+  .cnt{margin-left:0;padding:14px}
+  .tbar{padding:10px 14px}
+  .tbar h1{font-size:18px}
+  .kgrid{grid-template-columns:1fr 1fr;gap:8px}
+  .kpi{padding:12px 10px}
+  .kv{font-size:22px}
+  .pipeline{grid-template-columns:1fr;gap:8px}
+  .pipe-col{min-width:unset}
   .acct-summary{grid-template-columns:1fr}
-  .cnt{padding:16px}
-  .tbar{padding:10px 16px}
   .fr,.fr3{grid-template-columns:1fr}
+  .sec-hd{flex-direction:column;gap:8px;align-items:flex-start}
+  .row{padding:10px 12px;gap:8px}
+  /* Tables scroll horizontally */
+  .tbl{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
+  .tbl thead,.tbl tbody,.tbl tr{display:table;width:100%;table-layout:auto}
+  .tbl th,.tbl td{padding:8px 10px;font-size:10px}
+  /* Modals slide up from bottom */
+  .mbg{align-items:flex-end}
+  .mbox{max-width:100%!important;width:100%;border-radius:16px 16px 0 0;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease-out}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .mft{flex-wrap:wrap}.mft button{flex:1;min-width:100px}
+  /* Forms */
+  .fld input,.fld select,.fld textarea{font-size:14px!important;padding:10px 12px}
+  .sform-row{grid-template-columns:1fr}
+  /* Payments tabs */
+  .pay-tab{padding:10px 12px;font-size:12px!important}
+  /* Charges inline expand */
+  .card-bd{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* Buttons */
+  .btn{padding:8px 14px;font-size:11px}
+  .btn-sm{padding:6px 10px;font-size:9px}
+  /* Filter rows */
+  select,input[type="date"]{font-size:12px!important;min-width:0}
+}
+
+/* Small phone */
+@media(max-width:420px){
+  .kgrid{grid-template-columns:1fr}
+  .kpi{padding:10px 8px}
+  .kv{font-size:20px}
+  .tbar h1{font-size:16px}
+  .cnt{padding:10px}
+  .pay-tab{padding:8px 6px;font-size:11px!important}
+  .btn{font-size:10px;padding:7px 10px}
 }
 `;
 
@@ -352,6 +406,10 @@ export default function Page(){
   const[appSearch,setAppSearch]=useState("");
   const[appView,setAppView]=useState("pipeline");
   const[bulkSel,setBulkSel]=useState([]);
+  const[showConfetti,setShowConfetti]=useState(false);
+  const[leadToast,setLeadToast]=useState(null);
+  const[toastDismissing,setToastDismissing]=useState(false);
+  const lastAppCountRef=useRef(0);
   const[maint,setMaint]=useState(DEF_MAINT);
   const[apps,setApps]=useState(DEF_APPS);
   const[docs,setDocs]=useState(DEF_DOCS);
@@ -500,6 +558,25 @@ export default function Page(){
   },[props,charges]);
   // Auto-run on load
   useEffect(()=>{if(loaded&&props.length>0){const t=setTimeout(()=>autoGenRentCharges(),500);return()=>clearTimeout(t);}},[loaded]);
+
+  // New lead detection — poll apps and trigger confetti + toast
+  useEffect(()=>{
+    if(!loaded)return;
+    if(lastAppCountRef.current===0){lastAppCountRef.current=apps.length;return;}
+    if(apps.length>lastAppCountRef.current){
+      const newest=apps[0];
+      setShowConfetti(true);
+      setLeadToast(newest);
+      setToastDismissing(false);
+      setTimeout(()=>setShowConfetti(false),8000);
+      setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
+    }
+    lastAppCountRef.current=apps.length;
+  },[apps.length,loaded]);
+
+  const dismissToast=()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);};
+  const viewNewLead=()=>{setTab("applications");setLeadToast(null);setShowConfetti(false);};
+
   const openRecordPay=()=>setModal({type:"recordPay",step:1,selRoom:"",selCharge:"",payAmount:0,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});
   const openCreateCharge=()=>setModal({type:"createCharge",roomId:"",category:"Rent",desc:"",amount:0,dueDate:TODAY.toISOString().split("T")[0],notes:""});
   // Backwards compat: openPayForm still works from existing buttons
@@ -538,7 +615,7 @@ export default function Page(){
 
   return(<><style>{S}</style><div className="app">
     {/* Mobile header */}
-    <div className="mob-header"><div className="s-logo">🐻 BB <span>HQ</span></div><button className="mob-toggle" onClick={()=>setSideOpen(!sideOpen)}>☰</button></div>
+    <div className="mob-header"><div style={{display:"flex",alignItems:"center",gap:8}}><div className="s-logo" style={{fontSize:16}}>🐻 BB <span>HQ</span></div><span style={{fontSize:11,color:"#c4a882"}}>· {(tabs.find(t=>t.id===tab)||{}).l}</span></div><button className="mob-toggle" onClick={()=>setSideOpen(!sideOpen)}>{sideOpen?"✕":"☰"}</button></div>
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
 
     {/* Sidebar */}
@@ -1884,6 +1961,24 @@ export default function Page(){
     </div></div>);})()}
 
   {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean||r.clean}});}}/>}
+
+  {/* Confetti */}
+  {showConfetti&&<div className="confetti-wrap">{Array.from({length:60}).map((_,i)=>{const colors=["#d4a853","#4a7c59","#f5f0e8","#c45c4a","#3b82f6"];return(
+    <div key={i} className="confetti-piece" style={{left:`${Math.random()*100}%`,background:colors[i%colors.length],width:Math.random()*8+6,height:Math.random()*8+6,borderRadius:Math.random()>0.5?"50%":"2px",animationDuration:`${Math.random()*2+2}s`,animationDelay:`${Math.random()*1.5}s`}}/>
+  );})}</div>}
+
+  {/* New Lead Toast */}
+  {leadToast&&<div className={`lead-toast ${toastDismissing?"out":""}`}>
+    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:"#d4a853",letterSpacing:1.5}}>🎉 NEW LEAD!</div></div>
+    <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:22,fontWeight:800,color:"#f5f0e8"}}>{leadToast.name}</div></div>
+    <div style={{display:"flex",justifyContent:"center",gap:16,fontSize:12,color:"#c4a882",marginBottom:14}}>
+      {leadToast.phone&&<span>📞 {leadToast.phone}</span>}
+      {leadToast.property&&<span>🏠 {leadToast.property}</span>}
+      {leadToast.source&&<span>📍 {leadToast.source}</span>}
+    </div>
+    <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>View Application →</button>
+    <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#666",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
+  </div>}
 
   </>);
 }
