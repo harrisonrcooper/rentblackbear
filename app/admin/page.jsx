@@ -609,7 +609,7 @@ export default function Page(){
     const genForMonth=(targetDate)=>{
       const mk=`${targetDate.getFullYear()}-${(targetDate.getMonth()+1).toString().padStart(2,"0")}`;
       const moLabel=targetDate.toLocaleString("default",{month:"long",year:"numeric"});
-      const existing=new Set(charges.filter(c=>c.category==="Rent"&&(c.dueDate&&c.dueDate.startsWith)(mk)).map(c=>c.roomId));
+      const existing=new Set(charges.filter(c=>c.category==="Rent"&&c.dueDate&&c.dueDate.startsWith(mk)).map(c=>c.roomId));
       props.forEach(pr=>pr.rooms.forEach(r=>{
         if(r.st==="occupied"&&r.tenant&&!existing.has(r.id)){
           const moveIn=r.tenant.moveIn?new Date(r.tenant.moveIn+"T00:00:00"):null;
@@ -902,8 +902,9 @@ export default function Page(){
                     </>}
                 </div>);
               })()}
+              <div className="tp-card" style={{marginTop:10}}>
+                <h3>💳 Payment Summary</h3>
                 {(()=>{
-                  const upcoming=tCharges.filter(c=>chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
                   const recentPaid=tCharges.filter(c=>chargeStatus(c)==="paid").slice(-3);
                   const totalDue=upcoming.reduce((s,c)=>s+c.amount,0);
                   return(<>
@@ -1491,10 +1492,10 @@ export default function Page(){
             </div>);
           return null;})()}
 
-        {/* ── Source Analytics ── */}
+        {/* ── Lead Source Analytics ── */}
         <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,sourceAnalytics:!p.sourceAnalytics}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.sourceAnalytics?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📊 Source Analytics</div><div style={{fontSize:9,color:"#999"}}>Which channels are converting</div></div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.sourceAnalytics?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📊 Lead Source Analytics</div><div style={{fontSize:9,color:"#999"}}>Which channels are converting</div></div></div>
           </div>
           {expanded.sourceAnalytics&&<div style={{padding:0}}>
             <table className="tbl"><thead><tr><th>Source</th><th>Leads</th><th>In Pipeline</th><th>Approved</th><th>Denied</th><th>Conv %</th></tr></thead><tbody>
@@ -2423,7 +2424,7 @@ export default function Page(){
                             const accruing=50+daysChargeable2*5;
                             return(<div>
                               <div style={{fontWeight:700,color:"#c45c4a",animation:"pulse 1.5s ease-in-out infinite"}}>{fmtS(accruing)}</div>
-                              <div style={{fontSize:9,color:"#c45c4a",opacity:.7}}>$50 + ${daysChargeable2*5} ({daysChargeable2}d × $5)</div>
+                              <div style={{fontSize:9,color:"#c45c4a",opacity:.7}}>$50 + {daysChargeable2*5} ({daysChargeable2}d × $5)</div>
                             </div>);
                           })()
                           :<span style={{color:"#ccc",fontSize:10}}>—</span>}
@@ -2520,7 +2521,7 @@ export default function Page(){
               {/* Rolling late fee accrual banner */}
               {accrued&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderTop:"none",borderRadius:"0 0 8px 8px",fontSize:11}}>
                 <div style={{color:"#c45c4a"}}>
-                  <span style={{fontWeight:700}}>⚠️ Late fee accruing:</span> ${accrued.initial} base + ${accrued.daily} ({accrued.daysChargeable}d × $5)
+                  <span style={{fontWeight:700}}>⚠️ Late fee accruing:</span> {accrued.initial} base + {accrued.daily} ({accrued.daysChargeable}d × $5)
                 </div>
                 <div style={{fontWeight:800,color:"#c45c4a",fontSize:13}}>{fmtS(accrued.total)}</div>
               </div>}
@@ -3341,7 +3342,7 @@ export default function Page(){
               noLateFee:true,// SD and move-in charges are exempt from late fees
               notes:"Auto-generated on approval."
             }));
-            setCharges(p=>[...newCharges,...p]);
+            setCharges(p=>{const updated=[...newCharges,...p];save("hq-charges",updated);return updated;});
             // Store passcode and lock activation details on the app record
             const passcode=a.passcode||null;
             const lockActivation=passcode?{
