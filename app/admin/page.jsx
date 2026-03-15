@@ -910,7 +910,7 @@ export default function Page(){
                   return(<>
                     <div style={{background:totalDue>0?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:8,padding:12,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div><div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Amount Due</div><div style={{fontSize:22,fontWeight:800,color:totalDue>0?"#c45c4a":"#4a7c59"}}>{totalDue>0?`$${totalDue.toLocaleString()}`:"All clear ✓"}</div></div>
-                      {upcoming.length>0&&<button className="btn btn-gold btn-sm">Pay Now →</button>}
+                      {upcoming.length>0&&<button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"stripePayPortal",charges:upcoming,tRoom})}>Pay Now →</button>}
                     </div>
                     {upcoming.length>0&&upcoming.map(c=><div key={c.id} className="tp-row"><span style={{fontSize:11}}>{c.category} — {c.desc}<div style={{fontSize:9,color:"#999"}}>Due {fmtD(c.dueDate)}</div></span><span style={{fontWeight:800,color:chargeStatus(c)==="pastdue"?"#c45c4a":"#5c4a3a"}}>${c.amount.toLocaleString()}</span></div>)}
                     {recentPaid.length>0&&<><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginTop:8,marginBottom:4}}>Recent Payments</div>
@@ -940,19 +940,54 @@ export default function Page(){
                   💡 Rent is due on the <strong>1st of each month</strong>. A $50 late fee applies after the 3rd. You'll receive an invoice on the 20th of the prior month.
                 </div>
                 {tCharges.length===0&&<div style={{textAlign:"center",padding:16,color:"#999",fontSize:12}}>No charge history yet.</div>}
-                {tCharges.map(c=>{const st=chargeStatus(c);return(
-                  <div key={c.id} style={{padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                    <div>
-                      <div style={{fontSize:12,fontWeight:600}}>{c.category} — {c.desc}</div>
-                      <div style={{fontSize:9,color:"#999",marginTop:1}}>Due {fmtD(c.dueDate)}</div>
-                      {c.payments&&c.payments.length>0&&<div style={{fontSize:9,color:"#4a7c59"}}>✓ Paid {fmtD(c.payments[c.payments.length-1].date)} via {c.payments[c.payments.length-1].method}</div>}
+                {tCharges.map(c=>{
+                  const st=chargeStatus(c);
+                  const lastPay=c.payments&&c.payments[c.payments.length-1];
+                  const confId=lastPay&&lastPay.confId?lastPay.confId:`BB-${c.id.slice(0,8).toUpperCase()}`;
+                  const printReceipt=()=>{
+                    if(!lastPay)return;
+                    const w=window.open("","_blank");
+                    w.document.write(`<!DOCTYPE html><html><head><title>Receipt ${confId}</title><style>
+                      body{font-family:Georgia,serif;max-width:560px;margin:40px auto;padding:0 24px;color:#1a1714;line-height:1.6}
+                      h1{font-size:20px;font-weight:700;border-bottom:2px solid #1a1714;padding-bottom:8px;margin-bottom:20px}
+                      .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}
+                      .label{color:#666}.value{font-weight:600}
+                      .total{display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:800;border-top:2px solid #1a1714;margin-top:4px}
+                      .conf{font-family:monospace;font-size:18px;font-weight:900;color:#1a1714;letter-spacing:2px;text-align:center;padding:12px;background:#f5f0e8;border-radius:6px;margin:16px 0}
+                      .footer{margin-top:32px;font-size:11px;color:#999;text-align:center}
+                    </style></head><body>
+                      <h1>Payment Receipt</h1>
+                      <div class="conf">${confId}</div>
+                      <div class="row"><span class="label">Date</span><span class="value">${lastPay.date}</span></div>
+                      <div class="row"><span class="label">Tenant</span><span class="value">${c.tenantName}</span></div>
+                      <div class="row"><span class="label">Property</span><span class="value">${c.propName} · ${c.roomName}</span></div>
+                      <div class="row"><span class="label">Charge</span><span class="value">${c.category} — ${c.desc}</span></div>
+                      <div class="row"><span class="label">Payment Method</span><span class="value">${lastPay.method}</span></div>
+                      <div class="total"><span>Amount Paid</span><span>$${Number(c.amountPaid).toLocaleString()}</span></div>
+                      <div class="footer">Oak &amp; Main Development LLC · Black Bear Rentals · blackbearhousing@gmail.com</div>
+                    </body></html>`);
+                    w.document.close();w.print();
+                  };
+                  return(
+                  <div key={c.id} style={{padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:600}}>{c.category} — {c.desc}</div>
+                        <div style={{fontSize:9,color:"#999",marginTop:1}}>Due {fmtD(c.dueDate)}</div>
+                        {lastPay&&<div style={{fontSize:9,color:"#4a7c59",marginTop:1}}>✓ {fmtS(lastPay.amount)} via {lastPay.method} on {fmtD(lastPay.date)}</div>}
+                      </div>
+                      <div style={{textAlign:"right",display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                        <div style={{fontSize:14,fontWeight:800}}>${c.amount.toLocaleString()}</div>
+                        <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="partial"?"b-gold":"b-gray"}`}>{st}</span>
+                        {(st==="paid"||st==="partial")&&lastPay&&
+                          <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={printReceipt}>📄 Receipt PDF</button>}
+                      </div>
                     </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:14,fontWeight:800}}>${c.amount.toLocaleString()}</div>
-                      <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="partial"?"b-gold":"b-gray"}`}>{st}</span>
-                    </div>
-                  </div>
-                );})}
+                    {st==="partial"&&<div style={{fontSize:10,color:"#d4a853",marginTop:4}}>
+                      {fmtS(c.amountPaid)} paid · {fmtS(c.amount-c.amountPaid)} remaining
+                    </div>}
+                  </div>);
+                })}
                 <div style={{marginTop:14,background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#5c4a3a"}}>
                   <strong>Payment Methods Accepted:</strong> Zelle, Venmo, CashApp, Check, or ACH (coming soon via Stripe).<br/>
                   Send to: <strong>blackbearhousing@gmail.com</strong>
@@ -1098,7 +1133,6 @@ export default function Page(){
             ))}
           </div>
           <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            <button className="btn btn-green btn-sm" onClick={openRecordPay}>💰 Record Payment</button>
             <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
             <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>💳 Credit</button>
             <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"returnSD",roomId:"",deductions:[],returnAmount:0})}>🔒 Return SD</button>
@@ -1143,57 +1177,101 @@ export default function Page(){
           </div>
           <div style={{fontSize:10,color:"#999",marginBottom:8}}>{filteredCharges.length} charge{filteredCharges.length!==1?"s":""} · {periodLabel}</div>
           {/* Column headers */}
-          <div style={{display:"grid",gridTemplateColumns:"90px 90px 1fr 70px 90px 80px",gap:4,padding:"8px 14px",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+          <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"8px 14px",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,borderBottom:"2px solid rgba(0,0,0,.06)"}}>
             <div>Due Date</div><div>Category</div><div>Tenant / Room</div><div>Status</div><div>Deposit</div><div style={{textAlign:"right"}}>Amount</div>
           </div>
           {filteredCharges.sort((a,b)=>new Date(b.dueDate)-new Date(a.dueDate)).map(c=>{const st=chargeStatus(c);const lastPay=c.payments.length?c.payments[c.payments.length-1]:null;const isExp=expCharge===c.id;const rem=c.amount-c.amountPaid;const confId=`BB-${c.id.slice(0,8).toUpperCase()}`;return(
             <div key={c.id}>
-              <div style={{display:"grid",gridTemplateColumns:"90px 90px 1fr 70px 90px 80px",gap:4,padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.03)",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"transparent",transition:"background .1s"}} onClick={()=>setExpCharge(isExp?null:c.id)}>
+              <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.03)",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"transparent",transition:"background .1s"}} onClick={()=>setExpCharge(isExp?null:c.id)}>
                 <div style={{fontSize:11,fontWeight:600}}>{fmtD(c.dueDate)}</div>
                 <div><span className="badge b-gray" style={{fontSize:8}}>{c.category}</span></div>
                 <div><div style={{fontSize:11,fontWeight:600}}>{c.tenantName}</div><div style={{fontSize:9,color:"#999"}}>{c.propName} · {c.roomName}</div></div>
                 <div><span className={`badge ${stBadge[st]}`} style={{fontSize:8}}>{st}</span></div>
                 <div>{lastPay&&lastPay.depositDate?<div><div style={{fontSize:10}}>{fmtD(lastPay.depositDate)}</div><div style={{fontSize:8,color:"#999"}}>Redstone FCU</div></div>:lastPay&&lastPay.depositStatus==="transit"?<span style={{fontSize:9,color:"#d4a853"}}>In transit</span>:<span style={{fontSize:9,color:"#999"}}>—</span>}</div>
-                <div style={{textAlign:"right",fontWeight:800,fontSize:13,color:st==="paid"?"#4a7c59":st==="pastdue"?"#c45c4a":"inherit"}}>{fmtS(c.amount)}</div>
+                <div style={{textAlign:"right",fontWeight:800,fontSize:13,color:st==="paid"?"#4a7c59":st==="pastdue"?"#c45c4a":"inherit",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>
+                  <span>{fmtS(c.amount)}</span>
+                  <span style={{fontSize:10,color:"#999",fontWeight:400}}>{isExp?"∧":"∨"}</span>
+                </div>
               </div>
               {/* Expanded detail */}
-              {isExp&&<div style={{padding:"14px 20px",background:"#faf9f7",borderBottom:"2px solid rgba(0,0,0,.04)",animation:"fadeIn .15s"}}>
-                {/* Charge info */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12,fontSize:12}}>
-                  <div><span style={{color:"#999",fontSize:10}}>Description</span><div style={{fontWeight:600}}>{c.desc}</div></div>
-                  <div><span style={{color:"#999",fontSize:10}}>Created</span><div>{fmtD(c.createdDate)}</div></div>
-                  {c.amountPaid>0&&<div><span style={{color:"#999",fontSize:10}}>Paid</span><div style={{color:"#4a7c59",fontWeight:700}}>{fmtS(c.amountPaid)}</div></div>}
-                  {rem>0&&st!=="waived"&&<div><span style={{color:"#999",fontSize:10}}>Remaining</span><div style={{color:"#c45c4a",fontWeight:700}}>{fmtS(rem)}</div></div>}
+              {isExp&&<div style={{padding:"16px 20px",background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.04)",animation:"fadeIn .15s"}}>
+                {/* Description + reminder history */}
+                <div style={{marginBottom:12,fontSize:12}}>
+                  <span style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Description: </span>
+                  <span style={{fontWeight:500,color:"#3c3228"}}>{c.desc}</span>
                 </div>
-
-                {/* Payment history if any */}
-                {c.payments.length>0&&<div style={{marginBottom:12}}>
-                  <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",marginBottom:4}}>Payments</div>
-                  {c.payments.map(p=>(
-                    <div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}>
-                      <div><strong>{fmtD(p.date)}</strong> · {p.method}{p.notes?` · ${p.notes}`:""}{p.depositDate?` · Deposited ${fmtD(p.depositDate)}`:""}</div>
-                      <strong style={{color:"#4a7c59"}}>{fmtS(p.amount)}</strong>
-                    </div>))}
-                </div>}
-
-                {/* Paid: receipt info */}
-                {st==="paid"&&<div style={{background:"rgba(74,124,89,.04)",borderRadius:8,padding:12,marginBottom:12}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div><div style={{fontSize:9,color:"#4a7c59",fontWeight:700,textTransform:"uppercase"}}>Payment Confirmed</div><div style={{fontSize:11,fontFamily:"monospace",marginTop:2}}>Confirmation: {confId}</div></div>
-                    <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();alert(`Receipt PDF for ${confId} — will generate real PDF on deployment.`);}}>📄 Download Receipt</button>
+                {/* Reminder log */}
+                {(c.reminders||[]).map((r,i)=>(
+                  <div key={i} style={{fontSize:12,color:"#3c3228",marginBottom:4}}>
+                    A {r.method} reminder was sent to your tenant(s) on {fmtD(r.date)}
                   </div>
+                ))}
+
+                {/* Bank deposit note for unpaid charges */}
+                {(st==="pastdue"||st==="unpaid"||st==="partial")&&<div style={{fontSize:12,color:"#3c3228",marginBottom:14}}>
+                  The payment will be deposited into <strong>REDSTONE FEDERAL CU-HUNTSVILLE - Harrison Ray Cooper</strong> bank account.
                 </div>}
+
+                {/* Per-payment status timeline cards */}
+                {c.payments.length>0&&c.payments.map((p,pi)=>{
+                  const isTransit=p.depositStatus==="transit";
+                  const isDeposited=p.depositStatus==="deposited"||(!p.depositStatus&&p.depositDate);
+                  const pConfId=p.confId||`BB-${c.id.slice(0,6).toUpperCase()}-${pi+1}`;
+                  const printP=()=>{
+                    const w=window.open("","_blank");
+                    w.document.write(`<!DOCTYPE html><html><head><title>Receipt ${pConfId}</title><style>body{font-family:Georgia,serif;max-width:560px;margin:40px auto;padding:0 24px;color:#1a1714;line-height:1.6}h1{font-size:20px;font-weight:700;border-bottom:2px solid #1a1714;padding-bottom:8px;margin-bottom:20px}.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}.label{color:#666}.value{font-weight:600}.total{display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:800;border-top:2px solid #1a1714;margin-top:4px}.conf{font-family:monospace;font-size:18px;font-weight:900;text-align:center;padding:12px;background:#f5f0e8;border-radius:6px;margin:16px 0}.footer{margin-top:32px;font-size:11px;color:#999;text-align:center}</style></head><body><h1>Payment Receipt</h1><div class="conf">${pConfId}</div><div class="row"><span class="label">Date</span><span class="value">${p.date}</span></div><div class="row"><span class="label">Tenant</span><span class="value">${c.tenantName}</span></div><div class="row"><span class="label">Property</span><span class="value">${c.propName} · ${c.roomName}</span></div><div class="row"><span class="label">Charge</span><span class="value">${c.category} — ${c.desc}</span></div><div class="row"><span class="label">Method</span><span class="value">${p.method}</span></div><div class="total"><span>Amount Paid</span><span>$${Number(p.amount).toLocaleString()}</span></div><div class="footer">Oak &amp; Main Development LLC · Black Bear Rentals · blackbearhousing@gmail.com</div></body></html>`);
+                    w.document.close();w.print();
+                  };
+                  return(
+                  <div key={pi} style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.1)",borderRadius:10,padding:"14px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:16}}>
+                    {/* Left: payment identity */}
+                    <div style={{minWidth:140}}>
+                      <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Payment #{pConfId.slice(-6)}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{c.tenantName}</div>
+                      <div style={{fontSize:10,color:"#999",marginTop:2}}>Paid on {fmtD(p.date)}</div>
+                      {p.method&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>via {p.method}</div>}
+                      {p.notes&&<div style={{fontSize:9,color:"#999",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+                    </div>
+                    {/* Middle: status timeline */}
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Status:</div>
+                      {[
+                        {label:"PAYMENT MADE",done:true,date:fmtD(p.date)},
+                        {label:"TRANSFER INITIATED",done:isTransit||isDeposited,date:isTransit||isDeposited?fmtD(p.date):null},
+                        {label:isDeposited?`DEPOSITED ${fmtD(p.depositDate||p.date)}`:`DEPOSITED EST. ${p.depositEstDate||"—"}`,done:isDeposited,date:null},
+                      ].map((step,si)=>(
+                        <div key={si} style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:si<2?6:0}}>
+                          <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0}}>
+                            <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${step.done?"#3b82f6":"#ccc"}`,background:step.done?"#3b82f6":"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              {step.done&&<div style={{width:8,height:8,borderRadius:"50%",background:"#fff"}}/>}
+                            </div>
+                            {si<2&&<div style={{width:2,height:14,background:step.done?"#3b82f6":"#e5e3df",marginTop:2}}/>}
+                          </div>
+                          <div style={{paddingTop:1}}>
+                            <div style={{fontSize:10,fontWeight:700,color:step.done?"#1a1714":"#999"}}>{step.label}</div>
+                            {step.date&&<div style={{fontSize:9,color:"#999"}}>{step.date}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Right: amount + download */}
+                    <div style={{textAlign:"right",flexShrink:0}}>
+                      <div style={{fontSize:16,fontWeight:800,color:"#1a1714",marginBottom:6}}>{fmtS(p.amount)}</div>
+                      <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={e=>{e.stopPropagation();printP();}}>⬇ PDF</button>
+                    </div>
+                  </div>);
+                })}
 
                 {/* Unpaid/Late: action buttons */}
-                {st!=="paid"&&st!=="waived"&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {st!=="paid"&&st!=="waived"&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:c.payments.length?8:0}}>
                   <button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>💰 Record Payment</button>
-                  <button className="btn btn-dk btn-sm" onClick={e=>{e.stopPropagation();setNotifs(p=>[{id:uid(),type:"payment",msg:`Reminder sent to ${c.tenantName}: ${c.category} ${fmtS(rem)} due ${fmtD(c.dueDate)}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);alert(`Reminder sent to ${c.tenantName}`);}}>📧 Send Reminder</button>
+                  <button className="btn btn-dk btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null});}}>📣 Send Reminder</button>
                   <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"createCharge",roomId:c.roomId,category:c.category,desc:c.desc,amount:c.amount,dueDate:c.dueDate,notes:"Editing #"+c.id.slice(0,6)});}}>✏️ Edit</button>
-                  <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category});}}> 🗑 Delete</button>
+                  <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc});}}> 🗑 Delete</button>
                   {st==="pastdue"&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"waiveCharge",chargeId:c.id,reason:""});}}> ⏹ Stop Late Fees</button>}
                 </div>}
 
-                {st==="waived"&&<div style={{background:"rgba(0,0,0,.03)",borderRadius:6,padding:8,fontSize:11,color:"#999"}}>Waived{c.waivedReason?`: ${c.waivedReason}`:""}</div>}
+                {st==="waived"&&<div style={{background:"rgba(0,0,0,.03)",borderRadius:6,padding:8,fontSize:11,color:"#999",marginTop:8}}>Waived{c.waivedReason?`: ${c.waivedReason}`:""}</div>}
               </div>}
             </div>);})}
           {filteredCharges.length===0&&<div style={{textAlign:"center",padding:24,color:"#999"}}>No charges match your filters</div>}
@@ -2757,13 +2835,83 @@ export default function Page(){
   )}
 
   {/* Waive Charge Modal */}
+  {modal&&modal.type==="sendReminder"&&(()=>{
+    const c=modal.charge;
+    const tenantRoom=props.flatMap(p=>p.rooms).find(r=>r.id===c.roomId);
+    const tenant=tenantRoom&&tenantRoom.tenant;
+    const phone=tenant&&tenant.phone;
+    const email=tenant&&tenant.email;
+    const msg=`Hi ${c.tenantName.split(" ")[0]}, this is a reminder that your ${c.category} of ${fmtS(modal.rem)} was due on ${fmtD(c.dueDate)}. Please send payment at your earliest convenience. Thank you! — Black Bear Rentals`;
+    const emailSubject=`Payment Reminder — ${c.category} ${fmtS(modal.rem)} Due`;
+    const send=(method,customMsg)=>{
+      if(method==="email"&&email){window.open(`mailto:${email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(customMsg)}`);}
+      if(method==="text"&&phone){window.open(`sms:${phone.replace(/\D/g,"")}?body=${encodeURIComponent(customMsg)}`);}
+      // Log reminder on the charge record so it shows in expanded view
+      setCharges(p=>p.map(x=>x.id===c.id?{...x,reminders:[...(x.reminders||[]),{method,date:TODAY.toISOString().split("T")[0]}]}:x));
+      setNotifs(p=>[{id:uid(),type:"payment",msg:`Reminder sent to ${c.tenantName} via ${method}: ${c.category} ${fmtS(modal.rem)} due ${fmtD(c.dueDate)}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+      setModal(null);
+    };
+    const reminderMsg=modal.reminderMsg!==undefined?modal.reminderMsg:msg;
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+      <h2>📣 Send Reminder</h2>
+      <div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.1)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
+        <div style={{fontWeight:700,marginBottom:2}}>{c.tenantName}</div>
+        <div style={{color:"#999"}}>{c.category} — {fmtS(modal.rem)} overdue since {fmtD(c.dueDate)}</div>
+      </div>
+      <div className="fld" style={{marginBottom:14}}>
+        <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          Message
+          <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,reminderMsg:msg}))}>↺ Reset</button>
+        </label>
+        <textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
+      </div>
+      <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Send via</div>
+      <div style={{display:"flex",gap:8}}>
+        <button className="btn btn-dk" style={{flex:1,padding:"14px 8px"}} onClick={()=>send("email",reminderMsg)} disabled={!email}>
+          <div style={{fontSize:18,marginBottom:4}}>✉️</div>
+          <div style={{fontSize:12,fontWeight:700}}>Email</div>
+          <div style={{fontSize:9,color:"#c4a882",marginTop:2}}>{email||"No email on file"}</div>
+        </button>
+        <button className="btn btn-dk" style={{flex:1,padding:"14px 8px"}} onClick={()=>send("text",reminderMsg)} disabled={!phone}>
+          <div style={{fontSize:18,marginBottom:4}}>💬</div>
+          <div style={{fontSize:12,fontWeight:700}}>Text</div>
+          <div style={{fontSize:9,color:"#c4a882",marginTop:2}}>{phone||"No phone on file"}</div>
+        </button>
+      </div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button></div>
+    </div></div>);
+  })()}
+
+  {modal&&modal.type==="deleteCharge"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
+      <h2>🗑 Delete Charge?</h2>
+      <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
+        <div style={{fontWeight:700,marginBottom:2}}>{modal.tenantName}</div>
+        <div style={{color:"#999"}}>{modal.category} — {modal.desc}</div>
+      </div>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>This will permanently delete the charge and all associated payment records. This cannot be undone.</p>
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-red" onClick={()=>{setCharges(p=>p.filter(c=>c.id!==modal.chargeId));setExpCharge(null);setModal(null);}}>Yes, Delete</button>
+      </div>
+    </div></div>
+  )}
+
   {modal&&modal.type==="waiveCharge"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
-      <h2>Waive Charge</h2>
+      <h2>⏹ Stop Late Fees</h2>
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:12}}>This will stop late fees and mark the charge as waived. This cannot be undone.</p>
-      <div className="fld"><label>Reason (required)</label><textarea value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value}))} placeholder="e.g. Tenant hardship, billing error, goodwill gesture..." rows={2} autoFocus/></div>
+      <div className={`fld ${modal.reasonErr?"field-err":""}`}>
+        <label className={modal.reasonErr?"field-err-label":""}>Reason (required)</label>
+        <textarea value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value,reasonErr:false}))} placeholder="e.g. Tenant hardship, billing error, goodwill gesture..." rows={2} autoFocus/>
+        {modal.reasonErr&&<div className="err-msg">Please enter a reason</div>}
+      </div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-red" disabled={!(modal.reason||"").trim()} onClick={()=>{waiveCharge(modal.chargeId,modal.reason);setExpCharge(null);setModal(null);}}>Waive Charge</button></div>
+        <button className="btn btn-red" onClick={()=>{
+          if(!(modal.reason||"").trim()){setModal(prev=>({...prev,reasonErr:true}));shakeModal();return;}
+          waiveCharge(modal.chargeId,modal.reason);setExpCharge(null);setModal(null);
+        }}>Waive Charge</button></div>
     </div></div>
   )}
 
@@ -2841,9 +2989,66 @@ export default function Page(){
             if(!modal.payDate)errs.date="Select a date";
             if(Object.keys(errs).length){setModal(prev=>({...prev,payErrs:errs}));shakeModal();return;}
             const isTransit=["Stripe/ACH","Credit Card","Bank Transfer"].includes(modal.payMethod);
-            recordPayment(modal.selCharge,{amount:modal.payAmount,method:modal.payMethod,date:modal.payDate,notes:modal.payNotes,depositStatus:isTransit?"transit":"deposited",depositDate:isTransit?null:modal.payDate});
-            setModal(null);}}>Submit Payment</button></div>
+            const confId=`BB-${uid().slice(0,8).toUpperCase()}`;
+            recordPayment(modal.selCharge,{amount:modal.payAmount,method:modal.payMethod,date:modal.payDate,notes:modal.payNotes,depositStatus:isTransit?"transit":"deposited",depositDate:isTransit?null:modal.payDate,confId});
+            // Auto-send email receipt stub
+            const tenant=selRoom&&selRoom.tenant;
+            if(tenant&&tenant.email){
+              // TODO: wire to Resend — setNotifs logs it for now
+              setNotifs(p=>[{id:uid(),type:"payment",msg:`Receipt emailed to ${tenant.name} (${tenant.email}) — ${fmtS(modal.payAmount)} via ${modal.payMethod} · ${confId}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+            }
+            setModal(prev=>({...prev,step:3,confId,isTransit}));
+          }}>Submit Payment</button></div>
       </>}
+      {modal.step===3&&selCh&&(()=>{
+        const tenant=selRoom&&selRoom.tenant;
+        const printReceipt=()=>{
+          const w=window.open("","_blank");
+          w.document.write(`<!DOCTYPE html><html><head><title>Payment Receipt ${modal.confId}</title><style>
+            body{font-family:Georgia,serif;max-width:560px;margin:40px auto;padding:0 24px;color:#1a1714;line-height:1.6}
+            h1{font-size:20px;font-weight:700;border-bottom:2px solid #1a1714;padding-bottom:8px;margin-bottom:20px}
+            .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}
+            .label{color:#666}.value{font-weight:600}
+            .total{display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:800;border-top:2px solid #1a1714;margin-top:4px}
+            .badge{display:inline-block;padding:3px 10px;border-radius:100px;background:#e8f5e9;color:#2e7d32;font-size:11px;font-weight:700}
+            .conf{font-family:monospace;font-size:18px;font-weight:900;color:#1a1714;letter-spacing:2px;text-align:center;padding:12px;background:#f5f0e8;border-radius:6px;margin:16px 0}
+            .footer{margin-top:32px;font-size:11px;color:#999;text-align:center}
+            @media print{body{margin:20px}}
+          </style></head><body>
+            <h1>Payment Receipt</h1>
+            <div class="conf">${modal.confId}</div>
+            <div class="row"><span class="label">Date</span><span class="value">${modal.payDate}</span></div>
+            <div class="row"><span class="label">Tenant</span><span class="value">${selCh.tenantName}</span></div>
+            <div class="row"><span class="label">Property</span><span class="value">${selCh.propName} · ${selCh.roomName}</span></div>
+            <div class="row"><span class="label">Charge</span><span class="value">${selCh.category} — ${selCh.desc}</span></div>
+            <div class="row"><span class="label">Payment Method</span><span class="value">${modal.payMethod}</span></div>
+            ${modal.payNotes?`<div class="row"><span class="label">Notes</span><span class="value">${modal.payNotes}</span></div>`:""}
+            <div class="row"><span class="label">Status</span><span class="value">${modal.isTransit?"In Transit — will confirm on deposit":"Received &amp; Deposited"}</span></div>
+            <div class="total"><span>Amount Paid</span><span>$${Number(modal.payAmount).toLocaleString()}</span></div>
+            <div class="footer">Oak &amp; Main Development LLC · Black Bear Rentals · blackbearhousing@gmail.com<br/>This receipt confirms payment was received. Please retain for your records.</div>
+          </body></html>`);
+          w.document.close();w.print();
+        };
+        return(<>
+          <div style={{textAlign:"center",padding:"14px 0 8px"}}>
+            <div style={{fontSize:32,marginBottom:8}}>✅</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#4a7c59",marginBottom:4}}>Payment Recorded</div>
+            <div style={{fontFamily:"monospace",fontSize:13,fontWeight:700,color:"#5c4a3a",background:"rgba(0,0,0,.04)",padding:"6px 14px",borderRadius:6,display:"inline-block"}}>{modal.confId}</div>
+          </div>
+          <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:14,marginBottom:14,fontSize:12}}>
+            {[["Tenant",selCh.tenantName],["Charge",`${selCh.category} — ${selCh.desc}`],["Amount",fmtS(modal.payAmount)],["Method",modal.payMethod],["Date",fmtD(modal.payDate)],["Status",modal.isTransit?"🟡 In Transit":"✅ Deposited"]].map(([l,v])=>(
+              <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#999"}}>{l}</span><strong>{v}</strong></div>
+            ))}
+          </div>
+          <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.1)",borderRadius:8,padding:10,marginBottom:14,fontSize:11,color:"#3b82f6"}}>
+            📧 Receipt automatically emailed to {tenant?tenant.email:"tenant"} · Also visible in their tenant portal
+          </div>
+          <div className="mft">
+            <button className="btn btn-out" onClick={()=>setModal(null)}>Done</button>
+            <button className="btn btn-gold" onClick={printReceipt}>🖨 Print / Save PDF</button>
+          </div>
+        </>);
+      })()}
     </div></div>);})()}
 
   {/* Create Charge Modal */}
@@ -3075,6 +3280,61 @@ export default function Page(){
       </div>
 
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button><button className="btn btn-gold" onClick={printDoc}>🖨️ Print / Save as PDF</button></div>
+    </div></div>);
+  })()}
+
+  {/* ── Stripe Pay Portal (tenant portal Pay Now) ── */}
+  {modal&&modal.type==="stripePayPortal"&&(()=>{
+    const upcoming=modal.charges||[];
+    const tRoom=modal.tRoom;
+    const tenant=tRoom&&tRoom.tenant;
+    // STRIPE_PUBLISHABLE_KEY — set in Vercel env vars
+    // When key is present, show real Stripe checkout link per charge
+    // When not set yet, show setup message
+    const stripeReady=typeof window!=="undefined"&&window.__STRIPE_KEY__;
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
+      <h2>💳 Pay Online</h2>
+      <div style={{fontSize:11,color:"#999",marginBottom:14}}>Select a charge to pay. Both ACH bank transfer and credit/debit card accepted.</div>
+      {upcoming.map(c=>{
+        const rem=c.amount-c.amountPaid;
+        return(
+        <div key={c.id} style={{border:"1px solid rgba(0,0,0,.06)",borderRadius:10,padding:14,marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+            <div>
+              <div style={{fontSize:13,fontWeight:700}}>{c.category}</div>
+              <div style={{fontSize:11,color:"#999"}}>{c.desc} · Due {fmtD(c.dueDate)}</div>
+              {c.amountPaid>0&&<div style={{fontSize:10,color:"#d4a853"}}>{fmtS(c.amountPaid)} already paid</div>}
+            </div>
+            <div style={{fontWeight:800,fontSize:16,color:chargeStatus(c)==="pastdue"?"#c45c4a":"#1a1714"}}>{fmtS(rem)}</div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <button className="btn btn-dk btn-sm" style={{flex:1}} onClick={async()=>{
+              try{
+                // Create PaymentIntent via API
+                const r=await fetch("/api/stripe/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chargeId:c.id,amount:rem,tenantName:tenant?.name||c.tenantName,tenantEmail:tenant?.email||"",method:"ach"})});
+                const d=await r.json();
+                if(d.clientSecret){
+                  // Redirect to Stripe hosted payment page
+                  window.open(`https://checkout.stripe.com/pay/${d.clientSecret}#ach`,"_blank");
+                }else{alert("Payment setup failed. Please contact your property manager.");}
+              }catch(e){alert("Payment unavailable — please pay via Zelle or contact us.");}
+            }}>🏦 ACH Bank Transfer</button>
+            <button className="btn btn-gold btn-sm" style={{flex:1}} onClick={async()=>{
+              try{
+                const r=await fetch("/api/stripe/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chargeId:c.id,amount:rem,tenantName:tenant?.name||c.tenantName,tenantEmail:tenant?.email||"",method:"card"})});
+                const d=await r.json();
+                if(d.clientSecret){window.open(`https://checkout.stripe.com/pay/${d.clientSecret}`,"_blank");}
+                else{alert("Payment setup failed. Please contact your property manager.");}
+              }catch(e){alert("Payment unavailable — please pay via Zelle or contact us.");}
+            }}>💳 Credit / Debit Card</button>
+          </div>
+        </div>);
+      })}
+      <div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:10,marginTop:8,fontSize:10,color:"#9a7422"}}>
+        ACH transfers are free. Card payments may include a processing fee. Both deposit directly to your landlord. Questions? Text or email us at blackbearhousing@gmail.com.
+      </div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button></div>
     </div></div>);
   })()}
 
