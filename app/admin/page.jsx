@@ -144,7 +144,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(256) 555-0192",email:"info@rentblackbear.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled."};
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(256) 555-0192",email:"info@rentblackbear.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals"};
 const DEF_THEME={bg:"#1a1714",card:"#2c2520",accent:"#d4a853",text:"#f5f0e8",muted:"#c4a882",surface:"#fefdfb",surfaceAlt:"#f5f0e8",green:"#4a7c59",dark:"#1a1714",warm:"#5c4a3a"};
 const THEME_LABELS={bg:"Background",card:"Card",accent:"Accent",text:"Light Text",muted:"Muted",surface:"Surface",surfaceAlt:"Alt Surface",green:"Green",dark:"Dark",warm:"Warm"};
 const PRESETS={"Warm Lodge":DEF_THEME,"Midnight":{bg:"#0f1729",card:"#1a2540",accent:"#3b82f6",text:"#e8ecf4",muted:"#8899b8",surface:"#fafbfe",surfaceAlt:"#eef2f9",green:"#22c55e",dark:"#0f1729",warm:"#64748b"},"Forest":{bg:"#1a2e1a",card:"#243524",accent:"#7cb342",text:"#e8f0e4",muted:"#a3b89a",surface:"#fafcf8",surfaceAlt:"#eef3ea",green:"#7cb342",dark:"#1a2e1a",warm:"#5a6b52"}};
@@ -629,6 +629,7 @@ export default function Page(){
     return n;
   },[props,charges]);
   // Auto-run on load
+  // Auto-run on load as fallback only (cron job handles this server-side daily)
   useEffect(()=>{if(loaded&&props.length>0){const t=setTimeout(()=>autoGenRentCharges(),500);return()=>clearTimeout(t);}},[loaded]);
 
   // New lead detection — poll apps and trigger confetti + toast
@@ -2202,9 +2203,24 @@ export default function Page(){
           <div className="fr"><div className="fld"><label>Headline</label><input value={settings.heroHeadline} onChange={e=>setSettings({...settings,heroHeadline:e.target.value})}/></div><div className="fld"><label>Subline</label><input value={settings.heroSubline} onChange={e=>setSettings({...settings,heroSubline:e.target.value})}/></div></div>
           <div className="fld"><label>Description</label><textarea value={settings.heroDesc} onChange={e=>setSettings({...settings,heroDesc:e.target.value})}/></div>
         </div></div>
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>📣 Late Payment Reminder Template</h3>
+          <p style={{fontSize:11,color:"#999",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
+          <div className="fld">
+            <label style={{display:"flex",justifyContent:"space-between"}}>
+              Message Template
+              <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setSettings(s=>({...s,reminderTemplate:DEF_SETTINGS.reminderTemplate}))}>↺ Restore original</button>
+            </label>
+            <textarea value={settings.reminderTemplate||DEF_SETTINGS.reminderTemplate} onChange={e=>setSettings({...settings,reminderTemplate:e.target.value})} rows={4} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
+          </div>
+          <div style={{fontSize:9,color:"#999",marginTop:4,lineHeight:1.6}}>
+            Available variables: <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{firstName}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{fullName}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{amount}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{dueDate}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{category}"}</code>
+          </div>
+          <div style={{marginTop:8,background:"rgba(212,168,83,.06)",borderRadius:6,padding:10,fontSize:11,color:"#9a7422"}}>
+            <strong>Preview:</strong> {(settings.reminderTemplate||DEF_SETTINGS.reminderTemplate).replace(/{firstName}/g,"Marcus").replace(/{fullName}/g,"Marcus Johnson").replace(/{amount}/g,"$850.00").replace(/{dueDate}/g,"Mar 1, 2026").replace(/{category}/g,"Rent")}
+          </div>
+        </div></div>
       </>}
-
-      {/* ═══ THEME EDITOR ═══ */}
       {tab==="theme"&&(()=>{
         const saveCurrentTheme=()=>setModal({type:"saveTheme",themeName:""});
         const applyTheme=(t)=>setTheme({...t});
@@ -2841,45 +2857,82 @@ export default function Page(){
     const tenant=tenantRoom&&tenantRoom.tenant;
     const phone=tenant&&tenant.phone;
     const email=tenant&&tenant.email;
-    const msg=`Hi ${c.tenantName.split(" ")[0]}, this is a reminder that your ${c.category} of ${fmtS(modal.rem)} was due on ${fmtD(c.dueDate)}. Please send payment at your earliest convenience. Thank you! — Black Bear Rentals`;
+    const portalLink="https://rentblackbear.com/portal";
+    const template=settings.reminderTemplate||DEF_SETTINGS.reminderTemplate;
+    const buildMsg=(tmpl)=>tmpl
+      .replace(/{firstName}/g,c.tenantName.split(" ")[0])
+      .replace(/{fullName}/g,c.tenantName)
+      .replace(/{category}/g,c.category)
+      .replace(/{amount}/g,fmtS(modal.rem))
+      .replace(/{dueDate}/g,fmtD(c.dueDate))
+      .replace(/{portalLink}/g,portalLink);
+    const defaultMsg=buildMsg(template);
     const emailSubject=`Payment Reminder — ${c.category} ${fmtS(modal.rem)} Due`;
     const send=(method,customMsg)=>{
       if(method==="email"&&email){window.open(`mailto:${email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(customMsg)}`);}
       if(method==="text"&&phone){window.open(`sms:${phone.replace(/\D/g,"")}?body=${encodeURIComponent(customMsg)}`);}
-      // Log reminder on the charge record so it shows in expanded view
       setCharges(p=>p.map(x=>x.id===c.id?{...x,reminders:[...(x.reminders||[]),{method,date:TODAY.toISOString().split("T")[0]}]}:x));
       setNotifs(p=>[{id:uid(),type:"payment",msg:`Reminder sent to ${c.tenantName} via ${method}: ${c.category} ${fmtS(modal.rem)} due ${fmtD(c.dueDate)}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
       setModal(null);
     };
-    const reminderMsg=modal.reminderMsg!==undefined?modal.reminderMsg:msg;
+    const reminderMsg=modal.reminderMsg!==undefined?modal.reminderMsg:defaultMsg;
+    const isEdited=reminderMsg!==defaultMsg;
+    const editingDefault=modal.editingDefault||false;
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
       <h2>📣 Send Reminder</h2>
       <div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.1)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700,marginBottom:2}}>{c.tenantName}</div>
         <div style={{color:"#999"}}>{c.category} — {fmtS(modal.rem)} overdue since {fmtD(c.dueDate)}</div>
       </div>
-      <div className="fld" style={{marginBottom:14}}>
+
+      <div className="fld" style={{marginBottom:6}}>
         <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          Message
-          <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,reminderMsg:msg}))}>↺ Reset</button>
+          <span>Message</span>
+          <div style={{display:"flex",gap:4}}>
+            {isEdited&&!editingDefault&&<button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,reminderMsg:defaultMsg}))}>↺ Reset</button>}
+            {!editingDefault&&<button className="btn btn-gold btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,editingDefault:true,reminderMsg:template}))}>✏️ Edit Default</button>}
+            {editingDefault&&<span style={{fontSize:9,color:"#d4a853",fontWeight:700}}>Editing saved default</span>}
+          </div>
         </label>
-        <textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
+
+        {editingDefault
+          ?<>
+            <textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"2px solid rgba(212,168,83,.4)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6,background:"rgba(212,168,83,.02)"}}/>
+            <div style={{display:"flex",gap:6,marginTop:8}}>
+              <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,editingDefault:false,reminderMsg:defaultMsg}))}>Cancel</button>
+              <button className="btn btn-gold" style={{flex:2}} onClick={()=>{
+                setSettings(s=>({...s,reminderTemplate:reminderMsg}));
+                setModal(prev=>({...prev,editingDefault:false,reminderMsg:undefined}));
+              }}>💾 Save as Default</button>
+            </div>
+          </>
+          :<textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${isEdited?"rgba(212,168,83,.3)":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
+        }
       </div>
-      <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Send via</div>
-      <div style={{display:"flex",gap:8}}>
-        <button className="btn btn-dk" style={{flex:1,padding:"14px 8px"}} onClick={()=>send("email",reminderMsg)} disabled={!email}>
-          <div style={{fontSize:18,marginBottom:4}}>✉️</div>
-          <div style={{fontSize:12,fontWeight:700}}>Email</div>
-          <div style={{fontSize:9,color:"#c4a882",marginTop:2}}>{email||"No email on file"}</div>
-        </button>
-        <button className="btn btn-dk" style={{flex:1,padding:"14px 8px"}} onClick={()=>send("text",reminderMsg)} disabled={!phone}>
-          <div style={{fontSize:18,marginBottom:4}}>💬</div>
-          <div style={{fontSize:12,fontWeight:700}}>Text</div>
-          <div style={{fontSize:9,color:"#c4a882",marginTop:2}}>{phone||"No phone on file"}</div>
-        </button>
-      </div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button></div>
+
+      {!editingDefault&&<>
+        <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Send via</div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>send("email",reminderMsg)} disabled={!email}
+            style={{flex:1,padding:"14px 8px",borderRadius:8,border:"2px solid #3b82f6",background:"rgba(59,130,246,.06)",cursor:email?"pointer":"not-allowed",opacity:email?1:.5,textAlign:"center",fontFamily:"inherit",transition:"all .15s"}}
+            onMouseEnter={e=>{if(email)e.currentTarget.style.background="rgba(59,130,246,.12)"}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(59,130,246,.06)"}}>
+            <div style={{fontSize:20,marginBottom:4}}>✉️</div>
+            <div style={{fontSize:12,fontWeight:700,color:"#3b82f6"}}>Email</div>
+            <div style={{fontSize:9,color:"#3b82f6",opacity:.7,marginTop:2}}>{email||"No email on file"}</div>
+          </button>
+          <button onClick={()=>send("text",reminderMsg)} disabled={!phone}
+            style={{flex:1,padding:"14px 8px",borderRadius:8,border:"2px solid #4a7c59",background:"rgba(74,124,89,.06)",cursor:phone?"pointer":"not-allowed",opacity:phone?1:.5,textAlign:"center",fontFamily:"inherit",transition:"all .15s"}}
+            onMouseEnter={e=>{if(phone)e.currentTarget.style.background="rgba(74,124,89,.12)"}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(74,124,89,.06)"}}>
+            <div style={{fontSize:20,marginBottom:4}}>💬</div>
+            <div style={{fontSize:12,fontWeight:700,color:"#4a7c59"}}>Text</div>
+            <div style={{fontSize:9,color:"#4a7c59",opacity:.7,marginTop:2}}>{phone||"No phone on file"}</div>
+          </button>
+        </div>
+        <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button></div>
+      </>}
     </div></div>);
   })()}
 
