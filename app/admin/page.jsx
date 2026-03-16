@@ -1423,24 +1423,41 @@ export default function Page(){
           return flags;
         };
         const DEF_APP_FIELDS=[
-          {id:uid(),label:"First Name",type:"text",section:"Personal Info",required:true,active:true,placeholder:"Jane",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Last Name",type:"text",section:"Personal Info",required:true,active:true,placeholder:"Smith",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Email Address",type:"email",section:"Personal Info",required:true,active:true,placeholder:"jane@email.com",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Phone Number",type:"phone",section:"Personal Info",required:true,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Date of Birth",type:"date",section:"Personal Info",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Desired Move-In Date",type:"date",section:"Personal Info",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Photo ID",type:"file",section:"Verification",required:true,active:true,placeholder:"Upload driver's license, passport, or state ID",helpText:"JPG, PNG, or PDF. Max 10MB.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Social Security (last 4)",type:"number",section:"Verification",required:true,active:true,placeholder:"••••",helpText:"Only the last 4 digits — used for identity verification only.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Current Employer",type:"text",section:"Employment",required:true,active:true,placeholder:"Company name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Job Title / Position",type:"text",section:"Employment",required:false,active:true,placeholder:"Your role",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Gross Monthly Income",type:"number",section:"Employment",required:true,active:true,placeholder:"4200",helpText:"Before taxes. We look for 3x the monthly rent.",options:[],followUpYes:"",followUpNo:"",min:0,max:null},
-          {id:uid(),label:"Proof of Income",type:"file",section:"Employment",required:true,active:true,placeholder:"Upload pay stubs, offer letter, or bank statement",helpText:"Last 2 pay stubs preferred.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Previous Address",type:"address",section:"Rental History",required:true,active:true,placeholder:"",helpText:"Most recent address. Include landlord name and phone if renting.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Have you ever been evicted?",type:"yes-no",section:"Background",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please explain the circumstances.",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Do you have any felony convictions?",type:"yes-no",section:"Background",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain.",followUpNo:"",min:null,max:null},
+          // ── Section 1: Contact Info (Welcome step) ──
+          {id:uid(),label:"First Name",type:"text",section:"Contact Info",required:true,active:true,placeholder:"First name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Last Name",type:"text",section:"Contact Info",required:true,active:true,placeholder:"Last name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Email Address",type:"email",section:"Contact Info",required:true,active:true,placeholder:"you@email.com",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Phone Number",type:"phone",section:"Contact Info",required:true,active:true,placeholder:"(256) 555-1234",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Date of Birth",type:"date",section:"Contact Info",required:true,active:true,placeholder:"",helpText:"Must be at least 18 years old.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"How did you hear about us?",type:"dropdown",section:"Contact Info",required:true,active:true,placeholder:"",helpText:"",options:["Roomies.com","Google Search","Facebook / Instagram","Friend / Referral","Zillow / Apartments.com","Craigslist","Drive-by / Sign","NASA Intern Program","Military / Contractor Network","Other"],followUpYes:"",followUpNo:"",min:null,max:null},
+          // ── Section 2: Move-In Info (App Info step) ──
+          {id:uid(),label:"Desired Move-in Date",type:"date",section:"Move-In Info",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Number of Occupants",type:"counter",section:"Move-In Info",required:true,active:true,placeholder:"",helpText:"Only 1 person per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
+          // ── Section 3: Personal Information ──
+          {id:uid(),label:"Social Security Number (last 4)",type:"number",section:"Personal Information",required:true,active:true,placeholder:"••••",helpText:"Only the last 4 digits — used for identity verification. Never stored.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Photo ID Upload",type:"file",section:"Personal Information",required:false,active:true,placeholder:"Tap to upload driver's license, passport, or state ID",helpText:"JPG, PNG, or PDF. Max 10MB.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          // ── Section 4: Rental History ──
+          {id:uid(),label:"Current / Previous Address",type:"address",section:"Rental History",required:true,active:true,placeholder:"",helpText:"Include landlord name and contact info to strengthen your application.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Have you ever been evicted?",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain the circumstances.",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Do you have any felony convictions?",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain.",followUpNo:"",min:null,max:null},
+          // ── Section 5: Employment & Income ──
+          {id:uid(),label:"Current Employer",type:"text",section:"Employment & Income",required:true,active:true,placeholder:"Company name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Job Title / Position",type:"text",section:"Employment & Income",required:false,active:true,placeholder:"Your role",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Gross Monthly Income",type:"number",section:"Employment & Income",required:true,active:true,placeholder:"4200",helpText:"Before taxes. We look for 3x the monthly rent.",options:[],followUpYes:"",followUpNo:"",min:0,max:null},
+          {id:uid(),label:"Employer Reference Name",type:"text",section:"Employment & Income",required:false,active:true,placeholder:"Supervisor name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Employer Reference Phone",type:"phone",section:"Employment & Income",required:false,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Proof of Income",type:"file",section:"Employment & Income",required:false,active:true,placeholder:"Upload pay stubs, offer letter, or bank statement",helpText:"Last 2 pay stubs preferred.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          // ── Section 6: References ──
+          {id:uid(),label:"Employer Reference Name",type:"text",section:"References",required:true,active:true,placeholder:"Supervisor or HR contact",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Employer Reference Phone",type:"phone",section:"References",required:true,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Employer Reference Relationship",type:"text",section:"References",required:false,active:true,placeholder:"e.g. Manager",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Personal Reference Name",type:"text",section:"References",required:true,active:true,placeholder:"Someone who knows you well",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Personal Reference Phone",type:"phone",section:"References",required:true,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Personal Reference Relationship",type:"text",section:"References",required:false,active:true,placeholder:"e.g. Friend, Colleague",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          // ── Section 7: Emergency Contact ──
           {id:uid(),label:"Emergency Contact Name",type:"text",section:"Emergency Contact",required:true,active:true,placeholder:"Full name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Emergency Contact Phone",type:"phone",section:"Emergency Contact",required:true,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Relationship to You",type:"text",section:"Emergency Contact",required:true,active:true,placeholder:"e.g. Parent, Sibling, Friend",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Relationship to Applicant",type:"text",section:"Emergency Contact",required:true,active:true,placeholder:"e.g. Parent, Sibling, Friend",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
         ];
 
         return(<>
@@ -1871,9 +1888,12 @@ export default function Page(){
 
         {/* ── Application Preview ── */}
         {appFields.filter(f=>f.active).length>0&&<div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appPreview:!p.appPreview,appPrevSec:0}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📱 Application Preview</div><div style={{fontSize:9,color:"#999"}}>See exactly what tenants see on rentblackbear.com/apply</div></div></div>
-            <span style={{fontSize:10,color:"#999"}}>{[...new Set(appFields.filter(f=>f.active).map(f=>f.section))].length} sections · {appFields.filter(f=>f.active).length} fields</span>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appPreview:!p.appPreview,appPrevSec:p.appPreview?p.appPrevSec:0}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📱 Application Preview</div><div style={{fontSize:9,color:"#999"}}>Live preview — reflects your current fields exactly</div></div></div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              {expanded.appPreview&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={e=>{e.stopPropagation();setExpanded(p=>({...p,appPrevSec:0}));}}>↺ Restart</button>}
+              <span style={{fontSize:10,color:"#999"}}>{[...new Set(appFields.filter(f=>f.active).map(f=>f.section))].length} sections · {appFields.filter(f=>f.active).length} fields</span>
+            </div>
           </div>
           {expanded.appPreview&&(()=>{
             const activeSections=[...new Set(appFields.filter(f=>f.active).map(f=>f.section))];
