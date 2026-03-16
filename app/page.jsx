@@ -651,32 +651,6 @@ function Screening({properties}){
       const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(submitData)});
       const d=await res.json();
       if(d.ok){
-        // Write lead directly into hq-apps as pre-screened
-        const newLead={
-          id:Math.random().toString(36).slice(2,9),
-          name:form.name.trim(),
-          email:form.email.trim(),
-          phone:form.phone.trim(),
-          property:form.property,
-          room:"",
-          moveIn:form.moveIn,
-          income:"",
-          status:"pre-screened",
-          submitted:new Date().toISOString().split("T")[0],
-          lastContact:new Date().toISOString().split("T")[0],
-          bgCheck:"not-started",
-          creditScore:"—",
-          refs:"not-started",
-          source:submitData.source,
-          notes:form.reason,
-          history:[{from:"new",to:"pre-screened",date:new Date().toISOString().split("T")[0],note:"Submitted pre-screen form on public site"}],
-        };
-        // Load existing apps, prepend new lead, save back
-        const existing=await supaGet("hq-apps")||[];
-        await supaSet("hq-apps",[newLead,...existing]);
-        // Also fire a notification
-        const notifs=await supaGet("hq-notifs")||[];
-        await supaSet("hq-notifs",[{id:Math.random().toString(36).slice(2,9),type:"app",msg:"New lead: "+form.name+" — "+form.property+" · "+submitData.source,date:new Date().toISOString().split("T")[0],read:false,urgent:true},...notifs]);
         setStep(DONE);
       } else setSubError(d.error||"Something went wrong. Try again.");
     }
