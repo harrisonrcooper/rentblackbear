@@ -92,17 +92,26 @@ const DEF_MAINT=[ // maintenance requests
   {id:uid(),roomId:"r1",propId:"p1",tenant:"Marcus Johnson",title:"Dishwasher not draining",desc:"Water sits at the bottom after a cycle. Tried running it twice.",status:"open",priority:"medium",created:"2026-03-08",photos:0},
   {id:uid(),roomId:"r7",propId:"p2",tenant:"Lisa Thompson",title:"Bedroom door lock sticking",desc:"Have to jiggle the handle to get it to unlock. Getting worse.",status:"in-progress",priority:"low",created:"2026-03-05",photos:1},
 ];
-const DEF_APPS=[ // applications in pipeline
-  {id:"a1",name:"Taylor Morgan",email:"taylor@email.com",phone:"(256) 555-9001",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-04-01",income:"$4,200",status:"reviewing",submitted:"2026-03-09",bgCheck:"pending",creditScore:"710",refs:"pending",source:"Google Search",lastContact:"2026-03-11",passcode:"4821",history:[{from:"pre-screened",to:"called",date:"2026-03-09"},{from:"called",to:"invited",date:"2026-03-10"},{from:"invited",to:"applied",date:"2026-03-10"},{from:"applied",to:"reviewing",date:"2026-03-11"}]},
-  {id:"a2",name:"Jordan Lee",email:"jordan@email.com",phone:"(256) 555-9002",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-15",income:"$3,800",status:"pre-screened",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Friend / Referral",lastContact:"2026-03-10"},
-  {id:"a3",name:"Rachel Kim",email:"rachel.k@email.com",phone:"(256) 555-9003",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-05-15",income:"$5,500",status:"called",submitted:"2026-03-08",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-09",notes:"NASA summer intern. Has security clearance — can skip BG check.",waived:["Background Check"],waiverReason:"NASA intern with security clearance"},
-  {id:"a4",name:"David Park",email:"david.p@email.com",phone:"(256) 555-9004",property:"Lee Drive West",room:"Bedroom 3",moveIn:"2026-04-01",income:"$3,200",status:"denied",submitted:"2026-03-05",bgCheck:"failed",creditScore:"520",refs:"not-started",source:"Craigslist",deniedReason:"Failed background check",deniedDate:"2026-03-08",prevStage:"reviewing"},
-  {id:"a5",name:"Alex Rivera",email:"alex.r@email.com",phone:"(256) 555-9005",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-01",income:"$4,800",status:"approved",submitted:"2026-03-01",bgCheck:"passed",creditScore:"740",refs:"verified",source:"Zillow",lastContact:"2026-03-12",history:[{from:"pre-screened",to:"called",date:"2026-03-02"},{from:"called",to:"invited",date:"2026-03-03"},{from:"invited",to:"applied",date:"2026-03-05"},{from:"applied",to:"reviewing",date:"2026-03-06"},{from:"reviewing",to:"approved",date:"2026-03-12"}]},
-  {id:"a6",name:"Sam Patel",email:"sam.p@email.com",phone:"(256) 555-9006",property:"The Holmes House",room:"Bedroom 5",moveIn:"2026-06-01",income:"$6,200",status:"invited",submitted:"2026-03-07",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-11",notes:"Toyota intern, summer rotation",waived:["Background Check"],waiverReason:"Corporate intern with employer verification"},
-  {id:"a7",name:"David Park",email:"david.park2@email.com",phone:"(256) 555-9007",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-05-01",income:"$4,100",status:"pre-screened",submitted:"2026-03-12",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Google Search",lastContact:"2026-03-12",notes:"Same name as previously denied applicant"},
-  {id:"a8",name:"Chris Walker",email:"chris.w@email.com",phone:"(256) 555-8001",property:"Lee Drive West",room:"Bedroom 3",moveIn:"2026-05-01",income:"$3,600",status:"pre-screened",submitted:"2026-03-12",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Drive-by / Sign",lastContact:"2026-03-12",notes:""},
-  {id:"a9",name:"Priya Sharma",email:"priya.s@email.com",phone:"(256) 555-9009",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-01",income:"$4,500",status:"pre-screened",submitted:"2026-03-11",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Roomies.com",lastContact:"2026-03-11",notes:"Found us on Roomies.com listing"},
-  {id:"a10",name:"Derek Owens",email:"derek.o@email.com",phone:"(256) 555-9010",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-05-01",income:"$3,900",status:"called",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Roomies.com",lastContact:"2026-03-11",notes:""},
+const DEF_APPS=[
+  // ── Pre-Screened (just submitted, not yet called) ──
+  {id:"a1",name:"Jordan Lee",email:"jordan.lee@email.com",phone:"(256) 555-9001",property:"Lee Drive East",room:"",moveIn:"2026-04-15",income:"$3,800",status:"pre-screened",submitted:"2026-03-13",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Roomies.com",lastContact:"2026-03-13",notes:"Found us on Roomies.com. Interested in a 3BR."},
+  {id:"a2",name:"Priya Sharma",email:"priya.s@email.com",phone:"(256) 555-9002",property:"The Holmes House",room:"",moveIn:"2026-05-01",income:"$4,500",status:"pre-screened",submitted:"2026-03-12",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Google Search",lastContact:"2026-03-12",notes:""},
+  // ── Called (spoke on phone, deciding whether to invite) ──
+  {id:"a3",name:"Rachel Kim",email:"rachel.k@email.com",phone:"(256) 555-9003",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-05-15",income:"$5,500",status:"called",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-13",notes:"NASA summer intern rotating through Redstone. Has employer security clearance — skip BG check. Offer letter on file."},
+  {id:"a4",name:"Derek Owens",email:"derek.o@email.com",phone:"(256) 555-9004",property:"Lee Drive East",room:"",moveIn:"2026-05-01",income:"$3,900",status:"called",submitted:"2026-03-11",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Drive-by / Sign",lastContact:"2026-03-12",notes:"Saw the sign on Lee Drive. Works at Boeing."},
+  // ── Invited (sent application link, waiting for them to apply) ──
+  {id:"a5",name:"Sam Patel",email:"sam.p@email.com",phone:"(256) 555-9005",property:"The Holmes House",room:"Bedroom 5",moveIn:"2026-06-01",income:"$6,200",status:"invited",submitted:"2026-03-08",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-11",screenPkg:"none",incomeAdd:"none",appFee:0,waiverReason:"Toyota intern — employer background check accepted. Offer letter on file.",inviteLink:"https://rentblackbear.com/apply?invite=a5",sentVia:"Email",notes:"Toyota intern, summer rotation",history:[{from:"pre-screened",to:"called",date:"2026-03-08"},{from:"called",to:"invited",date:"2026-03-11",note:"Invited via Email · No Screening (Waived) · Fee waived — Toyota intern — employer background check accepted."}]},
+  {id:"a6",name:"Chris Walker",email:"chris.w@email.com",phone:"(256) 555-9006",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-05-01",income:"$4,100",status:"invited",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Facebook / Instagram",lastContact:"2026-03-12",screenPkg:"credit-bg",incomeAdd:"none",appFee:49,inviteLink:"https://rentblackbear.com/apply?invite=a6",sentVia:"Text",history:[{from:"pre-screened",to:"called",date:"2026-03-10"},{from:"called",to:"invited",date:"2026-03-12",note:"Invited via Text · Credit Report + Full Background Check · $49 fee"}]},
+  // ── Applied (filled out application, payment submitted) ──
+  {id:"a7",name:"Taylor Morgan",email:"taylor@email.com",phone:"(256) 555-9007",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-04-01",income:"$4,200",status:"applied",submitted:"2026-03-09",bgCheck:"pending",creditScore:"710",refs:"pending",source:"Google Search",lastContact:"2026-03-12",screenPkg:"credit-bg",incomeAdd:"income-only",appFee:59,notes:"Strong applicant. Income verification in progress.",history:[{from:"pre-screened",to:"called",date:"2026-03-09"},{from:"called",to:"invited",date:"2026-03-10"},{from:"invited",to:"applied",date:"2026-03-12",note:"Application submitted + $59 screening fee paid"}]},
+  // ── Reviewing (BG check back, refs contacted, making decision) ──
+  {id:"a8",name:"Marcus Johnson",email:"marcus.j@email.com",phone:"(256) 555-9008",property:"Lee Drive West",room:"Bedroom 2",moveIn:"2026-04-01",income:"$5,100",status:"reviewing",submitted:"2026-03-05",bgCheck:"passed",creditScore:"755",refs:"pending",source:"Military / Contractor Network",lastContact:"2026-03-13",screenPkg:"credit-bg",incomeAdd:"income-employment",appFee:64,notes:"Army contractor at Redstone. BG passed. Waiting on ref from previous landlord.",history:[{from:"pre-screened",to:"called",date:"2026-03-05"},{from:"called",to:"invited",date:"2026-03-06"},{from:"invited",to:"applied",date:"2026-03-08"},{from:"applied",to:"reviewing",date:"2026-03-10",note:"BG check passed. Credit 755. In review."}]},
+  // ── Approved (approved, lease being generated) ──
+  {id:"a9",name:"Alex Rivera",email:"alex.r@email.com",phone:"(256) 555-9009",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-01",income:"$4,800",status:"approved",submitted:"2026-03-01",bgCheck:"passed",creditScore:"740",refs:"verified",source:"Zillow",lastContact:"2026-03-13",screenPkg:"credit-bg",incomeAdd:"none",appFee:49,notes:"Excellent applicant. All refs verified. Lease being prepared.",history:[{from:"pre-screened",to:"called",date:"2026-03-02"},{from:"called",to:"invited",date:"2026-03-03"},{from:"invited",to:"applied",date:"2026-03-05"},{from:"applied",to:"reviewing",date:"2026-03-06"},{from:"reviewing",to:"approved",date:"2026-03-13",note:"All checks clear. Approved. Preparing lease."}]},
+  // ── Move-In (lease signed, SD paid, ready to move in) ──
+  {id:"a10",name:"Jamie Chen",email:"jamie.c@email.com",phone:"(256) 555-9010",property:"The Holmes House",room:"Bedroom 2",moveIn:"2026-04-01",income:"$5,200",status:"move-in",submitted:"2026-02-20",bgCheck:"passed",creditScore:"780",refs:"verified",source:"Friend / Referral",lastContact:"2026-03-13",screenPkg:"credit-bg",incomeAdd:"none",appFee:49,notes:"Lease signed 3/12. SD paid. Moving in April 1.",history:[{from:"pre-screened",to:"called",date:"2026-02-21"},{from:"called",to:"invited",date:"2026-02-22"},{from:"invited",to:"applied",date:"2026-02-24"},{from:"applied",to:"reviewing",date:"2026-02-26"},{from:"reviewing",to:"approved",date:"2026-03-05"},{from:"approved",to:"move-in",date:"2026-03-12",note:"Lease signed. SD received. Moving in 4/1."}]},
+  // ── Denied ──
+  {id:"a11",name:"David Park",email:"david.p@email.com",phone:"(256) 555-9011",property:"Lee Drive West",room:"Bedroom 3",moveIn:"2026-04-01",income:"$3,200",status:"denied",submitted:"2026-03-05",bgCheck:"failed",creditScore:"520",refs:"not-started",source:"Craigslist",lastContact:"2026-03-08",deniedReason:"Failed background check — criminal record",deniedDate:"2026-03-08",prevStage:"reviewing"},
 ];
 const DEF_DOCS=[
   {id:uid(),name:"Lease Template - Standard 12mo",type:"lease",property:"All",uploaded:"2026-01-15",size:"245 KB"},
@@ -3849,49 +3858,46 @@ export default function Page(){
   })()}
 
   {modal&&modal.type==="inviteApp"&&(()=>{const a=modal.data;
-    const reqList=[["bgCheck","Background Check"],["creditCheck","Credit Check"],["incomeAnalysis","Income Analysis (RentPrep)"],["incomeVerify","Income Verification"],["refCheck","Reference Check"],["idVerify","ID Verification"],["proofOfIncome","Proof of Income Upload"]];
-    const reqs=modal.reqs||{};const roomMode=modal.roomMode||"locked";
+
+    // ── RentPrep package selection ──
+    // pkg: "none" | "credit-only" | "credit-bg" 
+    // incomeAdd: "none" | "income-only" | "income-employment"
+    const pkg=modal.pkg||"credit-bg"; // default: credit + full BG
+    const incomeAdd=modal.incomeAdd||"none";
+    const pkgFees={"none":0,"credit-only":29,"credit-bg":49};
+    const incomeAdds={"none":0,"income-only":10,"income-employment":15};
+    const totalFee=pkgFees[pkg]+incomeAdds[incomeAdd];
+
+    const roomMode=modal.roomMode||"locked";
     const selPropId=modal.selPropId||(()=>{const mp=props.find(p=>p.name===a.property);return mp?mp.id:"";})();
     const selProp=props.find(p=>p.id===selPropId);const availRooms=selProp?selProp.rooms.filter(r=>r.st==="vacant"):[];
     const selRoomId=modal.selRoomId||"";const selRoom=availRooms.find(r=>r.id===selRoomId);
-    const anyWaived=reqList.some(([k])=>reqs[k]===false);
-    const baseFee=reqs.incomeAnalysis!==false?45:0;const procFee=(reqs.bgCheck!==false||reqs.creditCheck!==false||reqs.incomeAnalysis!==false)?10:0;const totalFee=baseFee+procFee;
     const doShake=shakeModal;
     const hasPreScreen=!!(a.email||a.phone||a.name);
     const showPreFill=hasPreScreen&&!modal.preConfirmed;
+
+    // Build human-readable package summary
+    const pkgLabel={"none":"No screening (waived)","credit-only":"Credit Report Only — SmartMove","credit-bg":"Credit Report + Full Background Check"};
+    const incomeLabel={"none":"No income verification","income-only":"+ Income Verification","income-employment":"+ Income & Employment Verification"};
+
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
 
       {/* ── Pre-fill confirmation screen ── */}
       {showPreFill?<>
         <h2>Invite {a.name} to Apply</h2>
-        <p style={{fontSize:12,color:"#5c4a3a",marginBottom:14}}>Before we send the invite, confirm the info we have on file is correct. They'll see this on the application and can update anything that's wrong.</p>
+        <p style={{fontSize:12,color:"#5c4a3a",marginBottom:14}}>Confirm the info on file is correct — they'll see it pre-filled on the application and can update anything wrong.</p>
 
         <div className="tp-card" style={{marginBottom:10}}>
-          <h3>👤 Pre-filled Information</h3>
+          <h3>👤 Pre-filled Info</h3>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
             <div><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Full Name</div><div style={{fontSize:13,fontWeight:700}}>{a.name||"—"}</div></div>
             <div><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Email</div><div style={{fontSize:13,fontWeight:700}}>{a.email||"—"}</div></div>
             <div><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Phone</div><div style={{fontSize:13,fontWeight:700}}>{a.phone||"—"}</div></div>
             <div><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Interested In</div><div style={{fontSize:13,fontWeight:700}}>{a.property||"No preference"}</div></div>
           </div>
-          <div style={{fontSize:10,color:"#d4a853",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>⚠ If any of this is wrong, close and update their profile before sending.</div>
+          <div style={{fontSize:10,color:"#d4a853",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>⚠ If anything is wrong, close and update their profile first.</div>
         </div>
-
-        <div className="tp-card" style={{marginBottom:10}}>
-          <h3>📋 What the Application Requires</h3>
-          <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.8}}>
-            {reqList.filter(([k])=>reqs[k]!==false).map(([k,l])=><div key={k} style={{display:"flex",alignItems:"center",gap:6,padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}><span style={{color:"#4a7c59",fontWeight:700}}>✓</span> {l}{k==="incomeAnalysis"&&<span style={{fontSize:9,color:"#d4a853",fontWeight:700,marginLeft:4}}>$45 fee</span>}</div>)}
-            {reqList.filter(([k])=>reqs[k]===false).map(([k,l])=><div key={k} style={{display:"flex",alignItems:"center",gap:6,padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.03)",color:"#999",textDecoration:"line-through"}}><span style={{fontWeight:700}}>—</span> {l}<span style={{fontSize:9,color:"#d4a853",fontWeight:700,marginLeft:4,textDecoration:"none"}}>Waived</span></div>)}
-          </div>
-          {totalFee>0&&<div style={{marginTop:10,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:6,display:"flex",justifyContent:"space-between",fontSize:12}}><span>Application fee (tenant pays)</span><strong>${totalFee}</strong></div>}
-        </div>
-
-        <div className="tp-card" style={{marginBottom:14,background:"rgba(74,124,89,.03)"}}>
-          <h3>⏱ Estimated Time</h3>
-          <div style={{fontSize:12,color:"#5c4a3a"}}>About <strong>10–15 minutes</strong> to complete. They can save and resume anytime. Their contact info above will be pre-filled so they can start right away.</div>
-        </div>
-
         <div className="mft">
           <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
           <button className="btn btn-dk" onClick={()=>setModal(prev=>({...prev,preConfirmed:true}))}>Looks Good → Set Up Invite</button>
@@ -3900,9 +3906,10 @@ export default function Page(){
       /* ── Main invite builder ── */
       <>
       <h2>Invite {a.name} to Apply</h2>
-      <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}><strong>{a.email}</strong> · {a.phone}</div>
+      <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:"#5c4a3a"}}><strong>{a.email}</strong> · {a.phone}</div>
 
-      <div className="tp-card"><h3>🏠 Room Assignment</h3>
+      {/* Room Assignment */}
+      <div className="tp-card" style={{marginBottom:10}}><h3>🏠 Room Assignment</h3>
         <div style={{display:"flex",gap:6,marginBottom:10}}>
           <button className={`btn ${roomMode==="locked"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"locked"}))}>Lock to room</button>
           <button className={`btn ${roomMode==="choice"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"choice"}))}>Let tenant choose</button>
@@ -3911,25 +3918,60 @@ export default function Page(){
           <div className="fld"><label>Property</label><select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,selRoomId:""}))} style={{width:"100%"}}><option value="">Select...</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
           <div className="fld"><label>Room</label><select value={selRoomId} onChange={e=>setModal(prev=>({...prev,selRoomId:e.target.value}))} style={{width:"100%"}}><option value="">Select...</option>{availRooms.map(r=><option key={r.id} value={r.id}>{r.name} — {fmtS(r.rent)}/mo</option>)}</select></div>
         </div>}
-        {roomMode==="choice"&&<p style={{fontSize:10,color:"#999"}}>Tenant will see available rooms and pick which one they want.</p>}
+        {roomMode==="choice"&&<p style={{fontSize:10,color:"#999"}}>Tenant will see all vacant rooms and pick one.</p>}
       </div>
 
-      <div className="tp-card"><h3>📋 Requirements</h3>
-        {reqList.map(([k,l])=><label key={k} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:12,cursor:"pointer",opacity:reqs[k]===false?0.5:1,textDecoration:reqs[k]===false?"line-through":"none"}}><input type="checkbox" checked={reqs[k]!==false} onChange={e=>setModal(prev=>({...prev,reqs:{...reqs,[k]:e.target.checked}}))}/>{l}{k==="incomeAnalysis"&&reqs[k]!==false&&<span style={{fontSize:9,color:"#d4a853",fontWeight:600}}>$45 (tenant pays)</span>}</label>)}
-      </div>
+      {/* RentPrep Screening Package */}
+      <div className="tp-card" style={{marginBottom:10}}><h3>🔍 Screening Package (RentPrep)</h3>
+        <p style={{fontSize:10,color:"#999",marginBottom:10}}>Select what this applicant is required to complete. The fee is paid by the tenant at the end of the application.</p>
+        {[
+          ["credit-bg","Credit Report + Full Background Check","Hand-compiled by FCRA-certified screeners","$49"],
+          ["credit-only","Credit Report Only","Automated SmartMove report","$29"],
+          ["none","No Screening (Waived)","e.g. intern with employer verification, military clearance","$0"],
+        ].map(([v,l,sub,price])=>(
+          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v}))} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${pkg===v?"#d4a853":"rgba(0,0,0,.06)"}`,background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:6,transition:"all .12s"}}>
+            <div style={{width:16,height:16,borderRadius:"50%",border:`2px solid ${pkg===v?"#d4a853":"rgba(0,0,0,.15)"}`,background:pkg===v?"#d4a853":"transparent",flexShrink:0}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{l}</div>
+              <div style={{fontSize:10,color:"#999"}}>{sub}</div>
+            </div>
+            <div style={{fontSize:13,fontWeight:800,color:pkg===v?"#d4a853":"#999"}}>{price}</div>
+          </div>
+        ))}
 
-      {totalFee>0&&<div className="tp-card" style={{background:"rgba(0,0,0,.02)"}}><h3>💳 Application Fee</h3>
-        <div style={{fontSize:11}}>
-          {reqs.incomeAnalysis!==false&&<div style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}><span>RentPrep BG / Credit / Income</span><span>${baseFee}</span></div>}
-          {procFee>0&&<div style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}><span>Black Bear processing</span><span>${procFee}</span></div>}
-          <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid rgba(0,0,0,.06)",fontWeight:700,marginTop:4}}><span>Total (tenant pays)</span><span>${totalFee}</span></div>
+        {/* Income add-on */}
+        <div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:10,marginTop:4}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Income Verification Add-on</div>
+          {[
+            ["none","None","—","$0"],
+            ["income-only","Income Verification","Verify income documents","$10"],
+            ["income-employment","Income + Employment Verification","Verify income and employer","$15"],
+          ].map(([v,l,sub,price])=>(
+            <div key={v} onClick={()=>setModal(prev=>({...prev,incomeAdd:v}))} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,border:`2px solid ${incomeAdd===v?"#4a7c59":"rgba(0,0,0,.06)"}`,background:incomeAdd===v?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",marginBottom:4,transition:"all .12s"}}>
+              <div style={{width:14,height:14,borderRadius:"50%",border:`2px solid ${incomeAdd===v?"#4a7c59":"rgba(0,0,0,.15)"}`,background:incomeAdd===v?"#4a7c59":"transparent",flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{l}</div>
+                {sub!=="—"&&<div style={{fontSize:9,color:"#999"}}>{sub}</div>}
+              </div>
+              <div style={{fontSize:11,fontWeight:700,color:incomeAdd===v?"#4a7c59":"#999"}}>{price}</div>
+            </div>
+          ))}
         </div>
-      </div>}
 
-      {anyWaived&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:12,marginBottom:12}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:6}}>Why are you waiving? (required)</div>
-        <textarea value={modal.waiverReason||""} onChange={e=>setModal(prev=>({...prev,waiverReason:e.target.value}))} placeholder="e.g. NASA intern with existing security clearance" style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit",resize:"vertical",minHeight:50}}/>
-      </div>}
+        {/* Fee total */}
+        <div style={{marginTop:10,padding:"10px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Total fee (tenant pays)</div>
+            <div style={{fontSize:10,color:"#999",marginTop:1}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" · "+incomeLabel[incomeAdd]:""}</div>
+          </div>
+          <div style={{fontSize:20,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":fmtS(totalFee)}</div>
+        </div>
+
+        {pkg==="none"&&<div style={{marginTop:8}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:4}}>Waiver reason (required)</div>
+          <textarea value={modal.waiverReason||""} onChange={e=>setModal(prev=>({...prev,waiverReason:e.target.value}))} placeholder="e.g. NASA intern — background check on file with employer. Offer letter accepted in lieu." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+        </div>}
+      </div>
 
       {modal.sendErrors&&modal.sendErrors.length>0&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,padding:10,marginBottom:8,animation:"fadeIn .2s"}}>{modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:10,color:"#c45c4a",padding:"1px 0"}}>⚠ {e}</div>)}</div>}
 
@@ -3944,23 +3986,24 @@ export default function Page(){
         const errors=[];
         if(roomMode==="locked"&&!selPropId)errors.push("Select a property");
         if(roomMode==="locked"&&selPropId&&!selRoomId)errors.push("Select a room");
-        if(anyWaived&&!(modal.waiverReason||"").trim())errors.push("Provide a waiver reason");
+        if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Provide a waiver reason for skipping screening");
         const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply?invite=${a.id}`;
         const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
         const commit=(method)=>{
-          const waived=reqList.filter(([k])=>reqs[k]===false).map(([,l])=>l);
           setApps(p=>p.map(x=>x.id===a.id?{...x,
             status:"invited",
             lastContact:TODAY.toISOString().split("T")[0],
-            waived,waiverReason:modal.waiverReason||"",
+            screenPkg:pkg,incomeAdd:incomeAdd,
+            waiverReason:modal.waiverReason||"",
             property:selProp?selProp.name:a.property,
             room:selRoom?selRoom.name:a.room,
             appFee:totalFee,
             inviteLink:link,
             sentVia:(x.sentVia?x.sentVia+", ":"")+method,
-            history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Invited via ${method}${waived.length?" · Waived: "+waived.join(", "):""}${modal.waiverReason?" — "+modal.waiverReason:""}`}]
+            history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],
+              note:`Invited via ${method} · ${pkgLabel[pkg]}${incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}${totalFee===0?" · Fee waived":" · $"+totalFee}${modal.waiverReason?" — "+modal.waiverReason:""}`}]
           }:x));
-          setNotifs(p=>[{id:uid(),type:"app",msg:`Invite sent to ${a.name} via ${method}${totalFee?` · Fee: $${totalFee}`:" · Fee waived"}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+          setNotifs(p=>[{id:uid(),type:"app",msg:`Invite sent to ${a.name} via ${method} · ${totalFee===0?"Fee waived":"$"+totalFee+" fee"}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
         };
 
         const sendEmail=async()=>{
@@ -3973,8 +4016,10 @@ export default function Page(){
               room:selRoom?selRoom.name:"",
               rent:selRoom?selRoom.rent:null,
               fee:totalFee,
+              screeningPkg:pkgLabel[pkg],
+              incomeAddOn:incomeAdd!=="none"?incomeLabel[incomeAdd]:"",
               note:modal.sendNote||"",
-              waived:reqList.filter(([k])=>reqs[k]===false).map(([,l])=>l),
+              waived:pkg==="none"?["Screening waived — "+modal.waiverReason]:[],
             })});
             const d=await res.json();
             if(d.ok){commit("Email");setModal(prev=>({...prev,emailSent:true,emailSending:false}));}
@@ -3982,7 +4027,7 @@ export default function Page(){
           }catch{setModal(prev=>({...prev,sendErrors:["Network error sending email"],emailSending:false}));}
         };
 
-        const smsBody=encodeURIComponent(`Hey ${a.name.split(" ")[0]}! You're invited to apply for a room at Black Bear Rentals in Huntsville, AL.${modal.sendNote?"\n\n"+modal.sendNote:""}\n\nApply here: ${link}\n\nTakes about 10–15 min. Questions? Just reply!\n\n— Harrison, Black Bear Rentals`);
+        const smsBody=encodeURIComponent(`Hey ${a.name.split(" ")[0]}! You're invited to apply for a room at Black Bear Rentals in Huntsville, AL.${modal.sendNote?"\n\n"+modal.sendNote:""}\n\nApply here: ${link}\n\n${totalFee===0?"No screening fee required for you!":"Screening fee: $"+totalFee+" (paid at end)"}\n\nTakes about 10–15 min. Questions? Just reply!\n\n— Harrison, Black Bear Rentals`);
 
         const copyLink=()=>{
           navigator.clipboard.writeText(link).then(()=>{
@@ -3994,11 +4039,9 @@ export default function Page(){
         return(
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           <div style={{display:"flex",gap:8}}>
-            {/* Email via Resend */}
             <button className="btn btn-green" style={{flex:1,opacity:modal.emailSending?.6:1}} onClick={sendEmail} disabled={!!modal.emailSending}>
               {modal.emailSending?"Sending...":modal.emailSent?"✓ Email Sent":"✉️ Send Email"}
             </button>
-            {/* SMS — opens Messages app */}
             <a href={`sms:${(a.phone||"").replace(/\D/g,"")}?&body=${smsBody}`}
               className="btn btn-dk btn-sm"
               style={{flex:1,textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}
@@ -4006,7 +4049,6 @@ export default function Page(){
               💬 Send Text
             </a>
           </div>
-          {/* Copy Link */}
           <button className="btn btn-out btn-sm" style={{width:"100%",color:modal.linkCopied?"#4a7c59":"#5c4a3a",borderColor:modal.linkCopied?"rgba(74,124,89,.3)":""}} onClick={copyLink}>
             {modal.linkCopied?"✓ Link Copied!":"🔗 Copy Invite Link"}
           </button>
