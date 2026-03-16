@@ -1400,13 +1400,56 @@ export default function Page(){
         const SI2={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
         const moveApp=(id,ns)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));};
         const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
-        const scoreApp=(a)=>{let s=50;if(a.income){const n=parseInt(String(a.income).replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(a.bgCheck==="passed")s+=15;if(a.creditScore&&a.creditScore!=="—"){const c=parseInt(a.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(a.refs==="verified")s+=10;return Math.min(s,100);};
+        const scoreApp=(a)=>{
+          let s=50;
+          const breakdown=[];
+          // Income
+          if(a.income){const n=parseInt(String(a.income).replace(/[^0-9]/g,""));
+            if(n>=5000){s+=15;breakdown.push("+15 income ≥$5k");}
+            else if(n>=4000){s+=10;breakdown.push("+10 income ≥$4k");}
+            else if(n>=3000){s+=5;breakdown.push("+5 income ≥$3k");}
+          }
+          // Background check
+          if(a.bgCheck==="passed"){s+=15;breakdown.push("+15 BG passed");}
+          else if(a.bgCheck==="failed"){s-=30;breakdown.push("-30 BG failed");}
+          // Credit score
+          if(a.creditScore&&a.creditScore!=="—"){const c=parseInt(a.creditScore);
+            if(c>=750){s+=15;breakdown.push("+15 credit ≥750");}
+            else if(c>=700){s+=10;breakdown.push("+10 credit ≥700");}
+            else if(c>=650){s+=5;breakdown.push("+5 credit ≥650");}
+            else if(c>0){s-=10;breakdown.push("-10 credit <650");}
+          }
+          // References
+          if(a.refs==="verified"){s+=10;breakdown.push("+10 refs verified");}
+          // Rent negotiated higher than list price
+          if(a.negotiatedRent&&a.room){const room=props.flatMap(p=>p.rooms).find(r=>r.name===a.room);if(room&&a.negotiatedRent>room.rent){s+=10;breakdown.push("+10 above-ask rent");}}
+          // Source quality
+          if(a.source==="NASA Intern Program"||a.source==="Military / Contractor Network"){s+=5;breakdown.push("+5 vetted source");}
+          // Eviction / felony in application data
+          if(a.applicationData){
+            const vals=Object.values(a.applicationData);
+            vals.forEach(v=>{if(v&&typeof v==="object"&&v.answer==="yes"&&(v.followUpText||"").length>0){s-=15;breakdown.push("-15 eviction/felony disclosed");}});
+          }
+          // Days stale — small penalty for going cold
+          const d=daysSince(a.lastContact||a.submitted);
+          if(d>=7){s-=10;breakdown.push("-10 stale 7d+");}
+          else if(d>=5){s-=5;breakdown.push("-5 stale 5d+");}
+          return{score:Math.max(0,Math.min(s,100)),breakdown};
+        };
+        const getScore=(a)=>scoreApp(a).score;
+        const getBreakdown=(a)=>scoreApp(a).breakdown;
+        const monthFilter=expanded.appMonthFilter||"all";
         const activeApps=apps.filter(a=>{
           if(a.status==="denied")return false;
           if(appSearch&&![a.name,a.email,a.phone,a.property,a.source].some(v=>(v||"").toLowerCase().includes(appSearch.toLowerCase())))return false;
+          if(monthFilter!=="all"&&!(a.submitted||"").startsWith(monthFilter))return false;
           return true;
         });
-        const deniedApps=apps.filter(a=>a.status==="denied");
+        const deniedApps=apps.filter(a=>{
+          if(a.status!=="denied")return false;
+          if(monthFilter!=="all"&&!(a.submitted||"").startsWith(monthFilter))return false;
+          return true;
+        });
         const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in"].includes(a.status));
         // Duplicate / returning detection
         const allTenantsList=props.flatMap(p=>p.rooms.filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
@@ -1488,12 +1531,18 @@ export default function Page(){
         {/* KPIs + controls */}
         <div className="kgrid" style={{gridTemplateColumns:"repeat(4,1fr)",marginBottom:10}}>
           <div className="kpi"><div className="kl">Pipeline</div><div className="kv">{activeApps.length}</div></div>
-          <div className="kpi"><div className="kl">Avg Score</div><div className="kv" style={{color:"#4a7c59"}}>{activeApps.length?Math.round(activeApps.reduce((s,a)=>s+scoreApp(a),0)/activeApps.length):0}</div></div>
+          <div className="kpi"><div className="kl">Avg Score</div><div className="kv" style={{color:"#4a7c59"}}>{activeApps.length?Math.round(activeApps.reduce((s,a)=>s+getScore(a),0)/activeApps.length):0}</div></div>
           <div className="kpi"><div className="kl">Stale</div><div className="kv" style={{color:staleApps.length?"#c45c4a":"#4a7c59"}}>{staleApps.length}</div></div>
           <div className="kpi"><div className="kl">Denied</div><div className="kv">{deniedApps.length}</div></div>
         </div>
         <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
           <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search applicants..." style={{flex:1,minWidth:160,padding:"8px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+          <select value={expanded.appMonthFilter||"all"} onChange={e=>setExpanded(p=>({...p,appMonthFilter:e.target.value}))} style={{padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+            <option value="all">All Time</option>
+            {[...new Set(apps.map(a=>(a.submitted||"").slice(0,7)).filter(Boolean).sort().reverse())].map(m=>{
+              const d=new Date(m+"-02");return<option key={m} value={m}>{d.toLocaleString("default",{month:"long",year:"numeric"})}</option>;
+            })}
+          </select>
           {[{v:"pipeline",l:"📋 Pipeline"},{v:"list",l:"📝 List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
         </div>
 
@@ -1531,15 +1580,34 @@ export default function Page(){
             <div key={stage} className="pipe-col">
               <div className="pipe-hd"><h4 style={{fontSize:10}}>{SI2[stage]} {SL[stage]}</h4><span className="pipe-cnt">{sa.length}</span></div>
               <div className="pipe-bd">
-                {sa.sort(function(a,b){return scoreApp(b)-scoreApp(a);}).map(function(a){var sc=scoreApp(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);return(
+                {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=["pre-screened","called"].includes(a.status);return(
                   <div key={a.id} className="pipe-card" style={{borderLeft:sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",paddingLeft:28}} onClick={function(){setModal({type:"app",data:a});}}>
                     <div style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)"}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>
-                    {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600}}>{flags[0].type==="current"?"⚠️ Current Tenant":flags[0].type==="past"?"🔄 Returning":"⚠️ Duplicate"}</div>}
-                    <div style={{display:"flex",justifyContent:"space-between"}}><div className="pipe-nm" style={{fontSize:10}}>{a.name}</div><span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 4px",borderRadius:3}}>{sc}</span></div>
+                    {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600,cursor:"pointer"}}
+                      onClick={e=>{e.stopPropagation();if(flags[0].type==="past"){setDrill("archive");setTab("tenants");}else if(flags[0].type==="dup"){setModal({type:"app",data:flags[0].data});}setModal(null);}}>
+                      {flags[0].type==="current"?"⚠ Current Tenant":flags[0].type==="past"?"↩ Returning":flags[0].type==="dup"?"⚠ Duplicate":""} →
+                    </div>}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div className="pipe-nm" style={{fontSize:10}}>{a.name}</div>
+                      <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
+                        <span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
+                          title={bd.join(" · ")||"Base score: 50"}
+                          onMouseEnter={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="block";}}
+                          onMouseLeave={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="none";}}
+                        >{sc}</span>
+                        <div style={{display:"none",position:"absolute",right:0,top:"100%",zIndex:20,background:"#1a1714",color:"#f5f0e8",borderRadius:6,padding:"6px 8px",fontSize:8,whiteSpace:"nowrap",boxShadow:"0 4px 12px rgba(0,0,0,.3)",marginTop:2}}>
+                          {bd.length>0?bd.map((b,i)=><div key={i}>{b}</div>):<div>Base: 50pts</div>}
+                        </div>
+                      </div>
+                    </div>
                     <div className="pipe-sub" style={{fontSize:8}}>{a.property||"—"}{a.room?" · "+a.room:""}</div>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:"#999",marginTop:2}}>
-                      <span>{a.source||""}</span>
-                      {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:600}}>{d}d</span>}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#999",marginTop:4}}>
+                      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
+                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                        {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:700}}>{d}d</span>}
+                        {canInvite&&<button style={{fontSize:7,padding:"1px 5px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
+                          onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite</button>}
+                      </div>
                     </div>
                   </div>);
                 })}
@@ -1551,7 +1619,7 @@ export default function Page(){
 
         {/* List */}
         {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th></tr></thead><tbody>
-          {activeApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map(a=>{const sc=scoreApp(a);const d=daysSince(a.lastContact||a.submitted);return(
+          {activeApps.sort((a,b)=>getScore(b)-getScore(a)).map(a=>{const sc=getScore(a);const d=daysSince(a.lastContact||a.submitted);return(
             <tr key={a.id} style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}><td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
               <td><span style={{fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a"}}>{sc}</span></td>
               <td><span className={`badge ${SC2[a.status]}`}>{SL[a.status]}</span></td>
@@ -1559,9 +1627,12 @@ export default function Page(){
               <td style={{fontSize:10}}>{a.source||"—"}</td></tr>);})}
         </tbody></table></div></div>}
 
-        {/* Denied */}
-        {deniedApps.length>0&&<div style={{marginTop:14}}><div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:6}}>DENIED ({deniedApps.length})</div>
-          {deniedApps.map(a=><div key={a.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · {fmtD(a.deniedDate)}{a.deniedReason?" · "+a.deniedReason:""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:x.prevStage||"pre-screened",deniedReason:null,deniedDate:null}:x))}>Restore</button></div>)}
+        {/* Denied — collapsible */}
+        {deniedApps.length>0&&<div style={{marginTop:14}}>
+          <button className="btn btn-out btn-sm" style={{width:"100%",color:"#999",marginBottom:4}} onClick={()=>setExpanded(p=>({...p,showDenied:!p.showDenied}))}>
+            {expanded.showDenied?"▾ Hide":"▸ Show"} Denied ({deniedApps.length})
+          </button>
+          {expanded.showDenied&&deniedApps.map(a=><div key={a.id} className="row" style={{opacity:.7}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · {fmtD(a.deniedDate)}{a.deniedReason?" · "+a.deniedReason:""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button><button className="btn btn-out btn-sm" onClick={()=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:x.prevStage||"pre-screened",deniedReason:null,deniedDate:null}:x))}>Restore</button></div>)}
         </div>}
 
         {/* ── Quick Add / Generic Link ── */}
@@ -1610,7 +1681,7 @@ export default function Page(){
             <div style={{marginTop:8,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:14,background:"rgba(212,168,83,.03)"}}>
               <div style={{fontSize:13,fontWeight:700,color:"#9a7422",marginBottom:8}}>📋 Waitlist — No Vacant Rooms</div>
               <div style={{fontSize:10,color:"#999",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
-              {waitlistApps.sort((a,b)=>scoreApp(b)-scoreApp(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>({scoreApp(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
+              {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
             </div>);
           return null;})()}
 
@@ -1630,13 +1701,13 @@ export default function Page(){
         {/* ── Waitlist ── */}
         {(()=>{const totalVacant=props.reduce((s,p)=>s+p.rooms.filter(r=>r.st==="vacant").length,0);
           if(totalVacant>0)return null;
-          const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status)).sort((a,b)=>scoreApp(b)-scoreApp(a));
+          const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status)).sort((a,b)=>getScore(b)-getScore(a));
           return waitlistApps.length>0?<div style={{marginTop:16,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:16,background:"rgba(212,168,83,.03)"}}>
             <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>📋 Waitlist — No Vacancies</div>
             <div style={{fontSize:10,color:"#999",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
             {waitlistApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
               <div style={{width:20,fontSize:11,fontWeight:700,color:"#d4a853"}}>#{i+1}</div>
-              <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>Score: {scoreApp(a)}</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div>
+              <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>Score: {getScore(a)}</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div>
             </div>)}
           </div>:null;
         })()}
