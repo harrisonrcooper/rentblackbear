@@ -2522,6 +2522,8 @@ export default function Page(){
             </div>
           </div>
         </div></div>
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Payment Reminder Template</h3>
           <p style={{fontSize:11,color:"#999",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
           <div className="fld">
             <label style={{display:"flex",justifyContent:"space-between"}}>
