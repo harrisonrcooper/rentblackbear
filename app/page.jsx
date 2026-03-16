@@ -619,7 +619,7 @@ function Chat(){
 
 function Screening({properties}){
   const PROPS=properties||[];
-  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",source:"",sourceOther:"",reason:""});
+  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
   const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});
   const[qs,setQs]=useState(SCREEN_QS);
   useEffect(()=>{supaGet("hq-screen-qs").then(d=>{if(d&&Array.isArray(d)&&d.length>0)setQs(d);});},[]);
@@ -675,7 +675,22 @@ function Screening({properties}){
           </div>
           <div><input className="sinp" placeholder="Email *" type="email" style={fldStyle("email")} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onBlur={()=>setTouched({...touched,email:true})}/>{errMsg("email")}</div>
           <div><select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}><option value="">Property interested in? *</option>{PROPS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>{errMsg("property")}</div>
-          <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label><input className="sinp" type="date" style={fldStyle("moveIn")} value={form.moveIn} onChange={e=>{setForm({...form,moveIn:e.target.value});setTouched({...touched,moveIn:true});}} onBlur={()=>setTouched({...touched,moveIn:true})}/>{errMsg("moveIn")}</div>
+          <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
+            <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
+              <select className="ssel" style={fldStyle("moveIn")} value={form.moveInMonth||""} onChange={e=>{const mo=e.target.value;setForm(f=>{const d=f.moveInDay,y=f.moveInYear;return{...f,moveInMonth:mo,moveIn:mo&&d&&y?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};});setTouched(t=>({...t,moveIn:true}));}} onBlur={()=>setTouched(t=>({...t,moveIn:true}))}>
+                <option value="">Month</option>
+                {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+              </select>
+              <select className="ssel" style={fldStyle("moveIn")} value={form.moveInDay||""} onChange={e=>{const d=e.target.value;setForm(f=>{const mo=f.moveInMonth,y=f.moveInYear;return{...f,moveInDay:d,moveIn:mo&&d&&y?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};});}}>
+                <option value="">Day</option>
+                {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
+              </select>
+              <select className="ssel" style={fldStyle("moveIn")} value={form.moveInYear||""} onChange={e=>{const y=e.target.value;setForm(f=>{const mo=f.moveInMonth,d=f.moveInDay;return{...f,moveInYear:y,moveIn:mo&&d&&y?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};});}}>
+                <option value="">Year</option>
+                {(()=>{const yr=new Date().getFullYear();return[yr,yr+1,yr+2].map(y=><option key={y} value={y}>{y}</option>);})()}
+              </select>
+            </div>
+            {errMsg("moveIn")}</div>
           <div><select className="ssel" style={fldStyle("source")} value={form.source} onChange={e=>{setForm({...form,source:e.target.value,sourceOther:""});setTouched({...touched,source:true});}} onBlur={()=>setTouched({...touched,source:true})}><option value="">How did you hear about us? *</option><option>Roomies.com</option><option>Google Search</option><option>Facebook / Instagram</option><option>Friend / Referral</option><option>Zillow / Apartments.com</option><option>Craigslist</option><option>Drive-by / Sign</option><option>Military / Contractor Network</option><option>Other</option></select>{errMsg("source")}
           {form.source==="Other"&&<><input className="sinp" placeholder="Please specify *" style={{marginTop:6,...fldStyle("sourceOther")}} value={form.sourceOther||""} onChange={e=>setForm({...form,sourceOther:e.target.value})} onBlur={()=>setTouched({...touched,sourceOther:true})}/>{touched.sourceOther&&!form.sourceOther?.trim()&&<div style={{color:"#c45c4a",fontSize:11,marginTop:2}}>Please tell us how you heard about us</div>}</>}</div>
           <div><textarea className="stxt" placeholder="Why are you leaving your current residence? *" style={fldStyle("reason")} value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} onBlur={()=>setTouched({...touched,reason:true})}/>{errMsg("reason")}{touched.reason&&form.reason.length>0&&form.reason.length<10&&<div style={{fontSize:10,color:"#999"}}>{form.reason.length}/10 characters</div>}</div>

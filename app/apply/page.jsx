@@ -184,8 +184,8 @@ export default function ApplyPage(){
   const[step,setStep]=useState("welcome");
   const[appType,setAppType]=useState("tenant");
   const[d,setD]=useState({
-    firstName:"",lastName:"",email:"",phone:"",dob:"",
-    moveIn:"",occupants:1,
+    firstName:"",lastName:"",email:"",phone:"",dob:"",dobMonth:"",dobDay:"",dobYear:"",source:"",
+    moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",occupants:1,
     // Personal
     ssn:"",idFile:null,idFileName:"",
     // Rental
@@ -214,7 +214,17 @@ export default function ApplyPage(){
 
   useEffect(()=>{(async()=>{try{const apps=await loadKey("hq-apps",[]);const inv=apps.find(a=>a.status==="invited");if(inv){setInvite(inv);setD(p=>({...p,firstName:inv.name?.split(" ")[0]||"",lastName:inv.name?.split(" ").slice(1).join(" ")||"",email:inv.email||"",phone:inv.phone||""}));}const p=await loadKey("hq-props",[]);setProps(p);}catch{}setLoading(false);})();},[]);
   useEffect(()=>{if(step!=="welcome"&&step!=="done"&&!loading){setSaving(true);const t=setTimeout(()=>setSaving(false),1500);return()=>clearTimeout(t);}},[d,step]);
+  // Keep d.dob in sync with the three dropdown parts
+  useEffect(()=>{const built=buildDob(d.dobMonth,d.dobDay,d.dobYear);if(built!==d.dob)upd("dob",built);},[d.dobMonth,d.dobDay,d.dobYear]);
+  // Keep d.moveIn in sync with move-in parts
+  useEffect(()=>{
+    if(d.moveInMonth&&d.moveInDay&&d.moveInYear){
+      const built=`${d.moveInYear}-${String(d.moveInMonth).padStart(2,"0")}-${String(d.moveInDay).padStart(2,"0")}`;
+      if(built!==d.moveIn)upd("moveIn",built);
+    }
+  },[d.moveInMonth,d.moveInDay,d.moveInYear]);
 
+  const buildDob=(mo,day,yr)=>mo&&day&&yr?`${yr}-${String(mo).padStart(2,"0")}-${String(day).padStart(2,"0")}`:"";
   const ageOk=(dob)=>{if(!dob)return false;const b=new Date(dob+"T00:00:00");const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=18;};
 
   const validate=(s)=>{
@@ -224,11 +234,13 @@ export default function ApplyPage(){
       if(!d.lastName.trim())e.lastName="Required";
       if(!d.email.trim()||!d.email.includes("@"))e.email="Valid email required";
       if(d.phone.replace(/\D/g,"").length!==10)e.phone="10-digit phone required";
-      if(!d.dob)e.dob="Required";
-      else if(!ageOk(d.dob))e.dob="You must be at least 18 years old";
+      if(!d.source)e.source="Please tell us how you heard about us";
+      const dob=buildDob(d.dobMonth,d.dobDay,d.dobYear);
+      if(!d.dobMonth||!d.dobDay||!d.dobYear)e.dob="Date of birth required";
+      else if(!ageOk(dob))e.dob="You must be at least 18 years old";
     }
     if(s==="appinfo"){
-      if(!d.moveIn)e.moveIn="Required";
+      if(!d.moveInMonth||!d.moveInDay||!d.moveInYear)e.moveIn="Move-in date required";
     }
     if(s==="personal"){
       if(!d.ssn||d.ssn.length<4)e.ssn="Last 4 of SSN required";
@@ -308,7 +320,41 @@ export default function ApplyPage(){
           <div className="fld-row"><div className="fld"><label>First Name<span className="req">*</span></label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder="First name"/>{errors.firstName&&<div className="err-msg">{errors.firstName}</div>}</div><div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder="Last name"/>{errors.lastName&&<div className="err-msg">{errors.lastName}</div>}</div></div>
           <div className="fld"><label>Email Address<span className="req">*</span></label><input type="email" value={d.email} onChange={e=>upd("email",e.target.value)} className={errors.email?"err":""} placeholder="you@email.com"/>{errors.email&&<div className="err-msg">{errors.email}</div>}</div>
           <div className="fld"><label>Phone Number<span className="req">*</span></label><input type="tel" value={d.phone} onChange={e=>upd("phone",fmtPhone(e.target.value))} className={errors.phone?"err":""} placeholder="(256) 555-1234"/>{errors.phone&&<div className="err-msg">{errors.phone}</div>}</div>
-          <div className="fld"><label>Date of Birth<span className="req">*</span></label><input type="date" value={d.dob} onChange={e=>upd("dob",e.target.value)} className={errors.dob?"err":""}/>{errors.dob&&<div className="err-msg">{errors.dob}</div>}</div>
+          <div className="fld">
+            <label>Date of Birth<span className="req">*</span></label>
+            <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
+              <select value={d.dobMonth} onChange={e=>upd("dobMonth",e.target.value)} className={errors.dob?"err":""} style={{fontSize:15}}>
+                <option value="">Month</option>
+                {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+              </select>
+              <select value={d.dobDay} onChange={e=>upd("dobDay",e.target.value)} className={errors.dob?"err":""} style={{fontSize:15}}>
+                <option value="">Day</option>
+                {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
+              </select>
+              <select value={d.dobYear} onChange={e=>upd("dobYear",e.target.value)} className={errors.dob?"err":""} style={{fontSize:15}}>
+                <option value="">Year</option>
+                {Array.from({length:82},(_,i)=>{const y=new Date().getFullYear()-18-i;return<option key={y} value={y}>{y}</option>;})}
+              </select>
+            </div>
+            {errors.dob&&<div className="err-msg">{errors.dob}</div>}
+          </div>
+          <div className="fld">
+            <label>How did you hear about us?<span className="req">*</span></label>
+            <select value={d.source} onChange={e=>upd("source",e.target.value)} className={errors.source?"err":""}>
+              <option value="">Select...</option>
+              <option>Roomies.com</option>
+              <option>Google Search</option>
+              <option>Facebook / Instagram</option>
+              <option>Friend / Referral</option>
+              <option>Zillow / Apartments.com</option>
+              <option>Craigslist</option>
+              <option>Drive-by / Sign</option>
+              <option>NASA Intern Program</option>
+              <option>Military / Contractor Network</option>
+              <option>Other</option>
+            </select>
+            {errors.source&&<div className="err-msg">{errors.source}</div>}
+          </div>
         </div>
         <div className="legal">By clicking the button below you are agreeing to our <a href="#">Application Authorization Policy</a>, <a href="#">Terms of Use</a> & <a href="#">Privacy Policy</a>.</div>
         <button className="btn-start" onClick={next}>Begin Application →</button>
@@ -318,7 +364,24 @@ export default function ApplyPage(){
       {step==="appinfo"&&<div className="sec">
         <div className="sec-num">Application Info</div>
         <div className="sec-hd"><h2>A Few Quick Details</h2><p>Help us prepare for your move-in.</p></div>
-        <div className="fld"><label>Desired Move-in Date<span className="req">*</span></label><input type="date" value={d.moveIn} onChange={e=>upd("moveIn",e.target.value)} className={errors.moveIn?"err":""}/>{errors.moveIn&&<div className="err-msg">{errors.moveIn}</div>}</div>
+        <div className="fld">
+          <label>Desired Move-in Date<span className="req">*</span></label>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
+            <select value={d.moveInMonth||""} onChange={e=>{upd("moveInMonth",e.target.value);}} className={errors.moveIn?"err":""} style={{fontSize:15}}>
+              <option value="">Month</option>
+              {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+            </select>
+            <select value={d.moveInDay||""} onChange={e=>upd("moveInDay",e.target.value)} className={errors.moveIn?"err":""} style={{fontSize:15}}>
+              <option value="">Day</option>
+              {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
+            </select>
+            <select value={d.moveInYear||""} onChange={e=>upd("moveInYear",e.target.value)} className={errors.moveIn?"err":""} style={{fontSize:15}}>
+              <option value="">Year</option>
+              {(()=>{const y=new Date().getFullYear();return[y,y+1,y+2].map(yr=><option key={yr} value={yr}>{yr}</option>);})()}
+            </select>
+          </div>
+          {errors.moveIn&&<div className="err-msg">{errors.moveIn}</div>}
+        </div>
         <div className="fld"><label>How many people will be living with you?</label>
           <div className="counter"><button className="counter-btn" onClick={()=>upd("occupants",Math.max(1,d.occupants-1))}>−</button><div className="counter-val">{d.occupants}</div><button className="counter-btn" onClick={()=>upd("occupants",d.occupants+1)}>+</button></div>
           {d.occupants>1&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.15)",borderRadius:8,padding:10,fontSize:12,color:"var(--rd)"}}>⚠ Only 1 person per room is allowed. Each additional occupant over 18 must submit their own application. If you're renting the entire property, please contact us.</div>}
@@ -475,8 +538,9 @@ export default function ApplyPage(){
           <div className="rev-row"><span className="rev-label">Name</span><span className="rev-val">{d.firstName} {d.lastName}</span></div>
           <div className="rev-row"><span className="rev-label">Email</span><span className="rev-val">{d.email}</span></div>
           <div className="rev-row"><span className="rev-label">Phone</span><span className="rev-val">{d.phone}</span></div>
-          <div className="rev-row"><span className="rev-label">DOB</span><span className="rev-val">{d.dob}</span></div>
-          <div className="rev-row"><span className="rev-label">Move-in</span><span className="rev-val">{d.moveIn||"—"}</span></div>
+          <div className="rev-row"><span className="rev-label">DOB</span><span className="rev-val">{d.dobMonth&&d.dobDay&&d.dobYear?`${["January","February","March","April","May","June","July","August","September","October","November","December"][d.dobMonth-1]} ${d.dobDay}, ${d.dobYear}`:"—"}</span></div>
+          <div className="rev-row"><span className="rev-label">Source</span><span className="rev-val">{d.source||"—"}</span></div>
+          <div className="rev-row"><span className="rev-label">Move-in</span><span className="rev-val">{d.moveInMonth&&d.moveInDay&&d.moveInYear?`${["January","February","March","April","May","June","July","August","September","October","November","December"][d.moveInMonth-1]} ${d.moveInDay}, ${d.moveInYear}`:"—"}</span></div>
         </div>
         {appType==="tenant"&&<>
           <div className="rev-sec"><h3>🏠 Rental History <span className="rev-edit" onClick={()=>setStep("rental")}>Edit</span></h3>
