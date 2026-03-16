@@ -3955,15 +3955,46 @@ export default function Page(){
       </div>
 
       <div className="tp-card" style={{marginBottom:10}}><h3>Room Assignment</h3>
-        <div style={{display:"flex",gap:6,marginBottom:8}}>
-          <button className={`btn ${roomMode==="locked"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"locked"}))}>Lock to room</button>
-          <button className={`btn ${roomMode==="choice"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"choice"}))}>Let tenant choose</button>
+        <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+          <button className={`btn ${roomMode==="locked"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"locked",selRoomId:""}))}>Lock to specific room</button>
+          <button className={`btn ${roomMode==="property"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"property",selRoomId:""}))}>Entire property</button>
+          <button className={`btn ${roomMode==="choice"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,roomMode:"choice",selRoomId:""}))}>Let tenant choose</button>
         </div>
+
         {roomMode==="locked"&&<div className="fr">
-          <div className="fld"><label>Property</label><select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,selRoomId:""}))} style={{width:"100%"}}><option value="">Select...</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-          <div className="fld"><label>Room</label><select value={selRoomId} onChange={e=>setModal(prev=>({...prev,selRoomId:e.target.value}))} style={{width:"100%"}}><option value="">Select...</option>{availRooms.map(r=><option key={r.id} value={r.id}>{r.name} — {fmtS(r.rent)}/mo</option>)}</select></div>
+          <div className="fld">
+            <label>Property {modal.sendErrors?.some(e=>e.includes("property"))&&<span style={{color:"#c45c4a",fontSize:10,fontWeight:700}}>← Required</span>}</label>
+            <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,selRoomId:"",sendErrors:[]}))}
+              style={{width:"100%",borderColor:modal.sendErrors?.some(e=>e.includes("property"))?"#c45c4a":undefined}}>
+              <option value="">Select property...</option>
+              {props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="fld">
+            <label>Room {selPropId&&!selRoomId&&modal.sendErrors?.some(e=>e.includes("room"))&&<span style={{color:"#c45c4a",fontSize:10,fontWeight:700}}>← Required</span>}</label>
+            <select value={selRoomId} onChange={e=>setModal(prev=>({...prev,selRoomId:e.target.value,sendErrors:[]}))}
+              style={{width:"100%",borderColor:selPropId&&modal.sendErrors?.some(e=>e.includes("room"))?"#c45c4a":undefined}}
+              disabled={!selPropId}>
+              <option value="">{selPropId?availRooms.length?"Select room...":"No vacant rooms":"Select property first"}</option>
+              {availRooms.map(r=><option key={r.id} value={r.id}>{r.name} — {fmtS(r.rent)}/mo</option>)}
+            </select>
+            {selPropId&&availRooms.length===0&&<div style={{fontSize:10,color:"#c45c4a",marginTop:3}}>No vacant rooms at this property.</div>}
+          </div>
         </div>}
-        {roomMode==="choice"&&<p style={{fontSize:10,color:"#999"}}>Tenant sees all vacant rooms and picks one.</p>}
+
+        {roomMode==="property"&&<div className="fld">
+          <label>Property {modal.sendErrors?.some(e=>e.includes("property"))&&<span style={{color:"#c45c4a",fontSize:10,fontWeight:700}}>← Required</span>}</label>
+          <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,sendErrors:[]}))}
+            style={{width:"100%",borderColor:modal.sendErrors?.some(e=>e.includes("property"))?"#c45c4a":undefined}}>
+            <option value="">Select property...</option>
+            {props.map(p=><option key={p.id} value={p.id}>{p.name} (entire property)</option>)}
+          </select>
+          {selPropId&&selProp&&<div style={{marginTop:6,padding:"7px 10px",background:"rgba(212,168,83,.06)",borderRadius:6,fontSize:10,color:"#9a7422"}}>
+            Inviting to rent all {selProp.rooms?.length||"?"} rooms at {selProp.name}. Confirm rent amount in the lease terms.
+          </div>}
+        </div>}
+
+        {roomMode==="choice"&&<p style={{fontSize:10,color:"#999"}}>Tenant sees all vacant rooms across your properties and picks one.</p>}
       </div>
 
       <div className="tp-card" style={{marginBottom:10}}><h3>Screening Package (RentPrep)</h3>
@@ -4016,13 +4047,20 @@ export default function Page(){
         <textarea value={modal.sendNote||""} onChange={e=>setModal(prev=>({...prev,sendNote:e.target.value}))} placeholder="e.g. Great speaking with you today!" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit",resize:"none"}}/>
       </div>
 
-      {modal.sendErrors&&modal.sendErrors.length>0&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,padding:10,marginBottom:8}}>{modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:10,color:"#c45c4a"}}>  {e}</div>)}</div>}
+      {modal.sendErrors&&modal.sendErrors.length>0&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#c45c4a",marginBottom:4}}>Fix the following before sending:</div>
+        {modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:11,color:"#c45c4a",display:"flex",alignItems:"center",gap:6,padding:"2px 0"}}>
+          <span style={{width:5,height:5,borderRadius:"50%",background:"#c45c4a",flexShrink:0,display:"inline-block"}}/>
+          {e}
+        </div>)}
+      </div>}
 
       {(()=>{
         const errors=[];
-        if(roomMode==="locked"&&!selPropId)errors.push("Select a property");
-        if(roomMode==="locked"&&selPropId&&!selRoomId)errors.push("Select a room");
-        if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Provide a waiver reason");
+        if(roomMode==="locked"&&!selPropId)errors.push("Select a property before sending");
+        if(roomMode==="locked"&&selPropId&&!selRoomId)errors.push(availRooms.length===0?"No vacant rooms at this property — choose a different property or mode":"Select a room before sending");
+        if(roomMode==="property"&&!selPropId)errors.push("Select a property before sending");
+        if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Provide a waiver reason for skipping screening");
         const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply?invite=${a.id}`;
         const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
         const commit=(method)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],screenPkg:pkg,incomeAdd:incomeAdd,appFee:totalFee,waiverReason:modal.waiverReason||"",property:selProp?selProp.name:a.property,room:selRoom?selRoom.name:a.room,inviteLink:link,sentVia:(x.sentVia?x.sentVia+", ":"")+method,history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Invited via ${method} - ${pkgLabel[pkg]} - $${totalFee}${modal.waiverReason?" - "+modal.waiverReason:""}`}]}:x));setNotifs(p=>[{id:uid(),type:"app",msg:`Invite sent to ${a.name} via ${method} - ${totalFee===0?"Fee waived":"$"+totalFee}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);};
@@ -4044,133 +4082,166 @@ export default function Page(){
   {/* Approval Confirmation Modal — double confirm + auto-charges */}
   {modal&&modal.type==="approveConfirm"&&(()=>{const a=modal.data;
     const incReqs=modal.incompleteReqs||[];
-    // Use terms saved during Reviewing, fall back to defaults
     const targetProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
     const targetRoom=a.termRoomId?(targetProp?targetProp.rooms.find(r=>r.id===a.termRoomId):null):(targetProp?targetProp.rooms.find(r=>r.name===a.room):null);
     const rent=a.termRent!==undefined?a.termRent:(targetRoom?targetRoom.rent:0);
     const termSD=a.termSD!==undefined?a.termSD:rent;
     const termMoveIn=a.termMoveIn||a.moveIn||TODAY.toISOString().split("T")[0];
     const termHighRisk=a.termHighRisk||false;
-    const termProrate=a.termProrate||"prorated";
     const existingLeases=targetRoom&&targetRoom.st==="occupied"?[{tenant:(targetRoom.tenant&&targetRoom.tenant.name)||"Unknown",leaseEnd:targetRoom.le}]:[];
+    const leaseOverlap=existingLeases.length>0;
 
     const moveInD=new Date(termMoveIn+"T00:00:00");
-    const daysInMonth=30;// per rule: always divide by 30
     const moveInDay=moveInD.getDate();
     const calDaysInMonth=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,0).getDate();
     const daysRemaining=calDaysInMonth-moveInDay+1;
-    const dailyRate=rent/daysInMonth;
-    const proratedAmt=Math.ceil(dailyRate*daysRemaining);// round up to nearest dollar
+    const dailyRate=rent/30;
+    const proratedAmt=Math.ceil(dailyRate*daysRemaining);
     const isFirstDay=moveInDay===1;
-    const autoOver15=daysRemaining>15;
+    const termProrate=a.termProrate||"prorated";
     const dayBefore=new Date(moveInD);dayBefore.setDate(dayBefore.getDate()-1);
     const firstDueDate=dayBefore>=TODAY?dayBefore.toISOString().split("T")[0]:termMoveIn;
-    const nextMonthFirst=`${moveInD.getFullYear()}-${(moveInD.getMonth()+2).toString().padStart(2,"0")}-01`;
 
-    // Build charge list
     const chargeList=[];
-    chargeList.push({cat:"Security Deposit",desc:"Security Deposit — secures room",amount:termSD,due:TODAY.toISOString().split("T")[0]});
+    chargeList.push({cat:"Security Deposit",desc:"Security Deposit",amount:termSD,due:TODAY.toISOString().split("T")[0]});
     if(isFirstDay||termProrate==="full"){
       chargeList.push({cat:"Rent",desc:`First Month's Rent — ${moveInD.toLocaleString("default",{month:"long",year:"numeric"})}`,amount:rent,due:firstDueDate});
     } else {
-      chargeList.push({cat:"Rent",desc:`Prorated Rent (${daysRemaining} days × $${Math.ceil(dailyRate)}) — ${moveInD.toLocaleString("default",{month:"long",year:"numeric"})}`,amount:proratedAmt,due:firstDueDate});
+      chargeList.push({cat:"Rent",desc:`Prorated Rent (${daysRemaining} days × $${Math.ceil(dailyRate)})`,amount:proratedAmt,due:firstDueDate});
     }
-    if(termHighRisk)chargeList.push({cat:"Rent",desc:"Last Month's Rent (held) — high-risk",amount:rent,due:firstDueDate});
+    if(termHighRisk)chargeList.push({cat:"Rent",desc:"Last Month's Rent (high-risk hold)",amount:rent,due:firstDueDate});
     const totalDue=chargeList.reduce((s,c)=>s+c.amount,0);
+
+    const hasWarnings=incReqs.length>0||leaseOverlap;
 
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
+
+      {/* ── Step 1: Review & confirm lease terms ── */}
       {!modal.confirmed?<>
         <h2>Approve {a.name}?</h2>
-        {incReqs.length>0&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginBottom:12,fontSize:11,color:"#9a7422"}}>⚠️ <strong>Incomplete:</strong> {incReqs.map(r=>r.label).join(", ")}</div>}
+        <p style={{fontSize:12,color:"#5c4a3a",marginBottom:14}}>Review the lease terms and any warnings below before approving. This will send them an approval email and text.</p>
 
+        {/* Warnings */}
+        {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:12,marginBottom:12}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:8}}>⚠ Warnings — review before proceeding</div>
+          {incReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:"#9a7422",padding:"3px 0",borderBottom:"1px solid rgba(212,168,83,.12)"}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:"#d4a853",flexShrink:0,display:"inline-block"}}/>
+            <strong>{r.label}</strong> is still pending — not yet completed
+          </div>)}
+          {leaseOverlap&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:"#c45c4a",padding:"3px 0",fontWeight:700}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:"#c45c4a",flexShrink:0,display:"inline-block"}}/>
+            Lease overlap — {existingLeases[0].tenant} is currently in this room (lease ends {fmtD(existingLeases[0].leaseEnd)})
+          </div>}
+          <div style={{marginTop:8,fontSize:10,color:"#9a7422",fontStyle:"italic"}}>You can still approve — but you'll need to confirm once more on the next screen.</div>
+        </div>}
+
+        {/* Lease terms */}
         <div className="tp-card" style={{marginBottom:10}}>
-          <h3>Confirm Lease Terms</h3>
+          <h3>Lease Terms</h3>
           <div className="tp-row"><span className="tp-label">Tenant</span><strong>{a.name}</strong></div>
-          <div className="tp-row"><span className="tp-label">Room</span><strong>{targetRoom?targetRoom.name:a.room||"—"}</strong></div>
+          <div className="tp-row"><span className="tp-label">Email</span><span style={{fontSize:11}}>{a.email}</span></div>
+          <div className="tp-row"><span className="tp-label">Phone</span><span style={{fontSize:11}}>{a.phone}</span></div>
+          <div className="tp-row"><span className="tp-label">Room</span><strong style={{color:!targetRoom?"#c45c4a":"inherit"}}>{targetRoom?targetRoom.name:a.room||"⚠ Not set"}</strong></div>
           <div className="tp-row"><span className="tp-label">Property</span><strong>{targetProp?targetProp.name:a.property||"—"}</strong></div>
-          <div className="tp-row"><span className="tp-label">Monthly Rent</span><strong>{fmtS(rent)}/mo</strong></div>
-          <div className="tp-row"><span className="tp-label">Move-in Date</span><strong>{fmtD(termMoveIn)}</strong></div>
-          <div className="tp-row"><span className="tp-label">Risk Level</span><strong>{termHighRisk?"⚠ High Risk":"Standard"}</strong></div>
+          <div className="tp-row"><span className="tp-label">Monthly Rent</span><strong style={{color:"#4a7c59"}}>{fmtS(rent)}/mo</strong></div>
+          <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(termMoveIn)}</strong></div>
+          <div className="tp-row"><span className="tp-label">Security Deposit</span><strong>{fmtS(termSD)}</strong></div>
+          <div className="tp-row"><span className="tp-label">Risk Level</span><strong>{termHighRisk?"⚠ High Risk — last month held":"Standard"}</strong></div>
         </div>
 
+        {/* Move-in charges */}
         <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:14,marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#4a7c59",marginBottom:10}}>📄 Charges to Generate</div>
-          <div style={{fontSize:10,color:"#999",marginBottom:10}}>Due dates pre-filled. Edit if needed — SD is exempt from late fees. Rent portion is also exempt until they move in.</div>
+          <div style={{fontSize:11,fontWeight:700,color:"#4a7c59",marginBottom:8}}>Move-In Charges (auto-generated)</div>
           {chargeList.map((c,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12,gap:12}}>
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12,gap:12}}>
               <div style={{flex:1}}>
-                <div style={{fontWeight:600}}>{c.cat==="Security Deposit"?"🔒":"🏠"} {c.desc}</div>
-                <div style={{fontSize:9,color:"#c45c4a",fontWeight:600}}>No late fees apply</div>
+                <div style={{fontWeight:600}}>{c.desc}</div>
+                <div style={{fontSize:9,color:"#999"}}>Due: <input type="date" value={modal.dueDates?.[i]||c.due} onChange={e=>{const dd=[...(modal.dueDates||chargeList.map(x=>x.due))];dd[i]=e.target.value;setModal(prev=>({...prev,dueDates:dd}));}} style={{fontSize:9,padding:"1px 4px",borderRadius:3,border:"1px solid rgba(0,0,0,.1)",fontFamily:"inherit"}}/></div>
               </div>
-              <div style={{textAlign:"right",display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
-                <strong>{fmtS(c.amount)}</strong>
-                <input type="date" value={modal.dueDates?.[i]||c.due} onChange={e=>{const dd=[...(modal.dueDates||chargeList.map(x=>x.due))];dd[i]=e.target.value;setModal(prev=>({...prev,dueDates:dd}));}} style={{fontSize:9,padding:"2px 5px",borderRadius:4,border:"1px solid rgba(0,0,0,.1)",fontFamily:"inherit",color:"#5c4a3a"}}/>
-              </div>
+              <strong>{fmtS(c.amount)}</strong>
             </div>
           ))}
           <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",fontWeight:800,fontSize:13,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:4}}>
             <span>Total Move-In</span><span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
           </div>
         </div>
-        {a.passcode&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:10,marginBottom:12,fontSize:11}}>
-          🔑 <strong>Door Passcode:</strong> {a.passcode} — tenant chose this during the application. Activates at 12:00am on move-in day once rent is received.
-        </div>}
-        {!a.passcode&&<div style={{background:"rgba(196,92,74,.06)",borderRadius:8,padding:8,marginBottom:12,fontSize:10,color:"#c45c4a"}}>
-          ⚠ No passcode on file — tenant didn't set one in their application.
+
+        {a.passcode&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:10,marginBottom:10,fontSize:11}}>
+          🔑 Door passcode <strong>{a.passcode}</strong> will activate at 12:00am on move-in day once rent is received.
         </div>}
 
-        {existingLeases.length>0&&<div style={{background:"rgba(196,92,74,.06)",borderRadius:8,padding:10,marginBottom:10,fontSize:11,color:"#c45c4a"}}>⚠️ <strong>Lease overlap:</strong> {existingLeases[0].tenant} currently in this room</div>}
+        {/* Require waiver note when approving with pending items */}
+        {incReqs.length>0&&<div className="fld" style={{marginBottom:10}}>
+          <label style={{fontSize:10,fontWeight:700,color:"#9a7422"}}>Why are you approving with pending items? <span style={{color:"#c45c4a"}}>*</span></label>
+          <textarea value={modal.bypassNote||""} onChange={e=>setModal(prev=>({...prev,bypassNote:e.target.value}))} placeholder="e.g. NASA intern — employer verification accepted in lieu of BG check" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${modal.bypassNoteErr?"#c45c4a":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+          {modal.bypassNoteErr&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2}}>Required — explain why you're proceeding</div>}
+        </div>}
+
         <div className="mft">
           <button className="btn btn-out" onClick={()=>setModal({type:"app",data:a})}>← Back</button>
-          <button className="btn btn-green" onClick={()=>setModal(prev=>({...prev,confirmed:true}))}>Yes, Approve →</button>
+          <button className="btn btn-green" onClick={()=>{
+            if(incReqs.length>0&&!(modal.bypassNote||"").trim()){setModal(prev=>({...prev,bypassNoteErr:true}));return;}
+            setModal(prev=>({...prev,confirmed:true,bypassNoteErr:false}));
+          }}>
+            {hasWarnings?"Approve Anyway →":"Yes, Approve →"}
+          </button>
         </div>
 
+      {/* ── Step 2: Final confirmation — restate everything including warnings ── */}
       </>:<>
-        <h2 style={{textAlign:"center"}}>⚠️ Final Confirmation</h2>
-        <div style={{textAlign:"center",padding:"12px 16px",fontSize:13,color:"#5c4a3a",lineHeight:1.7}}>
-          Approving <strong>{a.name}</strong> for <strong>{targetRoom?targetRoom.name:a.room}</strong> at <strong>{targetProp?targetProp.name:a.property}</strong><br/>
-          <strong>{fmtS(rent)}/mo</strong> starting <strong>{fmtD(termMoveIn)}</strong><br/>
-          <span style={{fontSize:11,color:"#999"}}>{fmtS(totalDue)} total move-in charges will be generated</span>
+        <h2 style={{textAlign:"center"}}>Final Confirmation</h2>
+        <p style={{fontSize:12,color:"#5c4a3a",textAlign:"center",marginBottom:14}}>This cannot be undone. An approval email and text will be sent to {a.name}.</p>
+
+        {/* Restate warnings on final screen */}
+        {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:12,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:6}}>⚠ You are approving with outstanding items:</div>
+          {incReqs.map((r,i)=><div key={i} style={{fontSize:11,color:"#9a7422",padding:"2px 0"}}>• {r.label} still pending</div>)}
+          {leaseOverlap&&<div style={{fontSize:11,color:"#c45c4a",padding:"2px 0",fontWeight:700}}>• Lease overlap with {existingLeases[0].tenant}</div>}
+        </div>}
+
+        <div style={{background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:16,marginBottom:14,textAlign:"center"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#1a1714",marginBottom:6}}>{a.name}</div>
+          <div style={{fontSize:13,color:"#5c4a3a"}}>{targetRoom?targetRoom.name:a.room} · {targetProp?targetProp.name:a.property}</div>
+          <div style={{fontSize:16,fontWeight:800,color:"#4a7c59",marginTop:6}}>{fmtS(rent)}/mo</div>
+          <div style={{fontSize:11,color:"#999",marginTop:4}}>Move-in {fmtD(termMoveIn)} · {fmtS(totalDue)} total due at move-in</div>
+          <div style={{marginTop:10,fontSize:11,color:"#4a7c59",fontWeight:600}}>✉️ Approval email + text will be sent automatically</div>
         </div>
+
         <div className="mft">
           <button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,confirmed:false}))}>← Go Back</button>
-          <button className="btn btn-green" onClick={()=>{
-            if(!targetRoom){alert("Room not found — check room assignment in Lease Terms.");return;}
+          <button className="btn btn-green" onClick={async()=>{
+            if(!targetRoom){alert("Room not found — check room assignment.");return;}
             const roomId=targetRoom.id;
             const propName=targetProp?targetProp.name:a.property;
             const now=TODAY.toISOString().split("T")[0];
-            // Use edited due dates if changed, else defaults
             const finalDues=modal.dueDates||chargeList.map(c=>c.due);
             const newCharges=chargeList.map((c,i)=>({
               id:uid(),roomId,tenantName:a.name,propName,roomName:targetRoom.name,
               category:c.cat,desc:c.desc,amount:c.amount,amountPaid:0,
               dueDate:finalDues[i]||c.due,createdDate:now,payments:[],waived:false,
-              noLateFee:true,// SD and move-in charges are exempt from late fees
-              notes:"Auto-generated on approval."
+              noLateFee:true,notes:"Auto-generated on approval."
             }));
             setCharges(p=>{const updated=[...newCharges,...p];save("hq-charges",updated);return updated;});
-            // Store passcode and lock activation details on the app record
             const passcode=a.passcode||null;
-            const lockActivation=passcode?{
-              passcode,
-              activatesAt:`${termMoveIn}T00:00:00`,// 12:00am on move-in day
-              status:"pending",// pending → active when rent paid
-              note:"Activates at 12am on move-in day once rent portion is received"
-            }:null;
+            const lockActivation=passcode?{passcode,activatesAt:`${termMoveIn}T00:00:00`,status:"pending"}:null;
             setApps(p=>p.map(x=>x.id===a.id?{...x,
               status:"approved",lastContact:now,
               property:propName,room:targetRoom.name,
-              highRisk:termHighRisk,
-              lockActivation,
+              highRisk:termHighRisk,lockActivation,
+              approvedWithPending:incReqs.length>0?(modal.bypassNote||incReqs.map(r=>r.label).join(", ")):null,
               history:[...(x.history||[]),{from:"reviewing",to:"approved",date:now,
-                note:`Approved. ${fmtS(totalDue)} move-in charges generated.${passcode?` Passcode ${passcode} pending activation.`:""}`}]
+                note:`Approved. ${fmtS(totalDue)} move-in charges generated.${incReqs.length>0?" Bypassed: "+incReqs.map(r=>r.label).join(", ")+(modal.bypassNote?" — "+modal.bypassNote:""):""}${leaseOverlap?" WARNING: lease overlap.":""}`}]
             }:x));
-            // TODO: Smart lock API stub — connect Schlage/August here
-            // if(lockActivation){ await smartLockAPI.scheduleCode({code:passcode, activateAt:lockActivation.activatesAt, roomId}); }
             setNotifs(p=>[{id:uid(),type:"app",
-              msg:`${a.name} approved for ${targetRoom.name} at ${propName} — ${fmtS(totalDue)} move-in charges generated${passcode?` · Passcode ${passcode} pending`:""}`,
-              date:now,read:false,urgent:false},...p]);
+              msg:`✅ ${a.name} approved — ${targetRoom.name} at ${propName} · ${fmtS(totalDue)} due at move-in`,
+              date:now,read:false,urgent:true},...p]);
+            // Send approval email
+            try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+              to:a.email,name:a.name,
+              room:targetRoom.name,property:propName,
+              rent,moveIn:fmtD(termMoveIn),totalDue
+            })});}catch{}
             setModal(null);
           }}>✅ Confirm & Approve</button>
         </div>
@@ -4200,8 +4271,17 @@ export default function Page(){
     const targetProp=props.find(p=>p.name===a.property);
     const targetRoom=targetProp?targetProp.rooms.find(r=>r.name===a.room&&r.st==="vacant"):null;
     const mf=[];var nm3=(a.name||"").toLowerCase();
-    archive.forEach(t=>{if(((t.name||"").toLowerCase()===nm3)||((t.email||"").toLowerCase()===(a.email||"").toLowerCase()))mf.push({type:"past",label:"🔄 Previously at "+(t.propName||"unknown")+(t.reason?" — "+t.reason:"")});});
-    apps.filter(x=>x.id!==a.id&&x.status==="denied").forEach(x=>{if(((x.name||"").toLowerCase()===nm3)||((x.email||"").toLowerCase()===(a.email||"").toLowerCase()))mf.push({type:"denied",label:"⚠️ Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});});
+    archive.forEach(t=>{
+      if(((t.name||"").toLowerCase()===nm3)||((t.email||"").toLowerCase()===(a.email||"").toLowerCase())){
+        const isEviction=t.reason&&(t.reason.toLowerCase().includes("evict")||t.reason.toLowerCase().includes("forcibly"));
+        const isEarly=t.reason&&(t.reason.toLowerCase().includes("early")||t.reason.toLowerCase().includes("broke"));
+        mf.push({
+          type:isEviction?"evicted":isEarly?"early":"past",
+          label:(isEviction?"⚠ Previously evicted":isEarly?"⚠ Broke lease early":"↩ Returning tenant")+" — "+(t.propName||"unknown")+(t.reason?" ("+t.reason+")":"")
+        });
+      }
+    });
+    apps.filter(x=>x.id!==a.id&&x.status==="denied").forEach(x=>{if(((x.name||"").toLowerCase()===nm3)||((x.email||"").toLowerCase()===(a.email||"").toLowerCase()))mf.push({type:"denied",label:"⚠ Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});});
     const reqs=[{key:"bgCheck",label:"Background Check"},{key:"creditScore",label:"Credit Check"},{key:"incomeVerified",label:"Income Verification"},{key:"refs",label:"References"},{key:"idVerified",label:"ID Verified"}];
     const waived=a.waived||[];
     const incompleteReqs=reqs.filter(r=>!waived.includes(r.label)&&a[r.key]!=="passed"&&a[r.key]!=="verified");
@@ -4220,9 +4300,16 @@ export default function Page(){
         </div>
       </div>
       <div style={{display:"flex",gap:2,marginBottom:12}}>{STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}><div style={{height:4,borderRadius:2,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:2}}/><div style={{fontSize:7,color:i<=si?"#d4a853":"#999"}}>{SI3[s]}</div></div>)}</div>
-      {mf.length>0&&<div style={{marginBottom:10}}>{mf.map((f,i)=><div key={i} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,background:f.type==="denied"?"rgba(196,92,74,.06)":"rgba(212,168,83,.06)",color:f.type==="denied"?"#c45c4a":"#9a7422"}}>{f.label}</div>)}</div>}
+      {mf.length>0&&<div style={{marginBottom:10}}>{mf.map((f,i)=><div key={i} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,
+        background:f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",
+        color:f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f"
+      }}>{f.label}</div>)}</div>}
       <div className="tp-card"><h3>👤 Applicant</h3><div className="tp-row"><span className="tp-label">Email</span><strong>{a.email}</strong></div><div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone}</strong></div><div className="tp-row"><span className="tp-label">Income</span><strong>{a.income||"—"}</strong></div>{a.source&&<div className="tp-row"><span className="tp-label">Source</span><strong>{a.source}</strong></div>}</div>
-      <div className="tp-card"><h3>🏠 Request</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{a.property||"No preference"}</strong></div>{a.room&&<div className="tp-row"><span className="tp-label">Bedroom</span><strong>{a.room}</strong></div>}<div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)||"Flexible"}</strong></div></div>
+      <div className="tp-card"><h3>🏠 Request</h3>
+        <div className="tp-row"><span className="tp-label">Property</span><strong>{a.property||"No preference"}</strong></div>
+        <div className="tp-row"><span className="tp-label">Bedroom</span><strong style={{color:a.room?"#1a1714":"#999"}}>{a.room||"No preference"}</strong></div>
+        <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)||"Flexible"}</strong></div>
+      </div>
       {a.status==="reviewing"&&<div className="tp-card"><h3>📋 Review Checklist</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"not-started";return(
           <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1}}>
@@ -4324,7 +4411,17 @@ export default function Page(){
           </div>
         </div>);
       })()}
-      {(a.status==="approved"||a.status==="move-in")&&<div className="tp-card"><h3>📋 Summary</h3>{reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"—";return(<div key={r.key} style={{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:11,opacity:isW?0.4:1}}><span style={{textDecoration:isW?"line-through":"none"}}>{r.label}</span><span style={{fontWeight:600,color:isW?"#999":val==="passed"||val==="verified"?"#4a7c59":"#d4a853"}}>{isW?"Waived":val}</span></div>);})}</div>}
+      {(a.status==="approved"||a.status==="move-in")&&<div className="tp-card"><h3>📋 Screening Summary</h3>
+        {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"—";const passed=val==="passed"||val==="verified";return(
+          <div key={r.key} style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:12,opacity:isW?.45:1,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
+              <span style={{fontSize:11,fontWeight:700,color:isW?"#bbb":passed?"#4a7c59":val==="pending"?"#d4a853":"#c45c4a"}}>{isW?"Bypassed":passed?"✓ "+val:val}</span>
+            </div>
+            {isW&&<div style={{fontSize:9,color:"#999",fontStyle:"italic",marginTop:1}}>{a.waiverReason?"Reason: "+a.waiverReason:"⚠ No waiver reason on file"}</div>}
+          </div>);})}
+        {a.approvedWithPending&&<div style={{marginTop:6,padding:"5px 8px",background:"rgba(212,168,83,.06)",borderRadius:5,fontSize:10,color:"#9a7422"}}>Approved with pending: {a.approvedWithPending}</div>}
+      </div>}
       {/* Roommate Compatibility */}
       {a.property&&<div className="tp-card"><h3>🏠 Housemates at {a.property}</h3>
         {(function(){var pr=props.find(function(p){return p.name===a.property;});if(!pr)return null;return pr.rooms.map(function(r){return(
@@ -4411,10 +4508,40 @@ export default function Page(){
       <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
         {a.status==="pre-screened"&&<><button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"called",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(null);}}>📞 Mark as Called</button><button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>✉️ Invite</button></>}
         {a.status==="called"&&<button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>✉️ Invite to Apply</button>}
-        {a.status==="invited"&&<div style={{flex:1,textAlign:"center",padding:"10px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:12,color:"#9a7422"}}>⏳ Waiting for {a.name} to submit...</div>}
+        {a.status==="invited"&&<div style={{flex:1,textAlign:"center",padding:"10px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:12,color:"#9a7422"}}>⏳ Waiting for {a.name} to submit their application...</div>}
         {a.status==="applied"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"reviewing",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"reviewing"}}));}}>🔍 Start Review</button>}
-        {a.status==="reviewing"&&<>{incompleteReqs.length>0&&<div style={{width:"100%",padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:4}}>⚠️ {incompleteReqs.map(r=>r.label).join(", ")} still pending</div>}<button className="btn btn-green" style={{flex:1}} onClick={()=>{setModal({type:"approveConfirm",data:a,incomplete:incompleteReqs,step:incompleteReqs.length>0?1:2});}}>✅ Approve</button></>}
-        {a.status==="approved"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{if(targetRoom)convertToTenant(targetRoom.id,targetProp.id);else if(allVacant.length>0)alert("Requested room taken. Open Properties to assign.");else alert("No vacant rooms.");}}>🔑 Convert to Tenant</button>}
+        {a.status==="reviewing"&&<>
+          {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
+            <div style={{fontWeight:700,marginBottom:4}}>⚠ Still pending — review before approving:</div>
+            {incompleteReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0"}}>
+              <span style={{width:6,height:6,borderRadius:"50%",background:"#d4a853",flexShrink:0,display:"inline-block"}}/>
+              {r.label}
+            </div>)}
+            <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
+          </div>}
+          <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
+            ✅ {incompleteReqs.length>0?"Approve Anyway":"Approve"}
+          </button>
+        </>}
+        {a.status==="approved"&&(()=>{
+          const appCharges2=charges.filter(c=>c.tenantName===a.name&&["Security Deposit","Rent","Move-In Fee"].includes(c.category));
+          const totalDue2=appCharges2.reduce((s,c)=>s+c.amount,0);
+          const totalPaid2=appCharges2.reduce((s,c)=>s+c.amountPaid,0);
+          const fullyPaid=appCharges2.length>0&&totalPaid2>=totalDue2;
+          const moveInDate=a.termMoveIn||a.moveIn;
+          return(
+          <div style={{width:"100%"}}>
+            {moveInDate&&<div style={{padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8,marginBottom:6,fontSize:11,color:"#2d6a3f",fontWeight:600,textAlign:"center"}}>
+              Pending move-in: {fmtD(moveInDate)}
+            </div>}
+            {fullyPaid
+              ?<button className="btn btn-green" style={{flex:1,width:"100%"}} onClick={()=>{if(targetRoom)convertToTenant(targetRoom.id,targetProp.id);else alert("Room not found — check room assignment.");}}>🔑 All Paid — Convert to Tenant</button>
+              :<div style={{padding:"8px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,fontSize:11,color:"#9a7422",textAlign:"center"}}>
+                {appCharges2.length===0?"No move-in charges found — go to Payments to add them.":`Waiting for payment — ${fmtS(totalDue2-totalPaid2)} remaining`}
+              </div>
+            }
+          </div>);
+        })()}
         {a.status==="move-in"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.filter(x=>x.id!==a.id));setModal(null);}}>🏠 Finalize</button>}
         <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,reason:""})}>Deny</button>
       </div>
