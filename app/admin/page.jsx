@@ -151,21 +151,21 @@ const PRESETS={"Warm Lodge":DEF_THEME,"Midnight":{bg:"#0f1729",card:"#1a2540",ac
 function contrast(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return(r*.299+g*.587+b*.114)>150?"#1a1714":"#f5f0e8";}
 
 const DEF_IDEAS=[
-  {id:uid(),title:"Insta360 3D tour embeds",cat:"Public Site",priority:"high",status:"Planned"},
-  {id:uid(),title:"Floor plans",cat:"Public Site",priority:"medium",status:"Planned"},
-  {id:uid(),title:"Savings calculator",cat:"Public Site",priority:"low",status:"Done"},
-  {id:uid(),title:"Testimonials / review system",cat:"Public Site",priority:"medium",status:"Done"},
-  {id:uid(),title:"Password protection for admin",cat:"Admin",priority:"high",status:"Planned"},
-  {id:uid(),title:"Tenant portal (maintenance, house info)",cat:"Tenant Portal",priority:"high",status:"Idea"},
-  {id:uid(),title:"Rent payment portal (Stripe)",cat:"Tenant Portal",priority:"high",status:"Idea"},
-  {id:uid(),title:"Automated move-in emails",cat:"Automation",priority:"medium",status:"Idea"},
-  {id:uid(),title:"Rent due reminders",cat:"Automation",priority:"medium",status:"Idea"},
-  {id:uid(),title:"Stripe for rent (ACH)",cat:"Integrations",priority:"high",status:"Idea"},
-  {id:uid(),title:"Background check API",cat:"Integrations",priority:"medium",status:"Idea"},
-  {id:uid(),title:"E-signatures (DocuSign)",cat:"Integrations",priority:"medium",status:"Idea"},
-  {id:uid(),title:"Replace stock photos",cat:"Content",priority:"high",status:"Planned"},
-  {id:uid(),title:"Capture Insta360 tours",cat:"Content",priority:"high",status:"Planned"},
-  {id:uid(),title:"Referral program",cat:"Future",priority:"low",status:"Idea"},
+  {id:uid(),title:"Insta360 3D tour embeds",cat:"Public Site",priority:"high",status:"Planned",notes:"",link:"",archived:false},
+  {id:uid(),title:"Floor plans",cat:"Public Site",priority:"medium",status:"Planned",notes:"",link:"",archived:false},
+  {id:uid(),title:"Savings calculator",cat:"Public Site",priority:"low",status:"Done",notes:"",link:"",archived:false},
+  {id:uid(),title:"Testimonials / review system",cat:"Public Site",priority:"medium",status:"Done",notes:"",link:"",archived:false},
+  {id:uid(),title:"Password protection for admin",cat:"Admin",priority:"high",status:"Planned",notes:"",link:"",archived:false},
+  {id:uid(),title:"Tenant portal (maintenance, house info)",cat:"Tenant Portal",priority:"high",status:"Idea",notes:"",link:"",archived:false},
+  {id:uid(),title:"Rent payment portal (Stripe)",cat:"Tenant Portal",priority:"high",status:"Idea",notes:"",link:"",archived:false},
+  {id:uid(),title:"Automated move-in emails",cat:"Automation",priority:"medium",status:"Idea",notes:"",link:"",archived:false},
+  {id:uid(),title:"Rent due reminders",cat:"Automation",priority:"medium",status:"Idea",notes:"",link:"",archived:false},
+  {id:uid(),title:"Stripe for rent (ACH)",cat:"Integrations",priority:"high",status:"Idea",notes:"",link:"",archived:false},
+  {id:uid(),title:"Background check API",cat:"Integrations",priority:"medium",status:"Idea",notes:"",link:"",archived:false},
+  {id:uid(),title:"E-signatures (DocuSign)",cat:"Integrations",priority:"medium",status:"Idea",notes:"",link:"",archived:false},
+  {id:uid(),title:"Replace stock photos",cat:"Content",priority:"high",status:"Planned",notes:"",link:"",archived:false},
+  {id:uid(),title:"Capture Insta360 tours",cat:"Content",priority:"high",status:"Planned",notes:"",link:"",archived:false},
+  {id:uid(),title:"Referral program",cat:"Future",priority:"low",status:"Idea",notes:"",link:"",archived:false},
 ];
 function randPalette(){const h=Math.floor(Math.random()*360);const c=(h+150+Math.random()*60)%360;const hl=(h2,s,l)=>{s/=100;l/=100;const a=s*Math.min(l,1-l);const f=n=>{const k=(n+h2/30)%12;const cv=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*cv).toString(16).padStart(2,"0");};return`#${f(0)}${f(8)}${f(4)}`;};return{bg:hl(h,20,9),card:hl(h,18,15),accent:hl(c,70,60),text:hl(h,10,94),muted:hl(h,14,65),surface:hl(c,5,98),surfaceAlt:hl(c,7,94),green:hl(150,50,45),dark:hl(h,20,8),warm:hl(h,12,44)};}
 
@@ -676,7 +676,7 @@ export default function Page(){
     {id:"properties",i:"🏠",l:"Properties"},
     {id:"site-settings",i:"⚙️",l:"Site Settings"},
     {id:"theme",i:"🎨",l:"Theme Editor"},
-    {id:"ideas",i:"💡",l:"Idea Board"},
+    {id:"ideas",i:"🧠",l:"Brain Dump"},
     {id:"notifications",i:"🔔",l:"Alerts",badge:m.unreadNotifs||null},
   ];
 
@@ -1481,10 +1481,31 @@ export default function Page(){
         </div>
 
         {/* Bulk invite bar */}
-        {(appView==="pipeline"||appView==="list")&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",background:bulkSel.length?"rgba(212,168,83,.08)":"rgba(0,0,0,.02)",borderRadius:8,marginBottom:10,border:bulkSel.length?"1px solid rgba(212,168,83,.2)":"1px solid transparent",transition:"all .2s"}}>          <input type="checkbox" checked={bulkSel.length>0&&bulkSel.length===activeApps.filter(a=>["pre-screened","called"].includes(a.status)).length} onChange={e=>{const invitable=activeApps.filter(a=>["pre-screened","called"].includes(a.status)).map(a=>a.id);setBulkSel(e.target.checked?invitable:[]);}} style={{width:14,height:14,cursor:"pointer"}}/>
-          <span style={{fontSize:11,color:"#999",flex:1}}>{bulkSel.length>0?`${bulkSel.length} selected`:"Select applicants to bulk invite"}</span>
-          <button className="btn btn-gold btn-sm" disabled={bulkSel.length===0} style={{opacity:bulkSel.length===0?.35:1,cursor:bulkSel.length===0?"not-allowed":"pointer"}} onClick={()=>{if(bulkSel.length===0)return;setModal({type:"bulkInvite",ids:bulkSel});}}>✉️ Invite Selected ({bulkSel.length})</button>
-          {bulkSel.length>0&&<button className="btn btn-out btn-sm" onClick={()=>setBulkSel([])}>✕ Clear</button>}
+        {(appView==="pipeline"||appView==="list")&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:bulkSel.length?"rgba(212,168,83,.08)":"rgba(0,0,0,.02)",borderRadius:8,marginBottom:10,border:bulkSel.length?"1px solid rgba(212,168,83,.2)":"1px solid transparent",transition:"all .2s",flexWrap:"wrap"}}>
+          <input type="checkbox" checked={bulkSel.length>0&&bulkSel.length===activeApps.length} onChange={e=>{setBulkSel(e.target.checked?activeApps.map(a=>a.id):[]);}} style={{width:14,height:14,cursor:"pointer"}}/>
+          <span style={{fontSize:11,color:"#999",flex:1,minWidth:80}}>{bulkSel.length>0?`${bulkSel.length} selected`:"Select applicants"}</span>
+          {bulkSel.length>0&&<>
+            <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"bulkInvite",ids:bulkSel})}
+              disabled={!bulkSel.some(id=>activeApps.find(a=>a.id===id&&["pre-screened","called"].includes(a.status)))}
+              style={{opacity:bulkSel.some(id=>activeApps.find(a=>a.id===id&&["pre-screened","called"].includes(a.status)))?1:.35}}>
+              ✉️ Invite ({bulkSel.filter(id=>activeApps.find(a=>a.id===id&&["pre-screened","called"].includes(a.status))).length})
+            </button>
+            <button className="btn btn-out btn-sm" style={{color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
+              onClick={()=>setModal({type:"confirmAction",title:"Archive "+bulkSel.length+" Applicant"+(bulkSel.length>1?"s":""),
+                body:"Move "+bulkSel.length+" applicant"+(bulkSel.length>1?"s":"")+" to Denied? They'll be hidden from the pipeline but stay in your records.",
+                confirmLabel:"Archive "+bulkSel.length,confirmStyle:"btn-out",
+                onConfirm:()=>{setApps(p=>p.map(a=>bulkSel.includes(a.id)?{...a,status:"denied",deniedReason:"Archived",deniedDate:TODAY.toISOString().split("T")[0],prevStage:a.status}:a));setBulkSel([]);setModal(null);}})}>
+              Archive ({bulkSel.length})
+            </button>
+            <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}}
+              onClick={()=>setModal({type:"confirmAction",title:"Delete "+bulkSel.length+" Applicant"+(bulkSel.length>1?"s":""),
+                body:"Permanently delete "+bulkSel.length+" applicant"+(bulkSel.length>1?"s":"")+"? This cannot be undone and all their data will be removed.",
+                confirmLabel:"Delete "+bulkSel.length,confirmStyle:"btn-red",
+                onConfirm:()=>{setApps(p=>p.filter(a=>!bulkSel.includes(a.id)));setBulkSel([]);setModal(null);}})}>
+              Delete ({bulkSel.length})
+            </button>
+            <button className="btn btn-out btn-sm" onClick={()=>setBulkSel([])}>✕ Clear</button>
+          </>}
         </div>}
 
         {/* Pipeline */}
@@ -1493,9 +1514,9 @@ export default function Page(){
             <div key={stage} className="pipe-col">
               <div className="pipe-hd"><h4 style={{fontSize:10}}>{SI2[stage]} {SL[stage]}</h4><span className="pipe-cnt">{sa.length}</span></div>
               <div className="pipe-bd">
-                {sa.sort(function(a,b){return scoreApp(b)-scoreApp(a);}).map(function(a){var sc=scoreApp(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var invitable=["pre-screened","called"].includes(a.status);var isChecked=bulkSel.includes(a.id);return(
-                  <div key={a.id} className="pipe-card" style={{borderLeft:sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",paddingLeft:invitable?28:12}} onClick={function(){setModal({type:"app",data:a});}}>
-                    {invitable&&<div style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)"}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>}
+                {sa.sort(function(a,b){return scoreApp(b)-scoreApp(a);}).map(function(a){var sc=scoreApp(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);return(
+                  <div key={a.id} className="pipe-card" style={{borderLeft:sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",paddingLeft:28}} onClick={function(){setModal({type:"app",data:a});}}>
+                    <div style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)"}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>
                     {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600}}>{flags[0].type==="current"?"⚠️ Current Tenant":flags[0].type==="past"?"🔄 Returning":"⚠️ Duplicate"}</div>}
                     <div style={{display:"flex",justifyContent:"space-between"}}><div className="pipe-nm" style={{fontSize:10}}>{a.name}</div><span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 4px",borderRadius:3}}>{sc}</span></div>
                     <div className="pipe-sub" style={{fontSize:8}}>{a.property||"—"}{a.room?" · "+a.room:""}</div>
@@ -2410,7 +2431,12 @@ export default function Page(){
         const saveCurrentTheme=()=>setModal({type:"saveTheme",themeName:""});
         const applyTheme=(t)=>setTheme({...t});
         const deleteTheme=(id)=>setSavedThemes(p=>p.filter(x=>x.id!==id));
-        const pushToSite=()=>{alert("Theme pushed to live site! (In production this updates the public site CSS variables in real-time via Supabase.)");};
+        const pushToSite=()=>{
+          save("hq-pub-theme",theme);
+          setNotifs(p=>[{id:uid(),type:"app",msg:"Theme published to live site — rentblackbear.com now uses the current colors",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+          setExpanded(pr=>({...pr,themePushSuccess:true}));
+          setTimeout(()=>setExpanded(pr=>({...pr,themePushSuccess:false})),3500);
+        };
         const exportTheme=()=>{const css=Object.entries(theme).map(([k,v])=>`  --${k}: ${v};`).join("\n");const json=JSON.stringify(theme,null,2);const blob=new Blob([`:root {\n${css}\n}\n\n/* JSON */\n${json}`],{type:"text/plain"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="blackbear-theme.css";a.click();URL.revokeObjectURL(url);};
         return(<>
         <div className="sec-hd"><div><h2>Theme Editor</h2><p>Edit, save, and push color schemes to your live site</p></div>
@@ -2420,6 +2446,7 @@ export default function Page(){
             <button className="btn btn-out" onClick={exportTheme}>📥 Export CSS</button>
             <button className="btn btn-out" onClick={()=>setTheme(randPalette())}>🎲 Random</button>
           </div></div>
+          {expanded.themePushSuccess&&<div style={{marginBottom:10,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,animation:"fadeIn .3s"}}>✓ Theme is live on rentblackbear.com — public site reads from Supabase on load</div>}
 
         {/* Presets + Saved Themes */}
         <div style={{marginBottom:16}}>
@@ -2482,82 +2509,149 @@ export default function Page(){
 
       {/* ═══ IDEA BOARD ═══ */}
       {tab==="ideas"&&(()=>{
-        const cats=[...new Set(ideas.map(i=>i.cat))];
+        const cats=[...new Set(ideas.filter(i=>!i.archived).map(i=>i.cat))];
+        const allCats=[...new Set(ideas.map(i=>i.cat))];
         const statuses=["Idea","Planned","Building","Done"];
-        const priColors={high:"🔴",medium:"🟡",low:"🟢"};
-        const stColors={Idea:"b-gray",Planned:"b-blue",Building:"b-gold",Done:"b-green"};
-        const addIdeaToCat=(cat)=>setModal({type:"newIdea",cat,title:"",priority:"medium",status:"Idea"});
+        const priColors={high:"#c45c4a",medium:"#d4a853",low:"#4a7c59"};
+        const priLabels={high:"High",medium:"Med",low:"Low"};
+        const priBg={high:"rgba(196,92,74,.08)",medium:"rgba(212,168,83,.08)",low:"rgba(74,124,89,.08)"};
+        const stBg={Idea:"rgba(0,0,0,.04)",Planned:"rgba(59,130,246,.08)",Building:"rgba(212,168,83,.1)",Done:"rgba(74,124,89,.08)"};
+        const stTxt={Idea:"#999",Planned:"#3b82f6",Building:"#9a7422",Done:"#4a7c59"};
+        const showArchived=expanded.showArchived||false;
+        const active=ideas.filter(i=>!i.archived);
+        const archived=ideas.filter(i=>i.archived);
+        const filtered=ideaFilter==="all"?active:ideaFilter==="high"||ideaFilter==="medium"||ideaFilter==="low"?active.filter(i=>i.priority===ideaFilter):active.filter(i=>i.status===ideaFilter);
         const updIdea=(id,f,v)=>setIdeas(p=>p.map(x=>x.id===id?{...x,[f]:v}:x));
-        const delIdea=id=>setIdeas(p=>p.filter(x=>x.id!==id));
-        const done=ideas.filter(i=>i.status==="Done").length;
-        const building=ideas.filter(i=>i.status==="Building").length;
-        const planned=ideas.filter(i=>i.status==="Planned").length;
-        const filtered=ideaFilter==="all"?ideas:ideaFilter==="high"||ideaFilter==="medium"||ideaFilter==="low"?ideas.filter(i=>i.priority===ideaFilter):ideas.filter(i=>i.status===ideaFilter);
+        const archiveIdea=(id)=>setIdeas(p=>p.map(x=>x.id===id?{...x,archived:true}:x));
+        const unarchiveIdea=(id)=>setIdeas(p=>p.map(x=>x.id===id?{...x,archived:false}:x));
+        const delIdea=(id)=>setModal({type:"confirmAction",title:"Delete Idea",body:"Permanently delete this idea? This cannot be undone.",confirmLabel:"Delete",confirmStyle:"btn-red",onConfirm:()=>{setIdeas(p=>p.filter(x=>x.id!==id));setModal(null);}});
+        const openEdit=(idea)=>setModal({type:"editIdea",idea:{...idea}});
 
-        const IdeaRow=({i})=>(<div key={i.id} className="row">
-          <span style={{cursor:"pointer"}} onClick={()=>updIdea(i.id,"priority",i.priority==="high"?"medium":i.priority==="medium"?"low":"high")}>{priColors[i.priority]}</span>
-          <div className="row-i"><div className="row-t" contentEditable suppressContentEditableWarning onBlur={e=>updIdea(i.id,"title",e.target.textContent)}>{i.title}</div><div className="row-s">{i.cat}</div></div>
-          <select value={i.cat} onChange={e=>updIdea(i.id,"cat",e.target.value)} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:9,fontFamily:"inherit"}}>{cats.map(c=><option key={c}>{c}</option>)}</select>
-          <select value={i.status} onChange={e=>updIdea(i.id,"status",e.target.value)} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:9,fontFamily:"inherit"}}>{statuses.map(s=><option key={s}>{s}</option>)}</select>
-          <span className={`badge ${stColors[i.status]}`}>{i.status}</span>
-          <button className="btn btn-red btn-sm" onClick={()=>delIdea(i.id)}>✕</button>
-        </div>);
+        const IdeaCard=({i})=>(
+          <div style={{padding:10,border:"1px solid rgba(0,0,0,.06)",borderRadius:8,marginBottom:6,background:"#fff",transition:"all .12s"}}
+            onMouseEnter={e=>e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,0,.06)"}
+            onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:8}}>
+              <span style={{flexShrink:0,fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:priBg[i.priority],color:priColors[i.priority],marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>{priLabels[i.priority]}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#1a1714",lineHeight:1.4}}>{i.title}</div>
+                {i.notes&&<div style={{fontSize:10,color:"#999",lineHeight:1.4,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{i.notes}</div>}
+                {i.link&&<a href={i.link} target="_blank" rel="noreferrer" style={{fontSize:9,color:"#3b82f6",textDecoration:"none",display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginTop:2}} onClick={e=>e.stopPropagation()}>↗ {i.link}</a>}
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderTop:"1px solid rgba(0,0,0,.04)",paddingTop:7}}>
+              <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:4,background:stBg[i.status],color:stTxt[i.status]}}>{i.status}</span>
+              <div style={{display:"flex",gap:4}}>
+                <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={e=>{e.stopPropagation();openEdit(i);}}>+ Edit</button>
+                <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={e=>{e.stopPropagation();archiveIdea(i.id);}}>Archive</button>
+                <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px",color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={e=>{e.stopPropagation();delIdea(i.id);}}>Delete</button>
+              </div>
+            </div>
+          </div>
+        );
+
+        const IdeaRow=({i})=>(
+          <div className="row" style={{cursor:"pointer"}} onClick={()=>openEdit(i)}>
+            <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:priBg[i.priority],color:priColors[i.priority],textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{priLabels[i.priority]}</span>
+            <div className="row-i">
+              <div className="row-t">{i.title}</div>
+              <div className="row-s">{i.cat}{i.notes&&" · "+i.notes.slice(0,60)+(i.notes.length>60?"...":"")}</div>
+            </div>
+            <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,background:stBg[i.status],color:stTxt[i.status],whiteSpace:"nowrap"}}>{i.status}</span>
+            <div style={{display:"flex",gap:4}} onClick={e=>e.stopPropagation()}>
+              <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>archiveIdea(i.id)}>Archive</button>
+              <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px",color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>delIdea(i.id)}>Delete</button>
+            </div>
+          </div>
+        );
 
         return(<>
-          <div className="kgrid" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
-            <div className="kpi"><div className="kl">Total</div><div className="kv">{ideas.length}</div></div>
-            <div className="kpi"><div className="kl">✓ Done</div><div className="kv kg">{done}</div></div>
-            <div className="kpi"><div className="kl">⚡ Building</div><div className="kv kw">{building}</div></div>
-            <div className="kpi"><div className="kl">📋 Planned</div><div className="kv">{planned}</div></div>
+          {/* KPIs */}
+          <div className="kgrid" style={{gridTemplateColumns:"repeat(5,1fr)"}}>
+            <div className="kpi"><div className="kl">Total</div><div className="kv">{active.length}</div></div>
+            <div className="kpi"><div className="kl">💡 Idea</div><div className="kv">{active.filter(i=>i.status==="Idea").length}</div></div>
+            <div className="kpi"><div className="kl">📋 Planned</div><div className="kv">{active.filter(i=>i.status==="Planned").length}</div></div>
+            <div className="kpi"><div className="kl">⚡ Building</div><div className="kv kw">{active.filter(i=>i.status==="Building").length}</div></div>
+            <div className="kpi"><div className="kl">✓ Done</div><div className="kv kg">{active.filter(i=>i.status==="Done").length}</div></div>
           </div>
 
-          <div className="sec-hd">
+          {/* Toolbar */}
+          <div className="sec-hd" style={{marginBottom:12}}>
             <div style={{display:"flex",gap:4}}>
-              {["board","list","status"].map(v=><button key={v} className={`btn ${ideaView===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setIdeaView(v)}>{v==="board"?"📋 Board":v==="list"?"📝 List":"📊 Status"}</button>)}
+              {[["board","📋 Board"],["list","📝 List"],["status","📊 Status"]].map(([v,l])=><button key={v} className={`btn ${ideaView===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setIdeaView(v)}>{l}</button>)}
             </div>
-            <div style={{display:"flex",gap:4,alignItems:"center"}}>
+            <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
               <select value={ideaFilter} onChange={e=>setIdeaFilter(e.target.value)} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}>
-                <option value="all">All</option><optgroup label="Status">{statuses.map(s=><option key={s} value={s}>{s}</option>)}</optgroup><optgroup label="Priority"><option value="high">🔴 High</option><option value="medium">🟡 Medium</option><option value="low">🟢 Low</option></optgroup>
+                <option value="all">All</option>
+                <optgroup label="Status">{statuses.map(s=><option key={s} value={s}>{s}</option>)}</optgroup>
+                <optgroup label="Priority"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></optgroup>
               </select>
-              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"newIdea",cat:cats[0]||"General",title:"",priority:"medium",status:"Idea"})}>+ New Idea</button>
-              {!showNewCat?<button className="btn btn-out btn-sm" onClick={()=>setShowNewCat(true)}>+ Category</button>
-              :<div style={{display:"flex",gap:3}}><input value={newCatInput} onChange={e=>setNewCatInput(e.target.value)} placeholder="Category name..." onKeyDown={e=>{if(e.key==="Enter"&&newCatInput.trim()){setIdeas(p=>[{id:uid(),title:"New idea",cat:newCatInput.trim(),priority:"medium",status:"Idea"},...p]);setNewCatInput("");setShowNewCat(false);}}} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",width:120}} autoFocus/><button className="btn btn-gold btn-sm" disabled={!newCatInput.trim()} onClick={()=>{setIdeas(p=>[{id:uid(),title:"New idea",cat:newCatInput.trim(),priority:"medium",status:"Idea"},...p]);setNewCatInput("");setShowNewCat(false);}}>Add</button><button className="btn btn-out btn-sm" onClick={()=>{setShowNewCat(false);setNewCatInput("");}}>x</button></div>}
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"newIdea",cat:cats[0]||"General",title:"",priority:"medium",status:"Idea",notes:"",link:""})}>+ New</button>
+              {!showNewCat
+                ?<button className="btn btn-out btn-sm" onClick={()=>setShowNewCat(true)}>+ Category</button>
+                :<div style={{display:"flex",gap:3}}>
+                  <input value={newCatInput} onChange={e=>setNewCatInput(e.target.value)} placeholder="Category name..." autoFocus
+                    onKeyDown={e=>{if(e.key==="Enter"&&newCatInput.trim()){setIdeas(p=>[{id:uid(),title:"New idea",cat:newCatInput.trim(),priority:"medium",status:"Idea",notes:"",link:"",archived:false},...p]);setNewCatInput("");setShowNewCat(false);}}}
+                    style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",width:120}}/>
+                  <button className="btn btn-gold btn-sm" disabled={!newCatInput.trim()} onClick={()=>{setIdeas(p=>[{id:uid(),title:"New idea",cat:newCatInput.trim(),priority:"medium",status:"Idea",notes:"",link:"",archived:false},...p]);setNewCatInput("");setShowNewCat(false);}}>Add</button>
+                  <button className="btn btn-out btn-sm" onClick={()=>{setShowNewCat(false);setNewCatInput("");}}>✕</button>
+                </div>}
             </div>
           </div>
 
-          {/* Board view - by category */}
-          {ideaView==="board"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:12}}>
+          {/* Board view */}
+          {ideaView==="board"&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:14}}>
             {cats.map(cat=>{const catIdeas=filtered.filter(i=>i.cat===cat);return(
-              <div key={cat} className="card">
-                <div className="card-hd" style={{cursor:"default"}}>
-                  <h3 style={{fontSize:12}}>{cat}</h3>
-                  <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                    <span style={{fontSize:10,color:"#999"}}>{catIdeas.length}</span>
-                    <button className="btn btn-out btn-sm" style={{padding:"2px 6px",fontSize:9}} onClick={()=>addIdeaToCat(cat)}>+</button>
+              <div key={cat} style={{background:"#fff",borderRadius:12,border:"2px solid rgba(0,0,0,.08)",boxShadow:"0 2px 8px rgba(0,0,0,.05)",overflow:"hidden"}}>
+                {/* Category header — solid dark strip */}
+                <div style={{padding:"11px 14px",background:"#1a1714",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:12,fontWeight:800,color:"#f5f0e8",letterSpacing:.3}}>{cat}</div>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <span style={{fontSize:10,fontWeight:700,color:"#d4a853",background:"rgba(212,168,83,.15)",padding:"1px 8px",borderRadius:100}}>{catIdeas.length}</span>
+                    <button style={{background:"rgba(255,255,255,.1)",border:"none",color:"#d4a853",cursor:"pointer",fontSize:16,lineHeight:1,width:22,height:22,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}} onClick={()=>setModal({type:"newIdea",cat,title:"",priority:"medium",status:"Idea",notes:"",link:""})}>+</button>
                   </div>
                 </div>
-                <div style={{padding:8,minHeight:60}}>{catIdeas.map(i=>(
-                  <div key={i.id} style={{padding:8,border:"1px solid rgba(0,0,0,.04)",borderRadius:6,marginBottom:4,fontSize:11,cursor:"pointer",transition:"all .1s"}} onClick={()=>updIdea(i.id,"status",statuses[(statuses.indexOf(i.status)+1)%statuses.length])}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:4}}>
-                      <span style={{cursor:"pointer"}} onClick={e=>{e.stopPropagation();updIdea(i.id,"priority",i.priority==="high"?"medium":i.priority==="medium"?"low":"high");}}>{priColors[i.priority]}</span>
-                      <span style={{flex:1,fontWeight:600,fontSize:11}}>{i.title}</span>
-                      <span className={`badge ${stColors[i.status]}`} style={{fontSize:7}}>{i.status}</span>
-                    </div>
-                  </div>
-                ))}{catIdeas.length===0&&<div style={{textAlign:"center",padding:12,color:"#ddd",fontSize:10}}>No ideas</div>}</div>
+                {/* Cards area */}
+                <div style={{padding:10,minHeight:80,background:"#faf9f7"}}>
+                  {catIdeas.map(i=><IdeaCard key={i.id} i={i}/>)}
+                  {catIdeas.length===0&&<div style={{textAlign:"center",padding:20,color:"#ccc",fontSize:10,fontStyle:"italic"}}>No ideas yet — click + to add one</div>}
+                </div>
               </div>);})}
           </div>}
 
-          {/* List view - flat list */}
-          {ideaView==="list"&&<>{filtered.map(i=><IdeaRow key={i.id} i={i}/>)}{filtered.length===0&&<div style={{textAlign:"center",padding:24,color:"#999"}}>No ideas match filter</div>}</>}
+          {/* List view */}
+          {ideaView==="list"&&<>
+            {filtered.map(i=><IdeaRow key={i.id} i={i}/>)}
+            {filtered.length===0&&<div style={{textAlign:"center",padding:32,color:"#999",fontSize:12}}>No ideas match this filter</div>}
+          </>}
 
-          {/* Status view - grouped by status */}
-          {ideaView==="status"&&<>{statuses.map(st=>{const stIdeas=filtered.filter(i=>i.status===st);if(!stIdeas.length)return null;return(
+          {/* Status view */}
+          {ideaView==="status"&&<>{statuses.map(st=>{const stIdeas=filtered.filter(i=>i.status===st);return(
             <div key={st} style={{marginBottom:14}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:1,marginBottom:6,display:"flex",alignItems:"center",gap:6}}><span className={`badge ${stColors[st]}`}>{st}</span> ({stIdeas.length})</div>
+              <div style={{fontSize:10,fontWeight:800,color:stTxt[st],textTransform:"uppercase",letterSpacing:1,marginBottom:6,display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:stBg[st],borderRadius:6}}>
+                {st} <span style={{fontWeight:500,opacity:.7}}>({stIdeas.length})</span>
+              </div>
               {stIdeas.map(i=><IdeaRow key={i.id} i={i}/>)}
+              {stIdeas.length===0&&<div style={{padding:"8px 12px",fontSize:11,color:"#ccc",fontStyle:"italic"}}>Nothing here</div>}
             </div>);})}
           </>}
+
+          {/* Archived toggle */}
+          {archived.length>0&&<div style={{marginTop:20,borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:14}}>
+            <button className="btn btn-out btn-sm" style={{width:"100%",color:"#999"}} onClick={()=>setExpanded(p=>({...p,showArchived:!p.showArchived}))}>
+              {showArchived?"▾ Hide":"▸ Show"} Archived ({archived.length})
+            </button>
+            {showArchived&&<div style={{marginTop:10}}>
+              {archived.map(i=>(
+                <div key={i.id} className="row" style={{opacity:.55}}>
+                  <span style={{fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:priBg[i.priority],color:priColors[i.priority],textTransform:"uppercase",letterSpacing:.5}}>{priLabels[i.priority]}</span>
+                  <div className="row-i"><div className="row-t" style={{textDecoration:"line-through"}}>{i.title}</div><div className="row-s">{i.cat}</div></div>
+                  <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>unarchiveIdea(i.id)}>Restore</button>
+                  <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>delIdea(i.id)}>Delete</button>
+                </div>
+              ))}
+            </div>}
+          </div>}
         </>);
       })()}
 
@@ -3165,41 +3259,70 @@ export default function Page(){
   )}
 
   {/* New Idea Modal */}
-  {modal&&modal.type==="newIdea"&&(()=>{
-    const cats=[...new Set(ideas.map(i=>i.cat))];
+  {modal&&(modal.type==="newIdea"||modal.type==="editIdea")&&(()=>{
+    const isEdit=modal.type==="editIdea";
+    const idea=isEdit?modal.idea:modal;
+    const allCats=[...new Set(ideas.map(i=>i.cat))];
+    const statuses=["Idea","Planned","Building","Done"];
+    const setIdea=(key,val)=>setModal(prev=>isEdit?{...prev,idea:{...prev.idea,[key]:val}}:{...prev,[key]:val});
+    const save=()=>{
+      if(!(idea.title||"").trim()||!idea.cat)return;
+      if(isEdit){
+        setIdeas(p=>p.map(x=>x.id===idea.id?{...x,...idea}:x));
+      } else {
+        setIdeas(p=>[{id:uid(),title:idea.title.trim(),cat:idea.cat,priority:idea.priority||"medium",status:idea.status||"Idea",notes:idea.notes||"",link:idea.link||"",archived:false},...p]);
+      }
+      setModal(null);
+    };
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
-      <h2>New Idea</h2>
-      <div className="fld"><label>Title</label><input value={modal.title||""} onChange={e=>setModal(prev=>({...prev,title:e.target.value}))} placeholder="What's the idea?" autoFocus/></div>
-      <div className="fld"><label>Category</label>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+      <h2>{isEdit?"Edit Idea":"New Idea"}</h2>
+      <div className="fld">
+        <label>Title<span style={{color:"#c45c4a",marginLeft:2}}>*</span></label>
+        <input value={idea.title||""} onChange={e=>setIdea("title",e.target.value)} placeholder="What's the idea?" autoFocus/>
+      </div>
+      <div className="fld">
+        <label>Notes / Description</label>
+        <textarea value={idea.notes||""} onChange={e=>setIdea("notes",e.target.value)} placeholder="Any context, details, or thoughts..." rows={3}/>
+      </div>
+      <div className="fld">
+        <label>Link / URL</label>
+        <input value={idea.link||""} onChange={e=>setIdea("link",e.target.value)} placeholder="https://..." type="url"/>
+      </div>
+      <div className="fld"><label>Category<span style={{color:"#c45c4a",marginLeft:2}}>*</span></label>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:4}}>
-          {cats.map(c=><button key={c} className={`btn ${modal.cat===c?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,cat:c}))}>{c}</button>)}
-          <button className="btn btn-out btn-sm" style={{borderStyle:"dashed"}} onClick={()=>setModal(prev=>({...prev,showCatInput:true}))}>+ New Category</button>
-          {modal.showCatInput&&<div style={{display:"flex",gap:3,marginTop:4}}><input value={modal.newCatName||""} onChange={e=>setModal(prev=>({...prev,newCatName:e.target.value}))} placeholder="Category name..." onKeyDown={e=>{if(e.key==="Enter"&&(modal.newCatName||"").trim())setModal(prev=>({...prev,cat:prev.newCatName.trim(),showCatInput:false,newCatName:""}));}} style={{flex:1,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}} autoFocus/><button className="btn btn-gold btn-sm" disabled={!(modal.newCatName||"").trim()} onClick={()=>setModal(prev=>({...prev,cat:prev.newCatName.trim(),showCatInput:false,newCatName:""}))}>Set</button></div>}
+          {allCats.map(c=><button key={c} className={`btn ${idea.cat===c?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setIdea("cat",c)}>{c}</button>)}
+          <button className="btn btn-out btn-sm" style={{borderStyle:"dashed"}} onClick={()=>setModal(prev=>({...prev,showCatInput:true}))}>+ New</button>
+          {modal.showCatInput&&<div style={{display:"flex",gap:3,marginTop:4,width:"100%"}}>
+            <input value={modal.newCatName||""} onChange={e=>setModal(prev=>({...prev,newCatName:e.target.value}))} placeholder="Category name..." autoFocus
+              onKeyDown={e=>{if(e.key==="Enter"&&(modal.newCatName||"").trim()){setIdea("cat",modal.newCatName.trim());setModal(prev=>({...prev,showCatInput:false,newCatName:""}));}}}
+              style={{flex:1,padding:"5px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+            <button className="btn btn-gold btn-sm" disabled={!(modal.newCatName||"").trim()} onClick={()=>{setIdea("cat",modal.newCatName.trim());setModal(prev=>({...prev,showCatInput:false,newCatName:""}));}}>Set</button>
+          </div>}
         </div>
-        {modal.cat&&!cats.includes(modal.cat)&&<div style={{fontSize:10,color:"#d4a853",marginTop:2}}>New category: <strong>{modal.cat}</strong></div>}
       </div>
       <div className="fr">
         <div className="fld"><label>Priority</label>
           <div style={{display:"flex",gap:4}}>
-            {[["high","🔴 High"],["medium","🟡 Medium"],["low","🟢 Low"]].map(([v,l])=>(
-              <button key={v} className={`btn ${modal.priority===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,priority:v}))}>{l}</button>
+            {[["high","High"],["medium","Medium"],["low","Low"]].map(([v,l])=>(
+              <button key={v} className={`btn ${idea.priority===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setIdea("priority",v)}>{l}</button>
             ))}
           </div>
         </div>
         <div className="fld"><label>Status</label>
-          <div style={{display:"flex",gap:4}}>
-            {["Idea","Planned","Building","Done"].map(s=>(
-              <button key={s} className={`btn ${modal.status===s?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,status:s}))}>{s}</button>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+            {statuses.map(s=>(
+              <button key={s} className={`btn ${idea.status===s?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setIdea("status",s)}>{s}</button>
             ))}
           </div>
         </div>
       </div>
       <div className="mft">
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-gold" disabled={!(modal.title||"").trim()||!modal.cat} onClick={()=>{setIdeas(p=>[{id:uid(),title:modal.title.trim(),cat:modal.cat,priority:modal.priority||"medium",status:modal.status||"Idea"},...p]);setModal(null);}}>Add Idea</button>
+        <button className="btn btn-gold" disabled={!(idea.title||"").trim()||!idea.cat} onClick={save}>{isEdit?"Save Changes":"Add Idea"}</button>
       </div>
-    </div></div>);})()}
+    </div></div>);
+  })()}
 
   {modal&&modal.type==="recordPay"&&(()=>{
     const occRooms=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
@@ -3311,8 +3434,23 @@ export default function Page(){
       if(!modal.amount||modal.amount<=0)e.amount="Enter a valid amount";
       if(!modal.dueDate)e.dueDate="Select a due date";
       if(Object.keys(e).length){setModal(prev=>({...prev,chErrs:e}));shakeModal();return;}
-      createCharge({roomId:modal.roomId,tenantName:(selRoom&&selRoom.tenant&&selRoom.tenant.name)||"",propName:(selRoom&&selRoom.propName)||"",roomName:(selRoom&&selRoom.name)||"",category:modal.category,desc:modal.desc||modal.category,amount:modal.amount,dueDate:modal.dueDate});
-      setModal(null);};
+      const tenantName=(selRoom&&selRoom.tenant&&selRoom.tenant.name)||"";
+      const propName=(selRoom&&selRoom.propName)||"";
+      const roomName=(selRoom&&selRoom.name)||"";
+      createCharge({roomId:modal.roomId,tenantName,propName,roomName,category:modal.category,desc:modal.desc||modal.category,amount:modal.amount,dueDate:modal.dueDate});
+      // If Security Deposit, also log to sdLedger
+      if(modal.category==="Security Deposit"){
+        const existing=sdLedger.find(s=>s.roomId===modal.roomId&&!s.returned);
+        if(existing){
+          // Add to existing held amount
+          setSdLedger(p=>p.map(s=>s.id===existing.id?{...s,amountHeld:s.amountHeld+modal.amount,deposits:[...(s.deposits||[]),{id:uid(),amount:modal.amount,date:TODAY.toISOString().split("T")[0],desc:modal.desc||"Security Deposit",chargeId:uid()}]}:s));
+        } else {
+          // Create new sd ledger entry
+          setSdLedger(p=>[...p,{id:uid(),roomId:modal.roomId,tenantName,propName,roomName,amountHeld:modal.amount,deposits:[{id:uid(),amount:modal.amount,date:TODAY.toISOString().split("T")[0],desc:modal.desc||"Security Deposit"}],deductions:[],returned:null,returnDate:null}]);
+        }
+      }
+      setModal(null);
+    };
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
       <h2>Create Charge</h2>
