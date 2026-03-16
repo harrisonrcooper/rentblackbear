@@ -69,6 +69,7 @@ const SCREEN_QS=[
 const SUPA_URL="https://vxysaclhucdjxzcknoar.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
 async function supaGet(key){try{const r=await fetch(`${SUPA_URL}/rest/v1/app_data?key=eq.${key}&select=value`,{headers:{apikey:SUPA_KEY,Authorization:`Bearer ${SUPA_KEY}`}});const d=await r.json();return d?.[0]?.value||null;}catch{return null;}}
+async function supaSet(key,value){try{await fetch(`${SUPA_URL}/rest/v1/app_data`,{method:"POST",headers:{apikey:SUPA_KEY,Authorization:`Bearer ${SUPA_KEY}`,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({key,value})});}catch{}}
 
 const AMENITIES=[
   {icon:"📶",t:"Google Fiber WiFi",d:"High-speed internet in every property."},
@@ -645,8 +646,40 @@ function Screening({properties}){
   const submitApp=async()=>{
     touchAll();if(!canSubmit){setSubError("Please complete all required fields.");return;}
     setSubmitting(true);setSubError("");
-    try{const submitData={...form,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(submitData)});
-      const d=await res.json();if(d.ok)setStep(DONE);else setSubError(d.error||"Something went wrong. Try again.");}
+    try{
+      const submitData={...form,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
+      const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(submitData)});
+      const d=await res.json();
+      if(d.ok){
+        // Write lead directly into hq-apps as pre-screened
+        const newLead={
+          id:Math.random().toString(36).slice(2,9),
+          name:form.name.trim(),
+          email:form.email.trim(),
+          phone:form.phone.trim(),
+          property:form.property,
+          room:"",
+          moveIn:form.moveIn,
+          income:"",
+          status:"pre-screened",
+          submitted:new Date().toISOString().split("T")[0],
+          lastContact:new Date().toISOString().split("T")[0],
+          bgCheck:"not-started",
+          creditScore:"—",
+          refs:"not-started",
+          source:submitData.source,
+          notes:form.reason,
+          history:[{from:"new",to:"pre-screened",date:new Date().toISOString().split("T")[0],note:"Submitted pre-screen form on public site"}],
+        };
+        // Load existing apps, prepend new lead, save back
+        const existing=await supaGet("hq-apps")||[];
+        await supaSet("hq-apps",[newLead,...existing]);
+        // Also fire a notification
+        const notifs=await supaGet("hq-notifs")||[];
+        await supaSet("hq-notifs",[{id:Math.random().toString(36).slice(2,9),type:"app",msg:"New lead: "+form.name+" — "+form.property+" · "+submitData.source,date:new Date().toISOString().split("T")[0],read:false,urgent:true},...notifs]);
+        setStep(DONE);
+      } else setSubError(d.error||"Something went wrong. Try again.");
+    }
     catch{setSubError("Connection error. Try again or email "+S_INFO.email);}
     setSubmitting(false);
   };
