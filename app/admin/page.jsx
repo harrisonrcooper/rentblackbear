@@ -1560,11 +1560,22 @@ export default function Page(){
           <input type="checkbox" checked={bulkSel.length>0&&bulkSel.length===activeApps.length} onChange={e=>{setBulkSel(e.target.checked?activeApps.map(a=>a.id):[]);}} style={{width:14,height:14,cursor:"pointer"}}/>
           <span style={{fontSize:11,color:"#999",flex:1,minWidth:80}}>{bulkSel.length>0?`${bulkSel.length} selected`:"Select applicants"}</span>
           {bulkSel.length>0&&<>
-            <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"bulkInvite",ids:bulkSel})}
-              disabled={!bulkSel.some(id=>activeApps.find(a=>a.id===id&&["pre-screened","called"].includes(a.status)))}
-              style={{opacity:bulkSel.some(id=>activeApps.find(a=>a.id===id&&["pre-screened","called"].includes(a.status)))?1:.35}}>
-              ✉️ Invite ({bulkSel.filter(id=>activeApps.find(a=>a.id===id&&["pre-screened","called"].includes(a.status))).length})
-            </button>
+            {(()=>{
+              const invitable=activeApps.filter(a=>bulkSel.includes(a.id)&&["pre-screened","called"].includes(a.status));
+              if(!invitable.length)return null;
+              return(
+                <button className="btn btn-gold btn-sm"
+                  onClick={()=>{
+                    if(invitable.length===1){
+                      setModal({type:"inviteApp",data:invitable[0]});
+                    } else {
+                      setModal({type:"bulkInvite",ids:bulkSel});
+                    }
+                  }}>
+                  ✉️ Invite ({invitable.length})
+                </button>
+              );
+            })()}
             <button className="btn btn-out btn-sm" style={{color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
               onClick={()=>setModal({type:"confirmAction",title:"Archive "+bulkSel.length+" Applicant"+(bulkSel.length>1?"s":""),
                 body:"Move "+bulkSel.length+" applicant"+(bulkSel.length>1?"s":"")+" to Denied? They'll be hidden from the pipeline but stay in your records.",
@@ -3903,6 +3914,12 @@ export default function Page(){
               ))}
             </div>
             {getPkg(a.id)==="none"&&<input value={perPerson[a.id]?.waiverReason||""} onChange={e=>setPersonWaiver(a.id,e.target.value)} placeholder="Waiver reason (required) — e.g. NASA intern" style={{width:"100%",marginTop:6,padding:"5px 8px",fontSize:10,borderRadius:5,border:"1px solid rgba(212,168,83,.3)",fontFamily:"inherit"}}/>}
+            {getPkg(a.id)!=="none"&&<div style={{marginTop:6,padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:6,fontSize:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>RentPrep</span><span>${pkgFees[getPkg(a.id)]}</span></div>
+              {getIncome(a.id)!=="none"&&<div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>Income verification</span><span>+${incomeAdds[getIncome(a.id)]}</span></div>}
+              <div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>Admin fee</span><span>+${adminFee}</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,color:"#9a7422",borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:3,marginTop:2}}><span>Tenant pays</span><span>${getFee(a.id)}</span></div>
+            </div>}
           </div>
         ))}
 
@@ -3972,9 +3989,22 @@ export default function Page(){
             </div>
           ))}
         </div>
-        <div style={{marginTop:8,padding:"9px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{fontSize:11,color:"#999"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</div>
-          <div style={{fontSize:18,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":fmtS(totalFee)}</div>
+        <div style={{marginTop:8,padding:"10px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:`1px solid ${totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)"}`}}>
+          {pkg!=="none"&&<>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#999",padding:"2px 0",borderBottom:"1px solid rgba(0,0,0,.04)",marginBottom:4}}>
+              <span>RentPrep — {pkgLabel[pkg]}</span><span>${pkgFees[pkg]}</span>
+            </div>
+            {incomeAdd!=="none"&&<div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#999",padding:"2px 0",borderBottom:"1px solid rgba(0,0,0,.04)",marginBottom:4}}>
+              <span>{incomeLabel[incomeAdd]}</span><span>+${incomeAdds[incomeAdd]}</span>
+            </div>}
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#999",padding:"2px 0",borderBottom:"1px solid rgba(0,0,0,.04)",marginBottom:6}}>
+              <span>Black Bear admin fee</span><span>+${adminFee}</span>
+            </div>
+          </>}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:11,fontWeight:700,color:totalFee===0?"#2d6a3f":"#9a7422"}}>Total (tenant pays)</span>
+            <span style={{fontSize:18,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":fmtS(totalFee)}</span>
+          </div>
         </div>
         {pkg==="none"&&<div style={{marginTop:8}}>
           <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:4}}>Waiver reason (required)</div>
