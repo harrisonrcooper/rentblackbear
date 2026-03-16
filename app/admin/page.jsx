@@ -2521,19 +2521,6 @@ export default function Page(){
           <div className="fld"><label>Description</label><textarea value={settings.heroDesc} onChange={e=>setSettings({...settings,heroDesc:e.target.value})}/></div>
         </div></div>
         <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>💳 Application Screening Fee</h3>
-          <p style={{fontSize:11,color:"#999",marginBottom:12}}>The admin/processing fee added to each screening package. This is included in the total shown to applicants — it is not shown as a separate line item.</p>
-          <div className="fr" style={{alignItems:"center",gap:12}}>
-            <div className="fld" style={{maxWidth:160}}>
-              <label>Admin / Processing Fee ($)</label>
-              <input type="number" min="0" max="100" value={settings.adminFee??10} onChange={e=>setSettings(s=>({...s,adminFee:Number(e.target.value)||0}))} style={{width:"100%"}}/>
-            </div>
-            <div style={{fontSize:11,color:"#999",paddingTop:20}}>
-              e.g. Credit + BG ($49) + Admin Fee (${settings.adminFee??10}) = <strong>${49+(settings.adminFee??10)}</strong> shown to tenant
-            </div>
-          </div>
-        </div></div>
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Payment Reminder Template</h3>
           <p style={{fontSize:11,color:"#999",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
           <div className="fld">
@@ -3917,7 +3904,14 @@ export default function Page(){
             {getPkg(a.id)!=="none"&&<div style={{marginTop:6,padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:6,fontSize:10}}>
               <div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>RentPrep</span><span>${pkgFees[getPkg(a.id)]}</span></div>
               {getIncome(a.id)!=="none"&&<div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>Income verification</span><span>+${incomeAdds[getIncome(a.id)]}</span></div>}
-              <div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>Admin fee</span><span>+${adminFee}</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",color:"#999",marginBottom:2}}>
+                <span>Admin fee</span>
+                <div style={{display:"flex",alignItems:"center",gap:3}}>
+                  <span>+$</span>
+                  <input type="number" min="0" max="200" value={adminFee} onChange={e=>setSettings(s=>({...s,adminFee:Number(e.target.value)||0}))}
+                    style={{width:38,padding:"1px 3px",borderRadius:3,border:"1px solid rgba(0,0,0,.1)",fontSize:9,fontFamily:"inherit",textAlign:"right"}}/>
+                </div>
+              </div>
               <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,color:"#9a7422",borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:3,marginTop:2}}><span>Tenant pays</span><span>${getFee(a.id)}</span></div>
             </div>}
           </div>
@@ -3997,8 +3991,13 @@ export default function Page(){
             {incomeAdd!=="none"&&<div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#999",padding:"2px 0",borderBottom:"1px solid rgba(0,0,0,.04)",marginBottom:4}}>
               <span>{incomeLabel[incomeAdd]}</span><span>+${incomeAdds[incomeAdd]}</span>
             </div>}
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#999",padding:"2px 0",borderBottom:"1px solid rgba(0,0,0,.04)",marginBottom:6}}>
-              <span>Black Bear admin fee</span><span>+${adminFee}</span>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"#999",padding:"2px 0",borderBottom:"1px solid rgba(0,0,0,.04)",marginBottom:6}}>
+              <span>Black Bear admin fee</span>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <span>+$</span>
+                <input type="number" min="0" max="200" value={adminFee} onChange={e=>setSettings(s=>({...s,adminFee:Number(e.target.value)||0}))}
+                  style={{width:44,padding:"1px 4px",borderRadius:4,border:"1px solid rgba(0,0,0,.12)",fontSize:11,fontFamily:"inherit",textAlign:"right"}}/>
+              </div>
             </div>
           </>}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
