@@ -3862,37 +3862,86 @@ export default function Page(){
 
       {modal.sendErrors&&modal.sendErrors.length>0&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,padding:10,marginBottom:8,animation:"fadeIn .2s"}}>{modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:10,color:"#c45c4a",padding:"1px 0"}}>⚠ {e}</div>)}</div>}
 
-      {/* Optional note + send method */}
-      <div style={{background:"rgba(0,0,0,.02)",borderRadius:10,padding:12,marginBottom:12}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",marginBottom:6}}>📤 How are you sending?</div>
-        <textarea value={modal.sendNote||""} onChange={e=>setModal(prev=>({...prev,sendNote:e.target.value}))} placeholder="Optional note to add to the message... (leave blank to fire off the default)" rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"none",marginBottom:8}}/>
-        {(()=>{
-          const errors=[];
-          if(roomMode==="locked"&&!selPropId)errors.push("Select a property");
-          if(roomMode==="locked"&&selPropId&&!selRoomId)errors.push("Select a room");
-          if(anyWaived&&!(modal.waiverReason||"").trim())errors.push("Provide a waiver reason");
-          const validate=(method)=>{
-            if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}
-            return true;
-          };
-          const commit=(method)=>{
-            const waived=reqList.filter(([k])=>reqs[k]===false).map(([,l])=>l);
-            setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],waived,waiverReason:modal.waiverReason||"",property:selProp?selProp.name:a.property,room:selRoom?selRoom.name:a.room,appFee:totalFee,sentVia:method,history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Invited via ${method}${waived.length?" · Waived: "+waived.join(", "):""}${modal.waiverReason?" — "+modal.waiverReason:""}`}]}:x));
-            setNotifs(p=>[{id:uid(),type:"app",msg:`Invite sent to ${a.name} via ${method}${totalFee?` · Fee: $${totalFee}`:""}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
-          };
-          const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply?invite=${a.id}`;
-          const note=modal.sendNote?`\n\n${modal.sendNote}`:"";
-          const smsBody=encodeURIComponent(`Hey ${a.name.split(" ")[0]}! You're invited to apply for a room at Black Bear Rentals in Huntsville.${note}\n\nApply here: ${link}\n\nTakes about 10–15 minutes. Let me know if you have questions!`);
-          const emailSubject=encodeURIComponent(`Your Application Invite — Black Bear Rentals`);
-          const emailBody=encodeURIComponent(`Hi ${a.name},\n\nGreat speaking with you! You're invited to apply for a room at Black Bear Rentals in Huntsville, AL.${selRoom?`\n\nRoom: ${selRoom.name} at ${selProp?selProp.name:a.property} — $${selRoom.rent}/mo`:""}${note}\n\nApply here: ${link}\n\nThe application takes about 10–15 minutes. You'll be asked to pay a $${totalFee} screening fee at the end.\n\nLet me know if you have any questions!\n\nHarrison\nBlack Bear Rentals\n(256) 555-0192`);
-          return(
-            <div style={{display:"flex",gap:6}}>
-              <a href={`sms:${a.phone}?&body=${smsBody}`} className="btn btn-dk btn-sm" style={{flex:1,textDecoration:"none",justifyContent:"center"}} onClick={()=>{if(!validate("Text"))return;commit("Text");}}>💬 Send Text</a>
-              <a href={`mailto:${a.email}?subject=${emailSubject}&body=${emailBody}`} className="btn btn-out btn-sm" style={{flex:1,textDecoration:"none",justifyContent:"center"}} onClick={()=>{if(!validate("Email"))return;commit("Email");}}>✉️ Send Email</a>
-            </div>
-          );
-        })()}
+      {/* Personal note */}
+      <div className="fld" style={{marginBottom:12}}>
+        <label>Personal Note (optional)</label>
+        <textarea value={modal.sendNote||""} onChange={e=>setModal(prev=>({...prev,sendNote:e.target.value}))} placeholder="Add a personal message... e.g. 'Great speaking with you today!'" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit",resize:"none"}}/>
       </div>
+
+      {/* Send buttons */}
+      {(()=>{
+        const errors=[];
+        if(roomMode==="locked"&&!selPropId)errors.push("Select a property");
+        if(roomMode==="locked"&&selPropId&&!selRoomId)errors.push("Select a room");
+        if(anyWaived&&!(modal.waiverReason||"").trim())errors.push("Provide a waiver reason");
+        const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply?invite=${a.id}`;
+        const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
+        const commit=(method)=>{
+          const waived=reqList.filter(([k])=>reqs[k]===false).map(([,l])=>l);
+          setApps(p=>p.map(x=>x.id===a.id?{...x,
+            status:"invited",
+            lastContact:TODAY.toISOString().split("T")[0],
+            waived,waiverReason:modal.waiverReason||"",
+            property:selProp?selProp.name:a.property,
+            room:selRoom?selRoom.name:a.room,
+            appFee:totalFee,
+            inviteLink:link,
+            sentVia:(x.sentVia?x.sentVia+", ":"")+method,
+            history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Invited via ${method}${waived.length?" · Waived: "+waived.join(", "):""}${modal.waiverReason?" — "+modal.waiverReason:""}`}]
+          }:x));
+          setNotifs(p=>[{id:uid(),type:"app",msg:`Invite sent to ${a.name} via ${method}${totalFee?` · Fee: $${totalFee}`:" · Fee waived"}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+        };
+
+        const sendEmail=async()=>{
+          if(!validate())return;
+          setModal(prev=>({...prev,emailSending:true,sendErrors:[]}));
+          try{
+            const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+              to:a.email,name:a.name,link,
+              property:selProp?selProp.name:a.property,
+              room:selRoom?selRoom.name:"",
+              rent:selRoom?selRoom.rent:null,
+              fee:totalFee,
+              note:modal.sendNote||"",
+              waived:reqList.filter(([k])=>reqs[k]===false).map(([,l])=>l),
+            })});
+            const d=await res.json();
+            if(d.ok){commit("Email");setModal(prev=>({...prev,emailSent:true,emailSending:false}));}
+            else{setModal(prev=>({...prev,sendErrors:[d.error||"Email failed — check Resend config"],emailSending:false}));}
+          }catch{setModal(prev=>({...prev,sendErrors:["Network error sending email"],emailSending:false}));}
+        };
+
+        const smsBody=encodeURIComponent(`Hey ${a.name.split(" ")[0]}! You're invited to apply for a room at Black Bear Rentals in Huntsville, AL.${modal.sendNote?"\n\n"+modal.sendNote:""}\n\nApply here: ${link}\n\nTakes about 10–15 min. Questions? Just reply!\n\n— Harrison, Black Bear Rentals`);
+
+        const copyLink=()=>{
+          navigator.clipboard.writeText(link).then(()=>{
+            setModal(prev=>({...prev,linkCopied:true}));
+            setTimeout(()=>setModal(prev=>({...prev,linkCopied:false})),2500);
+          });
+        };
+
+        return(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{display:"flex",gap:8}}>
+            {/* Email via Resend */}
+            <button className="btn btn-green" style={{flex:1,opacity:modal.emailSending?.6:1}} onClick={sendEmail} disabled={!!modal.emailSending}>
+              {modal.emailSending?"Sending...":modal.emailSent?"✓ Email Sent":"✉️ Send Email"}
+            </button>
+            {/* SMS — opens Messages app */}
+            <a href={`sms:${(a.phone||"").replace(/\D/g,"")}?&body=${smsBody}`}
+              className="btn btn-dk btn-sm"
+              style={{flex:1,textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}
+              onClick={()=>{if(!validate())return;commit("Text");}}>
+              💬 Send Text
+            </a>
+          </div>
+          {/* Copy Link */}
+          <button className="btn btn-out btn-sm" style={{width:"100%",color:modal.linkCopied?"#4a7c59":"#5c4a3a",borderColor:modal.linkCopied?"rgba(74,124,89,.3)":""}} onClick={copyLink}>
+            {modal.linkCopied?"✓ Link Copied!":"🔗 Copy Invite Link"}
+          </button>
+          <div style={{fontSize:9,color:"#bbb",textAlign:"center",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link}</div>
+        </div>);
+      })()}
 
       <div className="mft">
         {modal.preConfirmed&&<button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,preConfirmed:false}))}>← Back</button>}
