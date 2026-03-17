@@ -5393,8 +5393,29 @@ export default function Page(){
           {modal.pmSigErr&&<div style={{fontSize:10,color:"#c45c4a",marginTop:6,fontWeight:600}}>⚠ Your signature is required before sending</div>}
         </div>
 
-        <div className="mft">
+        <div className="mft" style={{flexWrap:"wrap",gap:8}}>
           <button className="btn btn-out" onClick={()=>setModal(p=>({...p,step:1}))}>← Edit Charges</button>
+          <button className="btn btn-out" style={{color:"#1d4ed8",borderColor:"rgba(59,130,246,.3)"}} onClick={()=>{
+            const template=leaseTemplate||{sections:[]};
+            const DEF=[];
+            const sections=(template.sections&&template.sections.length>0?template.sections:DEF);
+            const leaseEnd=new Date(termMoveIn+"T00:00:00");leaseEnd.setFullYear(leaseEnd.getFullYear()+1);
+            const previewVars={
+              MONTHLY_RENT:fmtS(rent).replace("$",""),
+              RENT_WORDS:numberToWords(rent),
+              DAILY_RATE:Math.ceil(rent/30),
+              SECURITY_DEPOSIT:fmtS(sdAmt).replace("$",""),
+              PRORATED_RENT:fmtS(proratedAmt).replace("$",""),
+              LEASE_START:fmtD(termMoveIn),
+              LEASE_END:fmtD(leaseEnd.toISOString().split("T")[0]),
+              PROPERTY_ADDRESS:(targetProp?targetProp.name:a.property)||"",
+              PARKING_SPACE:"See property map",
+              DOOR_CODE:a.passcode||"Assigned at move-in",
+              UTILITIES_CLAUSE:"Utilities included up to $100/mo. Overage split equally among residents.",
+              LANDLORD_NAME:settings.landlordName||"Carolina Cooper",
+            };
+            setModal(p=>({...p,previewLeaseOpen:true,previewVars,previewSections:sections}));
+          }}>👁 Preview Lease</button>
           <button className="btn btn-green" onClick={async()=>{
             if(!modal.pmSig){setModal(p=>({...p,pmSigErr:true,pmSigShakeKey:(p.pmSigShakeKey||0)+1}));return;}
             // Resolve room — fall back to any prop room match by name if termRoomId isn't set
@@ -5581,6 +5602,78 @@ export default function Page(){
       </>}
 
     </div></div>);})()}
+
+  {/* ── Lease Preview Modal ── */}
+  {modal&&modal.previewLeaseOpen&&(
+    <div className="mbg" style={{zIndex:110}} onClick={()=>setModal(p=>({...p,previewLeaseOpen:false}))}>
+      <div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:700,maxHeight:"90vh",overflowY:"auto",padding:0}}>
+
+        {/* Sticky header */}
+        <div style={{position:"sticky",top:0,background:"#1a1714",padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:10,borderRadius:"14px 14px 0 0"}}>
+          <div>
+            <div style={{fontFamily:"serif",fontSize:15,color:"#f5f0e8",fontWeight:700}}>Lease Preview</div>
+            <div style={{fontSize:10,color:"#c4a882",marginTop:2}}>Read-only · Variables substituted · Go back to edit</div>
+          </div>
+          <button className="btn btn-out btn-sm" style={{color:"#f5f0e8",borderColor:"rgba(255,255,255,.2)"}} onClick={()=>setModal(p=>({...p,previewLeaseOpen:false}))}>✕ Close</button>
+        </div>
+
+        <div style={{padding:28}}>
+
+          {/* Parties intro */}
+          <div style={{marginBottom:28,paddingBottom:28,borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+            <p style={{fontSize:13,color:"#3d3529",lineHeight:1.8,marginBottom:10}}>
+              This Rental Agreement ("Agreement") is entered into as of <strong>{modal.previewVars?.LEASE_START}</strong>, between:
+            </p>
+            <p style={{fontSize:13,color:"#3d3529",lineHeight:1.8,marginBottom:10}}>
+              <strong>Property Manager/Agent:</strong> {modal.previewVars?.LANDLORD_NAME}, {leaseTemplate?.company||"Black Bear Properties"} ("PROPERTY MANAGER"), and
+            </p>
+            <p style={{fontSize:13,color:"#3d3529",lineHeight:1.8,marginBottom:10}}>
+              <strong>Resident(s)/Lessee:</strong> <strong>{modal.data?.name}</strong> ("RESIDENT").
+            </p>
+            <p style={{fontSize:13,color:"#3d3529",lineHeight:1.8}}>
+              Premises located at <strong>{modal.previewVars?.PROPERTY_ADDRESS}</strong>, Huntsville, Alabama.
+            </p>
+          </div>
+
+          {/* Sections */}
+          {(modal.previewSections||[]).filter(s=>s.active!==false).map((sec,idx)=>(
+            <div key={sec.id} style={{marginBottom:28,paddingBottom:28,borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+              <div style={{fontSize:9,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Section {idx+1}</div>
+              <div style={{fontFamily:"serif",fontSize:17,color:"#1a1714",marginBottom:10}}>{sec.title}</div>
+              <div style={{fontSize:13,color:"#3d3529",lineHeight:1.8}} dangerouslySetInnerHTML={{__html:(sec.content||"").replace(/\{\{([^}]+)\}\}/g,(_,key)=>{const v=(modal.previewVars||{})[key.trim()];return v!==undefined?`<span style="color:#1a1714;font-weight:700;background:rgba(212,168,83,.1);padding:0 3px;border-radius:3px">${v}</span>`:`<span style="color:#c45c4a">{{${key}}}</span>`;})}}/>
+              {sec.requiresInitials&&<div style={{marginTop:14,padding:"8px 12px",background:"rgba(212,168,83,.05)",border:"1px dashed rgba(212,168,83,.3)",borderRadius:8,fontSize:10,color:"#9a7422",fontWeight:600}}>⚠ Tenant initials required for this section</div>}
+            </div>
+          ))}
+
+          {/* Signature preview */}
+          <div style={{marginTop:8,padding:16,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>Signatures</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+              <div>
+                <div style={{fontSize:10,color:"#999",marginBottom:6}}>Property Manager</div>
+                {modal.pmSig
+                  ?<img src={modal.pmSig} alt="PM signature" style={{maxHeight:50,maxWidth:"100%",border:"1px solid rgba(0,0,0,.08)",borderRadius:4,padding:3,background:"#fff"}}/>
+                  :<div style={{fontSize:12,fontFamily:"serif",color:"#1a1714"}}>{modal.previewVars?.LANDLORD_NAME}</div>
+                }
+                <div style={{fontSize:10,color:"#999",marginTop:4}}>{modal.previewVars?.LANDLORD_NAME} · Property Manager</div>
+              </div>
+              <div>
+                <div style={{fontSize:10,color:"#999",marginBottom:6}}>Resident</div>
+                <div style={{height:50,border:"2px dashed rgba(0,0,0,.1)",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <span style={{fontSize:11,color:"#bbb"}}>Tenant signs here</span>
+                </div>
+                <div style={{fontSize:10,color:"#999",marginTop:4}}>{modal.data?.name} · Resident</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{marginTop:16,textAlign:"center"}}>
+            <button className="btn btn-out" style={{marginRight:8}} onClick={()=>setModal(p=>({...p,previewLeaseOpen:false}))}>← Back to Signing</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
 
   {/* Deny Modal */}
   {modal&&modal.type==="denyApp"&&(
