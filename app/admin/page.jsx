@@ -772,11 +772,11 @@ export default function Page(){
   useEffect(()=>{if(loaded&&props.length>0){const t=setTimeout(()=>autoGenRentCharges(),500);return()=>clearTimeout(t);}},[loaded]);
 
   // Real-time poll — check Supabase for new "applied" apps every 15 seconds
-  const knownAppIds=useRef(new Set());
+  const knownAppliedIds=useRef(new Set());
   useEffect(()=>{
     if(!loaded)return;
-    // Seed known IDs from initial load so we don't false-fire on first mount
-    apps.forEach(a=>knownAppIds.current.add(a.id));
+    // Seed only the IDs that are already "applied" on load — so we don't re-fire for them
+    apps.filter(a=>a.status==="applied").forEach(a=>knownAppliedIds.current.add(a.id));
   },[loaded]);
 
   useEffect(()=>{
@@ -790,11 +790,12 @@ export default function Page(){
         let fresh=rows[0].value;
         if(typeof fresh==="string")fresh=JSON.parse(fresh);
         if(!Array.isArray(fresh))return;
-        const newApplied=fresh.filter(a=>a.status==="applied"&&!knownAppIds.current.has(a.id));
+        // Find apps that are now "applied" but weren't before
+        const newApplied=fresh.filter(a=>a.status==="applied"&&!knownAppliedIds.current.has(a.id));
         if(newApplied.length>0){
           // Update local state with fresh data
           setApps(fresh);
-          fresh.forEach(a=>knownAppIds.current.add(a.id));
+          fresh.filter(a=>a.status==="applied").forEach(a=>knownAppliedIds.current.add(a.id));
           // Add admin notification
           const newest=newApplied[0];
           setNotifs(p=>[{id:uid(),type:"app",msg:`🎉 ${newest.name} submitted their application${newest.property?" for "+newest.property:""}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
@@ -805,10 +806,10 @@ export default function Page(){
           setTimeout(()=>setShowConfetti(false),8000);
           setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
         } else {
-          // Still sync any other changes silently (stage moves from apply page, etc.)
-          fresh.forEach(a=>knownAppIds.current.add(a.id));
+          // Silently sync any other state changes
+          fresh.filter(a=>a.status==="applied").forEach(a=>knownAppliedIds.current.add(a.id));
         }
-      }catch{}
+      }catch(e){console.error("Poll error:",e);}
     };
     const interval=setInterval(poll,15000);
     return()=>clearInterval(interval);
