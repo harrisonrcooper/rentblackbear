@@ -5516,8 +5516,12 @@ export default function Page(){
             const updatedLeases=existingLease
               ?allLeases.map(l=>l.id===leaseRecord.id?updatedLease:l)
               :[...allLeases,updatedLease];
+            // Strip sections from Supabase payload — sections are large and stored in leaseTemplate separately
+            // The signing page loads sections from hq-lease-template, not from the lease record
+            const leasesForSupabase=updatedLeases.map(l=>({...l,sections:undefined}));
             // Force immediate Supabase write — don't rely on debounce
-            await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:"hq-leases",value:updatedLeases})});
+            const supaRes=await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:"hq-leases",value:leasesForSupabase})});
+            if(!supaRes.ok){const errBody=await supaRes.text();console.error("Supabase hq-leases write failed:",supaRes.status,errBody);alert("Failed to save lease to database: "+errBody);return;}
             setLeases(updatedLeases);
 
             // Email tenant — doc ready to sign

@@ -209,7 +209,12 @@ export default function LeaseSignPage() {
     (async () => {
       const leases = await loadKey("hq-leases", []);
       const found = leases.find(l => l.signingToken === t);
-      if (!found) { setError("Lease not found or link expired."); setLoading(false); return; }
+      if (!found) { setError("Lease not found or link expired. Token: "+t+" — "+leases.length+" leases loaded."); setLoading(false); return; }
+      // If sections were stripped from the lease record to save space, load from template
+      if (!found.sections || found.sections.length === 0) {
+        const tmpl = await loadKey("hq-lease-template", null);
+        if (tmpl && tmpl.sections) found.sections = tmpl.sections;
+      }
       if (found.status === "executed") { setDone(true); setLease(found); setLoading(false); return; }
       if (found.status !== "pending_tenant") { setError("This lease is not ready for your signature yet."); setLoading(false); return; }
       // Restore any partial progress
