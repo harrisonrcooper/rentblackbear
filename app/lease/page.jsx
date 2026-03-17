@@ -396,8 +396,7 @@ export default function LeaseSignPage() {
             executedAt: fullDate,
             doorCode: doorCode,
             chargesGenerated: generatedCharges.length,
-            chargeRows: generatedCharges.map(c => `${c.desc}: $${c.amount} — due ${c.dueDate}`).join("
-"),
+            chargeRows: generatedCharges.map(c => `${c.desc}: $${c.amount} — due ${c.dueDate}`).join(", "),
             totalDue: generatedCharges.reduce((s, c) => s + c.amount, 0),
           })
         });
@@ -421,8 +420,7 @@ export default function LeaseSignPage() {
             leaseEnd: lease.leaseEnd,
             doorCode: doorCode,
             executedAt: fullDate,
-            chargeRows: generatedCharges.map(c => `${c.desc}: $${c.amount} — due ${c.dueDate}`).join("
-"),
+            chargeRows: generatedCharges.map(c => `${c.desc}: $${c.amount} — due ${c.dueDate}`).join(", "),
             totalDue: generatedCharges.reduce((s, c) => s + c.amount, 0),
           })
         });
