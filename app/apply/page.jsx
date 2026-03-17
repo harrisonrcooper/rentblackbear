@@ -9,6 +9,7 @@ async function loadKey(k,fb){try{const r=await supa(`app_data?key=eq.${k}&select
 async function saveKey(k,v){try{await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:k,value:v})});}catch{}}
 
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const YEARS=Array.from({length:50},(_,i)=>2026-i);
 const STATES=["AL","AK","AZ","AR","CA","CO","CT","DC","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY"];
 
 // ─── Styles ──────────────────────────────────────────────────────
@@ -26,11 +27,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .app-body{flex:1;max-width:600px;margin:0 auto;width:100%;padding:0 16px}
 .app-footer{text-align:center;padding:20px;font-size:10px;color:#999}
 .app-footer a{color:var(--ac)}
+
+/* Progress */
 .prog{display:flex;gap:3px;padding:20px 0 10px}
 .prog-seg{flex:1;height:4px;border-radius:2px;background:rgba(0,0,0,.06);transition:all .4s}
 .prog-seg.done{background:var(--gn)}
 .prog-seg.cur{background:var(--ac)}
 .prog-label{font-size:10px;color:#999;margin-bottom:24px}
+
+/* Welcome */
 .welcome{text-align:center;padding:60px 0 40px}
 .welcome-bear{font-size:48px;margin-bottom:16px;animation:bounce 2s ease infinite}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
@@ -43,6 +48,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .type-btn{flex:1;padding:12px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#999}
 .type-btn.on{background:var(--dk);color:var(--cr)}
 .cosigner-note{background:rgba(212,168,83,.06);border:1px solid rgba(212,168,83,.15);border-radius:10px;padding:12px;margin-bottom:20px;font-size:12px;color:#9a7422}
+
+/* Sections */
 .sec{padding:24px 0;animation:fadeUp .4s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
@@ -51,6 +58,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .sec-hd h2{font-family:'DM Serif Display',serif;font-size:22px;color:var(--dk);margin-bottom:4px}
 .sec-hd p{font-size:12px;color:#999;line-height:1.5}
 .sec-num{font-size:10px;font-weight:700;color:var(--ac);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+
+/* Fields */
 .fld{margin-bottom:16px}
 .fld label{display:block;font-size:11px;font-weight:700;color:#5c4a3a;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
 .fld .req{color:var(--rd);margin-left:2px}
@@ -62,20 +71,59 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .fld-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fld-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .fld textarea{min-height:80px;resize:vertical}
-.counter{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+
+/* Counter */
+.counter{display:flex;align-items:center;gap:16px;margin-bottom:16px}
 .counter-btn{width:40px;height:40px;border-radius:50%;border:2px solid rgba(0,0,0,.1);background:#fff;font-size:20px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .15s;color:#3d3529}
 .counter-btn:hover{border-color:var(--ac);color:var(--ac)}
 .counter-val{font-size:28px;font-weight:700;min-width:40px;text-align:center}
+
+/* Add card */
+.add-card{border:2px dashed rgba(0,0,0,.1);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px}
+.add-card:hover{border-color:var(--ac);background:rgba(212,168,83,.02)}
+.add-card .plus{font-size:20px;color:var(--ac);margin-bottom:4px}
+.add-card .lbl{font-size:12px;color:#999;font-weight:500}
+
+/* Added item card */
+.item-card{border:2px solid rgba(74,124,89,.15);border-radius:12px;padding:14px;margin-bottom:10px;background:rgba(74,124,89,.02);position:relative}
+.item-card .item-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.item-card .item-nm{font-size:13px;font-weight:700;color:var(--dk)}
+.item-card .item-sub{font-size:10px;color:#999}
+.item-card .item-del{background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px;font-weight:600}
+.item-card .item-edit{background:none;border:none;color:var(--ac);cursor:pointer;font-size:11px;font-weight:600;margin-right:8px}
+
+/* Expand form */
+.expand-form{border:2px solid var(--ac);border-radius:14px;padding:18px;margin-bottom:16px;background:rgba(212,168,83,.02);animation:fadeUp .3s}
+.expand-form h3{font-size:14px;font-weight:700;color:var(--dk);margin-bottom:14px}
+
+/* Res type toggle */
+.res-toggle{display:flex;gap:0;border:2px solid rgba(0,0,0,.08);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.res-btn{flex:1;padding:10px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#999}
+.res-btn.on{background:var(--dk);color:var(--cr)}
+
+/* Strength tip */
+.strength-tip{background:rgba(212,168,83,.06);border-radius:8px;padding:10px;font-size:11px;color:#9a7422;margin:12px 0}
+
+/* Unemployed */
+.unemployed-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid rgba(0,0,0,.08);border-radius:10px;cursor:pointer;font-size:12px;color:#999;transition:all .2s;margin-bottom:16px;background:#fff}
+.unemployed-btn.on{border-color:var(--rd);background:rgba(196,92,74,.04);color:var(--rd)}
+
+/* File upload */
 .upload{border:2px dashed rgba(0,0,0,.1);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(0,0,0,.01)}
 .upload:hover{border-color:var(--ac);background:rgba(212,168,83,.03)}
 .upload.has{border-color:var(--gn);border-style:solid;background:rgba(74,124,89,.03)}
 .upload-ic{font-size:28px;margin-bottom:6px}
 .upload-txt{font-size:12px;color:#999}
 .upload-file{font-size:12px;color:var(--gn);font-weight:600;margin-top:4px}
-.yn-row{display:flex;gap:8px;margin-bottom:8px}
+
+/* Yes/No */
+.yn-row{display:flex;gap:8px;margin-bottom:16px}
+.yn-q{font-size:13px;font-weight:600;color:#3d3529;margin-bottom:8px}
 .yn-btn{flex:1;padding:12px;border:2px solid rgba(0,0,0,.08);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#999}
 .yn-btn.yes{border-color:var(--gn);background:rgba(74,124,89,.06);color:var(--gn)}
 .yn-btn.no{border-color:var(--rd);background:rgba(196,92,74,.06);color:var(--rd)}
+
+/* Room picker */
 .room-card{border:2px solid rgba(0,0,0,.08);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all .2s}
 .room-card:hover{border-color:var(--ac)}
 .room-card.sel{border-color:var(--ac);background:rgba(212,168,83,.04)}
@@ -87,12 +135,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .prop-info{padding:14px}
 .prop-name{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:2px}
 .prop-addr{font-size:11px;color:#999}
+
+/* Buttons */
 .btn-next{width:100%;padding:16px;background:var(--ac);color:var(--dk);border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
 .btn-next:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(212,168,83,.3)}
 .btn-back{width:100%;padding:14px;background:none;border:2px solid rgba(0,0,0,.08);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#999;transition:all .2s;margin-top:8px}
 .btn-back:hover{border-color:#999}
 .btn-start{width:100%;padding:18px;background:var(--dk);color:var(--cr);border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .3s}
 .btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,23,20,.3)}
+
+/* Review */
 .rev-sec{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:12px;padding:14px;margin-bottom:10px}
 .rev-sec h3{font-size:13px;font-weight:700;color:var(--dk);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .rev-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.03);font-size:12px}
@@ -100,394 +152,535 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .rev-label{color:#999}
 .rev-val{font-weight:600;color:#3d3529;text-align:right;max-width:60%}
 .rev-edit{font-size:10px;color:var(--ac);cursor:pointer;font-weight:600;margin-left:auto}
+
+/* Fee */
 .fee-card{background:var(--dk);border-radius:14px;padding:20px;color:var(--cr);margin-bottom:20px}
 .fee-card h3{font-size:14px;margin-bottom:12px}
 .fee-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:var(--mt)}
 .fee-total{display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.1);font-size:16px;font-weight:700;margin-top:6px}
+
+/* Legal */
 .legal{font-size:10px;color:#999;line-height:1.6;text-align:center;margin:16px 0 24px}
 .legal a{color:var(--ac);text-decoration:underline}
+
+/* Submitted */
 .submitted{text-align:center;padding:80px 20px}
 .submitted-ic{font-size:56px;margin-bottom:16px}
 .submitted h1{font-family:'DM Serif Display',serif;font-size:26px;color:var(--dk);margin-bottom:8px}
 .submitted p{color:#999;font-size:14px;line-height:1.6;max-width:400px;margin:0 auto}
+
 @media(max-width:500px){
   .fld-row,.fld-row3{grid-template-columns:1fr}
   .welcome h1{font-size:24px}
   .sec-hd h2{font-size:20px}
   .fld input,.fld select,.fld textarea{font-size:16px;padding:12px}
   .type-toggle{max-width:100%}
+  .res-toggle{flex-wrap:wrap}
+  .res-btn{min-width:30%}
 }
 `;
 
 export default function ApplyPage(){
-  const[fieldSchema,setFieldSchema]=useState(null);
-  const[loading,setLoading]=useState(true);
-  const[answers,setAnswers]=useState({});
-  const[errors,setErrors]=useState({});
-  const[stepIdx,setStepIdx]=useState(-1); // -1=welcome, 0..n-1=sections, n=review, n+1=payment
+  const[step,setStep]=useState("welcome");
   const[appType,setAppType]=useState("tenant");
+  const[d,setD]=useState({
+    firstName:"",lastName:"",email:"",phone:"",dob:"",
+    moveIn:"",occupants:1,
+    // Personal
+    ssn:"",idFile:null,idFileName:"",
+    // Rental
+    addresses:[],curAddressForm:null,
+    evicted:"",evictedExplain:"",felony:"",felonyExplain:"",
+    // Employment
+    employers:[],curEmployerForm:null,unemployed:false,
+    // References
+    empRefName:"",empRefPhone:"",empRefRelation:"",persRefName:"",persRefPhone:"",persRefRelation:"",
+    // Emergency
+    emergName:"",emergPhone:"",emergRelation:"",
+    // Room
+    selectedRoom:"",
+  });
+  const[errors,setErrors]=useState({});
   const[invite,setInvite]=useState(null);
-  const[submitted,setSubmitted]=useState(false);
+  const[loading,setLoading]=useState(true);
   const[saving,setSaving]=useState(false);
+  const[submitted,setSubmitted]=useState(false);
   const[props_,setProps]=useState([]);
-  const fileRefs=useRef({});
+  const fileRef=useRef(null);const payRef=useRef(null);
 
+  const upd=(k,v)=>{setD(p=>({...p,[k]:v}));setErrors(p=>({...p,[k]:undefined}));};
   const fmtPhone=(v)=>{const x=v.replace(/\D/g,"").slice(0,10);if(x.length<=3)return x;if(x.length<=6)return`(${x.slice(0,3)}) ${x.slice(3)}`;return`(${x.slice(0,3)}) ${x.slice(3,6)}-${x.slice(6)}`;};
-  const shake=()=>{const el=document.querySelector(".sec");if(el){el.style.animation="none";el.offsetHeight;el.style.animation="shake .4s ease";}};
+  const shake=()=>{const el=document.querySelector('.sec');if(el){el.style.animation="none";el.offsetHeight;el.style.animation="shake .4s ease";}};
 
-  // Load field schema + invite + props on mount
-  useEffect(()=>{(async()=>{
-    try{
-      // Read invite ID from URL ?invite=xxx
-      const params=new URLSearchParams(typeof window!=="undefined"?window.location.search:"");
-      const inviteId=params.get("invite");
-      const[schema,apps,p]=await Promise.all([loadKey("hq-app-fields",null),loadKey("hq-apps",[]),loadKey("hq-props",[])]);
-      const active=(schema&&schema.length>0?schema:[]).filter(f=>f.active);
-      setFieldSchema(active.length>0?active:null);
-      setProps(p||[]);
-      // Match by ID if provided, otherwise fall back to first invited
-      const inv=inviteId?(apps||[]).find(a=>a.id===inviteId):(apps||[]).find(a=>a.status==="invited");
-      if(inv){
-        setInvite(inv);
-        // Pre-fill answers from invite data
-        const pre={};
-        (active.length>0?active:[]).forEach(f=>{
-          const l=f.label.toLowerCase();
-          if(l.includes("first name")&&inv.name)pre[f.id]=inv.name.split(" ")[0]||"";
-          if(l.includes("last name")&&inv.name)pre[f.id]=inv.name.split(" ").slice(1).join(" ")||"";
-          if(l.includes("email")&&inv.email)pre[f.id]=inv.email;
-          if(l.includes("phone")&&inv.phone)pre[f.id]=inv.phone;
-        });
-        if(Object.keys(pre).length>0)setAnswers(pre);
-      }
-    }catch{}
-    setLoading(false);
-  })();},[]);
+  useEffect(()=>{(async()=>{try{
+    // Read ?invite= from URL
+    const inviteId=new URLSearchParams(window.location.search).get("invite");
+    const apps=await loadKey("hq-apps",[]);
+    // Match by ID first, fall back to matching by email if already submitted
+    const inv=inviteId?apps.find(a=>a.id===inviteId&&a.status==="invited"):null;
+    if(inv){
+      setInvite(inv);
+      setD(p=>({...p,phone:inv.phone||""}));
+    }
+    const p=await loadKey("hq-props",[]);setProps(p);
+  }catch{}setLoading(false);})();},[]);
+  useEffect(()=>{if(step!=="welcome"&&step!=="done"&&!loading){setSaving(true);const t=setTimeout(()=>setSaving(false),1500);return()=>clearTimeout(t);}},[d,step]);
 
-  // Auto-save answers as they change
-  useEffect(()=>{
-    if(stepIdx<0||loading)return;
-    setSaving(true);
-    const t=setTimeout(()=>setSaving(false),1200);
-    return()=>clearTimeout(t);
-  },[answers,stepIdx]);
+  const ageOk=(dob)=>{if(!dob)return false;const b=new Date(dob+"T00:00:00");const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=18;};
 
-  // Field schema — use loaded or fallback to minimal defaults
-  const activeFields=fieldSchema||[];
-  const sections=[...new Set(activeFields.map(f=>f.section))];
-  const REVIEW_IDX=sections.length;
-  const PAYMENT_IDX=sections.length+1;
-
-  const setAnswer=(fid,val)=>{setAnswers(p=>({...p,[fid]:val}));setErrors(p=>({...p,[fid]:undefined}));};
-
-  const validate=(secIdx)=>{
-    const secFields=activeFields.filter(f=>f.section===sections[secIdx]);
+  const validate=(s)=>{
     const e={};
-    secFields.forEach(f=>{
-      if(!f.required)return;
-      const v=answers[f.id];
-      if(f.type==="yes-no"){if(!v||!v.answer)e[f.id]="Please answer";}
-      else if(f.type==="date"){if(!v||!v.month||!v.day||!v.year)e[f.id]="Date required";}
-      else if(f.type==="address"){if(!v||!v.street||!v.city)e[f.id]="Street and city required";}
-      else if(f.type==="counter"){/* always has value */}
-      else if(f.type==="file"){/* not strictly required */}
-      else{if(!v||!String(v).trim())e[f.id]="Required";}
-    });
-    setErrors(e);
-    if(Object.keys(e).length>0)shake();
-    return Object.keys(e).length===0;
-  };
-
-  const next=()=>{
-    if(stepIdx===-1){setStepIdx(0);return;}
-    if(!validate(stepIdx))return;
-    setStepIdx(s=>s+1);
-  };
-  const back=()=>{setStepIdx(s=>Math.max(-1,s-1));};
-
-  // Get a readable display value for review
-  const displayVal=(f)=>{
-    const v=answers[f.id];
-    if(v===undefined||v===null||v==="")return"—";
-    if(f.type==="date")return v.month&&v.day&&v.year?`${MONTHS[v.month-1]} ${v.day}, ${v.year}`:"—";
-    if(f.type==="yes-no"){
-      if(!v.answer)return"—";
-      const ans=v.answer.charAt(0).toUpperCase()+v.answer.slice(1);
-      return v.followUpText?`${ans} — ${v.followUpText}`:ans;
+    if(s==="welcome"){
+      if(!d.firstName.trim())e.firstName="Required";
+      if(!d.lastName.trim())e.lastName="Required";
+      if(!d.email.trim()||!d.email.includes("@"))e.email="Valid email required";
+      if(d.phone.replace(/\D/g,"").length!==10)e.phone="10-digit phone required";
+      if(!d.dob)e.dob="Required";
+      else if(!ageOk(d.dob))e.dob="You must be at least 18 years old";
     }
-    if(f.type==="address"){
-      if(!v.street)return"—";
-      return[v.street,v.city,v.state,v.zip].filter(Boolean).join(", ");
+    if(s==="appinfo"){
+      if(!d.moveIn)e.moveIn="Required";
     }
-    if(f.type==="counter")return String(v||f.min||1);
-    return String(v);
+    if(s==="personal"){
+      if(!d.ssn||d.ssn.length<4)e.ssn="Last 4 of SSN required";
+    }
+    if(s==="rental"){
+      if(d.addresses.length===0)e.addresses="Add at least one address";
+      if(d.evicted==="")e.evicted="Please answer";
+      if(d.felony==="")e.felony="Please answer";
+    }
+    if(s==="employment"){
+      if(!d.unemployed&&d.employers.length===0)e.employers="Add at least one employer";
+    }
+    if(s==="references"){
+      if(!d.empRefName.trim())e.empRefName="Required";
+      if(!d.empRefPhone.trim())e.empRefPhone="Required";
+      if(!d.persRefName.trim())e.persRefName="Required";
+      if(!d.persRefPhone.trim())e.persRefPhone="Required";
+    }
+    if(s==="emergency"){
+      if(!d.emergName.trim())e.emergName="Required";
+      if(!d.emergPhone.trim())e.emergPhone="Required";
+      if(!d.emergRelation.trim())e.emergRelation="Required";
+    }
+    if(s==="room"){
+      if(invite?.inviteRoomMode==="choice"&&!d.selectedRoom)e.selectedRoom="Select a room";
+    }
+    setErrors(e);if(Object.keys(e).length>0)shake();return Object.keys(e).length===0;
   };
 
-  // Get first name for confirmation screen
-  const getFirstName=()=>{
-    const f=activeFields.find(f=>f.label.toLowerCase().includes("first name"));
-    return(f&&answers[f.id])||invite?.name?.split(" ")[0]||"";
+  const STEPS_TENANT=["welcome","appinfo","rental","personal","employment","references","emergency","room","review","payment","done"];
+  const STEPS_COSIGNER=["welcome","appinfo","personal","employment","review","payment","done"];
+  const getSteps=()=>{
+    const s=appType==="cosigner"?STEPS_COSIGNER:STEPS_TENANT;
+    return s.filter(x=>{if(x==="room"&&invite?.inviteRoomMode!=="choice")return false;return true;});
   };
-  const getEmail=()=>{
-    const f=activeFields.find(f=>f.type==="email");
-    return(f&&answers[f.id])||invite?.email||"";
-  };
+  const steps=getSteps();
+  const stepIdx=steps.indexOf(step);
+  const next=()=>{if(!validate(step))return;if(stepIdx<steps.length-1)setStep(steps[stepIdx+1]);};
+  const back=()=>{if(stepIdx>0)setStep(steps[stepIdx-1]);};
+  const LABELS={welcome:"Start",appinfo:"App Info",rental:"Rental History",personal:"Personal Info",employment:"Employment",references:"References",emergency:"Emergency",room:"Room",review:"Review",payment:"Payment",done:"Done"};
+  const baseFee=invite?.inviteFee||59;
 
-  // Field renderer
-  const renderField=(f)=>{
-    const v=answers[f.id];
-    const err=errors[f.id];
-    const isDOB=f.label.toLowerCase().includes("birth")||f.label.toLowerCase().includes("dob");
-    return(
-      <div key={f.id} className="fld">
-        <label>{f.label}{f.required&&<span className="req">*</span>}</label>
-        {f.helpText&&<div className="help">{f.helpText}</div>}
+  // Address form helpers
+  const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",landlordName:"",landlordEmail:"",landlordPhone:""};
+  const saveAddr=()=>{const f=d.curAddressForm;if(!f)return;if(!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn){shake();return;}
+    if(f._editIdx!==undefined){setD(p=>({...p,addresses:p.addresses.map((a,i)=>i===f._editIdx?f:a),curAddressForm:null}));}
+    else{setD(p=>({...p,addresses:[...p.addresses,f],curAddressForm:null}));}};
+  const blankEmp={employer:"",position:"",monthStarted:"",yearStarted:"",monthlyIncome:"",refName:"",refPhone:""};
+  const saveEmp=()=>{const f=d.curEmployerForm;if(!f)return;if(!f.employer||!f.monthlyIncome){shake();return;}
+    if(f._editIdx!==undefined){setD(p=>({...p,employers:p.employers.map((e,i)=>i===f._editIdx?f:e),curEmployerForm:null}));}
+    else{setD(p=>({...p,employers:[...p.employers,f],curEmployerForm:null}));}};
 
-        {(f.type==="text")&&<input value={v||""} onChange={e=>setAnswer(f.id,e.target.value)} placeholder={f.placeholder||""} className={err?"err":""}/>}
-        {(f.type==="email")&&<input type="email" value={v||""} onChange={e=>setAnswer(f.id,e.target.value)} placeholder={f.placeholder||"you@email.com"} className={err?"err":""}/>}
-        {(f.type==="phone")&&<input type="tel" value={v||""} onChange={e=>setAnswer(f.id,fmtPhone(e.target.value))} placeholder={f.placeholder||"(256) 555-0000"} className={err?"err":""}/>}
-        {(f.type==="number")&&<input type={f.label.toLowerCase().includes("social")||f.label.toLowerCase().includes("ssn")?"password":"number"} value={v||""} onChange={e=>setAnswer(f.id,e.target.value)} placeholder={f.placeholder||""} className={err?"err":""} maxLength={f.label.toLowerCase().includes("social")||f.label.toLowerCase().includes("ssn")?4:undefined}/>}
-        {(f.type==="long-text")&&<textarea value={v||""} onChange={e=>setAnswer(f.id,e.target.value)} placeholder={f.placeholder||""} className={err?"err":""}/>}
-
-        {f.type==="date"&&<>
-          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
-            <select value={v?.month||""} onChange={e=>setAnswer(f.id,{...(v||{}),month:e.target.value})} className={err?"err":""} style={{fontSize:15}}>
-              <option value="">Month</option>
-              {MONTHS.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
-            </select>
-            <select value={v?.day||""} onChange={e=>setAnswer(f.id,{...(v||{}),day:e.target.value})} className={err?"err":""} style={{fontSize:15}}>
-              <option value="">Day</option>
-              {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
-            </select>
-            <select value={v?.year||""} onChange={e=>setAnswer(f.id,{...(v||{}),year:e.target.value})} className={err?"err":""} style={{fontSize:15}}>
-              <option value="">Year</option>
-              {(isDOB
-                ?Array.from({length:82},(_,i)=>new Date().getFullYear()-18-i)
-                :[new Date().getFullYear(),new Date().getFullYear()+1,new Date().getFullYear()+2]
-              ).map(y=><option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
-        </>}
-
-        {f.type==="dropdown"&&<select value={v||""} onChange={e=>setAnswer(f.id,e.target.value)} className={err?"err":""}>
-          <option value="">{f.placeholder||"Select..."}</option>
-          {(f.options||[]).filter(Boolean).map((o,i)=><option key={i} value={o}>{o}</option>)}
-        </select>}
-
-        {f.type==="yes-no"&&<div>
-          <div className="yn-row">
-            <button className={`yn-btn ${v?.answer==="no"?"no":""}`} onClick={()=>setAnswer(f.id,{...(v||{}),answer:"no",followUpText:v?.answer==="no"?v.followUpText:""})}>No</button>
-            <button className={`yn-btn ${v?.answer==="yes"?"yes":""}`} onClick={()=>setAnswer(f.id,{...(v||{}),answer:"yes",followUpText:v?.answer==="yes"?v.followUpText:""})}>Yes</button>
-          </div>
-          {v?.answer==="yes"&&f.followUpYes&&<div className="fld" style={{marginTop:4}}>
-            <label>{f.followUpYes}<span className="req">*</span></label>
-            <textarea value={v?.followUpText||""} onChange={e=>setAnswer(f.id,{...v,followUpText:e.target.value})} placeholder="Please explain..."/>
-          </div>}
-          {v?.answer==="no"&&f.followUpNo&&<div className="fld" style={{marginTop:4}}>
-            <label>{f.followUpNo}<span className="req">*</span></label>
-            <textarea value={v?.followUpText||""} onChange={e=>setAnswer(f.id,{...v,followUpText:e.target.value})} placeholder="Please explain..."/>
-          </div>}
-        </div>}
-
-        {f.type==="file"&&<div>
-          <div className={`upload ${v?"has":""}`} onClick={()=>fileRefs.current[f.id]?.click()}>
-            <div className="upload-ic">{v?"✅":"📎"}</div>
-            <div className="upload-txt">{v||f.placeholder||"Tap to upload"}</div>
-          </div>
-          <input ref={el=>fileRefs.current[f.id]=el} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])setAnswer(f.id,e.target.files[0].name);}}/>
-          <div className="help">JPG, PNG, or PDF.</div>
-        </div>}
-
-        {f.type==="counter"&&<div className="counter">
-          <button className="counter-btn" onClick={()=>setAnswer(f.id,Math.max(f.min??1,(v||f.min||1)-1))}>−</button>
-          <div className="counter-val">{v||f.min||1}</div>
-          <button className="counter-btn" onClick={()=>setAnswer(f.id,Math.min(f.max??99,(v||f.min||1)+1))}>+</button>
-        </div>}
-
-        {f.type==="address"&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-          <input value={v?.street||""} onChange={e=>setAnswer(f.id,{...(v||{}),street:e.target.value})} placeholder="Street address" className={err?"err":""}/>
-          <div className="fld-row">
-            <input value={v?.city||""} onChange={e=>setAnswer(f.id,{...(v||{}),city:e.target.value})} placeholder="City"/>
-            <select value={v?.state||""} onChange={e=>setAnswer(f.id,{...(v||{}),state:e.target.value})}>
-              <option value="">State</option>
-              {STATES.map(s=><option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <input value={v?.zip||""} onChange={e=>setAnswer(f.id,{...(v||{}),zip:e.target.value.replace(/\D/g,"").slice(0,5)})} placeholder="Zip code"/>
-        </div>}
-
-        {err&&<div className="err-msg">{err}</div>}
-      </div>
-    );
-  };
-
-  // Loading state
-  if(loading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif",color:"#999"}}><div style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:8}}>🐻</div>Loading...</div></div>);
-
-  // Submitted state
-  if(submitted){
-    const fn=getFirstName();
-    const em=getEmail();
-    return(<><style>{CSS}</style><div className="app-wrap">
-      <div className="app-header"><div className="app-logo">🐻 Black Bear <span>Rentals</span></div></div>
-      <div className="app-body"><div className="submitted">
-        <div className="submitted-ic">🎉</div>
-        <h1>Application Submitted!</h1>
-        <p>Thanks{fn?`, ${fn}`:""} ! We've received your application and screening payment. We'll review everything and get back to you within 24–48 hours.</p>
-        <div style={{marginTop:24,padding:16,background:"rgba(74,124,89,.06)",borderRadius:12,fontSize:12,color:"#4a7c59",textAlign:"left"}}>
-          <strong>What happens next?</strong><br/>
-          1. Your background check and credit report are processing<br/>
-          2. We'll review your application and references<br/>
-          3. You'll receive a decision email at {em||"the email you provided"}<br/>
-          4. If approved, we'll send your lease for e-signing
-        </div>
-      </div></div>
-      <div className="app-footer">© {new Date().getFullYear()} Black Bear Rentals</div>
-    </div></>);
-  }
-
-  // Fee for payment step
-  const baseFee=(invite?.screenPkg==="credit-only"||invite?.screenPkg==="bg-only")?39:59;
-
-  // Progress bar — shows for section steps + review + payment
-  const showProgress=stepIdx>=0;
-  const progressTotal=sections.length+2; // sections + review + payment
-  const progressCurrent=stepIdx>=sections.length?stepIdx:stepIdx;
+  if(loading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif",color:"#999"}}><div style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:8}}>🐻</div>Loading your application...</div></div>);
+  if(submitted)return(<><style>{CSS}</style><div className="app-wrap"><div className="app-header"><div className="app-logo">🐻 Black Bear <span>Rentals</span></div></div><div className="app-body"><div className="submitted"><div className="submitted-ic">🎉</div><h1>Application Submitted!</h1><p>Thanks, {d.firstName}! We've received your application and screening payment. We'll review everything and get back to you within 24-48 hours.</p><div style={{marginTop:24,padding:16,background:"rgba(74,124,89,.06)",borderRadius:12,fontSize:12,color:"#4a7c59"}}><strong>What happens next?</strong><br/>1. Your background check and credit report are processing<br/>2. We'll review your application and references<br/>3. You'll receive an email with our decision<br/>4. If approved, we'll send your lease for e-signing</div></div></div><div className="app-footer">© {new Date().getFullYear()} Black Bear Rentals</div></div></>);
 
   return(<><style>{CSS}</style><div className="app-wrap">
-    <div className="app-header">
-      <div className="app-logo">🐻 Black Bear <span>Rentals</span></div>
-      {showProgress&&<div className="app-save">{saving?<><div className="dot"/>Saving...</>:"✓ Saved"}</div>}
-    </div>
+    <div className="app-header"><div className="app-logo">🐻 Black Bear <span>Rentals</span></div>{step!=="welcome"&&step!=="done"&&<div className="app-save">{saving?<><div className="dot"/>Saving...</>:"✓ Saved"}</div>}</div>
     <div className="app-body">
-
-      {/* Progress bar */}
-      {showProgress&&<>
-        <div className="prog">
-          {Array.from({length:progressTotal}).map((_,i)=>(
-            <div key={i} className={`prog-seg ${i<progressCurrent?"done":i===progressCurrent?"cur":""}`}/>
-          ))}
-        </div>
-        <div className="prog-label">
-          {stepIdx<sections.length?`Section ${stepIdx+1} of ${sections.length} · ${sections[stepIdx]}`
-            :stepIdx===REVIEW_IDX?"Review your application"
-            :"Final Step · Payment"}
-        </div>
-      </>}
+      {step!=="welcome"&&step!=="done"&&<><div className="prog">{steps.filter(s=>s!=="welcome"&&s!=="done").map((s,i)=>{const si=steps.indexOf(s);return<div key={s} className={`prog-seg ${si<stepIdx?"done":si===stepIdx?"cur":""}`}/>;})}</div><div className="prog-label">Step {stepIdx} of {steps.length-2} · {LABELS[step]}</div></>}
 
       {/* ═══ WELCOME ═══ */}
-      {stepIdx===-1&&<div className="welcome">
+      {step==="welcome"&&<div className="welcome">
         <div className="welcome-bear">🐻</div>
         <h1>Start My Application</h1>
         {invite?.inviteRoomName&&<div style={{fontSize:13,color:"var(--ac)",fontWeight:600,marginBottom:12}}>{invite.invitePropName} · {invite.inviteRoomName}{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}</div>}
         <div className="welcome-sub">We're excited you're interested! This application is quick, secure, and saves automatically.</div>
         <div className="welcome-perks">
-          <div className="welcome-perk"><div className="ic">⏱</div>Takes less than 10 minutes</div>
-          <div className="welcome-perk"><div className="ic">💾</div>Saves as you go</div>
+          <div className="welcome-perk"><div className="ic">⏱</div>Takes less than 11 minutes</div>
+          <div className="welcome-perk"><div className="ic">💾</div>Easy to save and resume at any time</div>
           <div className="welcome-perk"><div className="ic">📊</div>Will never impact your credit score</div>
           <div className="welcome-perk"><div className="ic">🔒</div>Your information is encrypted and secure</div>
         </div>
         <div style={{fontSize:11,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>What are you applying as?</div>
-        <div className="type-toggle">
-          <button className={`type-btn ${appType==="tenant"?"on":""}`} onClick={()=>setAppType("tenant")}>Tenant</button>
-          <button className={`type-btn ${appType==="cosigner"?"on":""}`} onClick={()=>setAppType("cosigner")}>Co-Signer</button>
-        </div>
+        <div className="type-toggle"><button className={`type-btn ${appType==="tenant"?"on":""}`} onClick={()=>setAppType("tenant")}>Tenant</button><button className={`type-btn ${appType==="cosigner"?"on":""}`} onClick={()=>setAppType("cosigner")}>Co-Signer</button></div>
         {appType==="cosigner"&&<div className="cosigner-note">As a co-signer, you'll complete a shorter application covering your identity and income.</div>}
-        {activeFields.length===0&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,fontSize:12,color:"#9a7422",marginBottom:20}}>⚠ The application form is being set up. Please check back soon or contact us directly.</div>}
-        <div className="legal">By clicking below you agree to our <a href="#">Application Authorization Policy</a>, <a href="#">Terms of Use</a> & <a href="#">Privacy Policy</a>.</div>
-        <button className="btn-start" onClick={next} disabled={activeFields.length===0} style={{opacity:activeFields.length===0?.5:1}}>Begin Application →</button>
+        <div style={{textAlign:"left",maxWidth:400,margin:"0 auto"}}>
+          <div className="fld-row"><div className="fld"><label>First Name<span className="req">*</span></label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder="First name"/>{errors.firstName&&<div className="err-msg">{errors.firstName}</div>}</div><div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder="Last name"/>{errors.lastName&&<div className="err-msg">{errors.lastName}</div>}</div></div>
+          <div className="fld"><label>Email Address<span className="req">*</span></label><input type="email" value={d.email} onChange={e=>upd("email",e.target.value)} className={errors.email?"err":""} placeholder="you@email.com"/>{errors.email&&<div className="err-msg">{errors.email}</div>}</div>
+          <div className="fld"><label>Phone Number<span className="req">*</span></label><input type="tel" value={d.phone} onChange={e=>upd("phone",fmtPhone(e.target.value))} className={errors.phone?"err":""} placeholder="(256) 555-1234"/>{errors.phone&&<div className="err-msg">{errors.phone}</div>}</div>
+          <div className="fld"><label>Date of Birth<span className="req">*</span></label><input type="date" value={d.dob} onChange={e=>upd("dob",e.target.value)} className={errors.dob?"err":""}/>{errors.dob&&<div className="err-msg">{errors.dob}</div>}</div>
+        </div>
+        <div className="legal">By clicking the button below you are agreeing to our <a href="#">Application Authorization Policy</a>, <a href="#">Terms of Use</a> & <a href="#">Privacy Policy</a>.</div>
+        <button className="btn-start" onClick={next}>Begin Application →</button>
       </div>}
 
-      {/* ═══ SECTION STEPS (dynamic) ═══ */}
-      {stepIdx>=0&&stepIdx<sections.length&&(()=>{
-        const secName=sections[stepIdx];
-        const secFields=activeFields.filter(f=>f.section===secName);
-        return(
-        <div className="sec">
-          <div className="sec-num">Section {stepIdx+1}</div>
-          <div className="sec-hd"><h2>{secName}</h2></div>
-          {secFields.map(f=>renderField(f))}
-          <button className="btn-next" onClick={next}>Continue →</button>
-          <button className="btn-back" onClick={back}>← Back</button>
-        </div>);
-      })()}
+      {/* ═══ APP INFO ═══ */}
+      {step==="appinfo"&&<div className="sec">
+        <div className="sec-num">Application Info</div>
+        <div className="sec-hd"><h2>A Few Quick Details</h2><p>Help us prepare for your move-in.</p></div>
+        <div className="fld"><label>Desired Move-in Date<span className="req">*</span></label><input type="date" value={d.moveIn} onChange={e=>upd("moveIn",e.target.value)} className={errors.moveIn?"err":""}/>{errors.moveIn&&<div className="err-msg">{errors.moveIn}</div>}</div>
+
+        {/* Room/property selection — only for walk-ins without a locked room */}
+        {(!invite||(invite&&!invite.inviteRoomName&&invite.inviteRoomMode!=="locked"))&&<>
+          <div className="fld">
+            <label>Which property are you interested in?</label>
+            <select value={d.preferredProperty} onChange={e=>{upd("preferredProperty",e.target.value);upd("selectedRoom","");}}>
+              <option value="">Select a property...</option>
+              {props_.map(p=><option key={p.id} value={p.name}>{p.name}{p.addr?" — "+p.addr:""}</option>)}
+              <option value="No preference">No preference — any available room</option>
+            </select>
+          </div>
+          {d.preferredProperty&&d.preferredProperty!=="No preference"&&(()=>{
+            const prop=props_.find(p=>p.name===d.preferredProperty);
+            const vacant=prop?.rooms?.filter(r=>r.st==="vacant")||[];
+            if(!prop)return null;
+            if(prop.rentalMode==="wholeHouse")return(
+              <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
+                🏠 <strong>{prop.name}</strong> is available as an entire property rental{prop.wholeHouseRent?` — $${prop.wholeHouseRent.toLocaleString()}/mo`:""}. We'll reach out to discuss details.
+              </div>
+            );
+            if(vacant.length===0)return(
+              <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--rd)"}}>
+                No rooms currently available at this property. Your application will be kept on file.
+              </div>
+            );
+            return(<div className="fld">
+              <label>Which room are you interested in?</label>
+              <select value={d.selectedRoom} onChange={e=>upd("selectedRoom",e.target.value)}>
+                <option value="">No preference — any available room</option>
+                {vacant.map(r=><option key={r.id} value={r.id}>{r.name} — ${r.rent}/mo{r.pb?" (Private bath)":""}</option>)}
+              </select>
+            </div>);
+          })()}
+        </>}
+
+        {/* If locked room from invite — show confirmation */}
+        {invite?.inviteRoomName&&<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--gn)"}}>
+          🏠 Applying for <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
+        </div>}
+
+        <div className="fld"><label>How many people will be living with you?</label>
+          <div className="counter"><button className="counter-btn" onClick={()=>upd("occupants",Math.max(1,d.occupants-1))}>−</button><div className="counter-val">{d.occupants}</div><button className="counter-btn" onClick={()=>upd("occupants",d.occupants+1)}>+</button></div>
+          {d.occupants>1&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.15)",borderRadius:8,padding:10,fontSize:12,color:"var(--rd)"}}>⚠ Only 1 person per room is allowed. Each additional occupant over 18 must submit their own application. If you're renting the entire property, please contact us.</div>}
+        </div>
+        <button className="btn-next" onClick={next}>Continue →</button>
+        <button className="btn-back" onClick={back}>← Back</button>
+      </div>}
+
+      {/* ═══ RENTAL HISTORY ═══ */}
+      {step==="rental"&&<div className="sec">
+        <div className="sec-num">Section 1</div>
+        <div className="sec-hd"><h2>Rental History</h2><p>Tell us about where you've lived. Add your current and previous addresses.</p></div>
+
+        {/* Added addresses */}
+        {d.addresses.map((a,i)=><div key={i} className="item-card">
+          <div className="item-hd"><div><div className="item-nm">{a.street}, {a.city}, {a.state} {a.zip}</div><div className="item-sub">{a.resType} · Since {a.monthIn} {a.yearIn}{a.rent?` · $${a.rent}/mo`:""}</div></div><div><button className="item-edit" onClick={()=>upd("curAddressForm",{...a,_editIdx:i})}>Edit</button><button className="item-del" onClick={()=>setD(p=>({...p,addresses:p.addresses.filter((_,j)=>j!==i)}))}>Remove</button></div></div>
+          {a.landlordName&&<div style={{fontSize:10,color:"#999"}}>Landlord: {a.landlordName}{a.landlordPhone?` · ${a.landlordPhone}`:""}</div>}
+        </div>)}
+
+        {/* Add address form */}
+        {d.curAddressForm?<div className="expand-form">
+          <h3>{d.curAddressForm._editIdx!==undefined?"Edit Address":"Add Current Address"}</h3>
+          <div className="fld"><label>Residence Type<span className="req">*</span></label>
+            <div className="res-toggle">{["Rent","Own","Other"].map(t=><button key={t} className={`res-btn ${d.curAddressForm.resType===t?"on":""}`} onClick={()=>upd("curAddressForm",{...d.curAddressForm,resType:t})}>{t}</button>)}</div>
+          </div>
+          <div className="fld-row">
+            <div className="fld"><label>Month Moved In<span className="req">*</span></label><select value={d.curAddressForm.monthIn} onChange={e=>upd("curAddressForm",{...d.curAddressForm,monthIn:e.target.value})}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
+            <div className="fld"><label>Year Moved In<span className="req">*</span></label><select value={d.curAddressForm.yearIn} onChange={e=>upd("curAddressForm",{...d.curAddressForm,yearIn:e.target.value})}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
+          </div>
+          <div className="fld"><label>Street Address<span className="req">*</span></label><input value={d.curAddressForm.street} onChange={e=>upd("curAddressForm",{...d.curAddressForm,street:e.target.value})} placeholder="123 Main Street"/></div>
+          <div className="fld-row">
+            <div className="fld"><label>Unit</label><input value={d.curAddressForm.unit} onChange={e=>upd("curAddressForm",{...d.curAddressForm,unit:e.target.value})} placeholder="Apt, Suite, etc."/></div>
+            <div className="fld"><label>City<span className="req">*</span></label><input value={d.curAddressForm.city} onChange={e=>upd("curAddressForm",{...d.curAddressForm,city:e.target.value})} placeholder="City"/></div>
+          </div>
+          <div className="fld-row3">
+            <div className="fld"><label>State<span className="req">*</span></label><select value={d.curAddressForm.state} onChange={e=>upd("curAddressForm",{...d.curAddressForm,state:e.target.value})}>{STATES.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+            <div className="fld"><label>Zip Code<span className="req">*</span></label><input value={d.curAddressForm.zip} onChange={e=>upd("curAddressForm",{...d.curAddressForm,zip:e.target.value.replace(/\D/g,"").slice(0,5)})} placeholder="35801"/></div>
+            <div className="fld"><label>Monthly Rent</label><input type="number" value={d.curAddressForm.rent} onChange={e=>upd("curAddressForm",{...d.curAddressForm,rent:e.target.value})} placeholder="1100"/></div>
+          </div>
+          <div className="fld"><label>Why are you moving?</label><textarea value={d.curAddressForm.reason} onChange={e=>upd("curAddressForm",{...d.curAddressForm,reason:e.target.value})} placeholder="Optional"/></div>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact Info</div>
+          <div className="fld"><label>Full Name</label><input value={d.curAddressForm.landlordName} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordName:e.target.value})} placeholder="Landlord's full name"/></div>
+          <div className="fld-row">
+            <div className="fld"><label>Email</label><input type="email" value={d.curAddressForm.landlordEmail} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value})} placeholder="landlord@email.com"/></div>
+            <div className="fld"><label>Phone</label><input type="tel" value={d.curAddressForm.landlordPhone} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value)})} placeholder="(555) 555-5555"/></div>
+          </div>
+          <div className="strength-tip">💡 <strong>Strengthen your application</strong> — Applicants who provide contact information for previous landlords are more likely to be accepted.</div>
+          <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveAddr}>Save Address</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curAddressForm",null)}>Cancel</button></div>
+        </div>
+        :<div className="add-card" onClick={()=>upd("curAddressForm",{...blankAddr})}><div className="plus">+</div><div className="lbl">Add {d.addresses.length===0?"Current":"Another"} Address</div></div>}
+        {errors.addresses&&<div className="err-msg" style={{marginBottom:12}}>{errors.addresses}</div>}
+
+        {/* Eviction / Felony */}
+        <div style={{marginTop:20}}><div className="yn-q">Have you ever been evicted?<span className="req" style={{color:"var(--rd)"}}>*</span></div>
+          <div className="yn-row"><button className={`yn-btn ${d.evicted==="no"?"yes":""}`} onClick={()=>upd("evicted","no")}>No</button><button className={`yn-btn ${d.evicted==="yes"?"no":""}`} onClick={()=>upd("evicted","yes")}>Yes</button></div>
+          {d.evicted==="yes"&&<div className="fld"><label>Please explain<span className="req">*</span></label><textarea value={d.evictedExplain} onChange={e=>upd("evictedExplain",e.target.value)} placeholder="Briefly explain the circumstances"/></div>}
+          {errors.evicted&&<div className="err-msg" style={{marginBottom:12}}>{errors.evicted}</div>}
+        </div>
+        <div><div className="yn-q">Do you have any felonies?<span className="req" style={{color:"var(--rd)"}}>*</span></div>
+          <div className="yn-row"><button className={`yn-btn ${d.felony==="no"?"yes":""}`} onClick={()=>upd("felony","no")}>No</button><button className={`yn-btn ${d.felony==="yes"?"no":""}`} onClick={()=>upd("felony","yes")}>Yes</button></div>
+          {d.felony==="yes"&&<div className="fld"><label>Please explain<span className="req">*</span></label><textarea value={d.felonyExplain} onChange={e=>upd("felonyExplain",e.target.value)} placeholder="Briefly explain"/></div>}
+          {errors.felony&&<div className="err-msg" style={{marginBottom:12}}>{errors.felony}</div>}
+        </div>
+        <button className="btn-next" onClick={next}>Continue →</button>
+        <button className="btn-back" onClick={back}>← Back</button>
+      </div>}
+
+      {/* ═══ PERSONAL INFO ═══ */}
+      {step==="personal"&&<div className="sec">
+        <div className="sec-num">Section 2</div>
+        <div className="sec-hd"><h2>Personal Information</h2><p>We need to verify your identity for the screening process.</p></div>
+        <div className="fld"><label>Social Security Number (last 4)<span className="req">*</span></label><input type="password" maxLength={4} value={d.ssn} onChange={e=>upd("ssn",e.target.value.replace(/\D/g,""))} className={errors.ssn?"err":""} placeholder="••••"/><div className="help">Only the last 4 digits — used for identity verification. Never stored.</div>{errors.ssn&&<div className="err-msg">{errors.ssn}</div>}</div>
+        <div className="fld"><label>Photo ID Upload</label><div className={`upload ${d.idFileName?"has":""}`} onClick={()=>fileRef.current?.click()}><div className="upload-ic">{d.idFileName?"✅":"📷"}</div><div className="upload-txt">{d.idFileName?"":"Tap to upload your driver's license, passport, or state ID"}</div>{d.idFileName&&<div className="upload-file">{d.idFileName}</div>}</div><input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/><div className="help">JPG, PNG, or PDF. Max 10MB.</div></div>
+        <button className="btn-next" onClick={next}>Continue →</button>
+        <button className="btn-back" onClick={back}>← Back</button>
+      </div>}
+
+      {/* ═══ EMPLOYMENT ═══ */}
+      {step==="employment"&&<div className="sec">
+        <div className="sec-num">Section 3</div>
+        <div className="sec-hd"><h2>Employment & Income</h2><p>Show the landlord that you can afford this rental.</p></div>
+
+        <button className={`unemployed-btn ${d.unemployed?"on":""}`} onClick={()=>upd("unemployed",!d.unemployed)}><span style={{fontSize:16}}>{d.unemployed?"☑":"☐"}</span> I'm currently unemployed</button>
+
+        {!d.unemployed&&<>
+          {d.employers.map((emp,i)=><div key={i} className="item-card">
+            <div className="item-hd"><div><div className="item-nm">{emp.employer}</div><div className="item-sub">{emp.position||"—"} · Since {emp.monthStarted} {emp.yearStarted} · ${emp.monthlyIncome}/mo</div></div><div><button className="item-edit" onClick={()=>upd("curEmployerForm",{...emp,_editIdx:i})}>Edit</button><button className="item-del" onClick={()=>setD(p=>({...p,employers:p.employers.filter((_,j)=>j!==i)}))}>Remove</button></div></div>
+          </div>)}
+
+          {d.curEmployerForm?<div className="expand-form">
+            <h3>{d.curEmployerForm._editIdx!==undefined?"Edit Employer":"Add Current Employer"}</h3>
+            <div className="fld"><label>Employer<span className="req">*</span></label><input value={d.curEmployerForm.employer} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,employer:e.target.value})} placeholder="Company name"/></div>
+            <div className="fld"><label>Position / Title / Occupation</label><input value={d.curEmployerForm.position} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,position:e.target.value})} placeholder="Your role"/></div>
+            <div className="fld-row">
+              <div className="fld"><label>Month Started</label><select value={d.curEmployerForm.monthStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,monthStarted:e.target.value})}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
+              <div className="fld"><label>Year Started</label><select value={d.curEmployerForm.yearStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,yearStarted:e.target.value})}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
+            </div>
+            <div className="fld"><label>Monthly Income (Gross)<span className="req">*</span></label><input type="number" value={d.curEmployerForm.monthlyIncome} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,monthlyIncome:e.target.value})} placeholder="4200"/></div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Employment Reference</div>
+            <div className="fld-row"><div className="fld"><label>Full Name</label><input value={d.curEmployerForm.refName} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,refName:e.target.value})} placeholder="Supervisor name"/></div><div className="fld"><label>Phone Number</label><input type="tel" value={d.curEmployerForm.refPhone} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,refPhone:fmtPhone(e.target.value)})} placeholder="(555) 555-5555"/></div></div>
+            <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveEmp}>Save Employer</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curEmployerForm",null)}>Cancel</button></div>
+          </div>
+          :<div className="add-card" onClick={()=>upd("curEmployerForm",{...blankEmp})}><div className="plus">+</div><div className="lbl">Add {d.employers.length===0?"Current":"Past"} Employer</div></div>}
+
+          {d.employers.length>0&&<div className="strength-tip">💡 Landlords like to see around 5 years of employment history on your application, if applicable.</div>}
+        </>}
+        {errors.employers&&<div className="err-msg" style={{marginBottom:12}}>{errors.employers}</div>}
+
+        <div className="fld" style={{marginTop:12}}><label>Proof of Income</label><div className={`upload ${d.payStubsName?"has":""}`} onClick={()=>payRef.current?.click()}><div className="upload-ic">{d.payStubsName?"✅":"📄"}</div><div className="upload-txt">{d.payStubsName?"":"Tap to upload pay stubs, offer letter, or bank statements"}</div>{d.payStubsName&&<div className="upload-file">{d.payStubsName}</div>}</div><input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/></div>
+
+        <button className="btn-next" onClick={next}>Continue →</button>
+        <button className="btn-back" onClick={back}>← Back</button>
+      </div>}
+
+      {/* ═══ REFERENCES ═══ */}
+      {step==="references"&&<div className="sec">
+        <div className="sec-num">Section 4</div>
+        <div className="sec-hd"><h2>References</h2><p>Provide one employer and one personal reference.</p></div>
+        <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer Reference</div>
+        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.empRefName} onChange={e=>upd("empRefName",e.target.value)} className={errors.empRefName?"err":""} placeholder="Supervisor or HR"/>{errors.empRefName&&<div className="err-msg">{errors.empRefName}</div>}</div>
+        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg">{errors.empRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div></div>
+        <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:20}}>Personal Reference</div>
+        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.persRefName} onChange={e=>upd("persRefName",e.target.value)} className={errors.persRefName?"err":""} placeholder="Someone who knows you well"/>{errors.persRefName&&<div className="err-msg">{errors.persRefName}</div>}</div>
+        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>upd("persRefPhone",fmtPhone(e.target.value))} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg">{errors.persRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.persRefRelation} onChange={e=>upd("persRefRelation",e.target.value)} placeholder="e.g. Friend"/></div></div>
+        <button className="btn-next" onClick={next}>Continue →</button>
+        <button className="btn-back" onClick={back}>← Back</button>
+      </div>}
+
+      {/* ═══ EMERGENCY ═══ */}
+      {step==="emergency"&&<div className="sec">
+        <div className="sec-num">Section 5</div>
+        <div className="sec-hd"><h2>Emergency Contact</h2><p>Someone we can reach in case of an emergency.</p></div>
+        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.emergName} onChange={e=>upd("emergName",e.target.value)} className={errors.emergName?"err":""} placeholder="Full name"/>{errors.emergName&&<div className="err-msg">{errors.emergName}</div>}</div>
+        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.emergPhone} onChange={e=>upd("emergPhone",fmtPhone(e.target.value))} className={errors.emergPhone?"err":""} placeholder="(555) 555-5555"/>{errors.emergPhone&&<div className="err-msg">{errors.emergPhone}</div>}</div><div className="fld"><label>Relationship<span className="req">*</span></label><input value={d.emergRelation} onChange={e=>upd("emergRelation",e.target.value)} className={errors.emergRelation?"err":""} placeholder="e.g. Parent"/>{errors.emergRelation&&<div className="err-msg">{errors.emergRelation}</div>}</div></div>
+        <button className="btn-next" onClick={next}>Continue →</button>
+        <button className="btn-back" onClick={back}>← Back</button>
+      </div>}
+
+      {/* ═══ ROOM ═══ */}
+      {step==="room"&&<div className="sec">
+        <div className="sec-num">Section 6</div>
+        <div className="sec-hd"><h2>Choose Your Room</h2><p>Select the room you'd like to apply for.</p></div>
+        {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=><div key={p.id} className="prop-card"><div className="prop-img">🐻</div><div className="prop-info"><div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div><div style={{marginTop:10}}>{p.rooms.filter(r=>r.st==="vacant").map(r=><div key={r.id} className={`room-card ${d.selectedRoom===r.id?"sel":""}`} onClick={()=>upd("selectedRoom",r.id)}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div className="room-name">{r.name}</div><div className="room-meta">{r.bed} · {r.pb?"Private":"Shared"} bath · {r.sqft} sqft</div></div><div className="room-price">${r.rent}<small style={{fontSize:10,color:"#999"}}>/mo</small></div></div></div>)}</div></div></div>);})()}
+        {errors.selectedRoom&&<div className="err-msg" style={{marginBottom:12}}>{errors.selectedRoom}</div>}
+        <button className="btn-next" onClick={next}>Continue →</button>
+        <button className="btn-back" onClick={back}>← Back</button>
+      </div>}
 
       {/* ═══ REVIEW ═══ */}
-      {stepIdx===REVIEW_IDX&&<div className="sec">
+      {step==="review"&&<div className="sec">
         <div className="sec-num">Almost Done!</div>
-        <div className="sec-hd"><h2>Review Your Application</h2><p>Verify everything looks correct before submitting.</p></div>
-        {sections.map((sec,si)=>{
-          const secFields=activeFields.filter(f=>f.section===sec);
-          return(
-          <div key={sec} className="rev-sec">
-            <h3>{sec} <span className="rev-edit" onClick={()=>setStepIdx(si)}>Edit</span></h3>
-            {secFields.map(f=>(
-              <div key={f.id} className="rev-row">
-                <span className="rev-label">{f.label}</span>
-                <span className="rev-val">{displayVal(f)}</span>
-              </div>
-            ))}
-          </div>);
-        })}
-        {invite?.inviteRoomName&&<div className="rev-sec">
-          <h3>🏠 Room</h3>
+        <div className="sec-hd"><h2>Review Your Application</h2><p>Verify everything is correct before submitting.</p></div>
+        <div className="rev-sec"><h3>👤 About You <span className="rev-edit" onClick={()=>setStep("welcome")}>Edit</span></h3>
+          <div className="rev-row"><span className="rev-label">Name</span><span className="rev-val">{d.firstName} {d.lastName}</span></div>
+          <div className="rev-row"><span className="rev-label">Email</span><span className="rev-val">{d.email}</span></div>
+          <div className="rev-row"><span className="rev-label">Phone</span><span className="rev-val">{d.phone}</span></div>
+          <div className="rev-row"><span className="rev-label">DOB</span><span className="rev-val">{d.dob}</span></div>
+          <div className="rev-row"><span className="rev-label">Move-in</span><span className="rev-val">{d.moveIn||"—"}</span></div>
+        </div>
+        {appType==="tenant"&&<>
+          <div className="rev-sec"><h3>🏠 Rental History <span className="rev-edit" onClick={()=>setStep("rental")}>Edit</span></h3>
+            {d.addresses.map((a,i)=><div key={i} className="rev-row"><span className="rev-label">{a.resType}</span><span className="rev-val">{a.street}, {a.city} {a.state}</span></div>)}
+            <div className="rev-row"><span className="rev-label">Evicted</span><span className="rev-val" style={{color:d.evicted==="yes"?"var(--rd)":"var(--gn)"}}>{d.evicted==="yes"?"Yes":"No"}</span></div>
+            <div className="rev-row"><span className="rev-label">Felonies</span><span className="rev-val" style={{color:d.felony==="yes"?"var(--rd)":"var(--gn)"}}>{d.felony==="yes"?"Yes":"No"}</span></div>
+          </div>
+        </>}
+        <div className="rev-sec"><h3>💼 Employment <span className="rev-edit" onClick={()=>setStep("employment")}>Edit</span></h3>
+          {d.unemployed?<div className="rev-row"><span className="rev-label">Status</span><span className="rev-val">Unemployed</span></div>
+          :d.employers.map((e,i)=><div key={i}><div className="rev-row"><span className="rev-label">{e.employer}</span><span className="rev-val">{e.position||"—"} · ${e.monthlyIncome}/mo</span></div></div>)}
+        </div>
+        {appType==="tenant"&&<>
+          <div className="rev-sec"><h3>📋 References <span className="rev-edit" onClick={()=>setStep("references")}>Edit</span></h3>
+            <div className="rev-row"><span className="rev-label">Employer</span><span className="rev-val">{d.empRefName} · {d.empRefPhone}</span></div>
+            <div className="rev-row"><span className="rev-label">Personal</span><span className="rev-val">{d.persRefName} · {d.persRefPhone}</span></div>
+          </div>
+          <div className="rev-sec"><h3>🚨 Emergency <span className="rev-edit" onClick={()=>setStep("emergency")}>Edit</span></h3>
+            <div className="rev-row"><span className="rev-label">Contact</span><span className="rev-val">{d.emergName} · {d.emergPhone} · {d.emergRelation}</span></div>
+          </div>
+        </>}
+        {invite?.inviteRoomName&&<div className="rev-sec"><h3>🏠 Room</h3>
           <div className="rev-row"><span className="rev-label">Property</span><span className="rev-val">{invite.invitePropName}</span></div>
           <div className="rev-row"><span className="rev-label">Room</span><span className="rev-val">{invite.inviteRoomName}</span></div>
-          {invite.inviteRent&&<div className="rev-row"><span className="rev-label">Rent</span><span className="rev-val" style={{color:"var(--ac)"}}>${invite.inviteRent}/mo</span></div>}
+          <div className="rev-row"><span className="rev-label">Rent</span><span className="rev-val" style={{color:"var(--ac)"}}>${invite.inviteRent}/mo</span></div>
         </div>}
+        {/* Lease Terms Preview */}
+        {(()=>{
+          const roomName=invite?.inviteRoomName||(d.selectedRoom&&props_.flatMap(p=>p.rooms).find(r=>r.id===d.selectedRoom)?.name)||null;
+          const propName=invite?.invitePropName||d.preferredProperty||null;
+          const rent=invite?.inviteRent||(d.selectedRoom&&props_.flatMap(p=>p.rooms).find(r=>r.id===d.selectedRoom)?.rent)||null;
+          const moveIn=d.moveIn;
+          if(!rent||!moveIn)return null;
+          const moveInD=new Date(moveIn+"T00:00:00");
+          const day=moveInD.getDate();
+          const calDays=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,0).getDate();
+          const daysLeft=calDays-day+1;
+          const dailyRate=Math.ceil(rent/30);
+          const proratedAmt=Math.ceil(dailyRate*daysLeft);
+          const isFirstDay=day===1;
+          const firstMonthAmt=isFirstDay?rent:proratedAmt;
+          const sd=rent;
+          const total=sd+firstMonthAmt;
+          const fmtS=n=>"$"+n.toLocaleString();
+          return(<div className="rev-sec" style={{borderTop:"2px solid rgba(212,168,83,.2)",paddingTop:16,marginTop:4}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+              <h3 style={{flex:1}}>💼 Estimated Lease Terms</h3>
+            </div>
+            <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#9a7422",lineHeight:1.5}}>
+              ⚠ This is an <strong>estimate only</strong> — not a lease. No room is reserved and no charges apply until you are approved and sign your lease.
+            </div>
+            {propName&&<div className="rev-row"><span className="rev-label">Property</span><span className="rev-val">{propName}</span></div>}
+            {roomName&&<div className="rev-row"><span className="rev-label">Room</span><span className="rev-val">{roomName}</span></div>}
+            <div className="rev-row"><span className="rev-label">Monthly Rent</span><span className="rev-val" style={{color:"var(--ac)",fontWeight:700}}>{fmtS(rent)}/mo</span></div>
+            <div className="rev-row"><span className="rev-label">Security Deposit</span><span className="rev-val">{fmtS(sd)}</span></div>
+            <div className="rev-row"><span className="rev-label">Move-in Date</span><span className="rev-val">{moveIn}</span></div>
+            {!isFirstDay&&<div className="rev-row"><span className="rev-label">Proration</span><span className="rev-val" style={{fontSize:11}}>{daysLeft} days × {fmtS(dailyRate)}/day = {fmtS(proratedAmt)}</span></div>}
+            <div style={{marginTop:12,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,padding:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>📄 Estimated Move-In Package</div>
+              <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
+                <span>🔒 Security Deposit</span><strong>{fmtS(sd)}</strong>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
+                <span>🏠 {isFirstDay?`First Month's Rent`:`Prorated Rent (${daysLeft} days)`}</span><strong>{fmtS(firstMonthAmt)}</strong>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",fontSize:13,fontWeight:800,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:4}}>
+                <span>Estimated Total at Move-In</span><span style={{color:"#4a7c59"}}>{fmtS(total)}</span>
+              </div>
+            </div>
+          </div>);
+        })()}
+
         <button className="btn-next" onClick={next}>Continue to Payment →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
 
       {/* ═══ PAYMENT ═══ */}
-      {stepIdx===PAYMENT_IDX&&<div className="sec">
+      {step==="payment"&&<div className="sec">
         <div className="sec-num">Final Step</div>
         <div className="sec-hd"><h2>Screening Fee</h2><p>Covers your background check, credit report, and application processing. Non-refundable.</p></div>
-        <div className="fee-card">
-          <h3>💳 Fee Breakdown</h3>
-          <div className="fee-row"><span>Background Check & Credit Report</span><span>${baseFee-10}</span></div>
+        <div className="fee-card"><h3>💳 Fee Breakdown</h3>
+          <div className="fee-row"><span>Background Check & Credit Report</span><span>${(invite?.screenPkg==="credit-only"||invite?.screenPkg==="bg-only")?29:49}</span></div>
           <div className="fee-row"><span>Application Processing</span><span>$10</span></div>
           <div className="fee-total"><span>Total Due Now</span><span>${baseFee}</span></div>
         </div>
-        <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:20,fontSize:11,color:"var(--gn)"}}>🔒 Secure Payment — Processed through Stripe. Card info never stored on our servers.</div>
-        <div style={{border:"2px dashed rgba(0,0,0,.1)",borderRadius:12,padding:24,textAlign:"center",marginBottom:20,background:"rgba(0,0,0,.01)"}}>
-          <div style={{fontSize:24,marginBottom:8}}>💳</div>
-          <div style={{fontSize:13,fontWeight:600,color:"#999"}}>Stripe Payment Form</div>
-          <div style={{fontSize:10,color:"#ccc",marginTop:4}}>Card details will appear here</div>
-        </div>
+        <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:20,fontSize:11,color:"var(--gn)"}}><strong>🔒 Secure Payment</strong> — Processed securely through Stripe. Card info never stored on our servers.</div>
+        <div style={{border:"2px dashed rgba(0,0,0,.1)",borderRadius:12,padding:24,textAlign:"center",marginBottom:20,background:"rgba(0,0,0,.01)"}}><div style={{fontSize:24,marginBottom:8}}>💳</div><div style={{fontSize:13,fontWeight:600,color:"#999"}}>Stripe Payment Form</div><div style={{fontSize:10,color:"#ccc",marginTop:4}}>Card details will appear here</div></div>
         <button className="btn-start" onClick={async()=>{
           setSubmitted(true);
-          const fn=getFirstName();
-          const lnField=activeFields.find(f=>f.label.toLowerCase().includes("last name"));
-          const fullName=(fn+(lnField&&answers[lnField.id]?" "+answers[lnField.id]:"")).trim()||invite?.name||"Applicant";
-          const em=getEmail();
-          // Update hq-apps — mark as applied with full answers
+          const now=new Date().toISOString().split("T")[0];
+          const fullName=`${d.firstName} ${d.lastName}`.trim();
+
           if(invite){
+            // Invited applicant — update existing record
             const apps=await loadKey("hq-apps",[]);
-            const up=apps.map(a=>a.id===invite.id?{...a,status:"applied",lastContact:new Date().toISOString().split("T")[0],applicationData:answers,history:[...(a.history||[]),{from:"invited",to:"applied",date:new Date().toISOString().split("T")[0],note:"Full application submitted + fee paid"}]}:a);
-            await saveKey("hq-apps",up);
-            // Fire urgent admin notification
-            const notifs=await loadKey("hq-notifs",[]);
-            await saveKey("hq-notifs",[{id:Math.random().toString(36).slice(2),type:"app",msg:`Application submitted: ${fullName} — $${baseFee} screening fee paid`,date:new Date().toISOString().split("T")[0],read:false,urgent:true},...notifs]);
+            const updated=apps.map(a=>a.id===invite.id?{...a,
+              status:"applied",lastContact:now,
+              applicationData:d,
+              name:fullName,email:d.email,phone:d.phone,
+              history:[...(a.history||[]),{from:"invited",to:"applied",date:now,note:`Application submitted + $${baseFee} paid`}]
+            }:a);
+            await saveKey("hq-apps",updated);
+          } else {
+            // Walk-in / no invite — create new applicant record
+            const apps=await loadKey("hq-apps",[]);
+            const newApp={
+              id:Math.random().toString(36).slice(2),
+              name:fullName,email:d.email,phone:d.phone,
+              property:d.preferredProperty||"",room:d.selectedRoom||"",
+              moveIn:d.moveIn||"",income:d.income||"",
+              status:"applied",submitted:now,lastContact:now,
+              bgCheck:"not-started",creditScore:"—",refs:"not-started",
+              source:"Online Application",applicationData:d,
+              screenPkg:"credit-bg",appFee:baseFee,
+              history:[{from:"new",to:"applied",date:now,note:"Walk-in application via apply page"}]
+            };
+            await saveKey("hq-apps",[...apps,newApp]);
           }
-          // Send confirmation email to applicant via API
-          if(em){
-            try{
-              await fetch("/api/apply-confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-                name:fullName,email:em,
-                property:invite?.invitePropName||invite?.property||"",
-                room:invite?.inviteRoomName||invite?.room||"",
-                rent:invite?.inviteRent||"",
-                fee:baseFee,
-              })});
-            }catch{}
-          }
+
+          // Admin notification in hq-notifs
+          const notifs=await loadKey("hq-notifs",[]);
+          await saveKey("hq-notifs",[{
+            id:Math.random().toString(36).slice(2),type:"app",
+            msg:`🎉 ${fullName} submitted their application${invite?.invitePropName?" for "+invite.invitePropName:""}`,
+            date:now,read:false,urgent:true
+          },...notifs]);
+
+          // Admin notification email
+          try{await fetch("/api/apply-notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+            applicantName:fullName,
+            applicantEmail:d.email,
+            applicantPhone:d.phone,
+            property:invite?.invitePropName||d.preferredProperty||"Not specified",
+            room:invite?.inviteRoomName||"Not specified",
+            moveIn:d.moveIn||"Flexible",
+            income:d.income||"Not provided",
+            fee:baseFee,
+            isInvited:!!invite,
+          })});}catch{}
+
+          // Tenant confirmation email
+          try{await fetch("/api/apply-confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+            name:fullName,email:d.email,
+            property:invite?.invitePropName||"",
+            room:invite?.inviteRoomName||"",
+            rent:invite?.inviteRent||null,
+            fee:baseFee,
+          })});}catch{}
         }}>Pay ${baseFee} & Submit Application</button>
         <div className="legal">By submitting, you authorize Black Bear Rentals and RentPrep to conduct a background check and credit inquiry. This will not impact your credit score. Fee is non-refundable.</div>
         <button className="btn-back" onClick={back}>← Back to Review</button>
       </div>}
-
     </div>
-    {stepIdx!==PAYMENT_IDX||!submitted?<div className="app-footer">© {new Date().getFullYear()} Black Bear Rentals — Oak & Main Development LLC · <a href="https://rentblackbear.com">rentblackbear.com</a></div>:null}
+    {step!=="done"&&<div className="app-footer">© {new Date().getFullYear()} Black Bear Rentals — Oak & Main Development LLC · <a href="https://rentblackbear.com">rentblackbear.com</a></div>}
   </div></>);
 }
