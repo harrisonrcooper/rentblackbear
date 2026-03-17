@@ -196,6 +196,7 @@ export default function LeaseSignPage() {
   const [signature, setSignature] = useState(null); // base64
   const [showSigCanvas, setShowSigCanvas] = useState(false);
   const [errors, setErrors] = useState([]);
+  const [shakeKey, setShakeKey] = useState(0); // increments on each submit attempt to re-trigger wiggle
   const [token, setToken] = useState(null);
   const sectionRefs = useRef({});
 
@@ -217,7 +218,7 @@ export default function LeaseSignPage() {
   }, []);
 
   const totalRequired = lease ? (lease.sections || []).filter(s => s.requiresInitials && s.active !== false).length + 1 : 0;
-  const completedInitials = Object.keys(initials).filter(k => initials[k] && initials[k].trim()).length;
+  const completedInitials = Object.keys(initials).filter(k => initials[k] && initials[k].trim().length >= 2).length;
   const completedSig = !!signature;
   const totalComplete = completedInitials + (completedSig ? 1 : 0);
   const pct = totalRequired > 0 ? Math.round(totalComplete / totalRequired * 100) : 0;
@@ -232,7 +233,7 @@ export default function LeaseSignPage() {
     const errs = [];
     const missing = [];
     (lease.sections || []).filter(s => s.requiresInitials && s.active !== false).forEach(s => {
-      if (!initials[s.id] || !initials[s.id].trim()) {
+      if (!initials[s.id] || initials[s.id].trim().length < 2) {
         errs.push(`Initials required — ${s.title}`);
         missing.push(s.id);
       }
@@ -243,6 +244,7 @@ export default function LeaseSignPage() {
     }
     if (errs.length > 0) {
       setErrors(errs);
+      setShakeKey(k => k + 1); // force wiggle re-animation
       scrollToFirst(missing);
       return;
     }
@@ -375,7 +377,7 @@ export default function LeaseSignPage() {
 
         {/* Error bar */}
         {errors.length > 0 && (
-          <div className="error-bar">
+          <div key={shakeKey} className="error-bar">
             <div style={{ fontWeight: 700, marginBottom: 6 }}>Please complete the following before submitting:</div>
             {errors.map((e, i) => <div key={i} className="error-item"><div className="error-dot"/>{e}</div>)}
           </div>
@@ -428,32 +430,38 @@ export default function LeaseSignPage() {
                       </div>
                       <div style={{ fontSize: 10, color: "#bbb", marginTop: 2 }}>Type 2–3 letters to acknowledge</div>
                     </div>
-                    {initials[section.id]
-                      ? <div className="initials-preview">{initials[section.id]}</div>
+                    {initials[section.id]?.length >= 2
+                      ? <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div className="initials-preview">{initials[section.id]}</div>
+                          <button
+                            onClick={() => setInitials(p => ({ ...p, [section.id]: "" }))}
+                            style={{fontSize:9,color:"#999",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontFamily:"inherit"}}
+                          >edit</button>
+                        </div>
                       : <input
                           className="initials-input"
                           maxLength={3}
                           placeholder="—"
                           value={initials[section.id] || ""}
+                          autoComplete="off"
                           onChange={e => {
-                            const val = e.target.value.toUpperCase();
+                            const val = e.target.value.replace(/[^a-zA-Z]/g,"").toUpperCase().slice(0,3);
                             setInitials(p => ({ ...p, [section.id]: val }));
                             setErrors(errs => errs.filter(err => !err.includes(section.title)));
-                            // Auto-advance to next missing
+                            // Auto-advance at 2+ chars
                             if (val.length >= 2) {
-                              const sections = (lease.sections || []).filter(s => s.requiresInitials && s.active !== false);
-                              const nextMissing = sections.find(s => s.id !== section.id && !initials[s.id]);
-                              if (nextMissing) {
-                                setTimeout(() => {
+                              const allSections = (lease.sections || []).filter(s => s.requiresInitials && s.active !== false);
+                              const currentIdx = allSections.findIndex(s => s.id === section.id);
+                              const nextMissing = allSections.slice(currentIdx + 1).find(s => !initials[s.id] || initials[s.id].length < 2);
+                              setTimeout(() => {
+                                if (nextMissing) {
                                   const el = sectionRefs.current[nextMissing.id];
                                   if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                                }, 300);
-                              } else if (!signature) {
-                                setTimeout(() => {
+                                } else if (!signature) {
                                   const el = sectionRefs.current["signature"];
                                   if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                                }, 300);
-                              }
+                                }
+                              }, 350);
                             }
                           }}
                         />
@@ -509,7 +517,16 @@ export default function LeaseSignPage() {
                   <div>
                     {!showSigCanvas
                       ? <button className="btn btn-gold" onClick={() => setShowSigCanvas(true)} style={{ width: "100%" }}>✍ Draw My Signature</button>
-                      : <SigCanvas onSave={(data) => { setSignature(data); setShowSigCanvas(false); setErrors(errs => errs.filter(e => !e.includes("signature"))); }} />
+                      : <SigCanvas onSave={(data) => {
+                          setSignature(data);
+                          setShowSigCanvas(false);
+                          setErrors(errs => errs.filter(e => !e.includes("signature")));
+                          // Scroll to submit bar after signing
+                          setTimeout(() => {
+                            const el = document.querySelector(".sticky-bar");
+                            if (el) el.scrollIntoView({ behavior: "smooth", block: "end" });
+                          }, 400);
+                        }} />
                     }
                   </div>
                 )}
@@ -521,7 +538,7 @@ export default function LeaseSignPage() {
 
         {/* Error bar at bottom too */}
         {errors.length > 0 && (
-          <div className="error-bar">
+          <div key={`bottom-${shakeKey}`} className="error-bar">
             <div style={{ fontWeight: 700, marginBottom: 6 }}>Still missing:</div>
             {errors.map((e, i) => <div key={i} className="error-item"><div className="error-dot"/>{e}</div>)}
           </div>
