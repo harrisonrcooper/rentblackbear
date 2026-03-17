@@ -284,12 +284,14 @@ export default function LeaseSignPage() {
         const todayStr = now.split("T")[0];
 
         // Auto-generate charges from chargeConfig set during lease send
+        // Use termRoomId (actual room ID) so charges match tenant portal filter
+        const roomId = signingApp?.termRoomId || signingApp?.roomId || lease.room;
         let generatedCharges = [];
         if (cfg && cfg.charges && cfg.charges.length > 0) {
           const uid = () => Math.random().toString(36).slice(2);
           generatedCharges = cfg.charges.map(c => ({
             id: uid(),
-            roomId: signingApp?.room || lease.room,
+            roomId: roomId,
             tenantName: lease.tenantName,
             propName: lease.property,
             roomName: lease.room,
@@ -307,6 +309,36 @@ export default function LeaseSignPage() {
           const existingCharges = await loadKey("hq-charges", []);
           await saveKey("hq-charges", [...generatedCharges, ...existingCharges]);
         }
+
+        // Save executed lease to hq-docs so it appears in tenant portal Documents tab
+        const existingDocs = await loadKey("hq-docs", []);
+        const leaseDoc = {
+          id: Math.random().toString(36).slice(2),
+          tenantRoomId: roomId,
+          tenant: lease.tenantName,
+          label: "Lease Agreement — " + (lease.property || "") + " · " + (lease.room || ""),
+          name: "lease-agreement-" + todayStr + ".pdf",
+          type: "lease",
+          source: "lease-signing",
+          leaseId: lease.id,
+          uploaded: todayStr,
+          executedAt: now,
+          // Store lease data so it can be rendered/downloaded
+          leaseSnapshot: {
+            tenantName: lease.tenantName,
+            property: lease.property,
+            room: lease.room,
+            rent: lease.rent,
+            sd: lease.sd,
+            moveIn: lease.moveIn,
+            leaseStart: lease.leaseStart,
+            leaseEnd: lease.leaseEnd,
+            executedAt: now,
+            landlordSignature: lease.landlordSignature,
+            tenantSignature: signature,
+          }
+        };
+        await saveKey("hq-docs", [leaseDoc, ...existingDocs]);
 
         const updatedApps = apps.map(a => a.id === lease.applicationId ? {
           ...a,
@@ -344,7 +376,7 @@ export default function LeaseSignPage() {
         urgent: true
       }, ...notifs]);
 
-      // Send email notifications (PM + tenant)
+      // Email PM — lease signed notification
       try {
         await fetch("/api/lease-executed", {
           method: "POST",
@@ -362,10 +394,40 @@ export default function LeaseSignPage() {
             sd: lease.sd,
             proratedRent: lease.proratedRent,
             executedAt: fullDate,
+            doorCode: doorCode,
+            chargesGenerated: generatedCharges.length,
+            chargeRows: generatedCharges.map(c => `${c.desc}: $${c.amount} — due ${c.dueDate}`).join("
+"),
+            totalDue: generatedCharges.reduce((s, c) => s + c.amount, 0),
           })
         });
       } catch (e) {
         console.error("Email notification failed:", e);
+      }
+
+      // Email tenant — signed copy confirmation
+      try {
+        await fetch("/api/lease-executed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "tenant_signed_confirmation",
+            tenantName: lease.tenantName,
+            tenantEmail: lease.tenantEmail,
+            property: lease.property,
+            room: lease.room,
+            rent: lease.rent,
+            moveIn: lease.moveIn,
+            leaseEnd: lease.leaseEnd,
+            doorCode: doorCode,
+            executedAt: fullDate,
+            chargeRows: generatedCharges.map(c => `${c.desc}: $${c.amount} — due ${c.dueDate}`).join("
+"),
+            totalDue: generatedCharges.reduce((s, c) => s + c.amount, 0),
+          })
+        });
+      } catch (e) {
+        console.error("Tenant confirmation email failed:", e);
       }
 
       setDone(true);
