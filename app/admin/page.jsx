@@ -5516,7 +5516,8 @@ export default function Page(){
             const updatedLeases=existingLease
               ?allLeases.map(l=>l.id===leaseRecord.id?updatedLease:l)
               :[...allLeases,updatedLease];
-            await save("hq-leases",updatedLeases);
+            // Force immediate Supabase write — don't rely on debounce
+            await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:"hq-leases",value:updatedLeases})});
             setLeases(updatedLeases);
 
             // Email tenant — doc ready to sign

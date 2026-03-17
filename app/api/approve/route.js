@@ -18,7 +18,7 @@ export async function POST(request) {
     const footer = `
       <hr style="margin:28px 0;border:none;border-top:1px solid #e8e5e0;"/>
       <p style="font-size:11px;color:#999;margin:0;">
-        — Harrison Cooper · Black Bear Rentals · Oak &amp; Main Development LLC<br/>
+        — Black Bear Rentals · Oak &amp; Main Development LLC<br/>
         Huntsville, Alabama · <a href="https://rentblackbear.com" style="color:#d4a853;">rentblackbear.com</a>
       </p>`;
 
@@ -93,7 +93,7 @@ export async function POST(request) {
         method: "POST",
         headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          from: "Harrison at Black Bear Rentals <hello@rentblackbear.com>",
+          from: "Black Bear Rentals <hello@rentblackbear.com>",
           to,
           subject: `Your Lease is Ready to Sign — ${room} at ${property}`,
           html: wrap(`
@@ -108,7 +108,7 @@ export async function POST(request) {
               <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <tr><td style="padding:6px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.06);">Room</td><td style="padding:6px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.06);">${room}</td></tr>
                 <tr><td style="padding:6px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.06);">Property</td><td style="padding:6px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.06);">${property}</td></tr>
-                <tr><td style="padding:6px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.06);">Monthly Rent</td><td style="padding:6px 0;font-weight:700;text-align:right;color:#2d6a3f;border-bottom:1px solid rgba(0,0,0,.06);">${fmtMoney(rent)}/mo</td></tr>
+                <tr><td style="padding:6px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.06);">Monthly Rent</td><td style="padding:6px 0;font-weight:700;text-align:right;color:#2d6a3f;border-bottom:1px solid rgba(0,0,0,.06);">${rent != null && !isNaN(Number(rent)) ? fmtMoney(rent)+"/mo" : "—"}</td></tr>
                 <tr><td style="padding:6px 0;color:#5c4a3a;">Move-in Date</td><td style="padding:6px 0;font-weight:700;text-align:right;">${moveIn}</td></tr>
               </table>
             </div>
@@ -135,7 +135,7 @@ export async function POST(request) {
             </div>
 
             <p style="font-size:13px;color:#5c4a3a;line-height:1.7;">
-              Questions? Reply to this email or call <strong>(850) 696-8070</strong>. We're excited to have you!
+              Questions? Reply to this email or call <strong>(850) 696-8101</strong>. We're excited to have you!
             </p>
           `),
         }),
@@ -204,7 +204,7 @@ export async function POST(request) {
       method: "POST",
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "Harrison at Black Bear Rentals <hello@rentblackbear.com>",
+        from: "Black Bear Rentals <hello@rentblackbear.com>",
         to,
         subject: `You're approved! Welcome to Black Bear Rentals 🐻`,
         html: wrap(`
@@ -236,7 +236,7 @@ export async function POST(request) {
           </div>
 
           <p style="font-size:13px;color:#5c4a3a;line-height:1.7;margin-bottom:20px;">
-            We're excited to have you join the Black Bear community! Reply to this email or call <strong>(850) 696-8070</strong> if you have any questions.
+            We're excited to have you join the Black Bear community! Reply to this email or call <strong>(850) 696-8101</strong> if you have any questions.
           </p>
 
           <div style="text-align:center;">
