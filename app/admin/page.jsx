@@ -695,6 +695,7 @@ export default function Page(){
   const[leaseTemplate,setLeaseTemplate]=useState(null);
   const[leaseSubTab,setLeaseSubTab]=useState("active");
   const[leaseForm,setLeaseForm]=useState(null);
+  const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
     const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
@@ -2535,7 +2536,7 @@ export default function Page(){
         </>}
 
         {/* Lease Form Modal */}
-        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:640,maxHeight:"90vh",overflowY:"auto"}}>
+        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:660,maxHeight:"90vh",overflowY:"auto"}}>
           <h2>{leaseForm.id?"Edit Lease":"Create New Lease"}</h2>
           <div style={{fontSize:11,color:"#999",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
 
@@ -2571,14 +2572,14 @@ export default function Page(){
           </div>
 
           <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8",marginBottom:8}}>LEASE TERMS</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8",marginBottom:8}}>LEASE TERMS · Pre-filled from application · Editable</div>
             <div className="fr3">
-              <div className="fld"><label>Monthly Rent ($)</label><input type="number" value={leaseForm.rent||""} onChange={e=>setLeaseForm(p=>({...p,rent:Number(e.target.value),sd:Number(e.target.value)}))}/></div>
+              <div className="fld"><label>Monthly Rent ($)</label><input type="number" value={leaseForm.rent||""} onChange={e=>{const rent=Number(e.target.value);const mi=leaseForm.moveIn;const day=mi?new Date(mi+"T00:00:00").getDate():1;const daysLeft=mi?new Date(new Date(mi+"T00:00:00").getFullYear(),new Date(mi+"T00:00:00").getMonth()+1,0).getDate()-day+1:0;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);setLeaseForm(p=>({...p,rent,sd:rent,proratedRent:prorated}));}}/></div>
               <div className="fld"><label>Security Deposit ($)</label><input type="number" value={leaseForm.sd||""} onChange={e=>setLeaseForm(p=>({...p,sd:Number(e.target.value)}))}/></div>
-              <div className="fld"><label>Prorated Rent ($)</label><input type="number" value={leaseForm.proratedRent||""} onChange={e=>setLeaseForm(p=>({...p,proratedRent:Number(e.target.value)}))}/></div>
+              <div className="fld"><label>Prorated Rent ($)</label><input type="number" value={leaseForm.proratedRent||0} onChange={e=>setLeaseForm(p=>({...p,proratedRent:Number(e.target.value)}))}/></div>
             </div>
             <div className="fr3">
-              <div className="fld"><label>Move-in Date</label><input type="date" value={leaseForm.moveIn||""} onChange={e=>setLeaseForm(p=>({...p,moveIn:e.target.value,leaseStart:e.target.value}))}/></div>
+              <div className="fld"><label>Move-in Date</label><input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0]}));}}/></div>
               <div className="fld"><label>Lease Start</label><input type="date" value={leaseForm.leaseStart||""} onChange={e=>setLeaseForm(p=>({...p,leaseStart:e.target.value}))}/></div>
               <div className="fld"><label>Lease End</label><input type="date" value={leaseForm.leaseEnd||""} onChange={e=>setLeaseForm(p=>({...p,leaseEnd:e.target.value}))}/></div>
             </div>
@@ -2591,6 +2592,57 @@ export default function Page(){
             </div>
           </div>
 
+          {/* Move-In Package Preview */}
+          {(()=>{
+            const rent=leaseForm.rent||0;
+            const sd=leaseForm.sd||0;
+            const mi=leaseForm.moveIn;
+            if(!rent||!mi)return null;
+            const miD=new Date(mi+"T00:00:00");
+            const day=miD.getDate();
+            const calDays=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate();
+            const daysLeft=calDays-day+1;
+            const dailyRate=Math.ceil(rent/30);
+            const isFirstDay=day===1;
+            const proratedAmt=isFirstDay?0:Math.ceil(dailyRate*daysLeft);
+            const firstMonthAmt=isFirstDay?rent:proratedAmt;
+            const total=sd+firstMonthAmt;
+            return(
+            <div style={{background:"#f9f8f5",border:"2px solid rgba(212,168,83,.25)",borderRadius:12,padding:16,marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>📄 Move-In Package Preview</div>
+
+              {/* Proration explainer */}
+              {!isFirstDay&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#5c4a3a",lineHeight:1.6}}>
+                <strong>Proration:</strong> {daysLeft} days remaining in {miD.toLocaleString("default",{month:"long"})} · {fmtS(rent)} ÷ 30 = {fmtS(dailyRate)}/day · Prorated total: {fmtS(proratedAmt)}
+              </div>}
+              {isFirstDay&&<div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#2d6a3f"}}>
+                ✓ Move-in on the 1st — full month's rent applies, no proration needed
+              </div>}
+
+              {/* Package line items */}
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700}}>🔒 Security Deposit</div>
+                    <div style={{fontSize:10,color:"#999"}}>Due today — secures the room</div>
+                  </div>
+                  <div style={{fontSize:15,fontWeight:800,color:"#1a1714"}}>{fmtS(sd)}</div>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700}}>🏠 {isFirstDay?"First Month's Rent":`Prorated Rent (${daysLeft} days × ${fmtS(dailyRate)})`}</div>
+                    <div style={{fontSize:10,color:"#999"}}>Due: {fmtD(mi)}</div>
+                  </div>
+                  <div style={{fontSize:15,fontWeight:800,color:"#1a1714"}}>{fmtS(firstMonthAmt)}</div>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px",background:"#1a1714",borderRadius:8}}>
+                  <div style={{fontSize:13,fontWeight:800,color:"#f5f0e8"}}>Total Due at Move-In</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#d4a853"}}>{fmtS(total)}</div>
+                </div>
+              </div>
+            </div>);
+          })()}
+
           <div className="fld"><label>Internal Notes</label><textarea value={leaseForm.notes||""} onChange={e=>setLeaseForm(p=>({...p,notes:e.target.value}))} placeholder="Notes for your records only — not on the lease" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
 
           <div className="mft">
@@ -2601,35 +2653,57 @@ export default function Page(){
 
         {/* Sign & Send modal */}
         {modal?.type==="signLease"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}}>
-          <h2>Sign & Send Lease</h2>
-          <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>You sign first, then the lease is sent to <strong>{modal.lease.tenantEmail}</strong> for their signature.</p>
-          <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:14}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#2d6a3f",marginBottom:10}}>Your Signature — {modal.lease.landlordName||"Carolina Cooper"}</div>
-            <div style={{fontSize:10,color:"#999",marginBottom:8}}>Draw your signature below. This confirms you are legally executing this lease as the property manager.</div>
-            {modal.landlordSig
-              ?<div>
-                <img src={modal.landlordSig} alt="Your sig" style={{maxHeight:60,maxWidth:"100%",display:"block",marginBottom:8}}/>
-                <button className="btn btn-out btn-sm" onClick={()=>setModal(p=>({...p,landlordSig:null}))}>Re-sign</button>
+            <h2>Sign & Send Lease</h2>
+            <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>You sign first as property manager, then the tenant receives a link to countersign.</p>
+
+            {settings.savedSignature&&!modal.landlordSig&&(
+              <div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:12,marginBottom:12}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#2d6a3f",marginBottom:8}}>USE SAVED SIGNATURE</div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <img src={settings.savedSignature} alt="Saved sig" style={{maxHeight:50,border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:4,background:"#fff"}}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:11,fontWeight:600}}>Carolina Cooper</div>
+                    <div style={{fontSize:10,color:"#999"}}>Saved signature on file</div>
+                  </div>
+                  <button className="btn btn-green btn-sm" onClick={()=>{setModal(p=>({...p,landlordSig:settings.savedSignature}));setLeaseSigErr(false);}}>Use This</button>
+                </div>
               </div>
-              :<SigCanvas onSave={(data)=>setModal(p=>({...p,landlordSig:data}))} height={100}/>
-            }
-          </div>
-          {modal.landlordSig&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:10,marginBottom:14,fontSize:11,color:"#9a7422"}}>
-            ✅ Signed. Clicking "Send to Tenant" will update the lease status and generate a unique signing link.
-          </div>}
-          <div className="mft">
-            <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-            <button className="btn btn-gold" disabled={!modal.landlordSig} onClick={async()=>{
-              if(!modal.landlordSig){return;}
-              const now=new Date().toISOString();
-              const token=uid()+uid();
-              const link=`${settings.siteUrl||"https://rentblackbear.com"}/lease?token=${token}`;
-              setLeases(p=>{const updated=p.map(l=>l.id===modal.leaseId?{...l,status:"pending_tenant",landlordSignature:modal.landlordSig,landlordSignedAt:now,signingToken:token,signingLink:link}:l);save("hq-leases",updated);return updated;});
-              setNotifs(p=>[{id:uid(),type:"lease",msg:`✍ Lease signed and sent to ${modal.lease.tenantEmail} — ${modal.lease.tenantName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
-              setModal({type:"leaseSent",lease:modal.lease,link});
-            }}>✉ Sign & Send to Tenant</button>
-          </div>
-        </div></div>}
+            )}
+
+            <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#2d6a3f",marginBottom:8}}>
+                {modal.landlordSig?"✓ Signature Captured":"Draw Your Signature — "+(modal.lease?.landlordName||"Carolina Cooper")}
+              </div>
+              {modal.landlordSig
+                ?<div>
+                  <img src={modal.landlordSig} alt="Your sig" style={{maxHeight:60,maxWidth:"100%",display:"block",marginBottom:8}}/>
+                  <button className="btn btn-out btn-sm" onClick={()=>setModal(p=>({...p,landlordSig:null}))}>Re-sign</button>
+                </div>
+                :<SigCanvas onSave={(data)=>{setModal(p=>({...p,landlordSig:data}));setLeaseSigErr(false);}} height={100}/>
+              }
+            </div>
+
+            {modal.landlordSig&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,cursor:"pointer",marginBottom:12,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)"}}>
+              <input type="checkbox" checked={!!modal.saveSignature} onChange={e=>setModal(p=>({...p,saveSignature:e.target.checked}))} style={{width:14,height:14}}/>
+              Save this signature for future leases
+            </label>}
+
+            {leaseSigErr&&<div style={{color:"#c45c4a",fontSize:12,fontWeight:700,padding:"8px 12px",background:"rgba(196,92,74,.06)",borderRadius:8,marginBottom:12,animation:"shake .4s ease"}}>⚠ Please draw your signature before sending</div>}
+
+            <div className="mft">
+              <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+              <button className="btn btn-gold" onClick={async()=>{
+                if(!modal.landlordSig){setLeaseSigErr(true);return;}
+                if(modal.saveSignature){setSettings(p=>{const updated={...p,savedSignature:modal.landlordSig};save("hq-settings",updated);return updated;});}
+                const now=new Date().toISOString();
+                const token=uid()+uid();
+                const link=`${settings.siteUrl||"https://rentblackbear.vercel.app"}/lease?token=${token}`;
+                setLeases(p=>{const updated=p.map(l=>l.id===modal.leaseId?{...l,status:"pending_tenant",landlordSignature:modal.landlordSig,landlordSignedAt:now,signingToken:token,signingLink:link}:l);save("hq-leases",updated);return updated;});
+                setNotifs(p=>[{id:uid(),type:"lease",msg:`✍ Lease signed and sent to ${modal.lease.tenantEmail} — ${modal.lease.tenantName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+                setModal({type:"leaseSent",lease:modal.lease,link});
+              }}>✉ Sign & Send to Tenant</button>
+            </div>
+          </div></div>}
 
         {/* Lease sent confirmation */}
         {modal?.type==="leaseSent"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480,textAlign:"center"}}>
