@@ -5469,7 +5469,7 @@ export default function Page(){
           </div>
           {a.chargeConfig&&<div style={{padding:"10px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,fontSize:11,color:"#2d6a3f",marginBottom:8}}>
             <div style={{fontWeight:700,marginBottom:4}}>Charges pending tenant signature:</div>
-            {(()=>{const cfg=a.chargeConfig;const items=[];items.push({l:"Security Deposit",v:cfg.sd});if(cfg.structure==="prorated")items.push({l:,v:cfg.proratedAmt});else items.push({l:"First Month Rent",v:cfg.rent});if(cfg.structure==="first-last")items.push({l:"Last Month Rent",v:cfg.rent});return items.map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between"}}><span>{it.l}</span><strong>{fmtS(it.v)}</strong></div>);})()}
+            {(()=>{const cfg=a.chargeConfig;const items=[];items.push({l:"Security Deposit",v:cfg.sd});if(cfg.structure==="prorated")items.push({l:"Prorated Rent ("+cfg.proratedDays+"d)",v:cfg.proratedAmt});else items.push({l:"First Month Rent",v:cfg.rent});if(cfg.structure==="first-last")items.push({l:"Last Month Rent",v:cfg.rent});return items.map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between"}}><span>{it.l}</span><strong>{fmtS(it.v)}</strong></div>);})()}
           </div>}
           <button className="btn btn-out btn-sm" style={{width:"100%"}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs:[],step:1})}>
             ✏️ Reconfigure Charges
