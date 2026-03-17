@@ -178,34 +178,103 @@ const DEF_IDEAS=[
 ];
 function randPalette(){const h=Math.floor(Math.random()*360);const c=(h+150+Math.random()*60)%360;const hl=(h2,s,l)=>{s/=100;l/=100;const a=s*Math.min(l,1-l);const f=n=>{const k=(n+h2/30)%12;const cv=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*cv).toString(16).padStart(2,"0");};return`#${f(0)}${f(8)}${f(4)}`;};return{bg:hl(h,20,9),card:hl(h,18,15),accent:hl(c,70,60),text:hl(h,10,94),muted:hl(h,14,65),surface:hl(c,5,98),surfaceAlt:hl(c,7,94),green:hl(150,50,45),dark:hl(h,20,8),warm:hl(h,12,44)};}
 
-// Photo manager - drag-and-drop + URL input
-function PhotoManager({photos=[],onChange,label="Photos",max=6}){
-  const[dragOver,setDragOver]=useState(false);const[urlInput,setUrlInput]=useState("");
-  const addUrl=()=>{if(urlInput.trim()){onChange([...(photos||[]),urlInput.trim()]);setUrlInput("");}};
-  const handleDrop=e=>{e.preventDefault();setDragOver(false);[...e.dataTransfer.files].filter(f=>f.type.startsWith("image/")).slice(0,max-(photos||[]).length).forEach(file=>{
-    const reader=new FileReader();reader.onload=ev=>onChange(prev=>[...(Array.isArray(prev)?prev:(photos||[])),ev.target.result]);reader.readAsDataURL(file);});};
-  const remove=i=>onChange((photos||[]).filter((_,j)=>j!==i));
-  return(<div style={{marginBottom:10}}>
-    <label style={{display:"block",fontSize:9,fontWeight:700,color:"#999",marginBottom:3,textTransform:"uppercase",letterSpacing:.3}}>{label} ({(photos||[]).length}/{max})</label>
-    {(photos||[]).length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-      {(photos||[]).map((p,i)=><div key={i} style={{width:64,height:64,borderRadius:6,overflow:"hidden",position:"relative",border:"1px solid rgba(0,0,0,.06)"}}>
-        <img src={p} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";}}/>
-        <button onClick={()=>remove(i)} style={{position:"absolute",top:2,right:2,width:16,height:16,borderRadius:"50%",background:"rgba(0,0,0,.6)",color:"#fff",border:"none",fontSize:9,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>x</button>
-      </div>)}
+// Photo manager — unlimited, multi-upload, drag-to-reorder
+function PhotoManager({photos=[],onChange,label="Photos"}){
+  const[dropOver,setDropOver]=useState(false);
+  const[urlInput,setUrlInput]=useState("");
+  const[dragIdx,setDragIdx]=useState(null);
+  const[dragOverIdx,setDragOverIdx]=useState(null);
+  const ph=photos||[];
+
+  const readFiles=files=>{
+    [...files].filter(f=>f.type.startsWith("image/")).forEach(file=>{
+      const r=new FileReader();
+      r.onload=ev=>onChange(prev=>[...(Array.isArray(prev)?prev:ph),ev.target.result]);
+      r.readAsDataURL(file);
+    });
+  };
+  const openPicker=()=>{
+    const inp=document.createElement("input");
+    inp.type="file";inp.accept="image/*";inp.multiple=true;
+    inp.onchange=e=>readFiles(e.target.files);
+    inp.click();
+  };
+  const handleDrop=e=>{
+    e.preventDefault();setDropOver(false);
+    if(e.dataTransfer.files.length)readFiles(e.dataTransfer.files);
+  };
+  const addUrl=()=>{if(urlInput.trim()){onChange([...ph,urlInput.trim()]);setUrlInput("");}};
+  const remove=i=>onChange(ph.filter((_,j)=>j!==i));
+
+  // drag-to-reorder
+  const onDragStart=(e,i)=>{setDragIdx(i);e.dataTransfer.effectAllowed="move";};
+  const onDragEnterThumb=(i)=>setDragOverIdx(i);
+  const onDragEndThumb=()=>{
+    if(dragIdx!==null&&dragOverIdx!==null&&dragIdx!==dragOverIdx){
+      const arr=[...ph];const[moved]=arr.splice(dragIdx,1);arr.splice(dragOverIdx,0,moved);onChange(arr);
+    }
+    setDragIdx(null);setDragOverIdx(null);
+  };
+
+  return(<div style={{marginBottom:12}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+      <label style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.3}}>{label} ({ph.length} photo{ph.length!==1?"s":""})</label>
+      {ph.length>0&&<span style={{fontSize:9,color:"#bbb"}}>Drag thumbnails to reorder · first photo = cover</span>}
+    </div>
+
+    {ph.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:6,marginBottom:8}}>
+      {ph.map((src,i)=>(
+        <div key={i}
+          draggable
+          onDragStart={e=>onDragStart(e,i)}
+          onDragEnter={()=>onDragEnterThumb(i)}
+          onDragEnd={onDragEndThumb}
+          onDragOver={e=>e.preventDefault()}
+          style={{
+            position:"relative",borderRadius:7,overflow:"hidden",
+            border:`2px solid ${dragOverIdx===i&&dragIdx!==i?"#d4a853":"rgba(0,0,0,.06)"}`,
+            cursor:"grab",aspectRatio:"1",
+            boxShadow:dragIdx===i?"0 4px 12px rgba(0,0,0,.2)":"none",
+            opacity:dragIdx===i?.5:1,
+            transition:"border-color .1s,opacity .1s",
+          }}>
+          {i===0&&<div style={{position:"absolute",top:3,left:3,background:"#d4a853",color:"#1a1714",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:2}}>COVER</div>}
+          <img src={src} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block",pointerEvents:"none"}} onError={e=>{e.target.style.display="none";}}/>
+          <button onClick={()=>remove(i)} style={{position:"absolute",top:3,right:3,width:18,height:18,borderRadius:"50%",background:"rgba(0,0,0,.65)",color:"#fff",border:"none",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2,lineHeight:1}}>×</button>
+        </div>
+      ))}
+      {/* Add more tile */}
+      <div onClick={openPicker} style={{aspectRatio:"1",borderRadius:7,border:"2px dashed rgba(0,0,0,.1)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#faf9f7",gap:3}} onMouseOver={e=>e.currentTarget.style.borderColor="#d4a853"} onMouseOut={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.1)"}>
+        <span style={{fontSize:18}}>+</span>
+        <span style={{fontSize:8,color:"#999",fontWeight:600}}>Add</span>
+      </div>
     </div>}
-    {(photos||[]).length<max&&<>
-      <div onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={handleDrop}
-        style={{border:`2px dashed ${dragOver?"#d4a853":"rgba(0,0,0,.08)"}`,borderRadius:8,padding:14,textAlign:"center",cursor:"pointer",background:dragOver?"rgba(212,168,83,.04)":"transparent",marginBottom:6}}
-        onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.multiple=true;inp.onchange=e=>{[...e.target.files].slice(0,max-(photos||[]).length).forEach(file=>{const reader=new FileReader();reader.onload=ev=>onChange(prev=>[...(Array.isArray(prev)?prev:(photos||[])),ev.target.result]);reader.readAsDataURL(file);});};inp.click();}}>
-        <div style={{fontSize:18,marginBottom:2}}>{"📷"}</div>
-        <div style={{fontSize:10,color:"#999",fontWeight:600}}>Drag and drop or click to browse</div>
-      </div>
-      <div style={{display:"flex",gap:4}}>
-        <input value={urlInput} onChange={e=>setUrlInput(e.target.value)} placeholder="Or paste image URL..." onKeyDown={e=>e.key==="Enter"&&addUrl()}
-          style={{flex:1,padding:"5px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",outline:"none"}}/>
-        <button className="btn btn-out btn-sm" onClick={addUrl} disabled={!urlInput.trim()}>Add</button>
-      </div>
-    </>}
+
+    {ph.length===0&&<div
+      onDragOver={e=>{e.preventDefault();setDropOver(true);}}
+      onDragLeave={()=>setDropOver(false)}
+      onDrop={handleDrop}
+      onClick={openPicker}
+      style={{border:`2px dashed ${dropOver?"#d4a853":"rgba(0,0,0,.08)"}`,borderRadius:8,padding:18,textAlign:"center",cursor:"pointer",background:dropOver?"rgba(212,168,83,.04)":"transparent",marginBottom:6,transition:"all .15s"}}>
+      <div style={{fontSize:22,marginBottom:4}}>📷</div>
+      <div style={{fontSize:11,color:"#999",fontWeight:600}}>Drop photos here or click to browse</div>
+      <div style={{fontSize:9,color:"#bbb",marginTop:2}}>Select multiple files at once — no limit</div>
+    </div>}
+
+    {ph.length>0&&<div
+      onDragOver={e=>{e.preventDefault();setDropOver(true);}}
+      onDragLeave={()=>setDropOver(false)}
+      onDrop={handleDrop}
+      style={{border:`1px dashed ${dropOver?"#d4a853":"rgba(0,0,0,.06)"}`,borderRadius:6,padding:"7px 12px",fontSize:10,color:"#999",textAlign:"center",marginBottom:6,cursor:"default",transition:"all .12s"}}>
+      Drop more photos anywhere here
+    </div>}
+
+    <div style={{display:"flex",gap:4}}>
+      <input value={urlInput} onChange={e=>setUrlInput(e.target.value)} placeholder="Or paste image URL and press Enter..."
+        onKeyDown={e=>e.key==="Enter"&&addUrl()}
+        style={{flex:1,padding:"5px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",outline:"none"}}/>
+      <button className="btn btn-out btn-sm" onClick={addUrl} disabled={!urlInput.trim()}>Add URL</button>
+    </div>
   </div>);
 }
 
@@ -233,37 +302,50 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
         <select value={mode} onChange={e=>setP({...p,rentalMode:e.target.value})}>
           <option value="byRoom">Rent by Bedroom</option>
           <option value="wholeHouse">Whole House</option>
-          <option value="both">Both (flexible)</option>
         </select>
       </div>
     </div>
 
-    {/* Whole house pricing — shown when mode includes whole house */}
-    {(mode==="wholeHouse"||mode==="both")&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,marginBottom:10}}>
-      <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:10}}>Whole House Pricing</div>
-      <div className="fr">
-        <div className="fld">
-          <label>Whole House Rent ($/mo)</label>
-          <input type="number" value={p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseRent:Number(e.target.value)})} placeholder="e.g. 3200"/>
-          <div style={{fontSize:9,color:"#999",marginTop:3}}>Shown when renting the entire property to one tenant/group</div>
+    {mode==="wholeHouse"&&<>
+      <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,marginBottom:10}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:10}}>Whole House Pricing</div>
+        <div className="fr">
+          <div className="fld">
+            <label>Whole House Rent ($/mo)</label>
+            <input type="number" value={p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseRent:Number(e.target.value)})} placeholder="e.g. 3200"/>
+            <div style={{fontSize:9,color:"#999",marginTop:3}}>Shown when renting the entire property to one tenant/group</div>
+          </div>
+          <div className="fld">
+            <label>Security Deposit</label>
+            <input type="number" value={p.wholeHouseSD||p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseSD:Number(e.target.value)})} placeholder="Defaults to 1 month rent"/>
+          </div>
         </div>
         <div className="fld">
-          <label>Security Deposit</label>
-          <input type="number" value={p.wholeHouseSD||p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseSD:Number(e.target.value)})} placeholder="Defaults to 1 month rent"/>
+          <label>Whole House Description</label>
+          <textarea value={p.wholeHouseDesc||""} onChange={e=>setP({...p,wholeHouseDesc:e.target.value})} placeholder="Describe the property as a whole — sq ft, layout, included amenities, parking, yard, etc." rows={3}/>
         </div>
       </div>
-      <div className="fld">
-        <label>Whole House Description</label>
-        <textarea value={p.wholeHouseDesc||""} onChange={e=>setP({...p,wholeHouseDesc:e.target.value})} placeholder="Describe the property as a whole — sq ft, layout, included amenities, parking, yard, etc." rows={3}/>
+      {/* Photo section with copy from rooms option */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>Property Photos</span>
+        {p.rooms.some(r=>(r.photos||[]).length>0)&&<button className="btn btn-out btn-sm" onClick={()=>{const all=[...(p.photos||[]),...p.rooms.flatMap(r=>r.photos||[])].filter((x,i,a)=>a.indexOf(x)===i);setP({...p,photos:all});}}>⬆ Copy all room photos here</button>}
       </div>
-    </div>}
+      <PhotoManager photos={p.photos||[]} onChange={v=>setP({...p,photos:typeof v==="function"?v(p.photos||[]):v})} label="Property Photos"/>
+    </>}
 
-    {/* Property description */}
-    <div className="fld"><label>{mode==="wholeHouse"?"Additional Notes":"Property Description"}</label><textarea value={p.desc||""} onChange={e=>setP({...p,desc:e.target.value})} placeholder="Describe the property — shows on the public site..." rows={2}/></div>
-    <PhotoManager photos={p.photos||[]} onChange={v=>setP({...p,photos:typeof v==="function"?v(p.photos||[]):v})} label="Property Photos" max={8}/>
+    {mode==="byRoom"&&<>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>Property Photos</span>
+        {mode==="byRoom"&&(p.photos||[]).length>0&&<span style={{fontSize:9,color:"#999"}}>These show on the property listing</span>}
+      </div>
+      <PhotoManager photos={p.photos||[]} onChange={v=>setP({...p,photos:typeof v==="function"?v(p.photos||[]):v})} label="Property Photos"/>
+    </>}
 
-    {/* Room editor — shown for byRoom and both modes */}
-    {(mode==="byRoom"||mode==="both")&&<div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:12,marginTop:4}}>
+    {/* Property description (both modes) */}
+    <div className="fld"><label>Property Notes / Description</label><textarea value={p.desc||""} onChange={e=>setP({...p,desc:e.target.value})} placeholder="Internal notes or public description..." rows={2}/></div>
+
+    {/* Room editor — byRoom only */}
+    {mode==="byRoom"&&<div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:12,marginTop:4}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <h3 style={{fontSize:13,fontWeight:800}}>Rooms ({p.rooms.length})</h3>
         <button className="btn btn-out btn-sm" onClick={addRoom}>+ Add Room</button>
@@ -282,7 +364,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
             <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
           </div>
           {!locked&&<div className="fld"><label>Room Description</label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Features, view, notes..."/></div>}
-          {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} max={4}/>}
+          {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`}/>}
           {!locked&&<button className="btn btn-red btn-sm" style={{marginTop:4}} onClick={()=>setP({...p,rooms:p.rooms.filter((_,j)=>j!==i)})}>Remove Room</button>}
           {locked&&<div style={{display:"flex",gap:6,alignItems:"center",marginTop:6}}>
             <button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease & Tenant →</button>
@@ -291,15 +373,14 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
         </div>);})}
     </div>}
 
-    {/* Whole house — show room count summary only */}
+    {/* Whole house — show room count summary for occupancy tracking */}
     {mode==="wholeHouse"&&p.rooms.length>0&&<div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:12,marginTop:4}}>
-      <div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:6}}>Room Breakdown (for internal tracking)</div>
+      <div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:6}}>Room Breakdown (occupancy tracking)</div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {p.rooms.map((r,i)=><div key={r.id} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:10,background:"#faf9f7",color:r.st==="occupied"?"#4a7c59":"#999"}}>
           {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
         </div>)}
       </div>
-      <button className="btn btn-out btn-sm" style={{marginTop:8}} onClick={()=>setP({...p,rentalMode:"both"})}>Switch to "Both" to edit individual rooms</button>
     </div>}
 
     {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
@@ -4017,7 +4098,7 @@ export default function Page(){
             <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,selRoomId:"",sendErrors:[]}))}
               style={{width:"100%",borderColor:modal.sendErrors?.some(e=>e.includes("property"))?"#c45c4a":undefined}}>
               <option value="">Select property...</option>
-              {props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+              {props.map(p=><option key={p.id} value={p.id}>{p.name}{p.addr ? " — "+p.addr : ""}</option>)}
             </select>
           </div>
           <div className="fld">
@@ -4037,7 +4118,7 @@ export default function Page(){
           <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,sendErrors:[]}))}
             style={{width:"100%",borderColor:modal.sendErrors?.some(e=>e.includes("property"))?"#c45c4a":undefined}}>
             <option value="">Select property...</option>
-            {props.map(p=><option key={p.id} value={p.id}>{p.name} (entire property)</option>)}
+            {props.map(p=><option key={p.id} value={p.id}>{p.name}{p.addr ? " — "+p.addr : ""}</option>)}
           </select>
           {selPropId&&selProp&&<>
             <div style={{marginTop:8,padding:"10px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)"}}>
