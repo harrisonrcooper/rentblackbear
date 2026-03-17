@@ -258,6 +258,7 @@ export default function ApplyPage(){
   const[saving,setSaving]=useState(false);
   const[submitted,setSubmitted]=useState(false);
   const[props_,setProps]=useState([]);
+  const[errors,setErrors]=useState({});
   const fileRef=useRef(null);const payRef=useRef(null);
 
   const upd=(k,v)=>{setD(p=>({...p,[k]:v}));setErrors(p=>({...p,[k]:undefined}));};
