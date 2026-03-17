@@ -14,7 +14,28 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 const fmt=n=>"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtS=n=>"$"+Number(n).toLocaleString();
 const fmtD=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;}
+const numberToWords=(n)=>{const ones=["","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE","TEN","ELEVEN","TWELVE","THIRTEEN","FOURTEEN","FIFTEEN","SIXTEEN","SEVENTEEN","EIGHTEEN","NINETEEN"];const tens=["","","TWENTY","THIRTY","FORTY","FIFTY","SIXTY","SEVENTY","EIGHTY","NINETY"];if(!n||n===0)return"ZERO";if(n<20)return ones[n];if(n<100)return tens[Math.floor(n/10)]+(n%10?" "+ones[n%10]:"");if(n<1000)return ones[Math.floor(n/100)]+" HUNDRED"+(n%100?" "+numberToWords(n%100):"");return numberToWords(Math.floor(n/1000))+" THOUSAND"+(n%1000?" "+numberToWords(n%1000):"");};
 const TODAY=new Date();const MO=TODAY.toLocaleString("default",{month:"long",year:"numeric"});
+
+// Signature canvas component — draw only, used in lease signing flow
+function SigCanvas({onSave,height=120}){
+  const canvasRef=React.useRef(null);const drawing=React.useRef(false);const lastPos=React.useRef(null);
+  const getPos=(e,c)=>{const r=c.getBoundingClientRect();const s=e.touches?e.touches[0]:e;return{x:s.clientX-r.left,y:s.clientY-r.top};};
+  const start=(e)=>{e.preventDefault();drawing.current=true;const c=canvasRef.current;const ctx=c.getContext("2d");const p=getPos(e,c);lastPos.current=p;ctx.beginPath();ctx.arc(p.x,p.y,1,0,Math.PI*2);ctx.fillStyle="#1a1714";ctx.fill();};
+  const move=(e)=>{if(!drawing.current)return;e.preventDefault();const c=canvasRef.current;const ctx=c.getContext("2d");const p=getPos(e,c);ctx.beginPath();ctx.moveTo(lastPos.current.x,lastPos.current.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#1a1714";ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();lastPos.current=p;};
+  const end=()=>{drawing.current=false;};
+  const clear=()=>{const c=canvasRef.current;c.getContext("2d").clearRect(0,0,c.width,c.height);};
+  const save=()=>{const c=canvasRef.current;const ctx=c.getContext("2d");const data=ctx.getImageData(0,0,c.width,c.height).data;if(!Array.from(data).some((v,i)=>i%4===3&&v>0))return;onSave(c.toDataURL("image/png"));};
+  return(<div>
+    <canvas ref={canvasRef} width={520} height={height} style={{border:"1.5px solid rgba(0,0,0,.1)",borderRadius:8,cursor:"crosshair",display:"block",background:"#fff",touchAction:"none",maxWidth:"100%"}}
+      onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
+      onTouchStart={start} onTouchMove={move} onTouchEnd={end}/>
+    <div style={{display:"flex",gap:8,marginTop:6}}>
+      <button className="btn btn-out btn-sm" onClick={clear}>Clear</button>
+      <button className="btn btn-gold btn-sm" onClick={save}>Apply Signature</button>
+    </div>
+  </div>);
+}
 
 // ─── Sample Data ────────────────────────────────────────────────────
 const DEF_PROPS=[
@@ -492,6 +513,7 @@ const S=`
 .fld textarea{resize:vertical;min-height:60px}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 
 /* Modal */
 .mbg{position:fixed;inset:0;background:rgba(26,23,20,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -645,13 +667,17 @@ export default function Page(){
   const[portalTenant,setPortalTenant]=useState(null);
   const[portalTab,setPortalTab]=useState("home");
   const[maintForm,setMaintForm]=useState({title:"",desc:"",priority:"medium",submitted:false});
+  const[leases,setLeases]=useState([]);
+  const[leaseTemplate,setLeaseTemplate]=useState(null);
+  const[leaseSubTab,setLeaseSubTab]=useState("active");
+  const[leaseForm,setLeaseForm]=useState(null);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[])]);
-    setProps(p);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLoaded(true);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
+    setProps(p);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,loaded]);
+  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,loaded]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   const m=useMemo(()=>{
@@ -829,6 +855,7 @@ export default function Page(){
   const saveProp=p=>{if(isNewProp)setProps(prev=>[...prev,p]);else setProps(prev=>prev.map(x=>x.id===p.id?p:x));setEditProp(null);};
 
   const pastDueCount=charges.filter(c=>chargeStatus(c)==="pastdue").length;
+  const pendingLeases=leases.filter(l=>l.status==="pending_tenant"||l.status==="pending_landlord").length;
   const tabs=[
     {id:"dashboard",i:"📊",l:"Dashboard"},
     {id:"scorecard",i:"📈",l:"Scorecard"},
@@ -845,10 +872,12 @@ export default function Page(){
     {id:"site-settings",i:"⚙️",l:"Site Settings"},
     {id:"theme",i:"🎨",l:"Theme Editor"},
     {id:"ideas",i:"🧠",l:"Brain Dump"},
+    {id:"leases",i:"📝",l:"Leases & Docs",badge:pendingLeases||null},
     {id:"notifications",i:"🔔",l:"Alerts",badge:m.unreadNotifs||null},
   ];
 
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);};
+  const confirmAction=(title,onConfirm,body="This cannot be undone.")=>{setModal({type:"confirmAction",title,body,confirmLabel:"Confirm",confirmStyle:"btn-red",onConfirm:()=>{onConfirm();setModal(null);}});};
   const shakeModal=()=>{const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .5s ease";}};
 
   if(!loaded)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"inherit"}}>Loading...</div>);
@@ -1214,17 +1243,22 @@ export default function Page(){
             {portalTab==="docs"&&<div style={{padding:18}}>
               <div className="tp-card">
                 <h3>📄 Your Documents</h3>
-                <div style={{fontSize:11,color:"#999",marginBottom:12}}>Lease addendums and agreements related to your tenancy.</div>
+                <div style={{fontSize:11,color:"#999",marginBottom:12}}>All documents related to your tenancy — application files, lease agreements, and addendums.</div>
                 {(()=>{
                   const tenantDocs=docs.filter(d=>d.tenantRoomId===tRoom.id||d.tenant===tRoom.tenant.name);
-                  if(tenantDocs.length===0)return<div style={{textAlign:"center",padding:16,color:"#999",fontSize:12}}>No documents on file yet.</div>;
-                  return tenantDocs.map(d=>(
-                    <div key={d.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                  const appDocs=(tRoom.tenant.documents||[]);
+                  const allDocs=[...appDocs,...tenantDocs];
+                  if(allDocs.length===0)return<div style={{textAlign:"center",padding:16,color:"#999",fontSize:12}}>No documents on file yet.</div>;
+                  return allDocs.map((d,i)=>(
+                    <div key={d.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                       <div>
-                        <div style={{fontSize:12,fontWeight:700}}>{d.name}</div>
-                        <div style={{fontSize:10,color:"#999"}}>{d.type==="addendum"?"Lease Addendum":"Document"} · {d.uploaded}</div>
+                        <div style={{fontSize:12,fontWeight:700}}>{d.label||d.name}</div>
+                        <div style={{fontSize:10,color:"#999"}}>{d.source==="application"?"Application document":d.type==="addendum"?"Lease Addendum":"Document"} · {d.uploaded}</div>
                       </div>
-                      {d.content&&<button className="btn btn-out btn-sm" onClick={()=>setModal({type:"viewAddendum",doc:d})}>📄 View</button>}
+                      <div style={{display:"flex",gap:4}}>
+                        {d.data&&<a href={d.data} download={d.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>⬇ Download</a>}
+                        {d.content&&<button className="btn btn-out btn-sm" onClick={()=>setModal({type:"viewAddendum",doc:d})}>📄 View</button>}
+                      </div>
                     </div>
                   ));
                 })()}
@@ -2236,6 +2270,396 @@ export default function Page(){
           </div>);
         })}
       </>}
+
+      {/* ═══ LEASES & DOCS ═══ */}
+      {tab==="leases"&&(()=>{
+        const DEF_LEASE_SECTIONS=[
+          {id:"s1",title:"Terms",requiresInitials:true,active:true,content:`<p>RESIDENT agrees to pay in advance <strong>{{RENT_WORDS}} (${{MONTHLY_RENT}})</strong> per month on the 1st day of each month. This agreement shall commence on <strong>{{LEASE_START}}</strong> and continue until <strong>{{LEASE_END}}</strong>.</p><p>Should RESIDENT move into Residence after the 1st of the month, rent will be prorated per day as follows: ${{MONTHLY_RENT}} ÷ 30 days = ${{DAILY_RATE}}/day. Prorated amount for partial first month: <strong>${{PRORATED_RENT}}</strong>.</p>`},
+          {id:"s2",title:"Payments",requiresInitials:true,active:true,content:`<p>Rent and other charges are to be paid at such place or method designated by PROPERTY MANAGER. All payments are to be made via the resident portal at rentblackbear.com or any other method approved by PROPERTY MANAGER.</p><p>PROPERTY MANAGER acknowledges receipt of the First Month's Rent and a Security Deposit of <strong>${{SECURITY_DEPOSIT}}</strong>. All payments are to be made payable to <strong>{{LANDLORD_NAME}}</strong>.</p>`},
+          {id:"s3",title:"Security Deposits",requiresInitials:true,active:true,content:`<p>The Security Deposit of <strong>${{SECURITY_DEPOSIT}}</strong> shall be held at Redstone Federal Credit Union in Huntsville, AL. The total security deposit shall not exceed one month's rent in accordance with Alabama Law and shall secure compliance with the terms of this agreement.</p><p>The deposit shall be refunded to RESIDENT within 35 days after the premises have been completely vacated, less any amount necessary to pay: a) any unpaid rent, b) cleaning costs, c) cost for repair of damages above ordinary wear and tear, and d) any other amount legally allowable. If RESIDENT should move from the premises prior to the expiration of the lease, they shall automatically forfeit their security deposit.</p>`},
+          {id:"s4",title:"Late Charge",requiresInitials:true,active:true,content:`<p>A late fee of <strong>$50</strong> shall be added and due for any payment of rent made after the 3rd of the month. An additional <strong>$5 per day</strong> will be charged until rent is paid in full. Any dishonored check shall be treated as unpaid rent, and subject to an additional fee of $35.</p>`},
+          {id:"s5",title:"Utilities",requiresInitials:true,active:true,content:`<p>{{UTILITIES_CLAUSE}}</p><p>Internet/WiFi is provided by PROPERTY MANAGER at no additional cost. All utilities are due on the 1st day of each month. RESIDENT agrees to pay previous month's utilities on the 1st of every month.</p>`},
+          {id:"s6",title:"Occupants",requiresInitials:true,active:true,content:`<p>Guest(s) staying over <strong>four (4) days</strong> within any thirty (30) day period without the written consent of PROPERTY MANAGER shall be considered a breach of this agreement. A $200 additional fee shall be charged to RESIDENT for each guest that stays in excess of four (4) days per thirty (30) day period. Repeated violations (two or more) are grounds for eviction.</p>`},
+          {id:"s7",title:"Pets",requiresInitials:true,active:true,content:`<p>No animal, fowl, fish, reptile, and/or pet of any kind shall be kept on or about the premises without obtaining prior written consent. If pet(s) are discovered, RESIDENT will be fined <strong>$300</strong> and <strong>$10 for each additional day</strong> the pet is on the property. PROPERTY MANAGER may also begin eviction proceedings.</p>`},
+          {id:"s8",title:"Parking",requiresInitials:true,active:true,content:`<p>RESIDENT is assigned parking space: <strong>{{PARKING_SPACE}}</strong>. Said space shall be used exclusively for parking of passenger automobiles. No washing, painting, or repair of vehicles is permitted. Only 1 (one) vehicle is allowed per resident. Violators may be towed at vehicle owner's risk and expense.</p>`},
+          {id:"s9",title:"Noise & Quiet Hours",requiresInitials:true,active:true,content:`<p>RESIDENT agrees not to cause or allow any noise or activity on the premises which might disturb the peace and quiet of another RESIDENT and/or neighbor. Quiet hours are in effect from <strong>10:00 PM to 7:00 AM on weekdays</strong> and <strong>11:00 PM to 10:00 AM on weekends</strong>.</p>`},
+          {id:"s10",title:"Smoking",requiresInitials:true,active:true,content:`<p>Any RESIDENT, including members of their household, guests, or visitors will be considered in violation of the lease if found smoking in the residence or anywhere on the property. This includes cigarettes, e-cigarettes, vaping devices, pipes, cigars, and similar substances.</p>`},
+          {id:"s11",title:"Property Maintenance",requiresInitials:true,active:true,content:`<p>RESIDENT is responsible for: maintaining cleanliness of the premises; replacing consumable items including batteries for TV remotes, keypad doorknobs (<strong>Door Code: {{DOOR_CODE}}</strong>), and smoke/CO detectors in their room; and clearing blockages in drains caused by their actions. Failure to replace batteries may result in a <strong>$50 service fee</strong>.</p>`},
+          {id:"s12",title:"Condition of Premises",requiresInitials:true,active:true,content:`<p>RESIDENT acknowledges they have examined the premises and all items are clean and in good satisfactory condition. RESIDENT agrees to keep the premises in good order and to immediately pay for costs to repair and/or replace any portion damaged by RESIDENT, their guests and/or invitees.</p>`},
+          {id:"s13",title:"Right of Entry and Inspection",requiresInitials:true,active:true,content:`<p>PROPERTY MANAGER retains the right to enter, inspect, or repair the premises with at least <strong>24 hours written notice</strong> before entering, except in cases of emergency or suspected abandonment. In emergencies, PROPERTY MANAGER may enter without prior notice to ensure safety.</p>`},
+          {id:"s14",title:"Notice of Termination",requiresInitials:true,active:true,content:`<p>Either Party may terminate the lease with a <strong>30-day written notice</strong>. Failure by RESIDENT to provide proper notice will result in rent for the following 30-day period and forfeiture of the security deposit.</p><p>After expiration of the leasing period, this agreement is automatically renewed month-to-month with a <strong>$50 monthly rent increase</strong>. If RESIDENT chooses to renew the lease, the rent does not increase from the original price.</p>`},
+          {id:"s15",title:"Room Rental / Co-Living Acknowledgment",requiresInitials:true,active:true,content:`<p>This Agreement is for the rental of <strong>one private bedroom only</strong>, not the entire dwelling unit. RESIDENT acknowledges that: other bedrooms may be occupied by other residents; PROPERTY MANAGER makes no representations regarding compatibility of other residents; and roommate composition may change during the tenancy.</p><p>RESIDENT is granted shared, non-exclusive use of common areas: kitchen, living room, dining areas, hallways, and laundry room. RESIDENT is strictly limited to their assigned bathroom only.</p>`},
+          {id:"s16",title:"House Rules",requiresInitials:true,active:true,content:`<p>RESIDENT shall comply with all house rules, which are deemed part of this rental agreement. Any violation may constitute grounds for eviction.</p><ul><li>Respect each other's privacy and personal belongings</li><li>No shoes in the house</li><li>No pets, no smoking</li><li>Keep all common areas clean, organized and decluttered at all times</li><li>Quiet hours as stated in Section 9</li><li>All roommates are responsible for trash/recycling bins on pickup days</li><li>When washing machine not in use, keep door open to prevent mold</li><li>Mattress cover shall not be taken off unless authorized by PROPERTY MANAGER</li></ul>`},
+          {id:"s17",title:"Insurance",requiresInitials:false,active:true,content:`<p>RESIDENT acknowledges that PROPERTY MANAGER's insurance does not cover personal property damage caused by fire, theft, rain, war, acts of God, or acts of others. RESIDENT is advised to obtain their own renter's insurance policy to cover personal losses.</p>`},
+          {id:"s18",title:"Entire Agreement",requiresInitials:false,active:true,content:`<p>This Agreement constitutes the entire Agreement between PROPERTY MANAGER and RESIDENT. No oral agreements have been entered into, and all modifications or notices shall be in writing to be valid. This Agreement shall be governed by the laws of the State of Alabama.</p>`},
+        ];
+
+        const template=leaseTemplate||{name:"Alabama Room Rental Agreement",landlordName:"Carolina Cooper",company:"Black Bear Properties",landlordEmail:"info@rentblackbear.com",sections:DEF_LEASE_SECTIONS};
+
+        const statusColors={draft:{bg:"rgba(0,0,0,.06)",tx:"#666",label:"Draft"},pending_landlord:{bg:"rgba(212,168,83,.1)",tx:"#9a7422",label:"Awaiting Your Signature"},pending_tenant:{bg:"rgba(59,130,246,.1)",tx:"#1d4ed8",label:"Sent to Tenant"},executed:{bg:"rgba(74,124,89,.1)",tx:"#2d6a3f",label:"Executed"},};
+
+        const openCreateLease=(app)=>{
+          // Auto-fill from application if provided
+          const prop=app?props.find(p=>p.name===app.property):null;
+          const room=prop?prop.rooms.find(r=>r.name===app.room):null;
+          const rent=room?room.rent:0;
+          const mi=app?.termMoveIn||app?.moveIn||"";
+          const miD=mi?new Date(mi+"T00:00:00"):null;
+          const day=miD?miD.getDate():1;
+          const daysLeft=miD?new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1:0;
+          const proratedRent=day===1?0:Math.ceil((rent/30)*daysLeft);
+          const leaseEndD=mi?new Date(mi+"T00:00:00"):new Date();
+          leaseEndD.setFullYear(leaseEndD.getFullYear()+1);
+          const utilitiesMode=prop?.utils||"allIncluded";
+          const utilitiesClause=utilitiesMode==="allIncluded"
+            ?"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, and gas. RESIDENT is responsible for no utility costs beyond the monthly rent."
+            :"PROPERTY MANAGER agrees to pay the first $100 of combined utilities (water, sewer, garbage, electricity, gas) per month. Any usage exceeding $100 per month shall be split equally among all current residents and billed on the 1st of each month. Failure to pay utility charges constitutes unpaid rent.";
+          setLeaseForm({
+            id:null,
+            applicationId:app?.id||null,
+            status:"draft",
+            tenantName:app?.name||"",tenantEmail:app?.email||"",tenantPhone:app?.phone||"",
+            property:app?.property||"",room:app?.room||"",roomId:room?.id||"",
+            propertyAddress:prop?.addr||"",
+            rent,sd:rent,proratedRent,
+            moveIn:mi,leaseStart:mi,
+            leaseEnd:leaseEndD.toISOString().split("T")[0],
+            leaseType:"fixed",
+            utilitiesMode,utilitiesClause,
+            parking:room?.parking||"",
+            doorCode:app?.applicationData?.doorCode||app?.passcode||"",
+            landlordName:template.landlordName||"Carolina Cooper",
+            company:template.company||"Black Bear Properties",
+            landlordEmail:template.landlordEmail||"info@rentblackbear.com",
+            agreementDate:TODAY.toISOString().split("T")[0],
+            sections:template.sections,
+            addenda:[],
+            notes:"",
+          });
+        };
+
+        const saveDraft=()=>{
+          if(!leaseForm)return;
+          const now=TODAY.toISOString().split("T")[0];
+          const rentWords=leaseForm.rent?numberToWords(leaseForm.rent):"";
+          const vars={
+            MONTHLY_RENT:leaseForm.rent?.toLocaleString()||"",
+            RENT_WORDS:rentWords,
+            DAILY_RATE:leaseForm.rent?Math.ceil(leaseForm.rent/30):"",
+            SECURITY_DEPOSIT:leaseForm.sd?.toLocaleString()||"",
+            PRORATED_RENT:leaseForm.proratedRent?.toLocaleString()||"0",
+            LEASE_START:fmtD(leaseForm.leaseStart),
+            LEASE_END:fmtD(leaseForm.leaseEnd),
+            PROPERTY_ADDRESS:leaseForm.propertyAddress||leaseForm.property||"",
+            PARKING_SPACE:leaseForm.parking||"See property map",
+            DOOR_CODE:leaseForm.doorCode||"Assigned at move-in",
+            UTILITIES_CLAUSE:leaseForm.utilitiesClause||"",
+            LANDLORD_NAME:leaseForm.landlordName||"Carolina Cooper",
+          };
+          const newLease={
+            ...leaseForm,
+            id:leaseForm.id||uid(),
+            variables:vars,
+            updatedAt:now,
+            createdAt:leaseForm.createdAt||now,
+          };
+          setLeases(p=>{const exists=p.find(l=>l.id===newLease.id);const updated=exists?p.map(l=>l.id===newLease.id?newLease:l):[...p,newLease];save("hq-leases",updated);return updated;});
+          setLeaseForm(null);
+          setLeaseSubTab("active");
+        };
+
+        const signAndSend=async(leaseId)=>{
+          // You sign first, then send to tenant
+          const now=new Date().toISOString();
+          const token=uid()+uid();
+          const link=`${settings.siteUrl||"https://rentblackbear.com"}/lease?token=${token}`;
+          setLeases(p=>{const updated=p.map(l=>l.id===leaseId?{...l,status:"pending_tenant",landlordSignedAt:now,signingToken:token,signingLink:link}:l);save("hq-leases",updated);return updated;});
+          setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease sent to tenant for signing — ${link}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+          setModal({type:"leaseSent",link});
+        };
+
+        const deleteLease=id=>{setLeases(p=>{const updated=p.filter(l=>l.id!==id);save("hq-leases",updated);return updated;});};
+
+        return(<>
+        <div className="sec-hd" style={{marginBottom:16}}>
+          <div>
+            <h2>Leases & Docs</h2>
+            <p>Create, send, and manage lease agreements · Drawn e-signatures · Auto-filled from applications</p>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button className="btn btn-out btn-sm" onClick={()=>{setLeaseSubTab("template");}}>⚙ Template</button>
+            <button className="btn btn-gold" onClick={()=>openCreateLease(null)}>+ New Lease</button>
+          </div>
+        </div>
+
+        {/* Sub-tabs */}
+        <div style={{display:"flex",gap:6,marginBottom:16,borderBottom:"1px solid rgba(0,0,0,.06)",paddingBottom:12}}>
+          {[["active","📄 Active Leases"],["template","⚙ Template Editor"]].map(([id,label])=>(
+            <button key={id} onClick={()=>setLeaseSubTab(id)}
+              style={{padding:"6px 14px",borderRadius:7,border:"none",background:leaseSubTab===id?"#1a1714":"transparent",color:leaseSubTab===id?"#f5f0e8":"#999",fontWeight:leaseSubTab===id?700:500,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Active Leases list */}
+        {leaseSubTab==="active"&&<>
+          {/* Quick-create from approved apps */}
+          {apps.filter(a=>a.status==="approved"&&!leases.find(l=>l.applicationId===a.id)).length>0&&(
+            <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:12,marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:8}}>⚡ Ready to lease — approved applicants without a lease</div>
+              {apps.filter(a=>a.status==="approved"&&!leases.find(l=>l.applicationId===a.id)).map(a=>(
+                <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(212,168,83,.1)"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:600}}>{a.name}</div>
+                    <div style={{fontSize:10,color:"#999"}}>{a.property} · {a.room} · {a.termMoveIn||a.moveIn||"move-in TBD"}</div>
+                  </div>
+                  <button className="btn btn-gold btn-sm" onClick={()=>openCreateLease(a)}>Create Lease →</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {leases.length===0&&!leaseForm&&<div style={{textAlign:"center",padding:48,color:"#999"}}>
+            <div style={{fontSize:40,marginBottom:12}}>📝</div>
+            <h3 style={{fontSize:15,marginBottom:6}}>No leases yet</h3>
+            <p style={{fontSize:12,marginBottom:16}}>Create your first lease from an approved application or manually.</p>
+            <button className="btn btn-gold" onClick={()=>openCreateLease(null)}>+ Create Lease</button>
+          </div>}
+
+          {leases.map(l=>{
+            const sc=statusColors[l.status]||statusColors.draft;
+            const isExec=l.status==="executed";
+            return(
+            <div key={l.id} className="card" style={{marginBottom:10,borderLeft:`3px solid ${isExec?"#4a7c59":"#d4a853"}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"14px 16px"}}>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <div style={{fontSize:14,fontWeight:700}}>{l.tenantName||"—"}</div>
+                    <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:sc.bg,color:sc.tx,textTransform:"uppercase",letterSpacing:.5}}>{sc.label}</span>
+                  </div>
+                  <div style={{fontSize:11,color:"#999"}}>{l.property} · {l.room} · {fmtS(l.rent||0)}/mo · Move-in {fmtD(l.moveIn)}</div>
+                  {l.signingLink&&<div style={{fontSize:10,color:"#3b82f6",marginTop:4,wordBreak:"break-all"}}>🔗 {l.signingLink}</div>}
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0,marginLeft:12}}>
+                  {l.status==="draft"&&<>
+                    <button className="btn btn-out btn-sm" onClick={()=>setLeaseForm({...l})}>✏ Edit</button>
+                    <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"signLease",leaseId:l.id,lease:l})}>✍ Sign & Send</button>
+                  </>}
+                  {l.status==="pending_tenant"&&<>
+                    <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");alert("Link copied!");}}>📋 Copy Link</button>
+                  </>}
+                  {l.status==="executed"&&<>
+                    <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"viewLease",lease:l})}>👁 View</button>
+                  </>}
+                  <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>confirmAction(`Delete lease for ${l.tenantName}?`,()=>deleteLease(l.id))}>✕</button>
+                </div>
+              </div>
+            </div>);
+          })}
+        </>}
+
+        {/* Template Editor */}
+        {leaseSubTab==="template"&&<>
+          <div className="card" style={{padding:16,marginBottom:14}}>
+            <h3 style={{fontSize:13,fontWeight:700,marginBottom:12}}>Default Lease Template Settings</h3>
+            <div className="fr">
+              <div className="fld"><label>Property Manager Name (on lease)</label>
+                <input value={template.landlordName||""} onChange={e=>setLeaseTemplate(p=>({...(p||template),landlordName:e.target.value}))} placeholder="Carolina Cooper"/>
+              </div>
+              <div className="fld"><label>Company Name</label>
+                <input value={template.company||""} onChange={e=>setLeaseTemplate(p=>({...(p||template),company:e.target.value}))} placeholder="Black Bear Properties"/>
+              </div>
+            </div>
+            <div className="fld"><label>Landlord Email</label>
+              <input type="email" value={template.landlordEmail||""} onChange={e=>setLeaseTemplate(p=>({...(p||template),landlordEmail:e.target.value}))} placeholder="info@rentblackbear.com"/>
+            </div>
+            <div style={{fontSize:10,color:"#999",marginTop:8}}>These defaults auto-fill every new lease. You can override per-lease in the lease editor.</div>
+          </div>
+
+          <div style={{fontSize:12,fontWeight:700,color:"#5c4a3a",marginBottom:10}}>Lease Sections — toggle active, require initials, edit content</div>
+          {(template.sections||DEF_LEASE_SECTIONS).map((sec,si)=>(
+            <div key={sec.id} className="card" style={{marginBottom:8,borderLeft:`3px solid ${sec.active!==false?"#d4a853":"rgba(0,0,0,.1)"}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,["lsec_"+sec.id]:!p["lsec_"+sec.id]}))}>
+                <span style={{fontSize:11,color:expanded["lsec_"+sec.id]?"#d4a853":"#999"}}>{expanded["lsec_"+sec.id]?"▾":"▸"}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:700,opacity:sec.active===false?.45:1}}>{sec.title}</div>
+                  <div style={{fontSize:9,color:"#999"}}>{sec.requiresInitials?"Initials required":"No initials"} · {sec.active===false?"Hidden":"Active"}</div>
+                </div>
+                <div style={{display:"flex",gap:6}} onClick={e=>e.stopPropagation()}>
+                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer"}}>
+                    <input type="checkbox" checked={sec.active!==false} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],active:e.target.checked};setLeaseTemplate(p=>({...(p||template),sections:secs}));}}/>Active
+                  </label>
+                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer"}}>
+                    <input type="checkbox" checked={!!sec.requiresInitials} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],requiresInitials:e.target.checked};setLeaseTemplate(p=>({...(p||template),sections:secs}));}}/>Initials
+                  </label>
+                </div>
+              </div>
+              {expanded["lsec_"+sec.id]&&<div style={{padding:"0 14px 14px"}}>
+                <div className="fld" style={{marginBottom:8}}><label>Section Title</label>
+                  <input value={sec.title} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],title:e.target.value};setLeaseTemplate(p=>({...(p||template),sections:secs}));}}/>
+                </div>
+                <div className="fld" style={{marginBottom:0}}><label>Content (HTML + {"{{VARIABLES}}"} supported)</label>
+                  <textarea value={sec.content||""} rows={5} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],content:e.target.value};setLeaseTemplate(p=>({...(p||template),sections:secs}));}} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"monospace",resize:"vertical"}}/>
+                </div>
+                <div style={{fontSize:9,color:"#bbb",marginTop:4}}>Variables: {"{{MONTHLY_RENT}} {{SECURITY_DEPOSIT}} {{LEASE_START}} {{LEASE_END}} {{PARKING_SPACE}} {{DOOR_CODE}} {{UTILITIES_CLAUSE}} {{LANDLORD_NAME}}"}</div>
+              </div>}
+            </div>
+          ))}
+          <button className="btn btn-gold" style={{marginTop:8}} onClick={()=>{save("hq-lease-template",template||{name:"Alabama Room Rental Agreement",landlordName:"Carolina Cooper",company:"Black Bear Properties",sections:DEF_LEASE_SECTIONS});alert("Template saved!");}}>💾 Save Template</button>
+        </>}
+
+        {/* Lease Form Modal */}
+        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:640,maxHeight:"90vh",overflowY:"auto"}}>
+          <h2>{leaseForm.id?"Edit Lease":"Create New Lease"}</h2>
+          <div style={{fontSize:11,color:"#999",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
+
+          <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8}}>PARTIES</div>
+            <div className="fr">
+              <div className="fld"><label>Tenant Name</label><input value={leaseForm.tenantName||""} onChange={e=>setLeaseForm(p=>({...p,tenantName:e.target.value}))}/></div>
+              <div className="fld"><label>Tenant Email</label><input type="email" value={leaseForm.tenantEmail||""} onChange={e=>setLeaseForm(p=>({...p,tenantEmail:e.target.value}))}/></div>
+            </div>
+            <div className="fr">
+              <div className="fld"><label>Tenant Phone</label><input value={leaseForm.tenantPhone||""} onChange={e=>setLeaseForm(p=>({...p,tenantPhone:e.target.value}))}/></div>
+              <div className="fld"><label>Property Manager (on lease)</label><input value={leaseForm.landlordName||"Carolina Cooper"} onChange={e=>setLeaseForm(p=>({...p,landlordName:e.target.value}))}/></div>
+            </div>
+          </div>
+
+          <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:12,marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#2d6a3f",marginBottom:8}}>PROPERTY</div>
+            <div className="fr">
+              <div className="fld"><label>Property</label>
+                <select value={leaseForm.property||""} onChange={e=>{const p2=props.find(p=>p.name===e.target.value);setLeaseForm(p=>({...p,property:e.target.value,propertyAddress:p2?.addr||"",utilitiesMode:p2?.utils||"allIncluded",utilitiesClause:p2?.utils==="allIncluded"?"PROPERTY MANAGER agrees to pay all utilities.":"PROPERTY MANAGER agrees to pay the first $100 of combined utilities per month. Any usage exceeding $100 shall be split equally among all residents."}));}}>
+                  <option value="">Select...</option>
+                  {props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="fld"><label>Room</label>
+                <select value={leaseForm.room||""} onChange={e=>{const prop=props.find(p=>p.name===leaseForm.property);const room=prop?.rooms.find(r=>r.name===e.target.value);setLeaseForm(p=>({...p,room:e.target.value,roomId:room?.id||"",rent:room?.rent||p.rent,sd:room?.rent||p.sd,parking:room?.parking||""}));}}>
+                  <option value="">Select...</option>
+                  {(props.find(p=>p.name===leaseForm.property)?.rooms||[]).map(r=><option key={r.id} value={r.name}>{r.name} — {fmtS(r.rent)}/mo</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="fld"><label>Property Address</label><input value={leaseForm.propertyAddress||""} onChange={e=>setLeaseForm(p=>({...p,propertyAddress:e.target.value}))}/></div>
+          </div>
+
+          <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8",marginBottom:8}}>LEASE TERMS</div>
+            <div className="fr3">
+              <div className="fld"><label>Monthly Rent ($)</label><input type="number" value={leaseForm.rent||""} onChange={e=>setLeaseForm(p=>({...p,rent:Number(e.target.value),sd:Number(e.target.value)}))}/></div>
+              <div className="fld"><label>Security Deposit ($)</label><input type="number" value={leaseForm.sd||""} onChange={e=>setLeaseForm(p=>({...p,sd:Number(e.target.value)}))}/></div>
+              <div className="fld"><label>Prorated Rent ($)</label><input type="number" value={leaseForm.proratedRent||""} onChange={e=>setLeaseForm(p=>({...p,proratedRent:Number(e.target.value)}))}/></div>
+            </div>
+            <div className="fr3">
+              <div className="fld"><label>Move-in Date</label><input type="date" value={leaseForm.moveIn||""} onChange={e=>setLeaseForm(p=>({...p,moveIn:e.target.value,leaseStart:e.target.value}))}/></div>
+              <div className="fld"><label>Lease Start</label><input type="date" value={leaseForm.leaseStart||""} onChange={e=>setLeaseForm(p=>({...p,leaseStart:e.target.value}))}/></div>
+              <div className="fld"><label>Lease End</label><input type="date" value={leaseForm.leaseEnd||""} onChange={e=>setLeaseForm(p=>({...p,leaseEnd:e.target.value}))}/></div>
+            </div>
+            <div className="fr">
+              <div className="fld"><label>Door Code</label><input value={leaseForm.doorCode||""} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value}))} placeholder="4-digit PIN from application"/></div>
+              <div className="fld"><label>Parking Space</label><input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value}))} placeholder="e.g. Space A1, Street parking"/></div>
+            </div>
+            <div className="fld"><label>Utilities Clause</label>
+              <textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+            </div>
+          </div>
+
+          <div className="fld"><label>Internal Notes</label><textarea value={leaseForm.notes||""} onChange={e=>setLeaseForm(p=>({...p,notes:e.target.value}))} placeholder="Notes for your records only — not on the lease" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
+
+          <div className="mft">
+            <button className="btn btn-out" onClick={()=>setLeaseForm(null)}>Cancel</button>
+            <button className="btn btn-gold" onClick={saveDraft}>💾 Save Draft</button>
+          </div>
+        </div></div>}
+
+        {/* Sign & Send modal */}
+        {modal?.type==="signLease"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}}>
+          <h2>Sign & Send Lease</h2>
+          <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>You sign first, then the lease is sent to <strong>{modal.lease.tenantEmail}</strong> for their signature.</p>
+          <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#2d6a3f",marginBottom:10}}>Your Signature — {modal.lease.landlordName||"Carolina Cooper"}</div>
+            <div style={{fontSize:10,color:"#999",marginBottom:8}}>Draw your signature below. This confirms you are legally executing this lease as the property manager.</div>
+            {modal.landlordSig
+              ?<div>
+                <img src={modal.landlordSig} alt="Your sig" style={{maxHeight:60,maxWidth:"100%",display:"block",marginBottom:8}}/>
+                <button className="btn btn-out btn-sm" onClick={()=>setModal(p=>({...p,landlordSig:null}))}>Re-sign</button>
+              </div>
+              :<SigCanvas onSave={(data)=>setModal(p=>({...p,landlordSig:data}))} height={100}/>
+            }
+          </div>
+          {modal.landlordSig&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:10,marginBottom:14,fontSize:11,color:"#9a7422"}}>
+            ✅ Signed. Clicking "Send to Tenant" will update the lease status and generate a unique signing link.
+          </div>}
+          <div className="mft">
+            <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+            <button className="btn btn-gold" disabled={!modal.landlordSig} onClick={async()=>{
+              if(!modal.landlordSig){return;}
+              const now=new Date().toISOString();
+              const token=uid()+uid();
+              const link=`${settings.siteUrl||"https://rentblackbear.com"}/lease?token=${token}`;
+              setLeases(p=>{const updated=p.map(l=>l.id===modal.leaseId?{...l,status:"pending_tenant",landlordSignature:modal.landlordSig,landlordSignedAt:now,signingToken:token,signingLink:link}:l);save("hq-leases",updated);return updated;});
+              setNotifs(p=>[{id:uid(),type:"lease",msg:`✍ Lease signed and sent to ${modal.lease.tenantEmail} — ${modal.lease.tenantName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+              setModal({type:"leaseSent",lease:modal.lease,link});
+            }}>✉ Sign & Send to Tenant</button>
+          </div>
+        </div></div>}
+
+        {/* Lease sent confirmation */}
+        {modal?.type==="leaseSent"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480,textAlign:"center"}}>
+          <div style={{fontSize:48,marginBottom:12}}>🎉</div>
+          <h2>Lease Sent!</h2>
+          <p style={{fontSize:13,color:"#5c4a3a",margin:"12px 0 20px",lineHeight:1.6}}>
+            The lease has been signed by you and a unique signing link has been generated for {modal.lease?.tenantEmail||"the tenant"}.
+          </p>
+          <div style={{background:"rgba(0,0,0,.03)",borderRadius:8,padding:"10px 14px",fontSize:11,color:"#5c4a3a",wordBreak:"break-all",marginBottom:16,textAlign:"left"}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#999",marginBottom:4}}>TENANT SIGNING LINK</div>
+            {modal.link}
+          </div>
+          <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+            <button className="btn btn-out" onClick={()=>{navigator.clipboard.writeText(modal.link||"");alert("Copied!");}}>📋 Copy Link</button>
+            <button className="btn btn-gold" onClick={()=>setModal(null)}>Done</button>
+          </div>
+        </div></div>}
+
+        {/* View executed lease */}
+        {modal?.type==="viewLease"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560,maxHeight:"90vh",overflowY:"auto"}}>
+          <h2>Executed Lease</h2>
+          <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            <div style={{flex:1,padding:"10px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,fontSize:11}}>
+              <div style={{color:"#999",marginBottom:2}}>Tenant</div><strong>{modal.lease.tenantName}</strong>
+            </div>
+            <div style={{flex:1,padding:"10px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,fontSize:11}}>
+              <div style={{color:"#999",marginBottom:2}}>Property</div><strong>{modal.lease.property} · {modal.lease.room}</strong>
+            </div>
+          </div>
+          <div className="tp-card"><h3>📋 Lease Summary</h3>
+            <div className="tp-row"><span className="tp-label">Rent</span><strong>{fmtS(modal.lease.rent||0)}/mo</strong></div>
+            <div className="tp-row"><span className="tp-label">Security Deposit</span><strong>{fmtS(modal.lease.sd||0)}</strong></div>
+            <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(modal.lease.moveIn)}</strong></div>
+            <div className="tp-row"><span className="tp-label">Lease End</span><strong>{fmtD(modal.lease.leaseEnd)}</strong></div>
+            <div className="tp-row"><span className="tp-label">Door Code</span><strong>{modal.lease.doorCode||"—"}</strong></div>
+            <div className="tp-row"><span className="tp-label">Parking</span><strong>{modal.lease.parking||"—"}</strong></div>
+          </div>
+          <div className="tp-card" style={{marginTop:10}}><h3>✍ Signatures</h3>
+            <div className="tp-row"><span className="tp-label">PM Signed</span><strong style={{color:"#4a7c59"}}>✓ {modal.lease.landlordSignedAt?new Date(modal.lease.landlordSignedAt).toLocaleDateString():"—"}</strong></div>
+            <div className="tp-row"><span className="tp-label">Tenant Signed</span><strong style={{color:"#4a7c59"}}>✓ {modal.lease.tenantSignedAt?new Date(modal.lease.tenantSignedAt).toLocaleDateString():"—"}</strong></div>
+            <div className="tp-row"><span className="tp-label">Executed</span><strong style={{color:"#4a7c59"}}>{modal.lease.executedAt?new Date(modal.lease.executedAt).toLocaleDateString():"—"}</strong></div>
+          </div>
+          {modal.lease.tenantSignature&&<div style={{marginTop:10}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:4}}>TENANT SIGNATURE</div>
+            <img src={modal.lease.tenantSignature} alt="Tenant sig" style={{maxHeight:60,border:"1px solid rgba(0,0,0,.06)",borderRadius:6,padding:4,background:"#fff"}}/>
+          </div>}
+          {modal.lease.landlordSignature&&<div style={{marginTop:10}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:4}}>PM SIGNATURE</div>
+            <img src={modal.lease.landlordSignature} alt="PM sig" style={{maxHeight:60,border:"1px solid rgba(0,0,0,.06)",borderRadius:6,padding:4,background:"#fff"}}/>
+          </div>}
+          <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
+        </div></div>}
+
+        </>);
+      })()}
 
       {/* ═══ DOCUMENTS ═══ */}
       {tab==="documents"&&<>
@@ -4465,9 +4889,32 @@ export default function Page(){
     const waived=a.waived||[];
     const incompleteReqs=reqs.filter(r=>!waived.includes(r.label)&&a[r.key]!=="passed"&&a[r.key]!=="verified");
     const convertToTenant=(roomId,propId)=>{
-      const mi=a.moveIn||TODAY.toISOString().split("T")[0];const le=new Date(mi+"T00:00:00");le.setFullYear(le.getFullYear()+1);
-      setProps(p=>p.map(pr=>pr.id===propId?{...pr,rooms:pr.rooms.map(rm=>rm.id===roomId?{...rm,st:"occupied",le:le.toISOString().split("T")[0],tenant:{name:a.name,email:a.email,phone:a.phone,moveIn:mi}}:rm)}:pr));
-      setApps(p=>p.filter(x=>x.id!==a.id));setNotifs(p=>[{id:uid(),type:"lease",msg:a.name+" converted to tenant",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);setModal(null);
+      const mi=a.termMoveIn||a.moveIn||TODAY.toISOString().split("T")[0];
+      const le=new Date(mi+"T00:00:00");le.setFullYear(le.getFullYear()+1);
+      const appDocs=(a.documents||[]).map(doc=>({
+        ...doc,
+        tenantRoomId:roomId,
+        tenant:a.name,
+        source:"application",
+        label:doc.label||doc.name,
+      }));
+      setProps(p=>p.map(pr=>pr.id===propId?{...pr,rooms:pr.rooms.map(rm=>rm.id===roomId?{...rm,
+        st:"occupied",
+        le:le.toISOString().split("T")[0],
+        tenant:{
+          name:a.name,email:a.email,phone:a.phone,moveIn:mi,
+          documents:appDocs,
+          applicationData:a.applicationData||null,
+          docsFlag:a.docsFlag||null,
+        }
+      }:rm)}:pr));
+      // Write application docs into hq-docs so tenant portal can see them
+      if(appDocs.length>0){
+        setDocs(prev=>{const updated=[...appDocs,...prev];save("hq-docs",updated);return updated;});
+      }
+      setApps(p=>p.filter(x=>x.id!==a.id));
+      setNotifs(p=>[{id:uid(),type:"lease",msg:`${a.name} converted to tenant — ${appDocs.length} doc(s) transferred`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+      setModal(null);
     };
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
@@ -4626,6 +5073,29 @@ export default function Page(){
             <div style={{flex:1}}><div style={{color:"#333"}}>{c.text}</div><div style={{color:"#999",fontSize:9}}>{c.date}{" "}{c.time}</div></div>
           </div>);})}</div>:<div style={{fontSize:10,color:"#ccc",textAlign:"center",padding:8}}>No communication logged</div>}
       </div>
+
+      {/* Documents from application */}
+      {((a.documents&&a.documents.length>0)||a.docsFlag)&&<div className="tp-card">
+        <h3>📎 Application Documents</h3>
+        {a.docsFlag&&<>
+          {!a.docsFlag.idUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.idUploadLater?"rgba(212,168,83,.06)":"rgba(196,92,74,.06)",color:a.docsFlag.idUploadLater?"#9a7422":"#c45c4a",marginBottom:4}}>
+            {a.docsFlag.idUploadLater?"⏳ Photo ID — will upload later":"⚠ Photo ID — not submitted"}
+          </div>}
+          {!a.docsFlag.incomeUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.incomeUploadLater?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",color:a.docsFlag.incomeUploadLater?"#9a7422":"#4a7c59",marginBottom:4}}>
+            {a.docsFlag.incomeUploadLater?"⏳ Proof of Income — will upload later":"ℹ Proof of Income — not submitted"}
+          </div>}
+        </>}
+        {(a.documents||[]).map((doc,i)=>(
+          <div key={doc.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+            <div>
+              <div style={{fontSize:12,fontWeight:600}}>{doc.label||doc.name}</div>
+              <div style={{fontSize:9,color:"#999"}}>{doc.name} · Uploaded {doc.uploaded}</div>
+            </div>
+            {doc.data&&<a href={doc.data} download={doc.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>⬇ Download</a>}
+          </div>
+        ))}
+        {(!a.documents||a.documents.length===0)&&<div style={{fontSize:11,color:"#999",fontStyle:"italic"}}>No files uploaded yet.</div>}
+      </div>}
 
       <div className="tp-card"><h3>📝 Notes</h3><textarea value={a.notes||""} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,notes:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,notes:e.target.value}}));}} placeholder="Internal notes..." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
 
