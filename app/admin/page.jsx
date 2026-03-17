@@ -563,7 +563,7 @@ const S=`
 .tp-card h3{font-size:14px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .tp-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.03);font-size:12px}
 .tp-row:last-child{border-bottom:none}
-.tp-label{color:#5c4a3a;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.tp-label{color:#3d3529;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
 
 /* Accounting */
 .acct-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
@@ -1279,7 +1279,7 @@ export default function Page(){
                     <div key={d.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                       <div>
                         <div style={{fontSize:12,fontWeight:700}}>{d.label||d.name}</div>
-                        <div style={{fontSize:10,color:"#999"}}>{d.source==="application"?"Application document":d.type==="addendum"?"Lease Addendum":"Document"} · {d.uploaded}</div>
+                        <div style={{fontSize:10,color:"#999"}}>{d.source==="application"?"Application document":d.type==="lease"?"Executed Lease Agreement":d.type==="addendum"?"Lease Addendum":"Document"} · {d.uploaded}</div>
                       </div>
                       <div style={{display:"flex",gap:4}}>
                         {d.data&&<a href={d.data} download={d.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>⬇ Download</a>}
@@ -5375,13 +5375,156 @@ export default function Page(){
             setNotifs(p=>[{id:uid(),type:"app",
               msg:`📨 Lease sent to ${a.name} — ${targetRoom.name} at ${targetProp?targetProp.name:a.property}`,
               date:now,read:false,urgent:true},...p]);
+
+            // Generate signing token + link for tenant
+            const propName=targetProp?targetProp.name:a.property;
+            const roomObj=targetRoom;
+            const bathType=roomObj?.pb?"Private bath":"Shared bath";
+            const sqft=roomObj?.sqft?roomObj.sqft+"sqft":"";
+            const sigToken=uid()+uid();
+            const sigLink=`${settings.siteUrl||"https://rentblackbear.com"}/lease?token=${sigToken}`;
+            const chargeRows=chargeList.map(c=>`${c.desc}: ${fmtS(c.amount)} — due ${fmtD(c.due)}`).join("\n");
+
+            // If a lease record exists for this app, stamp PM sig + token on it
+            const allLeases=await loadKey("hq-leases",[]);
+            const appLease2=allLeases.find(l=>l.applicationId===a.id&&l.status!=="executed");
+            if(appLease2){
+              const ul=allLeases.map(l=>l.id===appLease2.id?{
+                ...l,
+                status:"pending_tenant",
+                landlordSignature:modal.pmSig,
+                landlordSignedAt:now,
+                landlordName:settings.landlordName||settings.companyName||"Carolina Cooper",
+                signingToken:sigToken,
+                signingLink:sigLink,
+              }:l);
+              await saveKey("hq-leases",ul);
+            }
+
+            // Email tenant — doc ready to sign
             try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-              to:a.email,name:a.name,room:targetRoom.name,
-              property:targetProp?targetProp.name:a.property,
-              rent,moveIn:fmtD(termMoveIn),totalDue
-            })});}catch{}
-            setModal(null);
+              to:a.email,
+              name:a.name,
+              type:"tenant_lease_ready",
+              subject:`Your Lease is Ready to Sign — ${roomObj?.name} at ${propName}`,
+              signingLink:sigLink,
+              property:propName,
+              room:roomObj?.name,
+              rent:fmtS(rent),
+              moveIn:fmtD(termMoveIn),
+              totalDue:fmtS(totalDue),
+              landlordName:settings.landlordName||"Carolina Cooper",
+            })});}catch(e){console.error("Tenant email failed",e);}
+
+            // Email PM — full lease summary
+            try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+              to:settings.email||"info@rentblackbear.com",
+              name:settings.landlordName||"Harrison",
+              type:"pm_lease_sent",
+              subject:`✅ Lease Sent — ${a.name} · ${roomObj?.name} at ${propName}`,
+              tenantName:a.name,
+              tenantEmail:a.email,
+              tenantPhone:a.phone,
+              property:propName,
+              room:roomObj?.name,
+              bath:bathType,
+              sqft,
+              rent:fmtS(rent),
+              moveIn:fmtD(termMoveIn),
+              sd:fmtS(sdAmt),
+              sdDue:fmtD(sdDue),
+              structure,
+              totalDue:fmtS(totalDue),
+              chargeRows,
+              passcode:a.passcode||"Not set",
+              signingLink:sigLink,
+              pmSignedAt:now,
+            })});}catch(e){console.error("PM email failed",e);}
+
+            // Move to step 3 success screen
+            setModal(p=>({...p,step:3,sentAt:now,sentPropName:propName,sentRoom:roomObj?.name,sentBath:bathType,sigLink}));
           }}>✅ Sign & Send to Tenant</button>
+        </div>
+      </>}
+
+      {/* ── STEP 3: Success / Lease Summary ── */}
+      {step===3&&<>
+        <div style={{textAlign:"center",padding:"8px 0 20px"}}>
+          <div style={{fontSize:40,marginBottom:12}}>📨</div>
+          <h2 style={{margin:"0 0 6px"}}>Lease Sent!</h2>
+          <p style={{fontSize:12,color:"#5c4a3a"}}>
+            <strong>{a.name}</strong> will receive their lease link to sign. Charges generate automatically when they sign.
+          </p>
+          <div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:4}}>
+            ✓ You've been emailed a copy of this summary
+          </div>
+          <div style={{fontSize:10,color:"#5c4a3a",marginTop:4}}>
+            ✓ Tenant has been emailed their signing link
+          </div>
+          {modal.sigLink&&<div style={{marginTop:10,padding:"8px 12px",background:"rgba(59,130,246,.06)",border:"1px solid rgba(59,130,246,.15)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+            <div style={{fontSize:10,color:"#1d4ed8",wordBreak:"break-all",flex:1}}>{modal.sigLink}</div>
+            <button className="btn btn-out btn-sm" style={{fontSize:9,flexShrink:0}} onClick={()=>{navigator.clipboard.writeText(modal.sigLink);}} >📋 Copy</button>
+          </div>}
+        </div>
+
+        {/* Lease summary card */}
+        <div style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:10,overflow:"hidden",marginBottom:16}}>
+
+          {/* Header */}
+          <div style={{background:"#1a1714",padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontFamily:"serif",fontSize:15,color:"#f5f0e8",fontWeight:700}}>{modal.sentPropName||targetProp?.name}</div>
+            <span style={{fontSize:10,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Lease Sent</span>
+          </div>
+
+          {/* Tenant + room */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0,borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+            {[
+              ["Tenant",a.name],
+              ["Email",a.email],
+              ["Room",modal.sentRoom||targetRoom?.name],
+              ["Bath",modal.sentBath||(targetRoom?.pb?"Private":"Shared")],
+              ["Move-In",fmtD(termMoveIn)],
+              ["Monthly Rent",fmtS(rent)],
+              ["Door Code",a.passcode||"Not set"],
+              ["PM Signed",new Date().toLocaleDateString()],
+            ].map(([l,v],i)=>(
+              <div key={i} style={{padding:"9px 14px",borderBottom:"1px solid rgba(0,0,0,.05)",borderRight:i%2===0?"1px solid rgba(0,0,0,.05)":"none"}}>
+                <div style={{fontSize:9,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>{l}</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{v||"—"}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Charges — grouped */}
+          <div style={{padding:"12px 14px",borderBottom:"1px solid rgba(74,124,89,.1)",background:"rgba(74,124,89,.03)"}}>
+            <div style={{fontSize:9,fontWeight:800,color:"#2d6a3f",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Due Before Move-In</div>
+            {chargeList.filter(c=>c.due<=rentDue||c.cat==="Security Deposit").map((c,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                <div>
+                  <div style={{fontWeight:600,color:"#1a1714"}}>{c.desc}</div>
+                  <div style={{fontSize:10,color:"#4a7c59"}}>Due {fmtD(c.due)}</div>
+                </div>
+                <strong>{fmtS(c.amount)}</strong>
+              </div>
+            ))}
+            <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:13,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:6,paddingTop:6}}>
+              <span>Total before move-in</span><span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
+            </div>
+          </div>
+
+          {/* Following month if applicable */}
+          {!isFirstDay&&(structure==="prorated"||structure==="full")&&<div style={{padding:"12px 14px",background:"rgba(212,168,83,.03)"}}>
+            <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Following Month ({secondMonthLabel})</div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11}}>
+              <span style={{color:"#3d3529"}}>{structure==="prorated"?"Full rent begins":"Partial month rent"}</span>
+              <strong>{fmtS(structure==="prorated"?rent:proratedAmt)}</strong>
+            </div>
+          </div>}
+        </div>
+
+        <div className="mft">
+          <button className="btn btn-out" onClick={()=>setModal(null)}>Close</button>
+          <button className="btn btn-gold" onClick={()=>setModal({type:"app",data:{...a,status:"lease-sent"}})}>View Card →</button>
         </div>
       </>}
 
@@ -5405,6 +5548,7 @@ export default function Page(){
     const sc2=(x)=>{let s=50;if(x.income){const n=parseInt((x.income+"").replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(x.bgCheck==="passed")s+=15;if(x.creditScore&&x.creditScore!=="—"){const c=parseInt(x.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(x.refs==="verified")s+=10;return Math.min(s,100);};
     const score=sc2(a);
     const ds2=(d)=>{if(!d)return 0;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
+    const saveApp=(id,key,val)=>{setApps(p=>p.map(x=>x.id===id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
     const days=ds2(a.lastContact||a.submitted);
     const allVacant=props.flatMap(p=>p.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
     const targetProp=props.find(p=>p.name===a.property);
@@ -5466,12 +5610,45 @@ export default function Page(){
         background:f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",
         color:f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f"
       }}>{f.label}</div>)}</div>}
-      <div className="tp-card"><h3>👤 Applicant</h3><div className="tp-row"><span className="tp-label">Email</span><strong>{a.email}</strong></div><div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone}</strong></div><div className="tp-row"><span className="tp-label">Income</span><strong>{a.income||"—"}</strong></div>{a.source&&<div className="tp-row"><span className="tp-label">Source</span><strong>{a.source}</strong></div>}</div>
-      <div className="tp-card"><h3>🏠 Request</h3>
-        <div className="tp-row"><span className="tp-label">Property</span><strong>{a.property||"No preference"}</strong></div>
-        <div className="tp-row"><span className="tp-label">Bedroom</span><strong style={{color:a.room?"#1a1714":"#999"}}>{a.room||"No preference"}</strong></div>
-        <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)||"Flexible"}</strong></div>
+      {/* ── Editable Applicant Info ── */}
+      <div className="tp-card">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <h3 style={{margin:0}}>👤 Applicant Info</h3>
+          <span style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Editable — syncs to lease</span>
+        </div>
+        <div className="fr" style={{marginBottom:6}}>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>First Name</label>
+            <input value={(a.name||"").split(" ")[0]} onChange={e=>{const full=e.target.value+" "+((a.name||"").split(" ").slice(1).join(" "));saveApp(a.id,"name",full.trim());}} style={{width:"100%"}}/>
+          </div>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Last Name</label>
+            <input value={(a.name||"").split(" ").slice(1).join(" ")} onChange={e=>{const full=((a.name||"").split(" ")[0]||"")+" "+e.target.value;saveApp(a.id,"name",full.trim());}} style={{width:"100%"}}/>
+          </div>
+        </div>
+        <div className="fr" style={{marginBottom:6}}>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Email</label>
+            <input type="email" value={a.email||""} onChange={e=>saveApp(a.id,"email",e.target.value)} style={{width:"100%"}}/>
+          </div>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Phone</label>
+            <input type="tel" value={a.phone||""} onChange={e=>saveApp(a.id,"phone",e.target.value)} style={{width:"100%"}}/>
+          </div>
+        </div>
+        <div className="fr" style={{marginBottom:0}}>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Monthly Income</label>
+            <input value={a.income||""} onChange={e=>saveApp(a.id,"income",e.target.value)} placeholder="e.g. $4,500" style={{width:"100%"}}/>
+          </div>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Source</label>
+            <input value={a.source||""} onChange={e=>saveApp(a.id,"source",e.target.value)} placeholder="e.g. Zillow" style={{width:"100%"}}/>
+          </div>
+        </div>
       </div>
+
+
       {a.status==="reviewing"&&<div className="tp-card"><h3>📋 Review Checklist</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"not-started";return(
           <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1}}>
@@ -5481,8 +5658,8 @@ export default function Page(){
         {a.waiverReason&&<div style={{fontSize:10,color:"#999",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
       </div>}
 
-      {/* ── Room Assignment (Reviewing stage) ── */}
-      {a.status==="reviewing"&&(()=>{
+      {/* ── Room Assignment (all stages) ── */}
+      {(()=>{
         const allVacantRooms=props.flatMap(p=>p.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
         const termProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
         const termRoom=a.termRoomId?(termProp?termProp.rooms.find(r=>r.id===a.termRoomId):null):(termProp?termProp.rooms.find(r=>r.name===a.room):null);
@@ -5491,8 +5668,21 @@ export default function Page(){
         return(
         <div className="tp-card" style={{border:"2px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
           <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>🏠 Room Assignment</h3>
+          <div className="fr" style={{marginBottom:8,gap:8}}>
+            <div className="fld" style={{marginBottom:0}}>
+              <label>Property</label>
+              <select value={a.property||""} onChange={e=>{saveApp(a.id,"property",e.target.value);saveApp(a.id,"room","");saveApp(a.id,"termRoomId",null);saveApp(a.id,"termPropId",null);}} style={{width:"100%"}}>
+                <option value="">No preference</option>
+                {props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="fld" style={{marginBottom:0}}>
+              <label>Move-in Date</label>
+              <input type="date" value={a.termMoveIn||a.moveIn||""} onChange={e=>{saveApp(a.id,"moveIn",e.target.value);saveApp(a.id,"termMoveIn",e.target.value);}} style={{width:"100%"}}/>
+            </div>
+          </div>
           <div className="fld" style={{marginBottom:8}}>
-            <label>Assign Room <span style={{fontWeight:400,color:"#999",fontSize:9}}>Pre-filled from application — confirm or change</span></label>
+            <label>Assign Room <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Pre-filled from application — confirm or change</span></label>
             <select value={a.termRoomId||termRoom?.id||""} onChange={e=>{const r=allVacantRooms.find(x=>x.id===e.target.value);if(r){saveTerm("termRoomId",r.id);saveTerm("termPropId",r.propId);saveTerm("termRent",r.rent);saveTerm("termSD",r.rent);}}} style={{width:"100%"}}>
               {termRoom?<option value={termRoom.id}>{termRoom.name} at {termProp?.name} — {fmtS(termRent)}/mo</option>:<option value="">No matching vacant room — select one</option>}
               {allVacantRooms.filter(r=>r.id!==termRoom?.id).map(r=><option key={r.id} value={r.id}>{r.name} at {r.propName} — {fmtS(r.rent)}/mo</option>)}
@@ -5501,10 +5691,7 @@ export default function Page(){
           </div>
           <div className="fld" style={{marginBottom:0}}>
             <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span>Move-in Date <span style={{fontWeight:400,color:"#999",fontSize:9}}>Requested by tenant</span></span>
-              <button onClick={()=>saveTerm("termMoveInEditing",!a.termMoveInEditing)} style={{fontSize:9,fontWeight:700,color:"#d4a853",background:"none",border:"1px solid rgba(212,168,83,.3)",borderRadius:4,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>
-                {a.termMoveInEditing?"Lock":"Edit"}
-              </button>
+              <span>Confirmed Move-in Date</span>
             </label>
             {a.termMoveInEditing
               ?<input type="date" value={a.termMoveIn||a.moveIn||""} onChange={e=>saveTerm("termMoveIn",e.target.value)} autoFocus/>
@@ -5515,7 +5702,7 @@ export default function Page(){
             }
           </div>
           <div style={{marginTop:10,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
-            ⚙️ Rent structure, SD amount, risk level, and due dates are configured in the next step when you click <strong>Configure Charges &amp; Send Lease</strong>.
+            ⚙️ Rent structure, SD amount, risk level, and due dates are configured when you click <strong>Configure Charges &amp; Send Lease</strong>.
           </div>
         </div>);
       })()}
