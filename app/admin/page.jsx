@@ -5005,26 +5005,26 @@ export default function Page(){
         {/* Move-in Rent Structure */}
         <div className="fld" style={{marginBottom:12}}>
           <label style={{fontSize:11,fontWeight:700}}>Move-In Rent Structure</label>
-          {under15Days&&!isFirstDay&&<div style={{fontSize:10,color:"#d4a853",marginTop:2,marginBottom:6,fontWeight:600}}>⚡ Move-in is {daysRemaining} days into the month — recommending full first month's rent (prorated amount is minor).</div>}
-          {isFirstDay&&<div style={{fontSize:10,color:"#4a7c59",marginTop:2,marginBottom:6,fontWeight:600}}>✓ Move-in is the 1st — full month's rent applies.</div>}
+          {under15Days&&!isFirstDay&&<div style={{fontSize:10,color:"#d4a853",marginTop:2,marginBottom:6,fontWeight:600}}>⚡ Move-in is {daysRemaining} days into the month — recommending full first month.</div>}
+          {isFirstDay&&<div style={{fontSize:10,color:"#4a7c59",marginTop:2,marginBottom:6,fontWeight:600}}>✓ Move-in is the 1st — full month applies, no proration.</div>}
           <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:6}}>
             {(!isFirstDay?[
-              ["prorated","Prorated Only",fmtS(proratedAmt)+" due before move-in",daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+"/day. Full "+fmtS(rent)+" starts "+secondMonthLabel+"."],
-              ["full","Full Month Upfront",fmtS(rent)+" due before move-in",fmtS(proratedAmt)+" partial rent due "+secondMonthLabel+". Then full "+fmtS(rent)+" monthly after that."],
-              ["first-last","First + Last Month",fmtS(rent)+" first + "+fmtS(rent)+" last due before move-in",fmtS(proratedAmt)+" partial rent due "+secondMonthLabel+". Last month held for duration of lease."]
+              {val:"prorated",label:"Prorated Only",amt:fmtS(proratedAmt)+" due before move-in",desc:daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+Math.ceil(dailyRate)+"/day. Full "+fmtS(rent)+" starts "+secondMonthLabel+"."},
+              {val:"full",label:"Full Month Upfront",amt:fmtS(rent)+" due before move-in",desc:fmtS(proratedAmt)+" partial rent due "+secondMonthLabel+". Then "+fmtS(rent)+" monthly."},
+              {val:"first-last",label:"First + Last Month",amt:fmtS(rent)+" first + "+fmtS(rent)+" last due before move-in",desc:fmtS(proratedAmt)+" partial rent due "+secondMonthLabel+". Last month held for lease duration."}
             ]:[
-              ["full","Full First Month",fmtS(rent)+" due before move-in","Move-in on the 1st — no proration needed."]
-            ]).map(([val,label,amt,desc])=>(
-              <label key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:val}}))}
-                style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px",borderRadius:8,border:`2px solid ${structure===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:structure===val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer",width:"100%",boxSizing:"border-box",overflow:"hidden"}}>
-                <input type="radio" checked={structure===val} onChange={()=>{}} style={{flexShrink:0,marginTop:3,accentColor:"#4a7c59"}}/>
-                <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
-                  <div style={{fontSize:12,fontWeight:800,color:structure===val?"#2d6a3f":"#1a1714",marginBottom:2,wordBreak:"break-word"}}>{label}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:structure===val?"#4a7c59":"#3d3529",marginBottom:3,wordBreak:"break-word"}}>{amt}</div>
-                  <div style={{fontSize:10,color:"#777",lineHeight:1.5,wordBreak:"break-word"}}>{desc}</div>
+              {val:"full",label:"Full First Month",amt:fmtS(rent)+" due before move-in",desc:"Move-in on the 1st — no proration needed."}
+            ]).map(function(opt){return(
+              <div key={opt.val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:opt.val}}))}
+                style={{padding:"12px",borderRadius:8,border:"2px solid "+(structure===opt.val?"rgba(74,124,89,.4)":"rgba(0,0,0,.1)"),background:structure===opt.val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <input type="radio" readOnly checked={structure===opt.val} style={{accentColor:"#4a7c59",flexShrink:0}}/>
+                  <span style={{fontSize:12,fontWeight:800,color:structure===opt.val?"#2d6a3f":"#1a1714"}}>{opt.label}</span>
+                  <span style={{marginLeft:"auto",fontSize:12,fontWeight:700,color:structure===opt.val?"#4a7c59":"#3d3529",whiteSpace:"nowrap"}}>{opt.amt}</span>
                 </div>
-              </label>
-            ))}
+                <div style={{fontSize:10,color:"#666",paddingLeft:22,lineHeight:1.5}}>{opt.desc}</div>
+              </div>
+            );})}
           </div>
         </div>
 
