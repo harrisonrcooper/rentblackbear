@@ -84,7 +84,9 @@ export async function POST(request) {
     // ── TENANT: lease ready to sign ───────────────────────────────
     if (type === "tenant_lease_ready") {
       const { to, name, signingLink, property, room, rent, moveIn, totalDue,
-              chargeList, structure, proratedAmt, secondMonthLabel, isFirstDay, landlordName } = body;
+              chargeList, structure, proratedAmt, secondMonthLabel, isFirstDay, landlordName,
+              contactPhone } = body;
+      const phone = contactPhone || "(850) 696-8101";
       if (!to || !name) return Response.json({ ok: false, error: "Missing fields" }, { status: 400 });
       const firstName = name.split(" ")[0];
       const chargeBreakdown = buildChargeBreakdown(chargeList, structure, proratedAmt, secondMonthLabel, isFirstDay, rent);
@@ -135,7 +137,7 @@ export async function POST(request) {
             </div>
 
             <p style="font-size:13px;color:#5c4a3a;line-height:1.7;">
-              Questions? Reply to this email or call <strong>(850) 696-8101</strong>. We're excited to have you!
+              Questions? Reply to this email or call <strong>${phone}</strong>. We're excited to have you!
             </p>
           `),
         }),

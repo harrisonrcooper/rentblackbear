@@ -11,6 +11,21 @@ export async function POST(request) {
     const resendKey = process.env.RESEND_API_KEY;
     if (!resendKey) return Response.json({ ok: true, note: "No Resend key — email skipped" });
 
+    // Read PM settings for notification prefs + phone
+    const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://vxysaclhucdjxzcknoar.supabase.co";
+    const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
+    let pmSettings = {};
+    try {
+      const sr = await fetch(, {
+        headers: { apikey: SUPA_KEY, Authorization:  }
+      });
+      const sd = await sr.json();
+      pmSettings = sd?.[0]?.value || {};
+    } catch {}
+    const contactPhone = pmSettings.phone || "";
+    const pmEmail = pmSettings.email || "info@rentblackbear.com";
+    const notifLeaseSigned = pmSettings.notifLeaseSigned !== false;
+
     const fmtMoney = (n) => (n != null && !isNaN(Number(n))) ? `$${Number(n).toLocaleString()}` : "—";
 
     const header = `
@@ -123,7 +138,7 @@ export async function POST(request) {
             </div>
 
             <p style="font-size:13px;color:#5c4a3a;line-height:1.7;">
-              Questions? Reply to this email or call <strong>(850) 696-8101</strong>.
+              Questions? Reply to this email or call <strong></strong>.
             </p>
           `),
         }),
@@ -131,12 +146,14 @@ export async function POST(request) {
       return Response.json({ ok: true });
     }
 
-    // ── PM: lease signed notification ─────────────────────────────
+    // ── PM: lease signed notification (gated by notif prefs) ─────
+    if (!notifLeaseSigned) return Response.json({ ok: true, note: "PM notification disabled" });
     const { tenantName, tenantEmail, landlordEmail, property, room, rent, moveIn,
             leaseStart, leaseEnd, sd, proratedRent, executedAt,
             doorCode, chargesGenerated, chargeRows, totalDue } = body;
 
-    const pmEmail = landlordEmail || "info@rentblackbear.com";
+    // pmEmail already resolved from settings above, use landlordEmail if provided
+    const resolvedPmEmail = landlordEmail || pmEmail;
 
     await fetch("https://api.resend.com/emails", {
       method: "POST",

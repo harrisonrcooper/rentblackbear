@@ -215,7 +215,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(256) 555-0192",email:"info@rentblackbear.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals"};
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true};
 const DEF_THEME={bg:"#1a1714",card:"#2c2520",accent:"#d4a853",text:"#f5f0e8",muted:"#c4a882",surface:"#fefdfb",surfaceAlt:"#f5f0e8",green:"#4a7c59",dark:"#1a1714",warm:"#5c4a3a"};
 const THEME_LABELS={bg:"Background",card:"Card",accent:"Accent",text:"Light Text",muted:"Muted",surface:"Surface",surfaceAlt:"Alt Surface",green:"Green",dark:"Dark",warm:"Warm"};
 const PRESETS={"Warm Lodge":DEF_THEME,"Midnight":{bg:"#0f1729",card:"#1a2540",accent:"#3b82f6",text:"#e8ecf4",muted:"#8899b8",surface:"#fafbfe",surfaceAlt:"#eef2f9",green:"#22c55e",dark:"#0f1729",warm:"#64748b"},"Forest":{bg:"#1a2e1a",card:"#243524",accent:"#7cb342",text:"#e8f0e4",muted:"#a3b89a",surface:"#fafcf8",surfaceAlt:"#eef3ea",green:"#7cb342",dark:"#1a2e1a",warm:"#5a6b52"}};
@@ -3305,6 +3305,39 @@ export default function Page(){
           }
         </div></div>
 
+        {/* Email Notifications */}
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Email Notifications</h3>
+          <p style={{fontSize:11,color:"#999",marginBottom:14}}>Choose which events trigger an email to you at <strong>{settings.email||"info@rentblackbear.com"}</strong>. Tenant-facing emails always send regardless.</p>
+          {[
+            {key:"notifAppReceived",label:"New application received",desc:"When a tenant submits their application"},
+            {key:"notifLeaseSent",label:"Lease sent for signatures",desc:"When you send a lease to a tenant"},
+            {key:"notifLeaseSigned",label:"Tenant signs lease",desc:"When a tenant completes their e-signature"},
+            {key:"notifPaymentReceived",label:"Payment received",desc:"When a tenant makes a payment (SD, rent, prorated rent)"},
+            {key:"notifMaintenanceRequest",label:"Maintenance request",desc:"When a tenant submits a maintenance request"},
+          ].map(({key,label,desc})=>(
+            <div key={key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{label}</div>
+                <div style={{fontSize:10,color:"#999",marginTop:1}}>{desc}</div>
+              </div>
+              <button onClick={()=>setSettings(p=>{const u={...p,[key]:!p[key]};save("hq-settings",u);return u;})} style={{
+                flexShrink:0,marginLeft:12,width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",
+                background:settings[key]!==false?"#4a7c59":"rgba(0,0,0,.1)",
+                transition:"background .2s",position:"relative",
+              }}>
+                <div style={{
+                  position:"absolute",top:3,left:settings[key]!==false?22:3,width:18,height:18,borderRadius:"50%",
+                  background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"
+                }}/>
+              </button>
+            </div>
+          ))}
+          <div style={{marginTop:12,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:6,fontSize:11,color:"#9a7422"}}>
+            💡 Notification emails are sent to <strong>{settings.email||"info@rentblackbear.com"}</strong>. Update your email in Company Info above.
+          </div>
+        </div></div>
+
         <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Hero Section</h3>
           <div className="fld"><label>Tagline</label><input value={settings.tagline} onChange={e=>setSettings({...settings,tagline:e.target.value})}/></div>
@@ -5548,9 +5581,11 @@ export default function Page(){
               secondMonthLabel:secondMonthLabel,
               isFirstDay:isFirstDay,
               landlordName:settings.landlordName||"Carolina Cooper",
+              contactPhone:settings.phone||"(850) 696-8101",
             })});}catch(e){console.error("Tenant email failed",e);}
 
-            // Email PM — full lease summary
+            // Email PM — full lease summary (gated by notification prefs)
+            if(settings.notifLeaseSent!==false)
             try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
               to:settings.email||"info@rentblackbear.com",
               name:settings.landlordName||"Harrison",
@@ -5576,6 +5611,7 @@ export default function Page(){
               passcode:a.passcode||"Not set",
               signingLink:sigLink,
               pmSignedAt:now,
+              contactPhone:settings.phone||"(850) 696-8101",
             })});}catch(e){console.error("PM email failed",e);}
 
             // Move to step 3 success screen
