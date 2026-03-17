@@ -276,24 +276,61 @@ export default function LeaseSignPage() {
       } : l);
       await saveKey("hq-leases", updated);
 
-      // Write leaseSigned + confirmed passcode back to the applicant record
+      // Generate charges + move to onboarding when tenant signs
       if (lease.applicationId) {
         const apps = await loadKey("hq-apps", []);
+        const signingApp = apps.find(a => a.id === lease.applicationId);
+        const cfg = signingApp?.chargeConfig || null;
+        const todayStr = now.split("T")[0];
+
+        // Auto-generate charges from chargeConfig set during lease send
+        let generatedCharges = [];
+        if (cfg && cfg.charges && cfg.charges.length > 0) {
+          const uid = () => Math.random().toString(36).slice(2);
+          generatedCharges = cfg.charges.map(c => ({
+            id: uid(),
+            roomId: signingApp?.room || lease.room,
+            tenantName: lease.tenantName,
+            propName: lease.property,
+            roomName: lease.room,
+            category: c.cat,
+            desc: c.desc,
+            amount: c.amount,
+            amountPaid: 0,
+            dueDate: c.due,
+            createdDate: todayStr,
+            payments: [],
+            waived: false,
+            noLateFee: true,
+            notes: "Auto-generated on lease signing — " + fullDate
+          }));
+          const existingCharges = await loadKey("hq-charges", []);
+          await saveKey("hq-charges", [...generatedCharges, ...existingCharges]);
+        }
+
         const updatedApps = apps.map(a => a.id === lease.applicationId ? {
           ...a,
+          status: "onboarding",
           leaseSigned: true,
           leaseSignedAt: now,
           leaseId: lease.id,
           passcode: doorCode,
-          lastContact: now.split("T")[0],
+          lastContact: todayStr,
+          chargeConfig: cfg ? { ...cfg, generatedAt: now } : null,
           history: [...(a.history || []), {
             from: a.status,
-            to: a.status,
-            date: now.split("T")[0],
-            note: `Lease signed by tenant on ${fullDate}. Door code confirmed: ${doorCode}`
+            to: "onboarding",
+            date: todayStr,
+            note: `Lease signed on ${fullDate}. ${generatedCharges.length} charge(s) auto-generated. Door code: ${doorCode}`
           }]
         } : a);
         await saveKey("hq-apps", updatedApps);
+
+        // Store generated charges on lease record for done screen
+        const leases2 = await loadKey("hq-leases", []);
+        const withCharges = leases2.map(l => l.id === lease.id ? { ...l, generatedCharges } : l);
+        await saveKey("hq-leases", withCharges);
+        setLease(prev => ({ ...prev, generatedCharges }));
       }
 
       // Notify admin bell
@@ -383,6 +420,27 @@ export default function LeaseSignPage() {
             <div className="done-row" style={{ color: "#c4a882" }}><span>Door Code</span><strong style={{ color: "#d4a853", fontFamily: "monospace", letterSpacing: 4 }}>{lease.doorCode || doorCode || "—"}</strong></div>
             <div className="done-row" style={{ color: "#c4a882" }}><span>Executed</span><strong style={{ color: "#4a7c59" }}>{new Date(lease.executedAt).toLocaleDateString()}</strong></div>
           </div>
+
+          {/* Generated charges */}
+          {lease.generatedCharges && lease.generatedCharges.length > 0 && (
+            <div style={{ maxWidth: 400, margin: "20px auto 0", background: "rgba(74,124,89,.08)", border: "1px solid rgba(74,124,89,.2)", borderRadius: 12, padding: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#4a7c59", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>✓ Charges Added to Your Account</div>
+              {lease.generatedCharges.map((c, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.08)", fontSize: 12, color: "#c4a882" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: "#f5f0e8" }}>{c.desc}</div>
+                    <div style={{ fontSize: 10, color: "#8a7a68" }}>Due: {c.dueDate}</div>
+                  </div>
+                  <strong style={{ color: "#d4a853" }}>${c.amount?.toLocaleString()}</strong>
+                </div>
+              ))}
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontWeight: 800, fontSize: 14, color: "#f5f0e8", borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 4 }}>
+                <span>Total Due</span>
+                <span style={{ color: "#d4a853" }}>${lease.generatedCharges.reduce((s, c) => s + c.amount, 0).toLocaleString()}</span>
+              </div>
+              <div style={{ fontSize: 10, color: "#8a7a68", marginTop: 8, textAlign: "center" }}>Log in to your tenant portal to view and pay your balance.</div>
+            </div>
+          )}
         </div>
       </div>
     </div></>

@@ -1622,10 +1622,10 @@ export default function Page(){
 
       {/* ═══ APPLICATIONS ═══ */}
       {tab==="applications"&&(()=>{
-        const STAGES=["pre-screened","called","invited","applied","reviewing","onboarding"];
-        const SL={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","onboarding":"Onboarding","approved":"Onboarding","move-in":"Onboarding"};
-        const SC2={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","onboarding":"b-green","approved":"b-green","move-in":"b-green","denied":"b-red"};
-        const SI2={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","onboarding":"🏠"};
+        const STAGES=["pre-screened","called","invited","applied","reviewing","lease-sent","onboarding"];
+        const SL={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","lease-sent":"Lease Sent","onboarding":"Onboarding","approved":"Onboarding","move-in":"Onboarding","denied":"Denied"};
+        const SC2={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","lease-sent":"b-gold","onboarding":"b-green","approved":"b-green","move-in":"b-green","denied":"b-red"};
+        const SI2={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","lease-sent":"📨","onboarding":"🏠"};
         const moveApp=(id,ns)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));};
         const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
         const scoreApp=(a)=>{
@@ -1695,7 +1695,7 @@ export default function Page(){
           if(monthFilter!=="all"&&!(a.submitted||"").startsWith(monthFilter))return false;
           return true;
         });
-        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in","onboarding"].includes(a.status));
+        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in","onboarding","lease-sent"].includes(a.status));
         // Duplicate / returning detection
         const allTenantsList=props.flatMap(p=>p.rooms.filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
         const archiveList=archive.map(a=>({name:a.name||"",email:a.email||"",phone:a.phone||"",propName:a.propName,roomName:a.roomName,reason:a.reason,type:"past"}));
@@ -1840,9 +1840,11 @@ export default function Page(){
         {/* Pipeline */}
         {appView==="pipeline"&&<div className="pipeline" style={{gridTemplateColumns:"repeat(6,1fr)"}}>
           {STAGES.map(function(stage,si){
-            // Onboarding column shows both "approved", "onboarding", and "move-in" statuses
+            // Onboarding column shows "onboarding" and "move-in"; lease-sent shows "lease-sent" only
             var sa=stage==="onboarding"
               ?activeApps.filter(function(a){return["approved","onboarding","move-in"].includes(a.status);})
+              :stage==="lease-sent"
+              ?activeApps.filter(function(a){return a.status==="lease-sent";})
               :activeApps.filter(function(a){return a.status===stage;});
             return(
             <div key={stage} className="pipe-col">
@@ -1850,7 +1852,7 @@ export default function Page(){
               <div className="pipe-bd">
                 {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){
                   var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=["pre-screened","called"].includes(a.status);
-                  var isOnboarding=["approved","onboarding","move-in"].includes(a.status);
+                  var isOnboarding=["approved","onboarding","move-in"].includes(a.status);var isLeaseSent=a.status==="lease-sent";
                   var prog=isOnboarding?getOnboardingProgress(a):null;
                   return(
                   <div key={a.id} className="pipe-card" style={{
@@ -4860,173 +4862,284 @@ export default function Page(){
       <div className="mft" style={{marginTop:10}}><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button></div>
     </div></div>);})()}
 
-  {/* Approval Confirmation Modal — double confirm + auto-charges */}
-  {modal&&modal.type==="approveConfirm"&&(()=>{const a=modal.data;
+  {/* ── Approval Modal: Step 1 = Charge Config, Step 2 = Review & Send ── */}
+  {modal&&modal.type==="approveConfirm"&&(()=>{
+    const a=modal.data;
     const incReqs=modal.incompleteReqs||[];
+    const step=modal.step||1;
+
+    // Resolve property/room
     const targetProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
     const targetRoom=a.termRoomId?(targetProp?targetProp.rooms.find(r=>r.id===a.termRoomId):null):(targetProp?targetProp.rooms.find(r=>r.name===a.room):null);
     const rent=a.termRent!==undefined?a.termRent:(targetRoom?targetRoom.rent:0);
-    const termSD=a.termSD!==undefined?a.termSD:rent;
+    const defaultSD=a.termSD!==undefined?a.termSD:rent;
     const termMoveIn=a.termMoveIn||a.moveIn||TODAY.toISOString().split("T")[0];
-    const termHighRisk=a.termHighRisk||false;
     const existingLeases=targetRoom&&targetRoom.st==="occupied"?[{tenant:(targetRoom.tenant&&targetRoom.tenant.name)||"Unknown",leaseEnd:targetRoom.le}]:[];
     const leaseOverlap=existingLeases.length>0;
-
-    const moveInD=new Date(termMoveIn+"T00:00:00");
-    const moveInDay=moveInD.getDate();
-    const calDaysInMonth=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,0).getDate();
-    const daysRemaining=calDaysInMonth-moveInDay+1;
-    const dailyRate=rent/30;
-    const proratedAmt=Math.ceil(dailyRate*daysRemaining);
-    const isFirstDay=moveInDay===1;
-    const termProrate=a.termProrate||"prorated";
-    const dayBefore=new Date(moveInD);dayBefore.setDate(dayBefore.getDate()-1);
-    const firstDueDate=dayBefore>=TODAY?dayBefore.toISOString().split("T")[0]:termMoveIn;
-
-    const chargeList=[];
-    chargeList.push({cat:"Security Deposit",desc:"Security Deposit",amount:termSD,due:TODAY.toISOString().split("T")[0]});
-    if(isFirstDay||termProrate==="full"){
-      chargeList.push({cat:"Rent",desc:`First Month's Rent — ${moveInD.toLocaleString("default",{month:"long",year:"numeric"})}`,amount:rent,due:firstDueDate});
-    } else {
-      chargeList.push({cat:"Rent",desc:`Prorated Rent (${daysRemaining} days × $${Math.ceil(dailyRate)})`,amount:proratedAmt,due:firstDueDate});
-    }
-    if(termHighRisk)chargeList.push({cat:"Rent",desc:"Last Month's Rent (high-risk hold)",amount:rent,due:firstDueDate});
-    const totalDue=chargeList.reduce((s,c)=>s+c.amount,0);
-
     const hasWarnings=incReqs.length>0||leaseOverlap;
 
+    // Proration math
+    const moveInD=new Date(termMoveIn+"T00:00:00");
+    const moveInDay=moveInD.getDate();
+    const daysInMonth=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,0).getDate();
+    const daysRemaining=daysInMonth-moveInDay+1;
+    const dailyRate=Math.ceil(rent/30);
+    const proratedAmt=dailyRate*daysRemaining;
+    const isFirstDay=moveInDay===1;
+    const under15Days=daysRemaining<=15;
+    const dayBefore=new Date(moveInD);dayBefore.setDate(dayBefore.getDate()-1);
+    const defaultDueDate=dayBefore>=TODAY?dayBefore.toISOString().split("T")[0]:termMoveIn;
+
+    // Config state from modal (Step 1 editable fields)
+    const cfg=modal.cfg||{};
+    const riskLevel=cfg.riskLevel||"standard";
+    const sdAmt=cfg.sdAmt!==undefined?cfg.sdAmt:defaultSD;
+    // structure: "prorated" | "full" | "first-last"
+    // Auto-suggest: if move-in is in first 15 days of remaining month, default to "full" (prorated amount is minor, charge full)
+    const defaultStructure=isFirstDay?"full":under15Days?"full":"prorated";
+    const structure=cfg.structure||defaultStructure;
+    const sdDue=cfg.sdDue||TODAY.toISOString().split("T")[0];
+    const rentDue=cfg.rentDue||defaultDueDate;
+    // Payment plan for last month's rent
+    const lastMonthPlan=cfg.lastMonthPlan||"upfront"; // "upfront" | "installments"
+    const installmentCount=cfg.installmentCount||3;
+    const installmentStartDue=cfg.installmentStartDue||defaultDueDate;
+
+    // Build charge preview
+    const buildCharges=()=>{
+      const now=TODAY.toISOString().split("T")[0];
+      const list=[];
+      list.push({cat:"Security Deposit",desc:"Security Deposit",amount:sdAmt,due:sdDue,note:"Due upon lease signing to secure the room."});
+      if(isFirstDay||structure==="full"||structure==="first-last"){
+        list.push({cat:"Rent",desc:"First Month's Rent — "+moveInD.toLocaleString("default",{month:"long",year:"numeric"}),amount:rent,due:rentDue,note:"Due before move-in."});
+      } else {
+        list.push({cat:"Rent",desc:"Prorated Rent ("+daysRemaining+" days × $"+dailyRate+")",amount:proratedAmt,due:rentDue,note:"Due before move-in. Full rent begins next month."});
+      }
+      if(structure==="first-last"||riskLevel==="high"){
+        if(lastMonthPlan==="upfront"){
+          list.push({cat:"Rent",desc:"Last Month's Rent — "+((riskLevel==="high")?"High-Risk Hold":"Prepaid"),amount:rent,due:rentDue,note:"Held and applied to final month."});
+        } else {
+          for(let i=0;i<installmentCount;i++){
+            const d=new Date(installmentStartDue+"T00:00:00");
+            d.setMonth(d.getMonth()+i);
+            list.push({cat:"Rent",desc:"Last Month Installment "+(i+1)+" of "+installmentCount,amount:Math.ceil(rent/installmentCount),due:d.toISOString().split("T")[0],note:"Installment payment toward last month."});
+          }
+        }
+      }
+      return list;
+    };
+    const chargeList=buildCharges();
+    const totalDue=chargeList.reduce((s,c)=>s+c.amount,0);
+
+    // Step 1 validation
+    const step1Errors=modal.step1Errors||{};
+
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:540}}>
 
-      {/* ── Step 1: Review & confirm lease terms ── */}
-      {!modal.confirmed?<>
-        <h2>Approve {a.name}?</h2>
-        <p style={{fontSize:12,color:"#5c4a3a",marginBottom:14}}>Review the lease terms and any warnings below before approving. This will send them an approval email and text.</p>
-
-        {/* Warnings */}
-        {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:12,marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:8}}>⚠ Warnings — review before proceeding</div>
-          {incReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:"#9a7422",padding:"3px 0",borderBottom:"1px solid rgba(212,168,83,.12)"}}>
-            <span style={{width:6,height:6,borderRadius:"50%",background:"#d4a853",flexShrink:0,display:"inline-block"}}/>
-            <strong>{r.label}</strong> is still pending — not yet completed
-          </div>)}
-          {leaseOverlap&&<div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,color:"#c45c4a",padding:"3px 0",fontWeight:700}}>
-            <span style={{width:6,height:6,borderRadius:"50%",background:"#c45c4a",flexShrink:0,display:"inline-block"}}/>
-            Lease overlap — {existingLeases[0].tenant} is currently in this room (lease ends {fmtD(existingLeases[0].leaseEnd)})
-          </div>}
-          <div style={{marginTop:8,fontSize:10,color:"#9a7422",fontStyle:"italic"}}>You can still approve — but you'll need to confirm once more on the next screen.</div>
-        </div>}
-
-        {/* Lease terms */}
-        <div className="tp-card" style={{marginBottom:10}}>
-          <h3>Lease Terms</h3>
-          <div className="tp-row"><span className="tp-label">Tenant</span><strong>{a.name}</strong></div>
-          <div className="tp-row"><span className="tp-label">Email</span><span style={{fontSize:11}}>{a.email}</span></div>
-          <div className="tp-row"><span className="tp-label">Phone</span><span style={{fontSize:11}}>{a.phone}</span></div>
-          <div className="tp-row"><span className="tp-label">Room</span><strong style={{color:!targetRoom?"#c45c4a":"inherit"}}>{targetRoom?targetRoom.name:a.room||"⚠ Not set"}</strong></div>
-          <div className="tp-row"><span className="tp-label">Property</span><strong>{targetProp?targetProp.name:a.property||"—"}</strong></div>
-          <div className="tp-row"><span className="tp-label">Monthly Rent</span><strong style={{color:"#4a7c59"}}>{fmtS(rent)}/mo</strong></div>
-          <div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(termMoveIn)}</strong></div>
-          <div className="tp-row"><span className="tp-label">Security Deposit</span><strong>{fmtS(termSD)}</strong></div>
-          <div className="tp-row"><span className="tp-label">Risk Level</span><strong>{termHighRisk?"⚠ High Risk — last month held":"Standard"}</strong></div>
+      {/* ── STEP 1: Configure Charges ── */}
+      {step===1&&<>
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Step 1 of 2</div>
+          <h2 style={{margin:0}}>⚙️ Configure Charges</h2>
+          <p style={{fontSize:12,color:"#5c4a3a",marginTop:4}}>Set the charge structure before sending the lease to <strong>{a.name}</strong>. Charges will generate automatically when they sign.</p>
         </div>
 
-        {/* Move-in charges */}
-        <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:14,marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#4a7c59",marginBottom:8}}>Move-In Charges (auto-generated)</div>
-          {chargeList.map((c,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12,gap:12}}>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:600}}>{c.desc}</div>
-                <div style={{fontSize:9,color:"#999"}}>Due: <input type="date" value={modal.dueDates?.[i]||c.due} onChange={e=>{const dd=[...(modal.dueDates||chargeList.map(x=>x.due))];dd[i]=e.target.value;setModal(prev=>({...prev,dueDates:dd}));}} style={{fontSize:9,padding:"1px 4px",borderRadius:3,border:"1px solid rgba(0,0,0,.1)",fontFamily:"inherit"}}/></div>
-              </div>
-              <strong>{fmtS(c.amount)}</strong>
-            </div>
+        {/* Warnings */}
+        {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:12,marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:6}}>⚠ Warnings — review before sending</div>
+          {incReqs.map((r,i)=><div key={i} style={{fontSize:11,color:"#9a7422",padding:"2px 0"}}>• <strong>{r.label}</strong> still pending</div>)}
+          {leaseOverlap&&<div style={{fontSize:11,color:"#c45c4a",padding:"2px 0",fontWeight:700}}>• Lease overlap — {existingLeases[0].tenant} is in this room</div>}
+        </div>}
+
+        {/* Lease summary */}
+        <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:10,padding:"10px 14px",marginBottom:14,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+          {[["Tenant",a.name],["Room",targetRoom?targetRoom.name:a.room],["Property",targetProp?targetProp.name:a.property],["Move-in",fmtD(termMoveIn)],["Monthly Rent",fmtS(rent)],["Door Code",a.passcode||"Not set"]].map(([l,v])=>(
+            <div key={l} style={{fontSize:11}}><span style={{color:"#999"}}>{l}: </span><strong>{v}</strong></div>
           ))}
-          <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",fontWeight:800,fontSize:13,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:4}}>
-            <span>Total Move-In</span><span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
+        </div>
+
+        {/* Risk Level */}
+        <div className="fld" style={{marginBottom:12}}>
+          <label style={{fontSize:11,fontWeight:700}}>Risk Level</label>
+          <div style={{display:"flex",gap:8,marginTop:6}}>
+            {[["standard","✅ Standard","rgba(74,124,89,.08)","rgba(74,124,89,.4)","#2d6a3f"],["high","⚠️ High Risk","rgba(212,168,83,.08)","rgba(212,168,83,.4)","#9a7422"]].map(([val,label,bg,border,color])=>(
+              <button key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,riskLevel:val}}))}
+                style={{flex:1,padding:"10px",borderRadius:8,border:`2px solid ${riskLevel===val?border:"rgba(0,0,0,.08)"}`,background:riskLevel===val?bg:"#fff",fontWeight:700,fontSize:12,color:riskLevel===val?color:"#999",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div style={{fontSize:10,color:"#999",marginTop:4}}>High risk automatically adds last month's rent hold.</div>
+        </div>
+
+        {/* Security Deposit */}
+        <div className="fr" style={{marginBottom:12}}>
+          <div className="fld">
+            <label style={{fontSize:11,fontWeight:700}}>Security Deposit Amount</label>
+            <input type="number" value={sdAmt} onChange={e=>setModal(p=>({...p,cfg:{...cfg,sdAmt:Number(e.target.value)}}))}
+              style={{border:`1px solid ${step1Errors.sdAmt?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:6,padding:"8px 10px",fontSize:13,width:"100%",fontFamily:"inherit"}}/>
+            {step1Errors.sdAmt&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>{step1Errors.sdAmt}</div>}
+          </div>
+          <div className="fld">
+            <label style={{fontSize:11,fontWeight:700}}>SD Due Date</label>
+            <input type="date" value={sdDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,sdDue:e.target.value}}))}
+              style={{border:`1px solid ${step1Errors.sdDue?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:6,padding:"8px 10px",fontSize:13,width:"100%",fontFamily:"inherit"}}/>
+            {step1Errors.sdDue&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>{step1Errors.sdDue}</div>}
+            <div style={{fontSize:9,color:"#999",marginTop:2}}>SD is due upon lease signing to secure the room.</div>
           </div>
         </div>
 
-        {a.passcode&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:10,marginBottom:10,fontSize:11}}>
-          🔑 Door passcode <strong>{a.passcode}</strong> will activate at 12:00am on move-in day once rent is received.
+        {/* Move-in Rent Structure */}
+        <div className="fld" style={{marginBottom:12}}>
+          <label style={{fontSize:11,fontWeight:700}}>Move-In Rent Structure</label>
+          {under15Days&&!isFirstDay&&<div style={{fontSize:10,color:"#d4a853",marginTop:2,marginBottom:6,fontWeight:600}}>⚡ Move-in is {daysRemaining} days into the month — recommending full first month's rent (prorated amount is minor).</div>}
+          {isFirstDay&&<div style={{fontSize:10,color:"#4a7c59",marginTop:2,marginBottom:6,fontWeight:600}}>✓ Move-in is the 1st — full month's rent applies.</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:6}}>
+            {(!isFirstDay?[["prorated","Prorated Rent","Charge only the prorated days ("+daysRemaining+" days = "+fmtS(proratedAmt)+"). Second month is full rent."],["full","Full First Month","Charge full month's rent ("+fmtS(rent)+") regardless of move-in date."],["first-last","First + Last Month","Collect full first month ("+fmtS(rent)+") plus last month's rent ("+fmtS(rent)+") now."]]
+            :[["full","Full First Month","Move-in on the 1st — full month's rent ("+fmtS(rent)+")."]]).map(([val,label,desc])=>(
+              <label key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:val}}))}
+                style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${structure===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:structure===val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer"}}>
+                <input type="radio" checked={structure===val} onChange={()=>{}} style={{marginTop:2,accentColor:"#4a7c59"}}/>
+                <div><div style={{fontSize:12,fontWeight:700,color:structure===val?"#2d6a3f":"#1a1714"}}>{label}</div><div style={{fontSize:10,color:"#999",marginTop:1}}>{desc}</div></div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Last Month Payment Plan — only if first-last or high risk */}
+        {(structure==="first-last"||riskLevel==="high")&&<div className="fld" style={{marginBottom:12}}>
+          <label style={{fontSize:11,fontWeight:700}}>Last Month's Rent — Payment Plan</label>
+          <div style={{display:"flex",gap:8,marginTop:6}}>
+            {[["upfront","Pay Upfront"],["installments","Installment Plan"]].map(([val,label])=>(
+              <button key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,lastMonthPlan:val}}))}
+                style={{flex:1,padding:"9px",borderRadius:8,border:`2px solid ${lastMonthPlan===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:lastMonthPlan===val?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:12,color:lastMonthPlan===val?"#2d6a3f":"#999",cursor:"pointer",fontFamily:"inherit"}}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {lastMonthPlan==="installments"&&<div style={{marginTop:8,display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div className="fld">
+              <label style={{fontSize:10}}>Number of Installments</label>
+              <select value={installmentCount} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentCount:Number(e.target.value)}}))}
+                style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}>
+                {[2,3,4,6].map(n=><option key={n} value={n}>{n} payments of {fmtS(Math.ceil(rent/n))}</option>)}
+              </select>
+            </div>
+            <div className="fld">
+              <label style={{fontSize:10}}>First Installment Due</label>
+              <input type="date" value={installmentStartDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentStartDue:e.target.value}}))}
+                style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}/>
+            </div>
+          </div>}
         </div>}
 
-        {/* Require waiver note when approving with pending items */}
-        {incReqs.length>0&&<div className="fld" style={{marginBottom:10}}>
+        {/* Rent Due Date */}
+        <div className="fld" style={{marginBottom:14}}>
+          <label style={{fontSize:11,fontWeight:700}}>Move-In Rent Due Date</label>
+          <input type="date" value={rentDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,rentDue:e.target.value}}))}
+            style={{border:`1px solid ${step1Errors.rentDue?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:6,padding:"8px 10px",fontSize:13,width:"100%",fontFamily:"inherit"}}/>
+          {step1Errors.rentDue&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>{step1Errors.rentDue}</div>}
+          <div style={{fontSize:9,color:"#999",marginTop:2}}>Must be received before move-in day. Default is the day before.</div>
+        </div>
+
+        {/* Require bypass note if incomplete reqs */}
+        {incReqs.length>0&&<div className="fld" style={{marginBottom:12}}>
           <label style={{fontSize:10,fontWeight:700,color:"#9a7422"}}>Why are you approving with pending items? <span style={{color:"#c45c4a"}}>*</span></label>
-          <textarea value={modal.bypassNote||""} onChange={e=>setModal(prev=>({...prev,bypassNote:e.target.value}))} placeholder="e.g. NASA intern — employer verification accepted in lieu of BG check" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${modal.bypassNoteErr?"#c45c4a":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
-          {modal.bypassNoteErr&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2}}>Required — explain why you're proceeding</div>}
+          <textarea value={modal.bypassNote||""} onChange={e=>setModal(p=>({...p,bypassNote:e.target.value}))} placeholder="e.g. NASA intern — employer verification accepted in lieu of BG check" rows={2}
+            style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${modal.bypassNoteErr?"#c45c4a":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+          {modal.bypassNoteErr&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>Required — explain why you're proceeding with pending items</div>}
         </div>}
 
         <div className="mft">
           <button className="btn btn-out" onClick={()=>setModal({type:"app",data:a})}>← Back</button>
           <button className="btn btn-green" onClick={()=>{
-            if(incReqs.length>0&&!(modal.bypassNote||"").trim()){setModal(prev=>({...prev,bypassNoteErr:true}));return;}
-            setModal(prev=>({...prev,confirmed:true,bypassNoteErr:false}));
-          }}>
-            {hasWarnings?"Approve Anyway →":"Yes, Approve →"}
-          </button>
+            const errs={};
+            if(!sdAmt||sdAmt<=0)errs.sdAmt="Security deposit must be greater than $0";
+            if(!sdDue)errs.sdDue="SD due date is required";
+            if(!rentDue)errs.rentDue="Rent due date is required";
+            if(incReqs.length>0&&!(modal.bypassNote||"").trim()){setModal(p=>({...p,bypassNoteErr:true}));return;}
+            if(Object.keys(errs).length>0){setModal(p=>({...p,step1Errors:errs}));return;}
+            setModal(p=>({...p,step:2,step1Errors:{}}));
+          }}>Review Charges →</button>
+        </div>
+      </>}
+
+      {/* ── STEP 2: Review & Send Lease ── */}
+      {step===2&&<>
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Step 2 of 2</div>
+          <h2 style={{margin:0}}>📨 Review & Send Lease</h2>
+          <p style={{fontSize:12,color:"#5c4a3a",marginTop:4}}>These charges will be <strong>generated automatically</strong> when {a.name} signs their lease. Nothing is charged yet.</p>
         </div>
 
-      {/* ── Step 2: Final confirmation — restate everything including warnings ── */}
-      </>:<>
-        <h2 style={{textAlign:"center"}}>Final Confirmation</h2>
-        <p style={{fontSize:12,color:"#5c4a3a",textAlign:"center",marginBottom:14}}>This cannot be undone. An approval email and text will be sent to {a.name}.</p>
-
-        {/* Restate warnings on final screen */}
-        {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:12,marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:6}}>⚠ You are approving with outstanding items:</div>
-          {incReqs.map((r,i)=><div key={i} style={{fontSize:11,color:"#9a7422",padding:"2px 0"}}>• {r.label} still pending</div>)}
-          {leaseOverlap&&<div style={{fontSize:11,color:"#c45c4a",padding:"2px 0",fontWeight:700}}>• Lease overlap with {existingLeases[0].tenant}</div>}
+        {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:10,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:4}}>⚠ Sending with warnings:</div>
+          {incReqs.map((r,i)=><div key={i} style={{fontSize:11,color:"#9a7422",padding:"1px 0"}}>• {r.label} still pending</div>)}
+          {leaseOverlap&&<div style={{fontSize:11,color:"#c45c4a",fontWeight:700}}>• Lease overlap with {existingLeases[0].tenant}</div>}
         </div>}
 
-        <div style={{background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:16,marginBottom:14,textAlign:"center"}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#1a1714",marginBottom:6}}>{a.name}</div>
-          <div style={{fontSize:13,color:"#5c4a3a"}}>{targetRoom?targetRoom.name:a.room} · {targetProp?targetProp.name:a.property}</div>
-          <div style={{fontSize:16,fontWeight:800,color:"#4a7c59",marginTop:6}}>{fmtS(rent)}/mo</div>
-          <div style={{fontSize:11,color:"#999",marginTop:4}}>Move-in {fmtD(termMoveIn)} · {fmtS(totalDue)} total due at move-in</div>
-          <div style={{marginTop:10,fontSize:11,color:"#4a7c59",fontWeight:600}}>✉️ Approval email + text will be sent automatically</div>
+        {/* Charge list — read only preview */}
+        <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:14,marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#4a7c59",marginBottom:10}}>Charges generated on lease signing:</div>
+          {chargeList.map((c,i)=>(
+            <div key={i} style={{padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontWeight:600}}>{c.desc}</div>
+                <strong style={{color:"#1a1714"}}>{fmtS(c.amount)}</strong>
+              </div>
+              <div style={{fontSize:10,color:"#999",marginTop:2}}>Due: {fmtD(c.due)} · {c.note}</div>
+            </div>
+          ))}
+          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0 0",fontWeight:800,fontSize:14,borderTop:"2px solid rgba(74,124,89,.2)",marginTop:6}}>
+            <span>Total Due at Move-In</span><span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
+          </div>
+        </div>
+
+        <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:11}}>
+          <div style={{fontWeight:700,marginBottom:4,fontSize:12}}>What happens next:</div>
+          <div style={{color:"#5c4a3a",lineHeight:1.8}}>
+            1. App moves to <strong>Lease Sent</strong> — awaiting tenant signature<br/>
+            2. Tenant signs → charges auto-generate to their ledger<br/>
+            3. App moves to <strong>Onboarding</strong> automatically
+          </div>
         </div>
 
         <div className="mft">
-          <button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,confirmed:false}))}>← Go Back</button>
+          <button className="btn btn-out" onClick={()=>setModal(p=>({...p,step:1}))}>← Edit Charges</button>
           <button className="btn btn-green" onClick={async()=>{
             if(!targetRoom){alert("Room not found — check room assignment.");return;}
-            const roomId=targetRoom.id;
-            const propName=targetProp?targetProp.name:a.property;
             const now=TODAY.toISOString().split("T")[0];
-            const finalDues=modal.dueDates||chargeList.map(c=>c.due);
-            const newCharges=chargeList.map((c,i)=>({
-              id:uid(),roomId,tenantName:a.name,propName,roomName:targetRoom.name,
-              category:c.cat,desc:c.desc,amount:c.amount,amountPaid:0,
-              dueDate:finalDues[i]||c.due,createdDate:now,payments:[],waived:false,
-              noLateFee:true,notes:"Auto-generated on approval."
-            }));
-            setCharges(p=>{const updated=[...newCharges,...p];save("hq-charges",updated);return updated;});
+            const chargeConfig={
+              rent,sd:sdAmt,sdDue,rentDue,structure,riskLevel,
+              proratedDays:daysRemaining,proratedAmt,dailyRate,
+              lastMonthPlan,installmentCount,installmentStartDue,
+              generatedAt:null,charges:chargeList
+            };
             const passcode=a.passcode||null;
             const lockActivation=passcode?{passcode,activatesAt:`${termMoveIn}T00:00:00`,status:"pending"}:null;
             setApps(p=>p.map(x=>x.id===a.id?{...x,
-              status:"onboarding",lastContact:now,
-              property:propName,room:targetRoom.name,
-              highRisk:termHighRisk,lockActivation,
+              status:"lease-sent",lastContact:now,
+              property:targetProp?targetProp.name:a.property,
+              room:targetRoom.name,highRisk:riskLevel==="high",
+              chargeConfig,lockActivation,
               approvedWithPending:incReqs.length>0?(modal.bypassNote||incReqs.map(r=>r.label).join(", ")):null,
-              history:[...(x.history||[]),{from:"reviewing",to:"approved",date:now,
-                note:`Approved. ${fmtS(totalDue)} move-in charges generated.${incReqs.length>0?" Bypassed: "+incReqs.map(r=>r.label).join(", ")+(modal.bypassNote?" — "+modal.bypassNote:""):""}${leaseOverlap?" WARNING: lease overlap.":""}`}]
+              history:[...(x.history||[]),{from:"reviewing",to:"lease-sent",date:now,
+                note:`Lease sent. Charge config: ${structure}, ${fmtS(totalDue)} total on signing.${incReqs.length>0?" Bypassed: "+incReqs.map(r=>r.label).join(", "):""}`}]
             }:x));
             setNotifs(p=>[{id:uid(),type:"app",
-              msg:`✅ ${a.name} approved — ${targetRoom.name} at ${propName} · ${fmtS(totalDue)} due at move-in`,
+              msg:`📨 Lease sent to ${a.name} — ${targetRoom.name} at ${targetProp?targetProp.name:a.property}`,
               date:now,read:false,urgent:true},...p]);
-            // Send approval email
             try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-              to:a.email,name:a.name,
-              room:targetRoom.name,property:propName,
+              to:a.email,name:a.name,room:targetRoom.name,
+              property:targetProp?targetProp.name:a.property,
               rent,moveIn:fmtD(termMoveIn),totalDue
             })});}catch{}
             setModal(null);
-          }}>✅ Confirm & Approve</button>
+          }}>✅ Confirm & Send Lease</button>
         </div>
       </>}
+
     </div></div>);})()}
 
   {/* Deny Modal */}
@@ -5040,9 +5153,9 @@ export default function Page(){
   )}
 
   {modal&&modal.type==="app"&&(()=>{const a=modal.data;
-    const STAGES=["pre-screened","called","invited","applied","reviewing","onboarding"];
-    const SL2={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
-    const SI3={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
+    const STAGES=["pre-screened","called","invited","applied","reviewing","lease-sent","onboarding"];
+    const SL2={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","lease-sent":"Lease Sent","approved":"Onboarding","onboarding":"Onboarding","move-in":"Onboarding"};
+    const SI3={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","lease-sent":"📨","approved":"✅","onboarding":"🏠","move-in":"🏠"};
     const si=STAGES.indexOf(a.status);
     const sc2=(x)=>{let s=50;if(x.income){const n=parseInt((x.income+"").replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(x.bgCheck==="passed")s+=15;if(x.creditScore&&x.creditScore!=="—"){const c=parseInt(x.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(x.refs==="verified")s+=10;return Math.min(s,100);};
     const score=sc2(a);
@@ -5347,9 +5460,21 @@ export default function Page(){
             <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
           </div>}
           <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
-            ✅ {incompleteReqs.length>0?"Approve Anyway":"Approve"}
+            ⚙️ {incompleteReqs.length>0?"Configure & Send Lease Anyway":"Configure Charges & Send Lease"}
           </button>
         </>}
+        {a.status==="lease-sent"&&<div style={{width:"100%"}}>
+          <div style={{padding:"10px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,marginBottom:8,fontSize:11,color:"#9a7422",fontWeight:600,textAlign:"center"}}>
+            📨 Lease sent — awaiting tenant signature
+          </div>
+          {a.chargeConfig&&<div style={{padding:"10px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,fontSize:11,color:"#2d6a3f",marginBottom:8}}>
+            <div style={{fontWeight:700,marginBottom:4}}>Charges pending tenant signature:</div>
+            {(()=>{const cfg=a.chargeConfig;const items=[];items.push({l:"Security Deposit",v:cfg.sd});if(cfg.structure==="prorated")items.push({l:,v:cfg.proratedAmt});else items.push({l:"First Month Rent",v:cfg.rent});if(cfg.structure==="first-last")items.push({l:"Last Month Rent",v:cfg.rent});return items.map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between"}}><span>{it.l}</span><strong>{fmtS(it.v)}</strong></div>);})()}
+          </div>}
+          <button className="btn btn-out btn-sm" style={{width:"100%"}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs:[],step:1})}>
+            ✏️ Reconfigure Charges
+          </button>
+        </div>}
         {(a.status==="approved"||a.status==="onboarding")&&(()=>{
           const appCharges2=charges.filter(c=>c.tenantName===a.name&&["Security Deposit","Rent","Move-In Fee"].includes(c.category));
           const totalDue2=appCharges2.reduce((s,c)=>s+c.amount,0);
