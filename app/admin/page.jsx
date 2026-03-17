@@ -479,7 +479,7 @@ const S=`
 .mn{flex:1;overflow-y:auto;background:#f4f3f0;display:flex;flex-direction:column}
 .tbar{background:#fff;padding:14px 24px;border-bottom:1px solid rgba(0,0,0,.04);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
 .tbar h1{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
-.tbar-sub{font-size:10px;color:#999;margin-top:1px}
+.tbar-sub{font-size:10px;color:#5c4a3a;margin-top:1px}
 .cnt{padding:20px 24px;flex:1}
 
 /* Buttons */
@@ -497,7 +497,7 @@ const S=`
 .kpi{background:#fff;border-radius:12px;padding:16px;border:1px solid rgba(0,0,0,.03);cursor:pointer;transition:all .15s}
 .kpi:hover{border-color:rgba(212,168,83,.2);box-shadow:0 2px 12px rgba(0,0,0,.03)}
 .kpi.active{border-color:rgba(212,168,83,.3);box-shadow:0 2px 16px rgba(212,168,83,.08)}
-.kl{font-size:9px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
+.kl{font-size:9px;font-weight:700;color:#5c4a3a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
 .kv{font-size:24px;font-weight:800;line-height:1}.ks{font-size:10px;margin-top:3px}
 .kg{color:#4a7c59}.kw{color:#d4a853}.kb{color:#c45c4a}
 
@@ -510,7 +510,7 @@ const S=`
 .row{display:flex;align-items:center;padding:10px 16px;background:#fff;border-radius:8px;border:1px solid rgba(0,0,0,.03);margin-bottom:6px;gap:10px;transition:all .12s}
 .row:hover{border-color:rgba(212,168,83,.15)}
 .row-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.row-i{flex:1;min-width:0}.row-t{font-size:12px;font-weight:700}.row-s{font-size:10px;color:#999;margin-top:1px}
+.row-i{flex:1;min-width:0}.row-t{font-size:12px;font-weight:700}.row-s{font-size:10px;color:#5c4a3a;margin-top:1px}
 .row-v{font-size:14px;font-weight:800;text-align:right;min-width:60px}
 .badge{font-size:8px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:.3px}
 .b-green{background:rgba(74,124,89,.08);color:#4a7c59}
@@ -521,17 +521,17 @@ const S=`
 
 /* Section headers */
 .sec-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.sec-hd h2{font-size:15px;font-weight:800}.sec-hd p{font-size:10px;color:#999;margin-top:1px}
+.sec-hd h2{font-size:15px;font-weight:800}.sec-hd p{font-size:10px;color:#5c4a3a;margin-top:1px}
 
 /* Tables */
 .tbl{width:100%;border-collapse:separate;border-spacing:0}
-.tbl th{text-align:left;padding:10px 14px;font-size:9px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid rgba(0,0,0,.04)}
+.tbl th{text-align:left;padding:10px 14px;font-size:9px;font-weight:700;color:#5c4a3a;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid rgba(0,0,0,.04)}
 .tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(0,0,0,.03)}
 .tbl tr:hover td{background:rgba(212,168,83,.02)}
 
 /* Forms */
 .fld{margin-bottom:10px}
-.fld label{display:block;font-size:9px;font-weight:700;color:#999;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+.fld label{display:block;font-size:9px;font-weight:700;color:#5c4a3a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
 .fld input,.fld select,.fld textarea{width:100%;padding:8px 12px;border-radius:7px;border:1px solid rgba(0,0,0,.08);font-family:inherit;font-size:12px;outline:none;background:#faf9f7}
 .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:#d4a853}
 .fld textarea{resize:vertical;min-height:60px}
@@ -552,7 +552,7 @@ const S=`
 .pipeline{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;overflow-x:auto}
 .pipe-col{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,.03);overflow:hidden}
 .pipe-hd{padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.03);display:flex;justify-content:space-between;align-items:center}
-.pipe-hd h4{font-size:12px;font-weight:800}.pipe-cnt{font-size:10px;color:#999;background:rgba(0,0,0,.04);padding:1px 7px;border-radius:100px}
+.pipe-hd h4{font-size:12px;font-weight:800}.pipe-cnt{font-size:10px;color:#5c4a3a;background:rgba(0,0,0,.06);padding:1px 7px;border-radius:100px}
 .pipe-bd{padding:10px;min-height:100px}
 .pipe-card{padding:10px 10px 10px 30px;border-radius:8px;border:1px solid rgba(0,0,0,.07);margin-bottom:8px;cursor:pointer;transition:all .12s;position:relative}
 .pipe-card:hover{border-color:rgba(212,168,83,.3);box-shadow:0 2px 8px rgba(0,0,0,.06)}
@@ -563,7 +563,7 @@ const S=`
 .tp-card h3{font-size:14px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .tp-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.03);font-size:12px}
 .tp-row:last-child{border-bottom:none}
-.tp-label{color:#999;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
+.tp-label{color:#5c4a3a;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.3px}
 
 /* Accounting */
 .acct-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
@@ -5016,11 +5016,45 @@ export default function Page(){
           </div>
         </div>
 
-        {/* Move-in Rent Structure — PLACEHOLDER */}
+        {/* Move-in Rent Structure */}
         <div className="fld" style={{marginBottom:12}}>
-          <label style={{fontSize:11,fontWeight:700}}>Move-In Rent Structure</label>
-          <div style={{marginTop:6,padding:12,background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.08)",borderRadius:8,fontSize:11,color:"#999"}}>
-            Structure picker coming soon.
+          <label style={{fontSize:11,fontWeight:700,color:"#1a1714",textTransform:"none",letterSpacing:0}}>Move-In Rent Structure</label>
+          {under15Days&&!isFirstDay&&<div style={{fontSize:10,color:"#9a7422",fontWeight:600,margin:"4px 0 8px",padding:"6px 10px",background:"rgba(212,168,83,.08)",borderRadius:6}}>⚡ Only {daysRemaining} days left in the month — full month upfront is recommended.</div>}
+          {isFirstDay&&<div style={{fontSize:10,color:"#2d6a3f",fontWeight:600,margin:"4px 0 8px"}}>✓ Move-in is the 1st — full month, no proration needed.</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
+            {(!isFirstDay?[
+              {val:"prorated",title:"Prorated Only",line1:`${fmtS(proratedAmt)} due before move-in`,line2:`${daysRemaining} days × $${Math.ceil(dailyRate)}/day. Then full ${fmtS(rent)}/mo starting ${secondMonthLabel}.`},
+              {val:"full",title:"Full Month Upfront",line1:`${fmtS(rent)} due before move-in`,line2:`${fmtS(proratedAmt)} partial month due ${secondMonthLabel}, then full ${fmtS(rent)}/mo after.`},
+              {val:"first-last",title:"First + Last Month",line1:`${fmtS(rent)} first + ${fmtS(rent)} last due before move-in`,line2:`${fmtS(proratedAmt)} partial month due ${secondMonthLabel}. Last month held for lease duration.`}
+            ]:[
+              {val:"full",title:"Full First Month",line1:`${fmtS(rent)} due before move-in`,line2:"Move-in on the 1st — no proration needed."}
+            ]).map(opt=>(
+              <div key={opt.val}
+                onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:opt.val}}))}
+                style={{
+                  padding:"12px 14px",
+                  borderRadius:8,
+                  border:`2px solid ${structure===opt.val?"#4a7c59":"rgba(0,0,0,.1)"}`,
+                  background:structure===opt.val?"rgba(74,124,89,.06)":"#fff",
+                  cursor:"pointer"
+                }}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <div style={{
+                    width:14,height:14,borderRadius:"50%",flexShrink:0,
+                    border:`2px solid ${structure===opt.val?"#4a7c59":"#ccc"}`,
+                    background:structure===opt.val?"#4a7c59":"#fff",
+                    display:"flex",alignItems:"center",justifyContent:"center"
+                  }}>
+                    {structure===opt.val&&<div style={{width:5,height:5,borderRadius:"50%",background:"#fff"}}/>}
+                  </div>
+                  <span style={{fontSize:13,fontWeight:800,color:structure===opt.val?"#2d6a3f":"#1a1714"}}>{opt.title}</span>
+                </div>
+                <div style={{paddingLeft:22}}>
+                  <div style={{fontSize:12,fontWeight:700,color:structure===opt.val?"#4a7c59":"#3d3529",marginBottom:2}}>{opt.line1}</div>
+                  <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.5}}>{opt.line2}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
