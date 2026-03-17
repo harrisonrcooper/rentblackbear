@@ -292,6 +292,7 @@ export default function ApplyPage(){
       if(req("dob")&&(!d.dob||d.dob.includes(" ")))e.dob="Date of birth is required";
     }
     if(s==="appinfo"){
+      if(fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
       if(req("moveIn")&&(!d.moveIn||d.moveIn.includes(" ")))e.moveIn="Please select your desired move-in date";
       if(!invite&&req("preferredProperty")&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
     }
@@ -319,7 +320,6 @@ export default function ApplyPage(){
     }
     if(s==="room"){
       if(invite?.inviteRoomMode==="choice"&&!d.selectedRoom)e.selectedRoom="Please select a room";
-      if(!/^\d{4}$/.test(d.doorCode))e.doorCode="Please choose a 4-digit door code — numbers only";
     }
     setErrors(e);if(Object.keys(e).length>0)shake();return Object.keys(e).length===0;
   };
@@ -433,6 +433,34 @@ export default function ApplyPage(){
           <div className="counter"><button className="counter-btn" onClick={()=>upd("occupants",Math.max(1,d.occupants-1))}>−</button><div className="counter-val">{d.occupants}</div><button className="counter-btn" onClick={()=>upd("occupants",d.occupants+1)}>+</button></div>
           {d.occupants>1&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.15)",borderRadius:8,padding:10,fontSize:12,color:"var(--rd)"}}>⚠ Only 1 person per room is allowed. Each additional occupant over 18 must submit their own application. If you're renting the entire property, please contact us.</div>}
         </div>
+        {/* Door Code — driven by hq-app-fields */}
+        {fieldActive("doorCode")&&<div style={{marginTop:24,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>🔑 {fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
+          {fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once your deposit and first month's rent are received. You can update it when signing your lease.")&&<div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once your deposit and first month's rent are received. You can update it when signing your lease.")}</div>}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              value={d.doorCode}
+              onChange={e=>{
+                const val=e.target.value.replace(/\D/g,"").slice(0,4);
+                upd("doorCode",val);
+                if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));
+              }}
+              placeholder={fieldPlaceholder("doorCode","_ _ _ _")}
+              style={{
+                width:120,textAlign:"center",fontSize:28,fontWeight:900,letterSpacing:12,
+                fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,
+                borderRadius:10,padding:"12px 8px",outline:"none",background:"#fff",
+                color:"#1a1714"
+              }}
+            />
+            {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Code set</div>}
+            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
+          </div>
+        </div>}
+
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
@@ -615,34 +643,6 @@ export default function ApplyPage(){
         <div className="sec-hd"><h2>Choose Your Room</h2><p>Select the room you'd like to apply for.</p></div>
         {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=><div key={p.id} className="prop-card"><div className="prop-img">🐻</div><div className="prop-info"><div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div><div style={{marginTop:10}}>{p.rooms.filter(r=>r.st==="vacant").map(r=><div key={r.id} className={`room-card ${d.selectedRoom===r.id?"sel":""}`} onClick={()=>upd("selectedRoom",r.id)}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div className="room-name">{r.name}</div><div className="room-meta">{r.bed} · {r.pb?"Private":"Shared"} bath · {r.sqft} sqft</div></div><div className="room-price">${r.rent}<small style={{fontSize:10,color:"#999"}}>/mo</small></div></div></div>)}</div></div></div>);})()}
         {errors.selectedRoom&&<div className="err-msg" style={{marginBottom:12}}>{errors.selectedRoom}</div>}
-
-        {/* Door Code */}
-        <div style={{marginTop:24,background:"rgba(212,168,83,.05)",border:"1px solid rgba(212,168,83,.15)",borderRadius:12,padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>🔑 Choose Your 4-Digit Door Code</div>
-          <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>This code will be written into your lease and programmed into your smart lock. It activates at 12:00am on your move-in day once your security deposit and first month's rent are received. You can change it here when signing your lease.</div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={4}
-              value={d.doorCode}
-              onChange={e=>{
-                const val=e.target.value.replace(/\D/g,"").slice(0,4);
-                upd("doorCode",val);
-                if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));
-              }}
-              placeholder="_ _ _ _"
-              style={{
-                width:120,textAlign:"center",fontSize:28,fontWeight:900,letterSpacing:12,
-                fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.4)"}`,
-                borderRadius:10,padding:"12px 8px",outline:"none",background:"#fff",
-                color:"#1a1714",animation:errors.doorCode?"shake .4s ease":"none"
-              }}
-            />
-            {d.doorCode.length===4&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Code set</div>}
-            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
-          </div>
-        </div>
 
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
