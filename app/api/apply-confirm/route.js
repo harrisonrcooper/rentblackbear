@@ -55,7 +55,7 @@ export async function POST(request) {
               </div>
 
               <p style="font-size:13px;color:#5c4a3a;line-height:1.7;margin-bottom:20px;">
-                Questions? Reply to this email or call us at <strong>(256) 555-0192</strong>. We typically respond within a few hours.
+                Questions? Reply to this email or call us at <strong>(850) 696-8101</strong>. We typically respond within a few hours.
               </p>
 
               <div style="text-align:center;">
@@ -64,7 +64,7 @@ export async function POST(request) {
 
               <hr style="margin:28px 0;border:none;border-top:1px solid #e8e5e0;"/>
               <p style="font-size:11px;color:#999;margin:0;">
-                — Harrison Cooper · Black Bear Rentals · Oak &amp; Main Development LLC<br/>
+                — Black Bear Rentals · Oak &amp; Main Development LLC<br/>
                 Huntsville, Alabama · <a href="https://rentblackbear.com" style="color:#d4a853;">rentblackbear.com</a>
               </p>
             </div>
