@@ -771,20 +771,48 @@ export default function Page(){
   // Auto-run on load as fallback only (cron job handles this server-side daily)
   useEffect(()=>{if(loaded&&props.length>0){const t=setTimeout(()=>autoGenRentCharges(),500);return()=>clearTimeout(t);}},[loaded]);
 
-  // New lead detection — poll apps and trigger confetti + toast
+  // Real-time poll — check Supabase for new "applied" apps every 15 seconds
+  const knownAppIds=useRef(new Set());
   useEffect(()=>{
     if(!loaded)return;
-    if(lastAppCountRef.current===0){lastAppCountRef.current=apps.length;return;}
-    if(apps.length>lastAppCountRef.current){
-      const newest=apps[0];
-      setShowConfetti(true);
-      setLeadToast(newest);
-      setToastDismissing(false);
-      setTimeout(()=>setShowConfetti(false),8000);
-      setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
-    }
-    lastAppCountRef.current=apps.length;
-  },[apps.length,loaded]);
+    // Seed known IDs from initial load so we don't false-fire on first mount
+    apps.forEach(a=>knownAppIds.current.add(a.id));
+  },[loaded]);
+
+  useEffect(()=>{
+    if(!loaded)return;
+    const poll=async()=>{
+      try{
+        const res=await supa("app_data?key=eq.hq-apps&select=value",{headers:{Accept:"application/json"}});
+        if(!res.ok)return;
+        const rows=await res.json();
+        if(!rows||!rows[0])return;
+        let fresh=rows[0].value;
+        if(typeof fresh==="string")fresh=JSON.parse(fresh);
+        if(!Array.isArray(fresh))return;
+        const newApplied=fresh.filter(a=>a.status==="applied"&&!knownAppIds.current.has(a.id));
+        if(newApplied.length>0){
+          // Update local state with fresh data
+          setApps(fresh);
+          fresh.forEach(a=>knownAppIds.current.add(a.id));
+          // Add admin notification
+          const newest=newApplied[0];
+          setNotifs(p=>[{id:uid(),type:"app",msg:`🎉 ${newest.name} submitted their application${newest.property?" for "+newest.property:""}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
+          // Fire confetti + toast
+          setShowConfetti(true);
+          setLeadToast(newest);
+          setToastDismissing(false);
+          setTimeout(()=>setShowConfetti(false),8000);
+          setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
+        } else {
+          // Still sync any other changes silently (stage moves from apply page, etc.)
+          fresh.forEach(a=>knownAppIds.current.add(a.id));
+        }
+      }catch{}
+    };
+    const interval=setInterval(poll,15000);
+    return()=>clearInterval(interval);
+  },[loaded]);
 
   const dismissToast=()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);};
   const viewNewLead=()=>{setTab("applications");setLeadToast(null);setShowConfetti(false);};
@@ -4720,16 +4748,16 @@ export default function Page(){
     <div key={i} className="confetti-piece" style={{left:`${Math.random()*100}%`,background:colors[i%colors.length],width:Math.random()*8+6,height:Math.random()*8+6,borderRadius:Math.random()>0.5?"50%":"2px",animationDuration:`${Math.random()*2+2}s`,animationDelay:`${Math.random()*1.5}s`}}/>
   );})}</div>}
 
-  {/* New Lead Toast */}
+  {/* New Application Toast */}
   {leadToast&&<div className={`lead-toast ${toastDismissing?"out":""}`}>
-    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:"#d4a853",letterSpacing:1.5}}>🎉 NEW LEAD!</div></div>
+    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:"#d4a853",letterSpacing:1.5}}>🎉 NEW APPLICATION!</div></div>
     <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:22,fontWeight:800,color:"#f5f0e8"}}>{leadToast.name}</div></div>
-    <div style={{display:"flex",justifyContent:"center",gap:16,fontSize:12,color:"#c4a882",marginBottom:14}}>
+    <div style={{display:"flex",justifyContent:"center",gap:16,fontSize:12,color:"#c4a882",marginBottom:14,flexWrap:"wrap"}}>
       {leadToast.phone&&<span>📞 {leadToast.phone}</span>}
       {leadToast.property&&<span>🏠 {leadToast.property}</span>}
-      {leadToast.source&&<span>📍 {leadToast.source}</span>}
+      {leadToast.room&&<span>🚪 {leadToast.room}</span>}
     </div>
-    <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>View Application →</button>
+    <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>Review Application →</button>
     <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#666",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
   </div>}
 
