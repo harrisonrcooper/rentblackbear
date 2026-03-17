@@ -4892,7 +4892,9 @@ export default function Page(){
 
     // Config state from modal (Step 1 editable fields)
     const cfg=modal.cfg||{};
-    const riskLevel=cfg.riskLevel||"standard";
+    const creditNum=parseInt((a.creditScore||"").toString().replace(/[^0-9]/g,""))||null;
+    const suggestHighRisk=creditNum&&creditNum<620;
+    const riskLevel=cfg.riskLevel||(suggestHighRisk?"high":"standard");
     const sdAmt=cfg.sdAmt!==undefined?cfg.sdAmt:defaultSD;
     // structure: "prorated" | "full" | "first-last"
     // Auto-suggest: if move-in is in first 15 days of remaining month, default to "full" (prorated amount is minor, charge full)
@@ -4911,7 +4913,8 @@ export default function Page(){
     const secondMonthLabel=secondMonthD.toLocaleString("default",{month:"long",year:"numeric"});
     const buildCharges=()=>{
       const list=[];
-      list.push({cat:"Security Deposit",desc:"Security Deposit",amount:sdAmt,due:sdDue,note:"Due upon lease signing to secure the room."});
+      const isWholeHouse=targetProp&&targetProp.rentalMode==="wholeHouse";
+      list.push({cat:"Security Deposit",desc:"Security Deposit",amount:sdAmt,due:sdDue,note:"Due today — on lease signing to secure the "+(isWholeHouse?"property":"room")+"."});
       if(isFirstDay){
         // Move-in on the 1st — clean full month, no proration needed
         list.push({cat:"Rent",desc:"First Month's Rent — "+moveInD.toLocaleString("default",{month:"long",year:"numeric"}),amount:rent,due:rentDue,note:"Due before move-in."});
@@ -4931,10 +4934,18 @@ export default function Page(){
         if(lastMonthPlan==="upfront"){
           list.push({cat:"Rent",desc:"Last Month's Rent — "+((riskLevel==="high")?"High-Risk Hold":"Prepaid"),amount:rent,due:rentDue,note:"Held and applied to final month of lease."});
         } else {
-          for(let i=0;i<installmentCount;i++){
+          const freq=cfg.installmentFreq||"monthly";
+          const installMode=cfg.installMode||"count";
+          const customAmt=cfg.installmentAmt||0;
+          const finalCount=installMode==="amount"&&customAmt>0?Math.ceil(rent/customAmt):installmentCount;
+          const finalAmt=Math.ceil(rent/finalCount);
+          const freqDays={"weekly":7,"biweekly":14,"monthly":null};
+          for(let i=0;i<finalCount;i++){
             const d=new Date(installmentStartDue+"T00:00:00");
-            d.setMonth(d.getMonth()+i);
-            list.push({cat:"Rent",desc:"Last Month Installment "+(i+1)+" of "+installmentCount,amount:Math.ceil(rent/installmentCount),due:d.toISOString().split("T")[0],note:"Installment toward last month's rent."});
+            if(freq==="monthly"){d.setMonth(d.getMonth()+i);}
+            else{d.setDate(d.getDate()+(i*freqDays[freq]));}
+            const freqLabel={"weekly":"wk","biweekly":"2wk","monthly":"mo"};
+            list.push({cat:"Rent",desc:"Last Month Installment "+(i+1)+"/"+finalCount+" ("+freqLabel[freq]+")",amount:finalAmt,due:d.toISOString().split("T")[0],note:"Installment toward last month's rent."});
           }
         }
       }
@@ -4974,6 +4985,9 @@ export default function Page(){
         {/* Risk Level */}
         <div className="fld" style={{marginBottom:12}}>
           <label style={{fontSize:11,fontWeight:700}}>Risk Level</label>
+          {suggestHighRisk&&cfg.riskLevel!=="standard"&&<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginBottom:6,padding:"5px 8px",background:"rgba(196,92,74,.06)",borderRadius:6,border:"1px solid rgba(196,92,74,.15)"}}>
+            ⚠ Credit score {a.creditScore} — High Risk automatically selected. You can override below.
+          </div>}
           <div style={{display:"flex",gap:8,marginTop:6}}>
             {[["standard","✅ Standard","rgba(74,124,89,.08)","rgba(74,124,89,.4)","#2d6a3f"],["high","⚠️ High Risk","rgba(212,168,83,.08)","rgba(212,168,83,.4)","#9a7422"]].map(([val,label,bg,border,color])=>(
               <button key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,riskLevel:val}}))}
@@ -5021,20 +5035,68 @@ export default function Page(){
               </button>
             ))}
           </div>
-          {lastMonthPlan==="installments"&&<div style={{marginTop:8,display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            <div className="fld">
-              <label style={{fontSize:10}}>Number of Installments</label>
-              <select value={installmentCount} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentCount:Number(e.target.value)}}))}
-                style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}>
-                {[2,3,4,6].map(n=><option key={n} value={n}>{n} payments of {fmtS(Math.ceil(rent/n))}</option>)}
-              </select>
-            </div>
-            <div className="fld">
-              <label style={{fontSize:10}}>First Installment Due</label>
-              <input type="date" value={installmentStartDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentStartDue:e.target.value}}))}
-                style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}/>
-            </div>
-          </div>}
+          {lastMonthPlan==="installments"&&(()=>{
+            const freq=cfg.installmentFreq||"monthly";
+            const installMode=cfg.installMode||"count"; // "count" | "amount"
+            const customAmt=cfg.installmentAmt||0;
+            const countFromAmt=customAmt>0?Math.ceil(rent/customAmt):0;
+            const freqLabel={"weekly":"week","biweekly":"2 weeks","monthly":"month"};
+            return(
+            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
+              {/* Frequency */}
+              <div className="fld" style={{marginBottom:0}}>
+                <label style={{fontSize:10}}>Payment Frequency</label>
+                <div style={{display:"flex",gap:6,marginTop:4}}>
+                  {[["weekly","Weekly"],["biweekly","Bi-Weekly"],["monthly","Monthly"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setModal(p=>({...p,cfg:{...cfg,installmentFreq:v}}))}
+                      style={{flex:1,padding:"7px 4px",borderRadius:6,border:`2px solid ${freq===v?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:freq===v?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:freq===v?"#2d6a3f":"#999",cursor:"pointer",fontFamily:"inherit"}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Mode: set count or set amount */}
+              <div className="fld" style={{marginBottom:0}}>
+                <label style={{fontSize:10}}>Set by</label>
+                <div style={{display:"flex",gap:6,marginTop:4}}>
+                  {[["count","Number of payments"],["amount","Amount per payment"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setModal(p=>({...p,cfg:{...cfg,installMode:v}}))}
+                      style={{flex:1,padding:"7px 4px",borderRadius:6,border:`2px solid ${installMode===v?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:installMode===v?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:installMode===v?"#2d6a3f":"#999",cursor:"pointer",fontFamily:"inherit"}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {installMode==="count"&&<div className="fr" style={{gap:8}}>
+                <div className="fld" style={{marginBottom:0}}>
+                  <label style={{fontSize:10}}>Number of Payments</label>
+                  <select value={installmentCount} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentCount:Number(e.target.value)}}))}
+                    style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}>
+                    {[2,3,4,6,8,12].map(n=><option key={n} value={n}>{n} payments of {fmtS(Math.ceil(rent/n))} / {freqLabel[freq]}</option>)}
+                  </select>
+                </div>
+                <div className="fld" style={{marginBottom:0}}>
+                  <label style={{fontSize:10}}>First Payment Due</label>
+                  <input type="date" value={installmentStartDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentStartDue:e.target.value}}))}
+                    style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}/>
+                </div>
+              </div>}
+              {installMode==="amount"&&<div className="fr" style={{gap:8}}>
+                <div className="fld" style={{marginBottom:0}}>
+                  <label style={{fontSize:10}}>Amount per Payment ($)</label>
+                  <input type="number" value={customAmt||""} placeholder="e.g. 200"
+                    onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentAmt:Number(e.target.value),installmentCount:Number(e.target.value)>0?Math.ceil(rent/Number(e.target.value)):p.cfg.installmentCount}}))}
+                    style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}/>
+                  {customAmt>0&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>{countFromAmt} payment{countFromAmt!==1?"s":""} of {fmtS(customAmt)} / {freqLabel[freq]}{countFromAmt*customAmt>rent?<span style={{color:"#d4a853"}}> (rounds up by {fmtS(countFromAmt*customAmt-rent)})</span>:""}</div>}
+                </div>
+                <div className="fld" style={{marginBottom:0}}>
+                  <label style={{fontSize:10}}>First Payment Due</label>
+                  <input type="date" value={installmentStartDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentStartDue:e.target.value}}))}
+                    style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}/>
+                </div>
+              </div>}
+            </div>);
+          })()}
         </div>}
 
         {/* Rent Due Date — quick pick + optional custom */}
@@ -5355,8 +5417,19 @@ export default function Page(){
             {!termRoom&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" not found as a vacant room — it may be occupied. Select an available room before sending the lease.</div>}
           </div>
           <div className="fld" style={{marginBottom:0}}>
-            <label>Move-in Date <span style={{fontWeight:400,color:"#999",fontSize:9}}>From application — confirm or adjust</span></label>
-            <input type="date" value={a.termMoveIn||a.moveIn||""} onChange={e=>saveTerm("termMoveIn",e.target.value)}/>
+            <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span>Move-in Date <span style={{fontWeight:400,color:"#999",fontSize:9}}>Requested by tenant</span></span>
+              <button onClick={()=>saveTerm("termMoveInEditing",!a.termMoveInEditing)} style={{fontSize:9,fontWeight:700,color:"#d4a853",background:"none",border:"1px solid rgba(212,168,83,.3)",borderRadius:4,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit"}}>
+                {a.termMoveInEditing?"Lock":"Edit"}
+              </button>
+            </label>
+            {a.termMoveInEditing
+              ?<input type="date" value={a.termMoveIn||a.moveIn||""} onChange={e=>saveTerm("termMoveIn",e.target.value)} autoFocus/>
+              :<div style={{padding:"8px 10px",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:6,fontSize:13,fontWeight:700,color:"#1a1714"}}>
+                {a.moveIn?new Date(a.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}
+                <span style={{fontSize:10,fontWeight:400,color:"#999",marginLeft:6}}>— from application</span>
+              </div>
+            }
           </div>
           <div style={{marginTop:10,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
             ⚙️ Rent structure, SD amount, risk level, and due dates are configured in the next step when you click <strong>Configure Charges &amp; Send Lease</strong>.
@@ -5495,7 +5568,7 @@ export default function Page(){
             <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
           </div>}
           <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
-            ⚙️ {incompleteReqs.length>0?"Configure & Send Lease Anyway":"Configure Charges & Send Lease"}
+            ⚙️ Configure Charges & Send Lease{incompleteReqs.length>0?" Anyway":""}
           </button>
         </>}
         {a.status==="lease-sent"&&<div style={{width:"100%"}}>
