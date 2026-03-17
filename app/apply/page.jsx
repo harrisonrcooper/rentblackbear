@@ -340,7 +340,7 @@ export default function ApplyPage(){
 
   // Address form helpers
   const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",landlordName:"",landlordEmail:"",landlordPhone:""};
-  const saveAddr=()=>{const f=d.curAddressForm;if(!f)return;if(!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn){shake();return;}
+  const saveAddr=()=>{const f=d.curAddressForm;if(!f)return;if(!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn||!f.reason){upd("curAddressForm",{...f,_saved:true});shake();return;}
     if(f._editIdx!==undefined){setD(p=>({...p,addresses:p.addresses.map((a,i)=>i===f._editIdx?f:a),curAddressForm:null}));}
     else{setD(p=>({...p,addresses:[...p.addresses,f],curAddressForm:null}));}};
   const blankEmp={employer:"",position:"",monthStarted:"",yearStarted:"",monthlyIncome:"",refName:"",refPhone:""};
@@ -373,12 +373,12 @@ export default function ApplyPage(){
         {appType==="cosigner"&&<div className="cosigner-note">As a co-signer, you'll complete a shorter application covering your identity and income.</div>}
         <div style={{textAlign:"left",maxWidth:400,margin:"0 auto"}}>
           <div className="fld-row">
-            <div className="fld"><label>{fieldLabel("firstName","First Name")}{fieldRequired("firstName")&&<span className="req">*</span>}</label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder={fieldPlaceholder("firstName","First name")}/>{errors.firstName&&<div className="err-msg">{errors.firstName}</div>}</div>
-            <div className="fld"><label>{fieldLabel("lastName","Last Name")}{fieldRequired("lastName")&&<span className="req">*</span>}</label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder={fieldPlaceholder("lastName","Last name")}/>{errors.lastName&&<div className="err-msg">{errors.lastName}</div>}</div>
+            <div className="fld"><label>{fieldLabel("firstName","First Name")}{fieldRequired("firstName")&&<span className="req">*</span>}</label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder={fieldPlaceholder("firstName","First name")}/>{errors.firstName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.firstName}</div>}</div>
+            <div className="fld"><label>{fieldLabel("lastName","Last Name")}{fieldRequired("lastName")&&<span className="req">*</span>}</label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder={fieldPlaceholder("lastName","Last name")}/>{errors.lastName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.lastName}</div>}</div>
           </div>
-          {fieldActive("email")&&<div className="fld"><label>{fieldLabel("email","Email Address")}{fieldRequired("email")&&<span className="req">*</span>}</label><input type="email" value={d.email} onChange={e=>upd("email",e.target.value)} className={errors.email?"err":""} placeholder={fieldPlaceholder("email","you@email.com")}/>{errors.email&&<div className="err-msg">{errors.email}</div>}</div>}
-          <div className="fld"><label>{fieldLabel("phone","Phone Number")}{fieldRequired("phone")&&<span className="req">*</span>}</label><input type="tel" value={d.phone} onChange={e=>upd("phone",fmtPhone(e.target.value))} className={errors.phone?"err":""} placeholder={fieldPlaceholder("phone","(256) 555-1234")}/>{errors.phone&&<div className="err-msg">{errors.phone}</div>}</div>
-          {fieldActive("dob")&&<div className="fld"><label>{fieldLabel("dob","Date of Birth")}{fieldRequired("dob")&&<span className="req">*</span>}</label><DateDrop value={d.dob} onChange={v=>upd("dob",v)} hasErr={!!errors.dob} mode="dob"/>{fieldHelp("dob")&&<div className="help">{fieldHelp("dob")}</div>}{errors.dob&&<div className="err-msg">{errors.dob}</div>}</div>}
+          {fieldActive("email")&&<div className="fld"><label>{fieldLabel("email","Email Address")}{fieldRequired("email")&&<span className="req">*</span>}</label><input type="email" value={d.email} onChange={e=>upd("email",e.target.value)} className={errors.email?"err":""} placeholder={fieldPlaceholder("email","you@email.com")}/>{errors.email&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.email}</div>}</div>}
+          <div className="fld"><label>{fieldLabel("phone","Phone Number")}{fieldRequired("phone")&&<span className="req">*</span>}</label><input type="tel" value={d.phone} onChange={e=>upd("phone",fmtPhone(e.target.value))} className={errors.phone?"err":""} placeholder={fieldPlaceholder("phone","(256) 555-1234")}/>{errors.phone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.phone}</div>}</div>
+          {fieldActive("dob")&&<div className="fld"><label>{fieldLabel("dob","Date of Birth")}{fieldRequired("dob")&&<span className="req">*</span>}</label><DateDrop value={d.dob} onChange={v=>upd("dob",v)} hasErr={!!errors.dob} mode="dob"/>{fieldHelp("dob")&&<div className="help">{fieldHelp("dob")}</div>}{errors.dob&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.dob}</div>}</div>}
         </div>
         <div className="legal">By clicking the button below you are agreeing to our <a href="#">Application Authorization Policy</a>, <a href="#">Terms of Use</a> & <a href="#">Privacy Policy</a>.</div>
         <button className="btn-start" onClick={next}>Begin Application →</button>
@@ -388,7 +388,7 @@ export default function ApplyPage(){
       {step==="appinfo"&&<div className="sec">
         <div className="sec-num">Application Info</div>
         <div className="sec-hd"><h2>A Few Quick Details</h2><p>Help us prepare for your move-in.</p></div>
-        <div className="fld"><label>Desired Move-in Date<span className="req">*</span></label><DateDrop value={d.moveIn} onChange={v=>upd("moveIn",v)} hasErr={!!errors.moveIn} mode="movein"/>{errors.moveIn&&<div className="err-msg">{errors.moveIn}</div>}</div>
+        <div className="fld"><label>Desired Move-in Date<span className="req">*</span></label><DateDrop value={d.moveIn} onChange={v=>upd("moveIn",v)} hasErr={!!errors.moveIn} mode="movein"/>{errors.moveIn&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.moveIn}</div>}</div>
 
         {/* Room/property selection — only for walk-ins without a locked room */}
         {(!invite||(invite&&!invite.inviteRoomName&&invite.inviteRoomMode!=="locked"))&&<>
@@ -424,7 +424,7 @@ export default function ApplyPage(){
           })()}
         </>}
 
-        {errors.preferredProperty&&<div className="err-msg" style={{marginBottom:12,fontSize:12,padding:"10px 12px",background:"rgba(196,92,74,.04)",borderRadius:8,border:"1px solid rgba(196,92,74,.15)"}}>{errors.preferredProperty}</div>}
+        {errors.preferredProperty&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12,fontSize:12,padding:"10px 12px",background:"rgba(196,92,74,.04)",borderRadius:8,border:"1px solid rgba(196,92,74,.15)"}}>{errors.preferredProperty}</div>}
         {/* If locked room from invite — show confirmation */}
         {invite?.inviteRoomName&&<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--gn)"}}>
           🏠 Applying for <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
@@ -449,11 +449,11 @@ export default function ApplyPage(){
                 upd("doorCode",val);
                 if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));
               }}
-              placeholder={fieldPlaceholder("doorCode","_ _ _ _")}
+              placeholder="_ _ _ _"
               style={{
-                width:120,textAlign:"center",fontSize:28,fontWeight:900,letterSpacing:12,
+                width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,
                 fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,
-                borderRadius:10,padding:"12px 8px",outline:"none",background:"#fff",
+                borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",
                 color:"#1a1714"
               }}
             />
@@ -497,7 +497,7 @@ export default function ApplyPage(){
             <div className="fld"><label>Zip Code<span className="req">*</span></label><input value={d.curAddressForm.zip} onChange={e=>upd("curAddressForm",{...d.curAddressForm,zip:e.target.value.replace(/\D/g,"").slice(0,5)})} placeholder="35801"/></div>
             <div className="fld"><label>Monthly Rent</label><input type="number" value={d.curAddressForm.rent} onChange={e=>upd("curAddressForm",{...d.curAddressForm,rent:e.target.value})} placeholder="1100"/></div>
           </div>
-          <div className="fld"><label>Why are you moving?</label><textarea value={d.curAddressForm.reason} onChange={e=>upd("curAddressForm",{...d.curAddressForm,reason:e.target.value})} placeholder="Optional"/></div>
+          <div className="fld"><label>Why are you moving?<span className="req">*</span></label><textarea value={d.curAddressForm.reason} onChange={e=>upd("curAddressForm",{...d.curAddressForm,reason:e.target.value})} className={!d.curAddressForm.reason&&d.curAddressForm._saved?"err":""} placeholder="e.g. Moving for work, end of lease, upgrading, etc."/></div>
           <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact Info</div>
           <div className="fld"><label>Full Name</label><input value={d.curAddressForm.landlordName} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordName:e.target.value})} placeholder="Landlord's full name"/></div>
           <div className="fld-row">
@@ -508,18 +508,18 @@ export default function ApplyPage(){
           <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveAddr}>Save Address</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curAddressForm",null)}>Cancel</button></div>
         </div>
         :<div className="add-card" onClick={()=>upd("curAddressForm",{...blankAddr})}><div className="plus">+</div><div className="lbl">Add {d.addresses.length===0?"Current":"Another"} Address</div></div>}
-        {errors.addresses&&<div className="err-msg" style={{marginBottom:12}}>{errors.addresses}</div>}
+        {errors.addresses&&<div className="err-msg" style={{marginBottom:12,fontSize:13,fontWeight:700,padding:"10px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,animation:"shake .4s ease"}}>⚠ {errors.addresses}</div>}
 
         {/* Eviction / Felony */}
         <div style={{marginTop:20}}><div className="yn-q">Have you ever been evicted?<span className="req" style={{color:"var(--rd)"}}>*</span></div>
           <div className="yn-row"><button className={`yn-btn ${d.evicted==="no"?"yes":""}`} onClick={()=>upd("evicted","no")}>No</button><button className={`yn-btn ${d.evicted==="yes"?"no":""}`} onClick={()=>upd("evicted","yes")}>Yes</button></div>
           {d.evicted==="yes"&&<div className="fld"><label>Please explain<span className="req">*</span></label><textarea value={d.evictedExplain} onChange={e=>upd("evictedExplain",e.target.value)} placeholder="Briefly explain the circumstances"/></div>}
-          {errors.evicted&&<div className="err-msg" style={{marginBottom:12}}>{errors.evicted}</div>}
+          {errors.evicted&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.evicted}</div>}
         </div>
         <div><div className="yn-q">Do you have any felonies?<span className="req" style={{color:"var(--rd)"}}>*</span></div>
           <div className="yn-row"><button className={`yn-btn ${d.felony==="no"?"yes":""}`} onClick={()=>upd("felony","no")}>No</button><button className={`yn-btn ${d.felony==="yes"?"no":""}`} onClick={()=>upd("felony","yes")}>Yes</button></div>
           {d.felony==="yes"&&<div className="fld"><label>Please explain<span className="req">*</span></label><textarea value={d.felonyExplain} onChange={e=>upd("felonyExplain",e.target.value)} placeholder="Briefly explain"/></div>}
-          {errors.felony&&<div className="err-msg" style={{marginBottom:12}}>{errors.felony}</div>}
+          {errors.felony&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.felony}</div>}
         </div>
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
@@ -539,7 +539,7 @@ export default function ApplyPage(){
             <input type="checkbox" checked={d.idUploadLater} onChange={e=>{upd("idUploadLater",e.target.checked);if(e.target.checked)upd("idFileName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
             I'll upload my photo ID later
           </label>
-          {errors.idFile&&<div className="err-msg">{errors.idFile}</div>}
+          {errors.idFile&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.idFile}</div>}
         </div>}
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
@@ -574,7 +574,7 @@ export default function ApplyPage(){
 
           {d.employers.length>0&&<div className="strength-tip">💡 Landlords like to see around 5 years of employment history on your application, if applicable.</div>}
         </>}
-        {errors.employers&&<div className="err-msg" style={{marginBottom:12}}>{errors.employers}</div>}
+        {errors.employers&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.employers}</div>}
 
         {/* Unemployed — optional previous work history */}
         {d.unemployed&&<div style={{marginTop:12}}>
@@ -614,13 +614,13 @@ export default function ApplyPage(){
         <div className="sec-hd"><h2>References</h2><p>Provide {d.unemployed?"a personal reference":"one employer and one personal reference"}.</p></div>
         {!d.unemployed&&<>
           <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer Reference</div>
-          <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.empRefName} onChange={e=>upd("empRefName",e.target.value)} className={errors.empRefName?"err":""} placeholder="Supervisor or HR"/>{errors.empRefName&&<div className="err-msg">{errors.empRefName}</div>}</div>
-          <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg">{errors.empRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div></div>
+          <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.empRefName} onChange={e=>upd("empRefName",e.target.value)} className={errors.empRefName?"err":""} placeholder="Supervisor or HR"/>{errors.empRefName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefName}</div>}</div>
+          <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div></div>
           <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:20}}>Personal Reference</div>
         </>}
         {d.unemployed&&<div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Personal Reference</div>}
-        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.persRefName} onChange={e=>upd("persRefName",e.target.value)} className={errors.persRefName?"err":""} placeholder="Someone who knows you well"/>{errors.persRefName&&<div className="err-msg">{errors.persRefName}</div>}</div>
-        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>upd("persRefPhone",fmtPhone(e.target.value))} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg">{errors.persRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.persRefRelation} onChange={e=>upd("persRefRelation",e.target.value)} placeholder="e.g. Friend"/></div></div>
+        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.persRefName} onChange={e=>upd("persRefName",e.target.value)} className={errors.persRefName?"err":""} placeholder="Someone who knows you well"/>{errors.persRefName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefName}</div>}</div>
+        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>upd("persRefPhone",fmtPhone(e.target.value))} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.persRefRelation} onChange={e=>upd("persRefRelation",e.target.value)} placeholder="e.g. Friend"/></div></div>
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
@@ -629,10 +629,10 @@ export default function ApplyPage(){
       {step==="emergency"&&<div className="sec">
         <div className="sec-num">Section 5</div>
         <div className="sec-hd"><h2>Emergency Contact</h2><p>Someone we can reach in case of an emergency.</p></div>
-        {fieldActive("emergName")&&<div className="fld"><label>{fieldLabel("emergName","Full Name")}{fieldRequired("emergName")&&<span className="req">*</span>}</label><input value={d.emergName} onChange={e=>upd("emergName",e.target.value)} className={errors.emergName?"err":""} placeholder={fieldPlaceholder("emergName","Full name")}/>{errors.emergName&&<div className="err-msg">{errors.emergName}</div>}</div>}
+        {fieldActive("emergName")&&<div className="fld"><label>{fieldLabel("emergName","Full Name")}{fieldRequired("emergName")&&<span className="req">*</span>}</label><input value={d.emergName} onChange={e=>upd("emergName",e.target.value)} className={errors.emergName?"err":""} placeholder={fieldPlaceholder("emergName","Full name")}/>{errors.emergName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergName}</div>}</div>}
         <div className="fld-row">
-          {fieldActive("emergPhone")&&<div className="fld"><label>{fieldLabel("emergPhone","Phone")}{fieldRequired("emergPhone")&&<span className="req">*</span>}</label><input type="tel" value={d.emergPhone} onChange={e=>upd("emergPhone",fmtPhone(e.target.value))} className={errors.emergPhone?"err":""} placeholder={fieldPlaceholder("emergPhone","(555) 555-5555")}/>{errors.emergPhone&&<div className="err-msg">{errors.emergPhone}</div>}</div>}
-          {fieldActive("emergRelation")&&<div className="fld"><label>{fieldLabel("emergRelation","Relationship")}{fieldRequired("emergRelation")&&<span className="req">*</span>}</label><input value={d.emergRelation} onChange={e=>upd("emergRelation",e.target.value)} className={errors.emergRelation?"err":""} placeholder={fieldPlaceholder("emergRelation","e.g. Parent")}/>{errors.emergRelation&&<div className="err-msg">{errors.emergRelation}</div>}</div>}
+          {fieldActive("emergPhone")&&<div className="fld"><label>{fieldLabel("emergPhone","Phone")}{fieldRequired("emergPhone")&&<span className="req">*</span>}</label><input type="tel" value={d.emergPhone} onChange={e=>upd("emergPhone",fmtPhone(e.target.value))} className={errors.emergPhone?"err":""} placeholder={fieldPlaceholder("emergPhone","(555) 555-5555")}/>{errors.emergPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergPhone}</div>}</div>}
+          {fieldActive("emergRelation")&&<div className="fld"><label>{fieldLabel("emergRelation","Relationship")}{fieldRequired("emergRelation")&&<span className="req">*</span>}</label><input value={d.emergRelation} onChange={e=>upd("emergRelation",e.target.value)} className={errors.emergRelation?"err":""} placeholder={fieldPlaceholder("emergRelation","e.g. Parent")}/>{errors.emergRelation&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergRelation}</div>}</div>}
         </div>
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
@@ -643,7 +643,7 @@ export default function ApplyPage(){
         <div className="sec-num">Section 6</div>
         <div className="sec-hd"><h2>Choose Your Room</h2><p>Select the room you'd like to apply for.</p></div>
         {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=><div key={p.id} className="prop-card"><div className="prop-img">🐻</div><div className="prop-info"><div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div><div style={{marginTop:10}}>{p.rooms.filter(r=>r.st==="vacant").map(r=><div key={r.id} className={`room-card ${d.selectedRoom===r.id?"sel":""}`} onClick={()=>upd("selectedRoom",r.id)}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div className="room-name">{r.name}</div><div className="room-meta">{r.bed} · {r.pb?"Private":"Shared"} bath · {r.sqft} sqft</div></div><div className="room-price">${r.rent}<small style={{fontSize:10,color:"#999"}}>/mo</small></div></div></div>)}</div></div></div>);})()}
-        {errors.selectedRoom&&<div className="err-msg" style={{marginBottom:12}}>{errors.selectedRoom}</div>}
+        {errors.selectedRoom&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.selectedRoom}</div>}
 
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
@@ -755,22 +755,46 @@ export default function ApplyPage(){
           if(invite){
             // Invited applicant — update existing record
             const apps=await loadKey("hq-apps",[]);
+            // Resolve room from selectedRoom ID if tenant picked one
+            const allProps2=await loadKey("hq-props",[]);
+            const pickedRoom2=d.selectedRoom?allProps2.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.id===d.selectedRoom):null;
             const updated=apps.map(a=>a.id===invite.id?{...a,
               status:"applied",lastContact:now,
               applicationData:d,
               passcode:d.doorCode||null,
               name:fullName,email:d.email,phone:d.phone,
+              moveIn:d.moveIn||a.moveIn||"",
+              termMoveIn:d.moveIn||a.moveIn||"",
+              ...(pickedRoom2?{
+                room:pickedRoom2.name,
+                termRoomId:pickedRoom2.id,
+                termPropId:pickedRoom2.propId,
+                termRent:pickedRoom2.rent,
+                termSD:pickedRoom2.rent,
+                property:pickedRoom2.propName,
+              }:{}),
               history:[...(a.history||[]),{from:"invited",to:"applied",date:now,note:`Application submitted + $${baseFee} paid`}]
             }:a);
             await saveKey("hq-apps",updated);
           } else {
             // Walk-in / no invite — create new applicant record
             const apps=await loadKey("hq-apps",[]);
+            // Resolve room name + IDs from selectedRoom (which stores room ID)
+            const allProps=await loadKey("hq-props",[]);
+            const pickedRoomObj=d.selectedRoom?allProps.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.id===d.selectedRoom):null;
+            const roomName=pickedRoomObj?.name||d.selectedRoom||"";
+            const roomId=pickedRoomObj?.id||null;
+            const propId=pickedRoomObj?.propId||null;
+            const propName=pickedRoomObj?.propName||d.preferredProperty||"";
             const newApp={
               id:Math.random().toString(36).slice(2),
               name:fullName,email:d.email,phone:d.phone,
-              property:d.preferredProperty||"",room:d.selectedRoom||"",
-              moveIn:d.moveIn||"",income:d.income||"",
+              property:propName,room:roomName,
+              termRoomId:roomId,termPropId:propId,
+              termRent:pickedRoomObj?.rent||undefined,
+              termSD:pickedRoomObj?.rent||undefined,
+              moveIn:d.moveIn||"",termMoveIn:d.moveIn||"",
+              income:d.income||"",
               passcode:d.doorCode||null,
               status:"applied",submitted:now,lastContact:now,
               bgCheck:"not-started",creditScore:"—",refs:"not-started",
@@ -791,6 +815,7 @@ export default function ApplyPage(){
 
           // Admin notification email
           try{await fetch("/api/apply-notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+            to:"info@rentblackbear.com",
             applicantName:fullName,
             applicantEmail:d.email,
             applicantPhone:d.phone,
@@ -800,7 +825,8 @@ export default function ApplyPage(){
             income:d.income||"Not provided",
             fee:baseFee,
             isInvited:!!invite,
-          })});}catch{}
+            doorCode:d.doorCode||null,
+          })});}catch(e){console.error("PM notify failed",e);}
 
           // Tenant confirmation email
           try{await fetch("/api/apply-confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
