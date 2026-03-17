@@ -5521,6 +5521,10 @@ export default function Page(){
             setLeases(updatedLeases);
 
             // Email tenant — doc ready to sign
+            // Use the saved chargeConfig charges for accuracy (not the live modal cfg which may reset)
+            const emailChargeList=chargeConfig.charges&&chargeConfig.charges.length>0?chargeConfig.charges:chargeList;
+            const emailRent=rent>0?rent:(resolvedRoom?.rent||0);
+            const emailTotal=emailChargeList.reduce((s,c)=>s+(Number(c.amount)||0),0);
             try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
               to:a.email,
               name:a.name,
@@ -5529,12 +5533,12 @@ export default function Page(){
               signingLink:sigLink,
               property:propName,
               room:roomObj?.name,
-              rent:rent,
+              rent:emailRent,
               moveIn:fmtD(termMoveIn),
-              totalDue:totalDue,
+              totalDue:emailTotal,
               sd:sdAmt,
               sdDue:fmtD(sdDue),
-              chargeList:chargeList,
+              chargeList:emailChargeList,
               structure:structure,
               proratedAmt:proratedAmt,
               secondMonthLabel:secondMonthLabel,

@@ -35,16 +35,16 @@ export async function POST(request) {
     const buildChargeBreakdown = (chargeList, structure, proratedAmt, secondMonthLabel, isFirstDay, rent) => {
       if (!chargeList || !chargeList.length) return "";
 
+      const total = chargeList.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+
       const rows = chargeList.map(c => `
         <tr>
           <td style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.05);font-size:13px;color:#3d3529;">
-            <div style="font-weight:600;">${c.desc}</div>
-            <div style="font-size:11px;color:#4a7c59;margin-top:2px;">Due ${c.due || "—"}</div>
+            <div style="font-weight:600;">${c.desc || c.label || ""}</div>
+            <div style="font-size:11px;color:#4a7c59;margin-top:2px;">Due ${c.due || c.dueDate || "—"}</div>
           </td>
           <td style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.05);font-weight:700;text-align:right;font-size:13px;">${fmtMoney(c.amount)}</td>
         </tr>`).join("");
-
-      const total = chargeList.reduce((s, c) => s + (Number(c.amount) || 0), 0);
 
       let html = `
         <div style="margin-bottom:16px;">
@@ -60,9 +60,9 @@ export async function POST(request) {
           </div>
         </div>`;
 
-      // Following month
-      if (!isFirstDay && secondMonthLabel && (structure === "prorated" || structure === "full")) {
-        const followAmt = structure === "prorated" ? rent : proratedAmt;
+      // Following month row if applicable
+      if (!isFirstDay && secondMonthLabel && (structure === "prorated" || structure === "full") && rent > 0) {
+        const followAmt = structure === "prorated" ? Number(rent) : Number(proratedAmt);
         const followLabel = structure === "prorated" ? "Full rent begins" : "2nd month partial rent";
         html += `
           <div style="padding:12px;background:rgba(212,168,83,.06);border:1px solid rgba(212,168,83,.2);border-radius:8px;">
