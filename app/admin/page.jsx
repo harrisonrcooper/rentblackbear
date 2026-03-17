@@ -2,6 +2,7 @@
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
+import { LayoutDashboard, TrendingUp, Target, AlertTriangle, Users, Home, DollarSign, ClipboardList, Wrench, FolderOpen, FileText, BookOpen, Globe, Palette, Brain, Bell, Settings } from "lucide-react";
 
 // ─── Storage ────────────────────────────────────────────────────────
 // Supabase
@@ -19,7 +20,7 @@ const TODAY=new Date();const MO=TODAY.toLocaleString("default",{month:"long",yea
 
 // Signature canvas component — draw only, used in lease signing flow
 function SigCanvas({onSave,height=120}){
-  const canvasRef=React.useRef(null);const drawing=React.useRef(false);const lastPos=React.useRef(null);
+  const canvasRef=useRef(null);const drawing=useRef(false);const lastPos=useRef(null);
   const getPos=(e,c)=>{const r=c.getBoundingClientRect();const s=e.touches?e.touches[0]:e;return{x:s.clientX-r.left,y:s.clientY-r.top};};
   const start=(e)=>{e.preventDefault();drawing.current=true;const c=canvasRef.current;const ctx=c.getContext("2d");const p=getPos(e,c);lastPos.current=p;ctx.beginPath();ctx.arc(p.x,p.y,1,0,Math.PI*2);ctx.fillStyle="#1a1714";ctx.fill();};
   const move=(e)=>{if(!drawing.current)return;e.preventDefault();const c=canvasRef.current;const ctx=c.getContext("2d");const p=getPos(e,c);ctx.beginPath();ctx.moveTo(lastPos.current.x,lastPos.current.y);ctx.lineTo(p.x,p.y);ctx.strokeStyle="#1a1714";ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();lastPos.current=p;};
@@ -434,15 +435,19 @@ const S=`
 /* Layout */
 .app{display:flex;height:100vh;overflow:hidden}
 .side{width:220px;background:#1a1714;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
-.s-logo{padding:16px;font-size:15px;font-weight:800;color:#f5f0e8;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:7px}
+.s-logo{padding:16px 18px;font-size:15px;font-weight:800;color:#f5f0e8;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:7px}
 .s-logo span{color:#d4a853}
-.s-lbl{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(196,168,130,.25);padding:16px 14px 5px}
-.sn{display:flex;align-items:center;gap:8px;padding:9px 12px;margin:1px 6px;border-radius:7px;font-size:12px;font-weight:500;color:rgba(245,240,232,.45);cursor:pointer;border:none;background:none;width:calc(100% - 12px);text-align:left;font-family:inherit;transition:all .1s;position:relative}
-.sn:hover{background:rgba(255,255,255,.04);color:#f5f0e8}.sn.on{background:rgba(212,168,83,.12);color:#d4a853;font-weight:700}
-.sn-i{font-size:14px;width:18px;text-align:center}
+.s-lbl{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(196,168,130,.35);padding:14px 16px 4px}
+.sn{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;border-radius:7px;font-size:12px;font-weight:500;color:rgba(255,255,255,.72);cursor:pointer;border:none;background:none;width:calc(100% - 16px);text-align:left;font-family:inherit;transition:all .12s;position:relative}
+.sn:hover{background:rgba(255,255,255,.07);color:#fff}
+.sn.on{background:rgba(212,168,83,.18);color:#f0c96a;font-weight:700}
+.sn.on .sn-i{opacity:1}
+.sn-i{width:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.8;color:rgba(255,255,255,.9)}
+.sn:hover .sn-i{opacity:1;color:#fff}
+.sn.on .sn-i{opacity:1;color:#f0c96a}
 .sn-badge{position:absolute;right:10px;background:#c45c4a;color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:100px;min-width:16px;text-align:center}
-.s-ft{margin-top:auto;padding:12px 14px;border-top:1px solid rgba(255,255,255,.04)}
-.s-ft a{display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(245,240,232,.35);text-decoration:none;padding:6px 0;transition:color .15s}.s-ft a:hover{color:#d4a853}
+.s-ft{margin-top:auto;padding:12px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.s-ft a{display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.45);text-decoration:none;padding:6px 0;transition:color .15s}.s-ft a:hover{color:#d4a853}
 
 /* Mobile sidebar */
 .mob-header{display:none;background:#1a1714;padding:12px 16px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
@@ -857,23 +862,24 @@ export default function Page(){
   const pastDueCount=charges.filter(c=>chargeStatus(c)==="pastdue").length;
   const pendingLeases=leases.filter(l=>l.status==="pending_tenant"||l.status==="pending_landlord").length;
   const tabs=[
-    {id:"dashboard",i:"📊",l:"Dashboard"},
-    {id:"scorecard",i:"📈",l:"Scorecard"},
-    {id:"rocks",i:"🪨",l:"Rocks"},
-    {id:"issues",i:"⚠️",l:"Issues"},
-    {id:"tenants",i:"👥",l:"Tenants"},
-    {id:"portal",i:"🏡",l:"Tenant Portal"},
-    {id:"payments",i:"💰",l:"Payments",badge:pastDueCount||m.unpaid.length||null},
-    {id:"applications",i:"📋",l:"Applications",badge:m.activeApps||null},
-    {id:"maintenance",i:"🔧",l:"Maintenance",badge:m.openMaint||null},
-    {id:"documents",i:"📁",l:"Documents"},
-    {id:"accounting",i:"📈",l:"Accounting"},
-    {id:"properties",i:"🏠",l:"Properties"},
-    {id:"site-settings",i:"⚙️",l:"Site Settings"},
-    {id:"theme",i:"🎨",l:"Theme Editor"},
-    {id:"ideas",i:"🧠",l:"Brain Dump"},
-    {id:"leases",i:"📝",l:"Leases & Docs",badge:pendingLeases||null},
-    {id:"notifications",i:"🔔",l:"Alerts",badge:m.unreadNotifs||null},
+    {id:"dashboard",i:<LayoutDashboard size={15}/>,l:"Dashboard"},
+    {id:"scorecard",i:<TrendingUp size={15}/>,l:"Scorecard"},
+    {id:"rocks",i:<Target size={15}/>,l:"Rocks"},
+    {id:"issues",i:<AlertTriangle size={15}/>,l:"Issues"},
+    {id:"tenants",i:<Users size={15}/>,l:"Tenants"},
+    {id:"portal",i:<Home size={15}/>,l:"Tenant Portal"},
+    {id:"payments",i:<DollarSign size={15}/>,l:"Payments",badge:pastDueCount||m.unpaid.length||null},
+    {id:"applications",i:<ClipboardList size={15}/>,l:"Applications",badge:m.activeApps||null},
+    {id:"maintenance",i:<Wrench size={15}/>,l:"Maintenance",badge:m.openMaint||null},
+    {id:"leases",i:<FileText size={15}/>,l:"Leases & Docs",badge:pendingLeases||null},
+    {id:"documents",i:<FolderOpen size={15}/>,l:"Documents"},
+    {id:"accounting",i:<BookOpen size={15}/>,l:"Accounting"},
+    {id:"properties",i:<Home size={15}/>,l:"Properties"},
+    {id:"site-settings",i:<Globe size={15}/>,l:"Site Settings"},
+    {id:"theme",i:<Palette size={15}/>,l:"Theme Editor"},
+    {id:"ideas",i:<Brain size={15}/>,l:"Brain Dump"},
+    {id:"notifications",i:<Bell size={15}/>,l:"Alerts",badge:m.unreadNotifs||null},
+    {id:"settings_dummy",i:<Settings size={15}/>,l:"Settings"},
   ];
 
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);};
@@ -914,7 +920,7 @@ export default function Page(){
 
     {/* Main */}
     <div className="mn">
-      <div className="tbar"><div><h1>{(tabs.find(t=>t.id===tab)||{}).i} {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>
+      <div className="tbar"><div><h1><span style={{color:"#d4a853",display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>
       <div className="cnt">
 
       {/* ═══ DASHBOARD ═══ */}
