@@ -5457,21 +5457,67 @@ export default function Page(){
             const sigLink=`${settings.siteUrl||"https://rentblackbear.com"}/lease?token=${sigToken}`;
             const chargeRows=chargeList.map(c=>`${c.desc}: ${fmtS(c.amount)} — due ${fmtD(c.due)}`).join(", ");
 
-            // If a lease record exists for this app, stamp PM sig + token on it
+            // Find existing lease or auto-create one so the signing link always works
             const allLeases=await load("hq-leases",[]);
-            const appLease2=allLeases.find(l=>l.applicationId===a.id&&l.status!=="executed");
-            if(appLease2){
-              const ul=allLeases.map(l=>l.id===appLease2.id?{
-                ...l,
-                status:"pending_tenant",
-                landlordSignature:modal.pmSig,
-                landlordSignedAt:now,
-                landlordName:settings.landlordName||settings.companyName||"Carolina Cooper",
-                signingToken:sigToken,
-                signingLink:sigLink,
-              }:l);
-              await save("hq-leases",ul);
-            }
+            const existingLease=allLeases.find(l=>l.applicationId===a.id&&l.status!=="executed");
+            const leaseEndD=new Date(termMoveIn+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);
+            const tmpl=leaseTemplate||{sections:DEF_LEASE_SECTIONS};
+            const rentWords=numberToWords(rent);
+            const leaseVars={
+              MONTHLY_RENT:fmtS(rent).replace("$",""),
+              RENT_WORDS:rentWords,
+              DAILY_RATE:Math.ceil(rent/30),
+              SECURITY_DEPOSIT:fmtS(sdAmt).replace("$",""),
+              PRORATED_RENT:fmtS(proratedAmt).replace("$",""),
+              LEASE_START:fmtD(termMoveIn),
+              LEASE_END:fmtD(leaseEndD.toISOString().split("T")[0]),
+              PROPERTY_ADDRESS:propName,
+              PARKING_SPACE:"See property map",
+              DOOR_CODE:a.passcode||"Assigned at move-in",
+              UTILITIES_CLAUSE:"Utilities included up to $100/mo. Overage split equally among residents.",
+              LANDLORD_NAME:settings.landlordName||tmpl.landlordName||"Carolina Cooper",
+            };
+            const leaseRecord=existingLease||{
+              id:uid(),
+              applicationId:a.id,
+              tenantName:a.name,
+              tenantEmail:a.email,
+              tenantPhone:a.phone,
+              landlordName:settings.landlordName||tmpl.landlordName||"Carolina Cooper",
+              company:tmpl.company||settings.companyName||"Black Bear Properties",
+              landlordEmail:settings.email||"info@rentblackbear.com",
+              property:propName,
+              propertyAddress:propName,
+              room:resolvedRoom.name,
+              rent,
+              sd:sdAmt,
+              proratedRent:proratedAmt,
+              moveIn:termMoveIn,
+              leaseStart:termMoveIn,
+              leaseEnd:leaseEndD.toISOString().split("T")[0],
+              doorCode:a.passcode||"",
+              sections:tmpl.sections||DEF_LEASE_SECTIONS,
+              variables:leaseVars,
+              status:"draft",
+              createdAt:now,
+              updatedAt:now,
+            };
+            const updatedLease={
+              ...leaseRecord,
+              status:"pending_tenant",
+              landlordSignature:modal.pmSig,
+              landlordSignedAt:now,
+              landlordName:settings.landlordName||tmpl.landlordName||"Carolina Cooper",
+              signingToken:sigToken,
+              signingLink:sigLink,
+              variables:leaseVars,
+              updatedAt:now,
+            };
+            const updatedLeases=existingLease
+              ?allLeases.map(l=>l.id===leaseRecord.id?updatedLease:l)
+              :[...allLeases,updatedLease];
+            await save("hq-leases",updatedLeases);
+            setLeases(updatedLeases);
 
             // Email tenant — doc ready to sign
             try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
