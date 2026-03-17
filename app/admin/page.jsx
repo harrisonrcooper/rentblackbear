@@ -5397,8 +5397,11 @@ export default function Page(){
           <button className="btn btn-out" onClick={()=>setModal(p=>({...p,step:1}))}>← Edit Charges</button>
           <button className="btn btn-green" onClick={async()=>{
             if(!modal.pmSig){setModal(p=>({...p,pmSigErr:true,pmSigShakeKey:(p.pmSigShakeKey||0)+1}));return;}
-            if(!targetRoom){alert("Room not found — check room assignment.");return;}
+            // Resolve room — fall back to any prop room match by name if termRoomId isn't set
+            const resolvedRoom=targetRoom||(a.room?props.flatMap(p=>p.rooms).find(r=>r.name===a.room):null);
+            if(!resolvedRoom){setModal(p=>({...p,pmSigErr:false}));alert("No room assigned — go back and assign a room in the Room Assignment section.");return;}
             const now=TODAY.toISOString().split("T")[0];
+            try{
             const chargeConfig={
               rent,sd:sdAmt,sdDue,rentDue,structure,riskLevel,
               proratedDays:daysRemaining,proratedAmt,dailyRate,
@@ -5408,13 +5411,7 @@ export default function Page(){
             if(modal.savePmSig&&modal.pmSig){setSettings(p=>{const u={...p,savedSignature:modal.pmSig};save("hq-settings",u);return u;});}
             const passcode=a.passcode||null;
             const lockActivation=passcode?{passcode,activatesAt:`${termMoveIn}T00:00:00`,status:"pending"}:null;
-            // Update lease record with PM signature if a lease exists for this application
-            const existingLeases=await loadKey("hq-leases",[]);
-            const appLease=existingLeases.find(l=>l.applicationId===a.id&&l.status!=="executed");
-            if(appLease){
-              const updatedLeases=existingLeases.map(l=>l.id===appLease.id?{...l,landlordSignature:modal.pmSig,landlordSignedAt:now,landlordName:settings.landlordName||"Carolina Cooper"}:l);
-              await saveKey("hq-leases",updatedLeases);
-            }
+            // Lease record update happens below after token is generated
             setApps(p=>p.map(x=>x.id===a.id?{...x,
               status:"lease-sent",lastContact:now,
               property:targetProp?targetProp.name:a.property,
@@ -5432,7 +5429,7 @@ export default function Page(){
 
             // Generate signing token + link for tenant
             const propName=targetProp?targetProp.name:a.property;
-            const roomObj=targetRoom;
+            const roomObj=resolvedRoom;
             const bathType=roomObj?.pb?"Private bath":"Shared bath";
             const sqft=roomObj?.sqft?roomObj.sqft+"sqft":"";
             const sigToken=uid()+uid();
@@ -5497,6 +5494,7 @@ export default function Page(){
 
             // Move to step 3 success screen
             setModal(p=>({...p,step:3,sentAt:now,sentPropName:propName,sentRoom:roomObj?.name,sentBath:bathType,sigLink}));
+            }catch(err){console.error("Sign & send failed:",err);alert("Something went wrong: "+err.message+". Check the console for details.");}
           }}>✅ Sign & Send to Tenant</button>
         </div>
       </>}
