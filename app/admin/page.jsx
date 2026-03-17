@@ -4906,23 +4906,35 @@ export default function Page(){
     const installmentStartDue=cfg.installmentStartDue||defaultDueDate;
 
     // Build charge preview
+    const secondMonthD=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,1);
+    const secondMonthDue=secondMonthD.toISOString().split("T")[0];
+    const secondMonthLabel=secondMonthD.toLocaleString("default",{month:"long",year:"numeric"});
     const buildCharges=()=>{
-      const now=TODAY.toISOString().split("T")[0];
       const list=[];
       list.push({cat:"Security Deposit",desc:"Security Deposit",amount:sdAmt,due:sdDue,note:"Due upon lease signing to secure the room."});
-      if(isFirstDay||structure==="full"||structure==="first-last"){
+      if(isFirstDay){
+        // Move-in on the 1st — clean full month, no proration needed
         list.push({cat:"Rent",desc:"First Month's Rent — "+moveInD.toLocaleString("default",{month:"long",year:"numeric"}),amount:rent,due:rentDue,note:"Due before move-in."});
-      } else {
-        list.push({cat:"Rent",desc:"Prorated Rent ("+daysRemaining+" days × $"+dailyRate+")",amount:proratedAmt,due:rentDue,note:"Due before move-in. Full rent begins next month."});
+      } else if(structure==="prorated"){
+        // Pay only the stub days now — full rent starts next month
+        list.push({cat:"Rent",desc:"Prorated Rent ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,due:rentDue,note:"Due before move-in. Full rent of "+fmtS(rent)+" begins "+secondMonthLabel+"."});
+      } else if(structure==="full"||structure==="first-last"){
+        // Pay full month's rent upfront — covers the stub + most of next month
+        // True-up: only the prorated days are owed on the 1st of next month
+        list.push({cat:"Rent",desc:"First Month's Rent — "+moveInD.toLocaleString("default",{month:"long",year:"numeric"}),amount:rent,due:rentDue,note:"Due before move-in. Covers move-in through end of "+secondMonthLabel+"."});
+        if(!isFirstDay&&structure!=="first-last"){
+          // The $660 pre-paid covers the stub + all of next month, so true-up is just the prorated stub days
+          list.push({cat:"Rent",desc:"2nd Month True-Up — "+secondMonthLabel+" ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,due:secondMonthDue,note:"Because full month was paid upfront, only the prorated stub is owed on the 1st."});
+        }
       }
       if(structure==="first-last"||riskLevel==="high"){
         if(lastMonthPlan==="upfront"){
-          list.push({cat:"Rent",desc:"Last Month's Rent — "+((riskLevel==="high")?"High-Risk Hold":"Prepaid"),amount:rent,due:rentDue,note:"Held and applied to final month."});
+          list.push({cat:"Rent",desc:"Last Month's Rent — "+((riskLevel==="high")?"High-Risk Hold":"Prepaid"),amount:rent,due:rentDue,note:"Held and applied to final month of lease."});
         } else {
           for(let i=0;i<installmentCount;i++){
             const d=new Date(installmentStartDue+"T00:00:00");
             d.setMonth(d.getMonth()+i);
-            list.push({cat:"Rent",desc:"Last Month Installment "+(i+1)+" of "+installmentCount,amount:Math.ceil(rent/installmentCount),due:d.toISOString().split("T")[0],note:"Installment payment toward last month."});
+            list.push({cat:"Rent",desc:"Last Month Installment "+(i+1)+" of "+installmentCount,amount:Math.ceil(rent/installmentCount),due:d.toISOString().split("T")[0],note:"Installment toward last month's rent."});
           }
         }
       }
@@ -4996,12 +5008,35 @@ export default function Page(){
           {under15Days&&!isFirstDay&&<div style={{fontSize:10,color:"#d4a853",marginTop:2,marginBottom:6,fontWeight:600}}>⚡ Move-in is {daysRemaining} days into the month — recommending full first month's rent (prorated amount is minor).</div>}
           {isFirstDay&&<div style={{fontSize:10,color:"#4a7c59",marginTop:2,marginBottom:6,fontWeight:600}}>✓ Move-in is the 1st — full month's rent applies.</div>}
           <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:6}}>
-            {(!isFirstDay?[["prorated","Prorated Rent","Charge only the prorated days ("+daysRemaining+" days = "+fmtS(proratedAmt)+"). Second month is full rent."],["full","Full First Month","Charge full month's rent ("+fmtS(rent)+") regardless of move-in date."],["first-last","First + Last Month","Collect full first month ("+fmtS(rent)+") plus last month's rent ("+fmtS(rent)+") now."]]
-            :[["full","Full First Month","Move-in on the 1st — full month's rent ("+fmtS(rent)+")."]]).map(([val,label,desc])=>(
+            {(!isFirstDay?[
+              ["prorated",
+                "Prorated Only",
+                fmtS(proratedAmt)+" due before move-in ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+"). Then "+fmtS(rent)+" on "+secondMonthLabel+" and every month after.",
+                "Lower upfront — tenant pays only what they use."],
+              ["full",
+                "Full Month Upfront",
+                fmtS(rent)+" due before move-in. Then only "+fmtS(proratedAmt)+" on "+secondMonthLabel+" (true-up). Full "+fmtS(rent)+" billing starts the month after.",
+                "Recommended when move-in is late in the month — avoids collecting a tiny prorated amount."],
+              ["first-last",
+                "First + Last Month",
+                fmtS(rent)+" first month + "+fmtS(rent)+" last month due before move-in. "+fmtS(proratedAmt)+" true-up on "+secondMonthLabel+".",
+                "Maximum security — last month held in reserve for the duration of the lease."]
+            ]:[
+              ["full",
+                "Full First Month",
+                fmtS(rent)+" due before move-in. Move-in is on the 1st — no proration needed.",
+                ""]
+            ]).map(([val,label,summary,tip])=>(
               <label key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:val}}))}
                 style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${structure===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:structure===val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer"}}>
                 <input type="radio" checked={structure===val} onChange={()=>{}} style={{marginTop:2,accentColor:"#4a7c59"}}/>
-                <div><div style={{fontSize:12,fontWeight:700,color:structure===val?"#2d6a3f":"#1a1714"}}>{label}</div><div style={{fontSize:10,color:"#999",marginTop:1}}>{desc}</div></div>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{fontSize:12,fontWeight:700,color:structure===val?"#2d6a3f":"#1a1714"}}>{label}</div>
+                  </div>
+                  <div style={{fontSize:10,color:"#5c4a3a",marginTop:3,lineHeight:1.5}}>{summary}</div>
+                  {tip&&<div style={{fontSize:9,color:"#bbb",marginTop:3,fontStyle:"italic"}}>{tip}</div>}
+                </div>
               </label>
             ))}
           </div>
@@ -5068,20 +5103,21 @@ export default function Page(){
           const secondMonthLabel=secondMonthD.toLocaleString("default",{month:"long",day:"numeric",year:"numeric"});
           const rows=[];
           rows.push({label:"Security Deposit",amount:sdAmt,when:"Due today (on signing)",color:"#5c4a3a"});
-          if(structure==="prorated"&&!isFirstDay){
-            rows.push({label:"Prorated Rent ("+daysRemaining+" days)",amount:proratedAmt,when:"Due "+fmtD(rentDue),color:"#1a6b3a"});
-            rows.push({label:"Full Rent — "+secondMonthD.toLocaleString("default",{month:"long",year:"numeric"}),amount:rent,when:"Due "+secondMonthLabel+" (regular billing begins)",color:"#999",muted:true});
-          } else if(structure==="full"&&!isFirstDay){
-            rows.push({label:"Full First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue),color:"#1a6b3a"});
-            rows.push({label:"2nd Month Rent (prorated — "+daysRemaining+" days)",amount:proratedAmt,when:"Due "+secondMonthLabel,color:"#999",muted:true});
-          } else if(structure==="full"&&isFirstDay){
-            rows.push({label:"First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue),color:"#1a6b3a"});
+          if(isFirstDay){
+            rows.push({label:"First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue)});
+          } else if(structure==="prorated"){
+            rows.push({label:"Prorated Rent ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:"Due "+fmtD(rentDue)});
+            rows.push({label:"Full Rent — "+secondMonthLabel+" onward",amount:rent,when:"Due "+secondMonthLabel+" (regular billing begins)",muted:true});
+          } else if(structure==="full"){
+            rows.push({label:"Full First Month's Rent (upfront)",amount:rent,when:"Due "+fmtD(rentDue)});
+            rows.push({label:"2nd Month True-Up ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:"Due "+secondMonthLabel+" — then full "+fmtS(rent)+" monthly",muted:true});
           } else if(structure==="first-last"){
-            rows.push({label:"Full First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue),color:"#1a6b3a"});
+            rows.push({label:"Full First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue)});
+            rows.push({label:"2nd Month True-Up ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:"Due "+secondMonthLabel,muted:true});
             if(lastMonthPlan==="upfront"){
-              rows.push({label:"Last Month's Rent (held)",amount:rent,when:"Due "+fmtD(rentDue),color:"#1a6b3a"});
+              rows.push({label:"Last Month's Rent (held in reserve)",amount:rent,when:"Due "+fmtD(rentDue)});
             } else {
-              for(let i=0;i<installmentCount;i++){const d2=new Date(installmentStartDue+"T00:00:00");d2.setMonth(d2.getMonth()+i);rows.push({label:"Last Month Installment "+(i+1)+"/"+installmentCount,amount:Math.ceil(rent/installmentCount),when:"Due "+fmtD(d2.toISOString().split("T")[0]),color:"#1a6b3a"});}
+              for(let i=0;i<installmentCount;i++){const d2=new Date(installmentStartDue+"T00:00:00");d2.setMonth(d2.getMonth()+i);rows.push({label:"Last Month Installment "+(i+1)+"/"+installmentCount,amount:Math.ceil(rent/installmentCount),when:"Due "+fmtD(d2.toISOString().split("T")[0])});}
             }
           }
           const totalToday=sdAmt;
