@@ -554,9 +554,9 @@ const S=`
 .pipe-hd{padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.03);display:flex;justify-content:space-between;align-items:center}
 .pipe-hd h4{font-size:12px;font-weight:800}.pipe-cnt{font-size:10px;color:#999;background:rgba(0,0,0,.04);padding:1px 7px;border-radius:100px}
 .pipe-bd{padding:10px;min-height:100px}
-.pipe-card{padding:12px;border-radius:8px;border:1px solid rgba(0,0,0,.04);margin-bottom:8px;cursor:pointer;transition:all .12s;position:relative}
-.pipe-card:hover{border-color:rgba(212,168,83,.2);box-shadow:0 2px 8px rgba(0,0,0,.03)}
-.pipe-nm{font-size:12px;font-weight:700;margin-bottom:2px}.pipe-sub{font-size:10px;color:#999}.pipe-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.pipe-card{padding:10px 10px 10px 30px;border-radius:8px;border:1px solid rgba(0,0,0,.07);margin-bottom:8px;cursor:pointer;transition:all .12s;position:relative}
+.pipe-card:hover{border-color:rgba(212,168,83,.3);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pipe-nm{font-size:12px;font-weight:700;color:#1a1714;margin-bottom:2px}.pipe-sub{font-size:10px;color:#5c4a3a;font-weight:500}.pipe-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 
 /* Tenant portal preview */
 .tp-card{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,.03);padding:18px;margin-bottom:10px}
@@ -1796,19 +1796,27 @@ export default function Page(){
           {bulkSel.length>0&&<>
             {(()=>{
               const invitable=activeApps.filter(a=>bulkSel.includes(a.id)&&["pre-screened","called"].includes(a.status));
-              if(!invitable.length)return null;
-              return(
-                <button className="btn btn-gold btn-sm"
+              const reinvitable=activeApps.filter(a=>bulkSel.includes(a.id)&&a.status==="invited");
+              return(<>
+                {invitable.length>0&&<button className="btn btn-gold btn-sm"
                   onClick={()=>{
-                    if(invitable.length===1){
-                      setModal({type:"inviteApp",data:invitable[0]});
-                    } else {
-                      setModal({type:"bulkInvite",ids:bulkSel});
-                    }
+                    if(invitable.length===1){setModal({type:"inviteApp",data:invitable[0]});}
+                    else{setModal({type:"bulkInvite",ids:bulkSel});}
                   }}>
                   ✉️ Invite ({invitable.length})
-                </button>
-              );
+                </button>}
+                {reinvitable.length>0&&<button className="btn btn-out btn-sm" style={{color:"#3b82f6",borderColor:"rgba(59,130,246,.25)"}}
+                  onClick={()=>setModal({type:"confirmAction",title:`Reinvite ${reinvitable.length} Applicant${reinvitable.length>1?"s":""}`,
+                    body:`Resend the application link to ${reinvitable.length} invited applicant${reinvitable.length>1?"s":" ("+reinvitable[0].name+")"}?`,
+                    confirmLabel:"Reinvite",confirmStyle:"btn-gold",
+                    onConfirm:()=>{
+                      const now=TODAY.toISOString().split("T")[0];
+                      setApps(p=>p.map(a=>reinvitable.find(r=>r.id===a.id)?{...a,lastContact:now,history:[...(a.history||[]),{from:"invited",to:"invited",date:now,note:"Reinvited — resent application link"}]}:a));
+                      setBulkSel([]);setModal(null);
+                    }})}>
+                  🔄 Reinvite ({reinvitable.length})
+                </button>}
+              </>);
             })()}
             <button className="btn btn-out btn-sm" style={{color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
               onClick={()=>setModal({type:"confirmAction",title:"Archive "+bulkSel.length+" Applicant"+(bulkSel.length>1?"s":""),
@@ -1845,21 +1853,24 @@ export default function Page(){
                   var prog=isOnboarding?getOnboardingProgress(a):null;
                   return(
                   <div key={a.id} className="pipe-card" style={{
-                    border:isOnboarding?`2px solid ${prog.color}`:"",
-                    borderLeft:isOnboarding?"":sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",
-                    cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",paddingLeft:isOnboarding?8:28,
-                    padding:isOnboarding?"8px":undefined
+                    border:isOnboarding?`2px solid ${prog.color}`:"1px solid rgba(0,0,0,.07)",
+                    borderLeft:isOnboarding?`2px solid ${prog.color}`:sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",
+                    cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",
+                    padding:isOnboarding?"10px":"10px 10px 10px 30px",
                   }} onClick={function(){setModal({type:"app",data:a});}}>
-                    {!isOnboarding&&<div style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)"}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>}
+
+                    {/* Checkbox — only on non-onboarding, positioned cleanly */}
+                    {!isOnboarding&&<div style={{position:"absolute",left:8,top:12}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>}
+
                     {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600,cursor:"pointer"}}
                       onClick={e=>{e.stopPropagation();if(flags[0].type==="past"){setDrill("archive");setTab("tenants");}else if(flags[0].type==="dup"){setModal({type:"app",data:flags[0].data});}setModal(null);}}>
                       {flags[0].type==="current"?"⚠ Current Tenant":flags[0].type==="past"?"↩ Returning":flags[0].type==="dup"?"⚠ Duplicate":""} →
                     </div>}
+
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div className="pipe-nm" style={{fontSize:10}}>{a.name}</div>
+                      <div className="pipe-nm">{a.name}</div>
                       {!isOnboarding&&<div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
                         <span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
-                          title={bd.join(" · ")||"Base score: 50"}
                           onMouseEnter={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="block";}}
                           onMouseLeave={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="none";}}
                         >{sc}</span>
@@ -1868,12 +1879,24 @@ export default function Page(){
                         </div>
                       </div>}
                     </div>
-                    <div className="pipe-sub" style={{fontSize:8}}>{a.property||"—"}{a.room?" · "+a.room:""}</div>
+
+                    <div className="pipe-sub">{a.property||"—"}{a.room?" · "+a.room:""}</div>
+
+                    {/* Invited — "Awaiting Reply" badge + reinvite button */}
+                    {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:5}}>
+                      <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 6px",borderRadius:99}}>⏳ Awaiting Reply</span>
+                      <button style={{fontSize:8,padding:"2px 7px",background:"none",border:"1px solid rgba(59,130,246,.25)",borderRadius:4,color:"#3b82f6",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
+                        onClick={e=>{e.stopPropagation();
+                          const now=TODAY.toISOString().split("T")[0];
+                          setApps(p=>p.map(x=>x.id===a.id?{...x,lastContact:now,history:[...(x.history||[]),{from:"invited",to:"invited",date:now,note:"Reinvited — resent application link"}]}:x));
+                          if(a.inviteLink){navigator.clipboard.writeText(a.inviteLink);alert("Link copied! Re-send to "+a.name);}
+                        }}>🔄 Reinvite</button>
+                    </div>}
 
                     {/* Onboarding progress bar */}
                     {isOnboarding&&prog&&<>
-                      <div style={{marginTop:6,height:4,background:"rgba(0,0,0,.06)",borderRadius:2,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:`${prog.pct}%`,background:prog.color,borderRadius:2,transition:"width .3s ease"}}/>
+                      <div style={{marginTop:6,height:5,background:"rgba(0,0,0,.08)",borderRadius:3,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:`${prog.pct}%`,background:prog.color,borderRadius:3,transition:"width .3s ease"}}/>
                       </div>
                       <div style={{display:"flex",gap:3,marginTop:5}}>
                         {[
@@ -1882,20 +1905,21 @@ export default function Page(){
                           {key:"sdPaid",label:"SD"},
                           {key:"firstMonthPaid",label:"Rent"},
                         ].map(({key,label})=>(
-                          <div key={key} style={{flex:1,textAlign:"center",fontSize:6,fontWeight:700,padding:"2px 0",borderRadius:3,
-                            background:prog[key]?"rgba(74,124,89,.12)":"rgba(0,0,0,.04)",
-                            color:prog[key]?"#4a7c59":"#bbb"}}>
-                            {prog[key]?"✓":""} {label}
+                          <div key={key} style={{flex:1,textAlign:"center",fontSize:7,fontWeight:800,padding:"2px 0",borderRadius:3,
+                            background:prog[key]?"rgba(74,124,89,.15)":"rgba(0,0,0,.06)",
+                            color:prog[key]?"#2d6a3f":"#666"}}>
+                            {prog[key]?"✓ ":""}{label}
                           </div>
                         ))}
                       </div>
-                      {prog.ready&&<div style={{marginTop:4,fontSize:7,fontWeight:800,color:"#4a7c59",textAlign:"center",padding:"2px 0",background:"rgba(74,124,89,.08)",borderRadius:3}}>✅ Ready to Move In</div>}
+                      {prog.ready&&<div style={{marginTop:4,fontSize:8,fontWeight:800,color:"#2d6a3f",textAlign:"center",padding:"3px 0",background:"rgba(74,124,89,.1)",borderRadius:3}}>✅ Ready to Move In</div>}
                     </>}
 
-                    {!isOnboarding&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#999",marginTop:4}}>
+                    {/* Standard card footer */}
+                    {!isOnboarding&&a.status!=="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#777",marginTop:5}}>
                       <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
                       <div style={{display:"flex",alignItems:"center",gap:4}}>
-                        {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:700}}>{d}d</span>}
+                        {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#888",fontWeight:700}}>{d}d</span>}
                         {canInvite&&<button style={{fontSize:7,padding:"1px 5px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                           onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite</button>}
                       </div>
