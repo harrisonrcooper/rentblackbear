@@ -210,25 +210,63 @@ function PhotoManager({photos=[],onChange,label="Photos",max=6}){
 }
 
 function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
-  const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",desc:"",photos:[],rooms:[]});
+  const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",baths:1,beds:0,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",desc:"",wholeHouseRent:0,wholeHouseDesc:"",photos:[],rooms:[]});
   const[warning,setWarning]=useState(null);
   const addRoom=()=>setP({...p,rooms:[...p.rooms,{id:uid(),name:`Bedroom ${p.rooms.length+1}`,rent:600,sqft:150,pb:false,st:"vacant",le:null,tenant:null,desc:"",photos:[]}]});
   const updRoom=(i,f,v)=>{const rs=[...p.rooms];rs[i]={...rs[i],[f]:f==="rent"||f==="sqft"?Number(v):f==="pb"?v==="true":v};setP({...p,rooms:rs});};
   const updRoomPhotos=(i,v)=>{const rs=[...p.rooms];rs[i]={...rs[i],photos:typeof v==="function"?v(rs[i].photos||[]):v};setP({...p,rooms:rs});};
   const isOcc=r=>r.st==="occupied"&&r.tenant;
+  const mode=p.rentalMode||"byRoom";
   return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:720,maxHeight:"90vh",overflowY:"auto"}}>
     <h2>{isNew?"Add Property":`Edit: ${p.name}`}</h2>
+
+    {/* Basic info */}
     <div className="fr"><div className="fld"><label>Name</label><input value={p.name} onChange={e=>setP({...p,name:e.target.value})}/></div><div className="fld"><label>Address</label><input value={p.addr} onChange={e=>setP({...p,addr:e.target.value})}/></div></div>
     <div className="fr3"><div className="fld"><label>Latitude</label><input type="number" step="0.0001" value={p.lat||""} onChange={e=>setP({...p,lat:Number(e.target.value)})}/></div><div className="fld"><label>Longitude</label><input type="number" step="0.0001" value={p.lng||""} onChange={e=>setP({...p,lng:Number(e.target.value)})}/></div><div className="fld"><label style={{fontSize:8,color:"#999"}}>💡 Get from Google Maps</label><a href={`https://www.google.com/maps/search/${encodeURIComponent(p.addr||"")}`} target="_blank" rel="noopener" style={{fontSize:10,color:"#3b82f6",cursor:"pointer"}}>Look up →</a></div></div>
     <div className="fr3"><div className="fld"><label>Type</label><select value={p.type} onChange={e=>setP({...p,type:e.target.value})}><option>SFH</option><option>Townhome</option><option>Duplex</option></select></div><div className="fld"><label>Utilities</label><select value={p.utils} onChange={e=>setP({...p,utils:e.target.value})}><option value="allIncluded">All Included</option><option value="first100">Tenant Pays (Split)</option></select></div><div className="fld"><label>Cleaning</label><select value={p.clean} onChange={e=>setP({...p,clean:e.target.value})}><option>Weekly</option><option>Biweekly</option></select></div></div>
-    <div className="fr"><div className="fld"><label>Baths</label><input type="number" value={p.baths} onChange={e=>setP({...p,baths:Number(e.target.value)})}/></div><div className="fld"><label>Rental Mode</label><select value={p.rentalMode||"byRoom"} onChange={e=>setP({...p,rentalMode:e.target.value})}><option value="byRoom">Rent by Bedroom</option><option value="wholeHouse">Whole House</option></select></div></div>
-    <div className="fld"><label>Property Description</label><textarea value={p.desc||""} onChange={e=>setP({...p,desc:e.target.value})} placeholder="Describe the property - shows on the public site..." rows={3}/></div>
+
+    {/* Beds / baths / rental mode */}
+    <div className="fr3">
+      <div className="fld"><label>Bedrooms</label><input type="number" min="1" value={p.beds||p.rooms.length||0} onChange={e=>setP({...p,beds:Number(e.target.value)})}/></div>
+      <div className="fld"><label>Bathrooms</label><input type="number" step="0.5" min="1" value={p.baths} onChange={e=>setP({...p,baths:Number(e.target.value)})}/></div>
+      <div className="fld"><label>Rental Mode</label>
+        <select value={mode} onChange={e=>setP({...p,rentalMode:e.target.value})}>
+          <option value="byRoom">Rent by Bedroom</option>
+          <option value="wholeHouse">Whole House</option>
+          <option value="both">Both (flexible)</option>
+        </select>
+      </div>
+    </div>
+
+    {/* Whole house pricing — shown when mode includes whole house */}
+    {(mode==="wholeHouse"||mode==="both")&&<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,marginBottom:10}}>
+      <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:10}}>Whole House Pricing</div>
+      <div className="fr">
+        <div className="fld">
+          <label>Whole House Rent ($/mo)</label>
+          <input type="number" value={p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseRent:Number(e.target.value)})} placeholder="e.g. 3200"/>
+          <div style={{fontSize:9,color:"#999",marginTop:3}}>Shown when renting the entire property to one tenant/group</div>
+        </div>
+        <div className="fld">
+          <label>Security Deposit</label>
+          <input type="number" value={p.wholeHouseSD||p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseSD:Number(e.target.value)})} placeholder="Defaults to 1 month rent"/>
+        </div>
+      </div>
+      <div className="fld">
+        <label>Whole House Description</label>
+        <textarea value={p.wholeHouseDesc||""} onChange={e=>setP({...p,wholeHouseDesc:e.target.value})} placeholder="Describe the property as a whole — sq ft, layout, included amenities, parking, yard, etc." rows={3}/>
+      </div>
+    </div>}
+
+    {/* Property description */}
+    <div className="fld"><label>{mode==="wholeHouse"?"Additional Notes":"Property Description"}</label><textarea value={p.desc||""} onChange={e=>setP({...p,desc:e.target.value})} placeholder="Describe the property — shows on the public site..." rows={2}/></div>
     <PhotoManager photos={p.photos||[]} onChange={v=>setP({...p,photos:typeof v==="function"?v(p.photos||[]):v})} label="Property Photos" max={8}/>
 
-    <div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:12,marginTop:4}}>
+    {/* Room editor — shown for byRoom and both modes */}
+    {(mode==="byRoom"||mode==="both")&&<div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:12,marginTop:4}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <h3 style={{fontSize:13,fontWeight:800}}>{(p.rentalMode||"byRoom")==="byRoom"?"Rooms":"Unit"} ({p.rooms.length})</h3>
-        <button className="btn btn-out btn-sm" onClick={addRoom}>+ {(p.rentalMode||"byRoom")==="byRoom"?"Room":"Unit"}</button>
+        <h3 style={{fontSize:13,fontWeight:800}}>Rooms ({p.rooms.length})</h3>
+        <button className="btn btn-out btn-sm" onClick={addRoom}>+ Add Room</button>
       </div>
       {p.rooms.map((r,i)=>{const locked=isOcc(r);return(
         <div key={r.id} style={{padding:12,border:`1px solid ${locked?"rgba(0,0,0,.06)":"rgba(0,0,0,.05)"}`,borderRadius:8,marginBottom:8,background:locked?"#f0efec":"#faf9f7",opacity:locked?0.7:1,position:"relative"}}>
@@ -240,22 +278,33 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
           </div>
           <div className="fr3">
             <div className="fld"><label>Sq Ft</label><input type="number" value={r.sqft||""} placeholder="150" disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"sqft",e.target.value)}/></div>
-            <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{locked?`Occupied - ${r.tenant.name}`:"Vacant"}</div></div>
-            <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"-"}</div></div>
+            <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{locked?`Occupied — ${r.tenant.name}`:"Vacant"}</div></div>
+            <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
           </div>
           {!locked&&<div className="fld"><label>Room Description</label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Features, view, notes..."/></div>}
           {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} max={4}/>}
-          {locked&&(r.photos||[]).length>0&&<div style={{marginTop:4}}><label style={{display:"block",fontSize:9,fontWeight:700,color:"#999",marginBottom:3,textTransform:"uppercase",letterSpacing:.3}}>Photos ({(r.photos||[]).length})</label><div style={{display:"flex",gap:4}}>{(r.photos||[]).map((ph,j)=><div key={j} style={{width:44,height:44,borderRadius:4,overflow:"hidden",border:"1px solid rgba(0,0,0,.06)"}}><img src={ph} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>)}</div></div>}
           {!locked&&<button className="btn btn-red btn-sm" style={{marginTop:4}} onClick={()=>setP({...p,rooms:p.rooms.filter((_,j)=>j!==i)})}>Remove Room</button>}
           {locked&&<div style={{display:"flex",gap:6,alignItems:"center",marginTop:6}}>
             <button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease & Tenant →</button>
             <span style={{fontSize:10,color:"#999"}}>To edit room, manage the lease first</span>
           </div>}
         </div>);})}
-    </div>
+    </div>}
+
+    {/* Whole house — show room count summary only */}
+    {mode==="wholeHouse"&&p.rooms.length>0&&<div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:12,marginTop:4}}>
+      <div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:6}}>Room Breakdown (for internal tracking)</div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {p.rooms.map((r,i)=><div key={r.id} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:10,background:"#faf9f7",color:r.st==="occupied"?"#4a7c59":"#999"}}>
+          {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
+        </div>)}
+      </div>
+      <button className="btn btn-out btn-sm" style={{marginTop:8}} onClick={()=>setP({...p,rentalMode:"both"})}>Switch to "Both" to edit individual rooms</button>
+    </div>}
+
     {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
     <div className="mft"><button className="btn btn-out" onClick={onClose}>Cancel</button><button className="btn btn-gold" onClick={()=>{
-      if(!p.name.trim()){const inp=document.querySelector(".mbox input");if(inp){inp.style.borderColor="#c45c4a";inp.style.animation="fieldShake .35s ease";setTimeout(()=>{inp.style.borderColor="";inp.style.animation="";},600);}const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .5s ease";}setWarning("Property name is required.");return;}
+      if(!p.name.trim()){setWarning("Property name is required.");return;}
       setWarning(null);onSave(p);}}>{isNew?"Add":"Save"}</button></div>
   </div></div>);
 }
@@ -2454,10 +2503,11 @@ export default function Page(){
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
                 <h3>{isExp?"▾":"▸"} {p.name}</h3>
-                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {p.rooms.length} rooms · {p.baths} bath · {p.utils==="allIncluded"?"All Utils":"Tenant Pays Utils"} · {p.clean} · {(p.rentalMode||"byRoom")==="byRoom"?"By Bedroom":"Whole House"}</div>
+                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {p.beds||p.rooms.length}bd / {p.baths}ba · {p.utils==="allIncluded"?"All Utils":"Tenant Pays"} · {p.clean} · <span style={{color:"#d4a853",fontWeight:600}}>{(p.rentalMode||"byRoom")==="byRoom"?"By Bedroom":(p.rentalMode)==="wholeHouse"?"Whole House":"Flexible (Both)"}</span></div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
-                {pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))}</span>}
+                {(p.rentalMode==="wholeHouse"||p.rentalMode==="both")&&p.wholeHouseRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(p.wholeHouseRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole house</span></span>}
+                {(p.rentalMode==="byRoom"||p.rentalMode==="both"||!p.rentalMode)&&pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
                 {vac>0&&<span className="badge b-red">{vac} Vacant</span>}
                 {vac===0&&<span className="badge b-green">Full</span>}
                 {unpaidRooms.length>0&&<span className="badge b-red" title={`${unpaidRooms.map(r=>r.tenant.name).join(", ")} unpaid`}>💳 {unpaidRooms.length} Unpaid</span>}
@@ -3989,9 +4039,29 @@ export default function Page(){
             <option value="">Select property...</option>
             {props.map(p=><option key={p.id} value={p.id}>{p.name} (entire property)</option>)}
           </select>
-          {selPropId&&selProp&&<div style={{marginTop:6,padding:"7px 10px",background:"rgba(212,168,83,.06)",borderRadius:6,fontSize:10,color:"#9a7422"}}>
-            Inviting to rent all {selProp.rooms?.length||"?"} rooms at {selProp.name}. Confirm rent amount in the lease terms.
-          </div>}
+          {selPropId&&selProp&&<>
+            <div style={{marginTop:8,padding:"10px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                <div>
+                  <div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Bedrooms</div>
+                  <div style={{fontSize:13,fontWeight:700}}>{selProp.beds||selProp.rooms?.length||"—"}</div>
+                </div>
+                <div>
+                  <div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Bathrooms</div>
+                  <div style={{fontSize:13,fontWeight:700}}>{selProp.baths||"—"}</div>
+                </div>
+              </div>
+              <div className="fld" style={{marginBottom:0}}>
+                <label>Rent for Entire House ($/mo)</label>
+                <input type="number"
+                  value={modal.wholeHouseRentOverride!==undefined?modal.wholeHouseRentOverride:(selProp.wholeHouseRent||0)}
+                  onChange={e=>setModal(prev=>({...prev,wholeHouseRentOverride:Number(e.target.value)}))}
+                  placeholder={selProp.wholeHouseRent?String(selProp.wholeHouseRent):"Enter rent amount"}/>
+                {selProp.wholeHouseRent>0&&<div style={{fontSize:9,color:"#999",marginTop:2}}>Default from property: {fmtS(selProp.wholeHouseRent)}/mo — edit to override for this invite</div>}
+              </div>
+            </div>
+            {selProp.wholeHouseDesc&&<div style={{marginTop:6,fontSize:11,color:"#5c4a3a",fontStyle:"italic"}}>"{selProp.wholeHouseDesc}"</div>}
+          </>}
         </div>}
 
         {roomMode==="choice"&&<p style={{fontSize:10,color:"#999"}}>Tenant sees all vacant rooms across your properties and picks one.</p>}
@@ -4062,10 +4132,11 @@ export default function Page(){
         if(roomMode==="property"&&!selPropId)errors.push("Select a property before sending");
         if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Provide a waiver reason for skipping screening");
         const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply?invite=${a.id}`;
+        const effectiveRent=roomMode==="property"?(modal.wholeHouseRentOverride!==undefined?modal.wholeHouseRentOverride:(selProp?.wholeHouseRent||0)):selRoom?selRoom.rent:null;
         const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
-        const commit=(method)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],screenPkg:pkg,incomeAdd:incomeAdd,appFee:totalFee,waiverReason:modal.waiverReason||"",property:selProp?selProp.name:a.property,room:selRoom?selRoom.name:a.room,inviteLink:link,sentVia:(x.sentVia?x.sentVia+", ":"")+method,history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Invited via ${method} - ${pkgLabel[pkg]} - $${totalFee}${modal.waiverReason?" - "+modal.waiverReason:""}`}]}:x));setNotifs(p=>[{id:uid(),type:"app",msg:`Invite sent to ${a.name} via ${method} - ${totalFee===0?"Fee waived":"$"+totalFee}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);};
-        const sendEmail=async()=>{if(!validate())return;setModal(prev=>({...prev,emailSending:true,sendErrors:[]}));try{const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:a.email,name:a.name,link,property:selProp?selProp.name:a.property,room:selRoom?selRoom.name:"",rent:selRoom?selRoom.rent:null,fee:totalFee,screeningPkg:pkgLabel[pkg],note:modal.sendNote||"",waived:pkg==="none"?["Screening waived"]:[]})});const d=await res.json();if(d.ok){commit("Email");setModal(prev=>({...prev,emailSent:true,emailSending:false}));}else{setModal(prev=>({...prev,sendErrors:[d.error||"Email failed"],emailSending:false}));}}catch{setModal(prev=>({...prev,sendErrors:["Network error"],emailSending:false}));}};
-        const smsBody=encodeURIComponent(`Hey ${a.name.split(" ")[0]}! You are invited to apply for a room at Black Bear Rentals.${modal.sendNote?"\n\n"+modal.sendNote:""}\n\nApply: ${link}\n\n${totalFee===0?"No screening fee for you!":"Fee: $"+totalFee+" paid at end"}\n\n- Harrison, Black Bear Rentals`);
+        const commit=(method)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],screenPkg:pkg,incomeAdd:incomeAdd,appFee:totalFee,waiverReason:modal.waiverReason||"",property:selProp?selProp.name:a.property,room:roomMode==="property"?"Entire Property":selRoom?selRoom.name:a.room,inviteRent:effectiveRent,inviteLink:link,sentVia:(x.sentVia?x.sentVia+", ":"")+method,history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Invited via ${method} - ${pkgLabel[pkg]} - $${totalFee}${modal.waiverReason?" - "+modal.waiverReason:""}${roomMode==="property"?" - Entire property @ "+fmtS(effectiveRent)+"/mo":""}`}]}:x));setNotifs(p=>[{id:uid(),type:"app",msg:`Invite sent to ${a.name} via ${method} - ${totalFee===0?"Fee waived":"$"+totalFee}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);};
+        const sendEmail=async()=>{if(!validate())return;setModal(prev=>({...prev,emailSending:true,sendErrors:[]}));try{const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:a.email,name:a.name,link,property:selProp?selProp.name:a.property,room:roomMode==="property"?"Entire Property":selRoom?selRoom.name:"",rent:effectiveRent,fee:totalFee,screeningPkg:pkgLabel[pkg],note:modal.sendNote||"",waived:pkg==="none"?["Screening waived"]:[]})});const d=await res.json();if(d.ok){commit("Email");setModal(prev=>({...prev,emailSent:true,emailSending:false}));}else{setModal(prev=>({...prev,sendErrors:[d.error||"Email failed"],emailSending:false}));}}catch{setModal(prev=>({...prev,sendErrors:["Network error"],emailSending:false}));}};
+        const smsBody=encodeURIComponent(`Hey ${a.name.split(" ")[0]}! You are invited to apply for ${roomMode==="property"?`the entire ${selProp?.name||"property"}${effectiveRent?" at ${fmtS(effectiveRent)}/mo":""}`:a.property+" at Black Bear Rentals"}.${modal.sendNote?"\n\n"+modal.sendNote:""}\n\nApply: ${link}\n\n${totalFee===0?"No screening fee for you!":"Fee: $"+totalFee+" paid at end"}\n\n- Harrison, Black Bear Rentals`);
         const copyLink=()=>{navigator.clipboard.writeText(link).then(()=>{setModal(prev=>({...prev,linkCopied:true}));setTimeout(()=>setModal(prev=>({...prev,linkCopied:false})),2500);});};
         return(<div style={{display:"flex",flexDirection:"column",gap:7}}>
           <div style={{display:"flex",gap:7}}>
