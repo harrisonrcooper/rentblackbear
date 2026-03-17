@@ -19,14 +19,33 @@ function DateDrop({value,onChange,hasErr,mode="movein"}){
   const parts=value?value.split("-"):["","",""];
   const yr=parts[0]||"",mo=parts[1]||"",dy=parts[2]||"";
   const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   const curYear=now.getFullYear();
-  const dobYears=Array.from({length:curYear-1900+1},(_,i)=>curYear-i); // all years back to 1900
+  const curMonth=now.getMonth()+1; // 1-12
+  const curDay=now.getDate();
+  const dobYears=Array.from({length:curYear-1900+1},(_,i)=>curYear-i);
   const moveInYears=[curYear,curYear+1,curYear+2];
   const years=mode==="dob"?dobYears:moveInYears;
   const daysInMonth=(m,y)=>{if(!m||!y)return 31;return new Date(Number(y),Number(m),0).getDate();};
-  const days=Array.from({length:daysInMonth(mo,yr)},(_,i)=>String(i+1).padStart(2,"0"));
+  const allDays=Array.from({length:daysInMonth(mo,yr)},(_,i)=>String(i+1).padStart(2,"0"));
+  // For movein: filter out past days if selected month+year is current month+year
+  const days=mode==="movein"&&Number(yr)===curYear&&Number(mo)===curMonth
+    ?allDays.filter(d=>Number(d)>=curDay)
+    :allDays;
+  // For movein: filter out past months if selected year is current year
+  const MONTH_NUMS=Array.from({length:12},(_,i)=>String(i+1).padStart(2,"0"));
+  const validMonths=mode==="movein"&&Number(yr)===curYear
+    ?MONTH_NUMS.filter(m=>Number(m)>=curMonth)
+    :MONTH_NUMS;
   const set=(newYr,newMo,newDy)=>{
     if(!newYr&&!newMo&&!newDy){onChange("");return;}
+    // If movein and selected date is in the past, auto-correct day to today
+    if(mode==="movein"&&newYr&&newMo&&newDy){
+      const picked=new Date(Number(newYr),Number(newMo)-1,Number(newDy));
+      if(picked<today){
+        onChange(`${newYr}-${newMo}-${String(curDay).padStart(2,"0")}`);return;
+      }
+    }
     onChange(`${newYr||"    "}-${newMo||"  "}-${newDy||"  "}`.trim());
   };
   const selStyle={
@@ -40,7 +59,7 @@ function DateDrop({value,onChange,hasErr,mode="movein"}){
     <div style={{display:"flex",gap:8}}>
       <select value={mo} onChange={e=>{const v=e.target.value;set(yr,v,dy);}} style={selStyle}>
         <option value="">Month</option>
-        {MONTHS.map((m,i)=><option key={m} value={String(i+1).padStart(2,"0")}>{m}</option>)}
+        {MONTHS.map((m,i)=>{const mNum=String(i+1).padStart(2,"0");if(mode==="movein"&&!validMonths.includes(mNum))return null;return<option key={m} value={mNum}>{m}</option>;})}
       </select>
       <select value={dy} onChange={e=>set(yr,mo,e.target.value)} style={{...selStyle,flex:"0 0 90px"}}>
         <option value="">Day</option>
@@ -295,6 +314,7 @@ export default function ApplyPage(){
     if(s==="appinfo"){
       if(fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
       if(req("moveIn")&&(!d.moveIn||d.moveIn.includes(" ")))e.moveIn="Please select your desired move-in date";
+      if(d.moveIn&&!d.moveIn.includes(" ")){const mi=new Date(d.moveIn+"T00:00:00");const tod=new Date();tod.setHours(0,0,0,0);if(mi<tod)e.moveIn="Move-in date cannot be in the past — please select today or a future date";}
       if(!invite&&req("preferredProperty")&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
     }
     if(s==="personal"){
@@ -758,6 +778,13 @@ export default function ApplyPage(){
             // Resolve room from selectedRoom ID if tenant picked one
             const allProps2=await loadKey("hq-props",[]);
             const pickedRoom2=d.selectedRoom?allProps2.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.id===d.selectedRoom):null;
+            // If tenant had a locked/pre-assigned room, resolve termRoomId from the room name
+            const invitedApp=apps.find(a=>a.id===invite.id);
+            const roomNameFromInvite=invitedApp?.room||"";
+            const lockedRoomObj=!pickedRoom2&&roomNameFromInvite
+              ?allProps2.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.name===roomNameFromInvite)
+              :null;
+            const resolvedRoomData=pickedRoom2||lockedRoomObj;
             const updated=apps.map(a=>a.id===invite.id?{...a,
               status:"applied",lastContact:now,
               applicationData:d,
@@ -765,14 +792,19 @@ export default function ApplyPage(){
               name:fullName,email:d.email,phone:d.phone,
               moveIn:d.moveIn||a.moveIn||"",
               termMoveIn:d.moveIn||a.moveIn||"",
-              ...(pickedRoom2?{
-                room:pickedRoom2.name,
-                termRoomId:pickedRoom2.id,
-                termPropId:pickedRoom2.propId,
-                termRent:pickedRoom2.rent,
-                termSD:pickedRoom2.rent,
-                property:pickedRoom2.propName,
-              }:{}),
+              // Always ensure termRoomId, termRent, termSD are set from resolved room
+              ...(resolvedRoomData?{
+                room:resolvedRoomData.name,
+                property:resolvedRoomData.propName,
+                termRoomId:resolvedRoomData.id,
+                termPropId:resolvedRoomData.propId,
+                termRent:resolvedRoomData.rent,
+                termSD:resolvedRoomData.rent,
+              }:{
+                // Fall back to inviteRent if no room object found
+                termRent:invitedApp?.inviteRent||invitedApp?.termRent||undefined,
+                termSD:invitedApp?.inviteRent||invitedApp?.termSD||undefined,
+              }),
               history:[...(a.history||[]),{from:"invited",to:"applied",date:now,note:`Application submitted + $${baseFee} paid`}]
             }:a);
             await saveKey("hq-apps",updated);
