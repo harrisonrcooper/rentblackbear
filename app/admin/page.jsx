@@ -5458,7 +5458,7 @@ export default function Page(){
             const chargeRows=chargeList.map(c=>`${c.desc}: ${fmtS(c.amount)} — due ${fmtD(c.due)}`).join(", ");
 
             // If a lease record exists for this app, stamp PM sig + token on it
-            const allLeases=await loadKey("hq-leases",[]);
+            const allLeases=await load("hq-leases",[]);
             const appLease2=allLeases.find(l=>l.applicationId===a.id&&l.status!=="executed");
             if(appLease2){
               const ul=allLeases.map(l=>l.id===appLease2.id?{
@@ -5470,7 +5470,7 @@ export default function Page(){
                 signingToken:sigToken,
                 signingLink:sigLink,
               }:l);
-              await saveKey("hq-leases",ul);
+              await save("hq-leases",ul);
             }
 
             // Email tenant — doc ready to sign
