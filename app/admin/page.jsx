@@ -541,7 +541,7 @@ const S=`
 
 /* Modal */
 .mbg{position:fixed;inset:0;background:rgba(26,23,20,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
-.mbox{background:#fff;border-radius:14px;max-width:580px;width:100%;max-height:85vh;overflow-y:auto;padding:22px;animation:fadeIn .2s}
+.mbox{background:#fff;border-radius:14px;max-width:580px;width:100%;max-height:85vh;overflow-y:auto;overflow-x:hidden;padding:22px;animation:fadeIn .2s}
 .mbox h2{font-size:16px;font-weight:800;margin-bottom:14px}
 .mft{display:flex;justify-content:flex-end;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.04)}
 
@@ -4923,8 +4923,8 @@ export default function Page(){
         // True-up: only the prorated days are owed on the 1st of next month
         list.push({cat:"Rent",desc:"First Month's Rent — "+moveInD.toLocaleString("default",{month:"long",year:"numeric"}),amount:rent,due:rentDue,note:"Due before move-in. Covers move-in through end of "+secondMonthLabel+"."});
         if(!isFirstDay&&structure!=="first-last"){
-          // The $660 pre-paid covers the stub + all of next month, so true-up is just the prorated stub days
-          list.push({cat:"Rent",desc:"2nd Month True-Up — "+secondMonthLabel+" ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,due:secondMonthDue,note:"Because full month was paid upfront, only the prorated stub is owed on the 1st."});
+          // Full month paid upfront — only the partial days are owed on the 1st of next month
+          list.push({cat:"Rent",desc:"2nd Month Rent (partial) — "+secondMonthLabel+" ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,due:secondMonthDue,note:"Because full month was paid upfront, Only the partial days for that month are owed on the 1st."});
         }
       }
       if(structure==="first-last"||riskLevel==="high"){
@@ -5010,18 +5010,18 @@ export default function Page(){
           <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:6}}>
             {(!isFirstDay?[
               ["prorated","Prorated Only",fmtS(proratedAmt)+" due before move-in",daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+"/day. Full "+fmtS(rent)+" starts "+secondMonthLabel+"."],
-              ["full","Full Month Upfront",fmtS(rent)+" due before move-in",fmtS(proratedAmt)+" true-up due "+secondMonthLabel+". Then full "+fmtS(rent)+" monthly after that."],
-              ["first-last","First + Last Month",fmtS(rent)+" first + "+fmtS(rent)+" last due before move-in",fmtS(proratedAmt)+" true-up due "+secondMonthLabel+". Last month held for duration of lease."]
+              ["full","Full Month Upfront",fmtS(rent)+" due before move-in",fmtS(proratedAmt)+" partial rent due "+secondMonthLabel+". Then full "+fmtS(rent)+" monthly after that."],
+              ["first-last","First + Last Month",fmtS(rent)+" first + "+fmtS(rent)+" last due before move-in",fmtS(proratedAmt)+" partial rent due "+secondMonthLabel+". Last month held for duration of lease."]
             ]:[
               ["full","Full First Month",fmtS(rent)+" due before move-in","Move-in on the 1st — no proration needed."]
             ]).map(([val,label,amt,desc])=>(
               <label key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:val}}))}
-                style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px",borderRadius:8,border:`2px solid ${structure===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:structure===val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer"}}>
+                style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px",borderRadius:8,border:`2px solid ${structure===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:structure===val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer",width:"100%",boxSizing:"border-box",overflow:"hidden"}}>
                 <input type="radio" checked={structure===val} onChange={()=>{}} style={{flexShrink:0,marginTop:3,accentColor:"#4a7c59"}}/>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:800,color:structure===val?"#2d6a3f":"#1a1714",marginBottom:2}}>{label}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:structure===val?"#4a7c59":"#3d3529",marginBottom:3}}>{amt}</div>
-                  <div style={{fontSize:10,color:"#777",lineHeight:1.5}}>{desc}</div>
+                <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+                  <div style={{fontSize:12,fontWeight:800,color:structure===val?"#2d6a3f":"#1a1714",marginBottom:2,wordBreak:"break-word"}}>{label}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:structure===val?"#4a7c59":"#3d3529",marginBottom:3,wordBreak:"break-word"}}>{amt}</div>
+                  <div style={{fontSize:10,color:"#777",lineHeight:1.5,wordBreak:"break-word"}}>{desc}</div>
                 </div>
               </label>
             ))}
@@ -5093,10 +5093,10 @@ export default function Page(){
             rows.push({label:"Full Rent — "+secondMonthLabel+" onward",amount:rent,when:secondMonthLabel+" (regular monthly billing begins)",future:true});
           } else if(structure==="full"){
             rows.push({label:"Full First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue),future:false});
-            rows.push({label:"2nd Month True-Up ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:secondMonthLabel+" — then full "+fmtS(rent)+" monthly",future:true});
+            rows.push({label:"2nd Month Rent (partial) ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:secondMonthLabel+" — then full "+fmtS(rent)+" monthly",future:true});
           } else if(structure==="first-last"){
             rows.push({label:"Full First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue),future:false});
-            rows.push({label:"2nd Month True-Up ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:secondMonthLabel+" — then full "+fmtS(rent)+" monthly",future:true});
+            rows.push({label:"2nd Month Rent (partial) ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:secondMonthLabel+" — then full "+fmtS(rent)+" monthly",future:true});
             if(lastMonthPlan==="upfront"){
               rows.push({label:"Last Month's Rent (held in reserve)",amount:rent,when:"Due "+fmtD(rentDue),future:false});
             } else {
@@ -5204,7 +5204,7 @@ export default function Page(){
                 <div style={{fontSize:9,fontWeight:800,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Following Month</div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>2nd Month True-Up — {daysRemaining} day{daysRemaining===1?"":"s"} × ${Math.ceil(dailyRate)}/day</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>2nd Month Rent (partial) — {daysRemaining} day{daysRemaining===1?"":"s"} × ${Math.ceil(dailyRate)}/day</div>
                     <div style={{fontSize:10,color:"#5c4a3a",marginTop:1}}>Due {secondMonthLabel} · Then full {fmtS(rent)} monthly after</div>
                   </div>
                   <strong style={{fontSize:13,color:"#1a1714"}}>{fmtS(proratedAmt)}</strong>
@@ -5354,111 +5354,30 @@ export default function Page(){
         {a.waiverReason&&<div style={{fontSize:10,color:"#999",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
       </div>}
 
-      {/* ── Lease Terms Editor (Reviewing stage) ── */}
+      {/* ── Room Assignment (Reviewing stage) ── */}
       {a.status==="reviewing"&&(()=>{
         const allVacantRooms=props.flatMap(p=>p.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
-        // Auto-fill from application data; termX fields override once manually set
         const termProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
         const termRoom=a.termRoomId?(termProp?termProp.rooms.find(r=>r.id===a.termRoomId):null):(termProp?termProp.rooms.find(r=>r.name===a.room):null);
         const termRent=a.termRent!==undefined?a.termRent:(termRoom?termRoom.rent:0);
-        const termSD=a.termSD!==undefined?a.termSD:termRent;
-        const termMoveIn=a.termMoveIn||a.moveIn||TODAY.toISOString().split("T")[0];
-        const termHighRisk=a.termHighRisk||false;
-        const termProrate=a.termProrate||"prorated";
-        // Proration: rent / 30, round up to nearest dollar
-        const moveInD=new Date(termMoveIn+"T00:00:00");
-        const moveInDay=moveInD.getDate();
-        const calDaysInMonth=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,0).getDate();
-        const daysRemaining=calDaysInMonth-moveInDay+1;
-        const dailyRate=termRent/30;
-        const proratedAmt=Math.ceil(dailyRate*daysRemaining);
-        const isFirstDay=moveInDay===1;
-        const autoOver15=daysRemaining>15;
-        const dayBefore=new Date(moveInD);dayBefore.setDate(dayBefore.getDate()-1);
-        const firstDueDate=dayBefore>=TODAY?dayBefore.toISOString().split("T")[0]:termMoveIn;
-        const nextMonthFirst=`${moveInD.getFullYear()}-${(moveInD.getMonth()+2).toString().padStart(2,"0")}-01`;
-        // Build charge list
-        const charges2=[];
-        if(isFirstDay||termProrate==="full"){
-          charges2.push({label:"First Month's Rent",amount:termRent,due:firstDueDate});
-        } else {
-          charges2.push({label:`Prorated Rent (${daysRemaining} days × $${Math.ceil(dailyRate)})`,amount:proratedAmt,due:firstDueDate});
-        }
-        if(termHighRisk)charges2.push({label:"Last Month's Rent (held)",amount:termRent,due:firstDueDate});
-        const totalMoveIn=termSD+charges2.reduce((s,c)=>s+c.amount,0);
         const saveTerm=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
         return(
         <div className="tp-card" style={{border:"2px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <h3 style={{margin:0,color:"#9a7422"}}>💼 Lease Terms</h3>
-            <span style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Pre-filled from application · Editable</span>
-          </div>
+          <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>🏠 Room Assignment</h3>
           <div className="fld" style={{marginBottom:8}}>
-            <label>Room Assignment <span style={{fontWeight:400,color:"#d4a853",fontSize:9}}>(from their application)</span></label>
+            <label>Assign Room <span style={{fontWeight:400,color:"#999",fontSize:9}}>Pre-filled from application — confirm or change</span></label>
             <select value={a.termRoomId||termRoom?.id||""} onChange={e=>{const r=allVacantRooms.find(x=>x.id===e.target.value);if(r){saveTerm("termRoomId",r.id);saveTerm("termPropId",r.propId);saveTerm("termRent",r.rent);saveTerm("termSD",r.rent);}}} style={{width:"100%"}}>
-              {termRoom?<option value={termRoom.id}>{termRoom.name} at {termProp?.name} — {fmtS(termRent)}/mo</option>:<option value="">No matching vacant room</option>}
+              {termRoom?<option value={termRoom.id}>{termRoom.name} at {termProp?.name} — {fmtS(termRent)}/mo</option>:<option value="">No matching vacant room — select one</option>}
               {allVacantRooms.filter(r=>r.id!==termRoom?.id).map(r=><option key={r.id} value={r.id}>{r.name} at {r.propName} — {fmtS(r.rent)}/mo</option>)}
             </select>
-            {!termRoom&&a.room&&<div style={{fontSize:10,color:"#d4a853",marginTop:3}}>⚠ "{a.room}" not found as vacant — may be occupied. Select an available room.</div>}
+            {!termRoom&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" not found as a vacant room — it may be occupied. Select an available room before sending the lease.</div>}
           </div>
-          <div className="fr" style={{marginBottom:8}}>
-            <div className="fld" style={{marginBottom:0}}><label>Monthly Rent</label><input type="number" value={termRent} onChange={e=>saveTerm("termRent",Number(e.target.value))}/></div>
-            <div className="fld" style={{marginBottom:0}}><label>Security Deposit</label><input type="number" value={termSD} onChange={e=>saveTerm("termSD",Number(e.target.value))}/></div>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Move-in Date <span style={{fontWeight:400,color:"#999",fontSize:9}}>From application — confirm or adjust</span></label>
+            <input type="date" value={a.termMoveIn||a.moveIn||""} onChange={e=>saveTerm("termMoveIn",e.target.value)}/>
           </div>
-          <div className="fld" style={{marginBottom:8}}>
-            <label>Move-in Date <span style={{fontWeight:400,color:"#d4a853",fontSize:9}}>(from their application)</span></label>
-            <input type="date" value={termMoveIn} onChange={e=>saveTerm("termMoveIn",e.target.value)}/>
-          </div>
-          {!isFirstDay&&<div style={{marginBottom:10}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Proration — {daysRemaining} days remaining · ${termRent} ÷ 30 = {Math.ceil(dailyRate)}/day · Prorated total: ${proratedAmt}</div>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-              {[["prorated","Prorated Only"],["full","Full 1st Month"]].map(([v,l])=>(
-                <button key={v} className={`btn btn-sm ${termProrate===v?"btn-dk":"btn-out"}`} onClick={()=>saveTerm("termProrate",v)}>{l}</button>
-              ))}
-            </div>
-            <div style={{fontSize:9,color:"#d4a853",marginTop:4,lineHeight:1.5}}>
-              {termProrate==="prorated"&&`${daysRemaining} days × $${Math.ceil(dailyRate)}/day = $${proratedAmt}`}
-              {termProrate==="full"&&"Charging full first month — no proration"}
-            </div>
-          </div>}
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Risk Level</div>
-            <div style={{display:"flex",gap:6}}>
-              <button className={`btn btn-sm ${!termHighRisk?"btn-dk":"btn-out"}`} onClick={()=>saveTerm("termHighRisk",false)}>Standard</button>
-              <button className={`btn btn-sm ${termHighRisk?"btn-red":"btn-out"}`} onClick={()=>saveTerm("termHighRisk",true)}>⚠ High Risk (+ Last Month)</button>
-            </div>
-          </div>
-          <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,border:"1px solid rgba(74,124,89,.12)"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>📄 Move-In Package Preview</div>
-            <div style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11}}>
-              <div><div style={{fontWeight:600}}>🔒 Security Deposit</div><div style={{fontSize:9,color:"#999"}}>Due: Today — secures room</div></div>
-              <strong>{fmtS(termSD)}</strong>
-            </div>
-            {charges2.map((c,i)=>(
-              <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11}}>
-                <div><div style={{fontWeight:600}}>🏠 {c.label}</div><div style={{fontSize:9,color:"#999"}}>Due: {fmtD(c.due)}</div></div>
-                <strong>{fmtS(c.amount)}</strong>
-              </div>
-            ))}
-            <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",fontWeight:800,fontSize:13,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:4}}>
-              <span>Total Due at Move-In</span><span style={{color:"#4a7c59"}}>{fmtS(totalMoveIn)}</span>
-            </div>
-            {termProrate==="full"&&!isFirstDay&&(()=>{
-              const nextMonthD=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,1);
-              const nextMonthLabel=nextMonthD.toLocaleString("default",{month:"long",day:"numeric",year:"numeric"});
-              return(
-                <div style={{paddingTop:8,marginTop:6,borderTop:"1px dashed rgba(74,124,89,.25)"}}>
-                  <div style={{fontSize:9,fontWeight:800,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Following Month</div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"4px 0"}}>
-                    <div>
-                      <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>2nd Month True-Up — {daysRemaining} day{daysRemaining===1?"":"s"} × ${Math.ceil(dailyRate)}/day</div>
-                      <div style={{fontSize:9,color:"#5c4a3a",marginTop:1}}>Due {nextMonthLabel} · Then full {fmtS(termRent)} monthly</div>
-                    </div>
-                    <strong style={{fontSize:12,color:"#1a1714"}}>{fmtS(proratedAmt)}</strong>
-                  </div>
-                </div>
-              );
-            })()}
+          <div style={{marginTop:10,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
+            ⚙️ Rent structure, SD amount, risk level, and due dates are configured in the next step when you click <strong>Configure Charges &amp; Send Lease</strong>.
           </div>
         </div>);
       })()}
