@@ -282,9 +282,15 @@ export default function LeaseSignPage() {
       await saveKey("hq-leases", updated);
 
       // Generate charges + move to onboarding when tenant signs
-      if (lease.applicationId) {
-        const apps = await loadKey("hq-apps", []);
-        const signingApp = apps.find(a => a.id === lease.applicationId);
+      // Find app by applicationId, or fall back to matching by email/name
+      const apps = await loadKey("hq-apps", []);
+      const signingApp = lease.applicationId
+        ? apps.find(a => a.id === lease.applicationId)
+        : apps.find(a =>
+            (a.email && lease.tenantEmail && a.email.toLowerCase() === lease.tenantEmail.toLowerCase()) ||
+            (a.name && lease.tenantName && a.name.toLowerCase() === lease.tenantName.toLowerCase())
+          );
+      if (signingApp) {
         const cfg = signingApp?.chargeConfig || null;
         const todayStr = now.split("T")[0];
 
@@ -345,7 +351,7 @@ export default function LeaseSignPage() {
         };
         await saveKey("hq-docs", [leaseDoc, ...existingDocs]);
 
-        const updatedApps = apps.map(a => a.id === lease.applicationId ? {
+        const updatedApps = apps.map(a => a.id === signingApp.id ? {
           ...a,
           status: "onboarding",
           leaseSigned: true,
