@@ -16,8 +16,8 @@ export async function POST(request) {
     const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
     let pmSettings = {};
     try {
-      const sr = await fetch(, {
-        headers: { apikey: SUPA_KEY, Authorization:  }
+      const sr = await fetch(SUPA_URL + "/rest/v1/app_data?key=eq.hq-settings&select=value", {
+        headers: { apikey: SUPA_KEY, Authorization: "Bearer " + SUPA_KEY }
       });
       const sd = await sr.json();
       pmSettings = sd?.[0]?.value || {};
