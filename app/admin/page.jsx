@@ -5009,21 +5009,19 @@ export default function Page(){
           {isFirstDay&&<div style={{fontSize:10,color:"#4a7c59",marginTop:2,marginBottom:6,fontWeight:600}}>✓ Move-in is the 1st — full month's rent applies.</div>}
           <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:6}}>
             {(!isFirstDay?[
-              ["prorated","Prorated Only",fmtS(proratedAmt)+" upfront",daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+" — then full "+fmtS(rent)+" on "+secondMonthLabel],
-              ["full","Full Month Upfront",fmtS(rent)+" upfront",fmtS(proratedAmt)+" true-up on "+secondMonthLabel+" — then full "+fmtS(rent)+" monthly"],
-              ["first-last","First + Last Month",fmtS(rent*2)+" upfront",fmtS(proratedAmt)+" true-up on "+secondMonthLabel+" — last month held in reserve"]
+              ["prorated","Prorated Only",fmtS(proratedAmt)+" due before move-in",daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+"/day. Full "+fmtS(rent)+" starts "+secondMonthLabel+"."],
+              ["full","Full Month Upfront",fmtS(rent)+" due before move-in",fmtS(proratedAmt)+" true-up due "+secondMonthLabel+". Then full "+fmtS(rent)+" monthly after that."],
+              ["first-last","First + Last Month",fmtS(rent)+" first + "+fmtS(rent)+" last due before move-in",fmtS(proratedAmt)+" true-up due "+secondMonthLabel+". Last month held for duration of lease."]
             ]:[
-              ["full","Full First Month",fmtS(rent)+" upfront","Move-in on the 1st — no proration needed"]
+              ["full","Full First Month",fmtS(rent)+" due before move-in","Move-in on the 1st — no proration needed."]
             ]).map(([val,label,amt,desc])=>(
               <label key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:val}}))}
-                style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,border:`2px solid ${structure===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:structure===val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer"}}>
-                <input type="radio" checked={structure===val} onChange={()=>{}} style={{flexShrink:0,accentColor:"#4a7c59"}}/>
+                style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px",borderRadius:8,border:`2px solid ${structure===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:structure===val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer"}}>
+                <input type="radio" checked={structure===val} onChange={()=>{}} style={{flexShrink:0,marginTop:3,accentColor:"#4a7c59"}}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                    <div style={{fontSize:12,fontWeight:700,color:structure===val?"#2d6a3f":"#1a1714"}}>{label}</div>
-                    <div style={{fontSize:12,fontWeight:800,color:structure===val?"#4a7c59":"#1a1714",whiteSpace:"nowrap"}}>{amt}</div>
-                  </div>
-                  <div style={{fontSize:10,color:"#777",marginTop:2}}>{desc}</div>
+                  <div style={{fontSize:12,fontWeight:800,color:structure===val?"#2d6a3f":"#1a1714",marginBottom:2}}>{label}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:structure===val?"#4a7c59":"#3d3529",marginBottom:3}}>{amt}</div>
+                  <div style={{fontSize:10,color:"#777",lineHeight:1.5}}>{desc}</div>
                 </div>
               </label>
             ))}
@@ -5129,12 +5127,12 @@ export default function Page(){
               <div style={{marginTop:10,paddingTop:10,borderTop:"1px dashed rgba(0,0,0,.1)"}}>
                 <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Following Month</div>
                 {futureRows.map((r,i)=>(
-                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
                     <div>
-                      <div style={{fontSize:11,fontWeight:600,color:"#3d3529"}}>{r.label}</div>
-                      <div style={{fontSize:10,color:"#888",marginTop:1}}>{r.when}</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{r.label}</div>
+                      <div style={{fontSize:10,color:"#5c4a3a",marginTop:1}}>{r.when}</div>
                     </div>
-                    <strong style={{fontSize:12,color:"#3d3529"}}>{fmtS(r.amount)}</strong>
+                    <strong style={{fontSize:13,color:"#1a1714"}}>{fmtS(r.amount)}</strong>
                   </div>
                 ))}
                 <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0 0",borderTop:"1px solid rgba(0,0,0,.06)",marginTop:2}}>
@@ -5202,13 +5200,14 @@ export default function Page(){
             const secondMonthD=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,1);
             const secondMonthLabel=secondMonthD.toLocaleString("default",{month:"long",day:"numeric",year:"numeric"});
             return(
-              <div style={{marginTop:10,padding:"8px 10px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{padding:"8px 0",borderTop:"1px dashed rgba(0,0,0,.1)",marginTop:6}}>
+                <div style={{fontSize:9,fontWeight:800,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Following Month</div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
                   <div>
-                    <div style={{fontSize:11,fontWeight:700,color:"#9a7422"}}>Total due on {secondMonthLabel}</div>
-                    <div style={{fontSize:10,color:"#bbb",marginTop:1}}>2nd month — prorated ({daysRemaining} days charged at move-in rate)</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>2nd Month True-Up — {daysRemaining} day{daysRemaining===1?"":"s"} × ${Math.ceil(dailyRate)}/day</div>
+                    <div style={{fontSize:10,color:"#5c4a3a",marginTop:1}}>Due {secondMonthLabel} · Then full {fmtS(rent)} monthly after</div>
                   </div>
-                  <strong style={{fontSize:13,color:"#d4a853"}}>{fmtS(proratedAmt)}</strong>
+                  <strong style={{fontSize:13,color:"#1a1714"}}>{fmtS(proratedAmt)}</strong>
                 </div>
               </div>
             );
@@ -5448,13 +5447,14 @@ export default function Page(){
               const nextMonthD=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,1);
               const nextMonthLabel=nextMonthD.toLocaleString("default",{month:"long",day:"numeric",year:"numeric"});
               return(
-                <div style={{marginTop:8,padding:"8px 10px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{paddingTop:8,marginTop:6,borderTop:"1px dashed rgba(74,124,89,.25)"}}>
+                  <div style={{fontSize:9,fontWeight:800,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Following Month</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"4px 0"}}>
                     <div>
-                      <div style={{fontSize:11,fontWeight:700,color:"#9a7422"}}>Total due on {nextMonthLabel}</div>
-                      <div style={{fontSize:9,color:"#bbb",marginTop:1}}>2nd month true-up — {daysRemaining} day{daysRemaining===1?"":"s"} × ${Math.ceil(dailyRate)}/day (then full {fmtS(termRent)} monthly)</div>
+                      <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>2nd Month True-Up — {daysRemaining} day{daysRemaining===1?"":"s"} × ${Math.ceil(dailyRate)}/day</div>
+                      <div style={{fontSize:9,color:"#5c4a3a",marginTop:1}}>Due {nextMonthLabel} · Then full {fmtS(termRent)} monthly</div>
                     </div>
-                    <strong style={{fontSize:13,color:"#d4a853"}}>{fmtS(proratedAmt)}</strong>
+                    <strong style={{fontSize:12,color:"#1a1714"}}>{fmtS(proratedAmt)}</strong>
                   </div>
                 </div>
               );
