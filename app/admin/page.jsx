@@ -249,9 +249,13 @@ function PhotoManager({photos=[],onChange,label="Photos"}){
   const ph=photos||[];
 
   const readFiles=files=>{
-    [...files].filter(f=>f.type.startsWith("image/")).forEach(file=>{
+    const imageFiles=[...files].filter(f=>f.type.startsWith("image/"));
+    if(!imageFiles.length)return;
+    // Read all files first, then add all at once so they don't overwrite each other
+    const results=[];let done=0;
+    imageFiles.forEach((file,i)=>{
       const r=new FileReader();
-      r.onload=ev=>onChange(prev=>[...(Array.isArray(prev)?prev:ph),ev.target.result]);
+      r.onload=ev=>{results[i]=ev.target.result;done++;if(done===imageFiles.length){onChange(prev=>[...(Array.isArray(prev)?prev:ph),...results]);}};
       r.readAsDataURL(file);
     });
   };
