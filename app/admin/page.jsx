@@ -5017,12 +5017,14 @@ export default function Page(){
             ]).map(function(opt){return(
               <div key={opt.val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:opt.val}}))}
                 style={{padding:"12px",borderRadius:8,border:"2px solid "+(structure===opt.val?"rgba(74,124,89,.4)":"rgba(0,0,0,.1)"),background:structure===opt.val?"rgba(74,124,89,.05)":"#fff",cursor:"pointer"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
                   <input type="radio" readOnly checked={structure===opt.val} style={{accentColor:"#4a7c59",flexShrink:0}}/>
                   <span style={{fontSize:12,fontWeight:800,color:structure===opt.val?"#2d6a3f":"#1a1714"}}>{opt.label}</span>
-                  <span style={{marginLeft:"auto",fontSize:12,fontWeight:700,color:structure===opt.val?"#4a7c59":"#3d3529",whiteSpace:"nowrap"}}>{opt.amt}</span>
                 </div>
-                <div style={{fontSize:10,color:"#666",paddingLeft:22,lineHeight:1.5}}>{opt.desc}</div>
+                <div style={{paddingLeft:22}}>
+                  <div style={{fontSize:12,fontWeight:700,color:structure===opt.val?"#4a7c59":"#3d3529",marginBottom:2}}>{opt.amt}</div>
+                  <div style={{fontSize:10,color:"#666",lineHeight:1.5}}>{opt.desc}</div>
+                </div>
               </div>
             );})}
           </div>
