@@ -4982,22 +4982,10 @@ export default function Page(){
           ))}
         </div>
 
-        {/* Risk Level */}
-        <div className="fld" style={{marginBottom:12}}>
-          <label style={{fontSize:11,fontWeight:700}}>Risk Level</label>
-          {suggestHighRisk&&cfg.riskLevel!=="standard"&&<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginBottom:6,padding:"5px 8px",background:"rgba(196,92,74,.06)",borderRadius:6,border:"1px solid rgba(196,92,74,.15)"}}>
-            ⚠ Credit score {a.creditScore} — High Risk automatically selected. You can override below.
-          </div>}
-          <div style={{display:"flex",gap:8,marginTop:6}}>
-            {[["standard","✅ Standard","rgba(74,124,89,.08)","rgba(74,124,89,.4)","#2d6a3f"],["high","⚠️ High Risk","rgba(212,168,83,.08)","rgba(212,168,83,.4)","#9a7422"]].map(([val,label,bg,border,color])=>(
-              <button key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,riskLevel:val}}))}
-                style={{flex:1,padding:"10px",borderRadius:8,border:`2px solid ${riskLevel===val?border:"rgba(0,0,0,.08)"}`,background:riskLevel===val?bg:"#fff",fontWeight:700,fontSize:12,color:riskLevel===val?color:"#999",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
-                {label}
-              </button>
-            ))}
-          </div>
-          <div style={{fontSize:10,color:"#999",marginTop:4}}>High risk automatically adds last month's rent hold.</div>
-        </div>
+        {/* Risk indicator — shown only, not a toggle */}
+        {suggestHighRisk&&<div style={{fontSize:11,color:"#c45c4a",fontWeight:600,marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",borderRadius:8,border:"1px solid rgba(196,92,74,.2)"}}>
+          ⚠ Credit score {a.creditScore} — First + Last Month structure is recommended. Select it below.
+        </div>}
 
         {/* Security Deposit */}
         <div className="fr" style={{marginBottom:12}}>
@@ -5036,8 +5024,11 @@ export default function Page(){
                   borderRadius:8,
                   border:`2px solid ${structure===opt.val?"#4a7c59":"rgba(0,0,0,.1)"}`,
                   background:structure===opt.val?"rgba(74,124,89,.06)":"#fff",
-                  cursor:"pointer"
-                }}>
+                  cursor:"pointer",
+                  transition:"all .15s"
+                }}
+                onMouseEnter={e=>{if(structure!==opt.val)e.currentTarget.style.borderColor="rgba(74,124,89,.35)";}}
+                onMouseLeave={e=>{if(structure!==opt.val)e.currentTarget.style.borderColor="rgba(0,0,0,.1)";}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                   <div style={{
                     width:14,height:14,borderRadius:"50%",flexShrink:0,
@@ -5083,7 +5074,9 @@ export default function Page(){
                 <div style={{display:"flex",gap:6,marginTop:4}}>
                   {[["weekly","Weekly"],["biweekly","Bi-Weekly"],["monthly","Monthly"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setModal(p=>({...p,cfg:{...cfg,installmentFreq:v}}))}
-                      style={{flex:1,padding:"7px 4px",borderRadius:6,border:`2px solid ${freq===v?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:freq===v?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:freq===v?"#2d6a3f":"#999",cursor:"pointer",fontFamily:"inherit"}}>
+                      style={{flex:1,padding:"7px 4px",borderRadius:6,border:`2px solid ${freq===v?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:freq===v?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:freq===v?"#2d6a3f":"#5c4a3a",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}
+                      onMouseEnter={e=>{if(freq!==v){e.currentTarget.style.borderColor="rgba(74,124,89,.3)";e.currentTarget.style.background="rgba(74,124,89,.03)";}}}
+                      onMouseLeave={e=>{if(freq!==v){e.currentTarget.style.borderColor="rgba(0,0,0,.08)";e.currentTarget.style.background="#fff";}}}>
                       {l}
                     </button>
                   ))}
@@ -5095,7 +5088,9 @@ export default function Page(){
                 <div style={{display:"flex",gap:6,marginTop:4}}>
                   {[["count","Number of payments"],["amount","Amount per payment"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setModal(p=>({...p,cfg:{...cfg,installMode:v}}))}
-                      style={{flex:1,padding:"7px 4px",borderRadius:6,border:`2px solid ${installMode===v?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:installMode===v?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:installMode===v?"#2d6a3f":"#999",cursor:"pointer",fontFamily:"inherit"}}>
+                      style={{flex:1,padding:"7px 4px",borderRadius:6,border:`2px solid ${installMode===v?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:installMode===v?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:installMode===v?"#2d6a3f":"#5c4a3a",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}
+                      onMouseEnter={e=>{if(installMode!==v){e.currentTarget.style.borderColor="rgba(74,124,89,.3)";e.currentTarget.style.background="rgba(74,124,89,.03)";}}}
+                      onMouseLeave={e=>{if(installMode!==v){e.currentTarget.style.borderColor="rgba(0,0,0,.08)";e.currentTarget.style.background="#fff";}}}>
                       {l}
                     </button>
                   ))}
@@ -5146,7 +5141,9 @@ export default function Page(){
               return(
                 <button key={id} onClick={()=>{
                   setModal(p=>({...p,cfg:{...cfg,rentDueMode:id,rentDue:dateVal,customRentDue:id==="custom"?cfg.customRentDue||rentDue:cfg.customRentDue}}));
-                }} style={{flex:1,padding:"8px 4px",borderRadius:8,border:`2px solid ${isSelected?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:isSelected?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:isSelected?"#2d6a3f":"#999",cursor:"pointer",fontFamily:"inherit",textAlign:"center",lineHeight:1.3}}>
+                }} style={{flex:1,padding:"8px 4px",borderRadius:8,border:`2px solid ${isSelected?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:isSelected?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:isSelected?"#2d6a3f":"#5c4a3a",cursor:"pointer",fontFamily:"inherit",textAlign:"center",lineHeight:1.3,transition:"all .15s"}}
+                onMouseEnter={e=>{if(!isSelected){e.currentTarget.style.borderColor="rgba(74,124,89,.3)";e.currentTarget.style.background="rgba(74,124,89,.03)";}}}
+                onMouseLeave={e=>{if(!isSelected){e.currentTarget.style.borderColor="rgba(0,0,0,.08)";e.currentTarget.style.background="#fff";}}}>
                   {label}
                   {id!=="custom"&&<div style={{fontSize:9,fontWeight:400,color:isSelected?"#4a7c59":"#bbb",marginTop:2}}>{fmtD(dateVal)}</div>}
                 </button>
@@ -5188,37 +5185,46 @@ export default function Page(){
           return(
           <div style={{background:"rgba(26,27,24,.02)",border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:14,marginBottom:14}}>
             <div style={{fontSize:10,fontWeight:800,color:"#1a1714",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>💳 Charge Breakdown</div>
-            {nowRows.map((r,i)=>(
-              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-                <div>
-                  <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{r.label}</div>
-                  <div style={{fontSize:10,color:"#4a7c59",marginTop:1}}>{r.when}</div>
-                </div>
-                <strong style={{fontSize:13,color:"#1a1714"}}>{fmtS(r.amount)}</strong>
+            {/* Due before move-in — boxed group */}
+            <div style={{border:"1px solid rgba(74,124,89,.2)",borderRadius:8,overflow:"hidden",marginBottom:futureRows.length>0?10:0}}>
+              <div style={{padding:"6px 12px",background:"rgba(74,124,89,.06)",borderBottom:"1px solid rgba(74,124,89,.12)"}}>
+                <span style={{fontSize:9,fontWeight:800,color:"#2d6a3f",textTransform:"uppercase",letterSpacing:.8}}>Due Before Move-In</span>
               </div>
-            ))}
-            <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 4px",borderTop:"2px solid rgba(0,0,0,.08)",marginTop:2}}>
-              <span style={{fontSize:11,fontWeight:800}}>Total due before move-in</span>
-              <strong style={{fontSize:13,color:"#4a7c59"}}>{fmtS(totalBeforeMovein)}</strong>
+              {nowRows.map((r,i)=>(
+                <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 12px",borderBottom:"1px solid rgba(0,0,0,.05)"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{r.label}</div>
+                    <div style={{fontSize:10,color:"#4a7c59",marginTop:1}}>{r.when}</div>
+                  </div>
+                  <strong style={{fontSize:13,color:"#1a1714",flexShrink:0,marginLeft:12}}>{fmtS(r.amount)}</strong>
+                </div>
+              ))}
+              <div style={{display:"flex",justifyContent:"space-between",padding:"9px 12px",background:"rgba(74,124,89,.04)"}}>
+                <span style={{fontSize:12,fontWeight:800,color:"#1a1714"}}>Total due before move-in</span>
+                <strong style={{fontSize:13,color:"#4a7c59"}}>{fmtS(totalBeforeMovein)}</strong>
+              </div>
             </div>
-            {futureRows.length>0&&<>
-              <div style={{marginTop:10,paddingTop:10,borderTop:"1px dashed rgba(0,0,0,.1)"}}>
-                <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Following Month</div>
+            {/* Following month — separate boxed group */}
+            {futureRows.length>0&&(
+              <div style={{border:"1px solid rgba(212,168,83,.25)",borderRadius:8,overflow:"hidden"}}>
+                <div style={{padding:"6px 12px",background:"rgba(212,168,83,.08)",borderBottom:"1px solid rgba(212,168,83,.15)"}}>
+                  <span style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.8}}>Following Month</span>
+                </div>
                 {futureRows.map((r,i)=>(
-                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 12px",borderBottom:"1px solid rgba(0,0,0,.05)"}}>
                     <div>
                       <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{r.label}</div>
                       <div style={{fontSize:10,color:"#5c4a3a",marginTop:1}}>{r.when}</div>
                     </div>
-                    <strong style={{fontSize:13,color:"#1a1714"}}>{fmtS(r.amount)}</strong>
+                    <strong style={{fontSize:13,color:"#1a1714",flexShrink:0,marginLeft:12}}>{fmtS(r.amount)}</strong>
                   </div>
                 ))}
-                <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0 0",borderTop:"1px solid rgba(0,0,0,.06)",marginTop:2}}>
-                  <span style={{fontSize:11,fontWeight:800,color:"#3d3529"}}>Total due on {secondMonthLabel}</span>
-                  <strong style={{fontSize:12,color:"#3d3529"}}>{fmtS(totalFollowingMonth)}</strong>
+                <div style={{display:"flex",justifyContent:"space-between",padding:"9px 12px",background:"rgba(212,168,83,.05)"}}>
+                  <span style={{fontSize:12,fontWeight:800,color:"#1a1714"}}>Total due on {secondMonthLabel}</span>
+                  <strong style={{fontSize:13,color:"#9a7422"}}>{fmtS(totalFollowingMonth)}</strong>
                 </div>
               </div>
-            </>}
+            )}
           </div>);
         })()}
 
