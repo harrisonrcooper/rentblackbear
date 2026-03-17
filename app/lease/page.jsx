@@ -198,6 +198,8 @@ export default function LeaseSignPage() {
   const [errors, setErrors] = useState([]);
   const [shakeKey, setShakeKey] = useState(0); // increments on each submit attempt to re-trigger wiggle
   const [token, setToken] = useState(null);
+  const [doorCode, setDoorCode] = useState(""); // 4-digit passcode, pre-filled from application
+  const doorCodeRef = useRef(null);
   const sectionRefs = useRef({});
 
   useEffect(() => {
@@ -212,6 +214,7 @@ export default function LeaseSignPage() {
       if (found.status !== "pending_tenant") { setError("This lease is not ready for your signature yet."); setLoading(false); return; }
       // Restore any partial progress
       if (found.tenantInitials) setInitials(found.tenantInitials);
+      if (found.doorCode) setDoorCode(found.doorCode);
       setLease(found);
       setLoading(false);
     })();
@@ -225,6 +228,10 @@ export default function LeaseSignPage() {
 
   const scrollToFirst = (missingIds) => {
     const id = missingIds[0];
+    if (id === "doorCode") {
+      if (doorCodeRef.current) doorCodeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     const el = sectionRefs.current[id];
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   };
@@ -242,9 +249,13 @@ export default function LeaseSignPage() {
       errs.push("Final signature is required");
       missing.push("signature");
     }
+    if (!/^\d{4}$/.test(doorCode)) {
+      errs.push("Door code must be exactly 4 digits — numbers only");
+      missing.push("doorCode");
+    }
     if (errs.length > 0) {
       setErrors(errs);
-      setShakeKey(k => k + 1); // force wiggle re-animation
+      setShakeKey(k => k + 1);
       scrollToFirst(missing);
       return;
     }
@@ -260,11 +271,12 @@ export default function LeaseSignPage() {
         tenantSignature: signature,
         tenantSignedAt: now,
         tenantInitials: initials,
+        doorCode: doorCode,
         executedAt: now,
       } : l);
       await saveKey("hq-leases", updated);
 
-      // Write leaseSigned back to the applicant record
+      // Write leaseSigned + confirmed passcode back to the applicant record
       if (lease.applicationId) {
         const apps = await loadKey("hq-apps", []);
         const updatedApps = apps.map(a => a.id === lease.applicationId ? {
@@ -272,12 +284,13 @@ export default function LeaseSignPage() {
           leaseSigned: true,
           leaseSignedAt: now,
           leaseId: lease.id,
+          passcode: doorCode,
           lastContact: now.split("T")[0],
           history: [...(a.history || []), {
             from: a.status,
             to: a.status,
             date: now.split("T")[0],
-            note: `Lease signed by tenant on ${fullDate}`
+            note: `Lease signed by tenant on ${fullDate}. Door code confirmed: ${doorCode}`
           }]
         } : a);
         await saveKey("hq-apps", updatedApps);
@@ -367,6 +380,7 @@ export default function LeaseSignPage() {
             <div className="done-row" style={{ color: "#c4a882" }}><span>Room</span><strong style={{ color: "#f5f0e8" }}>{lease.room}</strong></div>
             <div className="done-row" style={{ color: "#c4a882" }}><span>Rent</span><strong style={{ color: "#d4a853" }}>${lease.rent?.toLocaleString()}/mo</strong></div>
             <div className="done-row" style={{ color: "#c4a882" }}><span>Move-in</span><strong style={{ color: "#f5f0e8" }}>{fmtDate(lease.moveIn)}</strong></div>
+            <div className="done-row" style={{ color: "#c4a882" }}><span>Door Code</span><strong style={{ color: "#d4a853", fontFamily: "monospace", letterSpacing: 4 }}>{lease.doorCode || doorCode || "—"}</strong></div>
             <div className="done-row" style={{ color: "#c4a882" }}><span>Executed</span><strong style={{ color: "#4a7c59" }}>{new Date(lease.executedAt).toLocaleDateString()}</strong></div>
           </div>
         </div>
@@ -517,6 +531,49 @@ export default function LeaseSignPage() {
                 )}
               </div>
             ))}
+
+            {/* Door code confirmation */}
+            <div
+              className="section"
+              ref={doorCodeRef}
+            >
+              <div className="section-num">Confirm</div>
+              <div className="section-title">Your Door Code</div>
+              <div className="section-body">
+                <p>Your 4-digit door code is written into this lease and will be programmed into your smart lock. It activates at 12:00am on your move-in day once your security deposit and first month's rent have been received.</p>
+                <p style={{ fontSize: 11, color: "#999" }}>You may change it below if you'd like a different code before signing. Once submitted, contact your property manager to request a change.</p>
+              </div>
+              <div style={{ marginTop: 20, padding: 20, background: "rgba(212,168,83,.04)", border: `2px solid ${errors.some(e => e.includes("Door code")) ? "#c45c4a" : "rgba(212,168,83,.25)"}`, borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#9a7422", textTransform: "uppercase", letterSpacing: .5 }}>🔑 {/^\d{4}$/.test(doorCode) ? "✓ Door Code Set" : "Enter Your 4-Digit Code"}</div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={doorCode}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                    setDoorCode(val);
+                    if (/^\d{4}$/.test(val)) setErrors(errs => errs.filter(e => !e.includes("Door code")));
+                  }}
+                  placeholder="_ _ _ _"
+                  style={{
+                    width: 130, textAlign: "center", fontSize: 30, fontWeight: 900, letterSpacing: 14,
+                    fontFamily: "monospace", border: `2px solid ${errors.some(e => e.includes("Door code")) ? "#c45c4a" : /^\d{4}$/.test(doorCode) ? "rgba(74,124,89,.4)" : "rgba(212,168,83,.4)"}`,
+                    borderRadius: 10, padding: "12px 8px", outline: "none", background: "#fff",
+                    color: "#1a1714", animation: errors.some(e => e.includes("Door code")) ? "shake .4s ease" : "none"
+                  }}
+                />
+                {/^\d{4}$/.test(doorCode)
+                  ? <div style={{ fontSize: 11, color: "#4a7c59", fontWeight: 600 }}>✓ This code will be programmed into your lock on move-in day</div>
+                  : <div style={{ fontSize: 11, color: "#c45c4a", fontWeight: 600 }}>Must be exactly 4 digits</div>
+                }
+                {errors.some(e => e.includes("Door code")) && (
+                  <div style={{ fontSize: 11, color: "#c45c4a", fontWeight: 700, animation: `shake .4s ease` }}>
+                    Door code must be exactly 4 digits — numbers only
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Final signature */}
             <div

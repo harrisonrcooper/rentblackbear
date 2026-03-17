@@ -1721,6 +1721,7 @@ export default function Page(){
           {id:uid(),label:"Desired Move-in Date",key:"moveIn",type:"date-movein",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Month / Day / Year dropdowns.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Property Interest",key:"preferredProperty",type:"property-select",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Required for walk-in applicants. Pre-filled from invite if applicable.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Preferred Room",key:"selectedRoom",type:"room-select",section:"Move-In & Property",required:false,active:true,placeholder:"",helpText:"Optional — shown based on selected property.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"passcode",section:"Move-In & Property",required:true,active:true,placeholder:"Choose a 4-digit code",helpText:"This code will be programmed into your smart lock and written into your lease. Activates at 12:00am on move-in day once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
           {id:uid(),label:"Number of Occupants",key:"occupants",type:"counter",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Only 1 person per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
           // ── Section 3: Personal Information ──
           {id:uid(),label:"Photo ID Upload",key:"idFile",type:"file",section:"Personal Information",required:true,active:true,placeholder:"Upload driver's license, passport, or state ID",helpText:"JPG, PNG, or PDF. Can be uploaded later — application will be marked incomplete until received.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
@@ -2183,7 +2184,7 @@ export default function Page(){
               {appFields.length===0&&<div style={{textAlign:"center",padding:28,color:"#999"}}>
                 <div style={{fontSize:36,marginBottom:8}}>📝</div>
                 <p style={{fontSize:12,marginBottom:12}}>No fields configured yet. Load the defaults to get started — you can customize everything.</p>
-                <button className="btn btn-gold" onClick={()=>setAppFields(DEF_APP_FIELDS)}>Load 25 Default Fields</button>
+                <button className="btn btn-gold" onClick={()=>setAppFields(DEF_APP_FIELDS)}>Load 26 Default Fields</button>
               </div>}
               {sections.map(sec=>{
                 const sFields=appFields.filter(f=>f.section===sec);
@@ -2258,7 +2259,7 @@ export default function Page(){
                 <div className="app-fields-editor-bottom"/>
                 <button className="btn btn-out" style={{width:"100%",marginTop:8,marginBottom:8}} onClick={addSection}>＋ Add New Section</button>
                 <div style={{display:"flex",gap:6}}>
-                  <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal({type:"confirmAction",title:"Reset to Defaults",body:"This will delete all your current fields and sections and reload the 18 default fields. This cannot be undone.",confirmLabel:"Yes, Reset",confirmStyle:"btn-red",onConfirm:()=>{setAppFields(DEF_APP_FIELDS);setModal(null);}})}>↺ Reset to Defaults</button>
+                  <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal({type:"confirmAction",title:"Reset to Defaults",body:"This will delete all your current fields and sections and reload the 26 default fields. This cannot be undone.",confirmLabel:"Yes, Reset",confirmStyle:"btn-red",onConfirm:()=>{setAppFields(DEF_APP_FIELDS);setModal(null);}})}>↺ Reset to Defaults</button>
                   <button className="btn btn-green" style={{flex:1}} onClick={()=>{
                     save("hq-app-fields",appFields);
                     setNotifs(p=>[{id:uid(),type:"app",msg:"Application form published — "+appFields.filter(f=>f.active).length+" fields across "+sections.length+" sections",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);

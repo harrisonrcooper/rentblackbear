@@ -240,7 +240,7 @@ export default function ApplyPage(){
     // Emergency
     emergName:"",emergPhone:"",emergRelation:"",
     // Room
-    selectedRoom:"",preferredProperty:"",
+    selectedRoom:"",preferredProperty:"",doorCode:"",
     // Docs
     idUploadLater:false,incomeUploadLater:false,
   });
@@ -319,6 +319,7 @@ export default function ApplyPage(){
     }
     if(s==="room"){
       if(invite?.inviteRoomMode==="choice"&&!d.selectedRoom)e.selectedRoom="Please select a room";
+      if(!/^\d{4}$/.test(d.doorCode))e.doorCode="Please choose a 4-digit door code — numbers only";
     }
     setErrors(e);if(Object.keys(e).length>0)shake();return Object.keys(e).length===0;
   };
@@ -614,6 +615,35 @@ export default function ApplyPage(){
         <div className="sec-hd"><h2>Choose Your Room</h2><p>Select the room you'd like to apply for.</p></div>
         {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=><div key={p.id} className="prop-card"><div className="prop-img">🐻</div><div className="prop-info"><div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div><div style={{marginTop:10}}>{p.rooms.filter(r=>r.st==="vacant").map(r=><div key={r.id} className={`room-card ${d.selectedRoom===r.id?"sel":""}`} onClick={()=>upd("selectedRoom",r.id)}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div className="room-name">{r.name}</div><div className="room-meta">{r.bed} · {r.pb?"Private":"Shared"} bath · {r.sqft} sqft</div></div><div className="room-price">${r.rent}<small style={{fontSize:10,color:"#999"}}>/mo</small></div></div></div>)}</div></div></div>);})()}
         {errors.selectedRoom&&<div className="err-msg" style={{marginBottom:12}}>{errors.selectedRoom}</div>}
+
+        {/* Door Code */}
+        <div style={{marginTop:24,background:"rgba(212,168,83,.05)",border:"1px solid rgba(212,168,83,.15)",borderRadius:12,padding:20}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>🔑 Choose Your 4-Digit Door Code</div>
+          <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>This code will be written into your lease and programmed into your smart lock. It activates at 12:00am on your move-in day once your security deposit and first month's rent are received. You can change it here when signing your lease.</div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              value={d.doorCode}
+              onChange={e=>{
+                const val=e.target.value.replace(/\D/g,"").slice(0,4);
+                upd("doorCode",val);
+                if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));
+              }}
+              placeholder="_ _ _ _"
+              style={{
+                width:120,textAlign:"center",fontSize:28,fontWeight:900,letterSpacing:12,
+                fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.4)"}`,
+                borderRadius:10,padding:"12px 8px",outline:"none",background:"#fff",
+                color:"#1a1714",animation:errors.doorCode?"shake .4s ease":"none"
+              }}
+            />
+            {d.doorCode.length===4&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Code set</div>}
+            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
+          </div>
+        </div>
+
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
@@ -653,6 +683,7 @@ export default function ApplyPage(){
           <div className="rev-row"><span className="rev-label">Property</span><span className="rev-val">{invite.invitePropName}</span></div>
           <div className="rev-row"><span className="rev-label">Room</span><span className="rev-val">{invite.inviteRoomName}</span></div>
           <div className="rev-row"><span className="rev-label">Rent</span><span className="rev-val" style={{color:"var(--ac)"}}>${invite.inviteRent}/mo</span></div>
+          {d.doorCode&&<div className="rev-row"><span className="rev-label">Door Code</span><span className="rev-val" style={{fontFamily:"monospace",fontWeight:900,letterSpacing:4}}>{d.doorCode}</span></div>}
         </div>}
         {/* Lease Terms Preview */}
         {(()=>{
@@ -726,6 +757,7 @@ export default function ApplyPage(){
             const updated=apps.map(a=>a.id===invite.id?{...a,
               status:"applied",lastContact:now,
               applicationData:d,
+              passcode:d.doorCode||null,
               name:fullName,email:d.email,phone:d.phone,
               history:[...(a.history||[]),{from:"invited",to:"applied",date:now,note:`Application submitted + $${baseFee} paid`}]
             }:a);
@@ -738,6 +770,7 @@ export default function ApplyPage(){
               name:fullName,email:d.email,phone:d.phone,
               property:d.preferredProperty||"",room:d.selectedRoom||"",
               moveIn:d.moveIn||"",income:d.income||"",
+              passcode:d.doorCode||null,
               status:"applied",submitted:now,lastContact:now,
               bgCheck:"not-started",creditScore:"—",refs:"not-started",
               source:"Online Application",applicationData:d,
