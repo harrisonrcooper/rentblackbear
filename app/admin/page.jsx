@@ -3276,6 +3276,34 @@ export default function Page(){
           <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
           <div className="fr3"><div className="fld"><label>Phone</label><input value={settings.phone} onChange={e=>setSettings({...settings,phone:e.target.value})}/></div><div className="fld"><label>Email</label><input value={settings.email} onChange={e=>setSettings({...settings,email:e.target.value})}/></div><div className="fld"><label>City</label><input value={settings.city} onChange={e=>setSettings({...settings,city:e.target.value})}/></div></div>
         </div></div>
+        {/* Signature Settings */}
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Property Manager Signature</h3>
+          <p style={{fontSize:11,color:"#5c4a3a",marginBottom:12}}>Saved here and auto-offered when signing leases. Draw a new one anytime to replace it.</p>
+          {settings.savedSignature
+            ?<div>
+              <div style={{padding:12,background:"#faf9f7",border:"1px solid rgba(0,0,0,.08)",borderRadius:8,display:"inline-block",marginBottom:10}}>
+                <img src={settings.savedSignature} alt="Saved signature" style={{maxHeight:70,maxWidth:260,display:"block"}}/>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button className="btn btn-out btn-sm" onClick={()=>setExpanded(p=>({...p,redrawSig:!p.redrawSig}))}>
+                  {expanded.redrawSig?"Cancel Redraw":"✏️ Redraw Signature"}
+                </button>
+                <button className="btn btn-red btn-sm" onClick={()=>{setSettings(p=>{const u={...p,savedSignature:null};save("hq-settings",u);return u;});}}>
+                  🗑 Remove
+                </button>
+              </div>
+              {expanded.redrawSig&&<div style={{marginTop:12}}>
+                <SigCanvas onSave={(data)=>{setSettings(p=>{const u={...p,savedSignature:data};save("hq-settings",u);return u;});setExpanded(p=>({...p,redrawSig:false}));}} height={100}/>
+              </div>}
+            </div>
+            :<div>
+              <div style={{fontSize:11,color:"#999",marginBottom:10}}>No signature saved yet. Draw one below and it will be offered automatically when signing leases.</div>
+              <SigCanvas onSave={(data)=>{setSettings(p=>{const u={...p,savedSignature:data};save("hq-settings",u);return u;});}} height={100}/>
+            </div>
+          }
+        </div></div>
+
         <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Hero Section</h3>
           <div className="fld"><label>Tagline</label><input value={settings.tagline} onChange={e=>setSettings({...settings,tagline:e.target.value})}/></div>
@@ -5229,11 +5257,11 @@ export default function Page(){
         })()}
 
         {/* Require bypass note if incomplete reqs */}
-        {incReqs.length>0&&<div className="fld" style={{marginBottom:12}}>
-          <label style={{fontSize:10,fontWeight:700,color:"#9a7422"}}>Why are you approving with pending items? <span style={{color:"#c45c4a"}}>*</span></label>
-          <textarea value={modal.bypassNote||""} onChange={e=>setModal(p=>({...p,bypassNote:e.target.value}))} placeholder="e.g. NASA intern — employer verification accepted in lieu of BG check" rows={2}
-            key={modal.bypassShakeKey||0} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${modal.bypassNoteErr?"#c45c4a":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical",animation:modal.bypassNoteErr?"shake .4s ease":"none"}}/>
-          {modal.bypassNoteErr&&<div key={modal.bypassShakeKey||0} style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>Required — explain why you're proceeding with pending items</div>}
+        {incReqs.length>0&&<div key={`bypass-${modal.bypassShakeKey||0}`} className="fld" style={{marginBottom:12,animation:modal.bypassNoteErr?"shake .4s ease":"none"}}>
+          <label style={{fontSize:10,fontWeight:700,color:"#9a7422",textTransform:"none",letterSpacing:0}}>Why are you approving with pending items? <span style={{color:"#c45c4a"}}>*</span></label>
+          <textarea value={modal.bypassNote||""} onChange={e=>setModal(p=>({...p,bypassNote:e.target.value,bypassNoteErr:false}))} placeholder="e.g. NASA intern — employer verification accepted in lieu of BG check" rows={2}
+            style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${modal.bypassNoteErr?"#c45c4a":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+          {modal.bypassNoteErr&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600}}>⚠ Required — explain why you're proceeding with pending items</div>}
         </div>}
 
         <div className="mft">
@@ -5250,12 +5278,12 @@ export default function Page(){
         </div>
       </>}
 
-      {/* ── STEP 2: Review & Send Lease ── */}
+      {/* ── STEP 2: Sign & Send ── */}
       {step===2&&<>
         <div style={{marginBottom:16}}>
           <div style={{fontSize:9,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Step 2 of 2</div>
-          <h2 style={{margin:0}}>📨 Review & Send Lease</h2>
-          <p style={{fontSize:12,color:"#5c4a3a",marginTop:4}}>These charges will be <strong>generated automatically</strong> when {a.name} signs their lease. Nothing is charged yet.</p>
+          <h2 style={{margin:0}}>✍️ Sign & Send to Tenant</h2>
+          <p style={{fontSize:12,color:"#5c4a3a",marginTop:4}}>Sign as property manager first. Once you sign, the lease is sent to <strong>{a.name}</strong> to countersign. Charges generate automatically when they sign.</p>
         </div>
 
         {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:10,marginBottom:12}}>
@@ -5264,52 +5292,57 @@ export default function Page(){
           {leaseOverlap&&<div style={{fontSize:11,color:"#c45c4a",fontWeight:700}}>• Lease overlap with {existingLeases[0].tenant}</div>}
         </div>}
 
-        {/* Charge list — read only preview */}
-        <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:14,marginBottom:14}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#4a7c59",marginBottom:10}}>Charges generated on lease signing:</div>
+        {/* Charge summary — compact read-only */}
+        <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:12,marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Charges on signing</div>
           {chargeList.map((c,i)=>(
-            <div key={i} style={{padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div style={{fontWeight:600}}>{c.desc}</div>
-                <strong style={{color:"#1a1714"}}>{fmtS(c.amount)}</strong>
-              </div>
-              <div style={{fontSize:10,color:"#999",marginTop:2}}>Due: {fmtD(c.due)} · {c.note}</div>
+            <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+              <span style={{color:"#3d3529"}}>{c.desc}</span>
+              <strong>{fmtS(c.amount)}</strong>
             </div>
           ))}
-          <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0 0",fontWeight:800,fontSize:14,borderTop:"2px solid rgba(74,124,89,.2)",marginTop:6}}>
-            <span>Total Due at Move-In</span><span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
+          <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:12,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:6,paddingTop:6}}>
+            <span>Total on signing</span><span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
           </div>
-          {/* 2nd month clarification — when full first month charged but move-in isn't the 1st */}
-          {structure==="full"&&!isFirstDay&&(()=>{
-            const secondMonthD=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,1);
-            const secondMonthLabel=secondMonthD.toLocaleString("default",{month:"long",day:"numeric",year:"numeric"});
-            return(
-              <div style={{padding:"8px 0",borderTop:"1px dashed rgba(0,0,0,.1)",marginTop:6}}>
-                <div style={{fontSize:9,fontWeight:800,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Following Month</div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>2nd Month Rent (partial) — {daysRemaining} day{daysRemaining===1?"":"s"} × ${Math.ceil(dailyRate)}/day</div>
-                    <div style={{fontSize:10,color:"#5c4a3a",marginTop:1}}>Due {secondMonthLabel} · Then full {fmtS(rent)} monthly after</div>
-                  </div>
-                  <strong style={{fontSize:13,color:"#1a1714"}}>{fmtS(proratedAmt)}</strong>
-                </div>
-              </div>
-            );
-          })()}
         </div>
 
-        <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:11}}>
-          <div style={{fontWeight:700,marginBottom:4,fontSize:12}}>What happens next:</div>
-          <div style={{color:"#5c4a3a",lineHeight:1.8}}>
-            1. App moves to <strong>Lease Sent</strong> — awaiting tenant signature<br/>
-            2. Tenant signs → charges auto-generate to their ledger<br/>
-            3. App moves to <strong>Onboarding</strong> automatically
+        {/* PM Signature */}
+        <div key={modal.pmSigShakeKey||0} style={{border:"2px solid rgba(0,0,0,.1)",borderRadius:10,padding:16,marginBottom:16,background:modal.pmSig?"rgba(74,124,89,.03)":"#fff",borderColor:modal.pmSig?"rgba(74,124,89,.3)":modal.pmSigErr?"#c45c4a":"rgba(0,0,0,.1)",animation:modal.pmSigErr&&!modal.pmSig?"shake .4s ease":"none"}}>
+          <div style={{fontSize:11,fontWeight:700,color:modal.pmSig?"#4a7c59":"#1a1714",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>
+            {modal.pmSig?"✓ Property Manager Signed":"Property Manager Signature"}
           </div>
+          {/* Use saved signature option */}
+          {settings.savedSignature&&!modal.pmSig&&<div style={{marginBottom:10,padding:"10px 12px",background:"rgba(212,168,83,.05)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <img src={settings.savedSignature} alt="Saved sig" style={{maxHeight:36,maxWidth:120,border:"1px solid rgba(0,0,0,.08)",borderRadius:4,padding:3,background:"#fff"}}/>
+              <span style={{fontSize:11,color:"#5c4a3a"}}>Use saved signature</span>
+            </div>
+            <button className="btn btn-gold btn-sm" onClick={()=>setModal(p=>({...p,pmSig:settings.savedSignature,pmSigErr:false}))}>Use This</button>
+          </div>}
+          {modal.pmSig
+            ?<div>
+              <img src={modal.pmSig} alt="Your signature" style={{maxHeight:60,maxWidth:"100%",display:"block",marginBottom:8,border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:4,background:"#fff"}}/>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700}}>{settings.landlordName||"Carolina Cooper"}</div>
+                  <div style={{fontSize:10,color:"#999"}}>Property Manager · {new Date().toLocaleDateString()}</div>
+                </div>
+                <button className="btn btn-out btn-sm" onClick={()=>setModal(p=>({...p,pmSig:null}))}>Re-sign</button>
+              </div>
+              <label style={{display:"flex",alignItems:"center",gap:8,fontSize:11,cursor:"pointer",marginTop:10,padding:"8px 10px",background:"rgba(212,168,83,.06)",borderRadius:7,border:"1px solid rgba(212,168,83,.15)"}}>
+                <input type="checkbox" checked={modal.savePmSig||false} onChange={e=>setModal(p=>({...p,savePmSig:e.target.checked}))} style={{accentColor:"#d4a853"}}/>
+                Save as default signature
+              </label>
+            </div>
+            :<SigCanvas onSave={(data)=>setModal(p=>({...p,pmSig:data,pmSigErr:false}))} height={100}/>
+          }
+          {modal.pmSigErr&&<div style={{fontSize:10,color:"#c45c4a",marginTop:6,fontWeight:600}}>⚠ Your signature is required before sending</div>}
         </div>
 
         <div className="mft">
           <button className="btn btn-out" onClick={()=>setModal(p=>({...p,step:1}))}>← Edit Charges</button>
           <button className="btn btn-green" onClick={async()=>{
+            if(!modal.pmSig){setModal(p=>({...p,pmSigErr:true,pmSigShakeKey:(p.pmSigShakeKey||0)+1}));return;}
             if(!targetRoom){alert("Room not found — check room assignment.");return;}
             const now=TODAY.toISOString().split("T")[0];
             const chargeConfig={
@@ -5318,16 +5351,26 @@ export default function Page(){
               lastMonthPlan,installmentCount,installmentStartDue,
               generatedAt:null,charges:chargeList
             };
+            if(modal.savePmSig&&modal.pmSig){setSettings(p=>{const u={...p,savedSignature:modal.pmSig};save("hq-settings",u);return u;});}
             const passcode=a.passcode||null;
             const lockActivation=passcode?{passcode,activatesAt:`${termMoveIn}T00:00:00`,status:"pending"}:null;
+            // Update lease record with PM signature if a lease exists for this application
+            const existingLeases=await loadKey("hq-leases",[]);
+            const appLease=existingLeases.find(l=>l.applicationId===a.id&&l.status!=="executed");
+            if(appLease){
+              const updatedLeases=existingLeases.map(l=>l.id===appLease.id?{...l,landlordSignature:modal.pmSig,landlordSignedAt:now,landlordName:settings.landlordName||"Carolina Cooper"}:l);
+              await saveKey("hq-leases",updatedLeases);
+            }
             setApps(p=>p.map(x=>x.id===a.id?{...x,
               status:"lease-sent",lastContact:now,
               property:targetProp?targetProp.name:a.property,
-              room:targetRoom.name,highRisk:riskLevel==="high",
+              room:targetRoom.name,highRisk:structure==="first-last",
               chargeConfig,lockActivation,
+              pmSignature:modal.pmSig,
+              pmSignedAt:now,
               approvedWithPending:incReqs.length>0?(modal.bypassNote||incReqs.map(r=>r.label).join(", ")):null,
               history:[...(x.history||[]),{from:"reviewing",to:"lease-sent",date:now,
-                note:`Lease sent. Charge config: ${structure}, ${fmtS(totalDue)} total on signing.${incReqs.length>0?" Bypassed: "+incReqs.map(r=>r.label).join(", "):""}`}]
+                note:`PM signed. Lease sent. Charge config: ${structure}, ${fmtS(totalDue)} total on signing.${incReqs.length>0?" Bypassed: "+incReqs.map(r=>r.label).join(", "):""}`}]
             }:x));
             setNotifs(p=>[{id:uid(),type:"app",
               msg:`📨 Lease sent to ${a.name} — ${targetRoom.name} at ${targetProp?targetProp.name:a.property}`,
@@ -5338,7 +5381,7 @@ export default function Page(){
               rent,moveIn:fmtD(termMoveIn),totalDue
             })});}catch{}
             setModal(null);
-          }}>✅ Confirm & Send Lease</button>
+          }}>✅ Sign & Send to Tenant</button>
         </div>
       </>}
 
