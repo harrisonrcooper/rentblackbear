@@ -5292,18 +5292,72 @@ export default function Page(){
           {leaseOverlap&&<div style={{fontSize:11,color:"#c45c4a",fontWeight:700}}>• Lease overlap with {existingLeases[0].tenant}</div>}
         </div>}
 
-        {/* Charge summary — compact read-only */}
-        <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:12,marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Charges on signing</div>
-          {chargeList.map((c,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-              <span style={{color:"#3d3529"}}>{c.desc}</span>
-              <strong>{fmtS(c.amount)}</strong>
+        {/* Full lease summary — review before signing */}
+        <div style={{border:"1px solid rgba(0,0,0,.09)",borderRadius:10,overflow:"hidden",marginBottom:16}}>
+
+          {/* Dark header */}
+          <div style={{background:"#1a1714",padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontFamily:"serif",fontSize:15,color:"#f5f0e8",fontWeight:700}}>{targetProp?targetProp.name:a.property}</div>
+              <div style={{fontSize:10,color:"#c4a882",marginTop:2}}>{targetRoom?targetRoom.name:a.room}</div>
             </div>
-          ))}
-          <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:12,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:6,paddingTop:6}}>
-            <span>Total on signing</span><span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:18,fontWeight:900,color:"#d4a853"}}>{fmtS(rent)}<span style={{fontSize:11,fontWeight:400,color:"#c4a882"}}>/mo</span></div>
+              <div style={{fontSize:10,color:"#c4a882",marginTop:1}}>{targetRoom?.pb?"Private bath":"Shared bath"}{targetRoom?.sqft?" · "+targetRoom.sqft+" sqft":""}</div>
+            </div>
           </div>
+
+          {/* Tenant + lease details */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+            {[
+              ["Tenant",a.name],
+              ["Email",a.email],
+              ["Phone",a.phone],
+              ["Move-In",fmtD(termMoveIn)],
+              ["Lease Start",fmtD(termMoveIn)],
+              ["Security Deposit",fmtS(sdAmt)+" — due "+fmtD(sdDue)],
+              ["Door Code",a.passcode||"Not set"],
+              ["Structure",structure==="prorated"?"Prorated":structure==="full"?"Full Month Upfront":"First + Last Month"],
+            ].map(([l,v],i)=>(
+              <div key={i} style={{padding:"9px 14px",borderBottom:"1px solid rgba(0,0,0,.04)",borderRight:i%2===0?"1px solid rgba(0,0,0,.04)":"none"}}>
+                <div style={{fontSize:9,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>{l}</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{v||"—"}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Charge rows — due before move-in */}
+          <div style={{padding:"10px 14px",borderBottom:"1px solid rgba(74,124,89,.12)",background:"rgba(74,124,89,.03)"}}>
+            <div style={{fontSize:9,fontWeight:800,color:"#2d6a3f",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Due Before Move-In</div>
+            {chargeList.filter(c=>c.cat==="Security Deposit"||c.due<=rentDue).map((c,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{c.desc}</div>
+                  <div style={{fontSize:10,color:"#4a7c59",marginTop:1}}>Due {fmtD(c.due)}</div>
+                </div>
+                <strong style={{fontSize:13,color:"#1a1714",flexShrink:0,marginLeft:12}}>{fmtS(c.amount)}</strong>
+              </div>
+            ))}
+            <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:13,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:6,paddingTop:6}}>
+              <span>Total due before move-in</span>
+              <span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
+            </div>
+          </div>
+
+          {/* Following month if applicable */}
+          {!isFirstDay&&(structure==="prorated"||structure==="full")&&(()=>{
+            const followAmt=structure==="prorated"?rent:proratedAmt;
+            const followLabel=structure==="prorated"?"Full rent begins":"Partial month rent";
+            return(
+              <div style={{padding:"10px 14px",background:"rgba(212,168,83,.03)"}}>
+                <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Following Month ({secondMonthLabel})</div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12}}>
+                  <span style={{color:"#3d3529"}}>{followLabel}</span>
+                  <strong>{fmtS(followAmt)}</strong>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* PM Signature */}
