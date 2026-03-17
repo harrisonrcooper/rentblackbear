@@ -549,7 +549,7 @@ const S=`
 .notif-dot{width:8px;height:8px;border-radius:50%;background:#c45c4a;display:inline-block;margin-left:4px}
 
 /* Pipeline columns */
-.pipeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;overflow-x:auto}
+.pipeline{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;overflow-x:auto}
 .pipe-col{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,.03);overflow:hidden}
 .pipe-hd{padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.03);display:flex;justify-content:space-between;align-items:center}
 .pipe-hd h4{font-size:12px;font-weight:800}.pipe-cnt{font-size:10px;color:#999;background:rgba(0,0,0,.04);padding:1px 7px;border-radius:100px}
@@ -579,7 +579,7 @@ const S=`
 @media(max-width:1024px){
   .side{width:200px}.cnt{margin-left:200px}
   .kgrid{grid-template-columns:1fr 1fr}
-  .pipeline{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));overflow-x:auto}
+  .pipeline{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));overflow-x:auto}
   .fr3{grid-template-columns:1fr 1fr}
 }
 
@@ -1838,7 +1838,7 @@ export default function Page(){
         </div>}
 
         {/* Pipeline */}
-        {appView==="pipeline"&&<div className="pipeline" style={{gridTemplateColumns:"repeat(6,1fr)"}}>
+        {appView==="pipeline"&&<div className="pipeline">
           {STAGES.map(function(stage,si){
             // Onboarding column shows "onboarding" and "move-in"; lease-sent shows "lease-sent" only
             var sa=stage==="onboarding"
