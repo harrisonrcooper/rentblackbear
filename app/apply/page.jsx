@@ -244,7 +244,15 @@ export default function ApplyPage(){
     // Docs
     idUploadLater:false,incomeUploadLater:false,
   });
-  const[errors,setErrors]=useState({});
+  const[appFields,setAppFields]=useState([]);
+
+  // Helper: get field config from hq-app-fields by key
+  const getField=(key)=>appFields.find(f=>f.key===key)||null;
+  const fieldActive=(key)=>{const f=getField(key);return !f||f.active!==false;};
+  const fieldRequired=(key)=>{const f=getField(key);return f?f.required:true;};
+  const fieldLabel=(key,fallback)=>{const f=getField(key);return (f&&f.label)||fallback;};
+  const fieldPlaceholder=(key,fallback)=>{const f=getField(key);return (f&&f.placeholder)||fallback||"";};
+  const fieldHelp=(key,fallback)=>{const f=getField(key);return (f&&f.helpText)||fallback||"";};
   const[invite,setInvite]=useState(null);
   const[loading,setLoading]=useState(true);
   const[saving,setSaving]=useState(false);
@@ -267,6 +275,7 @@ export default function ApplyPage(){
       setD(p=>({...p,phone:inv.phone||""}));
     }
     const p=await loadKey("hq-props",[]);setProps(p);
+    const af=await loadKey("hq-app-fields",[]);setAppFields(af);
   }catch{}setLoading(false);})();},[]);
   useEffect(()=>{if(step!=="welcome"&&step!=="done"&&!loading){setSaving(true);const t=setTimeout(()=>setSaving(false),1500);return()=>clearTimeout(t);}},[d,step]);
 
@@ -274,44 +283,42 @@ export default function ApplyPage(){
 
   const validate=(s)=>{
     const e={};
+    const req=(key)=>fieldActive(key)&&fieldRequired(key);
     if(s==="welcome"){
-      if(!d.firstName.trim())e.firstName="Required";
-      if(!d.lastName.trim())e.lastName="Required";
-      if(!d.email.trim()||!d.email.includes("@"))e.email="Valid email required";
-      if(d.phone.replace(/\D/g,"").length!==10)e.phone="10-digit phone required";
-      if(!d.dob||d.dob.includes(" ")||d.dob.replace(/[0-9\-]/g,"").length>0)e.dob="Required";
-      else if(!ageOk(d.dob))e.dob="You must be at least 18 years old";
+      if(req("firstName")&&!d.firstName.trim())e.firstName=`${fieldLabel("firstName","First Name")} is required`;
+      if(req("lastName")&&!d.lastName.trim())e.lastName=`${fieldLabel("lastName","Last Name")} is required`;
+      if(req("email")&&(!d.email.trim()||!d.email.includes("@")))e.email="Valid email address is required";
+      if(req("phone")&&d.phone.replace(/\D/g,"").length!==10)e.phone="A 10-digit phone number is required";
+      if(req("dob")&&(!d.dob||d.dob.includes(" ")))e.dob="Date of birth is required";
     }
     if(s==="appinfo"){
-      if(!d.moveIn||d.moveIn.includes(" "))e.moveIn="Please select your desired move-in date";
-      if(!invite&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
+      if(req("moveIn")&&(!d.moveIn||d.moveIn.includes(" ")))e.moveIn="Please select your desired move-in date";
+      if(!invite&&req("preferredProperty")&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
     }
     if(s==="personal"){
-      if(!d.idFileName&&!d.idUploadLater)e.idFile="Please upload your photo ID, or check the box to upload it later";
+      if(fieldActive("idFile")&&fieldRequired("idFile")&&!d.idFileName&&!d.idUploadLater)e.idFile="Please upload your photo ID, or check the box to upload it later";
     }
     if(s==="rental"){
-      if(d.addresses.length===0)e.addresses="Add at least one address";
-      if(d.evicted==="")e.evicted="Please answer";
-      if(d.felony==="")e.felony="Please answer";
+      if(req("addresses")&&d.addresses.length===0)e.addresses="Please add at least one address";
+      if(fieldActive("evicted")&&d.evicted==="")e.evicted="Please answer this question";
+      if(fieldActive("felony")&&d.felony==="")e.felony="Please answer this question";
     }
     if(s==="employment"){
-      if(!d.unemployed&&d.employers.length===0&&!d.incomeUploadLater)e.employers="Please add at least one employer, or check the box to upload income proof later";
+      if(!d.unemployed&&fieldActive("employers")&&fieldRequired("employers")&&d.employers.length===0&&!d.incomeUploadLater)e.employers="Please add at least one employer, or check the box to upload income proof later";
     }
     if(s==="references"){
-      if(!d.unemployed){
-        if(!d.empRefName.trim())e.empRefName="Employer reference name is required";
-        if(!d.empRefPhone.trim())e.empRefPhone="Employer reference phone is required";
-      }
-      if(!d.persRefName.trim())e.persRefName="Personal reference name is required";
-      if(!d.persRefPhone.trim())e.persRefPhone="Personal reference phone is required";
+      if(!d.unemployed&&fieldActive("empRefName")&&fieldRequired("empRefName")&&!d.empRefName.trim())e.empRefName=`${fieldLabel("empRefName","Employer reference name")} is required`;
+      if(!d.unemployed&&fieldActive("empRefPhone")&&fieldRequired("empRefPhone")&&!d.empRefPhone.trim())e.empRefPhone=`${fieldLabel("empRefPhone","Employer reference phone")} is required`;
+      if(fieldActive("persRefName")&&fieldRequired("persRefName")&&!d.persRefName.trim())e.persRefName=`${fieldLabel("persRefName","Personal reference name")} is required`;
+      if(fieldActive("persRefPhone")&&fieldRequired("persRefPhone")&&!d.persRefPhone.trim())e.persRefPhone=`${fieldLabel("persRefPhone","Personal reference phone")} is required`;
     }
     if(s==="emergency"){
-      if(!d.emergName.trim())e.emergName="Required";
-      if(!d.emergPhone.trim())e.emergPhone="Required";
-      if(!d.emergRelation.trim())e.emergRelation="Required";
+      if(fieldActive("emergName")&&fieldRequired("emergName")&&!d.emergName.trim())e.emergName=`${fieldLabel("emergName","Emergency contact name")} is required`;
+      if(fieldActive("emergPhone")&&fieldRequired("emergPhone")&&!d.emergPhone.trim())e.emergPhone=`${fieldLabel("emergPhone","Emergency contact phone")} is required`;
+      if(fieldActive("emergRelation")&&fieldRequired("emergRelation")&&!d.emergRelation.trim())e.emergRelation=`${fieldLabel("emergRelation","Relationship")} is required`;
     }
     if(s==="room"){
-      if(invite?.inviteRoomMode==="choice"&&!d.selectedRoom)e.selectedRoom="Select a room";
+      if(invite?.inviteRoomMode==="choice"&&!d.selectedRoom)e.selectedRoom="Please select a room";
     }
     setErrors(e);if(Object.keys(e).length>0)shake();return Object.keys(e).length===0;
   };
@@ -363,10 +370,13 @@ export default function ApplyPage(){
         <div className="type-toggle"><button className={`type-btn ${appType==="tenant"?"on":""}`} onClick={()=>setAppType("tenant")}>Tenant</button><button className={`type-btn ${appType==="cosigner"?"on":""}`} onClick={()=>setAppType("cosigner")}>Co-Signer</button></div>
         {appType==="cosigner"&&<div className="cosigner-note">As a co-signer, you'll complete a shorter application covering your identity and income.</div>}
         <div style={{textAlign:"left",maxWidth:400,margin:"0 auto"}}>
-          <div className="fld-row"><div className="fld"><label>First Name<span className="req">*</span></label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder="First name"/>{errors.firstName&&<div className="err-msg">{errors.firstName}</div>}</div><div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder="Last name"/>{errors.lastName&&<div className="err-msg">{errors.lastName}</div>}</div></div>
-          <div className="fld"><label>Email Address<span className="req">*</span></label><input type="email" value={d.email} onChange={e=>upd("email",e.target.value)} className={errors.email?"err":""} placeholder="you@email.com"/>{errors.email&&<div className="err-msg">{errors.email}</div>}</div>
-          <div className="fld"><label>Phone Number<span className="req">*</span></label><input type="tel" value={d.phone} onChange={e=>upd("phone",fmtPhone(e.target.value))} className={errors.phone?"err":""} placeholder="(256) 555-1234"/>{errors.phone&&<div className="err-msg">{errors.phone}</div>}</div>
-          <div className="fld"><label>Date of Birth<span className="req">*</span></label><DateDrop value={d.dob} onChange={v=>upd("dob",v)} hasErr={!!errors.dob} mode="dob"/>{errors.dob&&<div className="err-msg">{errors.dob}</div>}</div>
+          <div className="fld-row">
+            <div className="fld"><label>{fieldLabel("firstName","First Name")}{fieldRequired("firstName")&&<span className="req">*</span>}</label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder={fieldPlaceholder("firstName","First name")}/>{errors.firstName&&<div className="err-msg">{errors.firstName}</div>}</div>
+            <div className="fld"><label>{fieldLabel("lastName","Last Name")}{fieldRequired("lastName")&&<span className="req">*</span>}</label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder={fieldPlaceholder("lastName","Last name")}/>{errors.lastName&&<div className="err-msg">{errors.lastName}</div>}</div>
+          </div>
+          {fieldActive("email")&&<div className="fld"><label>{fieldLabel("email","Email Address")}{fieldRequired("email")&&<span className="req">*</span>}</label><input type="email" value={d.email} onChange={e=>upd("email",e.target.value)} className={errors.email?"err":""} placeholder={fieldPlaceholder("email","you@email.com")}/>{errors.email&&<div className="err-msg">{errors.email}</div>}</div>}
+          <div className="fld"><label>{fieldLabel("phone","Phone Number")}{fieldRequired("phone")&&<span className="req">*</span>}</label><input type="tel" value={d.phone} onChange={e=>upd("phone",fmtPhone(e.target.value))} className={errors.phone?"err":""} placeholder={fieldPlaceholder("phone","(256) 555-1234")}/>{errors.phone&&<div className="err-msg">{errors.phone}</div>}</div>
+          {fieldActive("dob")&&<div className="fld"><label>{fieldLabel("dob","Date of Birth")}{fieldRequired("dob")&&<span className="req">*</span>}</label><DateDrop value={d.dob} onChange={v=>upd("dob",v)} hasErr={!!errors.dob} mode="dob"/>{fieldHelp("dob")&&<div className="help">{fieldHelp("dob")}</div>}{errors.dob&&<div className="err-msg">{errors.dob}</div>}</div>}
         </div>
         <div className="legal">By clicking the button below you are agreeing to our <a href="#">Application Authorization Policy</a>, <a href="#">Terms of Use</a> & <a href="#">Privacy Policy</a>.</div>
         <button className="btn-start" onClick={next}>Begin Application →</button>
@@ -492,15 +502,15 @@ export default function ApplyPage(){
         <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
           ⚠ Your application will be considered <strong>incomplete</strong> without all documents uploaded. You may upload them later, but your application may be delayed.
         </div>
-        <div className="fld">
-          <label>Photo ID <span className="req">*</span></label>
-          {!d.idUploadLater&&<><div className={`upload ${d.idFileName?"has":""}`} onClick={()=>fileRef.current?.click()}><div className="upload-ic">{d.idFileName?"✅":"📷"}</div><div className="upload-txt">{d.idFileName?"":"Tap to upload your driver's license, passport, or state ID"}</div>{d.idFileName&&<div className="upload-file">{d.idFileName}</div>}</div><input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/><div className="help">JPG, PNG, or PDF. Max 10MB.</div></>}
+        {fieldActive("idFile")&&<div className="fld">
+          <label>{fieldLabel("idFile","Photo ID")}{fieldRequired("idFile")&&<span className="req">*</span>}</label>
+          {!d.idUploadLater&&<><div className={`upload ${d.idFileName?"has":""}`} onClick={()=>fileRef.current?.click()}><div className="upload-ic">{d.idFileName?"✅":"📷"}</div><div className="upload-txt">{d.idFileName?"":fieldPlaceholder("idFile","Upload driver's license, passport, or state ID")}</div>{d.idFileName&&<div className="upload-file">{d.idFileName}</div>}</div><input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/>{fieldHelp("idFile","JPG, PNG, or PDF. Max 10MB.")&&<div className="help">{fieldHelp("idFile","JPG, PNG, or PDF. Max 10MB.")}</div>}</>}
           <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
             <input type="checkbox" checked={d.idUploadLater} onChange={e=>{upd("idUploadLater",e.target.checked);if(e.target.checked)upd("idFileName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
             I'll upload my photo ID later
           </label>
           {errors.idFile&&<div className="err-msg">{errors.idFile}</div>}
-        </div>
+        </div>}
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
@@ -589,8 +599,11 @@ export default function ApplyPage(){
       {step==="emergency"&&<div className="sec">
         <div className="sec-num">Section 5</div>
         <div className="sec-hd"><h2>Emergency Contact</h2><p>Someone we can reach in case of an emergency.</p></div>
-        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.emergName} onChange={e=>upd("emergName",e.target.value)} className={errors.emergName?"err":""} placeholder="Full name"/>{errors.emergName&&<div className="err-msg">{errors.emergName}</div>}</div>
-        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.emergPhone} onChange={e=>upd("emergPhone",fmtPhone(e.target.value))} className={errors.emergPhone?"err":""} placeholder="(555) 555-5555"/>{errors.emergPhone&&<div className="err-msg">{errors.emergPhone}</div>}</div><div className="fld"><label>Relationship<span className="req">*</span></label><input value={d.emergRelation} onChange={e=>upd("emergRelation",e.target.value)} className={errors.emergRelation?"err":""} placeholder="e.g. Parent"/>{errors.emergRelation&&<div className="err-msg">{errors.emergRelation}</div>}</div></div>
+        {fieldActive("emergName")&&<div className="fld"><label>{fieldLabel("emergName","Full Name")}{fieldRequired("emergName")&&<span className="req">*</span>}</label><input value={d.emergName} onChange={e=>upd("emergName",e.target.value)} className={errors.emergName?"err":""} placeholder={fieldPlaceholder("emergName","Full name")}/>{errors.emergName&&<div className="err-msg">{errors.emergName}</div>}</div>}
+        <div className="fld-row">
+          {fieldActive("emergPhone")&&<div className="fld"><label>{fieldLabel("emergPhone","Phone")}{fieldRequired("emergPhone")&&<span className="req">*</span>}</label><input type="tel" value={d.emergPhone} onChange={e=>upd("emergPhone",fmtPhone(e.target.value))} className={errors.emergPhone?"err":""} placeholder={fieldPlaceholder("emergPhone","(555) 555-5555")}/>{errors.emergPhone&&<div className="err-msg">{errors.emergPhone}</div>}</div>}
+          {fieldActive("emergRelation")&&<div className="fld"><label>{fieldLabel("emergRelation","Relationship")}{fieldRequired("emergRelation")&&<span className="req">*</span>}</label><input value={d.emergRelation} onChange={e=>upd("emergRelation",e.target.value)} className={errors.emergRelation?"err":""} placeholder={fieldPlaceholder("emergRelation","e.g. Parent")}/>{errors.emergRelation&&<div className="err-msg">{errors.emergRelation}</div>}</div>}
+        </div>
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
