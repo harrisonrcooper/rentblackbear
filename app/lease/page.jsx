@@ -463,7 +463,14 @@ export default function LeaseSignPage() {
     </div></div></>
   );
 
-  if (done && lease) return (
+  if (done && lease) {
+    const signedDateStr = lease.executedAt
+      ? (lease.executedAt.includes("T")
+          ? new Date(lease.executedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+          : lease.executedAt)
+      : new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const portalUrl = `https://rentblackbear.com/portal?email=${encodeURIComponent(lease.tenantEmail || "")}&name=${encodeURIComponent(lease.tenantName || "")}`;
+    return (
     <><style>{CSS}</style>
     <div style={{ background: "#1a1714", minHeight: "100vh" }}>
       <div className="header" style={{ position: "relative" }}>
@@ -472,44 +479,59 @@ export default function LeaseSignPage() {
       <div className="wrap">
         <div className="done-screen">
           <div className="done-ic">🎉</div>
-          <h1 style={{ color: "#f5f0e8" }}>Lease Executed!</h1>
+          <h1 style={{ color: "#f5f0e8" }}>Lease Signed!</h1>
           <p style={{ color: "#c4a882" }}>
-            Your lease has been signed and countersigned. You'll receive a copy at {lease.tenantEmail}. Welcome home!
+            Your lease has been fully signed. You'll receive a confirmation at {lease.tenantEmail}. Welcome home!
           </p>
           <div className="done-detail" style={{ background: "rgba(255,255,255,.06)", borderColor: "rgba(255,255,255,.08)" }}>
-            <div className="done-row" style={{ color: "#c4a882" }}><span>Tenant</span><strong style={{ color: "#f5f0e8" }}>{lease.tenantName}</strong></div>
-            <div className="done-row" style={{ color: "#c4a882" }}><span>Property</span><strong style={{ color: "#f5f0e8" }}>{lease.property}</strong></div>
-            <div className="done-row" style={{ color: "#c4a882" }}><span>Room</span><strong style={{ color: "#f5f0e8" }}>{lease.room}</strong></div>
-            <div className="done-row" style={{ color: "#c4a882" }}><span>Rent</span><strong style={{ color: "#d4a853" }}>${lease.rent?.toLocaleString()}/mo</strong></div>
-            <div className="done-row" style={{ color: "#c4a882" }}><span>Move-in</span><strong style={{ color: "#f5f0e8" }}>{fmtDate(lease.moveIn)}</strong></div>
-            <div className="done-row" style={{ color: "#c4a882" }}><span>Door Code</span><strong style={{ color: "#d4a853", fontFamily: "monospace", letterSpacing: 4 }}>{lease.doorCode || doorCode || "—"}</strong></div>
-            <div className="done-row" style={{ color: "#c4a882" }}><span>Executed</span><strong style={{ color: "#4a7c59" }}>{new Date(lease.executedAt).toLocaleDateString()}</strong></div>
+            <div className="done-row"><span style={{ color: "#a89880" }}>Tenant</span><strong style={{ color: "#f5f0e8" }}>{lease.tenantName}</strong></div>
+            <div className="done-row"><span style={{ color: "#a89880" }}>Property</span><strong style={{ color: "#f5f0e8" }}>{lease.property}</strong></div>
+            <div className="done-row"><span style={{ color: "#a89880" }}>Room</span><strong style={{ color: "#f5f0e8" }}>{lease.room}</strong></div>
+            <div className="done-row"><span style={{ color: "#a89880" }}>Monthly Rent</span><strong style={{ color: "#d4a853" }}>${lease.rent?.toLocaleString()}/mo</strong></div>
+            <div className="done-row"><span style={{ color: "#a89880" }}>Move-in</span><strong style={{ color: "#f5f0e8" }}>{fmtDate(lease.moveIn)}</strong></div>
+            <div className="done-row"><span style={{ color: "#a89880" }}>Door Code</span><strong style={{ color: "#d4a853", fontFamily: "monospace", letterSpacing: 4 }}>{lease.doorCode || doorCode || "—"}</strong></div>
+            <div className="done-row"><span style={{ color: "#a89880" }}>Signed</span><strong style={{ color: "#4a7c59" }}>{signedDateStr}</strong></div>
           </div>
 
           {/* Generated charges */}
           {lease.generatedCharges && lease.generatedCharges.length > 0 && (
-            <div style={{ maxWidth: 400, margin: "20px auto 0", background: "rgba(74,124,89,.08)", border: "1px solid rgba(74,124,89,.2)", borderRadius: 12, padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#4a7c59", marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>✓ Charges Added to Your Account</div>
+            <div style={{ maxWidth: 420, margin: "20px auto 0", background: "rgba(74,124,89,.08)", border: "1px solid rgba(74,124,89,.25)", borderRadius: 12, padding: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#5aaa72", marginBottom: 12, textTransform: "uppercase", letterSpacing: .5 }}>✓ Charges Added to Your Account</div>
               {lease.generatedCharges.map((c, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,.08)", fontSize: 12, color: "#c4a882" }}>
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.07)", fontSize: 13 }}>
                   <div>
-                    <div style={{ fontWeight: 600, color: "#f5f0e8" }}>{c.desc}</div>
-                    <div style={{ fontSize: 10, color: "#8a7a68" }}>Due: {c.dueDate}</div>
+                    <div style={{ fontWeight: 600, color: "#f5f0e8", marginBottom: 3 }}>{c.desc}</div>
+                    <div style={{ fontSize: 11, color: "#a89880" }}>Due {c.dueDate}</div>
                   </div>
-                  <strong style={{ color: "#d4a853" }}>${c.amount?.toLocaleString()}</strong>
+                  <strong style={{ color: "#d4a853", flexShrink: 0, marginLeft: 12 }}>${c.amount?.toLocaleString()}</strong>
                 </div>
               ))}
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontWeight: 800, fontSize: 14, color: "#f5f0e8", borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontWeight: 800, fontSize: 15, color: "#f5f0e8", borderTop: "1px solid rgba(255,255,255,.12)", marginTop: 4 }}>
                 <span>Total Due</span>
-                <span style={{ color: "#d4a853" }}>${lease.generatedCharges.reduce((s, c) => s + c.amount, 0).toLocaleString()}</span>
+                <span style={{ color: "#d4a853" }}>${lease.generatedCharges.reduce((s, c) => s + (Number(c.amount)||0), 0).toLocaleString()}</span>
               </div>
-              <div style={{ fontSize: 10, color: "#8a7a68", marginTop: 8, textAlign: "center" }}>Log in to your tenant portal to view and pay your balance.</div>
             </div>
           )}
+
+          {/* SD reminder */}
+          <div style={{ maxWidth: 420, margin: "16px auto 0", background: "rgba(212,168,83,.08)", border: "1px solid rgba(212,168,83,.25)", borderRadius: 12, padding: 16, textAlign: "left" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#d4a853", marginBottom: 8, textTransform: "uppercase", letterSpacing: .5 }}>⚡ Next Step — Secure Your Room</div>
+            <div style={{ fontSize: 13, color: "#c4a882", lineHeight: 1.7 }}>
+              Submit your <strong style={{ color: "#f5f0e8" }}>security deposit</strong> to reserve <strong style={{ color: "#f5f0e8" }}>{lease.room}</strong> at <strong style={{ color: "#f5f0e8" }}>{lease.property}</strong>. Your room is not secured until the deposit is received.
+            </div>
+          </div>
+
+          {/* Portal link */}
+          <div style={{ maxWidth: 420, margin: "16px auto 0", textAlign: "center" }}>
+            <a href={portalUrl} style={{ display: "inline-block", background: "#d4a853", color: "#1a1714", padding: "14px 32px", borderRadius: 10, fontWeight: 800, fontSize: 14, textDecoration: "none", width: "100%", boxSizing: "border-box" }}>
+              Log In to Tenant Portal →
+            </a>
+            <div style={{ fontSize: 11, color: "#8a7a68", marginTop: 8 }}>View charges, make payments, and manage your tenancy</div>
+          </div>
         </div>
       </div>
     </div></>
-  );
+  );}
 
   if (!lease) return null;
 
