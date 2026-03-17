@@ -240,7 +240,9 @@ export default function ApplyPage(){
     // Emergency
     emergName:"",emergPhone:"",emergRelation:"",
     // Room
-    selectedRoom:"",
+    selectedRoom:"",preferredProperty:"",
+    // Docs
+    idUploadLater:false,incomeUploadLater:false,
   });
   const[errors,setErrors]=useState({});
   const[invite,setInvite]=useState(null);
@@ -281,10 +283,11 @@ export default function ApplyPage(){
       else if(!ageOk(d.dob))e.dob="You must be at least 18 years old";
     }
     if(s==="appinfo"){
-      if(!d.moveIn||d.moveIn.includes(" "))e.moveIn="Required";
+      if(!d.moveIn||d.moveIn.includes(" "))e.moveIn="Please select your desired move-in date";
+      if(!invite&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
     }
     if(s==="personal"){
-      if(!d.ssn||d.ssn.length<4)e.ssn="Last 4 of SSN required";
+      if(!d.idFileName&&!d.idUploadLater)e.idFile="Please upload your photo ID, or check the box to upload it later";
     }
     if(s==="rental"){
       if(d.addresses.length===0)e.addresses="Add at least one address";
@@ -292,13 +295,15 @@ export default function ApplyPage(){
       if(d.felony==="")e.felony="Please answer";
     }
     if(s==="employment"){
-      if(!d.unemployed&&d.employers.length===0)e.employers="Add at least one employer";
+      if(!d.unemployed&&d.employers.length===0&&!d.incomeUploadLater)e.employers="Please add at least one employer, or check the box to upload income proof later";
     }
     if(s==="references"){
-      if(!d.empRefName.trim())e.empRefName="Required";
-      if(!d.empRefPhone.trim())e.empRefPhone="Required";
-      if(!d.persRefName.trim())e.persRefName="Required";
-      if(!d.persRefPhone.trim())e.persRefPhone="Required";
+      if(!d.unemployed){
+        if(!d.empRefName.trim())e.empRefName="Employer reference name is required";
+        if(!d.empRefPhone.trim())e.empRefPhone="Employer reference phone is required";
+      }
+      if(!d.persRefName.trim())e.persRefName="Personal reference name is required";
+      if(!d.persRefPhone.trim())e.persRefPhone="Personal reference phone is required";
     }
     if(s==="emergency"){
       if(!d.emergName.trim())e.emergName="Required";
@@ -401,12 +406,13 @@ export default function ApplyPage(){
               <label>Which room are you interested in?</label>
               <select value={d.selectedRoom} onChange={e=>upd("selectedRoom",e.target.value)}>
                 <option value="">No preference — any available room</option>
-                {vacant.map(r=><option key={r.id} value={r.id}>{r.name} — ${r.rent}/mo{r.pb?" (Private bath)":""}</option>)}
+                {vacant.map(r=><option key={r.id} value={r.id}>{r.name} — ${r.rent}/mo · {r.pb?"Private bath":"Shared bath"}{r.sqft?" · "+r.sqft+" sqft":""}{r.desc?" · "+r.desc:""}</option>)}
               </select>
             </div>);
           })()}
         </>}
 
+        {errors.preferredProperty&&<div className="err-msg" style={{marginBottom:12,fontSize:12,padding:"10px 12px",background:"rgba(196,92,74,.04)",borderRadius:8,border:"1px solid rgba(196,92,74,.15)"}}>{errors.preferredProperty}</div>}
         {/* If locked room from invite — show confirmation */}
         {invite?.inviteRoomName&&<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--gn)"}}>
           🏠 Applying for <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
@@ -483,8 +489,18 @@ export default function ApplyPage(){
       {step==="personal"&&<div className="sec">
         <div className="sec-num">Section 2</div>
         <div className="sec-hd"><h2>Personal Information</h2><p>We need to verify your identity for the screening process.</p></div>
-        <div className="fld"><label>Social Security Number (last 4)<span className="req">*</span></label><input type="password" maxLength={4} value={d.ssn} onChange={e=>upd("ssn",e.target.value.replace(/\D/g,""))} className={errors.ssn?"err":""} placeholder="••••"/><div className="help">Only the last 4 digits — used for identity verification. Never stored.</div>{errors.ssn&&<div className="err-msg">{errors.ssn}</div>}</div>
-        <div className="fld"><label>Photo ID Upload</label><div className={`upload ${d.idFileName?"has":""}`} onClick={()=>fileRef.current?.click()}><div className="upload-ic">{d.idFileName?"✅":"📷"}</div><div className="upload-txt">{d.idFileName?"":"Tap to upload your driver's license, passport, or state ID"}</div>{d.idFileName&&<div className="upload-file">{d.idFileName}</div>}</div><input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/><div className="help">JPG, PNG, or PDF. Max 10MB.</div></div>
+        <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
+          ⚠ Your application will be considered <strong>incomplete</strong> without all documents uploaded. You may upload them later, but your application may be delayed.
+        </div>
+        <div className="fld">
+          <label>Photo ID <span className="req">*</span></label>
+          {!d.idUploadLater&&<><div className={`upload ${d.idFileName?"has":""}`} onClick={()=>fileRef.current?.click()}><div className="upload-ic">{d.idFileName?"✅":"📷"}</div><div className="upload-txt">{d.idFileName?"":"Tap to upload your driver's license, passport, or state ID"}</div>{d.idFileName&&<div className="upload-file">{d.idFileName}</div>}</div><input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/><div className="help">JPG, PNG, or PDF. Max 10MB.</div></>}
+          <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
+            <input type="checkbox" checked={d.idUploadLater} onChange={e=>{upd("idUploadLater",e.target.checked);if(e.target.checked)upd("idFileName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
+            I'll upload my photo ID later
+          </label>
+          {errors.idFile&&<div className="err-msg">{errors.idFile}</div>}
+        </div>
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
@@ -520,7 +536,33 @@ export default function ApplyPage(){
         </>}
         {errors.employers&&<div className="err-msg" style={{marginBottom:12}}>{errors.employers}</div>}
 
-        <div className="fld" style={{marginTop:12}}><label>Proof of Income</label><div className={`upload ${d.payStubsName?"has":""}`} onClick={()=>payRef.current?.click()}><div className="upload-ic">{d.payStubsName?"✅":"📄"}</div><div className="upload-txt">{d.payStubsName?"":"Tap to upload pay stubs, offer letter, or bank statements"}</div>{d.payStubsName&&<div className="upload-file">{d.payStubsName}</div>}</div><input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/></div>
+        {/* Unemployed — optional previous work history */}
+        {d.unemployed&&<div style={{marginTop:12}}>
+          <div style={{fontSize:12,color:"#5c4a3a",marginBottom:10}}>You may optionally provide previous work history to strengthen your application.</div>
+          {d.employers.map((emp,i)=><div key={i} className="item-card">
+            <div className="item-hd"><div><div className="item-nm">{emp.employer}</div><div className="item-sub">{emp.position||"—"} · Since {emp.monthStarted} {emp.yearStarted}</div></div><div><button className="item-edit" onClick={()=>upd("curEmployerForm",{...emp,_editIdx:i})}>Edit</button><button className="item-del" onClick={()=>setD(p=>({...p,employers:p.employers.filter((_,j)=>j!==i)}))}>Remove</button></div></div>
+          </div>)}
+          {d.curEmployerForm?<div className="expand-form">
+            <h3>Previous Employer</h3>
+            <div className="fld"><label>Employer</label><input value={d.curEmployerForm.employer} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,employer:e.target.value})} placeholder="Company name"/></div>
+            <div className="fld"><label>Position / Title</label><input value={d.curEmployerForm.position} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,position:e.target.value})} placeholder="Your role"/></div>
+            <div className="fld-row">
+              <div className="fld"><label>Month Started</label><select value={d.curEmployerForm.monthStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,monthStarted:e.target.value})}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
+              <div className="fld"><label>Year Started</label><select value={d.curEmployerForm.yearStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,yearStarted:e.target.value})}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
+            </div>
+            <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveEmp}>Save</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curEmployerForm",null)}>Cancel</button></div>
+          </div>
+          :<div className="add-card" onClick={()=>upd("curEmployerForm",{...blankEmp})}><div className="plus">+</div><div className="lbl">Add Previous Employer (optional)</div></div>}
+        </div>}
+
+        <div className="fld" style={{marginTop:12}}>
+          <label>Proof of Income</label>
+          {!d.incomeUploadLater&&<><div className={`upload ${d.payStubsName?"has":""}`} onClick={()=>payRef.current?.click()}><div className="upload-ic">{d.payStubsName?"✅":"📄"}</div><div className="upload-txt">{d.payStubsName?"":"Tap to upload pay stubs, offer letter, or bank statements"}</div>{d.payStubsName&&<div className="upload-file">{d.payStubsName}</div>}</div><input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/></>}
+          <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
+            <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>{upd("incomeUploadLater",e.target.checked);if(e.target.checked)upd("payStubsName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
+            I'll upload proof of income later
+          </label>
+        </div>
 
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
@@ -529,11 +571,14 @@ export default function ApplyPage(){
       {/* ═══ REFERENCES ═══ */}
       {step==="references"&&<div className="sec">
         <div className="sec-num">Section 4</div>
-        <div className="sec-hd"><h2>References</h2><p>Provide one employer and one personal reference.</p></div>
-        <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer Reference</div>
-        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.empRefName} onChange={e=>upd("empRefName",e.target.value)} className={errors.empRefName?"err":""} placeholder="Supervisor or HR"/>{errors.empRefName&&<div className="err-msg">{errors.empRefName}</div>}</div>
-        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg">{errors.empRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div></div>
-        <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:20}}>Personal Reference</div>
+        <div className="sec-hd"><h2>References</h2><p>Provide {d.unemployed?"a personal reference":"one employer and one personal reference"}.</p></div>
+        {!d.unemployed&&<>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer Reference</div>
+          <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.empRefName} onChange={e=>upd("empRefName",e.target.value)} className={errors.empRefName?"err":""} placeholder="Supervisor or HR"/>{errors.empRefName&&<div className="err-msg">{errors.empRefName}</div>}</div>
+          <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg">{errors.empRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div></div>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:20}}>Personal Reference</div>
+        </>}
+        {d.unemployed&&<div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Personal Reference</div>}
         <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.persRefName} onChange={e=>upd("persRefName",e.target.value)} className={errors.persRefName?"err":""} placeholder="Someone who knows you well"/>{errors.persRefName&&<div className="err-msg">{errors.persRefName}</div>}</div>
         <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>upd("persRefPhone",fmtPhone(e.target.value))} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg">{errors.persRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.persRefRelation} onChange={e=>upd("persRefRelation",e.target.value)} placeholder="e.g. Friend"/></div></div>
         <button className="btn-next" onClick={next}>Continue →</button>
@@ -642,7 +687,7 @@ export default function ApplyPage(){
           </div>);
         })()}
 
-        <button className="btn-next" onClick={next}>Continue to Payment →</button>
+        <button className="btn-next" onClick={next}>Continue to Background Check Payment →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
 
