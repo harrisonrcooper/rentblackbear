@@ -252,6 +252,7 @@ export default function LeaseSignPage() {
     setSubmitting(true);
     try {
       const now = new Date().toISOString();
+      const fullDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
       const leases = await loadKey("hq-leases", []);
       const updated = leases.map(l => l.id === lease.id ? {
         ...l,
@@ -262,15 +263,61 @@ export default function LeaseSignPage() {
         executedAt: now,
       } : l);
       await saveKey("hq-leases", updated);
-      // Notify admin
+
+      // Write leaseSigned back to the applicant record
+      if (lease.applicationId) {
+        const apps = await loadKey("hq-apps", []);
+        const updatedApps = apps.map(a => a.id === lease.applicationId ? {
+          ...a,
+          leaseSigned: true,
+          leaseSignedAt: now,
+          leaseId: lease.id,
+          lastContact: now.split("T")[0],
+          history: [...(a.history || []), {
+            from: a.status,
+            to: a.status,
+            date: now.split("T")[0],
+            note: `Lease signed by tenant on ${fullDate}`
+          }]
+        } : a);
+        await saveKey("hq-apps", updatedApps);
+      }
+
+      // Notify admin bell
       const notifs = await loadKey("hq-notifs", []);
       await saveKey("hq-notifs", [{
         id: Math.random().toString(36).slice(2),
         type: "lease",
         msg: `✍️ ${lease.tenantName} signed their lease — ${lease.room} at ${lease.property}`,
-        date: new Date().toISOString().split("T")[0],
-        read: false, urgent: true
+        date: now.split("T")[0],
+        read: false,
+        urgent: true
       }, ...notifs]);
+
+      // Send email notifications (PM + tenant)
+      try {
+        await fetch("/api/lease-executed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tenantName: lease.tenantName,
+            tenantEmail: lease.tenantEmail,
+            landlordEmail: lease.landlordEmail || "info@rentblackbear.com",
+            property: lease.property,
+            room: lease.room,
+            rent: lease.rent,
+            moveIn: lease.moveIn,
+            leaseStart: lease.leaseStart,
+            leaseEnd: lease.leaseEnd,
+            sd: lease.sd,
+            proratedRent: lease.proratedRent,
+            executedAt: fullDate,
+          })
+        });
+      } catch (e) {
+        console.error("Email notification failed:", e);
+      }
+
       setDone(true);
     } catch {
       setErrors(["Save failed — please try again."]);

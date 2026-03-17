@@ -1622,10 +1622,10 @@ export default function Page(){
 
       {/* ═══ APPLICATIONS ═══ */}
       {tab==="applications"&&(()=>{
-        const STAGES=["pre-screened","called","invited","applied","reviewing","approved","move-in"];
-        const SL={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
-        const SC2={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","approved":"b-green","move-in":"b-green","denied":"b-red"};
-        const SI2={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
+        const STAGES=["pre-screened","called","invited","applied","reviewing","onboarding"];
+        const SL={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","onboarding":"Onboarding","approved":"Onboarding","move-in":"Onboarding"};
+        const SC2={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","onboarding":"b-green","approved":"b-green","move-in":"b-green","denied":"b-red"};
+        const SI2={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","onboarding":"🏠"};
         const moveApp=(id,ns)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));};
         const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
         const scoreApp=(a)=>{
@@ -1666,6 +1666,23 @@ export default function Page(){
         };
         const getScore=(a)=>scoreApp(a).score;
         const getBreakdown=(a)=>scoreApp(a).breakdown;
+
+        // Onboarding progress — 4 steps
+        const getOnboardingProgress=(a)=>{
+          const appLease=leases.find(l=>l.applicationId===a.id);
+          const leaseSigned=appLease?.status==="executed"||!!a.leaseSigned;
+          const docsUploaded=(a.documents&&a.documents.length>0)||(a.docsFlag&&!a.docsFlag.idUploadLater&&!a.docsFlag.incomeUploadLater);
+          const appCharges=charges.filter(c=>c.tenantName===a.name);
+          const sdCharge=appCharges.find(c=>c.category==="Security Deposit");
+          const rentCharge=appCharges.find(c=>c.category==="Rent");
+          const sdPaid=sdCharge&&chargeStatus(sdCharge)==="paid";
+          const firstMonthPaid=rentCharge&&chargeStatus(rentCharge)==="paid";
+          const steps=[leaseSigned,docsUploaded,sdPaid,firstMonthPaid];
+          const count=steps.filter(Boolean).length;
+          const pct=count/4*100;
+          const color=count===4?"#4a7c59":count>=3?"#e8903a":count>=1?"#d4a853":"#c45c4a";
+          return{count,leaseSigned,docsUploaded,sdPaid,firstMonthPaid,pct,color,ready:count===4};
+        };
         const monthFilter=expanded.appMonthFilter||"all";
         const activeApps=apps.filter(a=>{
           if(a.status==="denied")return false;
@@ -1678,7 +1695,7 @@ export default function Page(){
           if(monthFilter!=="all"&&!(a.submitted||"").startsWith(monthFilter))return false;
           return true;
         });
-        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in"].includes(a.status));
+        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in","onboarding"].includes(a.status));
         // Duplicate / returning detection
         const allTenantsList=props.flatMap(p=>p.rooms.filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
         const archiveList=archive.map(a=>({name:a.name||"",email:a.email||"",phone:a.phone||"",propName:a.propName,roomName:a.roomName,reason:a.reason,type:"past"}));
@@ -1812,21 +1829,35 @@ export default function Page(){
         </div>}
 
         {/* Pipeline */}
-        {appView==="pipeline"&&<div className="pipeline" style={{gridTemplateColumns:"repeat(7,1fr)"}}>
-          {STAGES.map(function(stage,si){var sa=activeApps.filter(function(a){return a.status===stage;});return(
+        {appView==="pipeline"&&<div className="pipeline" style={{gridTemplateColumns:"repeat(6,1fr)"}}>
+          {STAGES.map(function(stage,si){
+            // Onboarding column shows both "approved", "onboarding", and "move-in" statuses
+            var sa=stage==="onboarding"
+              ?activeApps.filter(function(a){return["approved","onboarding","move-in"].includes(a.status);})
+              :activeApps.filter(function(a){return a.status===stage;});
+            return(
             <div key={stage} className="pipe-col">
               <div className="pipe-hd"><h4 style={{fontSize:10}}>{SI2[stage]} {SL[stage]}</h4><span className="pipe-cnt">{sa.length}</span></div>
               <div className="pipe-bd">
-                {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=["pre-screened","called"].includes(a.status);return(
-                  <div key={a.id} className="pipe-card" style={{borderLeft:sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",paddingLeft:28}} onClick={function(){setModal({type:"app",data:a});}}>
-                    <div style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)"}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>
+                {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){
+                  var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=["pre-screened","called"].includes(a.status);
+                  var isOnboarding=["approved","onboarding","move-in"].includes(a.status);
+                  var prog=isOnboarding?getOnboardingProgress(a):null;
+                  return(
+                  <div key={a.id} className="pipe-card" style={{
+                    border:isOnboarding?`2px solid ${prog.color}`:"",
+                    borderLeft:isOnboarding?"":sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",
+                    cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",paddingLeft:isOnboarding?8:28,
+                    padding:isOnboarding?"8px":undefined
+                  }} onClick={function(){setModal({type:"app",data:a});}}>
+                    {!isOnboarding&&<div style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)"}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>}
                     {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600,cursor:"pointer"}}
                       onClick={e=>{e.stopPropagation();if(flags[0].type==="past"){setDrill("archive");setTab("tenants");}else if(flags[0].type==="dup"){setModal({type:"app",data:flags[0].data});}setModal(null);}}>
                       {flags[0].type==="current"?"⚠ Current Tenant":flags[0].type==="past"?"↩ Returning":flags[0].type==="dup"?"⚠ Duplicate":""} →
                     </div>}
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div className="pipe-nm" style={{fontSize:10}}>{a.name}</div>
-                      <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
+                      {!isOnboarding&&<div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
                         <span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
                           title={bd.join(" · ")||"Base score: 50"}
                           onMouseEnter={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="block";}}
@@ -1835,17 +1866,40 @@ export default function Page(){
                         <div style={{display:"none",position:"absolute",right:0,top:"100%",zIndex:20,background:"#1a1714",color:"#f5f0e8",borderRadius:6,padding:"6px 8px",fontSize:8,whiteSpace:"nowrap",boxShadow:"0 4px 12px rgba(0,0,0,.3)",marginTop:2}}>
                           {bd.length>0?bd.map((b,i)=><div key={i}>{b}</div>):<div>Base: 50pts</div>}
                         </div>
-                      </div>
+                      </div>}
                     </div>
                     <div className="pipe-sub" style={{fontSize:8}}>{a.property||"—"}{a.room?" · "+a.room:""}</div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#999",marginTop:4}}>
+
+                    {/* Onboarding progress bar */}
+                    {isOnboarding&&prog&&<>
+                      <div style={{marginTop:6,height:4,background:"rgba(0,0,0,.06)",borderRadius:2,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:`${prog.pct}%`,background:prog.color,borderRadius:2,transition:"width .3s ease"}}/>
+                      </div>
+                      <div style={{display:"flex",gap:3,marginTop:5}}>
+                        {[
+                          {key:"leaseSigned",label:"Lease"},
+                          {key:"docsUploaded",label:"Docs"},
+                          {key:"sdPaid",label:"SD"},
+                          {key:"firstMonthPaid",label:"Rent"},
+                        ].map(({key,label})=>(
+                          <div key={key} style={{flex:1,textAlign:"center",fontSize:6,fontWeight:700,padding:"2px 0",borderRadius:3,
+                            background:prog[key]?"rgba(74,124,89,.12)":"rgba(0,0,0,.04)",
+                            color:prog[key]?"#4a7c59":"#bbb"}}>
+                            {prog[key]?"✓":""} {label}
+                          </div>
+                        ))}
+                      </div>
+                      {prog.ready&&<div style={{marginTop:4,fontSize:7,fontWeight:800,color:"#4a7c59",textAlign:"center",padding:"2px 0",background:"rgba(74,124,89,.08)",borderRadius:3}}>✅ Ready to Move In</div>}
+                    </>}
+
+                    {!isOnboarding&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#999",marginTop:4}}>
                       <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
                       <div style={{display:"flex",alignItems:"center",gap:4}}>
                         {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:700}}>{d}d</span>}
                         {canInvite&&<button style={{fontSize:7,padding:"1px 5px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                           onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite</button>}
                       </div>
-                    </div>
+                    </div>}
                   </div>);
                 })}
                 {sa.length===0&&<div style={{textAlign:"center",padding:12,color:"#ccc",fontSize:9}}>Empty</div>}
@@ -1929,7 +1983,7 @@ export default function Page(){
           </div>
           {expanded.sourceAnalytics&&<div style={{padding:0}}>
             <table className="tbl"><thead><tr><th>Source</th><th>Leads</th><th>In Pipeline</th><th>Approved</th><th>Denied</th><th>Conv %</th></tr></thead><tbody>
-            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const sa=apps.filter(a=>(a.source||"Unknown")===src);const inPipe=sa.filter(a=>a.status!=="denied"&&a.status!=="approved"&&a.status!=="move-in").length;const approved=sa.filter(a=>a.status==="approved"||a.status==="move-in").length;const denied=sa.filter(a=>a.status==="denied").length;const rate=sa.length?Math.round(approved/sa.length*100):0;return(
+            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const sa=apps.filter(a=>(a.source||"Unknown")===src);const inPipe=sa.filter(a=>a.status!=="denied"&&a.status!=="approved"&&a.status!=="move-in").length;const approved=sa.filter(a=>a.status==="approved"||a.status==="move-in"||a.status==="onboarding").length;const denied=sa.filter(a=>a.status==="denied").length;const rate=sa.length?Math.round(approved/sa.length*100):0;return(
               <tr key={src}><td style={{fontWeight:600}}>{src}</td><td>{sa.length}</td><td>{inPipe}</td><td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td><td style={{color:denied?"#c45c4a":"#999"}}>{denied}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>);})}
             </tbody></table>
           </div>}
@@ -2431,10 +2485,10 @@ export default function Page(){
         {/* Active Leases list */}
         {leaseSubTab==="active"&&<>
           {/* Quick-create from approved apps */}
-          {apps.filter(a=>a.status==="approved"&&!leases.find(l=>l.applicationId===a.id)).length>0&&(
+          {apps.filter(a=>["approved","onboarding"].includes(a.status)&&!leases.find(l=>l.applicationId===a.id)).length>0&&(
             <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:12,marginBottom:14}}>
               <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:8}}>⚡ Ready to lease — approved applicants without a lease</div>
-              {apps.filter(a=>a.status==="approved"&&!leases.find(l=>l.applicationId===a.id)).map(a=>(
+              {apps.filter(a=>["approved","onboarding"].includes(a.status)&&!leases.find(l=>l.applicationId===a.id)).map(a=>(
                 <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(212,168,83,.1)"}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:600}}>{a.name}</div>
@@ -4928,7 +4982,7 @@ export default function Page(){
             const passcode=a.passcode||null;
             const lockActivation=passcode?{passcode,activatesAt:`${termMoveIn}T00:00:00`,status:"pending"}:null;
             setApps(p=>p.map(x=>x.id===a.id?{...x,
-              status:"approved",lastContact:now,
+              status:"onboarding",lastContact:now,
               property:propName,room:targetRoom.name,
               highRisk:termHighRisk,lockActivation,
               approvedWithPending:incReqs.length>0?(modal.bypassNote||incReqs.map(r=>r.label).join(", ")):null,
@@ -4961,7 +5015,7 @@ export default function Page(){
   )}
 
   {modal&&modal.type==="app"&&(()=>{const a=modal.data;
-    const STAGES=["pre-screened","called","invited","applied","reviewing","approved","move-in"];
+    const STAGES=["pre-screened","called","invited","applied","reviewing","onboarding"];
     const SL2={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","approved":"Approved","move-in":"Move-In"};
     const SI3={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","approved":"✅","move-in":"🏠"};
     const si=STAGES.indexOf(a.status);
@@ -5136,7 +5190,7 @@ export default function Page(){
           </div>
         </div>);
       })()}
-      {(a.status==="approved"||a.status==="move-in")&&<div className="tp-card"><h3>📋 Screening Summary</h3>
+      {(a.status==="approved"||a.status==="move-in"||a.status==="onboarding")&&<div className="tp-card"><h3>📋 Screening Summary</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"—";const passed=val==="passed"||val==="verified";return(
           <div key={r.key} style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -5199,7 +5253,7 @@ export default function Page(){
       <div className="tp-card"><h3>📝 Notes</h3><textarea value={a.notes||""} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,notes:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,notes:e.target.value}}));}} placeholder="Internal notes..." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
 
       {/* Move-in charges — shown on approved applicants */}
-      {a.status==="approved"&&(()=>{
+      {(a.status==="approved"||a.status==="onboarding")&&(()=>{
         const lk=a.lockActivation;
         if(lk)return(
         <div className="tp-card" style={{marginTop:10,border:"1px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
@@ -5218,7 +5272,7 @@ export default function Page(){
         </div>);
         return null;
       })()}
-      {a.status==="approved"&&(()=>{
+      {(a.status==="approved"||a.status==="onboarding")&&(()=>{
         const appCharges=charges.filter(c=>c.tenantName===a.name&&["Security Deposit","Rent","Move-In Fee"].includes(c.category));
         if(!appCharges.length)return null;
         const totalDue=appCharges.reduce((s,c)=>s+c.amount,0);
@@ -5271,7 +5325,7 @@ export default function Page(){
             ✅ {incompleteReqs.length>0?"Approve Anyway":"Approve"}
           </button>
         </>}
-        {a.status==="approved"&&(()=>{
+        {(a.status==="approved"||a.status==="onboarding")&&(()=>{
           const appCharges2=charges.filter(c=>c.tenantName===a.name&&["Security Deposit","Rent","Move-In Fee"].includes(c.category));
           const totalDue2=appCharges2.reduce((s,c)=>s+c.amount,0);
           const totalPaid2=appCharges2.reduce((s,c)=>s+c.amountPaid,0);
@@ -5290,7 +5344,7 @@ export default function Page(){
             }
           </div>);
         })()}
-        {a.status==="move-in"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.filter(x=>x.id!==a.id));setModal(null);}}>🏠 Finalize</button>}
+        
         <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,reason:""})}>Deny</button>
       </div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
