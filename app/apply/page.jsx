@@ -12,6 +12,48 @@ const MONTHS=["January","February","March","April","May","June","July","August",
 const YEARS=Array.from({length:50},(_,i)=>2026-i);
 const STATES=["AL","AK","AZ","AR","CA","CO","CT","DC","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY"];
 
+// Three-dropdown date picker — returns value as "YYYY-MM-DD"
+// mode="dob": years 1924–2008 (must be 18+)
+// mode="movein": current year + 2 future years
+function DateDrop({value,onChange,hasErr,mode="movein"}){
+  const parts=value?value.split("-"):["","",""];
+  const yr=parts[0]||"",mo=parts[1]||"",dy=parts[2]||"";
+  const now=new Date();
+  const curYear=now.getFullYear();
+  const dobYears=Array.from({length:curYear-1900+1},(_,i)=>curYear-i); // all years back to 1900
+  const moveInYears=[curYear,curYear+1,curYear+2];
+  const years=mode==="dob"?dobYears:moveInYears;
+  const daysInMonth=(m,y)=>{if(!m||!y)return 31;return new Date(Number(y),Number(m),0).getDate();};
+  const days=Array.from({length:daysInMonth(mo,yr)},(_,i)=>String(i+1).padStart(2,"0"));
+  const set=(newYr,newMo,newDy)=>{
+    if(!newYr&&!newMo&&!newDy){onChange("");return;}
+    onChange(`${newYr||"    "}-${newMo||"  "}-${newDy||"  "}`.trim());
+  };
+  const selStyle={
+    flex:1,padding:"13px 8px",border:`2px solid ${hasErr?"var(--rd)":"rgba(0,0,0,.08)"}`,
+    borderRadius:10,fontSize:15,fontFamily:"inherit",outline:"none",
+    background:"#fff",color:(!yr&&!mo&&!dy)?"#999":"#3d3529",appearance:"none",
+    WebkitAppearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")",
+    backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:28,
+  };
+  return(
+    <div style={{display:"flex",gap:8}}>
+      <select value={mo} onChange={e=>{const v=e.target.value;set(yr,v,dy);}} style={selStyle}>
+        <option value="">Month</option>
+        {MONTHS.map((m,i)=><option key={m} value={String(i+1).padStart(2,"0")}>{m}</option>)}
+      </select>
+      <select value={dy} onChange={e=>set(yr,mo,e.target.value)} style={{...selStyle,flex:"0 0 90px"}}>
+        <option value="">Day</option>
+        {days.map(d=><option key={d} value={d}>{parseInt(d)}</option>)}
+      </select>
+      <select value={yr} onChange={e=>set(e.target.value,mo,dy)} style={{...selStyle,flex:"0 0 100px"}}>
+        <option value="">Year</option>
+        {years.map(y=><option key={y} value={String(y)}>{y}</option>)}
+      </select>
+    </div>
+  );
+}
+
 // ─── Styles ──────────────────────────────────────────────────────
 const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
@@ -226,7 +268,7 @@ export default function ApplyPage(){
   }catch{}setLoading(false);})();},[]);
   useEffect(()=>{if(step!=="welcome"&&step!=="done"&&!loading){setSaving(true);const t=setTimeout(()=>setSaving(false),1500);return()=>clearTimeout(t);}},[d,step]);
 
-  const ageOk=(dob)=>{if(!dob)return false;const b=new Date(dob+"T00:00:00");const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=18;};
+  const ageOk=(dob)=>{if(!dob||dob.includes(" "))return false;const b=new Date(dob+"T00:00:00");if(isNaN(b))return false;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=18;};
 
   const validate=(s)=>{
     const e={};
@@ -235,11 +277,11 @@ export default function ApplyPage(){
       if(!d.lastName.trim())e.lastName="Required";
       if(!d.email.trim()||!d.email.includes("@"))e.email="Valid email required";
       if(d.phone.replace(/\D/g,"").length!==10)e.phone="10-digit phone required";
-      if(!d.dob)e.dob="Required";
+      if(!d.dob||d.dob.includes(" ")||d.dob.replace(/[0-9\-]/g,"").length>0)e.dob="Required";
       else if(!ageOk(d.dob))e.dob="You must be at least 18 years old";
     }
     if(s==="appinfo"){
-      if(!d.moveIn)e.moveIn="Required";
+      if(!d.moveIn||d.moveIn.includes(" "))e.moveIn="Required";
     }
     if(s==="personal"){
       if(!d.ssn||d.ssn.length<4)e.ssn="Last 4 of SSN required";
@@ -319,7 +361,7 @@ export default function ApplyPage(){
           <div className="fld-row"><div className="fld"><label>First Name<span className="req">*</span></label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder="First name"/>{errors.firstName&&<div className="err-msg">{errors.firstName}</div>}</div><div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder="Last name"/>{errors.lastName&&<div className="err-msg">{errors.lastName}</div>}</div></div>
           <div className="fld"><label>Email Address<span className="req">*</span></label><input type="email" value={d.email} onChange={e=>upd("email",e.target.value)} className={errors.email?"err":""} placeholder="you@email.com"/>{errors.email&&<div className="err-msg">{errors.email}</div>}</div>
           <div className="fld"><label>Phone Number<span className="req">*</span></label><input type="tel" value={d.phone} onChange={e=>upd("phone",fmtPhone(e.target.value))} className={errors.phone?"err":""} placeholder="(256) 555-1234"/>{errors.phone&&<div className="err-msg">{errors.phone}</div>}</div>
-          <div className="fld"><label>Date of Birth<span className="req">*</span></label><input type="date" value={d.dob} onChange={e=>upd("dob",e.target.value)} className={errors.dob?"err":""}/>{errors.dob&&<div className="err-msg">{errors.dob}</div>}</div>
+          <div className="fld"><label>Date of Birth<span className="req">*</span></label><DateDrop value={d.dob} onChange={v=>upd("dob",v)} hasErr={!!errors.dob} mode="dob"/>{errors.dob&&<div className="err-msg">{errors.dob}</div>}</div>
         </div>
         <div className="legal">By clicking the button below you are agreeing to our <a href="#">Application Authorization Policy</a>, <a href="#">Terms of Use</a> & <a href="#">Privacy Policy</a>.</div>
         <button className="btn-start" onClick={next}>Begin Application →</button>
@@ -329,7 +371,7 @@ export default function ApplyPage(){
       {step==="appinfo"&&<div className="sec">
         <div className="sec-num">Application Info</div>
         <div className="sec-hd"><h2>A Few Quick Details</h2><p>Help us prepare for your move-in.</p></div>
-        <div className="fld"><label>Desired Move-in Date<span className="req">*</span></label><input type="date" value={d.moveIn} onChange={e=>upd("moveIn",e.target.value)} className={errors.moveIn?"err":""}/>{errors.moveIn&&<div className="err-msg">{errors.moveIn}</div>}</div>
+        <div className="fld"><label>Desired Move-in Date<span className="req">*</span></label><DateDrop value={d.moveIn} onChange={v=>upd("moveIn",v)} hasErr={!!errors.moveIn} mode="movein"/>{errors.moveIn&&<div className="err-msg">{errors.moveIn}</div>}</div>
 
         {/* Room/property selection — only for walk-ins without a locked room */}
         {(!invite||(invite&&!invite.inviteRoomName&&invite.inviteRoomMode!=="locked"))&&<>
