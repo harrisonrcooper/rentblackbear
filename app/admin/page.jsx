@@ -2,7 +2,26 @@
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
-import { LayoutDashboard, TrendingUp, Target, AlertTriangle, Users, Home, DollarSign, ClipboardList, Wrench, FolderOpen, FileText, BookOpen, Globe, Palette, Brain, Bell, Settings } from "lucide-react";
+
+// ── Inline SVG nav icons (no external dependency) ──────────────────
+const I=({d,s=15})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+const IconDashboard=()=><I d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10"/>;
+const IconTrending=()=><I d="M22 7l-8.5 8.5-5-5L2 17"/>;
+const IconTarget=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
+const IconAlert=()=><I d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01"/>;
+const IconUsers=()=><I d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"/>;
+const IconHome=()=><I d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>;
+const IconDollar=()=><I d="M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>;
+const IconClipboard=()=><I d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/>;
+const IconWrench=()=><I d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>;
+const IconFile=()=><I d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"/>;
+const IconFolder=()=><I d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>;
+const IconBook=()=><I d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>;
+const IconGlobe=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+const IconPalette=()=><I d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/>;
+const IconBrain=()=><I d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14z M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14z"/>;
+const IconBell=()=><I d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0"/>;
+const IconSettings=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 
 // ─── Storage ────────────────────────────────────────────────────────
 // Supabase
@@ -437,8 +456,8 @@ const S=`
 .side{width:220px;background:#1a1714;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
 .s-logo{padding:16px 18px;font-size:15px;font-weight:800;color:#f5f0e8;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:7px}
 .s-logo span{color:#d4a853}
-.s-lbl{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(196,168,130,.35);padding:14px 16px 4px}
-.sn{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;border-radius:7px;font-size:12px;font-weight:500;color:rgba(255,255,255,.72);cursor:pointer;border:none;background:none;width:calc(100% - 16px);text-align:left;font-family:inherit;transition:all .12s;position:relative}
+.s-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.72);padding:14px 16px 4px}
+.sn{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;border-radius:7px;font-size:13px;font-weight:500;color:rgba(255,255,255,.72);cursor:pointer;border:none;background:none;width:calc(100% - 16px);text-align:left;font-family:inherit;transition:all .12s;position:relative}
 .sn:hover{background:rgba(255,255,255,.07);color:#fff}
 .sn.on{background:rgba(212,168,83,.18);color:#f0c96a;font-weight:700}
 .sn.on .sn-i{opacity:1}
@@ -862,24 +881,24 @@ export default function Page(){
   const pastDueCount=charges.filter(c=>chargeStatus(c)==="pastdue").length;
   const pendingLeases=leases.filter(l=>l.status==="pending_tenant"||l.status==="pending_landlord").length;
   const tabs=[
-    {id:"dashboard",i:<LayoutDashboard size={15}/>,l:"Dashboard"},
-    {id:"scorecard",i:<TrendingUp size={15}/>,l:"Scorecard"},
-    {id:"rocks",i:<Target size={15}/>,l:"Rocks"},
-    {id:"issues",i:<AlertTriangle size={15}/>,l:"Issues"},
-    {id:"tenants",i:<Users size={15}/>,l:"Tenants"},
-    {id:"portal",i:<Home size={15}/>,l:"Tenant Portal"},
-    {id:"payments",i:<DollarSign size={15}/>,l:"Payments",badge:pastDueCount||m.unpaid.length||null},
-    {id:"applications",i:<ClipboardList size={15}/>,l:"Applications",badge:m.activeApps||null},
-    {id:"maintenance",i:<Wrench size={15}/>,l:"Maintenance",badge:m.openMaint||null},
-    {id:"leases",i:<FileText size={15}/>,l:"Leases & Docs",badge:pendingLeases||null},
-    {id:"documents",i:<FolderOpen size={15}/>,l:"Documents"},
-    {id:"accounting",i:<BookOpen size={15}/>,l:"Accounting"},
-    {id:"properties",i:<Home size={15}/>,l:"Properties"},
-    {id:"site-settings",i:<Globe size={15}/>,l:"Site Settings"},
-    {id:"theme",i:<Palette size={15}/>,l:"Theme Editor"},
-    {id:"ideas",i:<Brain size={15}/>,l:"Brain Dump"},
-    {id:"notifications",i:<Bell size={15}/>,l:"Alerts",badge:m.unreadNotifs||null},
-    {id:"settings_dummy",i:<Settings size={15}/>,l:"Settings"},
+    {id:"dashboard",i:<IconDashboard/>,l:"Dashboard"},
+    {id:"scorecard",i:<IconTrending/>,l:"Scorecard"},
+    {id:"rocks",i:<IconTarget/>,l:"Rocks"},
+    {id:"issues",i:<IconAlert/>,l:"Issues"},
+    {id:"tenants",i:<IconUsers/>,l:"Tenants"},
+    {id:"portal",i:<IconHome/>,l:"Tenant Portal"},
+    {id:"payments",i:<IconDollar/>,l:"Payments",badge:pastDueCount||m.unpaid.length||null},
+    {id:"applications",i:<IconClipboard/>,l:"Applications",badge:m.activeApps||null},
+    {id:"maintenance",i:<IconWrench/>,l:"Maintenance",badge:m.openMaint||null},
+    {id:"leases",i:<IconFile/>,l:"Leases & Docs",badge:pendingLeases||null},
+    {id:"documents",i:<IconFolder/>,l:"Documents"},
+    {id:"accounting",i:<IconBook/>,l:"Accounting"},
+    {id:"properties",i:<IconHome/>,l:"Properties"},
+    {id:"site-settings",i:<IconGlobe/>,l:"Site Settings"},
+    {id:"theme",i:<IconPalette/>,l:"Theme Editor"},
+    {id:"ideas",i:<IconBrain/>,l:"Brain Dump"},
+    {id:"notifications",i:<IconBell/>,l:"Alerts",badge:m.unreadNotifs||null},
+    {id:"settings_dummy",i:<IconSettings/>,l:"Settings"},
   ];
 
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);};
