@@ -305,6 +305,138 @@ const DEF_IDEAS=[
 function randPalette(){const h=Math.floor(Math.random()*360);const c=(h+150+Math.random()*60)%360;const hl=(h2,s,l)=>{s/=100;l/=100;const a=s*Math.min(l,1-l);const f=n=>{const k=(n+h2/30)%12;const cv=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*cv).toString(16).padStart(2,"0");};return`#${f(0)}${f(8)}${f(4)}`;};return{bg:hl(h,20,9),card:hl(h,18,15),accent:hl(c,70,60),text:hl(h,10,94),muted:hl(h,14,65),surface:hl(c,5,98),surfaceAlt:hl(c,7,94),green:hl(150,50,45),dark:hl(h,20,8),warm:hl(h,12,44)};}
 
 // Photo manager — unlimited, multi-upload, drag-to-reorder
+
+// ─── Photo Editor Modal ─────────────────────────────────────────────
+function PhotoEditor({src,onSave,onClose}){
+  const canvasRef=useRef(null);
+  const[brightness,setBrightness]=useState(100);
+  const[rotation,setRotation]=useState(0);
+  const[cropX,setCropX]=useState(0);
+  const[cropY,setCropY]=useState(0);
+  const[cropW,setCropW]=useState(100);
+  const[cropH,setCropH]=useState(100);
+  const[dragging,setDragging]=useState(null);
+  const[saving,setSaving]=useState(false);
+  const imgRef=useRef(null);
+  const previewRef=useRef(null);
+
+  // Draw preview whenever settings change
+  useEffect(()=>{
+    const img=new Image();
+    img.crossOrigin="anonymous";
+    img.onload=()=>{
+      imgRef.current=img;
+      drawPreview(img);
+    };
+    img.src=src;
+  },[src]);
+
+  useEffect(()=>{if(imgRef.current)drawPreview(imgRef.current);},[brightness,rotation,cropX,cropY,cropW,cropH]);
+
+  const drawPreview=(img)=>{
+    const c=previewRef.current;if(!c)return;
+    const ctx=c.getContext("2d");
+    // Work in a temp canvas at natural size for quality
+    const tmp=document.createElement("canvas");
+    const rad=rotation*Math.PI/180;
+    const sin=Math.abs(Math.sin(rad));const cos=Math.abs(Math.cos(rad));
+    const rW=Math.round(img.width*cos+img.height*sin);
+    const rH=Math.round(img.width*sin+img.height*cos);
+    tmp.width=rW;tmp.height=rH;
+    const tc=tmp.getContext("2d");
+    tc.translate(rW/2,rH/2);tc.rotate(rad);
+    tc.drawImage(img,-img.width/2,-img.height/2);
+    // Apply brightness
+    tc.globalCompositeOperation="multiply";
+    const b=(brightness-100)/100;
+    if(b>0){tc.fillStyle=`rgba(255,255,255,${b})`;tc.fillRect(-rW,-rH,rW*2,rH*2);}
+    else if(b<0){tc.globalCompositeOperation="darken";tc.fillStyle=`rgba(0,0,0,${-b})`;tc.fillRect(-rW,-rH,rW*2,rH*2);}
+    // Crop
+    const sx=Math.round(rW*cropX/100);const sy=Math.round(rH*cropY/100);
+    const sw=Math.round(rW*cropW/100);const sh=Math.round(rH*cropH/100);
+    // Draw to preview canvas
+    c.width=c.offsetWidth||600;c.height=c.offsetHeight||340;
+    ctx.clearRect(0,0,c.width,c.height);
+    const scale=Math.min(c.width/sw,c.height/sh);
+    const dx=(c.width-sw*scale)/2;const dy=(c.height-sh*scale)/2;
+    ctx.drawImage(tmp,sx,sy,sw,sh,dx,dy,sw*scale,sh*scale);
+    // Draw crop handles overlay
+    ctx.strokeStyle="rgba(212,168,83,.8)";ctx.lineWidth=2;ctx.setLineDash([6,3]);
+    ctx.strokeRect(dx,dy,sw*scale,sh*scale);ctx.setLineDash([]);
+  };
+
+  const applyAndSave=async()=>{
+    setSaving(true);
+    const img=imgRef.current;if(!img){setSaving(false);return;}
+    const rad=rotation*Math.PI/180;
+    const sin=Math.abs(Math.sin(rad));const cos=Math.abs(Math.cos(rad));
+    const rW=Math.round(img.width*cos+img.height*sin);
+    const rH=Math.round(img.width*sin+img.height*cos);
+    const tmp=document.createElement("canvas");tmp.width=rW;tmp.height=rH;
+    const tc=tmp.getContext("2d");
+    tc.translate(rW/2,rH/2);tc.rotate(rad);tc.drawImage(img,-img.width/2,-img.height/2);
+    // Brightness
+    if(brightness!==100){
+      const imgData=tc.getImageData(0,0,rW,rH);const d=imgData.data;
+      const f=brightness/100;
+      for(let i=0;i<d.length;i+=4){d[i]=Math.min(255,d[i]*f);d[i+1]=Math.min(255,d[i+1]*f);d[i+2]=Math.min(255,d[i+2]*f);}
+      tc.putImageData(imgData,0,0);
+    }
+    // Crop
+    const sx=Math.round(rW*cropX/100);const sy=Math.round(rH*cropY/100);
+    const sw=Math.round(rW*cropW/100);const sh=Math.round(rH*cropH/100);
+    const out=document.createElement("canvas");out.width=sw;out.height=sh;
+    out.getContext("2d").drawImage(tmp,sx,sy,sw,sh,0,0,sw,sh);
+    // Export as blob and upload
+    out.toBlob(async blob=>{
+      if(!blob){setSaving(false);return;}
+      const file=new File([blob],"edited.jpg",{type:"image/jpeg"});
+      const url=await uploadPhoto(file,"edited");
+      if(url)onSave(url);else onSave(out.toDataURL("image/jpeg",.92));
+      setSaving(false);
+    },"image/jpeg",.92);
+  };
+
+  const sliderRow=(label,val,setVal,min,max,step,unit)=>(
+    <div style={{marginBottom:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <label style={{fontSize:11,fontWeight:700,color:"#5c4a3a"}}>{label}</label>
+        <span style={{fontSize:11,color:"#9a7422",fontWeight:700}}>{val}{unit}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={val} onChange={e=>setVal(Number(e.target.value))}
+        style={{width:"100%",accentColor:"#d4a853"}}/>
+    </div>
+  );
+
+  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:820,maxHeight:"92vh",overflowY:"auto"}}>
+    <h2 style={{marginBottom:4}}>✏️ Edit Showcase Photo</h2>
+    <p style={{fontSize:11,color:"#999",marginBottom:14}}>Adjust the first 3 photos — these are shown on the property listing and comparison table.</p>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 260px",gap:16}}>
+      {/* Preview */}
+      <div>
+        <canvas ref={previewRef} style={{width:"100%",height:340,borderRadius:10,background:"#1a1714",display:"block"}}/>
+        <div style={{fontSize:9,color:"#999",textAlign:"center",marginTop:4}}>Live preview — dashed border shows crop area</div>
+      </div>
+      {/* Controls */}
+      <div style={{padding:"14px",background:"#faf9f7",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>
+        <div style={{fontSize:10,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:12}}>Adjustments</div>
+        {sliderRow("Brightness",brightness,setBrightness,20,200,5,"%")}
+        {sliderRow("Rotation",rotation,setRotation,-180,180,1,"°")}
+        <div style={{fontSize:10,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:12,marginTop:16}}>Crop</div>
+        {sliderRow("Left Edge",cropX,setCropX,0,49,1,"%")}
+        {sliderRow("Top Edge",cropY,setCropY,0,49,1,"%")}
+        {sliderRow("Width",cropW,v=>{if(cropX+v<=100)setCropW(v);},10,100,1,"%")}
+        {sliderRow("Height",cropH,v=>{if(cropY+v<=100)setCropH(v);},10,100,1,"%")}
+        <button className="btn btn-out btn-sm" style={{width:"100%",marginBottom:6,fontSize:10}} onClick={()=>{setBrightness(100);setRotation(0);setCropX(0);setCropY(0);setCropW(100);setCropH(100);}}>↺ Reset All</button>
+      </div>
+    </div>
+    <div className="mft" style={{marginTop:14}}>
+      <button className="btn btn-out" onClick={onClose}>Cancel</button>
+      <button className="btn btn-gold" onClick={applyAndSave} disabled={saving}>{saving?"Saving...":"✓ Apply & Save"}</button>
+    </div>
+  </div></div>);
+}
+
 function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
   const[dropOver,setDropOver]=useState(false);
   const[urlInput,setUrlInput]=useState("");
@@ -434,7 +566,13 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
         style={{flex:1,padding:"5px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",outline:"none"}}/>
       <button className="btn btn-out btn-sm" onClick={addUrl} disabled={!urlInput.trim()}>Add URL</button>
     </div>
-  </div>);
+  </div>
+  {editingPhoto&&<PhotoEditor
+    src={editingPhoto.src}
+    onClose={()=>setEditingPhoto(null)}
+    onSave={url=>{const next=[...ph];next[editingPhoto.index]=url;onChange(next);setEditingPhoto(null);}}
+  />}
+  );
 }
 
 function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
