@@ -552,26 +552,16 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
   const[highlight,setHighlight]=useState(null);
   const catColors={"Redstone Arsenal":"#b8956a",Entertainment:"#c4a882","Grocery & Retail":"#a8b882","Food & Drink":"#c4a070",Education:"#82a8a8",Healthcare:"#82a88c",property:"#d4a853"};
 
-  // Props come in already geocoded from parent — just use them directly
-  const resolvedProps=PROPS;
-  const propsRef=useRef(PROPS);
-  useEffect(()=>{propsRef.current=PROPS;},[PROPS]);
-  const mapCatRef=useRef(mapCat);
-  useEffect(()=>{mapCatRef.current=mapCat;},[mapCat]);
-
-  const buildMarkers=useCallback(()=>{
+  // Build markers — takes current props and cat directly, no stale refs
+  const buildMarkers=useCallback((curProps,curCat)=>{
     const L=window.L;const map=mapInst.current;if(!L||!map)return;
     markersRef.current.forEach(m=>m.remove());markersRef.current=[];
-    const curProps=propsRef.current;
-    const curCat=mapCatRef.current;
-    // Property pins — gold bear
     curProps.filter(p=>p.lat&&p.lng).forEach(p=>{
       const icon=L.divIcon({className:"",html:`<div style="width:34px;height:34px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer">🐻</div>`,iconSize:[34,34],iconAnchor:[17,34],popupAnchor:[0,-34]});
       const vacRooms=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));
       const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;min-width:180px;padding:4px 2px"><strong style="font-size:14px;color:#1a1714">${p.name}</strong><div style="color:#666;font-size:12px;margin:2px 0">${p.address}</div><div style="color:#d4a853;font-weight:700;font-size:13px;margin-top:4px">${vacRooms} room${vacRooms!==1?"s":""} available · From $${minR}/mo</div></div>`);
       markersRef.current.push(m);
     });
-    // POI pins
     const pins=curCat==="all"?POIS:POIS.filter(p=>p.cat===curCat);
     pins.forEach(p=>{
       const color=catColors[p.cat]||"#666";
@@ -581,6 +571,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     });
   },[]);
 
+  // Init map once
   useEffect(()=>{
     if(mapInst.current||!mapRef.current)return;
     const link=document.createElement("link");link.rel="stylesheet";link.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";document.head.appendChild(link);
@@ -588,20 +579,19 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     script.onload=()=>{
       const L=window.L;
       const map=L.map(mapRef.current,{scrollWheelZoom:false,zoomControl:true}).setView([34.723,-86.591],12);
-      // CartoDB Voyager — clean, colorful, modern tile
       L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{
         attribution:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>',
         subdomains:"abcd",maxZoom:20
       }).addTo(map);
       mapInst.current=map;
-      buildMarkers();
+      buildMarkers(PROPS,mapCat);
     };
     document.head.appendChild(script);
     return()=>{if(mapInst.current){mapInst.current.remove();mapInst.current=null;}};
   },[]);
 
-  // Rebuild markers whenever props or filter changes
-  useEffect(()=>{buildMarkers();},[PROPS,mapCat,buildMarkers]);
+  // Rebuild whenever props or filter changes — pass current values directly
+  useEffect(()=>{buildMarkers(PROPS,mapCat);},[PROPS,mapCat,buildMarkers]);
 
   const scrollToPin=(p)=>{
     if(mapInst.current&&p.lat){mapInst.current.setView([p.lat,p.lng],14,{animate:true});
