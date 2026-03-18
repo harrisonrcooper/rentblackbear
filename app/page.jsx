@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 // ─── Data ───────────────────────────────────────────────────────────
-const S_INFO = { company:"Black Bear Rentals", legal:"Oak & Main Development LLC", phone:"(256) 555-0192", email:"info@rentblackbear.com", city:"Huntsville, Alabama" };
+const S_INFO = { company:"Black Bear Rentals", legal:"Oak & Main Development LLC", phone:"(850) 696-8101", email:"info@rentblackbear.com", city:"Huntsville, Alabama" };
 
 const PROPS = [
   { id:"p1",name:"The Holmes House",address:"Corner of Holmes & Lee, Huntsville, AL",lat:34.7285,lng:-86.5920,type:"SFH",typeTag:"SFH",baths:3,sqft:2400,status:"Available",utils:"first100",clean:"Weekly",
@@ -509,12 +509,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 `;
 
 // ─── Components ─────────────────────────────────────────────────────
-function PropertyModal({p,onClose}){
+function PropertyModal({p,onClose,setLightbox,setLbIdx}){
   if(!p)return null;const minP=Math.min(...p.rooms.map(r=>r.rent));
   const goApply=()=>{onClose();setTimeout(()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"}),100);};
   return(<div className="mo" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <button className="mx" onClick={onClose}>✕</button>
-    <div className="mgal"><img src={p.imgs[0]} alt={p.name}/><div className="mside"><img src={p.imgs[1]} alt=""/><img src={p.imgs[2]} alt=""/></div></div>
+    <div className="mgal" style={{cursor:"pointer"}} onClick={()=>{setLightbox(p.imgs);setLbIdx(0);}}>
+      <img src={p.imgs[0]} alt={p.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+      {p.imgs.length>1&&<div className="mside">
+        {p.imgs.slice(1,3).map((img,i)=><img key={i} src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover",cursor:"pointer"}} onClick={e=>{e.stopPropagation();setLightbox(p.imgs);setLbIdx(i+1);}}/>)}
+      </div>}
+      {p.imgs.length>3&&<div style={{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,.6)",color:"#fff",fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:4}}>+{p.imgs.length-3} more</div>}
+    </div>
     <div className="mbody">
       <div className="mtp"><div><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.type}</span></div><h2 style={{marginTop:8}}>{p.name}</h2><p className="maddr">{p.address}</p></div>
         <div style={{display:"flex",gap:10,flexWrap:"wrap"}}><div className="mib"><div className="l">Rooms</div><div className="v">{p.rooms.length}</div></div><div className="mib"><div className="l">Baths</div><div className="v">{p.baths}</div></div><div className="mib"><div className="l">From</div><div className="v">${minP}<small>/mo</small></div></div></div></div>
@@ -712,7 +718,7 @@ function StickyBar({properties}){
 
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function Page(){
-  const[scrolled,setScrolled]=useState(false);const[sel,setSel]=useState(null);const[mobMenu,setMobMenu]=useState(false);
+  const[scrolled,setScrolled]=useState(false);const[sel,setSel]=useState(null);const[mobMenu,setMobMenu]=useState(false);const[lightbox,setLightbox]=useState(null);const[lbIdx,setLbIdx]=useState(0);
   const[calProp,setCalProp]=useState("all");const[calRoom,setCalRoom]=useState(null);const[mOff,setMOff]=useState(0);
   const[mapCat,setMapCat]=useState("all");
   const[showFlt,setShowFlt]=useState(false);
@@ -730,8 +736,21 @@ export default function Page(){
     Promise.all([
       fetch(SUPA+"/app_data?key=eq.hq-props&select=value",{headers:hdr}).then(r=>r.json()),
       fetch(SUPA+"/app_data?key=eq.hq-settings&select=value",{headers:hdr}).then(r=>r.json()),
-    ]).then(([p,s])=>{
-      if(p&&p[0]&&p[0].value&&Array.isArray(p[0].value)&&p[0].value.length>0)setLiveProps(p[0].value);
+      fetch(SUPA+"/app_data?key=eq.hq-prop-photos&select=value",{headers:hdr}).then(r=>r.json()),
+    ]).then(([p,s,ph])=>{
+      const photoMap=ph&&ph[0]&&ph[0].value?ph[0].value:{};
+      if(p&&p[0]&&p[0].value&&Array.isArray(p[0].value)&&p[0].value.length>0){
+        // Merge photos back into props from the photo map
+        const merged=p[0].value.map(prop=>({
+          ...prop,
+          photos:Object.keys(photoMap).filter(k=>k.startsWith(prop.id+"_")).sort().map(k=>photoMap[k]),
+          rooms:(prop.rooms||[]).map(room=>({
+            ...room,
+            photos:Object.keys(photoMap).filter(k=>k.startsWith(room.id+"_")).sort().map(k=>photoMap[k]),
+          })),
+        }));
+        setLiveProps(merged);
+      }
       if(s&&s[0]&&s[0].value&&s[0].value.companyName)setLiveSettings(s[0].value);
     }).catch(()=>{});
   },[]);
@@ -744,7 +763,7 @@ export default function Page(){
       id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,typeTag:p.type==="SFH"?"SFH":"Townhome",
       baths:p.baths||2,sqft:p.sqft||0,status:p.rooms.some(r=>r.st==="vacant")?"Available":p.status||"Coming Soon",
       utils:p.utils,clean:p.clean,desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
-      imgs:p.photos&&p.photos.length>0?p.photos:PROPS.find(x=>x.id===p.id)?.imgs||[],
+      imgs:(p.photos&&p.photos.length>0)?p.photos:(PROPS.find(x=>x.id===p.id)?.imgs||[]),
       rooms:p.rooms.map(r=>({
         id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'42"',pb:r.pb,sqft:r.sqft||0,
         feat:r.feat||[],st:r.st,le:r.le,
@@ -992,7 +1011,17 @@ export default function Page(){
     <footer className="ftr"><p>© {new Date().getFullYear()} {SI.company} — {SI.legal}. All rights reserved.</p></footer>
 
     {/* OVERLAYS */}
-    {sel&&<PropertyModal p={sel} onClose={()=>setSel(null)}/>}
+    {sel&&<PropertyModal p={sel} onClose={()=>setSel(null)} setLightbox={setLightbox} setLbIdx={setLbIdx}/>}
+    {lightbox&&<div onClick={()=>setLightbox(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:20,right:24,background:"none",border:"none",color:"#fff",fontSize:28,cursor:"pointer",lineHeight:1}}>✕</button>
+      <button onClick={e=>{e.stopPropagation();setLbIdx(i=>Math.max(0,i-1));}} style={{position:"absolute",left:16,background:"rgba(255,255,255,.15)",border:"none",color:"#fff",fontSize:28,cursor:"pointer",padding:"8px 14px",borderRadius:6,lineHeight:1}}>‹</button>
+      <img src={lightbox[lbIdx]} alt="" onClick={e=>e.stopPropagation()} style={{maxWidth:"90vw",maxHeight:"90vh",objectFit:"contain",borderRadius:8,boxShadow:"0 8px 40px rgba(0,0,0,.5)"}}/>
+      <button onClick={e=>{e.stopPropagation();setLbIdx(i=>Math.min(lightbox.length-1,i+1));}} style={{position:"absolute",right:16,background:"rgba(255,255,255,.15)",border:"none",color:"#fff",fontSize:28,cursor:"pointer",padding:"8px 14px",borderRadius:6,lineHeight:1}}>›</button>
+      <div style={{position:"absolute",bottom:20,left:"50%",transform:"translateX(-50%)",display:"flex",gap:6}}>
+        {lightbox.map((_,i)=><div key={i} onClick={e=>{e.stopPropagation();setLbIdx(i);}} style={{width:8,height:8,borderRadius:"50%",background:i===lbIdx?"#d4a853":"rgba(255,255,255,.4)",cursor:"pointer",transition:"background .2s"}}/>)}
+      </div>
+      <div style={{position:"absolute",bottom:20,right:24,color:"rgba(255,255,255,.5)",fontSize:12}}>{lbIdx+1} / {lightbox.length}</div>
+    </div>}
     <Chat/>
     <StickyBar properties={P}/>
   </>);
