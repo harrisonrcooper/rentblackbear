@@ -763,7 +763,7 @@ export default function Page(){
       id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,typeTag:p.type==="SFH"?"SFH":"Townhome",
       baths:p.baths||2,sqft:p.sqft||0,status:p.rooms.some(r=>r.st==="vacant")?"Available":p.status||"Coming Soon",
       utils:p.utils,clean:p.clean,desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
-      imgs:(p.photos&&p.photos.length>0)?p.photos:(PROPS.find(x=>x.id===p.id)?.imgs||[]),
+      imgs:(p.photos&&p.photos.length>0)?p.photos:[],
       rooms:p.rooms.map(r=>({
         id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'42"',pb:r.pb,sqft:r.sqft||0,
         feat:r.feat||[],st:r.st,le:r.le,
