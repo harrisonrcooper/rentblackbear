@@ -496,7 +496,7 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
   </div></div>);
 }
 
-function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSettings}){
+function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,onUpdateSettings}){
   const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]});
   const[activeUnit,setActiveUnit]=useState(0);
   const[warning,setWarning]=useState(null);
@@ -743,7 +743,13 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
     {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:"#4a7c59",textAlign:"center"}}>
       ✓ Saved
     </div>}
-    <div className="mft">
+    <div className="mft" style={{justifyContent:"space-between"}}>
+      <button className="btn btn-red btn-sm" style={{fontSize:11}} onClick={()=>{
+        const occ=allRooms(p).filter(r=>r.st==="occupied").length;
+        if(occ>0){alert("Cannot delete — "+p.name+" has "+occ+" occupied room"+(occ!==1?"s":"")+" . Remove all tenants first.");}
+        else if(window.confirm("Permanently delete "+p.name+"? This cannot be undone.")){onDelete(p.id);}
+      }}>🗑 Delete Property</button>
+      <div style={{display:"flex",gap:6}}>
       <button className="btn btn-out" onClick={onClose}>Cancel</button>
       <button className={`btn ${justSaved?"btn-green":unsaved?"btn-gold":"btn-out"}`} onClick={()=>{
         if(!p.name.trim()){setWarning("Property name is required.");return;}
@@ -752,6 +758,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
         setTimeout(()=>setJustSaved(false),3000);
         onSave(p);
       }}>{isNew?"Add Property":justSaved?"✓ Saved":"Save Changes"}</button>
+      </div>
     </div>
   </div></div>);
 }
@@ -1000,6 +1007,8 @@ export default function Page(){
   const[settings,setSettings]=useState(DEF_SETTINGS);
   const[theme,setTheme]=useState(DEF_THEME);
   const[editProp,setEditProp]=useState(null);
+  const[dragPropIdx,setDragPropIdx]=useState(null);
+  const[dragOverPropIdx,setDragOverPropIdx]=useState(null);
   const[isNewProp,setIsNewProp]=useState(false);
   const[ideas,setIdeas]=useState(DEF_IDEAS);
   const[loaded,setLoaded]=useState(false);
@@ -3359,7 +3368,7 @@ export default function Page(){
             <tr key={t.id}><td>{t.date}</td><td style={{fontWeight:600}}>{t.desc}</td><td>{(pr&&pr.name)||"—"}</td><td><span className={`badge ${t.type==="income"?"b-green":"b-red"}`}>{t.cat}</span></td>
               <td style={{textAlign:"right",fontWeight:800,color:t.type==="income"?"#4a7c59":"#c45c4a"}}>{t.type==="income"?"+":"-"}{fmtS(t.amount)}</td></tr>);})}
         </tbody></table></div></div>
-        {props.map(p=>{const inc=txns.filter(t=>t.propId===p.id&&t.type==="income").reduce((s,t)=>s+t.amount,0);const exp=txns.filter(t=>t.propId===p.id&&t.type==="expense").reduce((s,t)=>s+t.amount,0);return(
+        {props.map((p,idx)=>{const inc=txns.filter(t=>t.propId===p.id&&t.type==="income").reduce((s,t)=>s+t.amount,0);const exp=txns.filter(t=>t.propId===p.id&&t.type==="expense").reduce((s,t)=>s+t.amount,0);return(
           <div key={p.id} className="row"><div className="row-i"><div className="row-t">{p.name}</div><div className="row-s">{p.type} · {allRooms(p).length} rooms</div></div>
             <div style={{display:"flex",gap:16,alignItems:"center"}}><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Income</div><div style={{fontWeight:800,color:"#4a7c59",fontSize:13}}>{fmtS(inc)}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Expense</div><div style={{fontWeight:800,color:"#c45c4a",fontSize:13}}>{fmtS(exp)}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Net</div><div style={{fontWeight:800,color:inc-exp>=0?"#4a7c59":"#c45c4a",fontSize:13}}>{fmtS(inc-exp)}</div></div></div>
           </div>);})}
@@ -3594,10 +3603,26 @@ export default function Page(){
           const unpaidRooms=occRooms.filter(r=>!(payments[r.id]&&payments[r.id][MO]));
           const expiringRooms=occRooms.filter(r=>{if(!r.le)return false;const d=Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24));return d<=90;});
           return(
-          <div key={p.id} className="card" style={{marginBottom:10}}>
+          <div key={p.id} className="card"
+            draggable
+            onDragStart={()=>setDragPropIdx(idx)}
+            onDragEnter={()=>setDragOverPropIdx(idx)}
+            onDragOver={e=>e.preventDefault()}
+            onDragEnd={()=>{
+              if(dragPropIdx!==null&&dragOverPropIdx!==null&&dragPropIdx!==dragOverPropIdx){
+                const reordered=[...props];
+                const[moved]=reordered.splice(dragPropIdx,1);
+                reordered.splice(dragOverPropIdx,0,moved);
+                setProps(reordered);
+              }
+              setDragPropIdx(null);setDragOverPropIdx(null);
+            }}
+            style={{marginBottom:10,opacity:dragPropIdx===idx?.5:1,
+              border:dragOverPropIdx===idx&&dragPropIdx!==idx?"2px solid #d4a853":"2px solid transparent",
+              borderRadius:12,transition:"opacity .15s,border-color .1s",cursor:"grab"}}>
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
-                <h3>{isExp?"▾":"▸"} {p.name}</h3>
+                <h3><span style={{color:"#ccc",marginRight:4,cursor:"grab",fontSize:14}}>⠿</span>{isExp?"▾":"▸"} {p.name}</h3>
                 <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {allRooms(p).length}br · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
@@ -3608,7 +3633,6 @@ export default function Page(){
                 {unpaidRooms.length>0&&<span className="badge b-red" title={`${unpaidRooms.map(r=>r.tenant.name).join(", ")} unpaid`}>💳 {unpaidRooms.length} Unpaid</span>}
                 {expiringRooms.length>0&&<span className="badge b-gold" title={expiringRooms.map(r=>`${r.tenant.name} (${Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24))}d)`).join(", ")}>⚠ {expiringRooms.length} Expiring</span>}
                 <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setIsNewProp(false);setEditProp(p);}}>✏️ Edit</button>
-                <button className="btn btn-red btn-sm" onClick={e=>{e.stopPropagation();if(occRooms.length){alert("Cannot delete — "+p.name+" has occupied rooms. Remove all tenants first.");}else if(window.confirm("Delete "+p.name+"? This cannot be undone.")){setProps(prev=>prev.filter(x=>x.id!==p.id));}}}>✕</button>
               </div>
             </div>
             {isExp&&<div className="card-bd" style={{animation:"fadeIn .15s"}}>
@@ -6524,7 +6548,7 @@ export default function Page(){
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
     </div></div>);})()}
 
-  {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean||r.clean}});}} settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}}/>}
+  {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean||r.clean}});}} settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}} onDelete={id=>{setProps(prev=>prev.filter(x=>x.id!==id));setEditProp(null);}}/>}
 
   {/* Confetti */}
   {showConfetti&&<div className="confetti-wrap">{Array.from({length:60}).map((_,i)=>{const colors=["#d4a853","#4a7c59","#f5f0e8","#c45c4a","#3b82f6"];return(
