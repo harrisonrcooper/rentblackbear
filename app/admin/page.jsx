@@ -504,37 +504,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
   const[saveShake,setSaveShake]=useState(0);
   const[justSaved,setJustSaved]=useState(false);
   const[showUtilModal,setShowUtilModal]=useState(false);
-  const[geocoding,setGeocoding]=useState(false);
-  const[geocodeErr,setGeocodeErr]=useState("");
-  const geocode=async()=>{
-    if(!p.addr)return;
-    setGeocoding(true);setGeocodeErr("");
-    // Try multiple address formats — Nominatim is picky
-    const base=p.addr.trim();
-    const attempts=[
-      base+", Huntsville, Alabama, USA",
-      base+", Huntsville, AL 35801, USA",
-      base+", Madison County, Alabama, USA",
-      base+", Alabama, USA",
-    ];
-    try{
-      for(const attempt of attempts){
-        const q=encodeURIComponent(attempt);
-        const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us&addressdetails=1`,{headers:{"User-Agent":"BlackBearRentals/1.0 harrison@oakandmaindevelopment.com"}});
-        const data=await res.json();
-        if(data&&data.length>0){
-          const{lat,lon}=data[0];
-          updP({...p,lat:parseFloat(parseFloat(lat).toFixed(5)),lng:parseFloat(parseFloat(lon).toFixed(5))});
-          setGeocodeErr("");
-          setGeocoding(false);
-          return;
-        }
-        await new Promise(r=>setTimeout(r,300));// respect rate limit between attempts
-      }
-      setGeocodeErr("Address not found in OpenStreetMap. Use the Google Maps link below to get coordinates manually.");
-    }catch{setGeocodeErr("Geocoding failed — check your internet connection or enter coordinates manually.");}
-    setGeocoding(false);
-  };
+
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
   const updP=(val)=>{setP(val);markUnsaved();};
   // Mirror all settings + rooms from Unit A (index 0) to target unit
@@ -588,17 +558,10 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
 
     {/* Property-level info */}
     <div className="fr"><div className="fld"><label>Property Name</label><input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House"/></div><div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div></div>
-    <div className="fr3">
-      <div className="fld"><label>Latitude</label><input type="number" step="0.00001" value={p.lat||""} onChange={e=>setP({...p,lat:e.target.value===""?0:Number(e.target.value)})} onBlur={e=>{const v=Number(e.target.value);if(v!==0)updP({...p,lat:v});}} placeholder="Auto-fill →"/></div>
-      <div className="fld"><label>Longitude</label><input type="number" step="0.00001" value={p.lng||""} onChange={e=>setP({...p,lng:e.target.value===""?0:Number(e.target.value)})} onBlur={e=>{const v=Number(e.target.value);if(v!==0)updP({...p,lng:v});}} placeholder="Auto-fill →"/></div>
-      <div className="fld">
-        <label style={{visibility:"hidden"}}>.</label>
-        <button type="button" className="btn btn-out" style={{width:"100%",fontSize:11}} onClick={geocode} disabled={!p.addr||geocoding}>
-          {geocoding?"📍 Looking up...":"📍 Auto-fill from address"}
-        </button>
-        {geocodeErr&&<div style={{fontSize:9,color:"#c45c4a",marginTop:3}}>{geocodeErr}<br/><a href={`https://www.google.com/maps/search/${encodeURIComponent(p.addr+", Huntsville AL")}`} target="_blank" rel="noopener" style={{color:"#3b82f6",fontSize:9}}>Search on Google Maps →</a><br/><span style={{color:"#999",fontSize:9}}>Right-click the pin → "What's here?" to get coordinates, then paste above.</span></div>}
-        {p.lat&&p.lng&&!geocodeErr&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>✓ {p.lat}, {p.lng}</div>}
-      </div>
+    <div style={{fontSize:9,color:p.lat&&p.lng?"#4a7c59":"#999",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+      {p.lat&&p.lng
+        ?<>📍 <span style={{fontWeight:600}}>Map pin will update automatically when you save</span> — {p.lat.toFixed(4)}, {p.lng.toFixed(4)}</>
+        :<>📍 <span>Map coordinates will be set automatically when you save</span></>}
     </div>
     <div className="fr3">
       <div className="fld"><label>Property Type</label>
@@ -1219,14 +1182,14 @@ export default function Page(){
 
   const cycleRock=id=>setRocks(p=>p.map(r=>{if(r.id!==id)return r;const o=["on-track","off-track","not-started","done"];return{...r,status:o[(o.indexOf(r.status)+1)%o.length]};}));
   const saveProp=async(p)=>{
-    // Auto-geocode address if no valid coords stored yet
-    const hasCoords=p.lat&&p.lng&&isFinite(p.lat)&&isFinite(p.lng)&&p.lat!==0&&p.lng!==0;
+    // Always geocode from address on save — ensures pins are always accurate
     let finalProp=p;
-    if(!hasCoords&&p.addr){
+    if(p.addr){
       const attempts=[
         p.addr+", Huntsville, Alabama, USA",
         p.addr+", Huntsville, AL, USA",
         p.addr+", Madison County, Alabama, USA",
+        p.addr+", Alabama, USA",
       ];
       for(const attempt of attempts){
         try{
