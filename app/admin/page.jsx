@@ -3608,7 +3608,7 @@ export default function Page(){
                 {unpaidRooms.length>0&&<span className="badge b-red" title={`${unpaidRooms.map(r=>r.tenant.name).join(", ")} unpaid`}>💳 {unpaidRooms.length} Unpaid</span>}
                 {expiringRooms.length>0&&<span className="badge b-gold" title={expiringRooms.map(r=>`${r.tenant.name} (${Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24))}d)`).join(", ")}>⚠ {expiringRooms.length} Expiring</span>}
                 <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setIsNewProp(false);setEditProp(p);}}>✏️ Edit</button>
-                <button className="btn btn-red btn-sm" onClick={e=>{e.stopPropagation();if(occRooms.length){alert("Cannot delete — property has occupied rooms. Remove all tenants first.");}else{setProps(prev=>prev.filter(x=>x.id!==p.id));}}}>✕</button>
+                <button className="btn btn-red btn-sm" onClick={e=>{e.stopPropagation();if(occRooms.length){alert("Cannot delete — "+p.name+" has occupied rooms. Remove all tenants first.");}else if(window.confirm("Delete "+p.name+"? This cannot be undone.")){setProps(prev=>prev.filter(x=>x.id!==p.id));}}}>✕</button>
               </div>
             </div>
             {isExp&&<div className="card-bd" style={{animation:"fadeIn .15s"}}>
