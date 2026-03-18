@@ -558,10 +558,32 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
 
     {/* Property-level info */}
     <div className="fr"><div className="fld"><label>Property Name</label><input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House"/></div><div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div></div>
-    <div style={{fontSize:9,color:p.lat&&p.lng?"#4a7c59":"#999",marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-      {p.lat&&p.lng
-        ?<>📍 <span style={{fontWeight:600}}>Map pin will update automatically when you save</span> — {p.lat.toFixed(4)}, {p.lng.toFixed(4)}</>
-        :<>📍 <span>Map coordinates will be set automatically when you save</span></>}
+    <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:10}}>
+      <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Map Pin Location</div>
+      <div className="fr3">
+        <div className="fld" style={{marginBottom:0}}>
+          <label>Latitude</label>
+          <input type="number" step="0.00001" value={p.lat||""} placeholder="Auto-set on Save"
+            onChange={e=>setP({...p,lat:e.target.value===""?0:Number(e.target.value)})}
+            onBlur={e=>{const v=Number(e.target.value);updP({...p,lat:v||0});}}/>
+        </div>
+        <div className="fld" style={{marginBottom:0}}>
+          <label>Longitude</label>
+          <input type="number" step="0.00001" value={p.lng||""} placeholder="Auto-set on Save"
+            onChange={e=>setP({...p,lng:e.target.value===""?0:Number(e.target.value)})}
+            onBlur={e=>{const v=Number(e.target.value);updP({...p,lng:v||0});}}/>
+        </div>
+        <div className="fld" style={{marginBottom:0}}>
+          <label style={{visibility:"hidden"}}>.</label>
+          {p.lat&&p.lng
+            ?<div style={{fontSize:9,color:"#4a7c59",padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:6,border:"1px solid rgba(74,124,89,.15)",height:"100%",display:"flex",alignItems:"center"}}>✓ Pin set · saves with property</div>
+            :<div style={{fontSize:9,color:"#c45c4a",padding:"8px 10px",background:"rgba(196,92,74,.04)",borderRadius:6,border:"1px solid rgba(196,92,74,.15)"}}>
+              No pin yet — Save to auto-geocode, or paste coords from{" "}
+              <a href={`https://www.google.com/maps/search/${encodeURIComponent((p.addr||"")+" Huntsville AL")}`} target="_blank" rel="noopener" style={{color:"#3b82f6"}}>Google Maps</a>
+              {" "}(right-click → What's here?)
+            </div>}
+        </div>
+      </div>
     </div>
     <div className="fr3">
       <div className="fld"><label>Property Type</label>
@@ -1003,7 +1025,36 @@ export default function Page(){
   useEffect(()=>{(async()=>{
     const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
-    setProps(migrateProps(p));setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
+    const migratedProps=migrateProps(p);
+    // Auto-geocode any property missing valid coords — fire and forget
+    const needsGeocode=migratedProps.filter(prop=>!(prop.lat&&prop.lng&&isFinite(prop.lat)&&isFinite(prop.lng)&&prop.lat!==0&&prop.lng!==0)&&prop.addr);
+    if(needsGeocode.length>0){
+      (async()=>{
+        let updated=[...migratedProps];
+        for(const prop of needsGeocode){
+          const attempts=[prop.addr+", Huntsville, Alabama, USA",prop.addr+", Huntsville, AL, USA",prop.addr+", Alabama, USA"];
+          for(const attempt of attempts){
+            try{
+              const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(attempt)}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
+              const data=await res.json();
+              if(data&&data.length>0){
+                const lat=parseFloat(parseFloat(data[0].lat).toFixed(5));
+                const lng=parseFloat(parseFloat(data[0].lon).toFixed(5));
+                if(lat>34.5&&lat<35.0&&lng>-87.0&&lng<-86.3){
+                  updated=updated.map(x=>x.id===prop.id?{...x,lat,lng}:x);
+                  console.log("Auto-geocoded:",prop.name,"→",lat,lng);
+                  break;
+                }
+              }
+            }catch{}
+            await new Promise(r=>setTimeout(r,600));
+          }
+        }
+        setProps(updated);
+        save("hq-props",updated);
+      })();
+    }
+    setProps(migratedProps);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,loaded]);
@@ -1193,15 +1244,25 @@ export default function Page(){
       ];
       for(const attempt of attempts){
         try{
-          const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(attempt)}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
+          const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(attempt)}&format=json&limit=3&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0 harrison@oakandmaindevelopment.com"}});
           const data=await res.json();
+          console.log("Geocode attempt:",attempt,"→",data?.length,"results",data?.[0]);
           if(data&&data.length>0){
-            finalProp={...p,lat:parseFloat(parseFloat(data[0].lat).toFixed(5)),lng:parseFloat(parseFloat(data[0].lon).toFixed(5))};
-            break;
+            const lat=parseFloat(parseFloat(data[0].lat).toFixed(5));
+            const lng=parseFloat(parseFloat(data[0].lon).toFixed(5));
+            // Sanity check: must be in Huntsville AL area (Madison County)
+            if(lat>34.5&&lat<35.0&&lng>-87.0&&lng<-86.3){
+              finalProp={...p,lat,lng};
+              console.log("✓ Geocoded",p.name,"→",lat,lng);
+              break;
+            } else {
+              console.warn("Geocode result outside Huntsville area, skipping:",lat,lng);
+            }
           }
-        }catch{}
-        await new Promise(r=>setTimeout(r,300));
+        }catch(e){console.error("Geocode error:",e);}
+        await new Promise(r=>setTimeout(r,500));
       }
+      if(!finalProp.lat||!finalProp.lng)console.warn("⚠ Geocoding failed for",p.name,"— please enter coords manually");
     }
     if(isNewProp)setProps(prev=>[...prev,finalProp]);else setProps(prev=>prev.map(x=>x.id===p.id?finalProp:x));
     setEditProp(null);
