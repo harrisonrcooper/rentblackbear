@@ -272,7 +272,14 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true};
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,
+  utilTemplates:[
+    {id:"ut1",name:"All Included",key:"allIncluded",desc:"Landlord pays all utilities — water, sewer, garbage, electric, gas.",clause:"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, and gas. RESIDENT is responsible for no utility costs beyond the monthly rent."},
+    {id:"ut2",name:"Tenant Pays — Split (First $100)",key:"first100",desc:"PM covers first $100/mo. Overage split equally among all residents.",clause:"PROPERTY MANAGER agrees to pay the first $100 of combined utilities per month. Any usage exceeding $100 per month shall be split equally among all current residents and billed on the 1st of each month."},
+    {id:"ut3",name:"Tenant Pays — Metered",key:"metered",desc:"Each tenant pays their own metered usage directly.",clause:"RESIDENT is responsible for paying their metered utility usage directly to the provider. PROPERTY MANAGER is not responsible for any utility costs."},
+    {id:"ut4",name:"Tenant Pays — Full Split",key:"fullSplit",desc:"All utilities split equally among residents, no cap.",clause:"All utility costs including water, sewer, garbage, electricity, and gas shall be split equally among all current residents and billed on the 1st of each month."},
+  ]
+};
 const DEF_THEME={bg:"#1a1714",card:"#2c2520",accent:"#d4a853",text:"#f5f0e8",muted:"#c4a882",surface:"#fefdfb",surfaceAlt:"#f5f0e8",green:"#4a7c59",dark:"#1a1714",warm:"#5c4a3a"};
 const THEME_LABELS={bg:"Background",card:"Card",accent:"Accent",text:"Light Text",muted:"Muted",surface:"Surface",surfaceAlt:"Alt Surface",green:"Green",dark:"Dark",warm:"Warm"};
 const PRESETS={"Warm Lodge":DEF_THEME,"Midnight":{bg:"#0f1729",card:"#1a2540",accent:"#3b82f6",text:"#e8ecf4",muted:"#8899b8",surface:"#fafbfe",surfaceAlt:"#eef2f9",green:"#22c55e",dark:"#0f1729",warm:"#64748b"},"Forest":{bg:"#1a2e1a",card:"#243524",accent:"#7cb342",text:"#e8f0e4",muted:"#a3b89a",surface:"#fafcf8",surfaceAlt:"#eef3ea",green:"#7cb342",dark:"#1a2e1a",warm:"#5a6b52"}};
@@ -430,16 +437,91 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
   </div>);
 }
 
-function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
+function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
+  const templates=settings?.utilTemplates||DEF_SETTINGS.utilTemplates;
+  const[editingId,setEditingId]=useState(null);
+  const[draftT,setDraftT]=useState(null);
+  const saveTemplate=(t)=>{
+    const existing=templates.find(x=>x.id===t.id);
+    const updated=existing?templates.map(x=>x.id===t.id?t:x):[...templates,t];
+    onUpdateSettings({...(settings||DEF_SETTINGS),utilTemplates:updated});
+    setEditingId(null);setDraftT(null);
+  };
+  const deleteTemplate=(id)=>{
+    if(!window.confirm("Delete this template? Any units using it will keep their current value."))return;
+    onUpdateSettings({...(settings||DEF_SETTINGS),utilTemplates:templates.filter(t=>t.id!==id)});
+  };
+  const startNew=()=>{
+    const t={id:uid(),name:"New Template",key:"custom_"+uid().slice(0,4),desc:"",clause:""};
+    setDraftT(t);setEditingId(t.id);
+  };
+  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600,maxHeight:"82vh",overflowY:"auto"}}>
+    <h2 style={{marginBottom:4}}>Utility Templates</h2>
+    <p style={{fontSize:11,color:"#999",marginBottom:16}}>These templates appear in the Utilities dropdown when editing unit settings. Each template has a name, short description, and full lease clause.</p>
+    {templates.map(t=>(
+      <div key={t.id} style={{border:"1px solid rgba(0,0,0,.07)",borderRadius:8,padding:12,marginBottom:8,background:"#faf9f7"}}>
+        {editingId===t.id&&draftT
+          ?<div>
+            <div className="fr">
+              <div className="fld"><label>Template Name</label><input value={draftT.name} onChange={e=>setDraftT(x=>({...x,name:e.target.value}))}/></div>
+              <div className="fld"><label>Key <span style={{fontWeight:400,color:"#999",textTransform:"none"}}>(no spaces)</span></label><input value={draftT.key} onChange={e=>setDraftT(x=>({...x,key:e.target.value.replace(/[^a-z0-9_]/gi,"_")}))}/></div>
+            </div>
+            <div className="fld"><label>Short Description <span style={{fontWeight:400,color:"#999",textTransform:"none"}}>(shown below dropdown)</span></label><input value={draftT.desc} onChange={e=>setDraftT(x=>({...x,desc:e.target.value}))} placeholder="e.g. PM covers first $100/mo, overage split equally"/></div>
+            <div className="fld"><label>Lease Clause <span style={{fontWeight:400,color:"#999",textTransform:"none"}}>(inserted into lease agreement)</span></label>
+              <textarea value={draftT.clause} onChange={e=>setDraftT(x=>({...x,clause:e.target.value}))} rows={4} placeholder="Full clause text inserted into the lease document..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.5}}/>
+            </div>
+            <div style={{display:"flex",gap:6,marginTop:6}}>
+              <button className="btn btn-green btn-sm" onClick={()=>saveTemplate(draftT)}>✓ Save Template</button>
+              <button className="btn btn-out btn-sm" onClick={()=>{setEditingId(null);setDraftT(null);}}>Cancel</button>
+            </div>
+          </div>
+          :<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                {t.name}
+                <span style={{fontSize:9,color:"#bbb",fontFamily:"monospace",fontWeight:400}}>{t.key}</span>
+              </div>
+              {t.desc&&<div style={{fontSize:11,color:"#5c4a3a",marginTop:2}}>{t.desc}</div>}
+              {t.clause&&<div style={{fontSize:10,color:"#999",marginTop:3,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>"{t.clause}"</div>}
+            </div>
+            <div style={{display:"flex",gap:4,flexShrink:0}}>
+              <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>{setDraftT({...t});setEditingId(t.id);}}>Edit</button>
+              <button className="btn btn-red btn-sm" style={{fontSize:9}} onClick={()=>deleteTemplate(t.id)}>✕</button>
+            </div>
+          </div>}
+      </div>
+    ))}
+    <button className="btn btn-gold btn-sm" style={{marginTop:4,width:"100%"}} onClick={startNew}>+ Add New Template</button>
+    <div className="mft" style={{marginTop:12}}><button className="btn btn-green" onClick={onClose}>Done</button></div>
+  </div></div>);
+}
+
+function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSettings}){
   const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]});
   const[activeUnit,setActiveUnit]=useState(0);
   const[warning,setWarning]=useState(null);
   const[unsaved,setUnsaved]=useState(false);
   const[saveShake,setSaveShake]=useState(0);
   const[justSaved,setJustSaved]=useState(false);
+  const[showUtilModal,setShowUtilModal]=useState(false);
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
-  // Wrap setP to track unsaved changes
   const updP=(val)=>{setP(val);markUnsaved();};
+  // Mirror all settings + rooms from Unit A (index 0) to target unit
+  const mirrorFromA=(targetIdx)=>{
+    const src=p.units[0];
+    if(!src)return;
+    const units=(p.units||[]).map((u,i)=>{
+      if(i!==targetIdx)return u;
+      return{
+        ...u,
+        sqft:src.sqft,baths:src.baths,utils:src.utils,clean:src.clean,
+        rentalMode:src.rentalMode,rent:src.rent,sd:src.sd,desc:src.desc,
+        // Deep copy rooms with new IDs so they're fully independent
+        rooms:(src.rooms||[]).map(r=>({...r,id:uid(),st:"vacant",le:null,tenant:null})),
+      };
+    });
+    updP({...p,units});
+  };
   // Unit helpers
   const curUnit=p.units&&p.units.length>0?p.units[Math.min(activeUnit,(p.units||[]).length-1)]:null;
   const addUnit=()=>{
@@ -505,7 +587,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
     {/* Unit tabs */}
     <div style={{borderTop:"2px solid rgba(0,0,0,.06)",marginTop:12,paddingTop:12}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
           {(p.units||[]).map((u,i)=>(
             <button key={u.id} onClick={()=>setActiveUnit(i)} style={{
               padding:"6px 14px",borderRadius:7,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
@@ -516,8 +598,12 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
             }}>{u.name||`Unit ${i+1}`} <span style={{fontSize:10,fontWeight:400,opacity:.7}}>({(u.rooms||[]).length}br)</span></button>
           ))}
           {(p.type==="Duplex"||(p.units||[]).length===0)&&<button className="btn btn-out btn-sm" onClick={addUnit}>+ Add Unit</button>}
+          {(p.units||[]).length>1&&activeUnit>0&&<button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
+            onClick={()=>{if(window.confirm(`Copy all settings and rooms from Unit A to ${curUnit?.name||"this unit"}? Rooms will be vacant copies with new IDs.`))mirrorFromA(activeUnit);}}>
+            ⧉ Mirror from Unit A
+          </button>}
         </div>
-        <span style={{fontSize:10,color:"#999"}}>{p.type==="Duplex"?"Duplex — each unit has its own rooms, lease & financials":"SFH — one unit"}</span>
+        <span style={{fontSize:10,color:"#999"}}>{(p.units||[]).length>1?"Multiple units — each has its own rooms, lease & financials":"Single unit"}</span>
       </div>
 
       {/* Unit settings */}
@@ -532,7 +618,16 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
           <div className="fld"><label>Bathrooms</label><input type="number" step="0.5" min="0.5" value={curUnit.baths||1} onChange={e=>updUnit("baths",Number(e.target.value))}/></div>
         </div>
         <div className="fr3">
-          <div className="fld"><label>Utilities</label><select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}><option value="allIncluded">All Included</option><option value="first100">Tenant Pays (Split)</option></select></div>
+          <div className="fld">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+              <label style={{marginBottom:0}}>Utilities</label>
+              <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600}}>✏ Edit Templates</button>
+            </div>
+            <select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}>
+              {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
+            </select>
+            {(()=>{const t=(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(curUnit.utils||"allIncluded"));return t?<div style={{fontSize:9,color:"#999",marginTop:3}}>{t.desc}</div>:null;})()}
+          </div>
           <div className="fld"><label>Cleaning</label><select value={curUnit.clean||"Biweekly"} onChange={e=>updUnit("clean",e.target.value)}><option>Weekly</option><option>Biweekly</option><option>Monthly</option><option>None</option></select></div>
           <div className="fld"><label>Rental Mode</label>
             <select value={curUnit.rentalMode||"byRoom"} onChange={e=>updUnit("rentalMode",e.target.value)}>
@@ -590,6 +685,8 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
     </div>{/* end unit tabs */}
 
     {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
+    {showUtilModal&&<UtilTemplatesModal settings={settings} onUpdateSettings={onUpdateSettings} onClose={()=>setShowUtilModal(false)}/>}
+
     {unsaved&&!justSaved&&<div key={saveShake} style={{
       marginBottom:8,padding:"10px 14px",background:"rgba(196,92,74,.06)",
       border:"1px solid rgba(196,92,74,.25)",borderRadius:8,
@@ -2593,9 +2690,8 @@ export default function Page(){
           const leaseEndD=mi?new Date(mi+"T00:00:00"):new Date();
           leaseEndD.setFullYear(leaseEndD.getFullYear()+1);
           const utilitiesMode=unit?.utils||prop?.utils||"allIncluded";
-          const utilitiesClause=utilitiesMode==="allIncluded"
-            ?"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, and gas. RESIDENT is responsible for no utility costs beyond the monthly rent."
-            :"PROPERTY MANAGER agrees to pay the first $100 of combined utilities (water, sewer, garbage, electricity, gas) per month. Any usage exceeding $100 per month shall be split equally among all current residents and billed on the 1st of each month. Failure to pay utility charges constitutes unpaid rent.";
+          const utilTmpl=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===utilitiesMode);
+          const utilitiesClause=utilTmpl?.clause||"See lease for utility terms.";
           setLeaseForm({
             id:null,
             applicationId:app?.id||null,
@@ -6319,7 +6415,7 @@ export default function Page(){
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
     </div></div>);})()}
 
-  {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean||r.clean}});}}/>}
+  {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean||r.clean}});}} settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}}/>}
 
   {/* Confetti */}
   {showConfetti&&<div className="confetti-wrap">{Array.from({length:60}).map((_,i)=>{const colors=["#d4a853","#4a7c59","#f5f0e8","#c45c4a","#3b82f6"];return(
