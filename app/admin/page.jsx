@@ -247,16 +247,24 @@ function PhotoManager({photos=[],onChange,label="Photos"}){
   const[dragIdx,setDragIdx]=useState(null);
   const[dragOverIdx,setDragOverIdx]=useState(null);
   const[thumbSize,setThumbSize]=useState(80);
+  const[readingCount,setReadingCount]=useState(0);
   const ph=photos||[];
 
   const readFiles=files=>{
     const imageFiles=[...files].filter(f=>f.type.startsWith("image/"));
     if(!imageFiles.length)return;
-    // Read all files first, then add all at once so they don't overwrite each other
+    setReadingCount(imageFiles.length);
     const results=[];let done=0;
     imageFiles.forEach((file,i)=>{
       const r=new FileReader();
-      r.onload=ev=>{results[i]=ev.target.result;done++;if(done===imageFiles.length){onChange(prev=>[...(Array.isArray(prev)?prev:ph),...results]);}};
+      r.onload=ev=>{
+        results[i]=ev.target.result;
+        done++;
+        if(done===imageFiles.length){
+          onChange(prev=>[...(Array.isArray(prev)?prev:ph),...results]);
+          setReadingCount(0);
+        }
+      };
       r.readAsDataURL(file);
     });
   };
@@ -297,6 +305,13 @@ function PhotoManager({photos=[],onChange,label="Photos"}){
         <span style={{fontSize:9,color:"#bbb"}}>drag to reorder</span>
       </div>}
     </div>
+    {readingCount>0&&<div style={{marginBottom:6,padding:"5px 10px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:6,fontSize:10,color:"#9a7422",display:"flex",alignItems:"center",gap:6}}>
+      <div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #d4a853",borderTopColor:"transparent",animation:"spin .6s linear infinite"}}/>
+      Loading {readingCount} photo{readingCount!==1?"s":""}…
+    </div>}
+    {!readingCount&&ph.length>0&&<div style={{marginBottom:6,padding:"4px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6,fontSize:10,color:"#4a7c59",fontWeight:600}}>
+      ✓ {ph.length} photo{ph.length!==1?"s":""} ready — click Save to write to database
+    </div>}
 
     {ph.length>0&&<div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${thumbSize}px,1fr))`,gap:6,marginBottom:8}}>
       {ph.map((src,i)=>(
@@ -468,7 +483,7 @@ const S=`
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
-@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-4px)}30%{transform:translateX(4px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}75%{transform:translateX(-1px)}90%{transform:translateX(1px)}}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-4px)}30%{transform:translateX(4px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}75%{transform:translateX(-1px)}90%{transform:translateX(1px)}}
 @keyframes redFlash{0%{box-shadow:none}40%{box-shadow:inset 0 0 0 2px rgba(196,92,74,.2)}100%{box-shadow:none}}
 @keyframes fieldShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 .field-err input,.field-err select,.field-err textarea{border-color:#c45c4a!important;background:rgba(196,92,74,.03)!important;animation:fieldShake .35s ease}
@@ -919,7 +934,12 @@ export default function Page(){
     else{const r=props.flatMap(p=>p.rooms).find(x=>x.id===rid);setModal({type:"createCharge",roomId:rid,category:"Rent",desc:`${MO} Rent`,amount:(r&&r.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:"No existing charge — creating new"});}};
 
   const cycleRock=id=>setRocks(p=>p.map(r=>{if(r.id!==id)return r;const o=["on-track","off-track","not-started","done"];return{...r,status:o[(o.indexOf(r.status)+1)%o.length]};}));
-  const saveProp=p=>{if(isNewProp)setProps(prev=>[...prev,p]);else setProps(prev=>prev.map(x=>x.id===p.id?p:x));setEditProp(null);};
+  const saveProp=p=>{
+    // Immediately save photos to Supabase — don't wait for debounce
+    if(p.photos&&p.photos.length>0)save("hq-photos-"+p.id,p.photos);
+    if(isNewProp)setProps(prev=>[...prev,p]);else setProps(prev=>prev.map(x=>x.id===p.id?p:x));
+    setEditProp(null);
+  };
 
   const pastDueCount=charges.filter(c=>chargeStatus(c)==="pastdue").length;
   const pendingLeases=leases.filter(l=>l.status==="pending_tenant"||l.status==="pending_landlord").length;
