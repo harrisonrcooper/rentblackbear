@@ -210,9 +210,9 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 .map-c{border-radius:18px;overflow:hidden;border:1px solid rgba(0,0,0,.05)}.map-if{width:100%;height:420px;border:none}
 .map-live{height:420px}
 .poi-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-top:20px}
-.poi{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,.05);border-radius:10px;border:1px solid rgba(255,255,255,.08);text-decoration:none;color:inherit;transition:all .2s}.poi:hover{border-color:var(--ac);transform:translateY(-2px);background:rgba(255,255,255,.08)}
-.poi-ic{font-size:20px;width:40px;height:40px;border-radius:8px;background:rgba(212,168,83,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.poi-inf{flex:1}.poi-nm{font-size:12px;font-weight:700;color:var(--cr)}.poi-ct{font-size:10px;color:var(--mt)}
+.poi{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,255,255,.07);border-radius:10px;border:1px solid rgba(255,255,255,.12);text-decoration:none;color:inherit;transition:all .2s}.poi:hover{border-color:var(--ac);transform:translateY(-2px);background:rgba(255,255,255,.12)}
+.poi-ic{font-size:20px;width:40px;height:40px;border-radius:8px;background:rgba(212,168,83,.18);border:1px solid rgba(212,168,83,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.poi-inf{flex:1}.poi-nm{font-size:12px;font-weight:700;color:var(--cr)}.poi-ct{font-size:10px;color:rgba(255,255,255,.55)}
 .poi-lk{font-size:8px;color:var(--ac);font-weight:600;margin-top:1px}
 .poi-dr{font-size:12px;font-weight:800;color:var(--ac);white-space:nowrap}
 
@@ -613,7 +613,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     {/* Property pins */}
     <div className="poi-g">
       {PROPS.map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));const hasPin=validCoord(p.lat,p.lng);return(
-        <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.04)",cursor:hasPin?"pointer":"default",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",opacity:hasPin?1:0.7}} onClick={hasPin?()=>scrollToPin(p):undefined} onMouseEnter={hasPin?()=>scrollToPin(p):undefined}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>📍</div></div>);})}
+        <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:highlight===p.name?"rgba(212,168,83,.18)":"rgba(212,168,83,.10)",border:"1px solid rgba(212,168,83,.3)",cursor:hasPin?"pointer":"default",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",opacity:hasPin?1:0.75}} onClick={hasPin?()=>scrollToPin(p):undefined} onMouseEnter={hasPin?()=>scrollToPin(p):undefined}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>📍</div></div>);})}
       {/* POI list */}
       {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer" style={{cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",background:highlight===p.name?"rgba(255,255,255,.08)":"rgba(255,255,255,.05)"}} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.desc}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}
     </div>
