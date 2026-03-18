@@ -432,6 +432,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
 
 function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
   const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]});
+  const[activeUnit,setActiveUnit]=useState(0);
   const[warning,setWarning]=useState(null);
   const[unsaved,setUnsaved]=useState(false);
   const[saveShake,setSaveShake]=useState(0);
@@ -547,14 +548,6 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
         <div className="fld" style={{marginBottom:4}}><label>Unit Description</label><textarea value={curUnit.desc||""} onChange={e=>updUnit("desc",e.target.value)} placeholder="Unit features, finishes, notes..." rows={2}/></div>
       </div>}
 
-    {mode==="wholeHouse"&&<>
-      <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,marginBottom:10}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:10}}>Whole House Pricing</div>
-        <div className="fr">
-          <div className="fld">
-            <label>Whole House Rent ($/mo)</label>
-            <input type="number" value={p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseRent:Number(e.target.value)})} placeholder="e.g. 3200"/>
-            <div style={{fontSize:9,color:"#999",marginTop:3}}>Shown when renting the entire property to one tenant/group</div>
       {/* Room editor for this unit */}
       {curUnit&&mode==="byRoom"&&<div style={{marginTop:0}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
