@@ -149,7 +149,7 @@ function migrateProps(rawProps){
 }
 
 // ── Helpers: flatten units→rooms for backward compat ──
-const allRooms=(prop)=>(prop.units||[]).flatMap(u=>u.rooms||[]);
+const allRooms=(prop)=>{if(!prop)return[];if(prop.units&&prop.units.length>0)return prop.units.flatMap(u=>u.rooms||[]);return prop.rooms||[];};
 const allRoomsWithUnit=(prop)=>(prop.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,unitId:u.id,unitName:u.name,unitLabel:u.label,unitUtils:u.utils,unitClean:u.clean})));
 const findRoom=(props,roomId)=>{for(const p of props){for(const u of(p.units||[])){const r=(u.rooms||[]).find(x=>x.id===roomId);if(r)return{room:r,unit:u,prop:p};}}return null;};
 const findUnit=(props,unitId)=>{for(const p of props){const u=(p.units||[]).find(x=>x.id===unitId);if(u)return{unit:u,prop:p};}return null;};
@@ -1209,6 +1209,7 @@ export default function Page(){
       {tab==="portal"&&(()=>{
         const tRoom=portalTenant||(allTenants[0]||null);
         const tProp=tRoom?props.find(p=>allRooms(p).some(r=>r.id===tRoom.id)):null;
+        const tUnit=tProp?(tProp.units||[]).find(u=>(u.rooms||[]).some(r=>r.id===tRoom.id)):null;
         const tCharges=tRoom?charges.filter(c=>c.roomId===tRoom.id):[];
         const tMaint=tRoom?maint.filter(m=>m.roomId===tRoom.id):[];
         const submitMaint=()=>{
@@ -1216,8 +1217,10 @@ export default function Page(){
           setMaint(p=>[...p,{id:uid(),roomId:tRoom.id,propId:tProp&&tProp.id,tenant:tRoom.tenant.name,title:maintForm.title,desc:maintForm.desc,status:"open",priority:maintForm.priority,created:TODAY.toISOString().split("T")[0],photos:0}]);
           setMaintForm({title:"",desc:"",priority:"medium",submitted:true,titleErr:false});
         };
-        const utilDesc=tProp&&tProp.utils==="allIncluded"?"All utilities included (electric, water, gas, WiFi)":"Tenant pays utilities — split equally among roommates. WiFi always included.";
-        const cleanDesc=tProp&&tProp.clean==="Weekly"?"Common areas cleaned weekly":"Common areas cleaned biweekly";
+        const tUtils=tUnit?.utils||tProp?.utils||"allIncluded";
+        const tClean=tUnit?.clean||tProp?.clean||"Biweekly";
+        const utilDesc=tUtils==="allIncluded"?"All utilities included (electric, water, gas, WiFi)":"Tenant pays utilities — split equally among roommates. WiFi always included.";
+        const cleanDesc=tClean==="Weekly"?"Common areas cleaned weekly":"Common areas cleaned biweekly";
         const houseRules=[{icon:"🚭",rule:"No smoking or vaping anywhere on the property, including outdoors"},
           {icon:"🐾",rule:"No pets allowed"},
           {icon:"👟",rule:"No shoes inside — please remove at the door"},
@@ -1275,8 +1278,8 @@ export default function Page(){
               <div className="tp-card">
                 <h3>📄 Your Lease</h3>
                 {[
-                  ["Room",`${tRoom.name} · ${tRoom.pb?"Private bathroom":"Shared bathroom"}`],
-                  ["Property",`${tRoom.propName} — ${tProp&&tProp.addr}`],
+                  ["Room",`${tUnit&&tUnit.label?"Unit "+tUnit.label+" — ":""}${tRoom.name} · ${tRoom.pb?"Private bathroom":"Shared bathroom"}`],
+                  ["Property",`${tRoom.propName}${tUnit&&tUnit.label?" · Unit "+tUnit.label:""} — ${tProp&&tProp.addr}`],
                   ["Monthly Rent",`$${tRoom.rent.toLocaleString()}/mo`],
                   ["Move-In Date",fmtD(tRoom.tenant.moveIn)],
                   ["Lease Ends",tRoom.le?fmtD(tRoom.le):"Month-to-Month"],
@@ -2578,9 +2581,12 @@ export default function Page(){
 
         const openCreateLease=(app)=>{
           // Auto-fill from application if provided
-          const prop=app?props.find(p=>p.name===app.property):null;
-          const room=prop?proallRooms(p).find(r=>r.name===app.room):null;
-          const rent=room?room.rent:0;
+          // Prefer termRoomId (ID-based) over room name match for reliability
+          const prop=app?props.find(p=>p.id===app.termPropId||p.name===app.property):null;
+          const room=prop?(app?.termRoomId?allRooms(prop).find(r=>r.id===app.termRoomId):allRooms(prop).find(r=>r.name===app.room)):null;
+          // Find the unit this room belongs to for utils/clean
+          const unit=prop?(prop.units||[]).find(u=>(u.rooms||[]).some(r=>r.id===room?.id)):null;
+          const rent=app?.termRent||room?.rent||0;
           const mi=app?.termMoveIn||app?.moveIn||"";
           const miD=mi?new Date(mi+"T00:00:00"):null;
           const day=miD?miD.getDate():1;
@@ -2588,7 +2594,7 @@ export default function Page(){
           const proratedRent=day===1?0:Math.ceil((rent/30)*daysLeft);
           const leaseEndD=mi?new Date(mi+"T00:00:00"):new Date();
           leaseEndD.setFullYear(leaseEndD.getFullYear()+1);
-          const utilitiesMode=prop?.utils||"allIncluded";
+          const utilitiesMode=unit?.utils||prop?.utils||"allIncluded";
           const utilitiesClause=utilitiesMode==="allIncluded"
             ?"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, and gas. RESIDENT is responsible for no utility costs beyond the monthly rent."
             :"PROPERTY MANAGER agrees to pay the first $100 of combined utilities (water, sewer, garbage, electricity, gas) per month. Any usage exceeding $100 per month shall be split equally among all current residents and billed on the 1st of each month. Failure to pay utility charges constitutes unpaid rent.";
@@ -2597,9 +2603,12 @@ export default function Page(){
             applicationId:app?.id||null,
             status:"draft",
             tenantName:app?.name||"",tenantEmail:app?.email||"",tenantPhone:app?.phone||"",
-            property:app?.property||"",room:app?.room||"",roomId:room?.id||"",
+            property:app?.property||"",room:app?.room||"",
+            roomId:room?.id||app?.termRoomId||"",
+            unitId:unit?.id||app?.termUnitId||"",
+            unitName:unit?.name||app?.termUnitName||"",
             propertyAddress:prop?.addr||"",
-            rent,sd:rent,proratedRent,
+            rent,sd:app?.termSD||rent,proratedRent,
             moveIn:mi,leaseStart:mi,
             leaseEnd:leaseEndD.toISOString().split("T")[0],
             leaseType:"fixed",
@@ -2814,9 +2823,9 @@ export default function Page(){
                 </select>
               </div>
               <div className="fld"><label>Room</label>
-                <select value={leaseForm.room||""} onChange={e=>{const prop=props.find(p=>p.name===leaseForm.property);const room=prop?.rooms.find(r=>r.name===e.target.value);setLeaseForm(p=>({...p,room:e.target.value,roomId:room?.id||"",rent:room?.rent||p.rent,sd:room?.rent||p.sd,parking:room?.parking||""}));}}>
+                <select value={leaseForm.room||""} onChange={e=>{const prop=props.find(p=>p.name===leaseForm.property);const unit=prop?(prop.units||[]).find(u=>(u.rooms||[]).some(r=>r.name===e.target.value)):null;const room=unit?(unit.rooms||[]).find(r=>r.name===e.target.value):null;setLeaseForm(p=>({...p,room:e.target.value,roomId:room?.id||"",unitId:unit?.id||"",unitName:unit?.name||"",rent:room?.rent||p.rent,sd:room?.rent||p.sd,parking:room?.parking||""}));}}>
                   <option value="">Select...</option>
-                  {(props.find(p=>p.name===leaseForm.property)?.rooms||[]).map(r=><option key={r.id} value={r.name}>{r.name} — {fmtS(r.rent)}/mo</option>)}
+                  {(()=>{const lp=props.find(p=>p.name===leaseForm.property);if(!lp)return null;return(lp.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,unitLabel:u.label,unitName:u.name}))).map(r=><option key={r.id} value={r.name}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name} — {fmtS(r.rent)}/mo</option>);})()}
                 </select>
               </div>
             </div>
@@ -3047,7 +3056,7 @@ export default function Page(){
 
         {/* ── Tenant Ledgers ── */}
         {(()=>{
-          const tenantRooms=props.flatMap(p=>allRooms(p).filter(r=>r.tenant).map(r=>({...r,propName:p.name,propUtils:p.utils})));
+          const tenantRooms=props.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).filter(r=>r.tenant).map(r=>({...r,propName:p.name,unitId:u.id,unitName:u.name,unitLabel:u.label,propUtils:u.utils||p.utils}))));
           const selRoom=ledgerTenant!=="all"?tenantRooms.find(r=>r.id===ledgerTenant):null;
 
           // Build ledger entries from charges: each charge = debit, each payment = credit
@@ -3081,7 +3090,7 @@ export default function Page(){
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
                 <select value={ledgerTenant} onChange={e=>setLedgerTenant(e.target.value)} style={{padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
                   <option value="all">All Tenants</option>
-                  {tenantRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} — {r.propName} {r.name}</option>)}
+                  {tenantRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} — {r.propName}{r.unitLabel?" Unit "+r.unitLabel:""} {r.name}</option>)}
                 </select>
                 <button className="btn btn-out btn-sm" onClick={()=>window.print()}>🖨 Print</button>
               </div>
@@ -3181,7 +3190,7 @@ export default function Page(){
           {m.propBreakdown.map(pr=>{const pct=pr.occCount/(pr.occCount+pr.vacCount)*100;return(<div key={pr.id} style={{marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><div style={{fontWeight:700,fontSize:13}}>{pr.name} <span style={{fontSize:11,color:"#999"}}>{pr.type}</span></div><span className={`badge ${pr.vacCount?"b-red":"b-green"}`}>{pr.occCount}/{allRooms(pr).length} · {Math.round(pct)}%</span></div>
             <div style={{height:5,borderRadius:3,background:"#e5e3df",marginBottom:6}}><div style={{height:"100%",borderRadius:3,background:pct>=100?"#4a7c59":pct>=75?"#d4a853":"#c45c4a",width:`${pct}%`}}/></div>
-            {allRooms(pr).map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:r.tenant?"pointer":"default"}} onClick={()=>{if(r.tenant)setModal({type:"tenant",data:{...r,propName:pr.name,propUtils:pr.utils,propClean:pr.clean}});}}><div className="row-dot" style={{background:r.st==="vacant"?"#c45c4a":"#4a7c59"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:r.tenant?"#999":"#c45c4a"}}>{(r.tenant&&r.tenant.name)||"Vacant"}{r.tenant&&<span style={{color:"#c4a882",marginLeft:4}}>→ view</span>}</div></div><div style={{fontSize:12,fontWeight:700}}>{fmtS(r.rent)}</div></div>)}
+            {allRooms(pr).map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:r.tenant?"pointer":"default"}} onClick={()=>{if(r.tenant)setModal({type:"tenant",data:{...r,propName:pr.name,propUtils:(pr.units||[])[0]?.utils||pr.utils,propClean:(pr.units||[])[0]?.clean||pr.clean}});}}><div className="row-dot" style={{background:r.st==="vacant"?"#c45c4a":"#4a7c59"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:r.tenant?"#999":"#c45c4a"}}>{(r.tenant&&r.tenant.name)||"Vacant"}{r.tenant&&<span style={{color:"#c4a882",marginLeft:4}}>→ view</span>}</div></div><div style={{fontSize:12,fontWeight:700}}>{fmtS(r.rent)}</div></div>)}
           </div>);})}
         </div></div>}
 
@@ -3386,11 +3395,11 @@ export default function Page(){
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
                 <h3>{isExp?"▾":"▸"} {p.name}</h3>
-                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {p.beds||allRooms(p).length}bd / {p.baths}ba · {p.utils==="allIncluded"?"All Utils":"Tenant Pays"} · {p.clean} · <span style={{color:"#d4a853",fontWeight:600}}>{(p.rentalMode||"byRoom")==="byRoom"?"By Bedroom":(p.rentalMode)==="wholeHouse"?"Whole House":"Flexible (Both)"}</span></div>
+                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {allRooms(p).length}br · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
-                {(p.rentalMode==="wholeHouse"||p.rentalMode==="both")&&p.wholeHouseRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(p.wholeHouseRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole house</span></span>}
-                {(p.rentalMode==="byRoom"||p.rentalMode==="both"||!p.rentalMode)&&pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
+                {(p.units||[]).some(u=>u.rentalMode==="wholeHouse"&&u.rent>0)&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(Math.min(...(p.units||[]).filter(u=>u.rent>0).map(u=>u.rent)))}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
+                {pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
                 {vac>0&&<span className="badge b-red">{vac} Vacant</span>}
                 {vac===0&&<span className="badge b-green">Full</span>}
                 {unpaidRooms.length>0&&<span className="badge b-red" title={`${unpaidRooms.map(r=>r.tenant.name).join(", ")} unpaid`}>💳 {unpaidRooms.length} Unpaid</span>}
@@ -3408,9 +3417,12 @@ export default function Page(){
                 <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>At Full</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(totalRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
               </div>
               {/* Room list */}
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Rooms</div>
-              {allRooms(p).map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
-                const tenantData={...r,propName:p.name,propUtils:p.utils,propClean:p.clean};
+              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Rooms by Unit</div>
+              {(p.units||[]).map(u=><div key={u.id} style={{marginBottom:10}}>
+                {(p.units||[]).length>1&&<div style={{fontSize:10,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,padding:"3px 8px",background:"rgba(212,168,83,.06)",borderRadius:4,display:"inline-block"}}>{u.name}</div>}
+                {(u.rooms||[]).length===0&&<div style={{fontSize:11,color:"#bbb",padding:"6px 0"}}>No rooms — edit property to add</div>}
+              {(u.rooms||[]).map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+                const tenantData={...r,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label};
                 return(<div key={r.id} className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default",background:occ&&dl&&dl<=30?"rgba(196,92,74,.02)":occ&&dl&&dl<=90?"rgba(212,168,83,.02)":"#fff"}}>
                   <div className="row-dot" style={{background:occ?"#4a7c59":"#c45c4a",flexShrink:0}}/>
                   <div className="row-i">
@@ -3434,6 +3446,7 @@ export default function Page(){
                     </div>
                     :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}>+ Find Tenant</button>}
                 </div>);})}
+              </div>)})}
             </div>}
           </div>);})}
         {props.length===0&&<div style={{textAlign:"center",padding:40,color:"#999"}}><div style={{fontSize:40,marginBottom:8}}>🏠</div><h3 style={{fontSize:15}}>No Properties</h3><p style={{fontSize:12,marginTop:4}}>Add your first property above.</p></div>}
@@ -4937,7 +4950,7 @@ export default function Page(){
     const roomMode=modal.roomMode||"locked";
     const selPropId=modal.selPropId||(()=>{const mp=props.find(p=>p.name===a.property);return mp?mp.id:"";})();
     const selProp=props.find(p=>p.id===selPropId);
-    const availRooms=selProp?selProallRooms(p).filter(r=>r.st==="vacant"):[];
+    const availRooms=selProp?(selProp.units||[]).flatMap(u=>(u.rooms||[]).filter(r=>r.st==="vacant").map(r=>({...r,unitLabel:u.label,unitName:u.name}))):[];
     const selRoomId=modal.selRoomId||"";const selRoom=availRooms.find(r=>r.id===selRoomId);
     const doShake=shakeModal;
     return(
@@ -4970,7 +4983,7 @@ export default function Page(){
               style={{width:"100%",borderColor:selPropId&&modal.sendErrors?.some(e=>e.includes("room"))?"#c45c4a":undefined}}
               disabled={!selPropId}>
               <option value="">{selPropId?availRooms.length?"Select room...":"No vacant rooms":"Select property first"}</option>
-              {availRooms.map(r=><option key={r.id} value={r.id}>{r.name} — {fmtS(r.rent)}/mo</option>)}
+              {availRooms.map(r=><option key={r.id} value={r.id}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name} — {fmtS(r.rent)}/mo</option>)}
             </select>
             {selPropId&&availRooms.length===0&&<div style={{fontSize:10,color:"#c45c4a",marginTop:3}}>No vacant rooms at this property.</div>}
           </div>
@@ -5100,9 +5113,10 @@ export default function Page(){
     const incReqs=modal.incompleteReqs||[];
     const step=modal.step||1;
 
-    // Resolve property/room
+    // Resolve property/room/unit
     const targetProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
-    const targetRoom=a.termRoomId?(targetProp?targetProallRooms(p).find(r=>r.id===a.termRoomId):null):(targetProp?targetProallRooms(p).find(r=>r.name===a.room):null);
+    const targetRoom=a.termRoomId?(targetProp?allRooms(targetProp).find(r=>r.id===a.termRoomId):null):(targetProp?allRooms(targetProp).find(r=>r.name===a.room):null);
+    const targetUnit=targetProp?(targetProp.units||[]).find(u=>(u.rooms||[]).some(r=>r.id===targetRoom?.id)):null;
     const rent=a.termRent!==undefined?a.termRent:(targetRoom?targetRoom.rent:0);
     const defaultSD=a.termSD!==undefined?a.termSD:rent;
     const termMoveIn=a.termMoveIn||a.moveIn||TODAY.toISOString().split("T")[0];
@@ -5145,7 +5159,7 @@ export default function Page(){
     const secondMonthLabel=secondMonthD.toLocaleString("default",{month:"long",year:"numeric"});
     const buildCharges=()=>{
       const list=[];
-      const isWholeHouse=targetProp&&targetProp.rentalMode==="wholeHouse";
+      const isWholeHouse=targetUnit?targetUnit.rentalMode==="wholeHouse":(targetProp&&(targetProp.units||[]).some(u=>u.rentalMode==="wholeHouse"));
       list.push({cat:"Security Deposit",desc:"Security Deposit",amount:sdAmt,due:sdDue,note:"Due today — on lease signing to secure the "+(isWholeHouse?"property":"room")+"."});
       if(isFirstDay){
         // Move-in on the 1st — clean full month, no proration needed
@@ -5614,7 +5628,7 @@ export default function Page(){
               PROPERTY_ADDRESS:(targetProp?targetProp.name:a.property)||"",
               PARKING_SPACE:"See property map",
               DOOR_CODE:a.passcode||"Assigned at move-in",
-              UTILITIES_CLAUSE:"Utilities included up to $100/mo. Overage split equally among residents.",
+              UTILITIES_CLAUSE:(targetUnit?.utils||targetProp?.utils)==="allIncluded"?"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, and gas. RESIDENT is responsible for no utility costs beyond the monthly rent.":"PROPERTY MANAGER agrees to pay the first $100 of combined utilities per month. Any usage exceeding $100 shall be split equally among all current residents and billed on the 1st of each month.",
               LANDLORD_NAME:settings.landlordName||"Carolina Cooper",
             };
             setModal(p=>({...p,previewLeaseOpen:true,previewVars,previewSections:sections}));
@@ -5968,7 +5982,7 @@ export default function Page(){
     const days=ds2(a.lastContact||a.submitted);
     const allVacant=props.flatMap(p=>allRooms(p).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
     const targetProp=props.find(p=>p.name===a.property);
-    const targetRoom=targetProp?targetProallRooms(p).find(r=>r.name===a.room&&r.st==="vacant"):null;
+    const targetRoom=targetProp?allRooms(targetProp).find(r=>r.name===a.room&&r.st==="vacant"):null;
     const mf=[];var nm3=(a.name||"").toLowerCase();
     archive.forEach(t=>{
       if(((t.name||"").toLowerCase()===nm3)||((t.email||"").toLowerCase()===(a.email||"").toLowerCase())){
@@ -6076,9 +6090,9 @@ export default function Page(){
 
       {/* ── Room Assignment (all stages) ── */}
       {(()=>{
-        const allVacantRooms=props.flatMap(p=>allRooms(p).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
+        const allVacantRooms=props.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",name:"",label:"",rooms:allRooms(p)}]).flatMap(u=>(u.rooms||[]).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id,unitLabel:u.label,unitName:u.name}))));
         const termProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
-        const termRoom=a.termRoomId?(termProp?termProallRooms(p).find(r=>r.id===a.termRoomId):null):(termProp?termProallRooms(p).find(r=>r.name===a.room):null);
+        const termRoom=a.termRoomId?(termProp?allRooms(termProp).find(r=>r.id===a.termRoomId):null):(termProp?allRooms(termProp).find(r=>r.name===a.room):null);
         const termRent=a.termRent!==undefined?a.termRent:(termRoom?termRoom.rent:0);
         const saveTerm=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
         return(
@@ -6100,8 +6114,8 @@ export default function Page(){
           <div className="fld" style={{marginBottom:8}}>
             <label>Assign Room <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Pre-filled from application — confirm or change</span></label>
             <select value={a.termRoomId||termRoom?.id||""} onChange={e=>{const r=allVacantRooms.find(x=>x.id===e.target.value);if(r){saveTerm("termRoomId",r.id);saveTerm("termPropId",r.propId);saveTerm("termRent",r.rent);saveTerm("termSD",r.rent);}}} style={{width:"100%"}}>
-              {termRoom?<option value={termRoom.id}>{termRoom.name} at {termProp?.name} — {fmtS(termRent)}/mo</option>:<option value="">No matching vacant room — select one</option>}
-              {allVacantRooms.filter(r=>r.id!==termRoom?.id).map(r=><option key={r.id} value={r.id}>{r.name} at {r.propName} — {fmtS(r.rent)}/mo</option>)}
+              {termRoom?<option value={termRoom.id}>{termRoom.unitLabel?"Unit "+termRoom.unitLabel+" — ":""}{termRoom.name} at {termProp?.name} — {fmtS(termRent)}/mo</option>:<option value="">No matching vacant room — select one</option>}
+              {allVacantRooms.filter(r=>r.id!==termRoom?.id).map(r=><option key={r.id} value={r.id}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name} at {r.propName} — {fmtS(r.rent)}/mo</option>)}
             </select>
             {!termRoom&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" not found as a vacant room — it may be occupied. Select an available room before sending the lease.</div>}
           </div>
