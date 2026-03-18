@@ -1218,9 +1218,29 @@ export default function Page(){
     else{const r=props.flatMap(p=>allRooms(p)).find(x=>x.id===rid);setModal({type:"createCharge",roomId:rid,category:"Rent",desc:`${MO} Rent`,amount:(r&&r.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:"No existing charge — creating new"});}};
 
   const cycleRock=id=>setRocks(p=>p.map(r=>{if(r.id!==id)return r;const o=["on-track","off-track","not-started","done"];return{...r,status:o[(o.indexOf(r.status)+1)%o.length]};}));
-  const saveProp=p=>{
-    // Immediately save photos to Supabase — don't wait for debounce
-    if(isNewProp)setProps(prev=>[...prev,p]);else setProps(prev=>prev.map(x=>x.id===p.id?p:x));
+  const saveProp=async(p)=>{
+    // Auto-geocode address if no valid coords stored yet
+    const hasCoords=p.lat&&p.lng&&isFinite(p.lat)&&isFinite(p.lng)&&p.lat!==0&&p.lng!==0;
+    let finalProp=p;
+    if(!hasCoords&&p.addr){
+      const attempts=[
+        p.addr+", Huntsville, Alabama, USA",
+        p.addr+", Huntsville, AL, USA",
+        p.addr+", Madison County, Alabama, USA",
+      ];
+      for(const attempt of attempts){
+        try{
+          const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(attempt)}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
+          const data=await res.json();
+          if(data&&data.length>0){
+            finalProp={...p,lat:parseFloat(parseFloat(data[0].lat).toFixed(5)),lng:parseFloat(parseFloat(data[0].lon).toFixed(5))};
+            break;
+          }
+        }catch{}
+        await new Promise(r=>setTimeout(r,300));
+      }
+    }
+    if(isNewProp)setProps(prev=>[...prev,finalProp]);else setProps(prev=>prev.map(x=>x.id===p.id?finalProp:x));
     setEditProp(null);
   };
 
