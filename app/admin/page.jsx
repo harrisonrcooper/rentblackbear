@@ -409,7 +409,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
   };
   const isOcc=r=>r.st==="occupied"&&r.tenant;
   const mode=p.rentalMode||"byRoom";
-  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:720,maxHeight:"90vh",overflowY:"auto"}}>
+  return(<div className="mbg" onClick={()=>{if(unsaved&&!justSaved){setSaveShake(k=>k+1);}else{onClose();}}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:720,maxHeight:"90vh",overflowY:"auto"}}>
     <h2>{isNew?"Add Property":`Edit: ${p.name}`}</h2>
 
     {/* Basic info */}
