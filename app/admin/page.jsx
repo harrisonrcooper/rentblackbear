@@ -246,6 +246,7 @@ function PhotoManager({photos=[],onChange,label="Photos"}){
   const[urlInput,setUrlInput]=useState("");
   const[dragIdx,setDragIdx]=useState(null);
   const[dragOverIdx,setDragOverIdx]=useState(null);
+  const[thumbSize,setThumbSize]=useState(80);
   const ph=photos||[];
 
   const readFiles=files=>{
@@ -289,10 +290,15 @@ function PhotoManager({photos=[],onChange,label="Photos"}){
     <div style={{outline:dropOver?"2px dashed #d4a853":"2px solid transparent",borderRadius:8,transition:"outline .15s",padding:2}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <label style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.3}}>{label} ({ph.length} photo{ph.length!==1?"s":""})</label>
-      {ph.length>0&&<span style={{fontSize:9,color:"#bbb"}}>Drag thumbnails to reorder · drop files anywhere to add</span>}
+      {ph.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
+        <span style={{fontSize:9,color:"#bbb"}}>🔍</span>
+        <input type="range" min={60} max={200} step={10} value={thumbSize} onChange={e=>setThumbSize(Number(e.target.value))}
+          style={{width:64,accentColor:"#d4a853",cursor:"pointer"}} title="Thumbnail size"/>
+        <span style={{fontSize:9,color:"#bbb"}}>drag to reorder</span>
+      </div>}
     </div>
 
-    {ph.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:6,marginBottom:8}}>
+    {ph.length>0&&<div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${thumbSize}px,1fr))`,gap:6,marginBottom:8}}>
       {ph.map((src,i)=>(
         <div key={i}
           draggable
