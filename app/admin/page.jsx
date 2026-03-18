@@ -41,7 +41,7 @@ async function uploadPhoto(file,propId){
       headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
       body:file,
     });
-    if(!r.ok){const e=await r.text();console.error("Upload failed:",e);return null;}
+    if(!r.ok){const e=await r.text();console.error("Upload failed:",r.status,e);return null;}
     return `${SUPA_URL}/storage/v1/object/public/property-photos/${path}`;
   }catch(e){console.error("Upload error:",e);return null;}
 }
@@ -263,19 +263,30 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
   const[dragOverIdx,setDragOverIdx]=useState(null);
   const[thumbSize,setThumbSize]=useState(80);
   const[readingCount,setReadingCount]=useState(0);
+  const[uploadError,setUploadError]=useState("");
   const ph=photos||[];
 
   const readFiles=async files=>{
     const imageFiles=[...files].filter(f=>f.type.startsWith("image/"));
     if(!imageFiles.length)return;
     setReadingCount(imageFiles.length);
-    // Upload each file to Supabase Storage, collect public URLs
-    const urls=await Promise.all(imageFiles.map(async file=>{
+    setUploadError("");
+    let successCount=0;
+    const results=await Promise.all(imageFiles.map(async(file)=>{
+      // Try Supabase Storage first
       const url=await uploadPhoto(file,propId||"general");
-      return url;
+      if(url){successCount++;return url;}
+      // Fallback: base64 for small files only (<500KB)
+      if(file.size<500*1024){
+        return await new Promise(res=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.readAsDataURL(file);});
+      }
+      return null;
     }));
-    const valid=urls.filter(Boolean);
-    onChange(prev=>[...(Array.isArray(prev)?prev:ph),...valid]);
+    const valid=results.filter(Boolean);
+    if(valid.length>0)onChange(prev=>[...(Array.isArray(prev)?prev:ph),...valid]);
+    if(valid.length<imageFiles.length){
+      setUploadError(`${imageFiles.length-valid.length} photo(s) failed to upload. Check that the 'property-photos' bucket exists in Supabase Storage and is set to Public.`);
+    }
     setReadingCount(0);
   };
   const openPicker=()=>{
@@ -320,7 +331,10 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
       Loading {readingCount} photo{readingCount!==1?"s":""}…
     </div>}
     {!readingCount&&ph.length>0&&<div style={{marginBottom:6,padding:"4px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6,fontSize:10,color:"#4a7c59",fontWeight:600}}>
-      ✓ {ph.length} photo{ph.length!==1?"s":""} uploaded to cloud — click Save to apply
+      ✓ {ph.length} photo{ph.length!==1?"s":""} ready — click Save to apply
+    </div>}
+    {uploadError&&<div style={{marginBottom:6,padding:"6px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,fontSize:10,color:"#c45c4a",fontWeight:600}}>
+      ⚠ {uploadError}
     </div>}
 
     {ph.length>0&&<div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${thumbSize}px,1fr))`,gap:6,marginBottom:8}}>
