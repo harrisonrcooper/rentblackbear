@@ -1026,35 +1026,41 @@ export default function Page(){
     const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
-    // Auto-geocode any property missing valid coords — fire and forget
+    // Geocode any property missing valid coords — do this BEFORE setting state
+    // so coords are in place when autosave fires
     const needsGeocode=migratedProps.filter(prop=>!(prop.lat&&prop.lng&&isFinite(prop.lat)&&isFinite(prop.lng)&&prop.lat!==0&&prop.lng!==0)&&prop.addr);
+    let propsWithCoords=[...migratedProps];
     if(needsGeocode.length>0){
-      (async()=>{
-        let updated=[...migratedProps];
-        for(const prop of needsGeocode){
-          const attempts=[prop.addr+", Huntsville, Alabama, USA",prop.addr+", Huntsville, AL, USA",prop.addr+", Alabama, USA"];
-          for(const attempt of attempts){
-            try{
-              const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(attempt)}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
-              const data=await res.json();
-              if(data&&data.length>0){
-                const lat=parseFloat(parseFloat(data[0].lat).toFixed(5));
-                const lng=parseFloat(parseFloat(data[0].lon).toFixed(5));
-                if(lat>34.5&&lat<35.0&&lng>-87.0&&lng<-86.3){
-                  updated=updated.map(x=>x.id===prop.id?{...x,lat,lng}:x);
-                  console.log("Auto-geocoded:",prop.name,"→",lat,lng);
-                  break;
-                }
+      for(const prop of needsGeocode){
+        const attempts=[
+          prop.addr+", Huntsville, Alabama, USA",
+          prop.addr+", Huntsville, AL, USA",
+          prop.addr+", Alabama, USA",
+          prop.addr+", USA",
+        ];
+        let found=false;
+        for(const attempt of attempts){
+          try{
+            const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(attempt)}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
+            const data=await res.json();
+            if(data&&data.length>0){
+              const lat=parseFloat(parseFloat(data[0].lat).toFixed(5));
+              const lng=parseFloat(parseFloat(data[0].lon).toFixed(5));
+              // Broad Alabama bounds check
+              if(lat>30&&lat<36&&lng>-88&&lng<-84){
+                propsWithCoords=propsWithCoords.map(x=>x.id===prop.id?{...x,lat,lng}:x);
+                console.log("✓ Geocoded",prop.name,"→",lat,lng);
+                found=true;
+                break;
               }
-            }catch{}
-            await new Promise(r=>setTimeout(r,600));
-          }
+            }
+          }catch(e){console.warn("Geocode error:",e);}
+          await new Promise(r=>setTimeout(r,700));
         }
-        setProps(updated);
-        save("hq-props",updated);
-      })();
+        if(!found)console.warn("⚠ Could not geocode:",prop.name,prop.addr);
+      }
     }
-    setProps(migratedProps);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
+    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,loaded]);
