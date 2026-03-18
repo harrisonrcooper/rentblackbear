@@ -739,22 +739,24 @@ export default function Page(){
     Promise.all([
       fetch(SUPA+"/app_data?key=eq.hq-props&select=value",{headers:hdr}).then(r=>r.json()),
       fetch(SUPA+"/app_data?key=eq.hq-settings&select=value",{headers:hdr}).then(r=>r.json()),
-      fetch(SUPA+"/app_data?key=eq.hq-prop-photos&select=value",{headers:hdr}).then(r=>r.json()),
-    ]).then(([p,s,ph])=>{
-      const photoMap=ph&&ph[0]&&ph[0].value?ph[0].value:{};
+    ]).then(async([p,s])=>{
+      if(s&&s[0]&&s[0].value&&s[0].value.companyName)setLiveSettings(s[0].value);
       if(p&&p[0]&&p[0].value&&Array.isArray(p[0].value)&&p[0].value.length>0){
-        // Merge photos back into props from the photo map
-        const merged=p[0].value.map(prop=>({
-          ...prop,
-          photos:Object.keys(photoMap).filter(k=>k.startsWith(prop.id+"_")).sort().map(k=>photoMap[k]),
-          rooms:(prop.rooms||[]).map(room=>({
-            ...room,
-            photos:Object.keys(photoMap).filter(k=>k.startsWith(room.id+"_")).sort().map(k=>photoMap[k]),
-          })),
-        }));
+        const rawProps=p[0].value;
+        // Load each property's photos from its own key in parallel
+        const photoArrays=await Promise.all(
+          rawProps.map(prop=>
+            fetch(SUPA+"/app_data?key=eq.hq-photos-"+prop.id+"&select=value",{headers:hdr})
+              .then(r=>r.json())
+              .then(d=>({id:prop.id,photos:Array.isArray(d?.[0]?.value)?d[0].value:[]}))
+              .catch(()=>({id:prop.id,photos:[]}))
+          )
+        );
+        const photosById={};
+        photoArrays.forEach(({id,photos})=>{photosById[id]=photos;});
+        const merged=rawProps.map(prop=>({...prop,photos:photosById[prop.id]||[]}));
         setLiveProps(merged);
       }
-      if(s&&s[0]&&s[0].value&&s[0].value.companyName)setLiveSettings(s[0].value);
     }).catch(()=>{});
   },[]);
 
