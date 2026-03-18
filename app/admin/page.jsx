@@ -535,9 +535,10 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
             opacity:dragIdx===i?.5:1,
             transition:"border-color .1s,opacity .1s",
           }}>
-          {i===0&&<div style={{position:"absolute",top:3,left:3,background:"#d4a853",color:"#1a1714",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:2}}>COVER</div>}
+          {i===0&&<div style={{position:"absolute",top:3,left:3,background:"#d4a853",color:"#1a1714",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:3,pointerEvents:"none"}}>COVER</div>}
+          {i<3&&<div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}} onClick={e=>{e.stopPropagation();e.preventDefault();setEditingPhoto({index:i,src});}}>✏ Edit</div>}
           <img src={src} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block",pointerEvents:"none"}} onError={e=>{e.target.style.display="none";}}/>
-          <button onClick={()=>remove(i)} style={{position:"absolute",top:3,right:3,width:18,height:18,borderRadius:"50%",background:"rgba(0,0,0,.65)",color:"#fff",border:"none",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2,lineHeight:1}}>×</button>
+          <button onClick={e=>{e.stopPropagation();remove(i);}} style={{position:"absolute",top:3,right:3,width:18,height:18,borderRadius:"50%",background:"rgba(0,0,0,.65)",color:"#fff",border:"none",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3,lineHeight:1}}>×</button>
         </div>
       ))}
       {/* Add more tile */}
@@ -1175,11 +1176,17 @@ export default function Page(){
     let propsWithCoords=[...migratedProps];
     if(needsGeocode.length>0){
       for(const prop of needsGeocode){
+        // Strip directional prefixes/suffixes Nominatim struggles with (e.g. "E Crestview DR NW" → "Crestview DR")
+        const stripDir=s=>s.replace(/\b(NW|NE|SW|SE)\b/gi,"").replace(/\b[NSEW]\s+(?=[A-Za-z])/g,"").replace(/\s{2,}/g," ").trim();
+        const clean=stripDir(prop.addr);
+        const noQuad=prop.addr.replace(/\b(NW|NE|SW|SE)\b/gi,"").trim();
         const attempts=[
           prop.addr+", Huntsville, Alabama, USA",
           prop.addr+", Huntsville, AL, USA",
+          noQuad+", Huntsville, AL, USA",
+          clean+", Huntsville, AL, USA",
+          clean+", Huntsville, Alabama, USA",
           prop.addr+", Alabama, USA",
-          prop.addr+", USA",
         ];
         let found=false;
         for(const attempt of attempts){
@@ -1385,9 +1392,14 @@ export default function Page(){
     // Always geocode from address on save — ensures pins are always accurate
     let finalProp=p;
     if(p.addr){
+      const stripDir=s=>s.replace(/\b(NW|NE|SW|SE)\b/gi,"").replace(/\b[NSEW]\s+(?=[A-Za-z])/g,"").replace(/\s{2,}/g," ").trim();
+      const clean=stripDir(p.addr);
+      const noQuad=p.addr.replace(/\b(NW|NE|SW|SE)\b/gi,"").trim();
       const attempts=[
         p.addr+", Huntsville, Alabama, USA",
         p.addr+", Huntsville, AL, USA",
+        noQuad+", Huntsville, AL, USA",
+        clean+", Huntsville, AL, USA",
         p.addr+", Madison County, Alabama, USA",
         p.addr+", Alabama, USA",
       ];
