@@ -594,10 +594,15 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
   useEffect(()=>{buildMarkers(PROPS,mapCat);},[PROPS,mapCat,buildMarkers]);
 
   const scrollToPin=(p)=>{
-    if(mapInst.current&&p.lat){mapInst.current.setView([p.lat,p.lng],14,{animate:true});
-      const marker=markersRef.current.find(m=>{const ll=m.getLatLng();return Math.abs(ll.lat-p.lat)<0.001&&Math.abs(ll.lng-p.lng)<0.001;});
-      if(marker)marker.openPopup();
-    }
+    // Guard: skip if no valid coords
+    if(!p.lat||!p.lng||p.lat===0||p.lng===0)return;
+    try{
+      if(mapInst.current){
+        mapInst.current.setView([p.lat,p.lng],14,{animate:true});
+        const marker=markersRef.current.find(m=>{const ll=m.getLatLng();return Math.abs(ll.lat-p.lat)<0.001&&Math.abs(ll.lng-p.lng)<0.001;});
+        if(marker)marker.openPopup();
+      }
+    }catch(e){console.warn("Map scroll error:",e);}
     setHighlight(p.name);setTimeout(()=>setHighlight(null),2000);
   };
 
@@ -606,8 +611,8 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     <div className="tabs" style={{marginTop:0,marginBottom:16}}><button className={`tab ${mapCat==="all"?"on":""}`} onClick={()=>setMapCat("all")}>All</button>{mapCats.map(c=><button key={c} className={`tab ${mapCat===c?"on":""}`} onClick={()=>setMapCat(c)}>{c}</button>)}</div>
     {/* Property pins */}
     <div className="poi-g">
-      {PROPS.filter(p=>p.lat&&p.lng).map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));return(
-        <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.04)",cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none"}} onClick={()=>scrollToPin(p)} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>📍</div></div>);})}
+      {PROPS.map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));const hasPin=p.lat&&p.lng&&p.lat!==0&&p.lng!==0;return(
+        <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.04)",cursor:hasPin?"pointer":"default",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",opacity:hasPin?1:0.7}} onClick={hasPin?()=>scrollToPin(p):undefined} onMouseEnter={hasPin?()=>scrollToPin(p):undefined}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>{hasPin?"📍":"🔍 Locating..."}</div></div>);})}
       {/* POI list */}
       {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer" style={{cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",background:highlight===p.name?"rgba(255,255,255,.08)":"rgba(255,255,255,.05)"}} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.desc}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}
     </div>
@@ -788,7 +793,7 @@ export default function Page(){
     Promise.all(P.map(async p=>{
       const addr=(p.address||p.addr||"").trim();
       if(!addr)return p;
-      if(cache[addr])return{...p,lat:cache[addr].lat,lng:cache[addr].lng};
+      if(cache[addr]&&cache[addr].lat&&cache[addr].lng&&cache[addr].lat!==0)return{...p,lat:cache[addr].lat,lng:cache[addr].lng};
       try{
         const q=encodeURIComponent(addr+", Huntsville, AL, USA");
         const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
