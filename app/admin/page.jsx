@@ -552,7 +552,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
   const removeUnit=(idx)=>{const units=(p.units||[]).filter((_,j)=>j!==idx);updP({...p,units});setActiveUnit(Math.max(0,activeUnit-1));};
   const addRoom=()=>{
     if(!curUnit)return;
-    const newRoom={id:uid(),name:`Bedroom ${(curUnit.rooms||[]).length+1}`,rent:600,sqft:150,pb:false,st:"vacant",le:null,tenant:null,desc:"",photos:[]};
+    const newRoom={id:uid(),name:`Bedroom ${(curUnit.rooms||[]).length+1}`,rent:600,sqft:150,pb:false,bed:"Queen",tv:'55"',furnished:true,feat:[],st:"vacant",le:null,tenant:null,desc:"",photos:[]};
     const units=(p.units||[]).map((u,i)=>i===activeUnit?{...u,rooms:[...(u.rooms||[]),newRoom]}:u);
     updP({...p,units});
   };
@@ -689,10 +689,27 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
             </div>
             <div className="fr3">
               <div className="fld"><label>Sq Ft</label><input type="number" value={r.sqft||""} placeholder="150" disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"sqft",e.target.value)}/></div>
+              <div className="fld"><label>Bed Size</label><select value={r.bed||"Queen"} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"bed",e.target.value)}><option>King</option><option>Queen</option><option>Full</option><option>Twin XL</option><option>Twin</option></select></div>
+              <div className="fld"><label>TV Size</label><select value={r.tv||'55"'} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"tv",e.target.value)}><option value='75"'>75"</option><option value='65"'>65"</option><option value='55"'>55"</option><option value='50"'>50"</option><option value='43"'>43"</option><option value='42"'>42"</option><option value='32"'>32"</option><option value="None">None</option></select></div>
+            </div>
+            <div className="fr3">
               <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{locked?`Occupied — ${r.tenant.name}`:"Vacant"}</div></div>
               <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
+              <div className="fld"><label>Furnished</label><select value={String(r.furnished!==false)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"furnished",e.target.value==="true")}><option value="true">✓ Furnished</option><option value="false">Unfurnished</option></select></div>
             </div>
-            {!locked&&<div className="fld"><label>Description</label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Features, view, notes..."/></div>}
+            {!locked&&<div className="fld">
+              <label>Features <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— shown on public site (check all that apply)</span></label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>
+                {["Walk-in closet","En-suite bath","Closet organizer","Street view","Backyard view","USB outlets","Blackout curtains","Ceiling fan","Private entrance","Corner room","Lots of natural light","Extra storage"].map(feat=>{
+                  const checked=(r.feat||[]).includes(feat);
+                  return(<label key={feat} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer",padding:"3px 8px",borderRadius:5,border:`1px solid ${checked?"rgba(212,168,83,.4)":"rgba(0,0,0,.08)"}`,background:checked?"rgba(212,168,83,.06)":"#faf9f7",userSelect:"none"}}>
+                    <input type="checkbox" checked={checked} style={{accentColor:"#d4a853",width:11,height:11}} onChange={()=>{const cur=r.feat||[];const next=checked?cur.filter(f=>f!==feat):[...cur,feat];updRoom(i,"feat",next);}}/>
+                    {feat}
+                  </label>);
+                })}
+              </div>
+            </div>}
+            {!locked&&<div className="fld"><label>Description <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— internal notes</span></label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Additional notes..."/></div>}
             {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
             {!locked
               ?<button className="btn btn-red btn-sm" style={{marginTop:4}} onClick={()=>{const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).filter((_,j)=>j!==i)}:u);updP({...p,units});}}>Remove Room</button>
