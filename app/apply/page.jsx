@@ -695,7 +695,7 @@ export default function ApplyPage(){
                   </div>
                 );})}
               </div>
-            </div></div></div>);
+            </div></div>);
           });})()}
         {errors.selectedRoom&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.selectedRoom}</div>}
 

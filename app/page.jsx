@@ -732,7 +732,7 @@ function StickyBar({properties}){
   const[vis,setVis]=useState(false);const[dismissed,setDismissed]=useState(false);
   useEffect(()=>{const h=()=>{if(!dismissed)setVis(window.scrollY>500);};window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[dismissed]);
   if(dismissed)return null;
-  const minRent=properties&&properties.length?safeMin(properties.flatMap(p=>allRoomsP(p).map(r=>r.rent)))||600;
+  const minRent=properties&&properties.length?safeMin(properties.flatMap(p=>allRoomsP(p).map(r=>r.rent)))||600:600;
   return(<div className={`stk ${vis?"vis":""}`}><div className="stk-txt">Rooms from <strong>${minRent}/mo</strong> · Everything included</div><button className="stk-btn" onClick={()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"})}>Apply Now →</button><button className="stk-x" onClick={()=>setDismissed(true)}>✕</button></div>);
 }
 
