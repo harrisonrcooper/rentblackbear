@@ -844,7 +844,7 @@ export default function Page(){
     if(flt.allUtils&&r.utils!=="allIncluded")return false;if(flt.first100&&r.utils!=="first100")return false;
     if(flt.weekly&&r.cleaning!=="Weekly")return false;if(flt.biweekly&&r.cleaning!=="Biweekly")return false;
     if(selProp&&r.propName!==selProp)return false;
-    return true;});},[flt,hasAnyFlt]);
+    return true;});},[flt,hasAnyFlt,allRooms,selProp]);
   const Ck=()=><span className="ck">✓</span>;const Xx=()=><span className="cx">—</span>;
   const F=({id,lb})=><button className={`fp ${flt[id]?"on":""}`} onClick={()=>togFlt(id)}>{lb}</button>;
 
