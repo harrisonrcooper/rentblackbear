@@ -9,34 +9,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 // ─── Data ───────────────────────────────────────────────────────────
 const S_INFO = { company:"Black Bear Rentals", legal:"Oak & Main Development LLC", phone:"(850) 696-8101", email:"info@rentblackbear.com", city:"Huntsville, Alabama" };
 
-const PROPS = [
-  { id:"p1",name:"The Holmes House",address:"Corner of Holmes & Lee, Huntsville, AL",lat:34.7285,lng:-86.5920,type:"SFH",typeTag:"SFH",baths:3,sqft:2400,status:"Available",utils:"first100",clean:"Weekly",
-    desc:"A spacious 5-bedroom single family home in our flagship mixed-use neighborhood. Walking distance to coffee shops, salons, and neighborhood amenities.",
-    imgs:[],
-    rooms:[
-      {id:"r1",name:"Primary Suite",rent:850,bed:"Queen",tv:'55"',pb:true,sqft:280,feat:["Walk-in closet","En-suite bath"],st:"occupied",le:"2026-07-31"},
-      {id:"r2",name:"Bedroom 2",rent:750,bed:"Queen",tv:'42"',pb:true,sqft:220,feat:["Private bath","Closet organizer"],st:"occupied",le:"2026-08-31"},
-      {id:"r3",name:"Bedroom 3",rent:650,bed:"Full",tv:'42"',pb:false,sqft:180,feat:["Shared bath","Street view"],st:"occupied",le:"2026-03-31"},
-      {id:"r4",name:"Bedroom 4",rent:650,bed:"Full",tv:'42"',pb:false,sqft:175,feat:["Shared bath","Backyard view"],st:"vacant",le:null},
-      {id:"r5",name:"Bedroom 5",rent:600,bed:"Twin XL",tv:'32"',pb:false,sqft:160,feat:["Shared bath","Cozy layout"],st:"occupied",le:"2026-10-31"},
-    ]},
-  { id:"p2",name:"Lee Drive East",address:"Lee Drive, Huntsville, AL",lat:34.7280,lng:-86.5935,type:"Townhome",typeTag:"Townhome",baths:2,sqft:1200,status:"Available",utils:"allIncluded",clean:"Biweekly",
-    desc:"Brand-new construction townhome. Modern finishes throughout with an open floor plan and full kitchen.",
-    imgs:[],
-    rooms:[
-      {id:"r6",name:"Primary Suite",rent:750,bed:"Queen",tv:'55"',pb:true,sqft:200,feat:["En-suite bath","New construction"],st:"occupied",le:"2026-06-30"},
-      {id:"r7",name:"Bedroom 2",rent:650,bed:"Full",tv:'42"',pb:false,sqft:170,feat:["Shared bath","Good closet"],st:"occupied",le:"2026-07-31"},
-      {id:"r8",name:"Bedroom 3",rent:600,bed:"Twin XL",tv:'42"',pb:false,sqft:155,feat:["Shared bath","USB outlets"],st:"vacant",le:null},
-    ]},
-  { id:"p3",name:"Lee Drive West",address:"Lee Drive, Huntsville, AL",lat:34.7280,lng:-86.5940,type:"Townhome",typeTag:"Townhome",baths:2,sqft:1200,status:"Coming Soon",utils:"allIncluded",clean:"Biweekly",
-    desc:"Mirror unit to Lee Drive East with the same premium finishes. Reserve a room now for priority move-in.",
-    imgs:[],
-    rooms:[
-      {id:"r9",name:"Primary Suite",rent:750,bed:"Queen",tv:'55"',pb:true,sqft:200,feat:["En-suite bath","New construction"],st:"occupied",le:"2026-12-31"},
-      {id:"r10",name:"Bedroom 2",rent:650,bed:"Full",tv:'42"',pb:false,sqft:170,feat:["Shared bath","Good closet"],st:"occupied",le:"2026-12-31"},
-      {id:"r11",name:"Bedroom 3",rent:600,bed:"Full",tv:'42"',pb:false,sqft:155,feat:["Shared bath","USB outlets"],st:"occupied",le:"2027-01-31"},
-    ]},
-];
+// Properties come 100% from Supabase (hq-props). No hardcoded fallback.
+const PROPS=[];
 
 // Unit-aware room helpers for public page — handles both old flat rooms[] and new units[] format
 const allRoomsP=(prop)=>{
@@ -554,7 +528,16 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
         </div>
       )):(
         <div className="rgrid">{p.rooms.map(r=>(
-          <div key={r.id} className="rc"><div className="rm-m"><div className="rn">{r.name}<span className={`rbt ${r.pb?"rbt-p":"rbt-s"}`}>{r.pb?"Private Bath":"Shared Bath"}</span></div><div className="rd">{r.sqft?<span>{r.sqft} sqft</span>:null}<span>{r.bed} bed</span></div><div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div></div><div className="rprice">${r.rent}<small>/mo</small></div></div>
+          <div key={r.id} className="rc"><div className="rm-m">
+              <div className="rn">{r.name}<span className={`rbt ${r.pb?"rbt-p":"rbt-s"}`}>{r.pb?"Private Bath":"Shared Bath"}</span></div>
+              <div className="rd">
+                {r.sqft?<span>{r.sqft} sqft</span>:null}
+                {r.bed&&<span>{r.bed} bed</span>}
+                {r.tv&&r.tv!=="None"&&<span>{r.tv} TV</span>}
+                {r.furnished!==false&&<span>✓ Furnished</span>}
+              </div>
+              {(r.feat||[]).length>0&&<div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div>}
+            </div><div className="rprice">${r.rent}<small>/mo</small></div></div>
         ))}</div>
       )}
       <h4 className="mst">3D Tour</h4><div className="phbox"><div style={{fontSize:40}}>🏠</div><h4>Coming Soon</h4><p>Insta360 walkthrough will be embedded here</p></div>
@@ -567,40 +550,12 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
   const PROPS=properties||[];
   const mapRef=useRef(null);const mapInst=useRef(null);const markersRef=useRef([]);
   const[highlight,setHighlight]=useState(null);
-  const[geocodedProps,setGeocodedProps]=useState([]);
   const catColors={"Redstone Arsenal":"#b8956a",Entertainment:"#c4a882","Grocery & Retail":"#a8b882","Food & Drink":"#c4a070",Education:"#82a8a8",Healthcare:"#82a88c",property:"#d4a853"};
 
-  // Geocode all properties from their address — always use address, never trust stored lat/lng
-  useEffect(()=>{
-    if(!PROPS.length)return;
-    const cache=JSON.parse(sessionStorage.getItem("bb_geocache")||"{}");
-    Promise.all(PROPS.map(async p=>{
-      const addr=p.address||p.addr||"";
-      if(!addr)return p;
-      // Use cached result if available
-      if(cache[addr])return{...p,lat:cache[addr].lat,lng:cache[addr].lng};
-      try{
-        const q=encodeURIComponent(addr+", Huntsville, AL, USA");
-        const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
-        const data=await res.json();
-        if(data&&data.length>0){
-          const lat=parseFloat(parseFloat(data[0].lat).toFixed(5));
-          const lng=parseFloat(parseFloat(data[0].lon).toFixed(5));
-          cache[addr]={lat,lng};
-          sessionStorage.setItem("bb_geocache",JSON.stringify(cache));
-          return{...p,lat,lng};
-        }
-      }catch{}
-      return p;
-    })).then(resolved=>setGeocodedProps(resolved));
-  },[PROPS.length]);
-
-  // Use geocoded props if available, fall back to PROPS
-  const resolvedProps=geocodedProps.length>0?geocodedProps:PROPS;
-
-  // Store latest resolved props in a ref so marker rebuild always sees fresh data
-  const propsRef=useRef(resolvedProps);
-  useEffect(()=>{propsRef.current=resolvedProps;},[resolvedProps]);
+  // Props come in already geocoded from parent — just use them directly
+  const resolvedProps=PROPS;
+  const propsRef=useRef(PROPS);
+  useEffect(()=>{propsRef.current=PROPS;},[PROPS]);
   const mapCatRef=useRef(mapCat);
   useEffect(()=>{mapCatRef.current=mapCat;},[mapCat]);
 
@@ -645,8 +600,8 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     return()=>{if(mapInst.current){mapInst.current.remove();mapInst.current=null;}};
   },[]);
 
-  // Rebuild markers when resolved (geocoded) properties or category filter change
-  useEffect(()=>{buildMarkers();},[resolvedProps,mapCat,buildMarkers]);
+  // Rebuild markers whenever props or filter changes
+  useEffect(()=>{buildMarkers();},[PROPS,mapCat,buildMarkers]);
 
   const scrollToPin=(p)=>{
     if(mapInst.current&&p.lat){mapInst.current.setView([p.lat,p.lng],14,{animate:true});
@@ -661,7 +616,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     <div className="tabs" style={{marginTop:0,marginBottom:16}}><button className={`tab ${mapCat==="all"?"on":""}`} onClick={()=>setMapCat("all")}>All</button>{mapCats.map(c=><button key={c} className={`tab ${mapCat===c?"on":""}`} onClick={()=>setMapCat(c)}>{c}</button>)}</div>
     {/* Property pins */}
     <div className="poi-g">
-      {resolvedProps.filter(p=>p.lat&&p.lng).map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));return(
+      {PROPS.filter(p=>p.lat&&p.lng).map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));return(
         <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.04)",cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none"}} onClick={()=>scrollToPin(p)}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>📍</div></div>);})}
       {/* POI list */}
       {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer" style={{cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",background:highlight===p.name?"rgba(255,255,255,.08)":"rgba(255,255,255,.05)"}} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.desc}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}
@@ -809,9 +764,9 @@ export default function Page(){
 
   // Use Supabase data if available, otherwise hardcoded
   const P=useMemo(()=>{
-    // Always use live Supabase data. PROPS constant is only structural fallback (no images)
-    const source=liveProps&&liveProps.length>0?liveProps:PROPS;
-    return source.map(p=>{
+    // All data comes from Supabase — show nothing until loaded
+    if(!liveProps||!liveProps.length)return[];
+    return liveProps.map(p=>{
       const rooms=allRoomsP(p);
       const firstUnit=(p.units&&p.units.length>0)?p.units[0]:null;
       return{
@@ -824,11 +779,38 @@ export default function Page(){
         desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
         imgs:(p.photos&&p.photos.length>0)?p.photos:[],
         units:p.units||[],
-        rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'42"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],st:r.st,le:r.le})),
+        rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le})),
       };
     });
   },[liveProps]);
   const SI=liveSettings||S_INFO;
+
+  // Geocode property addresses in main component so MapSection always gets correct coords
+  const[geoP,setGeoP]=useState([]);
+  useEffect(()=>{
+    if(!P.length){setGeoP([]);return;}
+    const cache=JSON.parse(sessionStorage.getItem("bb_geocache")||"{}");
+    Promise.all(P.map(async p=>{
+      const addr=(p.address||p.addr||"").trim();
+      if(!addr)return p;
+      if(cache[addr])return{...p,lat:cache[addr].lat,lng:cache[addr].lng};
+      try{
+        const q=encodeURIComponent(addr+", Huntsville, AL, USA");
+        const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
+        const data=await res.json();
+        if(data&&data.length>0){
+          const lat=parseFloat(parseFloat(data[0].lat).toFixed(5));
+          const lng=parseFloat(parseFloat(data[0].lon).toFixed(5));
+          cache[addr]={lat,lng};
+          sessionStorage.setItem("bb_geocache",JSON.stringify(cache));
+          return{...p,lat,lng};
+        }
+      }catch{}
+      return p;
+    })).then(setGeoP);
+  },[P.length]);
+  // Use geocoded coords if ready, fall back to P while geocoding
+  const mapProps=geoP.length>0?geoP:P;
 
   const allRents=P.flatMap(p=>allRoomsP(p).map(r=>r.rent));const globalMin=Math.min(...allRents);const globalMax=Math.max(...allRents);const[bbRoom,setBbRoom]=useState(0);
   useEffect(()=>{if(allRents.length&&!bbRoom)setBbRoom(globalMin);},[allRents]);
@@ -993,7 +975,7 @@ export default function Page(){
 
     {/* MAP */}
     <section className="sec-dk" id="location"><div className="sec-inner"><div className="sh"><div className="sl">Location</div><h2 className="st" style={{color:"var(--cr)"}}>Minutes From Everything</h2><p className="ss" style={{color:"var(--mt)"}}>Our properties are centrally located in Huntsville. Click any pin for details.</p></div>
-      <MapSection mapCat={mapCat} setMapCat={setMapCat} mapCats={mapCats} mapFiltered={mapFiltered} nav={nav} properties={P}/>
+      <MapSection mapCat={mapCat} setMapCat={setMapCat} mapCats={mapCats} mapFiltered={mapFiltered} nav={nav} properties={mapProps}/>
     </div></section>
 
     {/* SAVINGS */}
