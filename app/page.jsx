@@ -833,7 +833,7 @@ export default function Page(){
   const mapFiltered=mapCat==="all"?POIS:POIS.filter(p=>p.cat===mapCat);
 
   // Compare
-  const allRooms=P.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",label:"",name:"",rooms:p.rooms}]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.name,propType:p.type,unitLabel:u.label,unitName:u.name,utils:u.utils||p.utils,cleaning:u.clean||p.clean}))));
+  const allRooms=P.flatMap(p=>(p.rooms||[]).map(r=>({...r,propName:p.name,propType:p.type,utils:p.utils,cleaning:p.clean})));
   const togFlt=k=>setFlt(f=>({...f,[k]:!f[k]}));const hasAnyFlt=Object.values(flt).some(v=>v);const fltCount=Object.values(flt).filter(v=>v).length;
   const resetFlt=()=>{setFlt(Object.fromEntries(Object.keys(flt).map(k=>[k,false])));setSelProp(null);};
   const filtRooms=useMemo(()=>{if(!hasAnyFlt)return allRooms;return allRooms.filter(r=>{
