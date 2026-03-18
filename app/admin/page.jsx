@@ -95,27 +95,69 @@ function SigCanvas({onSave,height=120}){
 
 // ─── Sample Data ────────────────────────────────────────────────────
 const DEF_PROPS=[
-  {id:"p1",name:"The Holmes House",addr:"Holmes & Lee, Huntsville",lat:34.7285,lng:-86.5920,type:"SFH",baths:3,utils:"first100",clean:"Weekly",
-    rooms:[
-      {id:"r1",name:"Primary Suite",rent:850,pb:true,st:"occupied",le:"2026-07-31",tenant:{name:"Marcus Johnson",email:"marcus@email.com",phone:"(256) 555-1001",moveIn:"2025-08-01"}},
-      {id:"r2",name:"Bedroom 2",rent:750,pb:true,st:"occupied",le:"2026-08-31",tenant:{name:"Sarah Chen",email:"sarah@email.com",phone:"(256) 555-1002",moveIn:"2025-09-01"}},
-      {id:"r3",name:"Bedroom 3",rent:650,pb:false,st:"occupied",le:"2026-03-31",tenant:{name:"David Park",email:"david@email.com",phone:"(256) 555-1003",moveIn:"2025-10-01"}},
-      {id:"r4",name:"Bedroom 4",rent:650,pb:false,st:"vacant",le:null,tenant:null},
-      {id:"r5",name:"Bedroom 5",rent:600,pb:false,st:"occupied",le:"2026-10-31",tenant:{name:"Amy Rodriguez",email:"amy@email.com",phone:"(256) 555-1005",moveIn:"2025-11-01"}},
+  {id:"p1",name:"The Holmes House",addr:"Holmes & Lee, Huntsville",lat:34.7285,lng:-86.5920,type:"SFH",sqft:2400,photos:[],
+    units:[{id:"p1_u1",name:"Main",label:"",sqft:2400,baths:3,utils:"first100",clean:"Weekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
+      rooms:[
+        {id:"r1",name:"Primary Suite",rent:850,pb:true,sqft:280,st:"occupied",le:"2026-07-31",tenant:{name:"Marcus Johnson",email:"marcus@email.com",phone:"(256) 555-1001",moveIn:"2025-08-01"}},
+        {id:"r2",name:"Bedroom 2",rent:750,pb:true,sqft:220,st:"occupied",le:"2026-08-31",tenant:{name:"Sarah Chen",email:"sarah@email.com",phone:"(256) 555-1002",moveIn:"2025-09-01"}},
+        {id:"r3",name:"Bedroom 3",rent:650,pb:false,sqft:180,st:"occupied",le:"2026-03-31",tenant:{name:"David Park",email:"david@email.com",phone:"(256) 555-1003",moveIn:"2025-10-01"}},
+        {id:"r4",name:"Bedroom 4",rent:650,pb:false,sqft:175,st:"vacant",le:null,tenant:null},
+        {id:"r5",name:"Bedroom 5",rent:600,pb:false,sqft:160,st:"occupied",le:"2026-10-31",tenant:{name:"Amy Rodriguez",email:"amy@email.com",phone:"(256) 555-1005",moveIn:"2025-11-01"}},
+      ]}]},
+  {id:"p2",name:"Lee Drive East",addr:"Lee Drive, Huntsville",lat:34.7280,lng:-86.5935,type:"Duplex",sqft:2400,photos:[],
+    units:[
+      {id:"p2_u1",name:"Unit A",label:"A",sqft:1200,baths:2,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
+        rooms:[
+          {id:"r6",name:"Primary Suite",rent:750,pb:true,sqft:200,st:"occupied",le:"2026-06-30",tenant:{name:"James Williams",email:"james@email.com",phone:"(256) 555-2001",moveIn:"2025-07-01"}},
+          {id:"r7",name:"Bedroom 2",rent:650,pb:false,sqft:170,st:"occupied",le:"2026-07-31",tenant:{name:"Lisa Thompson",email:"lisa@email.com",phone:"(256) 555-2002",moveIn:"2025-08-01"}},
+          {id:"r8",name:"Bedroom 3",rent:600,pb:false,sqft:155,st:"vacant",le:null,tenant:null},
+        ]},
+      {id:"p2_u2",name:"Unit B",label:"B",sqft:1200,baths:2,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
+        rooms:[]},
     ]},
-  {id:"p2",name:"Lee Drive East",addr:"Lee Drive, Huntsville",lat:34.7280,lng:-86.5935,type:"Townhome",baths:2,utils:"allIncluded",clean:"Biweekly",
-    rooms:[
-      {id:"r6",name:"Primary Suite",rent:750,pb:true,st:"occupied",le:"2026-06-30",tenant:{name:"James Williams",email:"james@email.com",phone:"(256) 555-2001",moveIn:"2025-07-01"}},
-      {id:"r7",name:"Bedroom 2",rent:650,pb:false,st:"occupied",le:"2026-07-31",tenant:{name:"Lisa Thompson",email:"lisa@email.com",phone:"(256) 555-2002",moveIn:"2025-08-01"}},
-      {id:"r8",name:"Bedroom 3",rent:600,pb:false,st:"vacant",le:null,tenant:null},
-    ]},
-  {id:"p3",name:"Lee Drive West",addr:"Lee Drive, Huntsville",lat:34.7280,lng:-86.5940,type:"Townhome",baths:2,utils:"allIncluded",clean:"Biweekly",
-    rooms:[
-      {id:"r9",name:"Primary Suite",rent:750,pb:true,st:"occupied",le:"2026-12-31",tenant:{name:"Kevin Brown",email:"kevin@email.com",phone:"(256) 555-3001",moveIn:"2026-01-01"}},
-      {id:"r10",name:"Bedroom 2",rent:650,pb:false,st:"occupied",le:"2026-12-31",tenant:{name:"Michelle Davis",email:"michelle@email.com",phone:"(256) 555-3002",moveIn:"2026-01-01"}},
-      {id:"r11",name:"Bedroom 3",rent:600,pb:false,st:"occupied",le:"2027-01-31",tenant:{name:"Carlos Gutierrez",email:"carlos@email.com",phone:"(256) 555-3003",moveIn:"2026-02-01"}},
+  {id:"p3",name:"Lee Drive West",addr:"Lee Drive, Huntsville",lat:34.7280,lng:-86.5940,type:"Duplex",sqft:2400,photos:[],
+    units:[
+      {id:"p3_u1",name:"Unit A",label:"A",sqft:1200,baths:2,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
+        rooms:[
+          {id:"r9",name:"Primary Suite",rent:750,pb:true,sqft:200,st:"occupied",le:"2026-12-31",tenant:{name:"Kevin Brown",email:"kevin@email.com",phone:"(256) 555-3001",moveIn:"2026-01-01"}},
+          {id:"r10",name:"Bedroom 2",rent:650,pb:false,sqft:170,st:"occupied",le:"2026-12-31",tenant:{name:"Michelle Davis",email:"michelle@email.com",phone:"(256) 555-3002",moveIn:"2026-01-01"}},
+          {id:"r11",name:"Bedroom 3",rent:600,pb:false,sqft:155,st:"occupied",le:"2027-01-31",tenant:{name:"Carlos Gutierrez",email:"carlos@email.com",phone:"(256) 555-3003",moveIn:"2026-02-01"}},
+        ]},
+      {id:"p3_u2",name:"Unit B",label:"B",sqft:1200,baths:2,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
+        rooms:[]},
     ]},
 ];
+
+// ── Migration: convert old props (rooms[]) to new format (units[]) ──
+function migrateProps(rawProps){
+  if(!rawProps||!rawProps.length)return rawProps;
+  return rawProps.map(p=>{
+    if(p.units)return p; // already migrated
+    // Wrap existing rooms in a single "Main" unit
+    return{
+      ...p,photos:p.photos||[],
+      units:[{
+        id:p.id+"_u1",name:"Main",label:"",
+        sqft:p.sqft||0,baths:p.baths||1,
+        utils:p.utils||"allIncluded",clean:p.clean||"Biweekly",
+        rentalMode:p.rentalMode||"byRoom",
+        rent:p.wholeHouseRent||0,desc:p.desc||"",photos:[],
+        rooms:(allRooms(p)||[]),
+      }],
+    };
+  });
+}
+
+// ── Helpers: flatten units→rooms for backward compat ──
+const allRooms=(prop)=>(prop.units||[]).flatMap(u=>u.rooms||[]);
+const allRoomsWithUnit=(prop)=>(prop.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,unitId:u.id,unitName:u.name,unitLabel:u.label,unitUtils:u.utils,unitClean:u.clean})));
+const findRoom=(props,roomId)=>{for(const p of props){for(const u of(p.units||[])){const r=(u.rooms||[]).find(x=>x.id===roomId);if(r)return{room:r,unit:u,prop:p};}}return null;};
+const findUnit=(props,unitId)=>{for(const p of props){const u=(p.units||[]).find(x=>x.id===unitId);if(u)return{unit:u,prop:p};}return null;};
+// Update a room by ID inside its unit, preserving hierarchy
+const updateRoomInProps=(props,roomId,updater)=>props.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===roomId?updater(r):r)}))}));
+// Update a specific prop's room by ID
+const updateRoomInProp=(prop,roomId,updater)=>({...prop,units:(prop.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===roomId?updater(r):r)}))});
+
 
 const DEF_PAYMENTS={};// {roomId: {month: amount}} - quick lookup (computed from charges)
 const CHARGE_CATS=["Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
@@ -389,7 +431,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
 }
 
 function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
-  const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",baths:1,beds:0,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",desc:"",wholeHouseRent:0,wholeHouseDesc:"",photos:[],rooms:[]});
+  const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]});
   const[warning,setWarning]=useState(null);
   const[unsaved,setUnsaved]=useState(false);
   const[saveShake,setSaveShake]=useState(0);
@@ -397,37 +439,113 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
   // Wrap setP to track unsaved changes
   const updP=(val)=>{setP(val);markUnsaved();};
-  const addRoom=()=>updP({...p,rooms:[...p.rooms,{id:uid(),name:`Bedroom ${p.rooms.length+1}`,rent:600,sqft:150,pb:false,st:"vacant",le:null,tenant:null,desc:"",photos:[]}]});
-  const updRoom=(i,f,v)=>{const rs=[...p.rooms];rs[i]={...rs[i],[f]:f==="rent"||f==="sqft"?Number(v):f==="pb"?v==="true":v};updP({...p,rooms:rs});};
+  // Unit helpers
+  const curUnit=p.units&&p.units.length>0?p.units[Math.min(activeUnit,(p.units||[]).length-1)]:null;
+  const addUnit=()=>{
+    const label=String.fromCharCode(65+(p.units||[]).length);
+    const newUnit={id:uid(),name:p.type==="Duplex"?`Unit ${label}`:"Main",label:p.type==="Duplex"?label:"",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]};
+    const units=[...(p.units||[]),newUnit];
+    updP({...p,units});setActiveUnit(units.length-1);
+  };
+  const updUnit=(f,v)=>{const units=(p.units||[]).map((u,i)=>i===activeUnit?{...u,[f]:v}:u);updP({...p,units});};
+  const removeUnit=(idx)=>{const units=(p.units||[]).filter((_,j)=>j!==idx);updP({...p,units});setActiveUnit(Math.max(0,activeUnit-1));};
+  const addRoom=()=>{
+    if(!curUnit)return;
+    const newRoom={id:uid(),name:`Bedroom ${(curUnit.rooms||[]).length+1}`,rent:600,sqft:150,pb:false,st:"vacant",le:null,tenant:null,desc:"",photos:[]};
+    const units=(p.units||[]).map((u,i)=>i===activeUnit?{...u,rooms:[...(u.rooms||[]),newRoom]}:u);
+    updP({...p,units});
+  };
+  const updRoom=(i,f,v)=>{
+    const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map((r,ri)=>ri===i?{...r,[f]:f==="rent"||f==="sqft"?Number(v):f==="pb"?v==="true":v}:r)}:u);
+    updP({...p,units});
+  };
   const updRoomPhotos=(i,v)=>{
-    const rs=[...p.rooms];
-    const newPhotos=typeof v==="function"?v(rs[i].photos||[]):v;
-    rs[i]={...rs[i],photos:newPhotos};
-    updP({...p,rooms:rs});
-    // Save room photos immediately to Supabase in background
-    
+    const units=(p.units||[]).map((u,ui)=>{
+      if(ui!==activeUnit)return u;
+      const rooms=(u.rooms||[]).map((r,ri)=>{if(ri!==i)return r;const newPhotos=typeof v==="function"?v(r.photos||[]):v;return{...r,photos:newPhotos};});
+      return{...u,rooms};
+    });
+    updP({...p,units});
   };
   const isOcc=r=>r.st==="occupied"&&r.tenant;
-  const mode=p.rentalMode||"byRoom";
-  return(<div className="mbg" onClick={()=>{if(unsaved&&!justSaved){setSaveShake(k=>k+1);}else{onClose();}}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:720,maxHeight:"90vh",overflowY:"auto"}}>
+  const mode=curUnit?.rentalMode||"byRoom";
+  return(<div className="mbg" onClick={()=>{if(unsaved&&!justSaved){setSaveShake(k=>k+1);}else{onClose();}}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760,maxHeight:"90vh",overflowY:"auto"}}>
     <h2>{isNew?"Add Property":`Edit: ${p.name}`}</h2>
 
-    {/* Basic info */}
-    <div className="fr"><div className="fld"><label>Name</label><input value={p.name} onChange={e=>setP({...p,name:e.target.value})}/></div><div className="fld"><label>Address</label><input value={p.addr} onChange={e=>setP({...p,addr:e.target.value})}/></div></div>
-    <div className="fr3"><div className="fld"><label>Latitude</label><input type="number" step="0.0001" value={p.lat||""} onChange={e=>setP({...p,lat:Number(e.target.value)})}/></div><div className="fld"><label>Longitude</label><input type="number" step="0.0001" value={p.lng||""} onChange={e=>setP({...p,lng:Number(e.target.value)})}/></div><div className="fld"><label style={{fontSize:8,color:"#999"}}>💡 Get from Google Maps</label><a href={`https://www.google.com/maps/search/${encodeURIComponent(p.addr||"")}`} target="_blank" rel="noopener" style={{fontSize:10,color:"#3b82f6",cursor:"pointer"}}>Look up →</a></div></div>
-    <div className="fr3"><div className="fld"><label>Type</label><select value={p.type} onChange={e=>setP({...p,type:e.target.value})}><option>SFH</option><option>Townhome</option><option>Duplex</option></select></div><div className="fld"><label>Utilities</label><select value={p.utils} onChange={e=>setP({...p,utils:e.target.value})}><option value="allIncluded">All Included</option><option value="first100">Tenant Pays (Split)</option></select></div><div className="fld"><label>Cleaning</label><select value={p.clean} onChange={e=>setP({...p,clean:e.target.value})}><option>Weekly</option><option>Biweekly</option></select></div></div>
-
-    {/* Beds / baths / rental mode */}
+    {/* Property-level info */}
+    <div className="fr"><div className="fld"><label>Property Name</label><input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House"/></div><div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div></div>
+    <div className="fr3"><div className="fld"><label>Latitude</label><input type="number" step="0.0001" value={p.lat||""} onChange={e=>updP({...p,lat:Number(e.target.value)})}/></div><div className="fld"><label>Longitude</label><input type="number" step="0.0001" value={p.lng||""} onChange={e=>updP({...p,lng:Number(e.target.value)})}/></div><div className="fld"><label style={{fontSize:8,color:"#999"}}>💡 Get from Google Maps</label><a href={`https://www.google.com/maps/search/${encodeURIComponent(p.addr||"")}`} target="_blank" rel="noopener" style={{fontSize:10,color:"#3b82f6",cursor:"pointer"}}>Look up →</a></div></div>
     <div className="fr3">
-      <div className="fld"><label>Bedrooms</label><input type="number" min="1" value={p.beds||p.rooms.length||0} onChange={e=>setP({...p,beds:Number(e.target.value)})}/></div>
-      <div className="fld"><label>Bathrooms</label><input type="number" step="0.5" min="1" value={p.baths} onChange={e=>setP({...p,baths:Number(e.target.value)})}/></div>
-      <div className="fld"><label>Rental Mode</label>
-        <select value={mode} onChange={e=>setP({...p,rentalMode:e.target.value})}>
-          <option value="byRoom">Rent by Bedroom</option>
-          <option value="wholeHouse">Whole House</option>
+      <div className="fld"><label>Property Type</label>
+        <select value={p.type||"SFH"} onChange={e=>{
+          const t=e.target.value;
+          // Auto-create units for duplex if none exist
+          let units=p.units||[];
+          if(t==="Duplex"&&units.length<=1){
+            const existing=units[0]||{id:uid(),name:"Unit A",label:"A",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]};
+            units=[{...existing,name:"Unit A",label:"A"},{id:uid(),name:"Unit B",label:"B",sqft:0,baths:1,utils:existing.utils,clean:existing.clean,rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]}];
+          } else if(t!=="Duplex"&&units.length===0){
+            units=[{id:p.id+"_u1",name:"Main",label:"",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]}];
+          }
+          updP({...p,type:t,units});
+        }}>
+          <option value="SFH">SFH</option>
+          <option value="Townhome">Townhome</option>
+          <option value="Duplex">Duplex</option>
+          <option value="Apartment">Apartment</option>
         </select>
       </div>
+      <div className="fld"><label>Total Sq Ft</label><input type="number" value={p.sqft||""} onChange={e=>updP({...p,sqft:Number(e.target.value)})} placeholder="2400"/></div>
+      <div className="fld"><label>Property Photos</label><span style={{fontSize:10,color:"#999"}}>{(p.photos||[]).length} photo{(p.photos||[]).length!==1?"s":""}</span></div>
     </div>
+    <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v==="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id}/>
+    <div className="fld"><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
+
+    {/* Unit tabs */}
+    <div style={{borderTop:"2px solid rgba(0,0,0,.06)",marginTop:12,paddingTop:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+          {(p.units||[]).map((u,i)=>(
+            <button key={u.id} onClick={()=>setActiveUnit(i)} style={{
+              padding:"6px 14px",borderRadius:7,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+              background:i===activeUnit?"#1a1714":"#fff",
+              color:i===activeUnit?"#d4a853":"#5c4a3a",
+              borderColor:i===activeUnit?"#1a1714":"rgba(0,0,0,.1)",
+              transition:"all .15s",
+            }}>{u.name||`Unit ${i+1}`} <span style={{fontSize:10,fontWeight:400,opacity:.7}}>({(u.rooms||[]).length}br)</span></button>
+          ))}
+          {(p.type==="Duplex"||(p.units||[]).length===0)&&<button className="btn btn-out btn-sm" onClick={addUnit}>+ Add Unit</button>}
+        </div>
+        <span style={{fontSize:10,color:"#999"}}>{p.type==="Duplex"?"Duplex — each unit has its own rooms, lease & financials":"SFH — one unit"}</span>
+      </div>
+
+      {/* Unit settings */}
+      {curUnit&&<div style={{background:"rgba(212,168,83,.03)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#9a7422"}}>{curUnit.name} Settings</div>
+          {(p.units||[]).length>1&&<button className="btn btn-red btn-sm" style={{fontSize:9}} onClick={()=>removeUnit(activeUnit)}>Remove Unit</button>}
+        </div>
+        <div className="fr3">
+          <div className="fld"><label>Unit Name</label><input value={curUnit.name||""} onChange={e=>updUnit("name",e.target.value)}/></div>
+          <div className="fld"><label>Sq Ft</label><input type="number" value={curUnit.sqft||""} onChange={e=>updUnit("sqft",Number(e.target.value))} placeholder="1200"/></div>
+          <div className="fld"><label>Bathrooms</label><input type="number" step="0.5" min="0.5" value={curUnit.baths||1} onChange={e=>updUnit("baths",Number(e.target.value))}/></div>
+        </div>
+        <div className="fr3">
+          <div className="fld"><label>Utilities</label><select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}><option value="allIncluded">All Included</option><option value="first100">Tenant Pays (Split)</option></select></div>
+          <div className="fld"><label>Cleaning</label><select value={curUnit.clean||"Biweekly"} onChange={e=>updUnit("clean",e.target.value)}><option>Weekly</option><option>Biweekly</option><option>Monthly</option><option>None</option></select></div>
+          <div className="fld"><label>Rental Mode</label>
+            <select value={curUnit.rentalMode||"byRoom"} onChange={e=>updUnit("rentalMode",e.target.value)}>
+              <option value="byRoom">By Bedroom</option>
+              <option value="wholeHouse">Whole Unit</option>
+            </select>
+          </div>
+        </div>
+        {(curUnit.rentalMode||"byRoom")==="wholeHouse"&&<div className="fr">
+          <div className="fld"><label>Monthly Rent</label><input type="number" value={curUnit.rent||""} onChange={e=>updUnit("rent",Number(e.target.value))} placeholder="3200"/></div>
+          <div className="fld"><label>Security Deposit</label><input type="number" value={curUnit.sd||curUnit.rent||""} onChange={e=>updUnit("sd",Number(e.target.value))} placeholder="Defaults to 1 month"/></div>
+        </div>}
+        <div className="fld" style={{marginBottom:4}}><label>Unit Description</label><textarea value={curUnit.desc||""} onChange={e=>updUnit("desc",e.target.value)} placeholder="Unit features, finishes, notes..." rows={2}/></div>
+      </div>}
 
     {mode==="wholeHouse"&&<>
       <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,marginBottom:10}}>
@@ -437,74 +555,46 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
             <label>Whole House Rent ($/mo)</label>
             <input type="number" value={p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseRent:Number(e.target.value)})} placeholder="e.g. 3200"/>
             <div style={{fontSize:9,color:"#999",marginTop:3}}>Shown when renting the entire property to one tenant/group</div>
-          </div>
-          <div className="fld">
-            <label>Security Deposit</label>
-            <input type="number" value={p.wholeHouseSD||p.wholeHouseRent||0} onChange={e=>setP({...p,wholeHouseSD:Number(e.target.value)})} placeholder="Defaults to 1 month rent"/>
-          </div>
+      {/* Room editor for this unit */}
+      {curUnit&&mode==="byRoom"&&<div style={{marginTop:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <h3 style={{fontSize:13,fontWeight:800}}>Rooms in {curUnit.name} ({(curUnit.rooms||[]).length})</h3>
+          <button className="btn btn-out btn-sm" onClick={addRoom}>+ Add Room</button>
         </div>
-        <div className="fld">
-          <label>Whole House Description</label>
-          <textarea value={p.wholeHouseDesc||""} onChange={e=>setP({...p,wholeHouseDesc:e.target.value})} placeholder="Describe the property as a whole — sq ft, layout, included amenities, parking, yard, etc." rows={3}/>
+        {(curUnit.rooms||[]).length===0&&<div style={{padding:"12px",textAlign:"center",color:"#999",fontSize:12,border:"2px dashed rgba(0,0,0,.06)",borderRadius:8}}>No rooms yet — click Add Room</div>}
+        {(curUnit.rooms||[]).map((r,i)=>{const locked=isOcc(r);return(
+          <div key={r.id} style={{padding:12,border:`1px solid ${locked?"rgba(0,0,0,.06)":"rgba(0,0,0,.05)"}`,borderRadius:8,marginBottom:8,background:locked?"#f0efec":"#faf9f7",position:"relative"}}>
+            {locked&&<div style={{position:"absolute",top:6,right:8}}><span className="badge b-green" style={{fontSize:8}}>🔗 {r.tenant.name}</span></div>}
+            <div className="fr3">
+              <div className="fld"><label>Name</label><input value={r.name} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"name",e.target.value)}/></div>
+              <div className="fld"><label>Rent $/mo</label><input type="number" value={r.rent} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"rent",e.target.value)}/></div>
+              <div className="fld"><label>Bath</label><select value={String(r.pb)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"pb",e.target.value)}><option value="true">Private</option><option value="false">Shared</option></select></div>
+            </div>
+            <div className="fr3">
+              <div className="fld"><label>Sq Ft</label><input type="number" value={r.sqft||""} placeholder="150" disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"sqft",e.target.value)}/></div>
+              <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{locked?`Occupied — ${r.tenant.name}`:"Vacant"}</div></div>
+              <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
+            </div>
+            {!locked&&<div className="fld"><label>Description</label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Features, view, notes..."/></div>}
+            {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
+            {!locked
+              ?<button className="btn btn-red btn-sm" style={{marginTop:4}} onClick={()=>{const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).filter((_,j)=>j!==i)}:u);updP({...p,units});}}>Remove Room</button>
+              :<div style={{display:"flex",gap:6,alignItems:"center",marginTop:6}}>
+                <button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease & Tenant →</button>
+                <span style={{fontSize:10,color:"#999"}}>Manage lease to edit room</span>
+              </div>}
+          </div>);})}
+      </div>}
+
+      {curUnit&&mode==="wholeHouse"&&(curUnit.rooms||[]).length>0&&<div style={{marginTop:8}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:6}}>Room Breakdown</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {(curUnit.rooms||[]).map(r=><div key={r.id} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:10,background:"#faf9f7",color:r.st==="occupied"?"#4a7c59":"#999"}}>
+            {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
+          </div>)}
         </div>
-      </div>
-      {/* Photo section with copy from rooms option */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>Property Photos</span>
-        {p.rooms.some(r=>(r.photos||[]).length>0)&&<button className="btn btn-out btn-sm" onClick={()=>{const all=[...(p.photos||[]),...p.rooms.flatMap(r=>r.photos||[])].filter((x,i,a)=>a.indexOf(x)===i);setP({...p,photos:all});}}>⬆ Copy all room photos here</button>}
-      </div>
-      <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v=="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id}/>
-    </>}
-
-    {mode==="byRoom"&&<>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>Property Photos</span>
-        {mode==="byRoom"&&(p.photos||[]).length>0&&<span style={{fontSize:9,color:"#999"}}>These show on the property listing</span>}
-      </div>
-      <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v=="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id}/>
-    </>}
-
-    {/* Property description (both modes) */}
-    <div className="fld"><label>Property Notes / Description</label><textarea value={p.desc||""} onChange={e=>setP({...p,desc:e.target.value})} placeholder="Internal notes or public description..." rows={2}/></div>
-
-    {/* Room editor — byRoom only */}
-    {mode==="byRoom"&&<div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:12,marginTop:4}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <h3 style={{fontSize:13,fontWeight:800}}>Rooms ({p.rooms.length})</h3>
-        <button className="btn btn-out btn-sm" onClick={addRoom}>+ Add Room</button>
-      </div>
-      {p.rooms.map((r,i)=>{const locked=isOcc(r);return(
-        <div key={r.id} style={{padding:12,border:`1px solid ${locked?"rgba(0,0,0,.06)":"rgba(0,0,0,.05)"}`,borderRadius:8,marginBottom:8,background:locked?"#f0efec":"#faf9f7",opacity:locked?0.7:1,position:"relative"}}>
-          {locked&&<div style={{position:"absolute",top:6,right:8}}><span className="badge b-green" style={{fontSize:8}}>{"🔗"} {r.tenant.name}</span></div>}
-          <div className="fr3">
-            <div className="fld"><label>Name</label><input value={r.name} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"name",e.target.value)} onClick={()=>{if(locked)setWarning(r.tenant.name);}}/></div>
-            <div className="fld"><label>Rent $/mo</label><input type="number" value={r.rent} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"rent",e.target.value)} onClick={()=>{if(locked)setWarning(r.tenant.name);}}/></div>
-            <div className="fld"><label>Bath</label><select value={String(r.pb)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"pb",e.target.value)} onClick={()=>{if(locked)setWarning(r.tenant.name);}}><option value="true">Private</option><option value="false">Shared</option></select></div>
-          </div>
-          <div className="fr3">
-            <div className="fld"><label>Sq Ft</label><input type="number" value={r.sqft||""} placeholder="150" disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"sqft",e.target.value)}/></div>
-            <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{locked?`Occupied — ${r.tenant.name}`:"Vacant"}</div></div>
-            <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
-          </div>
-          {!locked&&<div className="fld"><label>Room Description</label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Features, view, notes..."/></div>}
-          {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
-          {!locked&&<button className="btn btn-red btn-sm" style={{marginTop:4}} onClick={()=>setP({...p,rooms:p.rooms.filter((_,j)=>j!==i)})}>Remove Room</button>}
-          {locked&&<div style={{display:"flex",gap:6,alignItems:"center",marginTop:6}}>
-            <button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease & Tenant →</button>
-            <span style={{fontSize:10,color:"#999"}}>To edit room, manage the lease first</span>
-          </div>}
-        </div>);})}
-    </div>}
-
-    {/* Whole house — show room count summary for occupancy tracking */}
-    {mode==="wholeHouse"&&p.rooms.length>0&&<div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:12,marginTop:4}}>
-      <div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:6}}>Room Breakdown (occupancy tracking)</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-        {p.rooms.map((r,i)=><div key={r.id} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:10,background:"#faf9f7",color:r.st==="occupied"?"#4a7c59":"#999"}}>
-          {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
-        </div>)}
-      </div>
-    </div>}
+      </div>}
+    </div>{/* end unit tabs */}
 
     {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
     {unsaved&&!justSaved&&<div key={saveShake} style={{
@@ -802,8 +892,8 @@ export default function Page(){
 
   useEffect(()=>{(async()=>{
     const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
-    // Photos are now Supabase Storage URLs stored directly in hq-props — no separate load needed
-    setProps(p);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
+    // Migrate old props format (rooms[]) to new (units[]) if needed
+    setProps(migrateProps(p));setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,loaded]);
@@ -811,7 +901,7 @@ export default function Page(){
   // ─── Metrics ──────────────────────────────────────────────────
   const m=useMemo(()=>{
     let total=0,occ=0,full=0,proj=0,coll=0,due=0;const vacs=[];const expiring=[];const unpaid=[];const paid=[];
-    props.forEach(pr=>pr.rooms.forEach(r=>{
+    props.forEach(pr=>allRooms(pr).forEach(r=>{
       total++;full+=r.rent;
       if(r.st==="occupied"){occ++;proj+=r.rent;due+=r.rent;
         const pd=(payments[r.id]&&payments[r.id][MO])||0;coll+=pd;
@@ -822,7 +912,7 @@ export default function Page(){
     const openMaint=maint.filter(x=>x.status!=="resolved").length;
     const activeApps=apps.length;
     const unreadNotifs=notifs.filter(x=>!x.read).length;
-    const propBreakdown=props.map(pr=>{const rooms=pr.rooms;const occR=rooms.filter(r=>r.st==="occupied");const vacR=rooms.filter(r=>r.st!=="occupied");
+    const propBreakdown=props.map(pr=>{const rooms=allRooms(pr);const occR=rooms.filter(r=>r.st==="occupied");const vacR=rooms.filter(r=>r.st!=="occupied");
       const prjR=occR.reduce((s,r)=>s+r.rent,0);const fullR=rooms.reduce((s,r)=>s+r.rent,0);
       const collR=occR.reduce((s,r)=>s+((payments[r.id]&&payments[r.id][MO])||0),0);
       return{...pr,occCount:occR.length,vacCount:vacR.length,projected:prjR,fullOcc:fullR,collected:collR,occRooms:occR,vacRooms:vacR};
@@ -891,7 +981,7 @@ export default function Page(){
     setCharges(p=>p.map(c=>{if(c.id!==chargeId)return c;const newPaid=c.amountPaid+payData.amount;return{...c,amountPaid:Math.min(newPaid,c.amount),payments:[...c.payments,{id:uid(),...payData}]};}));
     // Update quick-lookup for backwards compat
     const ch=charges.find(c=>c.id===chargeId);if(ch){setPayments(p=>({...p,[ch.roomId]:{...p[ch.roomId],[MO]:((p[ch.roomId]&&p[ch.roomId][MO])||0)+payData.amount}}));}
-    setTxns(p=>[{id:uid(),date:payData.date,type:"income",desc:`${(ch&&ch.tenantName)||""} - ${(ch&&ch.category)} (${payData.method})`,amount:payData.amount,propId:(props.find(pr=>pr.rooms.some(r=>r.id===(ch&&ch.roomId)))||{}).id,cat:(ch&&ch.category)||"Rent"},...p]);
+    setTxns(p=>[{id:uid(),date:payData.date,type:"income",desc:`${(ch&&ch.tenantName)||""} - ${(ch&&ch.category)} (${payData.method})`,amount:payData.amount,propId:(props.find(pr=>allRooms(pr).some(r=>r.id===(ch&&ch.roomId)))||{}).id,cat:(ch&&ch.category)||"Rent"},...p]);
   };
   const waiveCharge=(chargeId,reason)=>setCharges(p=>p.map(c=>c.id===chargeId?{...c,waived:true,waivedReason:reason}:c));
   // Auto-generate rent charges:
@@ -904,7 +994,7 @@ export default function Page(){
       const mk=`${targetDate.getFullYear()}-${(targetDate.getMonth()+1).toString().padStart(2,"0")}`;
       const moLabel=targetDate.toLocaleString("default",{month:"long",year:"numeric"});
       const existing=new Set(charges.filter(c=>c.category==="Rent"&&c.dueDate&&c.dueDate.startsWith(mk)).map(c=>c.roomId));
-      props.forEach(pr=>pr.rooms.forEach(r=>{
+      props.forEach(pr=>allRooms(pr).forEach(r=>{
         if(r.st==="occupied"&&r.tenant&&!existing.has(r.id)){
           const moveIn=r.tenant.moveIn?new Date(r.tenant.moveIn+"T00:00:00"):null;
           if(!moveIn||moveIn<=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0)){
@@ -978,7 +1068,7 @@ export default function Page(){
   // Backwards compat: openPayForm still works from existing buttons
   const openPayForm=(rid)=>{const unpaidCh=charges.filter(c=>c.roomId===rid&&chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
     if(unpaidCh.length)setModal({type:"recordPay",step:2,selRoom:rid,selCharge:unpaidCh[0].id,payAmount:unpaidCh[0].amount-unpaidCh[0].amountPaid,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});
-    else{const r=props.flatMap(p=>p.rooms).find(x=>x.id===rid);setModal({type:"createCharge",roomId:rid,category:"Rent",desc:`${MO} Rent`,amount:(r&&r.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:"No existing charge — creating new"});}};
+    else{const r=props.flatMap(p=>allRooms(p)).find(x=>x.id===rid);setModal({type:"createCharge",roomId:rid,category:"Rent",desc:`${MO} Rent`,amount:(r&&r.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:"No existing charge — creating new"});}};
 
   const cycleRock=id=>setRocks(p=>p.map(r=>{if(r.id!==id)return r;const o=["on-track","off-track","not-started","done"];return{...r,status:o[(o.indexOf(r.status)+1)%o.length]};}));
   const saveProp=p=>{
@@ -1017,7 +1107,7 @@ export default function Page(){
   if(!loaded)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"inherit"}}>Loading...</div>);
 
   // All tenants flat list
-  const allTenants=props.flatMap(p=>p.rooms.filter(r=>r.tenant).map(r=>({...r,propName:p.name,propId:p.id,propUtils:p.utils,propClean:p.clean})));
+  const allTenants=props.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).filter(r=>r.tenant).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean}))));
 
   return(<><style>{S}</style><div className="app">
     {/* Mobile header */}
@@ -1125,7 +1215,7 @@ export default function Page(){
       {/* ═══ TENANT PORTAL (Admin Preview) ═══ */}
       {tab==="portal"&&(()=>{
         const tRoom=portalTenant||(allTenants[0]||null);
-        const tProp=tRoom?props.find(p=>p.rooms.some(r=>r.id===tRoom.id)):null;
+        const tProp=tRoom?props.find(p=>allRooms(p).some(r=>r.id===tRoom.id)):null;
         const tCharges=tRoom?charges.filter(c=>c.roomId===tRoom.id):[];
         const tMaint=tRoom?maint.filter(m=>m.roomId===tRoom.id):[];
         const submitMaint=()=>{
@@ -1493,7 +1583,7 @@ export default function Page(){
           {/* Quick property breakdown */}
           {m.propBreakdown.map(pr=>{const prCh=pCharges.filter(c=>c.propName===pr.name);const prPaid=prCh.reduce((s,c)=>s+c.amountPaid,0);const prDue=prCh.reduce((s,c)=>s+c.amount,0);return(
             <div key={pr.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,property:pr.name});}}>
-              <div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{pr.rooms.length} rooms · {pr.occCount} occupied</div></div>
+              <div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{allRooms(pr).length} rooms · {pr.occCount} occupied</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:800}}>{fmtS(prPaid)}<small style={{color:"#999"}}> / {fmtS(prDue)}</small></div>
                 <div style={{fontSize:9,color:prPaid>=prDue?"#4a7c59":"#c45c4a",fontWeight:600}}>{prDue?Math.round(prPaid/prDue*100):0}%</div></div>
             </div>
@@ -1639,7 +1729,7 @@ export default function Page(){
           const totalDeposited=filtered.reduce((s,p)=>s+p.amount,0);
 
           // SD section
-          const sdTenants=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
+          const sdTenants=props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
           const totalSD=sdTenants.reduce((s,r)=>{const sd=sdLedger.find(x=>x.roomId===r.id);return s+((sd&&sd.amountHeld)||r.rent);},0);
 
           return(<>
@@ -1758,7 +1848,7 @@ export default function Page(){
           // References
           if(a.refs==="verified"){s+=10;breakdown.push("+10 refs verified");}
           // Rent negotiated higher than list price
-          if(a.negotiatedRent&&a.room){const room=props.flatMap(p=>p.rooms).find(r=>r.name===a.room);if(room&&a.negotiatedRent>room.rent){s+=10;breakdown.push("+10 above-ask rent");}}
+          if(a.negotiatedRent&&a.room){const room=props.flatMap(p=>allRooms(p)).find(r=>r.name===a.room);if(room&&a.negotiatedRent>room.rent){s+=10;breakdown.push("+10 above-ask rent");}}
           // Source quality
           if(a.source==="NASA Intern Program"||a.source==="Military / Contractor Network"){s+=5;breakdown.push("+5 vetted source");}
           // Eviction / felony in application data
@@ -1805,7 +1895,7 @@ export default function Page(){
         });
         const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in","onboarding","lease-sent"].includes(a.status));
         // Duplicate / returning detection
-        const allTenantsList=props.flatMap(p=>p.rooms.filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
+        const allTenantsList=props.flatMap(p=>allRooms(p).filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
         const archiveList=archive.map(a=>({name:a.name||"",email:a.email||"",phone:a.phone||"",propName:a.propName,roomName:a.roomName,reason:a.reason,type:"past"}));
         const getFlags=(a)=>{
           const flags=[];
@@ -2102,7 +2192,7 @@ export default function Page(){
         </div>
 
         {/* ── Waitlist ── */}
-        {(()=>{const totalVacant=props.reduce((s,p)=>s+p.rooms.filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status));
+        {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status));
           if(totalVacant===0&&waitlistApps.length>0)return(
             <div style={{marginTop:8,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:14,background:"rgba(212,168,83,.03)"}}>
               <div style={{fontSize:13,fontWeight:700,color:"#9a7422",marginBottom:8}}>📋 Waitlist — No Vacant Rooms</div>
@@ -2125,7 +2215,7 @@ export default function Page(){
         </div>
 
         {/* ── Waitlist ── */}
-        {(()=>{const totalVacant=props.reduce((s,p)=>s+p.rooms.filter(r=>r.st==="vacant").length,0);
+        {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);
           if(totalVacant>0)return null;
           const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status)).sort((a,b)=>getScore(b)-getScore(a));
           return waitlistApps.length>0?<div style={{marginTop:16,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:16,background:"rgba(212,168,83,.03)"}}>
@@ -2496,7 +2586,7 @@ export default function Page(){
         const openCreateLease=(app)=>{
           // Auto-fill from application if provided
           const prop=app?props.find(p=>p.name===app.property):null;
-          const room=prop?prop.rooms.find(r=>r.name===app.room):null;
+          const room=prop?proallRooms(p).find(r=>r.name===app.room):null;
           const rent=room?room.rent:0;
           const mi=app?.termMoveIn||app?.moveIn||"";
           const miD=mi?new Date(mi+"T00:00:00"):null;
@@ -2964,7 +3054,7 @@ export default function Page(){
 
         {/* ── Tenant Ledgers ── */}
         {(()=>{
-          const tenantRooms=props.flatMap(p=>p.rooms.filter(r=>r.tenant).map(r=>({...r,propName:p.name,propUtils:p.utils})));
+          const tenantRooms=props.flatMap(p=>allRooms(p).filter(r=>r.tenant).map(r=>({...r,propName:p.name,propUtils:p.utils})));
           const selRoom=ledgerTenant!=="all"?tenantRooms.find(r=>r.id===ledgerTenant):null;
 
           // Build ledger entries from charges: each charge = debit, each payment = credit
@@ -3065,7 +3155,7 @@ export default function Page(){
               <td style={{textAlign:"right",fontWeight:800,color:t.type==="income"?"#4a7c59":"#c45c4a"}}>{t.type==="income"?"+":"-"}{fmtS(t.amount)}</td></tr>);})}
         </tbody></table></div></div>
         {props.map(p=>{const inc=txns.filter(t=>t.propId===p.id&&t.type==="income").reduce((s,t)=>s+t.amount,0);const exp=txns.filter(t=>t.propId===p.id&&t.type==="expense").reduce((s,t)=>s+t.amount,0);return(
-          <div key={p.id} className="row"><div className="row-i"><div className="row-t">{p.name}</div><div className="row-s">{p.type} · {p.rooms.length} rooms</div></div>
+          <div key={p.id} className="row"><div className="row-i"><div className="row-t">{p.name}</div><div className="row-s">{p.type} · {allRooms(p).length} rooms</div></div>
             <div style={{display:"flex",gap:16,alignItems:"center"}}><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Income</div><div style={{fontWeight:800,color:"#4a7c59",fontSize:13}}>{fmtS(inc)}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Expense</div><div style={{fontWeight:800,color:"#c45c4a",fontSize:13}}>{fmtS(exp)}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Net</div><div style={{fontWeight:800,color:inc-exp>=0?"#4a7c59":"#c45c4a",fontSize:13}}>{fmtS(inc-exp)}</div></div></div>
           </div>);})}
       </>}
@@ -3096,17 +3186,17 @@ export default function Page(){
         {drill==="sc-occ"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Occupancy: {m.occ}/{m.total}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
           {m.propBreakdown.map(pr=>{const pct=pr.occCount/(pr.occCount+pr.vacCount)*100;return(<div key={pr.id} style={{marginBottom:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><div style={{fontWeight:700,fontSize:13}}>{pr.name} <span style={{fontSize:11,color:"#999"}}>{pr.type}</span></div><span className={`badge ${pr.vacCount?"b-red":"b-green"}`}>{pr.occCount}/{pr.rooms.length} · {Math.round(pct)}%</span></div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><div style={{fontWeight:700,fontSize:13}}>{pr.name} <span style={{fontSize:11,color:"#999"}}>{pr.type}</span></div><span className={`badge ${pr.vacCount?"b-red":"b-green"}`}>{pr.occCount}/{allRooms(pr).length} · {Math.round(pct)}%</span></div>
             <div style={{height:5,borderRadius:3,background:"#e5e3df",marginBottom:6}}><div style={{height:"100%",borderRadius:3,background:pct>=100?"#4a7c59":pct>=75?"#d4a853":"#c45c4a",width:`${pct}%`}}/></div>
-            {pr.rooms.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:r.tenant?"pointer":"default"}} onClick={()=>{if(r.tenant)setModal({type:"tenant",data:{...r,propName:pr.name,propUtils:pr.utils,propClean:pr.clean}});}}><div className="row-dot" style={{background:r.st==="vacant"?"#c45c4a":"#4a7c59"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:r.tenant?"#999":"#c45c4a"}}>{(r.tenant&&r.tenant.name)||"Vacant"}{r.tenant&&<span style={{color:"#c4a882",marginLeft:4}}>→ view</span>}</div></div><div style={{fontSize:12,fontWeight:700}}>{fmtS(r.rent)}</div></div>)}
+            {allRooms(pr).map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:r.tenant?"pointer":"default"}} onClick={()=>{if(r.tenant)setModal({type:"tenant",data:{...r,propName:pr.name,propUtils:pr.utils,propClean:pr.clean}});}}><div className="row-dot" style={{background:r.st==="vacant"?"#c45c4a":"#4a7c59"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:r.tenant?"#999":"#c45c4a"}}>{(r.tenant&&r.tenant.name)||"Vacant"}{r.tenant&&<span style={{color:"#c4a882",marginLeft:4}}>→ view</span>}</div></div><div style={{fontSize:12,fontWeight:700}}>{fmtS(r.rent)}</div></div>)}
           </div>);})}
         </div></div>}
 
         {/* Drill: Collection */}
         {drill==="sc-coll"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Collection: {fmtS(m.coll)} / {fmtS(m.due)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
-          {m.unpaid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#c45c4a",marginBottom:6}}>UNPAID ({m.unpaid.length})</div>{m.unpaid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();openPayForm(r.id);}}>Pay</button></div>)}</>}
-          {m.paid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#4a7c59",margin:"10px 0 6px"}}>PAID ({m.paid.length})</div>{m.paid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
+          {m.unpaid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#c45c4a",marginBottom:6}}>UNPAID ({m.unpaid.length})</div>{m.unpaid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();openPayForm(r.id);}}>Pay</button></div>)}</>}
+          {m.paid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#4a7c59",margin:"10px 0 6px"}}>PAID ({m.paid.length})</div>{m.paid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
           <div style={{marginTop:12,padding:14,background:"rgba(0,0,0,.02)",borderRadius:10}}>
             <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}><span>Total Due</span><strong>{fmtS(m.due)}</strong></div>
             <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}><span>Collected</span><strong style={{color:"#4a7c59"}}>{fmtS(m.coll)}</strong></div>
@@ -3238,7 +3328,7 @@ export default function Page(){
 
           {scDrill==="coll"&&<div>
             <p style={{fontSize:12,color:"#5c4a3a",marginBottom:10}}>Collection = rent collected / rent due. Goal: 100%. Currently <strong>{m.collRate}%</strong>.</p>
-            {m.unpaid.length>0?<>{m.unpaid.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div style={{fontSize:9,color:"#c45c4a"}}>{r.propName} · {r.name} · {fmtS(r.rent)} unpaid</div></div></div>)}
+            {m.unpaid.length>0?<>{m.unpaid.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div style={{fontSize:9,color:"#c45c4a"}}>{r.propName} · {r.name} · {fmtS(r.rent)} unpaid</div></div></div>)}
               <div style={{fontSize:12,color:"#c45c4a",fontWeight:600,marginTop:8}}>Outstanding: {fmtS(m.due-m.coll)} from {m.unpaid.length} tenant{m.unpaid.length>1?"s":""}</div></>
             :<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>✓ All rent collected for {MO}!</div>}
           </div>}
@@ -3257,7 +3347,7 @@ export default function Page(){
           </div>}
         </div></div>}
         {m.expiring.length>0&&<><div className="sec-hd" style={{marginTop:16}}><div><h2>⚠️ Leases Expiring</h2></div></div>
-          {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean}});}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · {r.daysLeft} days</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}</>}
+          {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}});}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · {r.daysLeft} days</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}</>}
       </>}
 
       {/* ═══ ROCKS ═══ */}
@@ -3294,8 +3384,8 @@ export default function Page(){
       {tab==="properties"&&<>
         <div className="sec-hd"><div><h2>Manage Properties</h2><p>Click any property for details, or edit to manage rooms</p></div>
           <button className="btn btn-gold" onClick={()=>{setIsNewProp(true);setEditProp({});}}>+ Add Property</button></div>
-        {props.map(p=>{const pr=p.rooms.map(r=>r.rent);const vac=p.rooms.filter(r=>r.st==="vacant").length;const occRooms=p.rooms.filter(r=>r.st==="occupied");const isExp=expanded["prop-"+p.id];
-          const totalRent=p.rooms.reduce((s,r)=>s+r.rent,0);const projRent=occRooms.reduce((s,r)=>s+r.rent,0);
+        {props.map(p=>{const pr=allRooms(p).map(r=>r.rent);const vac=allRooms(p).filter(r=>r.st==="vacant").length;const occRooms=allRooms(p).filter(r=>r.st==="occupied");const isExp=expanded["prop-"+p.id];
+          const totalRent=allRooms(p).reduce((s,r)=>s+r.rent,0);const projRent=occRooms.reduce((s,r)=>s+r.rent,0);
           const unpaidRooms=occRooms.filter(r=>!(payments[r.id]&&payments[r.id][MO]));
           const expiringRooms=occRooms.filter(r=>{if(!r.le)return false;const d=Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24));return d<=90;});
           return(
@@ -3303,7 +3393,7 @@ export default function Page(){
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
                 <h3>{isExp?"▾":"▸"} {p.name}</h3>
-                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {p.beds||p.rooms.length}bd / {p.baths}ba · {p.utils==="allIncluded"?"All Utils":"Tenant Pays"} · {p.clean} · <span style={{color:"#d4a853",fontWeight:600}}>{(p.rentalMode||"byRoom")==="byRoom"?"By Bedroom":(p.rentalMode)==="wholeHouse"?"Whole House":"Flexible (Both)"}</span></div>
+                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {p.beds||allRooms(p).length}bd / {p.baths}ba · {p.utils==="allIncluded"?"All Utils":"Tenant Pays"} · {p.clean} · <span style={{color:"#d4a853",fontWeight:600}}>{(p.rentalMode||"byRoom")==="byRoom"?"By Bedroom":(p.rentalMode)==="wholeHouse"?"Whole House":"Flexible (Both)"}</span></div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
                 {(p.rentalMode==="wholeHouse"||p.rentalMode==="both")&&p.wholeHouseRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(p.wholeHouseRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole house</span></span>}
@@ -3319,14 +3409,14 @@ export default function Page(){
             {isExp&&<div className="card-bd" style={{animation:"fadeIn .15s"}}>
               {/* Property summary */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
-                <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Rooms</div><div style={{fontSize:18,fontWeight:800}}>{p.rooms.length}</div></div>
+                <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Rooms</div><div style={{fontSize:18,fontWeight:800}}>{allRooms(p).length}</div></div>
                 <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Occupied</div><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{occRooms.length}</div></div>
                 <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Projected</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(projRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
                 <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>At Full</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(totalRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
               </div>
               {/* Room list */}
               <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Rooms</div>
-              {p.rooms.map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+              {allRooms(p).map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
                 const tenantData={...r,propName:p.name,propUtils:p.utils,propClean:p.clean};
                 return(<div key={r.id} className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default",background:occ&&dl&&dl<=30?"rgba(196,92,74,.02)":occ&&dl&&dl<=90?"rgba(212,168,83,.02)":"#fff"}}>
                   <div className="row-dot" style={{background:occ?"#4a7c59":"#c45c4a",flexShrink:0}}/>
@@ -3683,7 +3773,7 @@ export default function Page(){
 
   {/* ═══ MODALS ═══ */}
   {modal&&modal.type==="tenant"&&(()=>{const r=modal.data;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;const months=dl?Math.max(0,Math.ceil(dl/30)):null;
-    const prop=props.find(p=>p.rooms.some(x=>x.id===r.id));
+    const prop=props.find(p=>allRooms(p).some(x=>x.id===r.id));
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:580}} ref={el=>{if(el&&modal.startSection==="lease"){setTimeout(()=>{const t=el.querySelector("#lease-actions-section");if(t)t.scrollIntoView({behavior:"smooth",block:"start"});},150);}}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -3939,7 +4029,7 @@ export default function Page(){
       {/* Lease Actions */}
       <div className="tp-card" id="lease-actions-section"><h3>⚡ Lease Actions</h3>
         <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10}}>Lease renewals happen when the tenant signs a new lease. Use the actions below to manage room assignments or end the lease.</div>
-        {(()=>{const allVacant=props.flatMap(pr=>pr.rooms.filter(x=>x.st==="vacant").map(x=>({...x,propName:pr.name,propId:pr.id,propUtils:pr.utils})));return allVacant.length>0?(
+        {(()=>{const allVacant=props.flatMap(pr=>(pr.units||[]).flatMap(u=>(u.rooms||[]).filter(x=>x.st==="vacant").map(x=>({...x,propName:pr.name,propId:pr.id,unitId:u.id,propUtils:u.utils||pr.utils}))));return allVacant.length>0?(
           <div style={{marginBottom:10}}>
             <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:6}}>MOVE TO DIFFERENT ROOM (ADDENDUM)</div>
             <button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,moveStep:1,moveTarget:null,moveDate:"immediately",moveCustomDate:TODAY.toISOString().split("T")[0],moveNewRent:null,moveNotes:"",moveAllVacant:allVacant}))}>Begin Room Move Process →</button>
@@ -4006,11 +4096,11 @@ export default function Page(){
       {modal.moveStep===3&&(()=>{const target=(modal.moveAllVacant||[]).find(x=>x.id===modal.moveTarget);if(!target)return null;const newRent=modal.moveNewRent||target.rent;const sdDiff=newRent-r.rent;
         const effDate=modal.moveDate==="immediately"?TODAY.toISOString().split("T")[0]:modal.moveDate==="endOfMonth"?`${TODAY.getFullYear()}-${(TODAY.getMonth()+1).toString().padStart(2,"0")}-${new Date(TODAY.getFullYear(),TODAY.getMonth()+1,0).getDate()}`:modal.moveCustomDate;
         const executeMove=()=>{
-          setProps(p=>p.map(pr=>({...pr,rooms:pr.rooms.map(rm=>{
+          setProps(p=>p.map(pr=>({...pr,units:(pr.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>{
             if(rm.id===r.id)return{...rm,st:"vacant",le:null,tenant:null};
             if(rm.id===target.id)return{...rm,st:"occupied",le:r.le,tenant:r.tenant,rent:newRent};
             return rm;
-          })})));
+          })}))})));
           // Generate SD adjustment invoice if upgrade
           if(sdDiff>0){createCharge({roomId:target.id,tenantName:r.tenant.name,propName:target.propName,roomName:target.name,category:"Security Deposit",desc:`SD Adjustment — Upgrade from ${r.name} to ${target.name}`,amount:sdDiff,dueDate:effDate});}
           // Generate next month's rent invoice at new rate
@@ -4128,7 +4218,7 @@ export default function Page(){
             if((modal.termConfirm||"").trim()!==r.tenant.name)e.confirm=`Must match exactly: "${r.tenant.name}"`;
             if(Object.keys(e).length){setModal(prev=>({...prev,termErrs:e}));shakeModal();return;}
             setArchive(prev=>[{id:uid(),name:r.tenant.name,email:r.tenant.email,phone:r.tenant.phone,roomName:r.name,propName:r.propName,rent:r.rent,moveIn:r.tenant.moveIn,leaseEnd:r.le,terminatedDate:modal.termDate,reason:modal.termNotes,sdStatus:modal.termSdStatus,sdNote:modal.termSdNote||"",payments:payments[r.id]||{},archivedOn:TODAY.toISOString().split("T")[0]},...prev]);
-            setProps(p=>p.map(pr=>({...pr,rooms:pr.rooms.map(rm=>rm.id===r.id?{...rm,st:"vacant",le:null,tenant:null}:rm)})));
+            setProps(p=>updateRoomInProps(p,r.id,rm=>({...rm,st:"vacant",le:null,tenant:null})));
             setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease terminated: ${r.tenant.name} — ${r.name} at ${r.propName}. SD: ${modal.termSdStatus}. Reason: ${modal.termNotes}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
             setModal(null);
           }}>Confirm Termination</button>
@@ -4165,7 +4255,7 @@ export default function Page(){
   {/* Waive Charge Modal */}
   {modal&&modal.type==="sendReminder"&&(()=>{
     const c=modal.charge;
-    const tenantRoom=props.flatMap(p=>p.rooms).find(r=>r.id===c.roomId);
+    const tenantRoom=props.flatMap(p=>allRooms(p)).find(r=>r.id===c.roomId);
     const tenant=tenantRoom&&tenantRoom.tenant;
     const phone=tenant&&tenant.phone;
     const email=tenant&&tenant.email;
@@ -4347,7 +4437,7 @@ export default function Page(){
   })()}
 
   {modal&&modal.type==="recordPay"&&(()=>{
-    const occRooms=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
+    const occRooms=props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
     const selRoom=occRooms.find(r=>r.id===modal.selRoom);
     const roomCharges=charges.filter(c=>c.roomId===modal.selRoom&&chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
     const selCh=charges.find(c=>c.id===modal.selCharge);
@@ -4447,7 +4537,7 @@ export default function Page(){
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
-    const occRooms=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
+    const occRooms=props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
     const selRoom=occRooms.find(r=>r.id===modal.roomId);
     const errs=modal.chErrs||{};
     const submit=()=>{
@@ -4491,7 +4581,7 @@ export default function Page(){
 
   {/* Add Credit */}
   {modal&&modal.type==="addCredit"&&(()=>{
-    const occRooms=props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
+    const occRooms=props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
       <h2>Add Credit</h2>
@@ -4505,7 +4595,7 @@ export default function Page(){
 
   {/* Return SD */}
   {modal&&modal.type==="returnSD"&&(()=>{
-    const tenantList=[...archive.map(a=>({id:a.id,name:a.name,roomName:a.roomName,propName:a.propName,rent:a.rent,type:"past"})),...props.flatMap(pr=>pr.rooms.filter(r=>r.st==="occupied"&&r.tenant).map(r=>({id:r.id,name:r.tenant.name,roomName:r.name,propName:pr.name,rent:r.rent,type:"current"})))];
+    const tenantList=[...archive.map(a=>({id:a.id,name:a.name,roomName:a.roomName,propName:a.propName,rent:a.rent,type:"past"})),...props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({id:r.id,name:r.tenant.name,roomName:r.name,propName:pr.name,rent:r.rent,type:"current"})))];
     const sel=tenantList.find(t=>t.id===modal.roomId);
     const sdHeld=(sel&&sel.rent)||0;
     const deductions=modal.deductions||[];
@@ -4854,7 +4944,7 @@ export default function Page(){
     const roomMode=modal.roomMode||"locked";
     const selPropId=modal.selPropId||(()=>{const mp=props.find(p=>p.name===a.property);return mp?mp.id:"";})();
     const selProp=props.find(p=>p.id===selPropId);
-    const availRooms=selProp?selProp.rooms.filter(r=>r.st==="vacant"):[];
+    const availRooms=selProp?selProallRooms(p).filter(r=>r.st==="vacant"):[];
     const selRoomId=modal.selRoomId||"";const selRoom=availRooms.find(r=>r.id===selRoomId);
     const doShake=shakeModal;
     return(
@@ -4905,7 +4995,7 @@ export default function Page(){
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
                 <div>
                   <div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Bedrooms</div>
-                  <div style={{fontSize:13,fontWeight:700}}>{selProp.beds||selProp.rooms?.length||"—"}</div>
+                  <div style={{fontSize:13,fontWeight:700}}>{selProp.beds||allRooms(selProp).length||"—"}</div>
                 </div>
                 <div>
                   <div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Bathrooms</div>
@@ -5019,7 +5109,7 @@ export default function Page(){
 
     // Resolve property/room
     const targetProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
-    const targetRoom=a.termRoomId?(targetProp?targetProp.rooms.find(r=>r.id===a.termRoomId):null):(targetProp?targetProp.rooms.find(r=>r.name===a.room):null);
+    const targetRoom=a.termRoomId?(targetProp?targetProallRooms(p).find(r=>r.id===a.termRoomId):null):(targetProp?targetProallRooms(p).find(r=>r.name===a.room):null);
     const rent=a.termRent!==undefined?a.termRent:(targetRoom?targetRoom.rent:0);
     const defaultSD=a.termSD!==undefined?a.termSD:rent;
     const termMoveIn=a.termMoveIn||a.moveIn||TODAY.toISOString().split("T")[0];
@@ -5539,7 +5629,7 @@ export default function Page(){
           <button className="btn btn-green" onClick={async()=>{
             if(!modal.pmSig){setModal(p=>({...p,pmSigErr:true,pmSigShakeKey:(p.pmSigShakeKey||0)+1}));return;}
             // Resolve room — fall back to any prop room match by name if termRoomId isn't set
-            const resolvedRoom=targetRoom||(a.room?props.flatMap(p=>p.rooms).find(r=>r.name===a.room):null);
+            const resolvedRoom=targetRoom||(a.room?props.flatMap(p=>allRooms(p)).find(r=>r.name===a.room):null);
             if(!resolvedRoom){setModal(p=>({...p,pmSigErr:false}));alert("No room assigned — go back and assign a room in the Room Assignment section.");return;}
             const now=TODAY.toISOString().split("T")[0];
             try{
@@ -5883,9 +5973,9 @@ export default function Page(){
     const ds2=(d)=>{if(!d)return 0;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
     const saveApp=(id,key,val)=>{setApps(p=>p.map(x=>x.id===id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
     const days=ds2(a.lastContact||a.submitted);
-    const allVacant=props.flatMap(p=>p.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
+    const allVacant=props.flatMap(p=>allRooms(p).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
     const targetProp=props.find(p=>p.name===a.property);
-    const targetRoom=targetProp?targetProp.rooms.find(r=>r.name===a.room&&r.st==="vacant"):null;
+    const targetRoom=targetProp?targetProallRooms(p).find(r=>r.name===a.room&&r.st==="vacant"):null;
     const mf=[];var nm3=(a.name||"").toLowerCase();
     archive.forEach(t=>{
       if(((t.name||"").toLowerCase()===nm3)||((t.email||"").toLowerCase()===(a.email||"").toLowerCase())){
@@ -5911,7 +6001,7 @@ export default function Page(){
         source:"application",
         label:doc.label||doc.name,
       }));
-      setProps(p=>p.map(pr=>pr.id===propId?{...pr,rooms:pr.rooms.map(rm=>rm.id===roomId?{...rm,
+      setProps(p=>p.map(pr=>pr.id!==propId?pr:updateRoomInProp(pr,roomId,rm=>({...rm,
         st:"occupied",
         le:le.toISOString().split("T")[0],
         tenant:{
@@ -5920,7 +6010,7 @@ export default function Page(){
           applicationData:a.applicationData||null,
           docsFlag:a.docsFlag||null,
         }
-      }:rm)}:pr));
+      }))));
       // Write application docs into hq-docs so tenant portal can see them
       if(appDocs.length>0){
         setDocs(prev=>{const updated=[...appDocs,...prev];save("hq-docs",updated);return updated;});
@@ -5993,9 +6083,9 @@ export default function Page(){
 
       {/* ── Room Assignment (all stages) ── */}
       {(()=>{
-        const allVacantRooms=props.flatMap(p=>p.rooms.filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
+        const allVacantRooms=props.flatMap(p=>allRooms(p).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
         const termProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
-        const termRoom=a.termRoomId?(termProp?termProp.rooms.find(r=>r.id===a.termRoomId):null):(termProp?termProp.rooms.find(r=>r.name===a.room):null);
+        const termRoom=a.termRoomId?(termProp?termProallRooms(p).find(r=>r.id===a.termRoomId):null):(termProp?termProallRooms(p).find(r=>r.name===a.room):null);
         const termRent=a.termRent!==undefined?a.termRent:(termRoom?termRoom.rent:0);
         const saveTerm=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
         return(
@@ -6052,7 +6142,7 @@ export default function Page(){
       </div>}
       {/* Roommate Compatibility */}
       {a.property&&<div className="tp-card"><h3>🏠 Housemates at {a.property}</h3>
-        {(function(){var pr=props.find(function(p){return p.name===a.property;});if(!pr)return null;return pr.rooms.map(function(r){return(
+        {(function(){var pr=props.find(function(p){return p.name===a.property;});if(!pr)return null;return allRooms(pr).map(function(r){return(
           <div key={r.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}>
             <div><strong>{r.name}</strong>{" — "}{r.st==="occupied"&&r.tenant?(r.tenant.name||"Occupied"):<span style={{color:"#4a7c59",fontWeight:600}}>Vacant</span>}</div>
             <div style={{color:"#999"}}>{fmtS(r.rent)}/mo</div>
@@ -6224,7 +6314,7 @@ export default function Page(){
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
     </div></div>);})()}
 
-  {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>p.rooms.some(x=>x.id===r.id))||{}).clean||r.clean}});}}/>}
+  {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean||r.clean}});}}/>}
 
   {/* Confetti */}
   {showConfetti&&<div className="confetti-wrap">{Array.from({length:60}).map((_,i)=>{const colors=["#d4a853","#4a7c59","#f5f0e8","#c45c4a","#3b82f6"];return(

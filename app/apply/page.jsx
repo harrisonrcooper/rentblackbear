@@ -8,6 +8,8 @@ const supa=(path,opts={})=>fetch(`${SUPA_URL}/rest/v1/${path}`,{...opts,headers:
 async function loadKey(k,fb){try{const r=await supa(`app_data?key=eq.${k}&select=value`);const d=await r.json();return d?.[0]?.value||fb;}catch{return fb;}}
 async function saveKey(k,v){try{await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:k,value:v})});}catch{}}
 
+// Unit-aware room helper
+const allRooms=(prop)=>(prop?.units||[]).flatMap(u=>u.rooms||[]);
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const YEARS=Array.from({length:50},(_,i)=>2026-i);
 const STATES=["AL","AK","AZ","AR","CA","CO","CT","DC","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY"];
@@ -422,7 +424,7 @@ export default function ApplyPage(){
           </div>
           {d.preferredProperty&&d.preferredProperty!=="No preference"&&(()=>{
             const prop=props_.find(p=>p.name===d.preferredProperty);
-            const vacant=prop?.rooms?.filter(r=>r.st==="vacant")||[];
+            const vacant=allRooms(prop).filter(r=>r.st==="vacant")||[];
             if(!prop)return null;
             if(prop.rentalMode==="wholeHouse")return(
               <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
@@ -662,7 +664,7 @@ export default function ApplyPage(){
       {step==="room"&&<div className="sec">
         <div className="sec-num">Section 6</div>
         <div className="sec-hd"><h2>Choose Your Room</h2><p>Select the room you'd like to apply for.</p></div>
-        {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=><div key={p.id} className="prop-card"><div className="prop-img">🐻</div><div className="prop-info"><div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div><div style={{marginTop:10}}>{p.rooms.filter(r=>r.st==="vacant").map(r=><div key={r.id} className={`room-card ${d.selectedRoom===r.id?"sel":""}`} onClick={()=>upd("selectedRoom",r.id)}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div className="room-name">{r.name}</div><div className="room-meta">{r.bed} · {r.pb?"Private":"Shared"} bath · {r.sqft} sqft</div></div><div className="room-price">${r.rent}<small style={{fontSize:10,color:"#999"}}>/mo</small></div></div></div>)}</div></div></div>);})()}
+        {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=><div key={p.id} className="prop-card"><div className="prop-img">🐻</div><div className="prop-info"><div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div><div style={{marginTop:10}}>{allRooms(p).filter(r=>r.st==="vacant").map(r=><div key={r.id} className={`room-card ${d.selectedRoom===r.id?"sel":""}`} onClick={()=>upd("selectedRoom",r.id)}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div className="room-name">{r.name}</div><div className="room-meta">{r.bed} · {r.pb?"Private":"Shared"} bath · {r.sqft} sqft</div></div><div className="room-price">${r.rent}<small style={{fontSize:10,color:"#999"}}>/mo</small></div></div></div>)}</div></div></div>);})()}
         {errors.selectedRoom&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.selectedRoom}</div>}
 
         <button className="btn-next" onClick={next}>Continue →</button>
@@ -708,9 +710,9 @@ export default function ApplyPage(){
         </div>}
         {/* Lease Terms Preview */}
         {(()=>{
-          const roomName=invite?.inviteRoomName||(d.selectedRoom&&props_.flatMap(p=>p.rooms).find(r=>r.id===d.selectedRoom)?.name)||null;
+          const roomName=invite?.inviteRoomName||(d.selectedRoom&&props_.flatMap(p=>allRooms(p)).find(r=>r.id===d.selectedRoom)?.name)||null;
           const propName=invite?.invitePropName||d.preferredProperty||null;
-          const rent=invite?.inviteRent||(d.selectedRoom&&props_.flatMap(p=>p.rooms).find(r=>r.id===d.selectedRoom)?.rent)||null;
+          const rent=invite?.inviteRent||(d.selectedRoom&&props_.flatMap(p=>allRooms(p)).find(r=>r.id===d.selectedRoom)?.rent)||null;
           const moveIn=d.moveIn;
           if(!rent||!moveIn)return null;
           const moveInD=new Date(moveIn+"T00:00:00");
@@ -777,12 +779,12 @@ export default function ApplyPage(){
             const apps=await loadKey("hq-apps",[]);
             // Resolve room from selectedRoom ID if tenant picked one
             const allProps2=await loadKey("hq-props",[]);
-            const pickedRoom2=d.selectedRoom?allProps2.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.id===d.selectedRoom):null;
+            const pickedRoom2=d.selectedRoom?allProps2.flatMap(p=>allRooms(p).map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.id===d.selectedRoom):null;
             // If tenant had a locked/pre-assigned room, resolve termRoomId from the room name
             const invitedApp=apps.find(a=>a.id===invite.id);
             const roomNameFromInvite=invitedApp?.room||"";
             const lockedRoomObj=!pickedRoom2&&roomNameFromInvite
-              ?allProps2.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.name===roomNameFromInvite)
+              ?allProps2.flatMap(p=>allRooms(p).map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.name===roomNameFromInvite)
               :null;
             const resolvedRoomData=pickedRoom2||lockedRoomObj;
             const updated=apps.map(a=>a.id===invite.id?{...a,
@@ -813,7 +815,7 @@ export default function ApplyPage(){
             const apps=await loadKey("hq-apps",[]);
             // Resolve room name + IDs from selectedRoom (which stores room ID)
             const allProps=await loadKey("hq-props",[]);
-            const pickedRoomObj=d.selectedRoom?allProps.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.id===d.selectedRoom):null;
+            const pickedRoomObj=d.selectedRoom?allProps.flatMap(p=>allRooms(p).map(r=>({...r,propName:p.name,propId:p.id}))).find(r=>r.id===d.selectedRoom):null;
             const roomName=pickedRoomObj?.name||d.selectedRoom||"";
             const roomId=pickedRoomObj?.id||null;
             const propId=pickedRoomObj?.propId||null;

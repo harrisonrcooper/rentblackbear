@@ -38,6 +38,8 @@ const PROPS = [
     ]},
 ];
 
+// Unit-aware room helpers for public page
+const allRoomsP=(prop)=>(prop?.units||[]).flatMap(u=>u.rooms||[]);
 const POIS=[
   {name:"Redstone Arsenal Gate 9",icon:"🪖",cat:"Redstone Arsenal",drive:"12 min",lat:34.6860,lng:-86.5860,desc:"Main contractor & visitor gate",url:"https://www.google.com/maps/place/Redstone+Arsenal+Gate+9"},
   {name:"Redstone Arsenal Gate 1",icon:"🪖",cat:"Redstone Arsenal",drive:"8 min",lat:34.6620,lng:-86.5530,desc:"Martin Rd — closest gate to our properties",url:"https://www.google.com/maps/place/Gate+1+Redstone+Arsenal"},
@@ -510,7 +512,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
 // ─── Components ─────────────────────────────────────────────────────
 function PropertyModal({p,onClose,setLightbox,setLbIdx}){
-  if(!p)return null;const minP=Math.min(...p.rooms.map(r=>r.rent));
+  if(!p)return null;const minP=Math.min(...allRoomsP(p).map(r=>r.rent));
   const goApply=()=>{onClose();setTimeout(()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"}),100);};
   return(<div className="mo" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <button className="mx" onClick={onClose}>✕</button>
@@ -526,7 +528,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
     </div>
     <div className="mbody">
       <div className="mtp"><div><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.type}</span></div><h2 style={{marginTop:8}}>{p.name}</h2><p className="maddr">{p.address}</p></div>
-        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}><div className="mib"><div className="l">Rooms</div><div className="v">{p.rooms.length}</div></div><div className="mib"><div className="l">Baths</div><div className="v">{p.baths}</div></div><div className="mib"><div className="l">From</div><div className="v">${minP}<small>/mo</small></div></div></div></div>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}><div className="mib"><div className="l">Rooms</div><div className="v">{allRoomsP(p).length}</div></div><div className="mib"><div className="l">Baths</div><div className="v">{p.baths}</div></div><div className="mib"><div className="l">From</div><div className="v">${minP}<small>/mo</small></div></div></div></div>
       <p className="mdesc">{p.desc}</p>
       <div className="istrip"><div className="ii">📶 WiFi</div><div className="ii">🛋️ Furnished</div><div className="ii">🅿️ Parking</div><div className="ii">🧹 {p.clean} Cleaning</div>{p.utils==="allIncluded"?<div className="ii">💡 All Utilities</div>:<div className="ii pt">💡 First $100 Utilities · Overage Split</div>}</div>
       <h3 className="rh">Rooms & Pricing</h3>
@@ -561,7 +563,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
         // Property pins (gold, larger) — pulled from PROPS data
         PROPS.filter(p=>p.lat&&p.lng).forEach(p=>{
           const icon=L.divIcon({className:"",html:`<div style="width:32px;height:32px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">🐻</div>`,iconSize:[32,32],iconAnchor:[16,32],popupAnchor:[0,-32]});
-          const vacRooms=p.rooms.filter(r=>r.st==="vacant").length;const minR=Math.min(...p.rooms.map(r=>r.rent));
+          const vacRooms=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=Math.min(...allRoomsP(p).map(r=>r.rent));
           const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;text-align:center;padding:4px"><strong style="font-size:14px">${p.name}</strong><br/><span style="color:#666">${p.address}</span><br/><span style="color:#d4a853;font-weight:700">${vacRooms} room${vacRooms!==1?"s":""} available · From $${minR}/mo</span></div>`);
           markersRef.current.push(m);
         });
@@ -599,7 +601,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     <div className="tabs" style={{marginTop:0,marginBottom:16}}><button className={`tab ${mapCat==="all"?"on":""}`} onClick={()=>setMapCat("all")}>All</button>{mapCats.map(c=><button key={c} className={`tab ${mapCat===c?"on":""}`} onClick={()=>setMapCat(c)}>{c}</button>)}</div>
     {/* Property pins */}
     <div className="poi-g">
-      {PROPS.filter(p=>p.lat&&p.lng).map(p=>{const vac=p.rooms.filter(r=>r.st==="vacant").length;const minR=Math.min(...p.rooms.map(r=>r.rent));return(
+      {PROPS.filter(p=>p.lat&&p.lng).map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=Math.min(...allRoomsP(p).map(r=>r.rent));return(
         <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.04)",cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none"}} onClick={()=>scrollToPin(p)}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>📍</div></div>);})}
       {/* POI list */}
       {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer" style={{cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",background:highlight===p.name?"rgba(255,255,255,.08)":"rgba(255,255,255,.05)"}} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.desc}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}
@@ -715,7 +717,7 @@ function StickyBar({properties}){
   const[vis,setVis]=useState(false);const[dismissed,setDismissed]=useState(false);
   useEffect(()=>{const h=()=>{if(!dismissed)setVis(window.scrollY>500);};window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[dismissed]);
   if(dismissed)return null;
-  const minRent=properties&&properties.length?Math.min(...properties.flatMap(p=>p.rooms.map(r=>r.rent))):600;
+  const minRent=properties&&properties.length?Math.min(...properties.flatMap(p=>allRoomsP(p).map(r=>r.rent))):600;
   return(<div className={`stk ${vis?"vis":""}`}><div className="stk-txt">Rooms from <strong>${minRent}/mo</strong> · Everything included</div><button className="stk-btn" onClick={()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"})}>Apply Now →</button><button className="stk-x" onClick={()=>setDismissed(true)}>✕</button></div>);
 }
 
@@ -749,20 +751,26 @@ export default function Page(){
   const P=useMemo(()=>{
     // Always use live Supabase data. PROPS constant is only structural fallback (no images)
     const source=liveProps&&liveProps.length>0?liveProps:PROPS;
-    return source.map(p=>({
-      id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,typeTag:p.type==="SFH"?"SFH":"Townhome",
-      baths:p.baths||2,sqft:p.sqft||0,status:p.rooms.some(r=>r.st==="vacant")?"Available":p.status||"Coming Soon",
-      utils:p.utils,clean:p.clean,desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
-      imgs:(p.photos&&p.photos.length>0)?p.photos:[],
-      rooms:p.rooms.map(r=>({
-        id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'42"',pb:r.pb,sqft:r.sqft||0,
-        feat:r.feat||[],st:r.st,le:r.le,
-      })),
-    }));
+    return source.map(p=>{
+      const rooms=allRoomsP(p);
+      const firstUnit=(p.units&&p.units.length>0)?p.units[0]:null;
+      return{
+        id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,
+        typeTag:p.type==="SFH"?"SFH":p.type==="Duplex"?"Duplex":"Townhome",
+        baths:firstUnit?.baths||p.baths||2,sqft:p.sqft||0,
+        status:rooms.some(r=>r.st==="vacant")?"Available":p.status||"Coming Soon",
+        utils:firstUnit?.utils||p.utils||"allIncluded",
+        clean:firstUnit?.clean||p.clean||"Biweekly",
+        desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
+        imgs:(p.photos&&p.photos.length>0)?p.photos:[],
+        units:p.units||[],
+        rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'42"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],st:r.st,le:r.le})),
+      };
+    });
   },[liveProps]);
   const SI=liveSettings||S_INFO;
 
-  const allRents=P.flatMap(p=>p.rooms.map(r=>r.rent));const globalMin=Math.min(...allRents);const globalMax=Math.max(...allRents);const[bbRoom,setBbRoom]=useState(0);
+  const allRents=P.flatMap(p=>allRoomsP(p).map(r=>r.rent));const globalMin=Math.min(...allRents);const globalMax=Math.max(...allRents);const[bbRoom,setBbRoom]=useState(0);
   useEffect(()=>{if(allRents.length&&!bbRoom)setBbRoom(globalMin);},[allRents]);
 
   useEffect(()=>{const h=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[]);
@@ -778,7 +786,7 @@ export default function Page(){
   const mapFiltered=mapCat==="all"?POIS:POIS.filter(p=>p.cat===mapCat);
 
   // Compare
-  const allRooms=P.flatMap(p=>p.rooms.map(r=>({...r,propName:p.name,propType:p.type,utils:p.utils,cleaning:p.clean})));
+  const allRooms=P.flatMap(p=>allRoomsP(p).map(r=>({...r,propName:p.name,propType:p.type,utils:p.utils,cleaning:p.clean})));
   const togFlt=k=>setFlt(f=>({...f,[k]:!f[k]}));const hasAnyFlt=Object.values(flt).some(v=>v);const fltCount=Object.values(flt).filter(v=>v).length;
   const resetFlt=()=>setFlt(Object.fromEntries(Object.keys(flt).map(k=>[k,false])));
   const filtRooms=useMemo(()=>{if(!hasAnyFlt)return allRooms;return allRooms.filter(r=>{
@@ -853,7 +861,7 @@ export default function Page(){
       <h1 className="fu fu1">Your Room Is Ready.<br/><em>Everything's Included.</em></h1>
       <p className="fu fu2">Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled. Just move in.</p>
       <div className="hbtns fu fu3"><button className="bp" onClick={()=>nav("properties")}>Browse Rooms</button><button className="bs" onClick={()=>nav("apply")}>Check If You Qualify</button></div>
-      <div className="hstats fu fu4"><div className="hst"><div className="hst-n">${Math.min(...P.flatMap(p=>p.rooms.map(r=>r.rent)))}</div><div className="hst-l">Rooms From</div></div><div className="hst"><div className="hst-n">0</div><div className="hst-l">Hidden Fees</div></div><div className="hst"><div className="hst-n">24/7</div><div className="hst-l">AI Support</div></div></div>
+      <div className="hstats fu fu4"><div className="hst"><div className="hst-n">${Math.min(...P.flatMap(p=>allRoomsP(p).map(r=>r.rent)))}</div><div className="hst-l">Rooms From</div></div><div className="hst"><div className="hst-n">0</div><div className="hst-l">Hidden Fees</div></div><div className="hst"><div className="hst-n">24/7</div><div className="hst-l">AI Support</div></div></div>
     </div></section>
 
     {/* SOCIAL PROOF */}
@@ -867,8 +875,8 @@ export default function Page(){
 
     {/* PROPERTIES */}
     <section className="sec" id="properties"><div className="sec-inner"><div className="sh"><div className="sl">Our Portfolio</div><h2 className="st">Find Your Room</h2><p className="ss">Browse by house, compare pricing, and pick the bedroom that fits you.</p></div>
-      <div className="pgrid">{P.map(p=>{const pr=p.rooms.map(r=>r.rent);return(
-        <div key={p.id} className="pcard" onClick={()=>setSel(p)}>{p.imgs&&p.imgs.length>0?<img src={p.imgs[0]} alt={p.name} className="pimg"/>:<div className="pimg" style={{background:"#2c2520",display:"flex",alignItems:"center",justifyContent:"center",color:"#d4a853",fontSize:32}}>🐻</div>}<div className="pinfo"><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr"><span className="ppr">${Math.min(...pr)}–${Math.max(...pr)}<small>/mo per room</small></span><span className="pbc">{p.rooms.length} rooms</span></div></div></div>);})}</div>
+      <div className="pgrid">{P.map(p=>{const pr=allRoomsP(p).map(r=>r.rent);return(
+        <div key={p.id} className="pcard" onClick={()=>setSel(p)}>{p.imgs&&p.imgs.length>0?<img src={p.imgs[0]} alt={p.name} className="pimg"/>:<div className="pimg" style={{background:"#2c2520",display:"flex",alignItems:"center",justifyContent:"center",color:"#d4a853",fontSize:32}}>🐻</div>}<div className="pinfo"><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr"><span className="ppr">${Math.min(...pr)}–${Math.max(...pr)}<small>/mo per room</small></span><span className="pbc">{allRoomsP(p).length} rooms</span></div></div></div>);})}</div>
     </div></section>
 
     {/* COMPARE */}
@@ -909,8 +917,8 @@ export default function Page(){
     <section className="sec" id="availability"><div className="sec-inner"><div className="sh"><div className="sl">Availability</div><h2 className="st">Room Availability</h2><p className="ss">Rooms available now are ready for immediate move-in. Click upcoming openings to see the calendar.</p></div>
       <div className="tabs"><button className={`tab ${calProp==="all"?"on":""}`} onClick={()=>{setCalProp("all");setCalRoom(null);}}>All</button>{P.map(p=><button key={p.id} className={`tab ${calProp===p.id?"on":""}`} onClick={()=>{setCalProp(p.id);setCalRoom(null);}}>{p.name}</button>)}</div>
       <div className="cal-grid">{calProps.map(prop=>(
-        <div key={prop.id} className="cal-card"><div className="cal-hd"><h3>{prop.name}</h3><span>{prop.type} · {prop.rooms.length} rooms</span></div><div className="cal-bd">
-          {prop.rooms.map(r=>{const isV=r.st==="vacant";const le=r.le?new Date(r.le+"T00:00:00"):null;const dl=le?Math.ceil((le-TODAY)/(1e3*60*60*24)):null;const isSoon=!isV&&dl&&dl<=90;const isExp=calRoom===r.id;
+        <div key={prop.id} className="cal-card"><div className="cal-hd"><h3>{prop.name}</h3><span>{prop.type} · {proallRoomsP(p).length} rooms</span></div><div className="cal-bd">
+          {allRoomsP(prop).map(r=>{const isV=r.st==="vacant";const le=r.le?new Date(r.le+"T00:00:00"):null;const dl=le?Math.ceil((le-TODAY)/(1e3*60*60*24)):null;const isSoon=!isV&&dl&&dl<=90;const isExp=calRoom===r.id;
             if(isV)return(<div key={r.id} className="cal-avail"><div className="cal-rm-l"><div className="cal-rm-n">{r.name} — ${r.rent}/mo</div><div className="cal-rm-d">{r.bed} · {r.pb?"Private bath":"Shared bath"} · {r.sqft} sqft · Ready now</div></div><button className="cal-avail-btn" onClick={()=>nav("apply")}>Apply Now →</button></div>);
             if(isSoon)return(<div key={r.id}><div className="cal-rm cal-soon" onClick={()=>setCalRoom(isExp?null:r.id)} style={{borderColor:isExp?"rgba(154,116,34,.3)":undefined,background:isExp?"rgba(254,243,218,.1)":undefined}}><div className="cal-rm-l"><div className="cal-rm-n">{r.name} — ${r.rent}/mo</div><div className="cal-rm-d">{r.bed} · {r.pb?"Private":"Shared"} bath · Opens <strong>{fmtD(r.le)}</strong></div></div><span className="cal-rm-st" style={{background:CLR.soonBg,color:CLR.soonTx}}>Opening {fmtD(r.le)} {isExp?"▾":"▸"}</span></div>
               {isExp&&<div style={{padding:"8px 0 12px",animation:"fadeIn .2s"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><button className="tab" style={{padding:"3px 8px",fontSize:9}} onClick={()=>setMOff(o=>o-1)}>←</button><div style={{fontSize:12,fontWeight:800}}>{mLbl}</div><button className="tab" style={{padding:"3px 8px",fontSize:9}} onClick={()=>setMOff(o=>o+1)}>→</button></div>
