@@ -738,7 +738,8 @@ export default function Page(){
   const[calProp,setCalProp]=useState("all");const[calRoom,setCalRoom]=useState(null);const[mOff,setMOff]=useState(0);
   const[mapCat,setMapCat]=useState("all");
   const[showFlt,setShowFlt]=useState(false);
-  const[flt,setFlt]=useState({available:false,openingSoon:false,privateBath:false,sharedBath:false,queen:false,full:false,twin:false,allUtils:false,first100:false,weekly:false,biweekly:false,holmes:false,leeEast:false,leeWest:false});
+  const[flt,setFlt]=useState({available:false,openingSoon:false,privateBath:false,sharedBath:false,queen:false,full:false,twin:false,allUtils:false,first100:false,weekly:false,biweekly:false});
+  const[selProp,setSelProp]=useState(null);
   const[calcV,setCalcV]=useState({rent:1100,electric:120,water:40,gas:30,trash:25,internet:60,furniture:200});
   const[faqOpen,setFaqOpen]=useState(null);
 
@@ -834,7 +835,7 @@ export default function Page(){
   // Compare
   const allRooms=P.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",label:"",name:"",rooms:p.rooms}]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.name,propType:p.type,unitLabel:u.label,unitName:u.name,utils:u.utils||p.utils,cleaning:u.clean||p.clean}))));
   const togFlt=k=>setFlt(f=>({...f,[k]:!f[k]}));const hasAnyFlt=Object.values(flt).some(v=>v);const fltCount=Object.values(flt).filter(v=>v).length;
-  const resetFlt=()=>setFlt(Object.fromEntries(Object.keys(flt).map(k=>[k,false])));
+  const resetFlt=()=>{setFlt(Object.fromEntries(Object.keys(flt).map(k=>[k,false])));setSelProp(null);};
   const filtRooms=useMemo(()=>{if(!hasAnyFlt)return allRooms;return allRooms.filter(r=>{
     const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
     if(flt.available&&r.st!=="vacant")return false;if(flt.openingSoon&&!(r.st==="occupied"&&dl&&dl<=90))return false;
@@ -842,7 +843,7 @@ export default function Page(){
     if(flt.queen&&r.bed!=="Queen")return false;if(flt.full&&r.bed!=="Full")return false;if(flt.twin&&r.bed!=="Twin XL")return false;
     if(flt.allUtils&&r.utils!=="allIncluded")return false;if(flt.first100&&r.utils!=="first100")return false;
     if(flt.weekly&&r.cleaning!=="Weekly")return false;if(flt.biweekly&&r.cleaning!=="Biweekly")return false;
-    if(flt.holmes&&r.propName!=="The Holmes House")return false;if(flt.leeEast&&r.propName!=="Lee Drive East")return false;if(flt.leeWest&&r.propName!=="Lee Drive West")return false;
+    if(selProp&&r.propName!==selProp)return false;
     return true;});},[flt,hasAnyFlt]);
   const Ck=()=><span className="ck">✓</span>;const Xx=()=><span className="cx">—</span>;
   const F=({id,lb})=><button className={`fp ${flt[id]?"on":""}`} onClick={()=>togFlt(id)}>{lb}</button>;
@@ -934,10 +935,10 @@ export default function Page(){
         <div className="flt-row"><span className="flt-lb">Bed</span><F id="queen" lb="Queen"/><F id="full" lb="Full"/><F id="twin" lb="Twin XL"/></div>
         <div className="flt-row"><span className="flt-lb">Utilities</span><F id="allUtils" lb="All Included"/><F id="first100" lb="First $100"/></div>
         <div className="flt-row"><span className="flt-lb">Cleaning</span><F id="weekly" lb="Weekly"/><F id="biweekly" lb="Biweekly"/></div>
-        <div className="flt-row"><span className="flt-lb">Property</span><F id="holmes" lb="Holmes"/><F id="leeEast" lb="Lee East"/><F id="leeWest" lb="Lee West"/>{hasAnyFlt&&<button className="flt-clr" onClick={resetFlt}>✕ Clear</button>}</div>
+        <div className="flt-row"><span className="flt-lb">Property</span>{P.map(p=><button key={p.id} className={`flt-btn ${selProp===p.name?"on":""}`} style={{marginRight:4}} onClick={()=>setSelProp(sp=>sp===p.name?null:p.name)}>{p.name}</button>)}{(hasAnyFlt||selProp)&&<button className="flt-clr" onClick={()=>{resetFlt();setSelProp(null);}}>✕ Clear</button>}</div>
       </>}</div>
       {hasAnyFlt&&<div style={{textAlign:"center",fontSize:12,color:"var(--ac)",fontWeight:700,marginBottom:14}}>Showing {filtRooms.length} of {allRooms.length} rooms</div>}
-      {filtRooms.length===0?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:12}}>No rooms match. <button className="flt-clr" onClick={resetFlt}>Clear</button></div>:(
+      {filtRooms.length===0?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:12}}>{!P.length?"Loading rooms...":"No rooms match your filters."}{(hasAnyFlt||selProp)&&<><br/><button className="flt-clr" style={{marginTop:8}} onClick={()=>{resetFlt();setSelProp(null);}}>Clear filters</button></>}</div>:(
         <div className="cw"><table className="cmp"><thead><tr><th style={{textAlign:"left"}}>Feature</th>{filtRooms.map(r=><th key={r.id}>{r.name}<div style={{fontSize:7,fontWeight:400,opacity:.6,marginTop:1,textTransform:"none",letterSpacing:0}}>{r.propName}{r.unitLabel?" · Unit "+r.unitLabel:""}</div></th>)}</tr></thead><tbody>
           <tr className="cmp-cat"><td>Pricing</td>{filtRooms.map(r=><td key={r.id}/>)}</tr>
           <tr><td>Rent</td>{filtRooms.map(r=><td key={r.id}><span className="cprice">${r.rent}<small>/mo</small></span></td>)}</tr>
