@@ -440,6 +440,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
   const[thumbSize,setThumbSize]=useState(80);
   const[readingCount,setReadingCount]=useState(0);
   const[uploadError,setUploadError]=useState("");
+  const[editingPhoto,setEditingPhoto]=useState(null);
   const ph=photos||[];
 
   const readFiles=async files=>{
