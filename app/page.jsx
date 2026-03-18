@@ -753,13 +753,18 @@ export default function Page(){
     const SUPA="https://vxysaclhucdjxzcknoar.supabase.co/rest/v1";
     const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
     const hdr={"apikey":KEY,"Authorization":"Bearer "+KEY};
-    Promise.all([
+    const fetchData=()=>Promise.all([
       fetch(SUPA+"/app_data?key=eq.hq-props&select=value",{headers:hdr}).then(r=>r.json()),
       fetch(SUPA+"/app_data?key=eq.hq-settings&select=value",{headers:hdr}).then(r=>r.json()),
     ]).then(([p,s])=>{
       if(s&&s[0]&&s[0].value&&s[0].value.companyName)setLiveSettings(s[0].value);
       if(p&&p[0]&&p[0].value&&Array.isArray(p[0].value)&&p[0].value.length>0)setLiveProps(p[0].value);
     }).catch(()=>{});
+    fetchData();
+    // Refetch when tab becomes visible again (e.g. after editing in admin)
+    const onVis=()=>{if(document.visibilityState==="visible")fetchData();};
+    document.addEventListener("visibilitychange",onVis);
+    return()=>document.removeEventListener("visibilitychange",onVis);
   },[]);
 
   // Use Supabase data if available, otherwise hardcoded
@@ -808,7 +813,7 @@ export default function Page(){
       }catch{}
       return p;
     })).then(setGeoP);
-  },[P.length]);
+  },[P.map(x=>x.id+x.address).join(",")]);
   // Use geocoded coords if ready, fall back to P while geocoding
   const mapProps=geoP.length>0?geoP:P;
 

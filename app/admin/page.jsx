@@ -509,17 +509,30 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
   const geocode=async()=>{
     if(!p.addr)return;
     setGeocoding(true);setGeocodeErr("");
+    // Try multiple address formats — Nominatim is picky
+    const base=p.addr.trim();
+    const attempts=[
+      base+", Huntsville, Alabama, USA",
+      base+", Huntsville, AL 35801, USA",
+      base+", Madison County, Alabama, USA",
+      base+", Alabama, USA",
+    ];
     try{
-      const q=encodeURIComponent(p.addr+", Huntsville, AL");
-      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
-      const data=await res.json();
-      if(data&&data.length>0){
-        const{lat,lon}=data[0];
-        updP({...p,lat:parseFloat(parseFloat(lat).toFixed(4)),lng:parseFloat(parseFloat(lon).toFixed(4))});
-      } else {
-        setGeocodeErr("Address not found — try a more specific address");
+      for(const attempt of attempts){
+        const q=encodeURIComponent(attempt);
+        const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us&addressdetails=1`,{headers:{"User-Agent":"BlackBearRentals/1.0 harrison@oakandmaindevelopment.com"}});
+        const data=await res.json();
+        if(data&&data.length>0){
+          const{lat,lon}=data[0];
+          updP({...p,lat:parseFloat(parseFloat(lat).toFixed(5)),lng:parseFloat(parseFloat(lon).toFixed(5))});
+          setGeocodeErr("");
+          setGeocoding(false);
+          return;
+        }
+        await new Promise(r=>setTimeout(r,300));// respect rate limit between attempts
       }
-    }catch{setGeocodeErr("Geocoding failed — enter coordinates manually");}
+      setGeocodeErr("Address not found in OpenStreetMap. Use the Google Maps link below to get coordinates manually.");
+    }catch{setGeocodeErr("Geocoding failed — check your internet connection or enter coordinates manually.");}
     setGeocoding(false);
   };
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
@@ -583,7 +596,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
         <button type="button" className="btn btn-out" style={{width:"100%",fontSize:11}} onClick={geocode} disabled={!p.addr||geocoding}>
           {geocoding?"📍 Looking up...":"📍 Auto-fill from address"}
         </button>
-        {geocodeErr&&<div style={{fontSize:9,color:"#c45c4a",marginTop:3}}>{geocodeErr}</div>}
+        {geocodeErr&&<div style={{fontSize:9,color:"#c45c4a",marginTop:3}}>{geocodeErr}<br/><a href={`https://www.google.com/maps/search/${encodeURIComponent(p.addr+", Huntsville AL")}`} target="_blank" rel="noopener" style={{color:"#3b82f6",fontSize:9}}>Search on Google Maps →</a><br/><span style={{color:"#999",fontSize:9}}>Right-click the pin → "What's here?" to get coordinates, then paste above.</span></div>}
         {p.lat&&p.lng&&!geocodeErr&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>✓ {p.lat}, {p.lng}</div>}
       </div>
     </div>
