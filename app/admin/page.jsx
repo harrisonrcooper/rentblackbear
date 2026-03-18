@@ -589,8 +589,8 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
     {/* Property-level info */}
     <div className="fr"><div className="fld"><label>Property Name</label><input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House"/></div><div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div></div>
     <div className="fr3">
-      <div className="fld"><label>Latitude</label><input type="number" step="0.0001" value={p.lat||""} onChange={e=>updP({...p,lat:Number(e.target.value)})} placeholder="Auto-fill →"/></div>
-      <div className="fld"><label>Longitude</label><input type="number" step="0.0001" value={p.lng||""} onChange={e=>updP({...p,lng:Number(e.target.value)})} placeholder="Auto-fill →"/></div>
+      <div className="fld"><label>Latitude</label><input type="number" step="0.00001" value={p.lat||""} onChange={e=>setP({...p,lat:e.target.value===""?0:Number(e.target.value)})} onBlur={e=>{const v=Number(e.target.value);if(v!==0)updP({...p,lat:v});}} placeholder="Auto-fill →"/></div>
+      <div className="fld"><label>Longitude</label><input type="number" step="0.00001" value={p.lng||""} onChange={e=>setP({...p,lng:e.target.value===""?0:Number(e.target.value)})} onBlur={e=>{const v=Number(e.target.value);if(v!==0)updP({...p,lng:v});}} placeholder="Auto-fill →"/></div>
       <div className="fld">
         <label style={{visibility:"hidden"}}>.</label>
         <button type="button" className="btn btn-out" style={{width:"100%",fontSize:11}} onClick={geocode} disabled={!p.addr||geocoding}>

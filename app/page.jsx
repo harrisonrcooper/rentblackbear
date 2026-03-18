@@ -19,6 +19,7 @@ const allRoomsP=(prop)=>{
   return prop.rooms||[]; // fallback for old flat format
 };
 const safeMin=(arr)=>arr.length>0?Math.min(...arr):0;
+const validCoord=(lat,lng)=>typeof lat==="number"&&typeof lng==="number"&&isFinite(lat)&&isFinite(lng)&&lat!==0&&lng!==0&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180;
 const safeMax=(arr)=>arr.length>0?Math.max(...arr):0;
 const POIS=[
   // Redstone Arsenal gates — verified coordinates
@@ -556,7 +557,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
   const buildMarkers=useCallback((curProps,curCat)=>{
     const L=window.L;const map=mapInst.current;if(!L||!map)return;
     markersRef.current.forEach(m=>m.remove());markersRef.current=[];
-    curProps.filter(p=>p.lat&&p.lng).forEach(p=>{
+    curProps.filter(p=>validCoord(p.lat,p.lng)).forEach(p=>{
       const icon=L.divIcon({className:"",html:`<div style="width:34px;height:34px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer">🐻</div>`,iconSize:[34,34],iconAnchor:[17,34],popupAnchor:[0,-34]});
       const vacRooms=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));
       const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;min-width:180px;padding:4px 2px"><strong style="font-size:14px;color:#1a1714">${p.name}</strong><div style="color:#666;font-size:12px;margin:2px 0">${p.address}</div><div style="color:#d4a853;font-weight:700;font-size:13px;margin-top:4px">${vacRooms} room${vacRooms!==1?"s":""} available · From $${minR}/mo</div></div>`);
@@ -595,7 +596,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
 
   const scrollToPin=(p)=>{
     // Guard: skip if no valid coords
-    if(!p.lat||!p.lng||p.lat===0||p.lng===0)return;
+    if(!validCoord(p.lat,p.lng))return;
     try{
       if(mapInst.current){
         mapInst.current.setView([p.lat,p.lng],14,{animate:true});
@@ -611,7 +612,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     <div className="tabs" style={{marginTop:0,marginBottom:16}}><button className={`tab ${mapCat==="all"?"on":""}`} onClick={()=>setMapCat("all")}>All</button>{mapCats.map(c=><button key={c} className={`tab ${mapCat===c?"on":""}`} onClick={()=>setMapCat(c)}>{c}</button>)}</div>
     {/* Property pins */}
     <div className="poi-g">
-      {PROPS.map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));const hasPin=p.lat&&p.lng&&p.lat!==0&&p.lng!==0;return(
+      {PROPS.map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));const hasPin=validCoord(p.lat,p.lng);return(
         <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.04)",cursor:hasPin?"pointer":"default",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",opacity:hasPin?1:0.7}} onClick={hasPin?()=>scrollToPin(p):undefined} onMouseEnter={hasPin?()=>scrollToPin(p):undefined}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>{hasPin?"📍":"🔍 Locating..."}</div></div>);})}
       {/* POI list */}
       {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer" style={{cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",background:highlight===p.name?"rgba(255,255,255,.08)":"rgba(255,255,255,.05)"}} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.desc}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}
@@ -793,7 +794,9 @@ export default function Page(){
     Promise.all(P.map(async p=>{
       const addr=(p.address||p.addr||"").trim();
       if(!addr)return p;
-      if(cache[addr]&&cache[addr].lat&&cache[addr].lng&&cache[addr].lat!==0)return{...p,lat:cache[addr].lat,lng:cache[addr].lng};
+      // If manually entered valid coords, skip geocoding
+      if(validCoord(p.lat,p.lng))return p;
+      if(cache[addr]&&validCoord(cache[addr].lat,cache[addr].lng))return{...p,lat:cache[addr].lat,lng:cache[addr].lng};
       try{
         const q=encodeURIComponent(addr+", Huntsville, AL, USA");
         const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
