@@ -2911,13 +2911,13 @@ export default function Page(){
             <div style={{fontSize:10,fontWeight:700,color:"#2d6a3f",marginBottom:8}}>PROPERTY</div>
             <div className="fr">
               <div className="fld"><label>Property</label>
-                <select value={leaseForm.property||""} onChange={e=>{const p2=props.find(p=>p.name===e.target.value);setLeaseForm(p=>({...p,property:e.target.value,propertyAddress:p2?.addr||"",utilitiesMode:p2?.utils||"allIncluded",utilitiesClause:p2?.utils==="allIncluded"?"PROPERTY MANAGER agrees to pay all utilities.":"PROPERTY MANAGER agrees to pay the first $100 of combined utilities per month. Any usage exceeding $100 shall be split equally among all residents."}));}}>
+                <select value={leaseForm.property||""} onChange={e=>{const p2=props.find(p=>p.name===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,property:e.target.value,propertyAddress:p2?.addr||"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
                   <option value="">Select...</option>
                   {props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
               </div>
               <div className="fld"><label>Room</label>
-                <select value={leaseForm.room||""} onChange={e=>{const prop=props.find(p=>p.name===leaseForm.property);const unit=prop?(prop.units||[]).find(u=>(u.rooms||[]).some(r=>r.name===e.target.value)):null;const room=unit?(unit.rooms||[]).find(r=>r.name===e.target.value):null;setLeaseForm(p=>({...p,room:e.target.value,roomId:room?.id||"",unitId:unit?.id||"",unitName:unit?.name||"",rent:room?.rent||p.rent,sd:room?.rent||p.sd,parking:room?.parking||""}));}}>
+                <select value={leaseForm.room||""} onChange={e=>{const prop=props.find(p=>p.name===leaseForm.property);const unit=prop?(prop.units||[]).find(u=>(u.rooms||[]).some(r=>r.name===e.target.value)):null;const room=unit?(unit.rooms||[]).find(r=>r.name===e.target.value):null;const uKey=unit?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,room:e.target.value,roomId:room?.id||"",unitId:unit?.id||"",unitName:unit?.name||"",rent:room?.rent||p.rent,sd:room?.rent||p.sd,parking:room?.parking||"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
                   <option value="">Select...</option>
                   {(()=>{const lp=props.find(p=>p.name===leaseForm.property);if(!lp)return null;return(lp.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,unitLabel:u.label,unitName:u.name}))).map(r=><option key={r.id} value={r.name}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name} — {fmtS(r.rent)}/mo</option>);})()}
                 </select>
@@ -5722,7 +5722,7 @@ export default function Page(){
               PROPERTY_ADDRESS:(targetProp?targetProp.name:a.property)||"",
               PARKING_SPACE:"See property map",
               DOOR_CODE:a.passcode||"Assigned at move-in",
-              UTILITIES_CLAUSE:(targetUnit?.utils||targetProp?.utils)==="allIncluded"?"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, and gas. RESIDENT is responsible for no utility costs beyond the monthly rent.":"PROPERTY MANAGER agrees to pay the first $100 of combined utilities per month. Any usage exceeding $100 shall be split equally among all current residents and billed on the 1st of each month.",
+              UTILITIES_CLAUSE:(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(targetUnit?.utils||targetProp?.utils||"allIncluded"))?.clause||"See lease for utility terms.",
               LANDLORD_NAME:settings.landlordName||"Carolina Cooper",
             };
             setModal(p=>({...p,previewLeaseOpen:true,previewVars,previewSections:sections}));
@@ -5785,7 +5785,7 @@ export default function Page(){
               PROPERTY_ADDRESS:propName,
               PARKING_SPACE:"See property map",
               DOOR_CODE:a.passcode||"Assigned at move-in",
-              UTILITIES_CLAUSE:"Utilities included up to $100/mo. Overage split equally among residents.",
+              UTILITIES_CLAUSE:(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(targetUnit?.utils||targetProp?.utils||"allIncluded"))?.clause||"See lease for utility terms.",
               LANDLORD_NAME:settings.landlordName||tmpl.landlordName||"Carolina Cooper",
             };
             const leaseRecord=existingLease||{
