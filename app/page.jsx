@@ -12,7 +12,7 @@ const S_INFO = { company:"Black Bear Rentals", legal:"Oak & Main Development LLC
 const PROPS = [
   { id:"p1",name:"The Holmes House",address:"Corner of Holmes & Lee, Huntsville, AL",lat:34.7285,lng:-86.5920,type:"SFH",typeTag:"SFH",baths:3,sqft:2400,status:"Available",utils:"first100",clean:"Weekly",
     desc:"A spacious 5-bedroom single family home in our flagship mixed-use neighborhood. Walking distance to coffee shops, salons, and neighborhood amenities.",
-    imgs:["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80","https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80","https://images.unsplash.com/photo-1600566753190-17f0baa2a6c0?w=800&q=80"],
+    imgs:[],
     rooms:[
       {id:"r1",name:"Primary Suite",rent:850,bed:"Queen",tv:'55"',pb:true,sqft:280,feat:["Walk-in closet","En-suite bath"],st:"occupied",le:"2026-07-31"},
       {id:"r2",name:"Bedroom 2",rent:750,bed:"Queen",tv:'42"',pb:true,sqft:220,feat:["Private bath","Closet organizer"],st:"occupied",le:"2026-08-31"},
@@ -22,7 +22,7 @@ const PROPS = [
     ]},
   { id:"p2",name:"Lee Drive East",address:"Lee Drive, Huntsville, AL",lat:34.7280,lng:-86.5935,type:"Townhome",typeTag:"Townhome",baths:2,sqft:1200,status:"Available",utils:"allIncluded",clean:"Biweekly",
     desc:"Brand-new construction townhome. Modern finishes throughout with an open floor plan and full kitchen.",
-    imgs:["https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80","https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80","https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80"],
+    imgs:[],
     rooms:[
       {id:"r6",name:"Primary Suite",rent:750,bed:"Queen",tv:'55"',pb:true,sqft:200,feat:["En-suite bath","New construction"],st:"occupied",le:"2026-06-30"},
       {id:"r7",name:"Bedroom 2",rent:650,bed:"Full",tv:'42"',pb:false,sqft:170,feat:["Shared bath","Good closet"],st:"occupied",le:"2026-07-31"},
@@ -30,7 +30,7 @@ const PROPS = [
     ]},
   { id:"p3",name:"Lee Drive West",address:"Lee Drive, Huntsville, AL",lat:34.7280,lng:-86.5940,type:"Townhome",typeTag:"Townhome",baths:2,sqft:1200,status:"Coming Soon",utils:"allIncluded",clean:"Biweekly",
     desc:"Mirror unit to Lee Drive East with the same premium finishes. Reserve a room now for priority move-in.",
-    imgs:["https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800&q=80","https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&q=80","https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80"],
+    imgs:[],
     rooms:[
       {id:"r9",name:"Primary Suite",rent:750,bed:"Queen",tv:'55"',pb:true,sqft:200,feat:["En-suite bath","New construction"],st:"occupied",le:"2026-12-31"},
       {id:"r10",name:"Bedroom 2",rent:650,bed:"Full",tv:'42"',pb:false,sqft:170,feat:["Shared bath","Good closet"],st:"occupied",le:"2026-12-31"},
@@ -514,12 +514,15 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
   const goApply=()=>{onClose();setTimeout(()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"}),100);};
   return(<div className="mo" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <button className="mx" onClick={onClose}>✕</button>
-    <div className="mgal" style={{cursor:"pointer"}} onClick={()=>{setLightbox(p.imgs);setLbIdx(0);}}>
-      <img src={p.imgs[0]} alt={p.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-      {p.imgs.length>1&&<div className="mside">
+    <div className="mgal" style={{cursor:p.imgs&&p.imgs.length>0?"pointer":"default",position:"relative"}} onClick={()=>{if(p.imgs&&p.imgs.length>0){setLightbox(p.imgs);setLbIdx(0);}}}>
+      {p.imgs&&p.imgs.length>0
+        ?<img src={p.imgs[0]} alt={p.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+        :<div style={{width:"100%",height:"100%",background:"#1a1714",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}><span style={{fontSize:48}}>🐻</span><span style={{fontSize:12,color:"#c4a882"}}>Photos coming soon</span></div>
+      }
+      {p.imgs&&p.imgs.length>1&&<div className="mside">
         {p.imgs.slice(1,3).map((img,i)=><img key={i} src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover",cursor:"pointer"}} onClick={e=>{e.stopPropagation();setLightbox(p.imgs);setLbIdx(i+1);}}/>)}
       </div>}
-      {p.imgs.length>3&&<div style={{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,.6)",color:"#fff",fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:4}}>+{p.imgs.length-3} more</div>}
+      {p.imgs&&p.imgs.length>3&&<div style={{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,.6)",color:"#fff",fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:4,zIndex:2}}>+{p.imgs.length-3} more</div>}
     </div>
     <div className="mbody">
       <div className="mtp"><div><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.type}</span></div><h2 style={{marginTop:8}}>{p.name}</h2><p className="maddr">{p.address}</p></div>
@@ -757,9 +760,9 @@ export default function Page(){
 
   // Use Supabase data if available, otherwise hardcoded
   const P=useMemo(()=>{
-    if(!liveProps||liveProps.length===0)return PROPS;
-    // Map admin data format to public site format
-    return liveProps.map(p=>({
+    // Always use live Supabase data. PROPS constant is only structural fallback (no images)
+    const source=liveProps&&liveProps.length>0?liveProps:PROPS;
+    return source.map(p=>({
       id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,typeTag:p.type==="SFH"?"SFH":"Townhome",
       baths:p.baths||2,sqft:p.sqft||0,status:p.rooms.some(r=>r.st==="vacant")?"Available":p.status||"Coming Soon",
       utils:p.utils,clean:p.clean,desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
@@ -878,7 +881,7 @@ export default function Page(){
     {/* PROPERTIES */}
     <section className="sec" id="properties"><div className="sec-inner"><div className="sh"><div className="sl">Our Portfolio</div><h2 className="st">Find Your Room</h2><p className="ss">Browse by house, compare pricing, and pick the bedroom that fits you.</p></div>
       <div className="pgrid">{P.map(p=>{const pr=p.rooms.map(r=>r.rent);return(
-        <div key={p.id} className="pcard" onClick={()=>setSel(p)}><img src={p.imgs[0]} alt={p.name} className="pimg"/><div className="pinfo"><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr"><span className="ppr">${Math.min(...pr)}–${Math.max(...pr)}<small>/mo per room</small></span><span className="pbc">{p.rooms.length} rooms</span></div></div></div>);})}</div>
+        <div key={p.id} className="pcard" onClick={()=>setSel(p)}>{p.imgs&&p.imgs.length>0?<img src={p.imgs[0]} alt={p.name} className="pimg"/>:<div className="pimg" style={{background:"#2c2520",display:"flex",alignItems:"center",justifyContent:"center",color:"#d4a853",fontSize:32}}>🐻</div>}<div className="pinfo"><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr"><span className="ppr">${Math.min(...pr)}–${Math.max(...pr)}<small>/mo per room</small></span><span className="pbc">{p.rooms.length} rooms</span></div></div></div>);})}</div>
     </div></section>
 
     {/* COMPARE */}
