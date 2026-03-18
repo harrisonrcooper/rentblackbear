@@ -675,7 +675,7 @@ export default function ApplyPage(){
         <div className="sec-num">Section 6</div>
         <div className="sec-hd"><h2>Choose Your Room</h2><p>Select the room you'd like to apply for.</p></div>
         {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=>{
-            const units=p.units&&p.units.length>0?p.units:[{id:"main",name:"",label:"",rooms:p.rooms||[]}];
+            const units=p.units&&p.units.length>0?p.units:[{id:"main",name:"Unit A",label:"A",rooms:p.rooms||[]}];
             const hasMultipleUnits=units.length>1;
             return(<div key={p.id} className="prop-card"><div className="prop-img">🐻</div><div className="prop-info">
               <div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div>

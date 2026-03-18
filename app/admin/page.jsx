@@ -96,7 +96,7 @@ function SigCanvas({onSave,height=120}){
 // ─── Sample Data ────────────────────────────────────────────────────
 const DEF_PROPS=[
   {id:"p1",name:"The Holmes House",addr:"Holmes & Lee, Huntsville",lat:34.7285,lng:-86.5920,type:"SFH",sqft:2400,photos:[],
-    units:[{id:"p1_u1",name:"Main",label:"",sqft:2400,baths:3,utils:"first100",clean:"Weekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
+    units:[{id:"p1_u1",name:"Unit A",label:"A",sqft:2400,baths:3,utils:"first100",clean:"Weekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
       rooms:[
         {id:"r1",name:"Primary Suite",rent:850,pb:true,sqft:280,st:"occupied",le:"2026-07-31",tenant:{name:"Marcus Johnson",email:"marcus@email.com",phone:"(256) 555-1001",moveIn:"2025-08-01"}},
         {id:"r2",name:"Bedroom 2",rent:750,pb:true,sqft:220,st:"occupied",le:"2026-08-31",tenant:{name:"Sarah Chen",email:"sarah@email.com",phone:"(256) 555-1002",moveIn:"2025-09-01"}},
@@ -137,7 +137,7 @@ function migrateProps(rawProps){
     return{
       ...p,photos:p.photos||[],
       units:[{
-        id:p.id+"_u1",name:"Main",label:"",
+        id:p.id+"_u1",name:"Unit A",label:"A",
         sqft:p.sqft||0,baths:p.baths||1,
         utils:p.utils||"allIncluded",clean:p.clean||"Biweekly",
         rentalMode:p.rentalMode||"byRoom",
@@ -444,7 +444,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
   const curUnit=p.units&&p.units.length>0?p.units[Math.min(activeUnit,(p.units||[]).length-1)]:null;
   const addUnit=()=>{
     const label=String.fromCharCode(65+(p.units||[]).length);
-    const newUnit={id:uid(),name:p.type==="Duplex"?`Unit ${label}`:"Main",label:p.type==="Duplex"?label:"",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]};
+    const newUnit={id:uid(),name:p.type==="Duplex"?`Unit ${label}`:"Unit A",label:p.type==="Duplex"?label:"A",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]};
     const units=[...(p.units||[]),newUnit];
     updP({...p,units});setActiveUnit(units.length-1);
   };
@@ -486,7 +486,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
             const existing=units[0]||{id:uid(),name:"Unit A",label:"A",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]};
             units=[{...existing,name:"Unit A",label:"A"},{id:uid(),name:"Unit B",label:"B",sqft:0,baths:1,utils:existing.utils,clean:existing.clean,rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]}];
           } else if(t!=="Duplex"&&units.length===0){
-            units=[{id:p.id+"_u1",name:"Main",label:"",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]}];
+            units=[{id:p.id+"_u1",name:"Unit A",label:"A",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]}];
           }
           updP({...p,type:t,units});
         }}>
@@ -591,21 +591,19 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
 
     {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
     {unsaved&&!justSaved&&<div key={saveShake} style={{
-      marginBottom:8,padding:"8px 12px",background:"rgba(196,92,74,.06)",
+      marginBottom:8,padding:"10px 14px",background:"rgba(196,92,74,.06)",
       border:"1px solid rgba(196,92,74,.25)",borderRadius:8,
-      fontSize:11,fontWeight:700,color:"#c45c4a",textAlign:"center",
+      fontSize:11,color:"#c45c4a",display:"flex",justifyContent:"space-between",alignItems:"center",
       animation:saveShake>0?"shake .4s ease":"none"
     }}>
-      ⚠ You have unsaved changes — click Save to keep them
+      <span style={{fontWeight:700}}>⚠ Unsaved changes</span>
+      <button onClick={onClose} style={{fontSize:10,color:"#c45c4a",background:"none",border:"1px solid rgba(196,92,74,.3)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>Discard & Close</button>
     </div>}
     {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:"#4a7c59",textAlign:"center"}}>
       ✓ Saved
     </div>}
     <div className="mft">
-      <button className="btn btn-out" onClick={()=>{
-        if(unsaved&&!justSaved){setSaveShake(k=>k+1);return;}
-        onClose();
-      }}>Cancel</button>
+      <button className="btn btn-out" onClick={onClose}>Cancel</button>
       <button className={`btn ${justSaved?"btn-green":unsaved?"btn-gold":"btn-out"}`} onClick={()=>{
         if(!p.name.trim()){setWarning("Property name is required.");return;}
         setWarning(null);
