@@ -493,7 +493,12 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
     setDragIdx(null);setDragOverIdx(null);
   };
 
-  return(<div style={{marginBottom:12}}
+  return(<>{editingPhoto&&<PhotoEditor
+    src={editingPhoto.src}
+    onClose={()=>setEditingPhoto(null)}
+    onSave={url=>{const next=[...ph];next[editingPhoto.index]=url;onChange(next);setEditingPhoto(null);}}
+  />}
+  <div style={{marginBottom:12}}
     onDragOver={e=>{e.preventDefault();if([...e.dataTransfer.types].includes("Files"))setDropOver(true);}}
     onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDropOver(false);}}
     onDrop={e=>{e.preventDefault();setDropOver(false);if(e.dataTransfer.files.length)readFiles(e.dataTransfer.files);}}>
@@ -567,12 +572,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
       <button className="btn btn-out btn-sm" onClick={addUrl} disabled={!urlInput.trim()}>Add URL</button>
     </div>
   </div>
-  {editingPhoto&&<PhotoEditor
-    src={editingPhoto.src}
-    onClose={()=>setEditingPhoto(null)}
-    onSave={url=>{const next=[...ph];next[editingPhoto.index]=url;onChange(next);setEditingPhoto(null);}}
-  />}
-  );
+  </>);
 }
 
 function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
