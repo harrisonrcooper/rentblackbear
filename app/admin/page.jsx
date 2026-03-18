@@ -3598,7 +3598,7 @@ export default function Page(){
       {tab==="properties"&&<>
         <div className="sec-hd"><div><h2>Manage Properties</h2><p>Click any property for details, or edit to manage rooms</p></div>
           <button className="btn btn-gold" onClick={()=>{setIsNewProp(true);setEditProp({});}}>+ Add Property</button></div>
-        {props.map(p=>{const pr=allRooms(p).map(r=>r.rent);const vac=allRooms(p).filter(r=>r.st==="vacant").length;const occRooms=allRooms(p).filter(r=>r.st==="occupied");const isExp=expanded["prop-"+p.id];
+        {props.map((p,idx)=>{const pr=allRooms(p).map(r=>r.rent);const vac=allRooms(p).filter(r=>r.st==="vacant").length;const occRooms=allRooms(p).filter(r=>r.st==="occupied");const isExp=expanded["prop-"+p.id];
           const totalRent=allRooms(p).reduce((s,r)=>s+r.rent,0);const projRent=occRooms.reduce((s,r)=>s+r.rent,0);
           const unpaidRooms=occRooms.filter(r=>!(payments[r.id]&&payments[r.id][MO]));
           const expiringRooms=occRooms.filter(r=>{if(!r.le)return false;const d=Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24));return d<=90;});
