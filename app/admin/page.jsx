@@ -95,7 +95,7 @@ function SigCanvas({onSave,height=120}){
 
 // ─── Sample Data ────────────────────────────────────────────────────
 const DEF_PROPS=[
-  {id:"p1",name:"The Holmes House",addr:"Holmes & Lee, Huntsville",lat:34.7285,lng:-86.5920,type:"SFH",sqft:2400,photos:[],
+  {id:"p1",name:"The Holmes House",addr:"Holmes & Lee, Huntsville",lat:0,lng:0,type:"SFH",sqft:2400,photos:[],
     units:[{id:"p1_u1",name:"Unit A",label:"A",sqft:2400,baths:3,utils:"first100",clean:"Weekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
       rooms:[
         {id:"r1",name:"Primary Suite",rent:850,pb:true,sqft:280,st:"occupied",le:"2026-07-31",tenant:{name:"Marcus Johnson",email:"marcus@email.com",phone:"(256) 555-1001",moveIn:"2025-08-01"}},
@@ -104,7 +104,7 @@ const DEF_PROPS=[
         {id:"r4",name:"Bedroom 4",rent:650,pb:false,sqft:175,st:"vacant",le:null,tenant:null},
         {id:"r5",name:"Bedroom 5",rent:600,pb:false,sqft:160,st:"occupied",le:"2026-10-31",tenant:{name:"Amy Rodriguez",email:"amy@email.com",phone:"(256) 555-1005",moveIn:"2025-11-01"}},
       ]}]},
-  {id:"p2",name:"Lee Drive East",addr:"Lee Drive, Huntsville",lat:34.7280,lng:-86.5935,type:"Duplex",sqft:2400,photos:[],
+  {id:"p2",name:"Lee Drive East",addr:"Lee Drive, Huntsville",lat:0,lng:0,type:"Duplex",sqft:2400,photos:[],
     units:[
       {id:"p2_u1",name:"Unit A",label:"A",sqft:1200,baths:2,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
         rooms:[
@@ -115,7 +115,7 @@ const DEF_PROPS=[
       {id:"p2_u2",name:"Unit B",label:"B",sqft:1200,baths:2,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
         rooms:[]},
     ]},
-  {id:"p3",name:"Lee Drive West",addr:"Lee Drive, Huntsville",lat:34.7280,lng:-86.5940,type:"Duplex",sqft:2400,photos:[],
+  {id:"p3",name:"Lee Drive West",addr:"Lee Drive, Huntsville",lat:0,lng:0,type:"Duplex",sqft:2400,photos:[],
     units:[
       {id:"p3_u1",name:"Unit A",label:"A",sqft:1200,baths:2,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],
         rooms:[

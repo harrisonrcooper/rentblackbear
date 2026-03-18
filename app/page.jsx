@@ -47,20 +47,27 @@ const allRoomsP=(prop)=>{
 const safeMin=(arr)=>arr.length>0?Math.min(...arr):0;
 const safeMax=(arr)=>arr.length>0?Math.max(...arr):0;
 const POIS=[
-  {name:"Redstone Arsenal Gate 9",icon:"🪖",cat:"Redstone Arsenal",drive:"12 min",lat:34.6860,lng:-86.5860,desc:"Main contractor & visitor gate",url:"https://www.google.com/maps/place/Redstone+Arsenal+Gate+9"},
-  {name:"Redstone Arsenal Gate 1",icon:"🪖",cat:"Redstone Arsenal",drive:"8 min",lat:34.6620,lng:-86.5530,desc:"Martin Rd — closest gate to our properties",url:"https://www.google.com/maps/place/Gate+1+Redstone+Arsenal"},
+  // Redstone Arsenal gates — verified coordinates
+  {name:"Redstone Arsenal Gate 9",icon:"🪖",cat:"Redstone Arsenal",drive:"12 min",lat:34.6598,lng:-86.6423,desc:"Main contractor & visitor gate",url:"https://www.google.com/maps/place/Redstone+Arsenal+Gate+9"},
+  {name:"Redstone Arsenal Gate 1",icon:"🪖",cat:"Redstone Arsenal",drive:"8 min",lat:34.6467,lng:-86.6108,desc:"Martin Rd — closest gate to our properties",url:"https://www.google.com/maps/place/Gate+1+Redstone+Arsenal"},
+  // Entertainment
   {name:"Downtown Huntsville",icon:"🏙️",cat:"Entertainment",drive:"5 min",lat:34.7304,lng:-86.5861,desc:"Courthouse Square, restaurants, nightlife",url:"https://www.downtownhuntsville.org"},
-  {name:"Von Braun Center",icon:"🎭",cat:"Entertainment",drive:"6 min",lat:34.7265,lng:-86.5893,desc:"Concerts, expos, conventions",url:"https://www.vonbrauncenter.com"},
-  {name:"Stovehouse",icon:"🍽️",cat:"Food & Drink",drive:"8 min",lat:34.7227,lng:-86.5651,desc:"Food hall, live music, cocktail bars",url:"https://www.stovehouse.com"},
-  {name:"Bridge Street Town Centre",icon:"🛍️",cat:"Shopping",drive:"14 min",lat:34.7155,lng:-86.6730,desc:"Outdoor mall, movie theater, restaurants",url:"https://www.bridgestreethuntsville.com"},
+  {name:"Von Braun Center",icon:"🎭",cat:"Entertainment",drive:"6 min",lat:34.7280,lng:-86.5935,desc:"Concerts, expos, conventions",url:"https://www.vonbrauncenter.com"},
+  {name:"MidCity District",icon:"🎯",cat:"Entertainment",drive:"12 min",lat:34.7064,lng:-86.6801,desc:"Dave & Buster's, Top Golf, Camp",url:"https://www.midcityhuntsville.com"},
+  // Food & Drink
+  {name:"Stovehouse",icon:"🍽️",cat:"Food & Drink",drive:"8 min",lat:34.7172,lng:-86.5712,desc:"Food hall, live music, cocktail bars",url:"https://www.stovehouse.com"},
+  // Shopping
+  {name:"Bridge Street Town Centre",icon:"🛍️",cat:"Shopping",drive:"14 min",lat:34.7527,lng:-86.6850,desc:"Outdoor mall, movie theater, restaurants",url:"https://www.bridgestreethuntsville.com"},
+  // Education
   {name:"UAH Campus",icon:"🎓",cat:"Education",drive:"10 min",lat:34.7254,lng:-86.6408,desc:"University of Alabama in Huntsville",url:"https://www.uah.edu"},
-  {name:"MidCity District",icon:"🎯",cat:"Entertainment",drive:"12 min",lat:34.7186,lng:-86.6168,desc:"Dave & Buster's, Top Golf, Camp",url:"https://www.midcityhuntsville.com"},
+  // Healthcare
   {name:"Huntsville Hospital",icon:"🏥",cat:"Healthcare",drive:"6 min",lat:34.7243,lng:-86.5826,desc:"Level 1 trauma center, emergency",url:"https://www.huntsvillehospital.org"},
-  {name:"Walmart Supercenter",icon:"🛒",cat:"Grocery & Retail",drive:"7 min",lat:34.7372,lng:-86.6136,desc:"Full grocery, pharmacy, general merchandise",url:"https://www.walmart.com/store/1098-huntsville-al"},
-  {name:"Target",icon:"🎯",cat:"Grocery & Retail",drive:"7 min",lat:34.7378,lng:-86.6095,desc:"Grocery, clothing, home goods",url:"https://www.target.com/sl/huntsville-south/2781"},
-  {name:"Costco",icon:"🛒",cat:"Grocery & Retail",drive:"12 min",lat:34.7315,lng:-86.6545,desc:"Bulk grocery, gas station, pharmacy",url:"https://www.costco.com/warehouse-locations/huntsville-al-1198.html"},
-  {name:"Kroger",icon:"🛒",cat:"Grocery & Retail",drive:"5 min",lat:34.7050,lng:-86.5870,desc:"Grocery, deli, pharmacy",url:"https://www.kroger.com/stores"},
-  {name:"ALDI",icon:"🛒",cat:"Grocery & Retail",drive:"6 min",lat:34.7365,lng:-86.6020,desc:"Budget-friendly grocery",url:"https://stores.aldi.us/al/huntsville"},
+  // Grocery & Retail — University Dr corridor
+  {name:"Walmart Supercenter",icon:"🛒",cat:"Grocery & Retail",drive:"7 min",lat:34.7329,lng:-86.6480,desc:"Full grocery, pharmacy, general merchandise",url:"https://www.walmart.com/store/1098-huntsville-al"},
+  {name:"Target",icon:"🎯",cat:"Grocery & Retail",drive:"7 min",lat:34.7059,lng:-86.6226,desc:"Grocery, clothing, home goods",url:"https://www.target.com/sl/huntsville-south/2781"},
+  {name:"Costco",icon:"🛒",cat:"Grocery & Retail",drive:"12 min",lat:34.7370,lng:-86.6784,desc:"Bulk grocery, gas station, pharmacy",url:"https://www.costco.com/warehouse-locations/huntsville-al-1198.html"},
+  {name:"Kroger",icon:"🛒",cat:"Grocery & Retail",drive:"5 min",lat:34.7050,lng:-86.5870,desc:"Grocery, deli, pharmacy — Sparkman Dr",url:"https://www.kroger.com/stores"},
+  {name:"ALDI",icon:"🛒",cat:"Grocery & Retail",drive:"6 min",lat:34.7293,lng:-86.6318,desc:"Budget-friendly grocery",url:"https://stores.aldi.us/al/huntsville"},
 ];
 
 const SCREEN_QS=[
@@ -560,11 +567,40 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
   const PROPS=properties||[];
   const mapRef=useRef(null);const mapInst=useRef(null);const markersRef=useRef([]);
   const[highlight,setHighlight]=useState(null);
+  const[geocodedProps,setGeocodedProps]=useState([]);
   const catColors={"Redstone Arsenal":"#b8956a",Entertainment:"#c4a882","Grocery & Retail":"#a8b882","Food & Drink":"#c4a070",Education:"#82a8a8",Healthcare:"#82a88c",property:"#d4a853"};
 
-  // Store latest PROPS in a ref so marker rebuild always sees fresh data
-  const propsRef=useRef(PROPS);
-  useEffect(()=>{propsRef.current=PROPS;},[PROPS]);
+  // Geocode all properties from their address — always use address, never trust stored lat/lng
+  useEffect(()=>{
+    if(!PROPS.length)return;
+    const cache=JSON.parse(sessionStorage.getItem("bb_geocache")||"{}");
+    Promise.all(PROPS.map(async p=>{
+      const addr=p.address||p.addr||"";
+      if(!addr)return p;
+      // Use cached result if available
+      if(cache[addr])return{...p,lat:cache[addr].lat,lng:cache[addr].lng};
+      try{
+        const q=encodeURIComponent(addr+", Huntsville, AL, USA");
+        const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=us`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
+        const data=await res.json();
+        if(data&&data.length>0){
+          const lat=parseFloat(parseFloat(data[0].lat).toFixed(5));
+          const lng=parseFloat(parseFloat(data[0].lon).toFixed(5));
+          cache[addr]={lat,lng};
+          sessionStorage.setItem("bb_geocache",JSON.stringify(cache));
+          return{...p,lat,lng};
+        }
+      }catch{}
+      return p;
+    })).then(resolved=>setGeocodedProps(resolved));
+  },[PROPS.length]);
+
+  // Use geocoded props if available, fall back to PROPS
+  const resolvedProps=geocodedProps.length>0?geocodedProps:PROPS;
+
+  // Store latest resolved props in a ref so marker rebuild always sees fresh data
+  const propsRef=useRef(resolvedProps);
+  useEffect(()=>{propsRef.current=resolvedProps;},[resolvedProps]);
   const mapCatRef=useRef(mapCat);
   useEffect(()=>{mapCatRef.current=mapCat;},[mapCat]);
 
@@ -609,8 +645,8 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     return()=>{if(mapInst.current){mapInst.current.remove();mapInst.current=null;}};
   },[]);
 
-  // Rebuild markers when properties or category filter change
-  useEffect(()=>{buildMarkers();},[PROPS,mapCat,buildMarkers]);
+  // Rebuild markers when resolved (geocoded) properties or category filter change
+  useEffect(()=>{buildMarkers();},[resolvedProps,mapCat,buildMarkers]);
 
   const scrollToPin=(p)=>{
     if(mapInst.current&&p.lat){mapInst.current.setView([p.lat,p.lng],14,{animate:true});
@@ -625,7 +661,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     <div className="tabs" style={{marginTop:0,marginBottom:16}}><button className={`tab ${mapCat==="all"?"on":""}`} onClick={()=>setMapCat("all")}>All</button>{mapCats.map(c=><button key={c} className={`tab ${mapCat===c?"on":""}`} onClick={()=>setMapCat(c)}>{c}</button>)}</div>
     {/* Property pins */}
     <div className="poi-g">
-      {PROPS.filter(p=>p.lat&&p.lng).map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));return(
+      {resolvedProps.filter(p=>p.lat&&p.lng).map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));return(
         <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:"rgba(212,168,83,.04)",cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none"}} onClick={()=>scrollToPin(p)}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>📍</div></div>);})}
       {/* POI list */}
       {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer" style={{cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",background:highlight===p.name?"rgba(255,255,255,.08)":"rgba(255,255,255,.05)"}} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.desc}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}
