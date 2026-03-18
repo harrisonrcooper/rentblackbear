@@ -504,6 +504,24 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
   const[saveShake,setSaveShake]=useState(0);
   const[justSaved,setJustSaved]=useState(false);
   const[showUtilModal,setShowUtilModal]=useState(false);
+  const[geocoding,setGeocoding]=useState(false);
+  const[geocodeErr,setGeocodeErr]=useState("");
+  const geocode=async()=>{
+    if(!p.addr)return;
+    setGeocoding(true);setGeocodeErr("");
+    try{
+      const q=encodeURIComponent(p.addr+", Huntsville, AL");
+      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,{headers:{"User-Agent":"BlackBearRentals/1.0"}});
+      const data=await res.json();
+      if(data&&data.length>0){
+        const{lat,lon}=data[0];
+        updP({...p,lat:parseFloat(parseFloat(lat).toFixed(4)),lng:parseFloat(parseFloat(lon).toFixed(4))});
+      } else {
+        setGeocodeErr("Address not found — try a more specific address");
+      }
+    }catch{setGeocodeErr("Geocoding failed — enter coordinates manually");}
+    setGeocoding(false);
+  };
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
   const updP=(val)=>{setP(val);markUnsaved();};
   // Mirror all settings + rooms from Unit A (index 0) to target unit
@@ -557,7 +575,18 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant,settings,onUpdateSet
 
     {/* Property-level info */}
     <div className="fr"><div className="fld"><label>Property Name</label><input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House"/></div><div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div></div>
-    <div className="fr3"><div className="fld"><label>Latitude</label><input type="number" step="0.0001" value={p.lat||""} onChange={e=>updP({...p,lat:Number(e.target.value)})}/></div><div className="fld"><label>Longitude</label><input type="number" step="0.0001" value={p.lng||""} onChange={e=>updP({...p,lng:Number(e.target.value)})}/></div><div className="fld"><label style={{fontSize:8,color:"#999"}}>💡 Get from Google Maps</label><a href={`https://www.google.com/maps/search/${encodeURIComponent(p.addr||"")}`} target="_blank" rel="noopener" style={{fontSize:10,color:"#3b82f6",cursor:"pointer"}}>Look up →</a></div></div>
+    <div className="fr3">
+      <div className="fld"><label>Latitude</label><input type="number" step="0.0001" value={p.lat||""} onChange={e=>updP({...p,lat:Number(e.target.value)})} placeholder="Auto-fill →"/></div>
+      <div className="fld"><label>Longitude</label><input type="number" step="0.0001" value={p.lng||""} onChange={e=>updP({...p,lng:Number(e.target.value)})} placeholder="Auto-fill →"/></div>
+      <div className="fld">
+        <label style={{visibility:"hidden"}}>.</label>
+        <button type="button" className="btn btn-out" style={{width:"100%",fontSize:11}} onClick={geocode} disabled={!p.addr||geocoding}>
+          {geocoding?"📍 Looking up...":"📍 Auto-fill from address"}
+        </button>
+        {geocodeErr&&<div style={{fontSize:9,color:"#c45c4a",marginTop:3}}>{geocodeErr}</div>}
+        {p.lat&&p.lng&&!geocodeErr&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>✓ {p.lat}, {p.lng}</div>}
+      </div>
+    </div>
     <div className="fr3">
       <div className="fld"><label>Property Type</label>
         <select value={p.type||"SFH"} onChange={e=>{

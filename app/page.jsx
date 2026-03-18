@@ -562,46 +562,55 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
   const[highlight,setHighlight]=useState(null);
   const catColors={"Redstone Arsenal":"#b8956a",Entertainment:"#c4a882","Grocery & Retail":"#a8b882","Food & Drink":"#c4a070",Education:"#82a8a8",Healthcare:"#82a88c",property:"#d4a853"};
 
+  // Store latest PROPS in a ref so marker rebuild always sees fresh data
+  const propsRef=useRef(PROPS);
+  useEffect(()=>{propsRef.current=PROPS;},[PROPS]);
+  const mapCatRef=useRef(mapCat);
+  useEffect(()=>{mapCatRef.current=mapCat;},[mapCat]);
+
+  const buildMarkers=useCallback(()=>{
+    const L=window.L;const map=mapInst.current;if(!L||!map)return;
+    markersRef.current.forEach(m=>m.remove());markersRef.current=[];
+    const curProps=propsRef.current;
+    const curCat=mapCatRef.current;
+    // Property pins — gold bear
+    curProps.filter(p=>p.lat&&p.lng).forEach(p=>{
+      const icon=L.divIcon({className:"",html:`<div style="width:34px;height:34px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer">🐻</div>`,iconSize:[34,34],iconAnchor:[17,34],popupAnchor:[0,-34]});
+      const vacRooms=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));
+      const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;min-width:180px;padding:4px 2px"><strong style="font-size:14px;color:#1a1714">${p.name}</strong><div style="color:#666;font-size:12px;margin:2px 0">${p.address}</div><div style="color:#d4a853;font-weight:700;font-size:13px;margin-top:4px">${vacRooms} room${vacRooms!==1?"s":""} available · From $${minR}/mo</div></div>`);
+      markersRef.current.push(m);
+    });
+    // POI pins
+    const pins=curCat==="all"?POIS:POIS.filter(p=>p.cat===curCat);
+    pins.forEach(p=>{
+      const color=catColors[p.cat]||"#666";
+      const icon=L.divIcon({className:"",html:`<div style="width:28px;height:28px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.22);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer">${p.icon}</div>`,iconSize:[28,28],iconAnchor:[14,28],popupAnchor:[0,-28]});
+      const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;padding:4px 2px;min-width:160px"><strong style="font-size:13px">${p.name}</strong><div style="color:#666;font-size:11px;margin-top:2px">${p.desc}</div><div style="color:#d4a853;font-size:11px;font-weight:600;margin-top:3px">🚗 ${p.drive}</div></div>`);
+      markersRef.current.push(m);
+    });
+  },[]);
+
   useEffect(()=>{
     if(mapInst.current||!mapRef.current)return;
-    // Load Leaflet
     const link=document.createElement("link");link.rel="stylesheet";link.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";document.head.appendChild(link);
     const script=document.createElement("script");script.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     script.onload=()=>{
       const L=window.L;
-      const map=L.map(mapRef.current,{scrollWheelZoom:false}).setView([34.72,-86.59],12);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:'© OpenStreetMap'}).addTo(map);
+      const map=L.map(mapRef.current,{scrollWheelZoom:false,zoomControl:true}).setView([34.723,-86.591],12);
+      // CartoDB Voyager — clean, colorful, modern tile
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{
+        attribution:'© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>',
+        subdomains:"abcd",maxZoom:20
+      }).addTo(map);
       mapInst.current=map;
-      // Add markers
-      const addMarkers=()=>{
-        markersRef.current.forEach(m=>m.remove());markersRef.current=[];
-        // Property pins (gold, larger) — pulled from PROPS data
-        PROPS.filter(p=>p.lat&&p.lng).forEach(p=>{
-          const icon=L.divIcon({className:"",html:`<div style="width:32px;height:32px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer">🐻</div>`,iconSize:[32,32],iconAnchor:[16,32],popupAnchor:[0,-32]});
-          const vacRooms=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));
-          const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;text-align:center;padding:4px"><strong style="font-size:14px">${p.name}</strong><br/><span style="color:#666">${p.address}</span><br/><span style="color:#d4a853;font-weight:700">${vacRooms} room${vacRooms!==1?"s":""} available · From $${minR}/mo</span></div>`);
-          markersRef.current.push(m);
-        });
-        // POI pins
-        const pins=mapCat==="all"?POIS:POIS.filter(p=>p.cat===mapCat);
-        pins.forEach(p=>{
-          const color=catColors[p.cat]||"#666";
-          const icon=L.divIcon({className:"",html:`<div style="width:26px;height:26px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer">${p.icon}</div>`,iconSize:[26,26],iconAnchor:[13,26],popupAnchor:[0,-26]});
-          const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;padding:4px"><strong>${p.name}</strong><br/><span style="color:#666">${p.desc} · 🚗 ${p.drive}</span></div>`);
-          markersRef.current.push(m);
-        });
-      };
-      addMarkers();
-      map._addMarkersForFilter=addMarkers;
+      buildMarkers();
     };
     document.head.appendChild(script);
     return()=>{if(mapInst.current){mapInst.current.remove();mapInst.current=null;}};
   },[]);
 
-  // Update markers when filter changes
-  useEffect(()=>{
-    if(mapInst.current&&mapInst.current._addMarkersForFilter)mapInst.current._addMarkersForFilter();
-  },[mapCat]);
+  // Rebuild markers when properties or category filter change
+  useEffect(()=>{buildMarkers();},[PROPS,mapCat,buildMarkers]);
 
   const scrollToPin=(p)=>{
     if(mapInst.current&&p.lat){mapInst.current.setView([p.lat,p.lng],14,{animate:true});
