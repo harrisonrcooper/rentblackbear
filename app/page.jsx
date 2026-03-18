@@ -148,8 +148,8 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 .mo{position:fixed;inset:0;z-index:200;background:rgba(26,23,20,.85);backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;animation:fadeIn .25s}
 .modal{background:#fff;border-radius:18px;max-width:960px;width:100%;margin:36px auto;position:relative;animation:fadeUp .35s}
 .mx{position:absolute;top:14px;right:14px;z-index:10;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.mgal{display:grid;grid-template-columns:2fr 1fr;gap:3px;height:280px;overflow:hidden;border-radius:18px 18px 0 0}
-.mgal img{width:100%;height:100%;object-fit:cover}.mside{display:flex;flex-direction:column;gap:3px}
+.mgal{display:grid;grid-template-columns:2fr 1fr;gap:3px;border-radius:18px 18px 0 0;background:#111}
+.mgal img{width:100%;height:100%;object-fit:contain;max-height:420px;background:#111}.mside{display:flex;flex-direction:column;gap:3px}
 .mbody{padding:36px}
 .mtp{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px;flex-wrap:wrap}
 .modal h2{font-family:var(--fd);font-size:28px;margin-bottom:3px}
@@ -362,7 +362,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 /* ─── Tablet (max 1024px) ─── */
 @media(max-width:1024px){
 .calc-grid{grid-template-columns:1fr}
-.mgal{grid-template-columns:1fr;height:220px}.mside{display:none}
+.mgal{grid-template-columns:1fr}.mside{display:none}
 .cmp-w{max-width:100%}
 }
 
@@ -399,7 +399,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .mo{padding:0;align-items:flex-end}
 .modal{margin:0;border-radius:18px 18px 0 0;max-height:92vh;overflow-y:auto}
 .mx{top:12px;right:12px;width:36px;height:36px;font-size:16px}
-.mgal{grid-template-columns:1fr;height:200px}.mside{display:none}
+.mgal{grid-template-columns:1fr}.mside{display:none}
 .mbody{padding:20px 16px}
 .mtp{flex-direction:column;gap:16px}
 .mib{min-width:80px;padding:10px 14px}.mib .v{font-size:22px}
@@ -506,7 +506,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
     <button className="mx" onClick={onClose}>✕</button>
     <div className="mgal" style={{cursor:p.imgs&&p.imgs.length>0?"pointer":"default",position:"relative"}} onClick={()=>{if(p.imgs&&p.imgs.length>0){setLightbox(p.imgs);setLbIdx(0);}}}>
       {p.imgs&&p.imgs.length>0
-        ?<img src={p.imgs[0]} alt={p.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+        ?<img src={p.imgs[0]} alt={p.name} style={{width:"100%",height:"auto",objectFit:"contain",maxHeight:480,display:"block"}}/>
         :<div style={{width:"100%",height:"100%",background:"#1a1714",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}><span style={{fontSize:48}}>🐻</span><span style={{fontSize:12,color:"#c4a882"}}>Photos coming soon</span></div>
       }
       {p.imgs&&p.imgs.length>1&&<div className="mside">
