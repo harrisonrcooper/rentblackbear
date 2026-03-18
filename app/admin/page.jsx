@@ -308,32 +308,17 @@ function randPalette(){const h=Math.floor(Math.random()*360);const c=(h+150+Math
 
 // ─── Photo Editor Modal ─────────────────────────────────────────────
 function PhotoEditor({src,onSave,onClose}){
-  const canvasRef=useRef(null);
   const[brightness,setBrightness]=useState(100);
   const[rotation,setRotation]=useState(0);
   const[cropX,setCropX]=useState(0);
   const[cropY,setCropY]=useState(0);
   const[cropW,setCropW]=useState(100);
   const[cropH,setCropH]=useState(100);
-  const[dragging,setDragging]=useState(null);
   const[saving,setSaving]=useState(false);
   const imgRef=useRef(null);
   const previewRef=useRef(null);
 
-  // Draw preview whenever settings change
-  useEffect(()=>{
-    const img=new Image();
-    img.crossOrigin="anonymous";
-    img.onload=()=>{
-      imgRef.current=img;
-      drawPreview(img);
-    };
-    img.src=src;
-  },[src]);
-
-  useEffect(()=>{if(imgRef.current)drawPreview(imgRef.current);},[brightness,rotation,cropX,cropY,cropW,cropH]);
-
-  const drawPreview=(img)=>{
+  const drawPreview=(img,br=brightness,rot=rotation,cx=cropX,cy=cropY,cw=cropW,ch=cropH)=>{
     const c=previewRef.current;if(!c)return;
     const ctx=c.getContext("2d");
     // Work in a temp canvas at natural size for quality
@@ -364,6 +349,16 @@ function PhotoEditor({src,onSave,onClose}){
     ctx.strokeStyle="rgba(212,168,83,.8)";ctx.lineWidth=2;ctx.setLineDash([6,3]);
     ctx.strokeRect(dx,dy,sw*scale,sh*scale);ctx.setLineDash([]);
   };
+
+  useEffect(()=>{
+    const img=new Image();
+    img.crossOrigin="anonymous";
+    img.onload=()=>{imgRef.current=img;drawPreview(img);};
+    img.onerror=()=>{console.warn("PhotoEditor: could not load image (CORS?)");};
+    img.src=src;
+  },[src]);
+
+  useEffect(()=>{if(imgRef.current)drawPreview(imgRef.current);},[brightness,rotation,cropX,cropY,cropW,cropH]);
 
   const applyAndSave=async()=>{
     setSaving(true);
@@ -635,7 +630,7 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
 }
 
 function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,onUpdateSettings}){
-  const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]});
+  const[p,setP]=useState(()=>{if(!prop)return{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]};try{return JSON.parse(JSON.stringify(prop));}catch{return{...prop,photos:prop.photos||[],units:(prop.units||[]).map(u=>({...u,rooms:(u.rooms||[])}))};} });
   const[activeUnit,setActiveUnit]=useState(0);
   const[warning,setWarning]=useState(null);
   const[unsaved,setUnsaved]=useState(false);
