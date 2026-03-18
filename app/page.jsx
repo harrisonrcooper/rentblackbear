@@ -788,9 +788,10 @@ export default function Page(){
 
   // Geocode property addresses in main component so MapSection always gets correct coords
   const[geoP,setGeoP]=useState([]);
+  const geoDep=P.map(x=>x.id+(x.address||x.addr||"")).join(",");
   useEffect(()=>{
     if(!P.length){setGeoP([]);return;}
-    const cache=JSON.parse(sessionStorage.getItem("bb_geocache")||"{}");
+    const cache=JSON.parse((typeof sessionStorage!=="undefined"?sessionStorage.getItem("bb_geocache"):null)||"{}");
     Promise.all(P.map(async p=>{
       const addr=(p.address||p.addr||"").trim();
       if(!addr)return p;
@@ -805,17 +806,17 @@ export default function Page(){
           const lat=parseFloat(parseFloat(data[0].lat).toFixed(5));
           const lng=parseFloat(parseFloat(data[0].lon).toFixed(5));
           cache[addr]={lat,lng};
-          sessionStorage.setItem("bb_geocache",JSON.stringify(cache));
+          if(typeof sessionStorage!=="undefined")sessionStorage.setItem("bb_geocache",JSON.stringify(cache));
           return{...p,lat,lng};
         }
       }catch{}
       return p;
     })).then(setGeoP);
-  },[P.map(x=>x.id+x.address).join(",")]);
+  },[geoDep]);
   // Use geocoded coords if ready, fall back to P while geocoding
   const mapProps=geoP.length>0?geoP:P;
 
-  const allRents=P.flatMap(p=>allRoomsP(p).map(r=>r.rent));const globalMin=Math.min(...allRents);const globalMax=Math.max(...allRents);const[bbRoom,setBbRoom]=useState(0);
+  const allRents=P.flatMap(p=>allRoomsP(p).map(r=>r.rent));const globalMin=allRents.length?Math.min(...allRents):500;const globalMax=allRents.length?Math.max(...allRents):1200;const[bbRoom,setBbRoom]=useState(0);
   useEffect(()=>{if(allRents.length&&!bbRoom)setBbRoom(globalMin);},[allRents]);
 
   useEffect(()=>{const h=()=>setScrolled(window.scrollY>50);window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[]);
