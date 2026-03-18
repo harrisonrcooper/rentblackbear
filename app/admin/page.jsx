@@ -730,10 +730,17 @@ export default function Page(){
   useEffect(()=>{(async()=>{
     const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ph]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-prop-photos",{})]);
     // Merge photos back into props from separate photo store
+    // One-time migration: if hq-prop-photos is empty but old hq-props had photos, seed it
+    let safePhotoMap=ph&&typeof ph==="object"&&!Array.isArray(ph)?ph:{};
+    if(Object.keys(safePhotoMap).length===0){
+      const migratedMap={};
+      p.forEach(prop=>{(prop.photos||[]).forEach((photo,i)=>{if(photo&&photo.length>100)migratedMap[prop.id+"_"+i]=photo;});(prop.rooms||[]).forEach(room=>{(room.photos||[]).forEach((photo,j)=>{if(photo&&photo.length>100)migratedMap[room.id+"_"+j]=photo;});});});
+      if(Object.keys(migratedMap).length>0){safePhotoMap=migratedMap;save("hq-prop-photos",migratedMap);}
+    }
     const pWithPhotos=p.map(prop=>({...prop,
-      photos:Object.keys(ph).filter(k=>k.startsWith(prop.id+"_")).sort((a,b)=>Number(a.split("_")[1])-Number(b.split("_")[1])).map(k=>ph[k]),
+      photos:Object.keys(safePhotoMap).filter(k=>k.startsWith(prop.id+"_")).sort((a,b)=>Number(a.split("_").pop())-Number(b.split("_").pop())).map(k=>safePhotoMap[k]),
       rooms:(prop.rooms||[]).map(room=>({...room,
-        photos:Object.keys(ph).filter(k=>k.startsWith(room.id+"_")).sort((a,b)=>Number(a.split("_")[1])-Number(b.split("_")[1])).map(k=>ph[k]),
+        photos:Object.keys(safePhotoMap).filter(k=>k.startsWith(room.id+"_")).sort((a,b)=>Number(a.split("_").pop())-Number(b.split("_").pop())).map(k=>safePhotoMap[k]),
       })),
     }));
     setProps(pWithPhotos);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
@@ -742,8 +749,8 @@ export default function Page(){
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([(()=>{
               const propsNoPhotos=props.map(p=>({...p,photos:[],rooms:(p.rooms||[]).map(r=>({...r,photos:[]}))}));
               const photoMap={};
-              props.forEach(p=>{(p.photos||[]).forEach((ph,i)=>{photoMap[p.id+"_"+i]=ph;});(p.rooms||[]).forEach(r=>{(r.photos||[]).forEach((ph,j)=>{photoMap[r.id+"_"+j]=ph;});});});
-              save("hq-prop-photos",photoMap);
+              props.forEach(p=>{(p.photos||[]).forEach((ph,i)=>{if(ph)photoMap[p.id+"_"+i]=ph;});(p.rooms||[]).forEach(r=>{(r.photos||[]).forEach((ph,j)=>{if(ph)photoMap[r.id+"_"+j]=ph;});});});
+              if(Object.keys(photoMap).length>0)save("hq-prop-photos",photoMap);
               return save("hq-props",propsNoPhotos);
             })(),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,loaded]);
 
