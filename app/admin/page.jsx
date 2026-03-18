@@ -30,6 +30,21 @@ const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const supa=(path,opts={})=>fetch(SUPA_URL+"/rest/v1/"+path,{...opts,headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":opts.prefer||"return=representation",...(opts.headers||{})}});
 async function load(k,fb){try{const r=await supa("app_data?key=eq."+k+"&select=value");const d=await r.json();return d&&d.length>0&&d[0].value!=null?d[0].value:fb;}catch{return fb;}}
 async function save(k,d){try{await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:k,value:d})});}catch(e){console.error("Save error:",k,e);}}
+
+// Upload a file to Supabase Storage, return public URL
+async function uploadPhoto(file,propId){
+  const ext=file.name.split(".").pop()||"jpg";
+  const path=`properties/${propId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  try{
+    const r=await fetch(`${SUPA_URL}/storage/v1/object/property-photos/${path}`,{
+      method:"POST",
+      headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
+      body:file,
+    });
+    if(!r.ok){const e=await r.text();console.error("Upload failed:",e);return null;}
+    return `${SUPA_URL}/storage/v1/object/public/property-photos/${path}`;
+  }catch(e){console.error("Upload error:",e);return null;}
+}
 const uid=()=>Math.random().toString(36).slice(2,9);
 const fmt=n=>"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtS=n=>"$"+Number(n).toLocaleString();
@@ -241,7 +256,7 @@ const DEF_IDEAS=[
 function randPalette(){const h=Math.floor(Math.random()*360);const c=(h+150+Math.random()*60)%360;const hl=(h2,s,l)=>{s/=100;l/=100;const a=s*Math.min(l,1-l);const f=n=>{const k=(n+h2/30)%12;const cv=l-a*Math.max(Math.min(k-3,9-k,1),-1);return Math.round(255*cv).toString(16).padStart(2,"0");};return`#${f(0)}${f(8)}${f(4)}`;};return{bg:hl(h,20,9),card:hl(h,18,15),accent:hl(c,70,60),text:hl(h,10,94),muted:hl(h,14,65),surface:hl(c,5,98),surfaceAlt:hl(c,7,94),green:hl(150,50,45),dark:hl(h,20,8),warm:hl(h,12,44)};}
 
 // Photo manager — unlimited, multi-upload, drag-to-reorder
-function PhotoManager({photos=[],onChange,label="Photos"}){
+function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
   const[dropOver,setDropOver]=useState(false);
   const[urlInput,setUrlInput]=useState("");
   const[dragIdx,setDragIdx]=useState(null);
@@ -250,23 +265,18 @@ function PhotoManager({photos=[],onChange,label="Photos"}){
   const[readingCount,setReadingCount]=useState(0);
   const ph=photos||[];
 
-  const readFiles=files=>{
+  const readFiles=async files=>{
     const imageFiles=[...files].filter(f=>f.type.startsWith("image/"));
     if(!imageFiles.length)return;
     setReadingCount(imageFiles.length);
-    const results=[];let done=0;
-    imageFiles.forEach((file,i)=>{
-      const r=new FileReader();
-      r.onload=ev=>{
-        results[i]=ev.target.result;
-        done++;
-        if(done===imageFiles.length){
-          onChange(prev=>[...(Array.isArray(prev)?prev:ph),...results]);
-          setReadingCount(0);
-        }
-      };
-      r.readAsDataURL(file);
-    });
+    // Upload each file to Supabase Storage, collect public URLs
+    const urls=await Promise.all(imageFiles.map(async file=>{
+      const url=await uploadPhoto(file,propId||"general");
+      return url;
+    }));
+    const valid=urls.filter(Boolean);
+    onChange(prev=>[...(Array.isArray(prev)?prev:ph),...valid]);
+    setReadingCount(0);
   };
   const openPicker=()=>{
     const inp=document.createElement("input");
@@ -310,7 +320,7 @@ function PhotoManager({photos=[],onChange,label="Photos"}){
       Loading {readingCount} photo{readingCount!==1?"s":""}…
     </div>}
     {!readingCount&&ph.length>0&&<div style={{marginBottom:6,padding:"4px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6,fontSize:10,color:"#4a7c59",fontWeight:600}}>
-      ✓ {ph.length} photo{ph.length!==1?"s":""} ready — click Save to write to database
+      ✓ {ph.length} photo{ph.length!==1?"s":""} uploaded to cloud — click Save to apply
     </div>}
 
     {ph.length>0&&<div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${thumbSize}px,1fr))`,gap:6,marginBottom:8}}>
@@ -367,9 +377,22 @@ function PhotoManager({photos=[],onChange,label="Photos"}){
 function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
   const[p,setP]=useState(prop?JSON.parse(JSON.stringify(prop)):{id:uid(),name:"",addr:"",type:"SFH",baths:1,beds:0,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",desc:"",wholeHouseRent:0,wholeHouseDesc:"",photos:[],rooms:[]});
   const[warning,setWarning]=useState(null);
-  const addRoom=()=>setP({...p,rooms:[...p.rooms,{id:uid(),name:`Bedroom ${p.rooms.length+1}`,rent:600,sqft:150,pb:false,st:"vacant",le:null,tenant:null,desc:"",photos:[]}]});
-  const updRoom=(i,f,v)=>{const rs=[...p.rooms];rs[i]={...rs[i],[f]:f==="rent"||f==="sqft"?Number(v):f==="pb"?v==="true":v};setP({...p,rooms:rs});};
-  const updRoomPhotos=(i,v)=>{const rs=[...p.rooms];rs[i]={...rs[i],photos:typeof v==="function"?v(rs[i].photos||[]):v};setP({...p,rooms:rs});};
+  const[unsaved,setUnsaved]=useState(false);
+  const[saveShake,setSaveShake]=useState(0);
+  const[justSaved,setJustSaved]=useState(false);
+  const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
+  // Wrap setP to track unsaved changes
+  const updP=(val)=>{setP(val);markUnsaved();};
+  const addRoom=()=>updP({...p,rooms:[...p.rooms,{id:uid(),name:`Bedroom ${p.rooms.length+1}`,rent:600,sqft:150,pb:false,st:"vacant",le:null,tenant:null,desc:"",photos:[]}]});
+  const updRoom=(i,f,v)=>{const rs=[...p.rooms];rs[i]={...rs[i],[f]:f==="rent"||f==="sqft"?Number(v):f==="pb"?v==="true":v};updP({...p,rooms:rs});};
+  const updRoomPhotos=(i,v)=>{
+    const rs=[...p.rooms];
+    const newPhotos=typeof v==="function"?v(rs[i].photos||[]):v;
+    rs[i]={...rs[i],photos:newPhotos};
+    updP({...p,rooms:rs});
+    // Save room photos immediately to Supabase in background
+    
+  };
   const isOcc=r=>r.st==="occupied"&&r.tenant;
   const mode=p.rentalMode||"byRoom";
   return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:720,maxHeight:"90vh",overflowY:"auto"}}>
@@ -416,7 +439,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
         <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>Property Photos</span>
         {p.rooms.some(r=>(r.photos||[]).length>0)&&<button className="btn btn-out btn-sm" onClick={()=>{const all=[...(p.photos||[]),...p.rooms.flatMap(r=>r.photos||[])].filter((x,i,a)=>a.indexOf(x)===i);setP({...p,photos:all});}}>⬆ Copy all room photos here</button>}
       </div>
-      <PhotoManager photos={p.photos||[]} onChange={v=>setP({...p,photos:typeof v==="function"?v(p.photos||[]):v})} label="Property Photos"/>
+      <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v=="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id}/>
     </>}
 
     {mode==="byRoom"&&<>
@@ -424,7 +447,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
         <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>Property Photos</span>
         {mode==="byRoom"&&(p.photos||[]).length>0&&<span style={{fontSize:9,color:"#999"}}>These show on the property listing</span>}
       </div>
-      <PhotoManager photos={p.photos||[]} onChange={v=>setP({...p,photos:typeof v==="function"?v(p.photos||[]):v})} label="Property Photos"/>
+      <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v=="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id}/>
     </>}
 
     {/* Property description (both modes) */}
@@ -450,7 +473,7 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
             <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
           </div>
           {!locked&&<div className="fld"><label>Room Description</label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Features, view, notes..."/></div>}
-          {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`}/>}
+          {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
           {!locked&&<button className="btn btn-red btn-sm" style={{marginTop:4}} onClick={()=>setP({...p,rooms:p.rooms.filter((_,j)=>j!==i)})}>Remove Room</button>}
           {locked&&<div style={{display:"flex",gap:6,alignItems:"center",marginTop:6}}>
             <button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease & Tenant →</button>
@@ -470,9 +493,30 @@ function PropEditor({prop,onSave,onClose,isNew,onViewTenant}){
     </div>}
 
     {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
-    <div className="mft"><button className="btn btn-out" onClick={onClose}>Cancel</button><button className="btn btn-gold" onClick={()=>{
-      if(!p.name.trim()){setWarning("Property name is required.");return;}
-      setWarning(null);onSave(p);}}>{isNew?"Add":"Save"}</button></div>
+    {unsaved&&!justSaved&&<div key={saveShake} style={{
+      marginBottom:8,padding:"8px 12px",background:"rgba(196,92,74,.06)",
+      border:"1px solid rgba(196,92,74,.25)",borderRadius:8,
+      fontSize:11,fontWeight:700,color:"#c45c4a",textAlign:"center",
+      animation:saveShake>0?"shake .4s ease":"none"
+    }}>
+      ⚠ You have unsaved changes — click Save to keep them
+    </div>}
+    {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:"#4a7c59",textAlign:"center"}}>
+      ✓ Saved
+    </div>}
+    <div className="mft">
+      <button className="btn btn-out" onClick={()=>{
+        if(unsaved&&!justSaved){setSaveShake(k=>k+1);return;}
+        onClose();
+      }}>Cancel</button>
+      <button className={`btn ${justSaved?"btn-green":unsaved?"btn-gold":"btn-out"}`} onClick={()=>{
+        if(!p.name.trim()){setWarning("Property name is required.");return;}
+        setWarning(null);
+        setUnsaved(false);setJustSaved(true);
+        setTimeout(()=>setJustSaved(false),3000);
+        onSave(p);
+      }}>{isNew?"Add Property":justSaved?"✓ Saved":"Save Changes"}</button>
+    </div>
   </div></div>);
 }
 
@@ -744,22 +788,11 @@ export default function Page(){
 
   useEffect(()=>{(async()=>{
     const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
-    // Load photos per-property — each in its own Supabase key to avoid size limits
-    const photosByProp={};
-    await Promise.all(p.map(async prop=>{
-      const ph=await load("hq-photos-"+prop.id,[]);
-      photosByProp[prop.id]=Array.isArray(ph)?ph:[];
-    }));
-    const pWithPhotos=p.map(prop=>({...prop,photos:photosByProp[prop.id]||[]}));
-    setProps(pWithPhotos);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
+    // Photos are now Supabase Storage URLs stored directly in hq-props — no separate load needed
+    setProps(p);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([(()=>{
-              // Save each property's photos to its own key — avoids Supabase size limits
-              props.forEach(p=>{save("hq-photos-"+p.id,p.photos||[]);});
-              const propsNoPhotos=props.map(p=>({...p,photos:[],rooms:(p.rooms||[]).map(r=>({...r,photos:[]}))}));
-              return save("hq-props",propsNoPhotos);
-            })(),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,loaded]);
+  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,loaded]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   const m=useMemo(()=>{
@@ -936,7 +969,6 @@ export default function Page(){
   const cycleRock=id=>setRocks(p=>p.map(r=>{if(r.id!==id)return r;const o=["on-track","off-track","not-started","done"];return{...r,status:o[(o.indexOf(r.status)+1)%o.length]};}));
   const saveProp=p=>{
     // Immediately save photos to Supabase — don't wait for debounce
-    if(p.photos&&p.photos.length>0)save("hq-photos-"+p.id,p.photos);
     if(isNewProp)setProps(prev=>[...prev,p]);else setProps(prev=>prev.map(x=>x.id===p.id?p:x));
     setEditProp(null);
   };

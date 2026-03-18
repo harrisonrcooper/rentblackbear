@@ -739,24 +739,9 @@ export default function Page(){
     Promise.all([
       fetch(SUPA+"/app_data?key=eq.hq-props&select=value",{headers:hdr}).then(r=>r.json()),
       fetch(SUPA+"/app_data?key=eq.hq-settings&select=value",{headers:hdr}).then(r=>r.json()),
-    ]).then(async([p,s])=>{
+    ]).then(([p,s])=>{
       if(s&&s[0]&&s[0].value&&s[0].value.companyName)setLiveSettings(s[0].value);
-      if(p&&p[0]&&p[0].value&&Array.isArray(p[0].value)&&p[0].value.length>0){
-        const rawProps=p[0].value;
-        // Load each property's photos from its own key in parallel
-        const photoArrays=await Promise.all(
-          rawProps.map(prop=>
-            fetch(SUPA+"/app_data?key=eq.hq-photos-"+prop.id+"&select=value",{headers:hdr})
-              .then(r=>r.json())
-              .then(d=>({id:prop.id,photos:Array.isArray(d?.[0]?.value)?d[0].value:[]}))
-              .catch(()=>({id:prop.id,photos:[]}))
-          )
-        );
-        const photosById={};
-        photoArrays.forEach(({id,photos})=>{photosById[id]=photos;});
-        const merged=rawProps.map(prop=>({...prop,photos:photosById[prop.id]||[]}));
-        setLiveProps(merged);
-      }
+      if(p&&p[0]&&p[0].value&&Array.isArray(p[0].value)&&p[0].value.length>0)setLiveProps(p[0].value);
     }).catch(()=>{});
   },[]);
 
