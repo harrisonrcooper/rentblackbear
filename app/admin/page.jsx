@@ -323,109 +323,185 @@ function PhotoEditor({src,onSave,onClose}){
   const[saving,setSaving]=useState(false);
   const imgRef=useRef(null);
   const previewRef=useRef(null);
+  const rafRef=useRef(null);
+  // Canvas layout refs — updated on every draw so mouse handlers stay in sync
+  const layoutRef=useRef({dx:0,dy:0,dw:0,dh:0,imgW:0,imgH:0});
+  const dragRef=useRef(null); // {mode,startX,startY,startCropX,startCropY,startCropW,startCropH}
+  const cropRef=useRef({x:0,y:0,w:100,h:100});
 
   const doRotate=(deg)=>{const r=((rotation+deg)%360+360)%360;const d=r>180?r-360:r;setRotation(d);setRotInput(String(d));};
 
-  // Renders current state to preview canvas
-  const drawPreview=()=>{
-    const img=imgRef.current;const c=previewRef.current;if(!img||!c)return;
-    const ctx=c.getContext("2d");
+  const applyAdjustments=(tc,rW,rH)=>{
+    if(brightness===100&&contrast===100&&saturation===100)return;
+    const id=tc.getImageData(0,0,rW,rH);const d=id.data;
+    const bf=brightness/100;const cf=contrast/100;const sf=saturation/100;
+    for(let i=0;i<d.length;i+=4){
+      let r=d[i],g=d[i+1],b=d[i+2];
+      r*=bf;g*=bf;b*=bf;
+      r=(r-128)*cf+128;g=(g-128)*cf+128;b=(b-128)*cf+128;
+      const gray=0.299*r+0.587*g+0.114*b;
+      r=gray+(r-gray)*sf;g=gray+(g-gray)*sf;b=gray+(b-gray)*sf;
+      d[i]=Math.max(0,Math.min(255,r));d[i+1]=Math.max(0,Math.min(255,g));d[i+2]=Math.max(0,Math.min(255,b));
+    }
+    tc.putImageData(id,0,0);
+  };
+
+  const buildRotated=()=>{
+    const img=imgRef.current;if(!img)return null;
     const rad=rotation*Math.PI/180;
     const sin=Math.abs(Math.sin(rad));const cos=Math.abs(Math.cos(rad));
     const rW=Math.round(img.width*cos+img.height*sin);
     const rH=Math.round(img.width*sin+img.height*cos);
-    // Render to offscreen canvas
     const tmp=document.createElement("canvas");tmp.width=rW;tmp.height=rH;
     const tc=tmp.getContext("2d");
-    tc.translate(rW/2,rH/2);
-    tc.scale(flipH?-1:1,flipV?-1:1);
-    tc.rotate(rad);
+    tc.translate(rW/2,rH/2);tc.scale(flipH?-1:1,flipV?-1:1);tc.rotate(rad);
     tc.drawImage(img,-img.width/2,-img.height/2);
-    // Apply pixel adjustments
-    if(brightness!==100||contrast!==100||saturation!==100){
-      const id=tc.getImageData(0,0,rW,rH);const d=id.data;
-      const bf=brightness/100;const cf=(contrast/100);const sf=saturation/100;
-      for(let i=0;i<d.length;i+=4){
-        let r=d[i],g=d[i+1],b=d[i+2];
-        // Brightness
-        r*=bf;g*=bf;b*=bf;
-        // Contrast
-        r=(r-128)*cf+128;g=(g-128)*cf+128;b=(b-128)*cf+128;
-        // Saturation
-        const gray=0.299*r+0.587*g+0.114*b;
-        r=gray+(r-gray)*sf;g=gray+(g-gray)*sf;b=gray+(b-gray)*sf;
-        d[i]=Math.max(0,Math.min(255,r));d[i+1]=Math.max(0,Math.min(255,g));d[i+2]=Math.max(0,Math.min(255,b));
-      }
-      tc.putImageData(id,0,0);
-    }
-    // Crop region
-    const sx=Math.round(rW*cropX/100);const sy=Math.round(rH*cropY/100);
-    const sw=Math.max(1,Math.round(rW*cropW/100));const sh=Math.max(1,Math.round(rH*cropH/100));
-    // Draw to preview
-    c.width=c.offsetWidth||700;c.height=c.offsetHeight||400;
-    ctx.clearRect(0,0,c.width,c.height);
-    ctx.fillStyle="#1a1714";ctx.fillRect(0,0,c.width,c.height);
-    const scale=Math.min(c.width/sw,c.height/sh)*.95;
+    applyAdjustments(tc,rW,rH);
+    return{canvas:tmp,rW,rH};
+  };
+
+  const drawPreview=()=>{
+    const c=previewRef.current;if(!c)return;
+    const built=buildRotated();if(!built)return;
+    const{canvas:tmp,rW,rH}=built;
+    const cx=cropRef.current.x,cy=cropRef.current.y,cw=cropRef.current.w,ch=cropRef.current.h;
+    const sx=Math.round(rW*cx/100);const sy=Math.round(rH*cy/100);
+    const sw=Math.max(1,Math.round(rW*cw/100));const sh=Math.max(1,Math.round(rH*ch/100));
+    c.width=c.offsetWidth||700;c.height=c.offsetHeight||420;
+    const ctx=c.getContext("2d");
+    ctx.fillStyle="#111";ctx.fillRect(0,0,c.width,c.height);
+    const scale=Math.min((c.width-20)/sw,(c.height-20)/sh);
     const dx=(c.width-sw*scale)/2;const dy=(c.height-sh*scale)/2;
-    ctx.drawImage(tmp,sx,sy,sw,sh,dx,dy,sw*scale,sh*scale);
+    const dw=sw*scale;const dh=sh*scale;
+    ctx.drawImage(tmp,sx,sy,sw,sh,dx,dy,dw,dh);
+    // Store layout for mouse handlers
+    layoutRef.current={dx,dy,dw,dh,imgW:rW,imgH:rH,sx,sy,sw,sh,scale};
+    // Dark overlay outside crop on full image
+    const fullScale=Math.min((c.width-20)/rW,(c.height-20)/rH);
+    const fdx=(c.width-rW*fullScale)/2;const fdy=(c.height-rH*fullScale)/2;
     // Crop border
-    ctx.strokeStyle="rgba(212,168,83,.9)";ctx.lineWidth=2;ctx.setLineDash([6,3]);
-    ctx.strokeRect(dx,dy,sw*scale,sh*scale);ctx.setLineDash([]);
-    // Grid lines
+    ctx.strokeStyle="#d4a853";ctx.lineWidth=2;ctx.setLineDash([]);
+    ctx.strokeRect(dx,dy,dw,dh);
+    // Corner handles
+    const hs=8;
+    [[dx,dy],[dx+dw,dy],[dx,dy+dh],[dx+dw,dy+dh],
+     [dx+dw/2,dy],[dx+dw/2,dy+dh],[dx,dy+dh/2],[dx+dw,dy+dh/2]
+    ].forEach(([hx,hy])=>{
+      ctx.fillStyle="#d4a853";ctx.fillRect(hx-hs/2,hy-hs/2,hs,hs);
+    });
+    // Grid
     if(showGrid){
-      // Rule of thirds — bright white lines
-      ctx.strokeStyle="rgba(255,255,255,.85)";ctx.lineWidth=1.5;ctx.setLineDash([]);
+      ctx.strokeStyle="rgba(255,255,255,.85)";ctx.lineWidth=1.5;
       for(let g=1;g<3;g++){
-        const gx=dx+sw*scale*g/3;ctx.beginPath();ctx.moveTo(gx,dy);ctx.lineTo(gx,dy+sh*scale);ctx.stroke();
-        const gy=dy+sh*scale*g/3;ctx.beginPath();ctx.moveTo(dx,gy);ctx.lineTo(dx+sw*scale,gy);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(dx+dw*g/3,dy);ctx.lineTo(dx+dw*g/3,dy+dh);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(dx,dy+dh*g/3);ctx.lineTo(dx+dw,dy+dh*g/3);ctx.stroke();
       }
-      // Center crosshair
-      ctx.strokeStyle="rgba(212,168,83,.9)";ctx.lineWidth=1;ctx.setLineDash([4,4]);
-      const cx2=dx+sw*scale/2;const cy2=dy+sh*scale/2;
-      ctx.beginPath();ctx.moveTo(cx2,dy);ctx.lineTo(cx2,dy+sh*scale);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(dx,cy2);ctx.lineTo(dx+sw*scale,cy2);ctx.stroke();
+      ctx.strokeStyle="rgba(212,168,83,.8)";ctx.lineWidth=1;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(dx+dw/2,dy);ctx.lineTo(dx+dw/2,dy+dh);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(dx,dy+dh/2);ctx.lineTo(dx+dw,dy+dh/2);ctx.stroke();
       ctx.setLineDash([]);
-      // Diagonals faint
-      ctx.strokeStyle="rgba(255,255,255,.25)";ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(dx,dy);ctx.lineTo(dx+sw*scale,dy+sh*scale);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(dx+sw*scale,dy);ctx.lineTo(dx,dy+sh*scale);ctx.stroke();
     }
   };
 
+  const scheduleDraw=()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(drawPreview);};
+
   useEffect(()=>{
     const img=new Image();img.crossOrigin="anonymous";
-    img.onload=()=>{imgRef.current=img;drawPreview();};
-    img.onerror=()=>{console.warn("PhotoEditor: CORS issue loading image");};
+    img.onload=()=>{imgRef.current=img;cropRef.current={x:0,y:0,w:100,h:100};setCropX(0);setCropY(0);setCropW(100);setCropH(100);scheduleDraw();};
+    img.onerror=()=>console.warn("PhotoEditor: CORS issue");
     img.src=src;
   },[src]);
 
-  const rafRef=useRef(null);
-  const scheduleDraw=()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(drawPreview);};
-  useEffect(()=>{scheduleDraw();},[brightness,contrast,saturation,rotation,flipH,flipV,cropX,cropY,cropW,cropH,showGrid]);
+  useEffect(()=>{cropRef.current={x:cropX,y:cropY,w:cropW,h:cropH};scheduleDraw();},[brightness,contrast,saturation,rotation,flipH,flipV,cropX,cropY,cropW,cropH,showGrid]);
+
+  // Mouse handlers — drag to draw new crop, drag handles to resize
+  const getHandle=(mx,my,dx,dy,dw,dh)=>{
+    const hs=12;
+    const pts=[
+      {id:"tl",x:dx,y:dy},{id:"tr",x:dx+dw,y:dy},{id:"bl",x:dx,y:dy+dh},{id:"br",x:dx+dw,y:dy+dh},
+      {id:"tm",x:dx+dw/2,y:dy},{id:"bm",x:dx+dw/2,y:dy+dh},
+      {id:"ml",x:dx,y:dy+dh/2},{id:"mr",x:dx+dw,y:dy+dh/2},
+    ];
+    for(const p of pts)if(Math.abs(mx-p.x)<hs&&Math.abs(my-p.y)<hs)return p.id;
+    if(mx>dx&&mx<dx+dw&&my>dy&&my<dy+dh)return"move";
+    return null;
+  };
+
+  const canvasToImgPct=(cx,cy)=>{
+    const{dx,dy,dw,dh,imgW,imgH,sx,sy,sw,sh}=layoutRef.current;
+    const px=(cx-dx)/dw*sw+sx;const py=(cy-dy)/dh*sh+sy;
+    return{px:Math.max(0,Math.min(imgW,px)),py:Math.max(0,Math.min(imgH,py))};
+  };
+
+  const onMouseDown=e=>{
+    const c=previewRef.current;if(!c)return;
+    const rect=c.getBoundingClientRect();
+    const scaleX=c.width/rect.width;const scaleY=c.height/rect.height;
+    const mx=(e.clientX-rect.left)*scaleX;const my=(e.clientY-rect.top)*scaleY;
+    const{dx,dy,dw,dh,imgW,imgH}=layoutRef.current;
+    const handle=getHandle(mx,my,dx,dy,dw,dh);
+    dragRef.current={mode:handle||"draw",startMx:mx,startMy:my,
+      startCX:cropX,startCY:cropY,startCW:cropW,startCH:cropH,
+      imgW,imgH,dx,dy,dw,dh};
+    e.preventDefault();
+  };
+
+  const onMouseMove=e=>{
+    const d=dragRef.current;if(!d||!d.mode)return;
+    const c=previewRef.current;if(!c)return;
+    const rect=c.getBoundingClientRect();
+    const scaleX=c.width/rect.width;const scaleY=c.height/rect.height;
+    const mx=(e.clientX-rect.left)*scaleX;const my=(e.clientY-rect.top)*scaleY;
+    const{dx,dy,dw,dh,imgW,imgH}=layoutRef.current;
+    const pxPerPct=imgW/100;const pyPerPct=imgH/100;
+    const dPctX=(mx-d.startMx)/dw*cropW;const dPctY=(my-d.startMy)/dh*cropH;
+    let nx=cropX,ny=cropY,nw=cropW,nh=cropH;
+    if(d.mode==="draw"){
+      const{px:x1}=canvasToImgPct(d.startMx,d.startMy);const{px:x2}=canvasToImgPct(mx,d.startMy);
+      const{py:y1}=canvasToImgPct(d.startMx,d.startMy);const{py:y2}=canvasToImgPct(d.startMx,my);
+      const rx=Math.min(x1,x2)/imgW*100;const ry=Math.min(y1,y2)/imgH*100;
+      const rw=Math.abs(x2-x1)/imgW*100;const rh=Math.abs(y2-y1)/imgH*100;
+      nx=Math.max(0,rx);ny=Math.max(0,ry);nw=Math.min(100-nx,Math.max(5,rw));nh=Math.min(100-ny,Math.max(5,rh));
+    }else if(d.mode==="move"){
+      nx=Math.max(0,Math.min(100-d.startCW,d.startCX+dPctX));
+      ny=Math.max(0,Math.min(100-d.startCH,d.startCY+dPctY));
+      nw=d.startCW;nh=d.startCH;
+    }else{
+      // Handle resize
+      const ddx=(mx-d.startMx)/dw*d.startCW;const ddy=(my-d.startMy)/dh*d.startCH;
+      if(d.mode.includes("r"))nw=Math.max(5,Math.min(100-d.startCX,d.startCW+ddx));
+      if(d.mode.includes("l")){nx=Math.max(0,Math.min(d.startCX+d.startCW-5,d.startCX+ddx));nw=d.startCW+(d.startCX-nx);}
+      if(d.mode.includes("b"))nh=Math.max(5,Math.min(100-d.startCY,d.startCH+ddy));
+      if(d.mode.includes("t")){ny=Math.max(0,Math.min(d.startCY+d.startCH-5,d.startCY+ddy));nh=d.startCH+(d.startCY-ny);}
+    }
+    cropRef.current={x:nx,y:ny,w:nw,h:nh};
+    scheduleDraw();
+  };
+
+  const onMouseUp=()=>{
+    if(!dragRef.current)return;
+    const{x,y,w,h}=cropRef.current;
+    setCropX(Math.round(x*10)/10);setCropY(Math.round(y*10)/10);
+    setCropW(Math.round(w*10)/10);setCropH(Math.round(h*10)/10);
+    dragRef.current=null;
+  };
+
+  const getCursor=e=>{
+    const c=previewRef.current;if(!c)return;
+    const rect=c.getBoundingClientRect();
+    const scaleX=c.width/rect.width;const scaleY=c.height/rect.height;
+    const mx=(e.clientX-rect.left)*scaleX;const my=(e.clientY-rect.top)*scaleY;
+    const{dx,dy,dw,dh}=layoutRef.current;
+    const h=getHandle(mx,my,dx,dy,dw,dh);
+    const cursors={tl:"nwse-resize",br:"nwse-resize",tr:"nesw-resize",bl:"nesw-resize",
+      tm:"ns-resize",bm:"ns-resize",ml:"ew-resize",mr:"ew-resize",move:"move"};
+    c.style.cursor=cursors[h]||"crosshair";
+  };
 
   const applyAndSave=async()=>{
     setSaving(true);
-    const img=imgRef.current;if(!img){setSaving(false);return;}
-    const rad=rotation*Math.PI/180;
-    const sin=Math.abs(Math.sin(rad));const cos=Math.abs(Math.cos(rad));
-    const rW=Math.round(img.width*cos+img.height*sin);
-    const rH=Math.round(img.width*sin+img.height*cos);
-    const tmp=document.createElement("canvas");tmp.width=rW;tmp.height=rH;
-    const tc=tmp.getContext("2d");
-    tc.translate(rW/2,rH/2);tc.scale(flipH?-1:1,flipV?-1:1);tc.rotate(rad);tc.drawImage(img,-img.width/2,-img.height/2);
-    if(brightness!==100||contrast!==100||saturation!==100){
-      const id=tc.getImageData(0,0,rW,rH);const d=id.data;
-      const bf=brightness/100;const cf=contrast/100;const sf=saturation/100;
-      for(let i=0;i<d.length;i+=4){
-        let r=d[i],g=d[i+1],b=d[i+2];
-        r*=bf;g*=bf;b*=bf;
-        r=(r-128)*cf+128;g=(g-128)*cf+128;b=(b-128)*cf+128;
-        const gray=0.299*r+0.587*g+0.114*b;
-        r=gray+(r-gray)*sf;g=gray+(g-gray)*sf;b=gray+(b-gray)*sf;
-        d[i]=Math.max(0,Math.min(255,r));d[i+1]=Math.max(0,Math.min(255,g));d[i+2]=Math.max(0,Math.min(255,b));
-      }
-      tc.putImageData(id,0,0);
-    }
+    const built=buildRotated();if(!built){setSaving(false);return;}
+    const{canvas:tmp,rW,rH}=built;
     const sx=Math.round(rW*cropX/100);const sy=Math.round(rH*cropY/100);
     const sw=Math.max(1,Math.round(rW*cropW/100));const sh=Math.max(1,Math.round(rH*cropH/100));
     const out=document.createElement("canvas");out.width=sw;out.height=sh;
@@ -452,55 +528,69 @@ function PhotoEditor({src,onSave,onClose}){
     </div>
   );
 
-  const iconBtn=(label,onClick,title)=>(
-    <button title={title||label} onClick={onClick} style={{padding:"6px 0",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",fontSize:13,cursor:"pointer",fontFamily:"inherit",flex:1,fontWeight:600,color:"#5c4a3a",transition:"all .1s"}}
-      onMouseOver={e=>{e.currentTarget.style.background="#d4a853";e.currentTarget.style.color="#1a1714";}}
-      onMouseOut={e=>{e.currentTarget.style.background="#fff";e.currentTarget.style.color="#5c4a3a";}}>{label}</button>
+  const iconBtn=(label,onClick,title,active)=>(
+    <button title={title||label} onClick={onClick}
+      style={{padding:"6px 0",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",
+        background:active?"#d4a853":"#fff",color:active?"#1a1714":"#5c4a3a",
+        fontSize:13,cursor:"pointer",fontFamily:"inherit",flex:1,fontWeight:600,transition:"all .1s"}}
+      onMouseOver={e=>{if(!active){e.currentTarget.style.background="#f5e8c0";}}}
+      onMouseOut={e=>{if(!active){e.currentTarget.style.background="#fff";}}}>{label}</button>
   );
 
-  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:960,maxHeight:"94vh",overflowY:"auto",padding:20}}>
+  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:1000,maxHeight:"95vh",overflowY:"auto",padding:20}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div><h2 style={{marginBottom:2}}>✏️ Photo Editor</h2><div style={{fontSize:10,color:"#999"}}>Crop · Rotate · Flip · Adjust · Grid</div></div>
+      <div><h2 style={{marginBottom:2}}>✏️ Photo Editor</h2>
+        <div style={{fontSize:10,color:"#999"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move</div>
+      </div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={()=>setShowGrid(g=>!g)} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:showGrid?"#d4a853":"#fff",color:showGrid?"#1a1714":"#5c4a3a",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>⊞ Grid {showGrid?"ON":"OFF"}</button>
-        <button onClick={()=>{setBrightness(100);setContrast(100);setSaturation(100);setRotation(0);setRotInput("0");setFlipH(false);setFlipV(false);setCropX(0);setCropY(0);setCropW(100);setCropH(100);}} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",color:"#c45c4a"}}>↺ Reset All</button>
+        <button onClick={()=>{setBrightness(100);setContrast(100);setSaturation(100);setRotation(0);setRotInput("0");setFlipH(false);setFlipV(false);setCropX(0);setCropY(0);setCropW(100);setCropH(100);cropRef.current={x:0,y:0,w:100,h:100};scheduleDraw();}} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(196,92,74,.3)",background:"#fff",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",color:"#c45c4a"}}>↺ Reset All</button>
       </div>
     </div>
 
-    <div style={{display:"grid",gridTemplateColumns:"1fr 280px",gap:16}}>
-      {/* Preview */}
-      <div style={{background:"#1a1714",borderRadius:12,overflow:"hidden",minHeight:400,display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <canvas ref={previewRef} style={{width:"100%",height:400,display:"block"}}/>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 270px",gap:16}}>
+      {/* Canvas — drag to crop */}
+      <div style={{background:"#111",borderRadius:12,overflow:"hidden",position:"relative"}}>
+        <canvas ref={previewRef}
+          style={{width:"100%",height:430,display:"block",cursor:"crosshair"}}
+          onMouseDown={onMouseDown}
+          onMouseMove={e=>{onMouseMove(e);getCursor(e);}}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}/>
+        <div style={{position:"absolute",bottom:6,left:0,right:0,textAlign:"center",fontSize:9,color:"rgba(255,255,255,.4)",pointerEvents:"none"}}>
+          Drag to crop · Handles to resize · Inside box to move
+        </div>
       </div>
 
-      {/* Controls */}
-      <div style={{overflowY:"auto",maxHeight:440}}>
+      {/* Controls panel */}
+      <div style={{overflowY:"auto",maxHeight:440,paddingRight:2}}>
 
-        {/* Quick transform */}
+        {/* Transform */}
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Transform</div>
-          <div style={{display:"flex",gap:4,marginBottom:6}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>Transform</div>
+          <div style={{display:"flex",gap:4,marginBottom:5}}>
             {iconBtn("↺ 90°",()=>doRotate(-90),"Rotate 90° CCW")}
             {iconBtn("↻ 90°",()=>doRotate(90),"Rotate 90° CW")}
             {iconBtn("180°",()=>doRotate(180),"Rotate 180°")}
           </div>
-          <div style={{display:"flex",gap:4,marginBottom:8}}>
-            {iconBtn("⇔ Flip H",()=>setFlipH(f=>!f),"Flip Horizontal / Mirror")}
-            {iconBtn("⇕ Flip V",()=>setFlipV(f=>!f),"Flip Vertical")}
+          <div style={{display:"flex",gap:4,marginBottom:10}}>
+            {iconBtn("⇔ Flip H",()=>setFlipH(f=>!f),"Flip Horizontal",flipH)}
+            {iconBtn("⇕ Flip V",()=>setFlipV(f=>!f),"Flip Vertical",flipV)}
           </div>
-          {/* Fine rotation */}
-          <div style={{marginBottom:4}}>
+          <div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
               <label style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>Fine Rotation</label>
-              <input type="number" value={rotInput} min={-180} max={180} step={0.1}
-                onChange={e=>setRotInput(e.target.value)}
-                onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){const clamped=Math.max(-180,Math.min(180,v));setRotation(clamped);setRotInput(String(clamped));}}}
-                onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(rotInput);if(!isNaN(v)){const c=Math.max(-180,Math.min(180,v));setRotation(c);setRotInput(String(c));}}}}
-                style={{width:58,padding:"2px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.1)",fontSize:10,fontFamily:"inherit",textAlign:"right"}}/>
-              <span style={{fontSize:10,color:"#9a7422",fontWeight:700,marginLeft:2}}>°</span>
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <input type="number" value={rotInput} min={-180} max={180} step={0.1}
+                  onChange={e=>setRotInput(e.target.value)}
+                  onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){const cl=Math.max(-180,Math.min(180,v));setRotation(cl);setRotInput(String(cl));}}}
+                  onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(rotInput);if(!isNaN(v)){const cl=Math.max(-180,Math.min(180,v));setRotation(cl);setRotInput(String(cl));}}}}
+                  style={{width:52,padding:"2px 5px",borderRadius:5,border:"1px solid rgba(0,0,0,.1)",fontSize:10,fontFamily:"inherit",textAlign:"right"}}/>
+                <span style={{fontSize:10,color:"#9a7422",fontWeight:700}}>°</span>
+              </div>
             </div>
             <input type="range" min={-180} max={180} step={0.1} value={rotation}
-              onChange={e=>{const v=Number(e.target.value);setRotation(v);setRotInput(String(v));}}
+              onChange={e=>{const v=Number(e.target.value);setRotation(v);setRotInput(v.toFixed(1));}}
               onInput={e=>{const v=Number(e.target.value);setRotation(v);setRotInput(v.toFixed(1));}}
               style={{width:"100%",accentColor:"#d4a853",cursor:"pointer",height:18}}/>
           </div>
@@ -508,20 +598,25 @@ function PhotoEditor({src,onSave,onClose}){
 
         {/* Adjustments */}
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Adjustments</div>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>Adjustments</div>
           <SL label="Brightness" val={brightness} set={setBrightness} min={20} max={200} step={1} unit="%"/>
           <SL label="Contrast" val={contrast} set={setContrast} min={20} max={200} step={1} unit="%" color="#7c6a3a"/>
           <SL label="Saturation" val={saturation} set={setSaturation} min={0} max={200} step={1} unit="%" color="#7c3a5a"/>
         </div>
 
-        {/* Crop */}
-        <div>
-          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Crop <span style={{fontSize:8,fontWeight:400,color:"#bbb",textTransform:"none"}}>(dashed line = crop area)</span></div>
-          <SL label="Left %" val={cropX} set={v=>{setCropX(v);if(v+cropW>100)setCropW(100-v);}} min={0} max={80} step={1} unit="%"/>
-          <SL label="Top %" val={cropY} set={v=>{setCropY(v);if(v+cropH>100)setCropH(100-v);}} min={0} max={80} step={1} unit="%"/>
-          <SL label="Width %" val={cropW} set={v=>{if(cropX+v<=100)setCropW(v);}} min={10} max={100} step={1} unit="%"/>
-          <SL label="Height %" val={cropH} set={v=>{if(cropY+v<=100)setCropH(v);}} min={10} max={100} step={1} unit="%"/>
-          <button className="btn btn-out btn-sm" style={{width:"100%",fontSize:9,marginTop:4}} onClick={()=>{setCropX(0);setCropY(0);setCropW(100);setCropH(100);}}>Reset Crop</button>
+        {/* Crop info */}
+        <div style={{background:"#faf9f7",borderRadius:8,padding:10,border:"1px solid rgba(0,0,0,.06)"}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Crop Area</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontSize:10,color:"#5c4a3a"}}>
+            <div>X: <strong>{cropX.toFixed(1)}%</strong></div>
+            <div>Y: <strong>{cropY.toFixed(1)}%</strong></div>
+            <div>W: <strong>{cropW.toFixed(1)}%</strong></div>
+            <div>H: <strong>{cropH.toFixed(1)}%</strong></div>
+          </div>
+          <button className="btn btn-out btn-sm" style={{width:"100%",fontSize:9,marginTop:8}}
+            onClick={()=>{setCropX(0);setCropY(0);setCropW(100);setCropH(100);cropRef.current={x:0,y:0,w:100,h:100};scheduleDraw();}}>
+            Reset Crop
+          </button>
         </div>
       </div>
     </div>
