@@ -309,56 +309,90 @@ function randPalette(){const h=Math.floor(Math.random()*360);const c=(h+150+Math
 // ─── Photo Editor Modal ─────────────────────────────────────────────
 function PhotoEditor({src,onSave,onClose}){
   const[brightness,setBrightness]=useState(100);
+  const[contrast,setContrast]=useState(100);
+  const[saturation,setSaturation]=useState(100);
   const[rotation,setRotation]=useState(0);
+  const[rotInput,setRotInput]=useState("0");
+  const[flipH,setFlipH]=useState(false);
+  const[flipV,setFlipV]=useState(false);
   const[cropX,setCropX]=useState(0);
   const[cropY,setCropY]=useState(0);
   const[cropW,setCropW]=useState(100);
   const[cropH,setCropH]=useState(100);
+  const[showGrid,setShowGrid]=useState(false);
   const[saving,setSaving]=useState(false);
   const imgRef=useRef(null);
   const previewRef=useRef(null);
 
-  const drawPreview=(img,br=brightness,rot=rotation,cx=cropX,cy=cropY,cw=cropW,ch=cropH)=>{
-    const c=previewRef.current;if(!c)return;
+  const doRotate=(deg)=>{const r=((rotation+deg)%360+360)%360;const d=r>180?r-360:r;setRotation(d);setRotInput(String(d));};
+
+  // Renders current state to preview canvas
+  const drawPreview=()=>{
+    const img=imgRef.current;const c=previewRef.current;if(!img||!c)return;
     const ctx=c.getContext("2d");
-    // Work in a temp canvas at natural size for quality
-    const tmp=document.createElement("canvas");
     const rad=rotation*Math.PI/180;
     const sin=Math.abs(Math.sin(rad));const cos=Math.abs(Math.cos(rad));
     const rW=Math.round(img.width*cos+img.height*sin);
     const rH=Math.round(img.width*sin+img.height*cos);
-    tmp.width=rW;tmp.height=rH;
+    // Render to offscreen canvas
+    const tmp=document.createElement("canvas");tmp.width=rW;tmp.height=rH;
     const tc=tmp.getContext("2d");
-    tc.translate(rW/2,rH/2);tc.rotate(rad);
+    tc.translate(rW/2,rH/2);
+    tc.scale(flipH?-1:1,flipV?-1:1);
+    tc.rotate(rad);
     tc.drawImage(img,-img.width/2,-img.height/2);
-    // Apply brightness
-    tc.globalCompositeOperation="multiply";
-    const b=(brightness-100)/100;
-    if(b>0){tc.fillStyle=`rgba(255,255,255,${b})`;tc.fillRect(-rW,-rH,rW*2,rH*2);}
-    else if(b<0){tc.globalCompositeOperation="darken";tc.fillStyle=`rgba(0,0,0,${-b})`;tc.fillRect(-rW,-rH,rW*2,rH*2);}
-    // Crop
+    // Apply pixel adjustments
+    if(brightness!==100||contrast!==100||saturation!==100){
+      const id=tc.getImageData(0,0,rW,rH);const d=id.data;
+      const bf=brightness/100;const cf=(contrast/100);const sf=saturation/100;
+      for(let i=0;i<d.length;i+=4){
+        let r=d[i],g=d[i+1],b=d[i+2];
+        // Brightness
+        r*=bf;g*=bf;b*=bf;
+        // Contrast
+        r=(r-128)*cf+128;g=(g-128)*cf+128;b=(b-128)*cf+128;
+        // Saturation
+        const gray=0.299*r+0.587*g+0.114*b;
+        r=gray+(r-gray)*sf;g=gray+(g-gray)*sf;b=gray+(b-gray)*sf;
+        d[i]=Math.max(0,Math.min(255,r));d[i+1]=Math.max(0,Math.min(255,g));d[i+2]=Math.max(0,Math.min(255,b));
+      }
+      tc.putImageData(id,0,0);
+    }
+    // Crop region
     const sx=Math.round(rW*cropX/100);const sy=Math.round(rH*cropY/100);
-    const sw=Math.round(rW*cropW/100);const sh=Math.round(rH*cropH/100);
-    // Draw to preview canvas
-    c.width=c.offsetWidth||600;c.height=c.offsetHeight||340;
+    const sw=Math.max(1,Math.round(rW*cropW/100));const sh=Math.max(1,Math.round(rH*cropH/100));
+    // Draw to preview
+    c.width=c.offsetWidth||700;c.height=c.offsetHeight||400;
     ctx.clearRect(0,0,c.width,c.height);
-    const scale=Math.min(c.width/sw,c.height/sh);
+    ctx.fillStyle="#1a1714";ctx.fillRect(0,0,c.width,c.height);
+    const scale=Math.min(c.width/sw,c.height/sh)*.95;
     const dx=(c.width-sw*scale)/2;const dy=(c.height-sh*scale)/2;
     ctx.drawImage(tmp,sx,sy,sw,sh,dx,dy,sw*scale,sh*scale);
-    // Draw crop handles overlay
-    ctx.strokeStyle="rgba(212,168,83,.8)";ctx.lineWidth=2;ctx.setLineDash([6,3]);
+    // Crop border
+    ctx.strokeStyle="rgba(212,168,83,.9)";ctx.lineWidth=2;ctx.setLineDash([6,3]);
     ctx.strokeRect(dx,dy,sw*scale,sh*scale);ctx.setLineDash([]);
+    // Grid lines
+    if(showGrid){
+      ctx.strokeStyle="rgba(255,255,255,.3)";ctx.lineWidth=1;ctx.setLineDash([]);
+      for(let g=1;g<3;g++){
+        const gx=dx+sw*scale*g/3;ctx.beginPath();ctx.moveTo(gx,dy);ctx.lineTo(gx,dy+sh*scale);ctx.stroke();
+        const gy=dy+sh*scale*g/3;ctx.beginPath();ctx.moveTo(dx,gy);ctx.lineTo(dx+sw*scale,gy);ctx.stroke();
+      }
+      // Diagonals
+      ctx.strokeStyle="rgba(255,255,255,.12)";
+      ctx.beginPath();ctx.moveTo(dx,dy);ctx.lineTo(dx+sw*scale,dy+sh*scale);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(dx+sw*scale,dy);ctx.lineTo(dx,dy+sh*scale);ctx.stroke();
+    }
   };
 
   useEffect(()=>{
-    const img=new Image();
-    img.crossOrigin="anonymous";
-    img.onload=()=>{imgRef.current=img;drawPreview(img);};
-    img.onerror=()=>{console.warn("PhotoEditor: could not load image (CORS?)");};
+    const img=new Image();img.crossOrigin="anonymous";
+    img.onload=()=>{imgRef.current=img;drawPreview();};
+    img.onerror=()=>{console.warn("PhotoEditor: CORS issue loading image");};
     img.src=src;
   },[src]);
 
-  useEffect(()=>{if(imgRef.current)drawPreview(imgRef.current);},[brightness,rotation,cropX,cropY,cropW,cropH]);
+  useEffect(()=>{drawPreview();},[brightness,contrast,saturation,rotation,flipH,flipV,cropX,cropY,cropW,cropH,showGrid]);
 
   const applyAndSave=async()=>{
     setSaving(true);
@@ -369,20 +403,24 @@ function PhotoEditor({src,onSave,onClose}){
     const rH=Math.round(img.width*sin+img.height*cos);
     const tmp=document.createElement("canvas");tmp.width=rW;tmp.height=rH;
     const tc=tmp.getContext("2d");
-    tc.translate(rW/2,rH/2);tc.rotate(rad);tc.drawImage(img,-img.width/2,-img.height/2);
-    // Brightness
-    if(brightness!==100){
-      const imgData=tc.getImageData(0,0,rW,rH);const d=imgData.data;
-      const f=brightness/100;
-      for(let i=0;i<d.length;i+=4){d[i]=Math.min(255,d[i]*f);d[i+1]=Math.min(255,d[i+1]*f);d[i+2]=Math.min(255,d[i+2]*f);}
-      tc.putImageData(imgData,0,0);
+    tc.translate(rW/2,rH/2);tc.scale(flipH?-1:1,flipV?-1:1);tc.rotate(rad);tc.drawImage(img,-img.width/2,-img.height/2);
+    if(brightness!==100||contrast!==100||saturation!==100){
+      const id=tc.getImageData(0,0,rW,rH);const d=id.data;
+      const bf=brightness/100;const cf=contrast/100;const sf=saturation/100;
+      for(let i=0;i<d.length;i+=4){
+        let r=d[i],g=d[i+1],b=d[i+2];
+        r*=bf;g*=bf;b*=bf;
+        r=(r-128)*cf+128;g=(g-128)*cf+128;b=(b-128)*cf+128;
+        const gray=0.299*r+0.587*g+0.114*b;
+        r=gray+(r-gray)*sf;g=gray+(g-gray)*sf;b=gray+(b-gray)*sf;
+        d[i]=Math.max(0,Math.min(255,r));d[i+1]=Math.max(0,Math.min(255,g));d[i+2]=Math.max(0,Math.min(255,b));
+      }
+      tc.putImageData(id,0,0);
     }
-    // Crop
     const sx=Math.round(rW*cropX/100);const sy=Math.round(rH*cropY/100);
-    const sw=Math.round(rW*cropW/100);const sh=Math.round(rH*cropH/100);
+    const sw=Math.max(1,Math.round(rW*cropW/100));const sh=Math.max(1,Math.round(rH*cropH/100));
     const out=document.createElement("canvas");out.width=sw;out.height=sh;
     out.getContext("2d").drawImage(tmp,sx,sy,sw,sh,0,0,sw,sh);
-    // Export as blob and upload
     out.toBlob(async blob=>{
       if(!blob){setSaving(false);return;}
       const file=new File([blob],"edited.jpg",{type:"image/jpeg"});
@@ -392,42 +430,92 @@ function PhotoEditor({src,onSave,onClose}){
     },"image/jpeg",.92);
   };
 
-  const sliderRow=(label,val,setVal,min,max,step,unit)=>(
-    <div style={{marginBottom:12}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <label style={{fontSize:11,fontWeight:700,color:"#5c4a3a"}}>{label}</label>
-        <span style={{fontSize:11,color:"#9a7422",fontWeight:700}}>{val}{unit}</span>
+  const SL=({label,val,set,min,max,step,unit,color})=>(
+    <div style={{marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+        <label style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>{label}</label>
+        <span style={{fontSize:10,color:color||"#9a7422",fontWeight:700}}>{val}{unit}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={val} onChange={e=>setVal(Number(e.target.value))}
-        style={{width:"100%",accentColor:"#d4a853"}}/>
+      <input type="range" min={min} max={max} step={step} value={val} onChange={e=>set(Number(e.target.value))} style={{width:"100%",accentColor:"#d4a853"}}/>
     </div>
   );
 
-  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:820,maxHeight:"92vh",overflowY:"auto"}}>
-    <h2 style={{marginBottom:4}}>✏️ Edit Showcase Photo</h2>
-    <p style={{fontSize:11,color:"#999",marginBottom:14}}>Adjust the first 3 photos — these are shown on the property listing and comparison table.</p>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 260px",gap:16}}>
-      {/* Preview */}
-      <div>
-        <canvas ref={previewRef} style={{width:"100%",height:340,borderRadius:10,background:"#1a1714",display:"block"}}/>
-        <div style={{fontSize:9,color:"#999",textAlign:"center",marginTop:4}}>Live preview — dashed border shows crop area</div>
-      </div>
-      {/* Controls */}
-      <div style={{padding:"14px",background:"#faf9f7",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>
-        <div style={{fontSize:10,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:12}}>Adjustments</div>
-        {sliderRow("Brightness",brightness,setBrightness,20,200,5,"%")}
-        {sliderRow("Rotation",rotation,setRotation,-180,180,1,"°")}
-        <div style={{fontSize:10,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:12,marginTop:16}}>Crop</div>
-        {sliderRow("Left Edge",cropX,setCropX,0,49,1,"%")}
-        {sliderRow("Top Edge",cropY,setCropY,0,49,1,"%")}
-        {sliderRow("Width",cropW,v=>{if(cropX+v<=100)setCropW(v);},10,100,1,"%")}
-        {sliderRow("Height",cropH,v=>{if(cropY+v<=100)setCropH(v);},10,100,1,"%")}
-        <button className="btn btn-out btn-sm" style={{width:"100%",marginBottom:6,fontSize:10}} onClick={()=>{setBrightness(100);setRotation(0);setCropX(0);setCropY(0);setCropW(100);setCropH(100);}}>↺ Reset All</button>
+  const iconBtn=(label,onClick,title)=>(
+    <button title={title||label} onClick={onClick} style={{padding:"6px 0",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",fontSize:13,cursor:"pointer",fontFamily:"inherit",flex:1,fontWeight:600,color:"#5c4a3a",transition:"all .1s"}}
+      onMouseOver={e=>{e.currentTarget.style.background="#d4a853";e.currentTarget.style.color="#1a1714";}}
+      onMouseOut={e=>{e.currentTarget.style.background="#fff";e.currentTarget.style.color="#5c4a3a";}}>{label}</button>
+  );
+
+  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:960,maxHeight:"94vh",overflowY:"auto",padding:20}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div><h2 style={{marginBottom:2}}>✏️ Photo Editor</h2><div style={{fontSize:10,color:"#999"}}>Crop · Rotate · Flip · Adjust · Grid</div></div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={()=>setShowGrid(g=>!g)} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:showGrid?"#d4a853":"#fff",color:showGrid?"#1a1714":"#5c4a3a",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>⊞ Grid {showGrid?"ON":"OFF"}</button>
+        <button onClick={()=>{setBrightness(100);setContrast(100);setSaturation(100);setRotation(0);setRotInput("0");setFlipH(false);setFlipV(false);setCropX(0);setCropY(0);setCropW(100);setCropH(100);}} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",color:"#c45c4a"}}>↺ Reset All</button>
       </div>
     </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 280px",gap:16}}>
+      {/* Preview */}
+      <div style={{background:"#1a1714",borderRadius:12,overflow:"hidden",minHeight:400,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <canvas ref={previewRef} style={{width:"100%",height:400,display:"block"}}/>
+      </div>
+
+      {/* Controls */}
+      <div style={{overflowY:"auto",maxHeight:440}}>
+
+        {/* Quick transform */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Transform</div>
+          <div style={{display:"flex",gap:4,marginBottom:6}}>
+            {iconBtn("↺ 90°",()=>doRotate(-90),"Rotate 90° CCW")}
+            {iconBtn("↻ 90°",()=>doRotate(90),"Rotate 90° CW")}
+            {iconBtn("180°",()=>doRotate(180),"Rotate 180°")}
+          </div>
+          <div style={{display:"flex",gap:4,marginBottom:8}}>
+            {iconBtn("⇔ Flip H",()=>setFlipH(f=>!f),"Flip Horizontal / Mirror")}
+            {iconBtn("⇕ Flip V",()=>setFlipV(f=>!f),"Flip Vertical")}
+          </div>
+          {/* Fine rotation */}
+          <div style={{marginBottom:4}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+              <label style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>Fine Rotation</label>
+              <input type="number" value={rotInput} min={-180} max={180} step={0.1}
+                onChange={e=>setRotInput(e.target.value)}
+                onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){const clamped=Math.max(-180,Math.min(180,v));setRotation(clamped);setRotInput(String(clamped));}}}
+                onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(rotInput);if(!isNaN(v)){const c=Math.max(-180,Math.min(180,v));setRotation(c);setRotInput(String(c));}}}}
+                style={{width:58,padding:"2px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.1)",fontSize:10,fontFamily:"inherit",textAlign:"right"}}/>
+              <span style={{fontSize:10,color:"#9a7422",fontWeight:700,marginLeft:2}}>°</span>
+            </div>
+            <input type="range" min={-180} max={180} step={0.5} value={rotation}
+              onChange={e=>{const v=Number(e.target.value);setRotation(v);setRotInput(String(v));}}
+              style={{width:"100%",accentColor:"#d4a853"}}/>
+          </div>
+        </div>
+
+        {/* Adjustments */}
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Adjustments</div>
+          <SL label="Brightness" val={brightness} set={setBrightness} min={20} max={200} step={1} unit="%"/>
+          <SL label="Contrast" val={contrast} set={setContrast} min={20} max={200} step={1} unit="%" color="#7c6a3a"/>
+          <SL label="Saturation" val={saturation} set={setSaturation} min={0} max={200} step={1} unit="%" color="#7c3a5a"/>
+        </div>
+
+        {/* Crop */}
+        <div>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Crop <span style={{fontSize:8,fontWeight:400,color:"#bbb",textTransform:"none"}}>(dashed line = crop area)</span></div>
+          <SL label="Left %" val={cropX} set={v=>{setCropX(v);if(v+cropW>100)setCropW(100-v);}} min={0} max={80} step={1} unit="%"/>
+          <SL label="Top %" val={cropY} set={v=>{setCropY(v);if(v+cropH>100)setCropH(100-v);}} min={0} max={80} step={1} unit="%"/>
+          <SL label="Width %" val={cropW} set={v=>{if(cropX+v<=100)setCropW(v);}} min={10} max={100} step={1} unit="%"/>
+          <SL label="Height %" val={cropH} set={v=>{if(cropY+v<=100)setCropH(v);}} min={10} max={100} step={1} unit="%"/>
+          <button className="btn btn-out btn-sm" style={{width:"100%",fontSize:9,marginTop:4}} onClick={()=>{setCropX(0);setCropY(0);setCropW(100);setCropH(100);}}>Reset Crop</button>
+        </div>
+      </div>
+    </div>
+
     <div className="mft" style={{marginTop:14}}>
       <button className="btn btn-out" onClick={onClose}>Cancel</button>
-      <button className="btn btn-gold" onClick={applyAndSave} disabled={saving}>{saving?"Saving...":"✓ Apply & Save"}</button>
+      <button className="btn btn-gold" onClick={applyAndSave} disabled={saving} style={{minWidth:140}}>{saving?"⏳ Saving...":"✓ Apply & Save"}</button>
     </div>
   </div></div>);
 }
@@ -536,7 +624,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
             transition:"border-color .1s,opacity .1s",
           }}>
           {i===0&&<div style={{position:"absolute",top:3,left:3,background:"#d4a853",color:"#1a1714",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:3,pointerEvents:"none"}}>COVER</div>}
-          {i<3&&<div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}} onClick={e=>{e.stopPropagation();e.preventDefault();setEditingPhoto({index:i,src});}}>✏ Edit</div>}
+          <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}} onClick={e=>{e.stopPropagation();e.preventDefault();setEditingPhoto({index:i,src});}}>✏ Edit</div>
           <img src={src} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block",pointerEvents:"none"}} onError={e=>{e.target.style.display="none";}}/>
           <button onClick={e=>{e.stopPropagation();remove(i);}} style={{position:"absolute",top:3,right:3,width:18,height:18,borderRadius:"50%",background:"rgba(0,0,0,.65)",color:"#fff",border:"none",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3,lineHeight:1}}>×</button>
         </div>
