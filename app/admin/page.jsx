@@ -307,7 +307,7 @@ function randPalette(){const h=Math.floor(Math.random()*360);const c=(h+150+Math
 // Photo manager — unlimited, multi-upload, drag-to-reorder
 
 // ─── Photo Editor Modal ─────────────────────────────────────────────
-function PhotoEditor({src,onSave,onClose}){
+function PhotoEditor({src,onSave,onClose,aspectLock=null}){
   const[brightness,setBrightness]=useState(100);
   const[contrast,setContrast]=useState(100);
   const[saturation,setSaturation]=useState(100);
@@ -407,7 +407,19 @@ function PhotoEditor({src,onSave,onClose}){
 
   useEffect(()=>{
     const img=new Image();img.crossOrigin="anonymous";
-    img.onload=()=>{imgRef.current=img;cropRef.current={x:0,y:0,w:100,h:100};setCropX(0);setCropY(0);setCropW(100);setCropH(100);scheduleDraw();};
+    img.onload=()=>{
+      imgRef.current=img;
+      // Init crop to aspect ratio if locked
+      if(aspectLock){
+        const[aw,ah]=aspectLock.split(":").map(Number);
+        const ratio=aw/ah;const imgRatio=img.width/img.height;
+        let w=100,h=100;
+        if(imgRatio>ratio){w=ratio/imgRatio*100;}else{h=imgRatio/ratio*100;}
+        const x=(100-w)/2;const y=(100-h)/2;
+        cropRef.current={x,y,w,h};setCropX(x);setCropY(y);setCropW(w);setCropH(h);
+      }else{cropRef.current={x:0,y:0,w:100,h:100};setCropX(0);setCropY(0);setCropW(100);setCropH(100);}
+      scheduleDraw();
+    };
     img.onerror=()=>console.warn("PhotoEditor: CORS issue");
     img.src=src;
   },[src]);
@@ -460,7 +472,8 @@ function PhotoEditor({src,onSave,onClose}){
       const{px:x1}=canvasToImgPct(d.startMx,d.startMy);const{px:x2}=canvasToImgPct(mx,d.startMy);
       const{py:y1}=canvasToImgPct(d.startMx,d.startMy);const{py:y2}=canvasToImgPct(d.startMx,my);
       const rx=Math.min(x1,x2)/imgW*100;const ry=Math.min(y1,y2)/imgH*100;
-      const rw=Math.abs(x2-x1)/imgW*100;const rh=Math.abs(y2-y1)/imgH*100;
+      let rw=Math.abs(x2-x1)/imgW*100;let rh=Math.abs(y2-y1)/imgH*100;
+      if(aspectLock){const[aw,ah]=aspectLock.split(":").map(Number);const ratio=aw/ah;const imgAR=imgW/imgH;rh=rw/ratio*imgAR;}
       nx=Math.max(0,rx);ny=Math.max(0,ry);nw=Math.min(100-nx,Math.max(5,rw));nh=Math.min(100-ny,Math.max(5,rh));
     }else if(d.mode==="move"){
       nx=Math.max(0,Math.min(100-d.startCW,d.startCX+dPctX));
@@ -540,7 +553,7 @@ function PhotoEditor({src,onSave,onClose}){
   return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:1000,maxHeight:"95vh",overflowY:"auto",padding:20}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div><h2 style={{marginBottom:2}}>✏️ Photo Editor</h2>
-        <div style={{fontSize:10,color:"#999"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move</div>
+        <div style={{fontSize:10,color:"#999"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move{aspectLock&&<span style={{marginLeft:8,background:"rgba(212,168,83,.12)",color:"#9a7422",fontWeight:700,padding:"1px 7px",borderRadius:4,fontSize:9}}>🔒 {aspectLock} locked — card preview ratio</span>}</div>
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={()=>setShowGrid(g=>!g)} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:showGrid?"#d4a853":"#fff",color:showGrid?"#1a1714":"#5c4a3a",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>⊞ Grid {showGrid?"ON":"OFF"}</button>
@@ -628,7 +641,7 @@ function PhotoEditor({src,onSave,onClose}){
   </div></div>);
 }
 
-function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
+function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=null}){
   const[dropOver,setDropOver]=useState(false);
   const[urlInput,setUrlInput]=useState("");
   const[dragIdx,setDragIdx]=useState(null);
@@ -637,6 +650,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
   const[readingCount,setReadingCount]=useState(0);
   const[uploadError,setUploadError]=useState("");
   const[editingPhoto,setEditingPhoto]=useState(null);
+  const[pickingFocal,setPickingFocal]=useState(false);
   const ph=photos||[];
 
   const readFiles=async files=>{
@@ -685,8 +699,13 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
     setDragIdx(null);setDragOverIdx(null);
   };
 
+  useEffect(()=>{
+    const onKey=e=>{if(e.key==="Escape")setPickingFocal(false);};
+    window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
+  },[]);
   return(<>{editingPhoto&&<PhotoEditor
     src={editingPhoto.src}
+    aspectLock={editingPhoto.index===0?"16:9":null}
     onClose={()=>setEditingPhoto(null)}
     onSave={url=>{const next=[...ph];next[editingPhoto.index]=url;onChange(next);setEditingPhoto(null);}}
   />}
@@ -733,6 +752,10 @@ function PhotoManager({photos=[],onChange,label="Photos",propId=""}){
           }}>
           {i===0&&<div style={{position:"absolute",top:3,left:3,background:"#d4a853",color:"#1a1714",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:3,pointerEvents:"none"}}>COVER</div>}
           <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}} onClick={e=>{e.stopPropagation();e.preventDefault();setEditingPhoto({index:i,src});}}>✏ Edit</div>
+          {i===0&&<div style={{position:"absolute",top:3,right:22,background:"rgba(0,0,0,.65)",color:"#fff",fontSize:7,fontWeight:800,padding:"2px 5px",borderRadius:3,zIndex:3,cursor:"crosshair",userSelect:"none"}} title="Click to set focal point — controls how photo is cropped in cards" onClick={e=>{e.stopPropagation();setPickingFocal(true);}} >🎯</div>}
+          {i===0&&pickingFocal&&<div style={{position:"absolute",inset:0,zIndex:4,cursor:"crosshair",background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{e.stopPropagation();const rect=e.currentTarget.getBoundingClientRect();const x=Math.round((e.clientX-rect.left)/rect.width*100);const y=Math.round((e.clientY-rect.top)/rect.height*100);onFocalPoint&&onFocalPoint(x,y);setPickingFocal(false);}}>
+            <div style={{color:"#fff",fontSize:10,fontWeight:700,textAlign:"center",pointerEvents:"none",textShadow:"0 1px 3px rgba(0,0,0,.8)"}}>Click to set focal point<br/><span style={{fontSize:8,fontWeight:400,opacity:.8}}>Press ESC to cancel</span></div>
+          </div>}
           <img src={src} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block",pointerEvents:"none"}} onError={e=>{e.target.style.display="none";}}/>
           <button onClick={e=>{e.stopPropagation();remove(i);}} style={{position:"absolute",top:3,right:3,width:18,height:18,borderRadius:"50%",background:"rgba(0,0,0,.65)",color:"#fff",border:"none",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3,lineHeight:1}}>×</button>
         </div>
@@ -939,7 +962,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
       <div className="fld"><label>Total Sq Ft</label><input type="number" value={p.sqft||""} onChange={e=>updP({...p,sqft:Number(e.target.value)})} placeholder="2400"/></div>
       <div className="fld"><label>Property Photos</label><span style={{fontSize:10,color:"#999"}}>{(p.photos||[]).length} photo{(p.photos||[]).length!==1?"s":""}</span></div>
     </div>
-    <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v==="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id}/>
+    <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v==="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id} onFocalPoint={(x,y)=>updP({...p,focalPoint:{x,y}})}/>
     <div className="fld"><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
 
     {/* Unit tabs */}
@@ -1025,6 +1048,21 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
               <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{locked?`Occupied — ${r.tenant.name}`:"Vacant"}</div></div>
               <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
               <div className="fld"><label>Furnished</label><select value={String(r.furnished!==false)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"furnished",e.target.value==="true")}><option value="true">✓ Furnished</option><option value="false">Unfurnished</option></select></div>
+            </div>
+            <div className="fr" style={{alignItems:"flex-end",gap:8}}>
+              <div className="fld" style={{flex:1}}>
+                <label>Utilities <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— overrides unit default for this room</span></label>
+                <select value={r.utils||curUnit?.utils||"allIncluded"} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"utils",e.target.value)}>
+                  <option value="">— Use unit default —</option>
+                  {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
+                </select>
+                {(r.utils&&r.utils!=="")&&<div style={{fontSize:9,color:"#5c4a3a",marginTop:3}}>{(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===r.utils)?.desc||""}</div>}
+                {(!r.utils||r.utils==="")&&curUnit?.utils&&<div style={{fontSize:9,color:"#999",marginTop:3}}>Using unit default: {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===curUnit.utils)?.name||curUnit.utils}</div>}
+              </div>
+              {!locked&&(curUnit?.rooms||[]).length>1&&<button className="btn btn-out btn-sm" style={{fontSize:9,whiteSpace:"nowrap",marginBottom:1}} title="Apply this room's utility setting to all rooms in this unit"
+                onClick={()=>{const utils=r.utils||curUnit?.utils||"allIncluded";const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map(rm=>({...rm,utils}))}:u);updP({...p,units});}}>
+                ⚡ Apply to all rooms in {curUnit?.name||"this unit"}
+              </button>}
             </div>
             {!locked&&<div className="fld">
               <label>Features <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— shown on public site (check all that apply)</span></label>

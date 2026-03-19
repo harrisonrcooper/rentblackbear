@@ -772,7 +772,7 @@ export default function Page(){
       const rooms=allRoomsP(p);
       const firstUnit=(p.units&&p.units.length>0)?p.units[0]:null;
       return{
-        id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,
+        id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,focalPoint:p.focalPoint||null,
         typeTag:p.type==="SFH"?"SFH":p.type==="Duplex"?"Duplex":"Townhome",
         baths:firstUnit?.baths||p.baths||2,sqft:p.sqft||0,
         status:rooms.some(r=>r.st==="vacant")?"Available":p.status||"Coming Soon",
