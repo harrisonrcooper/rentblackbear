@@ -131,7 +131,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 /* Property cards */
 .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px;max-width:1200px;margin:0 auto}
 .pcard{background:#fff;border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.05);transition:all .3s;cursor:pointer}.pcard:hover{transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.08)}
-.pimg{height:200px;width:100%;object-fit:contain;background:#1a1714}
+.pimg{height:200px;width:100%;object-fit:cover}
 .pinfo{padding:20px}
 .ptags{display:flex;gap:6px;margin-bottom:10px}
 .tag{padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
