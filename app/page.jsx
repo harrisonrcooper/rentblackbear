@@ -131,7 +131,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 /* Property cards */
 .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px;max-width:1200px;margin:0 auto}
 .pcard{background:#fff;border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.05);transition:all .3s;cursor:pointer}.pcard:hover{transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.08)}
-.pimg{height:200px;width:100%;object-fit:cover}
+.pimg{height:200px;width:100%;object-fit:contain;background:#1a1714}
 .pinfo{padding:20px}
 .ptags{display:flex;gap:6px;margin-bottom:10px}
 .tag{padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
@@ -149,7 +149,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 .modal{background:#fff;border-radius:18px;max-width:960px;width:100%;margin:36px auto;position:relative;animation:fadeUp .35s}
 .mx{position:absolute;top:14px;right:14px;z-index:10;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .mgal{display:grid;grid-template-columns:2fr 1fr;gap:4px;border-radius:18px 18px 0 0;overflow:hidden;background:#1a1714;height:380px}
-.mgal img{width:100%;height:100%;object-fit:cover;display:block}.mside{display:flex;flex-direction:column;gap:4px}
+.mgal img{width:100%;height:100%;object-fit:contain;display:block;background:#1a1714}.mside{display:flex;flex-direction:column;gap:4px}
 .mbody{padding:36px}
 .mtp{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:16px;flex-wrap:wrap}
 .modal h2{font-family:var(--fd);font-size:28px;margin-bottom:3px}
@@ -506,11 +506,11 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
     <button className="mx" onClick={onClose}>✕</button>
     <div className="mgal" style={{cursor:p.imgs&&p.imgs.length>0?"pointer":"default",position:"relative"}} onClick={()=>{if(p.imgs&&p.imgs.length>0){setLightbox(p.imgs);setLbIdx(0);}}}>
       {p.imgs&&p.imgs.length>0
-        ?<img src={p.imgs[0]} alt={p.name} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+        ?<img src={p.imgs[0]} alt={p.name} style={{width:"100%",height:"100%",objectFit:"contain",display:"block",background:"#1a1714"}}/>
         :<div style={{width:"100%",height:"100%",background:"#1a1714",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}><span style={{fontSize:48}}>🐻</span><span style={{fontSize:12,color:"#c4a882"}}>Photos coming soon</span></div>
       }
       {p.imgs&&p.imgs.length>1&&<div className="mside">
-        {p.imgs.slice(1,3).map((img,i)=><img key={i} src={img} alt="" style={{width:"100%",height:"100%",objectFit:"cover",cursor:"pointer"}} onClick={e=>{e.stopPropagation();setLightbox(p.imgs);setLbIdx(i+1);}}/>)}
+        {p.imgs.slice(1,3).map((img,i)=><img key={i} src={img} alt="" style={{width:"100%",height:"100%",objectFit:"contain",cursor:"pointer",background:"#1a1714"}} onClick={e=>{e.stopPropagation();setLightbox(p.imgs);setLbIdx(i+1);}}/>)}
       </div>}
       {p.imgs&&p.imgs.length>3&&<div style={{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,.6)",color:"#fff",fontSize:11,fontWeight:700,padding:"3px 8px",borderRadius:4,zIndex:2}}>+{p.imgs.length-3} more</div>}
     </div>
@@ -518,7 +518,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
       <div className="mtp"><div><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.type}</span></div><h2 style={{marginTop:8}}>{p.name}</h2><p className="maddr">{p.address}</p></div>
         <div style={{display:"flex",gap:10,flexWrap:"wrap"}}><div className="mib"><div className="l">Rooms</div><div className="v">{allRoomsP(p).length}</div></div><div className="mib"><div className="l">Baths</div><div className="v">{p.baths}</div></div><div className="mib"><div className="l">From</div><div className="v">${minP}<small>/mo</small></div></div></div></div>
       <p className="mdesc">{p.desc}</p>
-      <div className="istrip"><div className="ii">📶 WiFi</div><div className="ii">🛋️ Furnished</div><div className="ii">🅿️ Parking</div><div className="ii">🧹 {p.clean} Cleaning</div>{p.utils==="allIncluded"?<div className="ii">💡 All Utilities</div>:<div className="ii pt">💡 First $100 Utilities · Overage Split</div>}</div>
+      <div className="istrip"><div className="ii">📶 WiFi</div><div className="ii">🛋️ Furnished</div><div className="ii">🅿️ Parking</div><div className="ii">🧹 {p.clean} Cleaning</div>{p.utils==="allIncluded"?<div className="ii">💡 All Utilities</div>:<div className="ii pt">💡 First $100 Covered · Overage Split</div>}</div>
       <h3 className="rh">Rooms & Pricing</h3>
       {(p.units&&p.units.length>1)?p.units.map(u=>(
         <div key={u.id} style={{marginBottom:16}}>
