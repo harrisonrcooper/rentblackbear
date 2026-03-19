@@ -373,13 +373,20 @@ function PhotoEditor({src,onSave,onClose}){
     ctx.strokeRect(dx,dy,sw*scale,sh*scale);ctx.setLineDash([]);
     // Grid lines
     if(showGrid){
-      ctx.strokeStyle="rgba(255,255,255,.3)";ctx.lineWidth=1;ctx.setLineDash([]);
+      // Rule of thirds — bright white lines
+      ctx.strokeStyle="rgba(255,255,255,.85)";ctx.lineWidth=1.5;ctx.setLineDash([]);
       for(let g=1;g<3;g++){
         const gx=dx+sw*scale*g/3;ctx.beginPath();ctx.moveTo(gx,dy);ctx.lineTo(gx,dy+sh*scale);ctx.stroke();
         const gy=dy+sh*scale*g/3;ctx.beginPath();ctx.moveTo(dx,gy);ctx.lineTo(dx+sw*scale,gy);ctx.stroke();
       }
-      // Diagonals
-      ctx.strokeStyle="rgba(255,255,255,.12)";
+      // Center crosshair
+      ctx.strokeStyle="rgba(212,168,83,.9)";ctx.lineWidth=1;ctx.setLineDash([4,4]);
+      const cx2=dx+sw*scale/2;const cy2=dy+sh*scale/2;
+      ctx.beginPath();ctx.moveTo(cx2,dy);ctx.lineTo(cx2,dy+sh*scale);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(dx,cy2);ctx.lineTo(dx+sw*scale,cy2);ctx.stroke();
+      ctx.setLineDash([]);
+      // Diagonals faint
+      ctx.strokeStyle="rgba(255,255,255,.25)";ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(dx,dy);ctx.lineTo(dx+sw*scale,dy+sh*scale);ctx.stroke();
       ctx.beginPath();ctx.moveTo(dx+sw*scale,dy);ctx.lineTo(dx,dy+sh*scale);ctx.stroke();
     }
@@ -392,7 +399,9 @@ function PhotoEditor({src,onSave,onClose}){
     img.src=src;
   },[src]);
 
-  useEffect(()=>{drawPreview();},[brightness,contrast,saturation,rotation,flipH,flipV,cropX,cropY,cropW,cropH,showGrid]);
+  const rafRef=useRef(null);
+  const scheduleDraw=()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(drawPreview);};
+  useEffect(()=>{scheduleDraw();},[brightness,contrast,saturation,rotation,flipH,flipV,cropX,cropY,cropW,cropH,showGrid]);
 
   const applyAndSave=async()=>{
     setSaving(true);
@@ -436,7 +445,10 @@ function PhotoEditor({src,onSave,onClose}){
         <label style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>{label}</label>
         <span style={{fontSize:10,color:color||"#9a7422",fontWeight:700}}>{val}{unit}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={val} onChange={e=>set(Number(e.target.value))} style={{width:"100%",accentColor:"#d4a853"}}/>
+      <input type="range" min={min} max={max} step={step} value={val}
+        onChange={e=>set(Number(e.target.value))}
+        onInput={e=>set(Number(e.target.value))}
+        style={{width:"100%",accentColor:"#d4a853",cursor:"pointer",height:18}}/>
     </div>
   );
 
@@ -487,9 +499,10 @@ function PhotoEditor({src,onSave,onClose}){
                 style={{width:58,padding:"2px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.1)",fontSize:10,fontFamily:"inherit",textAlign:"right"}}/>
               <span style={{fontSize:10,color:"#9a7422",fontWeight:700,marginLeft:2}}>°</span>
             </div>
-            <input type="range" min={-180} max={180} step={0.5} value={rotation}
+            <input type="range" min={-180} max={180} step={0.1} value={rotation}
               onChange={e=>{const v=Number(e.target.value);setRotation(v);setRotInput(String(v));}}
-              style={{width:"100%",accentColor:"#d4a853"}}/>
+              onInput={e=>{const v=Number(e.target.value);setRotation(v);setRotInput(v.toFixed(1));}}
+              style={{width:"100%",accentColor:"#d4a853",cursor:"pointer",height:18}}/>
           </div>
         </div>
 
