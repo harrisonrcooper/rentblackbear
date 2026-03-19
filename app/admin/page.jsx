@@ -965,69 +965,87 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
     <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v==="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id} onFocalPoint={(x,y)=>updP({...p,focalPoint:{x,y}})}/>
     <div className="fld"><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
 
-    {/* Unit tabs */}
-    <div style={{borderTop:"2px solid rgba(0,0,0,.06)",marginTop:12,paddingTop:12}}>
+    {/* ── Section 2: Rental Configuration ── */}
+    <div style={{borderTop:"2px solid rgba(0,0,0,.06)",marginTop:14,paddingTop:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#5c4a3a",letterSpacing:.3}}>
+          RENTAL CONFIGURATION
+          {(p.units||[]).length>1&&<span style={{fontWeight:400,color:"#999",marginLeft:6,fontSize:10}}>— select unit to configure</span>}
+        </div>
+        {/* Unit tabs — only show for multi-unit */}
+        {(p.units||[]).length>1&&<div style={{display:"flex",gap:4,alignItems:"center"}}>
           {(p.units||[]).map((u,i)=>(
             <button key={u.id} onClick={()=>setActiveUnit(i)} style={{
-              padding:"6px 14px",borderRadius:7,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-              background:i===activeUnit?"#1a1714":"#fff",
-              color:i===activeUnit?"#d4a853":"#5c4a3a",
-              borderColor:i===activeUnit?"#1a1714":"rgba(0,0,0,.1)",
-              transition:"all .15s",
-            }}>{u.name||`Unit ${i+1}`} <span style={{fontSize:10,fontWeight:400,opacity:.7}}>({(u.rooms||[]).length}br)</span></button>
+              padding:"5px 12px",borderRadius:7,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+              background:i===activeUnit?"#1a1714":"#fff",color:i===activeUnit?"#d4a853":"#5c4a3a",
+              borderColor:i===activeUnit?"#1a1714":"rgba(0,0,0,.1)",transition:"all .15s",
+            }}>{u.name||`Unit ${i+1}`}</button>
           ))}
-          {(p.type==="Duplex"||(p.units||[]).length===0)&&<button className="btn btn-out btn-sm" onClick={addUnit}>+ Add Unit</button>}
-          {(p.units||[]).length>1&&activeUnit>0&&<button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
+          {activeUnit>0&&<button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
             onClick={()=>{if(window.confirm(`Copy all settings and rooms from Unit A to ${curUnit?.name||"this unit"}? Rooms will be vacant copies with new IDs.`))mirrorFromA(activeUnit);}}>
-            ⧉ Mirror from Unit A
+            ⧉ Mirror A
           </button>}
-        </div>
-        <span style={{fontSize:10,color:"#999"}}>{(p.units||[]).length>1?"Multiple units — each has its own rooms, lease & financials":"Single unit"}</span>
+          <button className="btn btn-out btn-sm" onClick={addUnit}>+ Unit</button>
+        </div>}
       </div>
 
-      {/* Unit settings */}
       {curUnit&&<div style={{background:"rgba(212,168,83,.03)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:14,marginBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div style={{fontSize:12,fontWeight:800,color:"#9a7422"}}>{curUnit.name} Settings</div>
-          {(p.units||[]).length>1&&<button className="btn btn-red btn-sm" style={{fontSize:9}} onClick={()=>removeUnit(activeUnit)}>Remove Unit</button>}
-        </div>
-        <div className="fr3">
-          <div className="fld"><label>Unit Name</label><input value={curUnit.name||""} onChange={e=>updUnit("name",e.target.value)}/></div>
-          <div className="fld"><label>Sq Ft</label><input type="number" value={curUnit.sqft||""} onChange={e=>updUnit("sqft",Number(e.target.value))} placeholder="1200"/></div>
-          <div className="fld"><label>Bathrooms</label><input type="number" step="0.5" min="0.5" value={curUnit.baths||1} onChange={e=>updUnit("baths",Number(e.target.value))}/></div>
-        </div>
-        <div className="fr3">
-          <div className="fld">
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-              <label style={{marginBottom:0}}>Utilities</label>
-              <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600}}>✏ Edit Templates</button>
+        {/* Rental Mode — first because it gates everything else */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:12,borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:800,color:"#1a1714",marginBottom:2}}>
+              {(p.units||[]).length>1?curUnit.name:"Rental Mode"}
             </div>
-            <select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}>
-              {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
-            </select>
-            {(()=>{const t=(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(curUnit.utils||"allIncluded"));return t?<div style={{fontSize:9,color:"#999",marginTop:3}}>{t.desc}</div>:null;})()}
+            <div style={{fontSize:10,color:"#999"}}>
+              {mode==="byRoom"?"Rented by individual bedroom — configure each room below":"Rented as a whole unit — single lease, one tenant or household"}
+            </div>
           </div>
-          <div className="fld"><label>Cleaning</label><select value={curUnit.clean||"Biweekly"} onChange={e=>updUnit("clean",e.target.value)}><option>Weekly</option><option>Biweekly</option><option>Monthly</option><option>None</option></select></div>
-          <div className="fld"><label>Rental Mode</label>
-            <select value={curUnit.rentalMode||"byRoom"} onChange={e=>updUnit("rentalMode",e.target.value)}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <select value={curUnit.rentalMode||"byRoom"} onChange={e=>updUnit("rentalMode",e.target.value)}
+              style={{fontWeight:700,fontSize:12,minWidth:130}}>
               <option value="byRoom">By Bedroom</option>
               <option value="wholeHouse">Whole Unit</option>
             </select>
+            {(p.units||[]).length>1&&<button className="btn btn-red btn-sm" style={{fontSize:9}} onClick={()=>removeUnit(activeUnit)}>Remove</button>}
           </div>
         </div>
-        {(curUnit.rentalMode||"byRoom")==="wholeHouse"&&<div className="fr">
+
+        {/* Unit basics */}
+        <div className="fr3">
+          {(p.units||[]).length>1&&<div className="fld"><label>Unit Name</label><input value={curUnit.name||""} onChange={e=>updUnit("name",e.target.value)}/></div>}
+          <div className="fld"><label>Sq Ft</label><input type="number" value={curUnit.sqft||""} onChange={e=>updUnit("sqft",Number(e.target.value))} placeholder="1200"/></div>
+          <div className="fld"><label>Bathrooms</label><input type="number" step="0.5" min="0.5" value={curUnit.baths||1} onChange={e=>updUnit("baths",Number(e.target.value))}/></div>
+          <div className="fld"><label>Cleaning</label><select value={curUnit.clean||"Biweekly"} onChange={e=>updUnit("clean",e.target.value)}><option>Weekly</option><option>Biweekly</option><option>Monthly</option><option>None</option></select></div>
+        </div>
+
+        {/* Utilities */}
+        <div className="fld">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+            <label style={{marginBottom:0}}>Utilities</label>
+            <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600}}>✏ Edit Templates</button>
+          </div>
+          <select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}>
+            {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
+          </select>
+          {(()=>{const t=(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(curUnit.utils||"allIncluded"));return t?<div style={{fontSize:9,color:"#999",marginTop:3}}>{t.desc}</div>:null;})()}
+        </div>
+
+        {/* Whole unit pricing */}
+        {mode==="wholeHouse"&&<div className="fr">
           <div className="fld"><label>Monthly Rent</label><input type="number" value={curUnit.rent||""} onChange={e=>updUnit("rent",Number(e.target.value))} placeholder="3200"/></div>
-          <div className="fld"><label>Security Deposit</label><input type="number" value={curUnit.sd||curUnit.rent||""} onChange={e=>updUnit("sd",Number(e.target.value))} placeholder="Defaults to 1 month"/></div>
+          <div className="fld"><label>Security Deposit</label><input type="number" value={curUnit.sd||curUnit.rent||""} onChange={e=>updUnit("sd",Number(e.target.value))} placeholder="Defaults to 1 month rent"/></div>
         </div>}
-        <div className="fld" style={{marginBottom:4}}><label>Unit Description</label><textarea value={curUnit.desc||""} onChange={e=>updUnit("desc",e.target.value)} placeholder="Unit features, finishes, notes..." rows={2}/></div>
+
+        <div className="fld" style={{marginBottom:4}}><label>Unit Notes <span style={{fontWeight:400,color:"#999",textTransform:"none",fontSize:9}}>— internal only</span></label><textarea value={curUnit.desc||""} onChange={e=>updUnit("desc",e.target.value)} placeholder="Finishes, features, notes for this unit..." rows={2}/></div>
       </div>}
 
-      {/* Room editor for this unit */}
+      {/* ── Section 3: Rooms (only for byRoom mode) ── */}
       {curUnit&&mode==="byRoom"&&<div style={{marginTop:0}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <h3 style={{fontSize:13,fontWeight:800}}>Rooms in {curUnit.name} ({(curUnit.rooms||[]).length})</h3>
+          <div>
+            <div style={{fontSize:11,fontWeight:800,color:"#5c4a3a",letterSpacing:.3}}>BEDROOMS{(p.units||[]).length>1?` — ${curUnit.name}`:""}</div>
+            <div style={{fontSize:10,color:"#999"}}>{(curUnit.rooms||[]).length} room{(curUnit.rooms||[]).length!==1?"s":""} · each gets its own lease</div>
+          </div>
           <button className="btn btn-out btn-sm" onClick={addRoom}>+ Add Room</button>
         </div>
         {(curUnit.rooms||[]).length===0&&<div style={{padding:"12px",textAlign:"center",color:"#999",fontSize:12,border:"2px dashed rgba(0,0,0,.06)",borderRadius:8}}>No rooms yet — click Add Room</div>}
