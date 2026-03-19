@@ -4091,7 +4091,7 @@ export default function Page(){
                     </div>
                     :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}>+ Find Tenant</button>}
                 </div>);})}
-              </div>))}
+              </div>)}
             </div>}
           </div>);})}
         {props.length===0&&<div style={{textAlign:"center",padding:40,color:"#999"}}><div style={{fontSize:40,marginBottom:8}}>🏠</div><h3 style={{fontSize:15}}>No Properties</h3><p style={{fontSize:12,marginTop:4}}>Add your first property above.</p></div>}
