@@ -635,7 +635,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
     </div>
 
     <div className="mft" style={{marginTop:14}}>
-      <button className="btn btn-out" onClick={onClose}>Cancel</button>
+      <button className="btn btn-out" onClick={tryClose}>Cancel</button>
       <button className="btn btn-gold" onClick={applyAndSave} disabled={saving} style={{minWidth:140}}>{saving?"⏳ Saving...":"✓ Apply & Save"}</button>
     </div>
   </div></div>);
@@ -869,6 +869,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
   const[saveShake,setSaveShake]=useState(0);
   const[justSaved,setJustSaved]=useState(false);
   const[showUtilModal,setShowUtilModal]=useState(false);
+  const[showCloseConfirm,setShowCloseConfirm]=useState(false);
 
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
   const updP=(val)=>{setP(val);markUnsaved();};
@@ -918,7 +919,8 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
   };
   const isOcc=r=>r.st==="occupied"&&r.tenant;
   const mode=curUnit?.rentalMode||"byRoom";
-  return(<div className="mbg" onClick={()=>{if(unsaved&&!justSaved){if(window.confirm("Close without saving? Your changes will be lost."))onClose();}else{onClose();}}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760,maxHeight:"90vh",overflowY:"auto"}}>
+  const tryClose=()=>{if(unsaved&&!justSaved)setShowCloseConfirm(true);else onClose();};
+  return(<div className="mbg" onClick={tryClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760,maxHeight:"90vh",overflowY:"auto"}}>
     <h2>{isNew?"Add Property":`Edit: ${p.name}`}</h2>
 
     {/* Property-level info */}
@@ -1135,15 +1137,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
     {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
     {showUtilModal&&<UtilTemplatesModal settings={settings} onUpdateSettings={onUpdateSettings} onClose={()=>setShowUtilModal(false)}/>}
 
-    {unsaved&&!justSaved&&<div key={saveShake} style={{
-      marginBottom:8,padding:"10px 14px",background:"rgba(196,92,74,.06)",
-      border:"1px solid rgba(196,92,74,.25)",borderRadius:8,
-      fontSize:11,color:"#c45c4a",display:"flex",justifyContent:"space-between",alignItems:"center",
-      animation:saveShake>0?"shake .4s ease":"none"
-    }}>
-      <span style={{fontWeight:700}}>⚠ Unsaved changes</span>
-      <button onClick={onClose} style={{fontSize:10,color:"#c45c4a",background:"none",border:"1px solid rgba(196,92,74,.3)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>Discard & Close</button>
-    </div>}
+
     {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:"#4a7c59",textAlign:"center"}}>
       ✓ Saved
     </div>}
@@ -1164,6 +1158,22 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
       }}>{isNew?"Add Property":justSaved?"✓ Saved":"Save Changes"}</button>
       </div>
     </div>
+  {showCloseConfirm&&<div className="mbg" style={{zIndex:10001}} onClick={e=>e.stopPropagation()}>
+    <div style={{background:"#fff",borderRadius:14,padding:28,maxWidth:360,width:"90%",margin:"auto",position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
+      <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
+      <div style={{fontSize:16,fontWeight:700,color:"#1a1714",marginBottom:8}}>Unsaved changes</div>
+      <div style={{fontSize:13,color:"#5c4a3a",marginBottom:20,lineHeight:1.5}}>You have unsaved changes to <strong>{p.name||"this property"}</strong>. What would you like to do?</div>
+      <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+        <button className="btn btn-red" style={{minWidth:110}} onClick={()=>{setShowCloseConfirm(false);onClose();}}>Discard & Close</button>
+        <button className="btn btn-gold" style={{minWidth:110}} onClick={()=>{
+          setShowCloseConfirm(false);
+          if(!p.name.trim()){setWarning("Property name is required.");return;}
+          setUnsaved(false);setJustSaved(true);setTimeout(()=>setJustSaved(false),3000);onSave(p);
+        }}>Save & Close</button>
+      </div>
+      <button style={{marginTop:14,background:"none",border:"none",fontSize:12,color:"#999",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowCloseConfirm(false)}>Keep editing</button>
+    </div>
+  </div>}
   </div></div>);
 }
 
