@@ -3996,8 +3996,16 @@ export default function Page(){
       {tab==="properties"&&<>
         <div className="sec-hd"><div><h2>Manage Properties</h2><p>Click any property for details, or edit to manage rooms</p></div>
           <button className="btn btn-gold" onClick={()=>{setIsNewProp(true);setEditProp({});}}>+ Add Property</button></div>
-        {props.map((p,idx)=>{const pr=allRooms(p).map(r=>r.rent);const vac=allRooms(p).filter(r=>r.st==="vacant").length;const occRooms=allRooms(p).filter(r=>r.st==="occupied");const isExp=expanded["prop-"+p.id];
-          const totalRent=allRooms(p).reduce((s,r)=>s+r.rent,0);const projRent=occRooms.reduce((s,r)=>s+r.rent,0);
+        {props.map((p,idx)=>{
+          const isWholeUnit=(p.units||[]).length>0&&(p.units||[]).every(u=>u.rentalMode==="wholeHouse");
+          const wholeUnitRent=(p.units||[]).reduce((s,u)=>s+(u.rentalMode==="wholeHouse"?u.rent||0:0),0);
+          const rooms=isWholeUnit?[]:allRooms(p);
+          const pr=rooms.map(r=>r.rent);
+          const vac=rooms.filter(r=>r.st==="vacant").length;
+          const occRooms=rooms.filter(r=>r.st==="occupied");
+          const isExp=expanded["prop-"+p.id];
+          const totalRent=isWholeUnit?wholeUnitRent:rooms.reduce((s,r)=>s+r.rent,0);
+          const projRent=isWholeUnit?wholeUnitRent:occRooms.reduce((s,r)=>s+r.rent,0);
           const unpaidRooms=occRooms.filter(r=>!(payments[r.id]&&payments[r.id][MO]));
           const expiringRooms=occRooms.filter(r=>{if(!r.le)return false;const d=Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24));return d<=90;});
           return(
@@ -4021,13 +4029,14 @@ export default function Page(){
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
                 <h3><span style={{color:"#ccc",marginRight:4,cursor:"grab",fontSize:14}}>⠿</span>{isExp?"▾":"▸"} {p.name}</h3>
-                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {allRooms(p).length}br · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
+                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {isWholeUnit?"Whole Unit":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
-                {(p.units||[]).some(u=>u.rentalMode==="wholeHouse"&&u.rent>0)&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(Math.min(...(p.units||[]).filter(u=>u.rent>0).map(u=>u.rent)))}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
-                {pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
-                {vac>0&&<span className="badge b-red">{vac} Vacant</span>}
-                {vac===0&&<span className="badge b-green">Full</span>}
+                {isWholeUnit&&wholeUnitRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(wholeUnitRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
+                {!isWholeUnit&&pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
+                {!isWholeUnit&&vac>0&&<span className="badge b-red">{vac} Vacant</span>}
+                {!isWholeUnit&&vac===0&&allRooms(p).length>0&&<span className="badge b-green">Full</span>}
+                {isWholeUnit&&<span className="badge b-green">Whole Unit</span>}
                 {unpaidRooms.length>0&&<span className="badge b-red" title={`${unpaidRooms.map(r=>r.tenant.name).join(", ")} unpaid`}>💳 {unpaidRooms.length} Unpaid</span>}
                 {expiringRooms.length>0&&<span className="badge b-gold" title={expiringRooms.map(r=>`${r.tenant.name} (${Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24))}d)`).join(", ")}>⚠ {expiringRooms.length} Expiring</span>}
                 <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setIsNewProp(false);setEditProp(p);}}>✏️ Edit</button>
@@ -4036,14 +4045,25 @@ export default function Page(){
             {isExp&&<div className="card-bd" style={{animation:"fadeIn .15s"}}>
               {/* Property summary */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
-                <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Rooms</div><div style={{fontSize:18,fontWeight:800}}>{allRooms(p).length}</div></div>
-                <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Occupied</div><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{occRooms.length}</div></div>
+                {!isWholeUnit&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Rooms</div><div style={{fontSize:18,fontWeight:800}}>{allRooms(p).length}</div></div>}
+                {!isWholeUnit&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Occupied</div><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{occRooms.length}</div></div>}
+                {isWholeUnit&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center",gridColumn:"span 2"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Monthly Rent</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(wholeUnitRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>}
                 <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Projected</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(projRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
                 <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>At Full</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(totalRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
               </div>
-              {/* Room list */}
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Rooms by Unit</div>
-              {(p.units||[]).map(u=><div key={u.id} style={{marginBottom:10}}>
+              {/* Whole unit info */}
+              {isWholeUnit&&<div style={{padding:"12px 14px",background:"#faf9f7",borderRadius:8,marginBottom:10}}>
+                {(p.units||[]).map(u=><div key={u.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700}}>{(p.units||[]).length>1?u.name:"Whole Unit"} · {u.utils==="allIncluded"?"All Utilities":u.utils==="first100"?"First $100 Utilities":"Tenant Pays"} · {u.clean||"Biweekly"} Clean</div>
+                    <div style={{fontSize:10,color:"#999",marginTop:2}}>Single lease · {u.baths||1} bath{u.baths!==1?"s":""}</div>
+                  </div>
+                  <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([])}}>+ Find Tenant</button>
+                </div>)}
+              </div>}
+              {/* Room list — only for byRoom */}
+              {!isWholeUnit&&<div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Rooms by Unit</div>}
+              {!isWholeUnit&&(p.units||[]).map(u=><div key={u.id} style={{marginBottom:10}}>
                 {(p.units||[]).length>1&&<div style={{fontSize:10,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,padding:"3px 8px",background:"rgba(212,168,83,.06)",borderRadius:4,display:"inline-block"}}>{u.name}</div>}
                 {(u.rooms||[]).length===0&&<div style={{fontSize:11,color:"#bbb",padding:"6px 0"}}>No rooms — edit property to add</div>}
               {(u.rooms||[]).map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
@@ -4071,7 +4091,7 @@ export default function Page(){
                     </div>
                     :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}>+ Find Tenant</button>}
                 </div>);})}
-              </div>)}
+              </div>))}
             </div>}
           </div>);})}
         {props.length===0&&<div style={{textAlign:"center",padding:40,color:"#999"}}><div style={{fontSize:40,marginBottom:8}}>🏠</div><h3 style={{fontSize:15}}>No Properties</h3><p style={{fontSize:12,marginTop:4}}>Add your first property above.</p></div>}
