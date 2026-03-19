@@ -850,6 +850,17 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
   </div></div>);
 }
 
+
+// Property type → default unit config
+const PROP_TYPES={
+  SFH:{label:"SFH",units:[{name:"Main",label:""}]},
+  Townhome:{label:"Townhome",units:[{name:"Main",label:""}]},
+  Duplex:{label:"Duplex",units:[{name:"Unit A",label:"A"},{name:"Unit B",label:"B"}]},
+  Triplex:{label:"Triplex",units:[{name:"Unit A",label:"A"},{name:"Unit B",label:"B"},{name:"Unit C",label:"C"}]},
+  Fourplex:{label:"Fourplex",units:[{name:"Unit A",label:"A"},{name:"Unit B",label:"B"},{name:"Unit C",label:"C"},{name:"Unit D",label:"D"}]},
+  ADU:{label:"ADU (Main + ADU)",units:[{name:"Main House",label:"Main"},{name:"ADU",label:"ADU"}]},
+  Apartment:{label:"Apartment",units:[{name:"Unit 1",label:"1"}]},
+};
 function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,onUpdateSettings}){
   const[p,setP]=useState(()=>{if(!prop)return{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]};try{return JSON.parse(JSON.stringify(prop));}catch{return{...prop,photos:prop.photos||[],units:(prop.units||[]).map(u=>({...u,rooms:(u.rooms||[])}))};} });
   const[activeUnit,setActiveUnit]=useState(0);
@@ -942,21 +953,20 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
     <div className="fr3">
       <div className="fld"><label>Property Type</label>
         <select value={p.type||"SFH"} onChange={e=>{
-          const t=e.target.value;
-          // Auto-create units for duplex if none exist
-          let units=p.units||[];
-          if(t==="Duplex"&&units.length<=1){
-            const existing=units[0]||{id:uid(),name:"Unit A",label:"A",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]};
-            units=[{...existing,name:"Unit A",label:"A"},{id:uid(),name:"Unit B",label:"B",sqft:0,baths:1,utils:existing.utils,clean:existing.clean,rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]}];
-          } else if(t!=="Duplex"&&units.length===0){
-            units=[{id:p.id+"_u1",name:"Unit A",label:"A",sqft:0,baths:1,utils:"allIncluded",clean:"Biweekly",rentalMode:"byRoom",rent:0,desc:"",photos:[],rooms:[]}];
-          }
-          updP({...p,type:t,units});
+          const t=e.target.value;const cfg=PROP_TYPES[t]||PROP_TYPES.SFH;
+          const existing=p.units||[];
+          // Build new units — preserve existing data where unit count matches, else scaffold
+          const newUnits=cfg.units.map((def,i)=>{
+            const ex=existing[i];
+            return ex
+              ?{...ex,name:def.name,label:def.label}
+              :{id:uid(),name:def.name,label:def.label,sqft:0,baths:1,
+                utils:existing[0]?.utils||"allIncluded",clean:existing[0]?.clean||"Biweekly",
+                rentalMode:"byRoom",rent:0,sd:0,desc:"",photos:[],rooms:[]};
+          });
+          setActiveUnit(0);updP({...p,type:t,units:newUnits});
         }}>
-          <option value="SFH">SFH</option>
-          <option value="Townhome">Townhome</option>
-          <option value="Duplex">Duplex</option>
-          <option value="Apartment">Apartment</option>
+          {Object.entries(PROP_TYPES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
         </select>
       </div>
       <div className="fld"><label>Total Sq Ft</label><input type="number" value={p.sqft||""} onChange={e=>updP({...p,sqft:Number(e.target.value)})} placeholder="2400"/></div>
@@ -972,20 +982,22 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
           RENTAL CONFIGURATION
           {(p.units||[]).length>1&&<span style={{fontWeight:400,color:"#999",marginLeft:6,fontSize:10}}>— select unit to configure</span>}
         </div>
-        {/* Unit tabs — only show for multi-unit */}
-        {(p.units||[]).length>1&&<div style={{display:"flex",gap:4,alignItems:"center"}}>
+        {/* Unit tabs — show for multi-unit, always */}
+        {(p.units||[]).length>1&&<div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
           {(p.units||[]).map((u,i)=>(
             <button key={u.id} onClick={()=>setActiveUnit(i)} style={{
               padding:"5px 12px",borderRadius:7,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
               background:i===activeUnit?"#1a1714":"#fff",color:i===activeUnit?"#d4a853":"#5c4a3a",
               borderColor:i===activeUnit?"#1a1714":"rgba(0,0,0,.1)",transition:"all .15s",
-            }}>{u.name||`Unit ${i+1}`}</button>
+            }}>{u.name||`Unit ${i+1}`}
+            <span style={{fontSize:9,fontWeight:400,opacity:.6,marginLeft:4}}>{u.rentalMode==="wholeHouse"?"whole":"by room"}</span>
+            </button>
           ))}
           {activeUnit>0&&<button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
-            onClick={()=>{if(window.confirm(`Copy all settings and rooms from Unit A to ${curUnit?.name||"this unit"}? Rooms will be vacant copies with new IDs.`))mirrorFromA(activeUnit);}}>
-            ⧉ Mirror A
+            onClick={()=>{if(window.confirm(`Copy all settings from ${(p.units||[])[0]?.name||"Unit A"} to ${curUnit?.name}? Rooms will be vacant copies.`))mirrorFromA(activeUnit);}}>
+            ⧉ Mirror
           </button>}
-          <button className="btn btn-out btn-sm" onClick={addUnit}>+ Unit</button>
+          <button className="btn btn-out btn-sm" onClick={addUnit} title="Add another unit to this property">+ Unit</button>
         </div>}
       </div>
 
@@ -1006,13 +1018,18 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
               <option value="byRoom">By Bedroom</option>
               <option value="wholeHouse">Whole Unit</option>
             </select>
-            {(p.units||[]).length>1&&<button className="btn btn-red btn-sm" style={{fontSize:9}} onClick={()=>removeUnit(activeUnit)}>Remove</button>}
+            {(p.units||[]).length>(PROP_TYPES[p.type]||PROP_TYPES.SFH).units.length&&
+              <button className="btn btn-red btn-sm" style={{fontSize:9}} onClick={()=>{
+                const hasOcc=allRooms({units:[curUnit]}).some(r=>r.st==="occupied");
+                if(hasOcc){alert("Cannot remove — "+curUnit.name+" has occupied rooms. Remove tenants first.");}
+                else if(window.confirm("Remove "+curUnit.name+"? This cannot be undone.")){removeUnit(activeUnit);}
+              }}>Remove Unit</button>}
           </div>
         </div>
 
         {/* Unit basics */}
         <div className="fr3">
-          {(p.units||[]).length>1&&<div className="fld"><label>Unit Name</label><input value={curUnit.name||""} onChange={e=>updUnit("name",e.target.value)}/></div>}
+          {(p.units||[]).length>1&&<div className="fld"><label>Unit Name <span style={{fontWeight:400,color:"#999",textTransform:"none",fontSize:9}}>— editable</span></label><input value={curUnit.name||""} onChange={e=>updUnit("name",e.target.value)}/></div>}
           {(p.units||[]).length>1&&<div className="fld"><label>Sq Ft</label><input type="number" value={curUnit.sqft||""} onChange={e=>updUnit("sqft",Number(e.target.value))} placeholder="1200"/></div>}
           <div className="fld"><label>Bathrooms</label><input type="number" step="0.5" min="0.5" value={curUnit.baths||1} onChange={e=>updUnit("baths",Number(e.target.value))}/></div>
           <div className="fld"><label>Cleaning</label><select value={curUnit.clean||"Biweekly"} onChange={e=>updUnit("clean",e.target.value)}><option>Weekly</option><option>Biweekly</option><option>Monthly</option><option>None</option></select></div>
@@ -4029,7 +4046,7 @@ export default function Page(){
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
                 <h3><span style={{color:"#ccc",marginRight:4,cursor:"grab",fontSize:14}}>⠿</span>{isExp?"▾":"▸"} {p.name}</h3>
-                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {p.type} · {isWholeUnit?"Whole Unit":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
+                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {(PROP_TYPES[p.type]||PROP_TYPES.SFH).label} · {isWholeUnit?"Whole Unit":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
                 {isWholeUnit&&wholeUnitRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(wholeUnitRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
