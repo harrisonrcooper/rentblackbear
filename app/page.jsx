@@ -659,6 +659,7 @@ function Screening({properties}){
   else if(touched.phone&&!isValidPhone(form.phone))errs.phone="Enter a valid 10-digit phone number";
   if(touched.property&&!form.property)errs.property="Select a property";
   if(touched.moveIn&&!form.moveIn)errs.moveIn="Select a preferred move-in date";
+  else if(touched.moveIn&&form.moveIn){const today=new Date();today.setHours(0,0,0,0);const sel=new Date(form.moveIn+"T00:00:00");if(sel<today)errs.moveIn="Move-in date cannot be in the past";}
   if(touched.source&&!form.source)errs.source="Tell us how you heard about us";
   if(touched.sourceOther&&form.source==="Other"&&!form.sourceOther?.trim())errs.sourceOther="Please tell us how you heard about us";
   if(touched.reason&&!form.reason)errs.reason="This field is required";
@@ -699,18 +700,49 @@ function Screening({properties}){
           <div><select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}><option value="">Property interested in? *</option>{PROPS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>{errMsg("property")}</div>
           <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
             <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
-              <select className="ssel" style={fldStyle("moveIn")} value={form.moveInMonth||""} onChange={e=>{const mo=e.target.value;setForm(f=>{const d=f.moveInDay,y=f.moveInYear;return{...f,moveInMonth:mo,moveIn:mo&&d&&y?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};});setTouched(t=>({...t,moveIn:true}));}} onBlur={()=>setTouched(t=>({...t,moveIn:true}))}>
-                <option value="">Month</option>
-                {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m,i)=><option key={i} value={i+1}>{m}</option>)}
-              </select>
-              <select className="ssel" style={fldStyle("moveIn")} value={form.moveInDay||""} onChange={e=>{const d=e.target.value;setForm(f=>{const mo=f.moveInMonth,y=f.moveInYear;return{...f,moveInDay:d,moveIn:mo&&d&&y?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};});}}>
-                <option value="">Day</option>
-                {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
-              </select>
-              <select className="ssel" style={fldStyle("moveIn")} value={form.moveInYear||""} onChange={e=>{const y=e.target.value;setForm(f=>{const mo=f.moveInMonth,d=f.moveInDay;return{...f,moveInYear:y,moveIn:mo&&d&&y?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};});}}>
-                <option value="">Year</option>
-                {(()=>{const yr=new Date().getFullYear();return[yr,yr+1,yr+2].map(y=><option key={y} value={y}>{y}</option>);})()}
-              </select>
+              {(()=>{
+                const today=new Date();today.setHours(0,0,0,0);
+                const todayY=today.getFullYear(),todayM=today.getMonth()+1,todayD=today.getDate();
+                const selY=Number(form.moveInYear),selM=Number(form.moveInMonth);
+                // Month is past if same year and month < today's month
+                const monthDisabled=m=>selY===todayY&&m<todayM;
+                // Day is past if same year+month and day < today's day
+                const dayDisabled=d=>selY===todayY&&selM===todayM&&d<todayD;
+                // Auto-clear day if it becomes invalid after month/year change
+                return(<>
+                <select className="ssel" style={fldStyle("moveIn")} value={form.moveInMonth||""} onChange={e=>{
+                  const mo=Number(e.target.value);
+                  setForm(f=>{
+                    const y=Number(f.moveInYear)||todayY;
+                    // If selected day is now in the past, clear it
+                    const d=(y===todayY&&mo===todayM&&Number(f.moveInDay)<todayD)?"":f.moveInDay;
+                    return{...f,moveInMonth:mo||"",moveInDay:d,moveIn:mo&&d&&y?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};
+                  });setTouched(t=>({...t,moveIn:true}));}} onBlur={()=>setTouched(t=>({...t,moveIn:true}))}>
+                  <option value="">Month</option>
+                  {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m,i)=>{
+                    const disabled=selY===todayY&&(i+1)<todayM;
+                    return<option key={i} value={i+1} disabled={disabled} style={{color:disabled?"#ccc":undefined}}>{m}</option>;
+                  })}
+                </select>
+                <select className="ssel" style={fldStyle("moveIn")} value={form.moveInDay||""} onChange={e=>{const d=e.target.value;setForm(f=>{const mo=f.moveInMonth,y=f.moveInYear;return{...f,moveInDay:d,moveIn:mo&&d&&y?`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`:""};});}}>
+                  <option value="">Day</option>
+                  {Array.from({length:31},(_,i)=>{
+                    const d=i+1;const disabled=dayDisabled(d);
+                    return<option key={d} value={d} disabled={disabled} style={{color:disabled?"#ccc":undefined}}>{d}</option>;
+                  })}
+                </select>
+                <select className="ssel" style={fldStyle("moveIn")} value={form.moveInYear||""} onChange={e=>{const y=e.target.value;setForm(f=>{
+                  const mo=f.moveInMonth;
+                  // Clear month if it's now in the past
+                  const newMo=(Number(y)===todayY&&Number(mo)<todayM)?"":mo;
+                  const d=f.moveInDay;
+                  const newD=(Number(y)===todayY&&Number(newMo)===todayM&&Number(d)<todayD)?"":d;
+                  return{...f,moveInYear:y,moveInMonth:newMo,moveInDay:newD,moveIn:newMo&&newD&&y?`${y}-${String(newMo).padStart(2,"0")}-${String(newD).padStart(2,"0")}`:""};});}}>
+                  <option value="">Year</option>
+                  {(()=>{const yr=new Date().getFullYear();return[yr,yr+1,yr+2].map(y=><option key={y} value={y}>{y}</option>);})()}
+                </select>
+                </>);
+              })()}
             </div>
             {errMsg("moveIn")}</div>
           <div><select className="ssel" style={fldStyle("source")} value={form.source} onChange={e=>{setForm({...form,source:e.target.value,sourceOther:""});setTouched({...touched,source:true});}} onBlur={()=>setTouched({...touched,source:true})}><option value="">How did you hear about us? *</option><option>Roomies.com</option><option>Google Search</option><option>Facebook / Instagram</option><option>Friend / Referral</option><option>Zillow / Apartments.com</option><option>Craigslist</option><option>Drive-by / Sign</option><option>Military / Contractor Network</option><option>Other</option></select>{errMsg("source")}
