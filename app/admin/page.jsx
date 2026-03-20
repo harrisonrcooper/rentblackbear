@@ -6802,6 +6802,7 @@ export default function Page(){
         le:le.toISOString().split("T")[0],
         tenant:{
           name:a.name,email:a.email,phone:a.phone,moveIn:mi,
+          dob:a.dob||null,gender:a.gender||"",occupationType:a.occupationType||"",
           documents:appDocs,
           applicationData:a.applicationData||null,
           docsFlag:a.docsFlag||null,
@@ -6855,15 +6856,13 @@ export default function Page(){
             <input type="tel" value={a.phone||""} onChange={e=>saveApp(a.id,"phone",e.target.value)} style={{width:"100%"}}/>
           </div>
         </div>
-        <div className="fr" style={{marginBottom:0}}>
-          <div className="fld" style={{marginBottom:0}}>
-            <label>Monthly Income</label>
-            <input value={a.income||""} onChange={e=>saveApp(a.id,"income",e.target.value)} placeholder="e.g. $4,500" style={{width:"100%"}}/>
-          </div>
-          <div className="fld" style={{marginBottom:0}}>
-            <label>Source</label>
-            <input value={a.source||""} onChange={e=>saveApp(a.id,"source",e.target.value)} placeholder="e.g. Zillow" style={{width:"100%"}}/>
-          </div>
+        <div className="fld" style={{marginBottom:6}}>
+          <label>Source</label>
+          <input value={a.source||""} onChange={e=>saveApp(a.id,"source",e.target.value)} placeholder="e.g. Zillow, Roomies.com" style={{width:"100%"}}/>
+        </div>
+        <div className="fld" style={{marginBottom:0}}>
+          <label>Reason for Leaving <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— from applicant's pre-screen</span></label>
+          <textarea value={a.notes||""} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,notes:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,notes:e.target.value}}));}} placeholder="Why are they leaving their current place? (auto-filled from pre-screen form)" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
         </div>
       </div>
 
@@ -6908,21 +6907,6 @@ export default function Page(){
             </select>
             {!termRoom&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" not found as a vacant room — it may be occupied. Select an available room before sending the lease.</div>}
           </div>
-          <div className="fld" style={{marginBottom:0}}>
-            <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span>Confirmed Move-in Date</span>
-            </label>
-            {a.termMoveInEditing
-              ?<input type="date" value={a.termMoveIn||a.moveIn||""} onChange={e=>saveTerm("termMoveIn",e.target.value)} autoFocus/>
-              :<div style={{padding:"8px 10px",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:6,fontSize:13,fontWeight:700,color:"#1a1714"}}>
-                {a.moveIn?new Date(a.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"Not set"}
-                <span style={{fontSize:10,fontWeight:400,color:"#999",marginLeft:6}}>— from application</span>
-              </div>
-            }
-          </div>
-          <div style={{marginTop:10,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
-            ⚙️ Rent structure, SD amount, risk level, and due dates are configured when you click <strong>Configure Charges &amp; Send Lease</strong>.
-          </div>
         </div>);
       })()}
       {(a.status==="approved"||a.status==="move-in"||a.status==="onboarding")&&<div className="tp-card"><h3>📋 Screening Summary</h3>
@@ -6938,11 +6922,31 @@ export default function Page(){
       </div>}
       {/* Roommate Compatibility */}
       {a.property&&<div className="tp-card"><h3>🏠 Housemates at {a.property}</h3>
-        {(function(){var pr=props.find(function(p){return p.name===a.property;});if(!pr)return null;return allRooms(pr).map(function(r){return(
-          <div key={r.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}>
-            <div><strong>{r.name}</strong>{" — "}{r.st==="occupied"&&r.tenant?(r.tenant.name||"Occupied"):<span style={{color:"#4a7c59",fontWeight:600}}>Vacant</span>}</div>
-            <div style={{color:"#999"}}>{fmtS(r.rent)}/mo</div>
-          </div>);});})()}
+        {(function(){
+          var pr=props.find(function(p){return p.name===a.property;});
+          if(!pr)return null;
+          const calcAge=(dob)=>{if(!dob)return null;const b=new Date(dob+"T00:00:00");if(isNaN(b))return null;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=10&&age<120?age:null;};
+          return allRooms(pr).map(function(r){
+            const occ=r.st==="occupied"&&r.tenant;
+            const age=occ?calcAge(r.tenant.dob):null;
+            const genderShort=occ&&r.tenant.gender?r.tenant.gender==="Male"?"M":r.tenant.gender==="Female"?"F":r.tenant.gender==="Non-binary"?"NB":null:null;
+            return(
+              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:600}}>{r.name}</div>
+                  {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>
+                    {r.tenant.name||"Occupied"}
+                    {(genderShort||age||r.tenant.occupationType)&&<span style={{color:"#999",marginLeft:6}}>
+                      {[genderShort,age?"Age "+age:null,r.tenant.occupationType].filter(Boolean).join(" · ")}
+                    </span>}
+                  </div>}
+                  {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
+                </div>
+                <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(r.rent)}/mo</div>
+              </div>
+            );
+          });
+        })()}
       </div>}
 
       {/* Communication Log */}
@@ -6985,7 +6989,6 @@ export default function Page(){
         {(!a.documents||a.documents.length===0)&&<div style={{fontSize:11,color:"#999",fontStyle:"italic"}}>No files uploaded yet.</div>}
       </div>}
 
-      <div className="tp-card"><h3>📝 Notes</h3><textarea value={a.notes||""} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,notes:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,notes:e.target.value}}));}} placeholder="Internal notes..." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
 
       {/* Move-in charges — shown on approved applicants */}
       {(a.status==="approved"||a.status==="onboarding")&&(()=>{

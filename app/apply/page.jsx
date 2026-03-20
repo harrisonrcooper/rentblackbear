@@ -257,7 +257,7 @@ export default function ApplyPage(){
   const[step,setStep]=useState("welcome");
   const[appType,setAppType]=useState("tenant");
   const[d,setD]=useState({
-    firstName:"",lastName:"",email:"",phone:"",dob:"",
+    firstName:"",lastName:"",email:"",phone:"",dob:"",gender:"",occupationType:"",
     moveIn:"",occupants:1,
     // Personal
     ssn:"",idFile:null,idFileName:"",
@@ -328,6 +328,8 @@ export default function ApplyPage(){
       if(req("moveIn")&&(!d.moveIn||d.moveIn.includes(" ")))e.moveIn="Please select your desired move-in date";
       if(d.moveIn&&!d.moveIn.includes(" ")){const mi=new Date(d.moveIn+"T00:00:00");const tod=new Date();tod.setHours(0,0,0,0);if(mi<tod)e.moveIn="Move-in date cannot be in the past — please select today or a future date";}
       if(!invite&&req("preferredProperty")&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
+      if(!d.gender)e.gender="Please select a gender option";
+      if(!d.occupationType)e.occupationType="Please select what best describes you";
     }
     if(s==="personal"){
       if(fieldActive("idFile")&&fieldRequired("idFile")&&!d.idFileName&&!d.idUploadLater)e.idFile="Please upload your photo ID, or check the box to upload it later";
@@ -466,6 +468,34 @@ export default function ApplyPage(){
           <div className="counter"><button className="counter-btn" onClick={()=>upd("occupants",Math.max(1,d.occupants-1))}>−</button><div className="counter-val">{d.occupants}</div><button className="counter-btn" onClick={()=>upd("occupants",d.occupants+1)}>+</button></div>
           {d.occupants>1&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.15)",borderRadius:8,padding:10,fontSize:12,color:"var(--rd)"}}>⚠ Only 1 person per room is allowed. Each additional occupant over 18 must submit their own application. If you're renting the entire property, please contact us.</div>}
         </div>
+
+        <div className="fld-row">
+          <div className="fld">
+            <label>Gender<span className="req">*</span></label>
+            <select value={d.gender} onChange={e=>upd("gender",e.target.value)} className={errors.gender?"err":""}>
+              <option value="">Select...</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Non-binary">Non-binary</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+            {errors.gender&&<div className="err-msg" style={{animation:"shake .4s ease"}}>Please select a gender option</div>}
+          </div>
+          <div className="fld">
+            <label>What brings you to Huntsville?<span className="req">*</span></label>
+            <select value={d.occupationType} onChange={e=>upd("occupationType",e.target.value)} className={errors.occupationType?"err":""}>
+              <option value="">Select...</option>
+              <option value="Intern">Intern</option>
+              <option value="Military">Military</option>
+              <option value="Contractor">Contractor</option>
+              <option value="Remote Worker">Remote Worker</option>
+              <option value="Student">Student</option>
+              <option value="Other">Other</option>
+            </select>
+            {errors.occupationType&&<div className="err-msg" style={{animation:"shake .4s ease"}}>Please select what best describes you</div>}
+          </div>
+        </div>
+
         {/* Door Code — driven by hq-app-fields */}
         {fieldActive("doorCode")&&<div style={{marginTop:24,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
           <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>🔑 {fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
@@ -824,7 +854,7 @@ export default function ApplyPage(){
               applicationData:d,
               passcode:d.doorCode||null,
               name:fullName,email:d.email,phone:d.phone,
-              moveIn:d.moveIn||a.moveIn||"",
+              dob:d.dob||null,gender:d.gender||"",occupationType:d.occupationType||"",
               termMoveIn:d.moveIn||a.moveIn||"",
               // Always ensure termRoomId, termRent, termSD are set from resolved room
               ...(resolvedRoomData?{
@@ -865,7 +895,7 @@ export default function ApplyPage(){
               termRent:pickedRoomObj?.rent||undefined,
               termSD:pickedRoomObj?.rent||undefined,
               moveIn:d.moveIn||"",termMoveIn:d.moveIn||"",
-              income:d.income||"",
+              income:d.income||"",dob:d.dob||null,gender:d.gender||"",occupationType:d.occupationType||"",
               passcode:d.doorCode||null,
               status:"applied",submitted:now,lastContact:now,
               bgCheck:"not-started",creditScore:"—",refs:"not-started",

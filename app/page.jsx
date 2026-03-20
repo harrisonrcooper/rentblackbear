@@ -641,7 +641,7 @@ function Chat(){
 
 function Screening({properties}){
   const PROPS=properties||[];
-  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
+  const[step,setStep]=useState(0);const[form,setForm]=useState({firstName:"",lastName:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
   const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});
   const[qs,setQs]=useState(SCREEN_QS);
   useEffect(()=>{supaGet("hq-screen-qs").then(d=>{if(d&&Array.isArray(d)&&d.length>0)setQs(d);});},[]); 
@@ -655,7 +655,8 @@ function Screening({properties}){
   const isValidEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const isValidPhone=p=>p.replace(/\D/g,"").length===10;
   const errs={};
-  if(touched.name&&!form.name.trim())errs.name="Full name is required";
+  if(touched.firstName&&!form.firstName.trim())errs.firstName="First name is required";
+  if(touched.lastName&&!form.lastName.trim())errs.lastName="Last name is required";
   if(touched.email&&!form.email)errs.email="Email is required";
   else if(touched.email&&!isValidEmail(form.email))errs.email="Enter a valid email address";
   if(touched.phone&&!form.phone)errs.phone="Phone is required";
@@ -667,13 +668,14 @@ function Screening({properties}){
   if(touched.sourceOther&&form.source==="Other"&&!form.sourceOther?.trim())errs.sourceOther="Please tell us how you heard about us";
   if(touched.reason&&!form.reason)errs.reason="This field is required";
   else if(touched.reason&&form.reason.length<10)errs.reason="Please provide at least 10 characters";
-  const canSubmit=form.name.trim()&&isValidEmail(form.email)&&isValidPhone(form.phone)&&form.property&&form.moveIn&&form.source&&(form.source!=="Other"||form.sourceOther?.trim())&&form.reason.length>=10;
-  const touchAll=()=>setTouched({name:true,email:true,phone:true,property:true,moveIn:true,source:true,sourceOther:true,reason:true});
+  const canSubmit=form.firstName.trim()&&form.lastName.trim()&&isValidEmail(form.email)&&isValidPhone(form.phone)&&form.property&&form.moveIn&&form.source&&(form.source!=="Other"||form.sourceOther?.trim())&&form.reason.length>=10;
+  const touchAll=()=>setTouched({firstName:true,lastName:true,email:true,phone:true,property:true,moveIn:true,source:true,sourceOther:true,reason:true});
   const submitApp=async()=>{
     touchAll();if(!canSubmit){setSubError("Please complete all required fields.");return;}
     setSubmitting(true);setSubError("");
     try{
-      const submitData={...form,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
+      const fullName=`${form.firstName} ${form.lastName}`.trim();
+      const submitData={...form,name:fullName,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
       const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(submitData)});
       const d=await res.json();
       if(d.ok){
@@ -696,10 +698,13 @@ function Screening({properties}){
       {step===FORM&&<div style={{animation:"fadeUp .3s"}}><div className="scr-hd" style={{marginBottom:20}}><h2>{formSettings.heading||"Almost There"}</h2><p>{formSettings.subtext||"All fields are required."}</p></div>
         <div className="sform">
           <div className="sform-row">
-            <div style={{flex:1}}><input className="sinp" placeholder="Full Name *" style={fldStyle("name")} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} onBlur={()=>setTouched({...touched,name:true})}/>{errMsg("name")}</div>
-            <div style={{flex:1}}><input className="sinp" placeholder="Phone *" type="tel" style={fldStyle("phone")} value={form.phone} onChange={e=>setForm({...form,phone:fmtPhone(e.target.value)})} onBlur={()=>setTouched({...touched,phone:true})}/>{errMsg("phone")}</div>
+            <div style={{flex:1}}><input className="sinp" placeholder="First Name *" style={fldStyle("firstName")} value={form.firstName} onChange={e=>setForm({...form,firstName:e.target.value})} onBlur={()=>setTouched({...touched,firstName:true})}/>{errMsg("firstName")}</div>
+            <div style={{flex:1}}><input className="sinp" placeholder="Last Name *" style={fldStyle("lastName")} value={form.lastName} onChange={e=>setForm({...form,lastName:e.target.value})} onBlur={()=>setTouched({...touched,lastName:true})}/>{errMsg("lastName")}</div>
           </div>
-          <div><input className="sinp" placeholder="Email *" type="email" style={fldStyle("email")} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onBlur={()=>setTouched({...touched,email:true})}/>{errMsg("email")}</div>
+          <div className="sform-row">
+            <div style={{flex:1}}><input className="sinp" placeholder="Phone *" type="tel" style={fldStyle("phone")} value={form.phone} onChange={e=>setForm({...form,phone:fmtPhone(e.target.value)})} onBlur={()=>setTouched({...touched,phone:true})}/>{errMsg("phone")}</div>
+            <div style={{flex:1}}><input className="sinp" placeholder="Email *" type="email" style={fldStyle("email")} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onBlur={()=>setTouched({...touched,email:true})}/>{errMsg("email")}</div>
+          </div>
           <div><select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}><option value="">Property interested in? *</option>{PROPS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>{errMsg("property")}</div>
           <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
             <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
@@ -754,7 +759,7 @@ function Screening({properties}){
           {subError&&<div style={{background:"rgba(168,58,46,.08)",color:"#a83a2e",padding:"10px 14px",borderRadius:8,fontSize:13,marginBottom:8}}>{subError}</div>}
           <button className="scr-sub" disabled={submitting} onClick={submitApp}>{submitting?"Submitting...":"Submit Application →"}</button>
         </div></div>}
-      {step===DONE&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
+      {step===DONE&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.firstName?`, ${form.firstName}`:""}! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
     </div></div></section>
   );
 }
