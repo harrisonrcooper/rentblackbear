@@ -5782,7 +5782,7 @@ export default function Page(){
               <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} · {a.phone}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":selRoom?selRoom.name:"Not specified"}{selRoom?._willVacate?<span style={{fontSize:9,color:"#9a7422",marginLeft:6}}>· lease ends {fmtD(selRoom.le)}</span>:null}</td></tr>
-              {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtS(inviteRent)}/mo</td></tr>}
+              {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtS(inviteRent)+"/mo"}</td></tr>}
               {inviteMoveIn&&<tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtD(inviteMoveIn)}</td></tr>}
               <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Screening</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Fee (tenant)</td><td style={{padding:"5px 0",fontWeight:700,color:totalFee===0?"#4a7c59":"#d4a853",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{totalFee===0?"Free":fmtS(totalFee)}</td></tr>
@@ -5845,7 +5845,7 @@ export default function Page(){
             <select value={selRoomId} onChange={e=>{const r=allAvailForInvite.find(x=>x.id===e.target.value);setModal(prev=>({...prev,selRoomId:e.target.value,selPropId:r?r.propId:prev.selPropId,inviteRent:r?r.rent:undefined,inviteSD:r?r.rent:undefined}));}} style={{width:"100%"}}>
               <option value="">No room selected at this time</option>
               {allAvailForInvite.filter(r=>!selPropId||r.propId===selPropId).map(r=>(
-                <option key={r.id} value={r.id}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name} at {r.propName} — {fmtS(r.rent)}/mo{r._willVacate?" · lease ends "+fmtD(r.le):""}</option>
+                <option key={r.id} value={r.id}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name+" at "+r.propName+" — "+fmtS(r.rent)+"/mo"+(r._willVacate?" · lease ends "+fmtD(r.le):"")}</option>
               ))}
             </select>
           </div>
@@ -5906,7 +5906,7 @@ export default function Page(){
                     <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
                     <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} placeholder={selProp.wholeHouseRent?String(selProp.wholeHouseRent):"Enter amount"} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}}/>
                   </div>
-                  {selProp.wholeHouseRent>0&&<div style={{fontSize:9,color:"#999",marginTop:2}}>Property default: {fmtS(selProp.wholeHouseRent)}/mo</div>}
+                  {selProp.wholeHouseRent>0&&<div style={{fontSize:9,color:"#999",marginTop:2}}>{"Property default: "+fmtS(selProp.wholeHouseRent)+"/mo"}</div>}
                 </div>
                 <div className="fld" style={{marginBottom:0}}>
                   <label>Security Deposit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-fills — editable</span></label>
