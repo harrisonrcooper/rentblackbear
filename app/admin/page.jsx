@@ -276,6 +276,8 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
+    prescreenTenantSubject:"You're on our radar, {firstName} 🐻 — Black Bear Rentals",
+    prescreenTenantBody:"Thanks for reaching out, {firstName}! You passed our pre-screen — nice work. We've received your info and one of our team members will be in touch within 24 hours to discuss next steps.",
     applicationSubject:"📝 New Application — {name} · {property}",
     applicationBody:"A full application was submitted by {name} for {property}{room}. Review in admin.",
     leaseSignedSubject:"✍️ Lease Signed — {name}",
@@ -4208,7 +4210,8 @@ export default function Page(){
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Email Templates</h3>
           <p style={{fontSize:11,color:"#999",marginBottom:14}}>Customize the subject line and body of notification emails sent to you. Use <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"name{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"property{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"room{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"amount{"+"}"}</code> as placeholders.</p>
           {[
-            {key:"prescreen",label:"Pre-Screen Submitted",icon:"📋",desc:"Sent when someone completes the qualifying questions"},
+            {key:"prescreen",label:"Pre-Screen Alert (to you)",icon:"📋",desc:"Sent to PM when someone completes the qualifying questions"},
+            {key:"prescreenTenant",label:"Pre-Screen Confirmation (to applicant)",icon:"✉️",desc:"Sent to the applicant after they pass the pre-screen — the '24 hours' email"},
             {key:"application",label:"Full Application Received",icon:"📝",desc:"Sent when an invited applicant submits their full application"},
             {key:"leaseSigned",label:"Lease Signed",icon:"✍️",desc:"Sent when a tenant e-signs their lease"},
             {key:"payment",label:"Payment Received",icon:"💰",desc:"Sent when a payment is recorded"},

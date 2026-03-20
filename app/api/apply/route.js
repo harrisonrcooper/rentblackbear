@@ -102,6 +102,49 @@ export async function POST(request) {
       });
     }
 
+    // Tenant confirmation email — reads subject/body from settings
+    if (resendKey && email) {
+      const firstName = name ? name.split(" ")[0] : "there";
+      const tpl = s.emailTemplates || {};
+      const vars = { name, firstName, property: property || "", room: "", amount: "" };
+      const tenantSubject = applyTemplate(
+        tpl.prescreenTenantSubject || "You're on our radar, {firstName} 🐻 — Black Bear Rentals",
+        vars
+      );
+      const tenantBodyIntro = applyTemplate(
+        tpl.prescreenTenantBody || "Thanks for reaching out, {firstName}! You passed our pre-screen — nice work. We've received your info and one of our team members will be in touch within 24 hours to discuss next steps.",
+        vars
+      );
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: fromAddress(s),
+          to: email,
+          subject: tenantSubject,
+          html: emailWrap(`
+            <h2 style="font-size:22px;margin:0 0 12px;color:#1a1714;">Thanks for reaching out, ${firstName}!</h2>
+            <p style="font-size:14px;color:#5c4a3a;line-height:1.7;margin-bottom:16px;">${tenantBodyIntro}</p>
+            <div style="background:#faf7f2;border:1px solid #e8e0d0;border-radius:10px;padding:20px;margin-bottom:24px;">
+              <div style="font-size:10px;font-weight:800;color:#9a7422;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Your Submission</div>
+              <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Name</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${name}</td></tr>
+                ${property ? `<tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Property</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${property}</td></tr>` : ""}
+                <tr><td style="padding:5px 0;color:#5c4a3a;">Preferred Move-in</td><td style="padding:5px 0;text-align:right;">${moveIn || "Flexible"}</td></tr>
+              </table>
+            </div>
+            <p style="font-size:13px;color:#5c4a3a;line-height:1.7;margin-bottom:20px;">
+              In the meantime, feel free to browse available rooms and compare pricing at <a href="${s.siteUrl || "https://rentblackbear.com"}" style="color:#d4a853;font-weight:700;">${s.siteUrl || "rentblackbear.com"}</a>.
+            </p>
+            <p style="font-size:13px;color:#5c4a3a;line-height:1.7;">
+              Questions? Reply to this email or text/call us at <strong>${s.phone || "(850) 696-8101"}</strong>.
+            </p>
+            <p style="font-size:13px;color:#5c4a3a;margin-top:20px;">— ${s.companyName || "Black Bear Rentals"}</p>
+          `, s),
+        }),
+      });
+    }
+
     // Add to hq-notifs
     const notifs = await loadKey("hq-notifs", []);
     await saveKey("hq-notifs", [{
