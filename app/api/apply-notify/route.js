@@ -9,14 +9,16 @@ export async function POST(request) {
     if (!resendKey) return Response.json({ ok:true, note:"No Resend key" });
     const s = await getSettings();
     if (s.notifAppReceived===false) return Response.json({ ok:true, note:"Notification disabled" });
+    const tpl=s.emailTemplates||{};
 
     await fetch("https://api.resend.com/emails", {
       method:"POST", headers:{Authorization:`Bearer ${resendKey}`,"Content-Type":"application/json"},
       body: JSON.stringify({
         from: fromAddress(s), to: s.email,
-        subject: `📋 New Application — ${applicantName}${property?" · "+property:""}`,
+        subject: (tpl.applicationSubject||"📝 New Application — {name} · {property}").replace("{name}",applicantName).replace("{property}",property||"Not specified"),
         html: emailWrap(`
           <h2 style="font-size:20px;margin:0 0 6px;">New Application Received</h2>
+          <p style="font-size:13px;color:#5c4a3a;margin:0 0 16px;">${(tpl.applicationBody||"A full application was submitted by {name} for {property}.").replace("{name}",applicantName).replace("{property}",property||"Not specified").replace("{room}",room&&room!=="Not specified"?" Room: "+room:"")}</p>
           <p style="font-size:13px;color:#5c4a3a;margin:0 0 20px;">${isInvited?"Invited applicant":"Walk-in applicant"} submitted a full application${property?" for "+property:""}.</p>
           <div style="background:#f0faf4;border:1px solid #c3e6cb;border-radius:10px;padding:16px;margin-bottom:20px;">
             <div style="font-size:10px;font-weight:800;color:#2d6a3f;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Applicant Details</div>

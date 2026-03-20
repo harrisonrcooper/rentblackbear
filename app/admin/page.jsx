@@ -272,7 +272,17 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,
+  emailTemplates:{
+    prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
+    prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
+    applicationSubject:"📝 New Application — {name} · {property}",
+    applicationBody:"A full application was submitted by {name} for {property}{room}. Review in admin.",
+    leaseSignedSubject:"✍️ Lease Signed — {name}",
+    leaseSignedBody:"{name} has signed their lease for {property}. Log in to admin to review.",
+    paymentSubject:"💰 Payment Received — {name}",
+    paymentBody:"{name} submitted a payment of {amount} for {property}.",
+  },
   utilTemplates:[
     {id:"ut1",name:"All Included",key:"allIncluded",desc:"Landlord pays all utilities — water, sewer, garbage, electric, gas.",clause:"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, and gas. RESIDENT is responsible for no utility costs beyond the monthly rent."},
     {id:"ut2",name:"Tenant Pays — Split (First $100)",key:"first100",desc:"PM covers first $100/mo. Overage split equally among all residents.",clause:"PROPERTY MANAGER agrees to pay the first $100 of combined utilities per month. Any usage exceeding $100 per month shall be split equally among all current residents and billed on the 1st of each month."},
@@ -4165,7 +4175,8 @@ export default function Page(){
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Email Notifications</h3>
           <p style={{fontSize:11,color:"#999",marginBottom:14}}>Choose which events trigger an email to you at <strong>{settings.email||"info@rentblackbear.com"}</strong>. Tenant-facing emails always send regardless.</p>
           {[
-            {key:"notifAppReceived",label:"New application received",desc:"When a tenant submits their application"},
+            {key:"notifPrescreen",label:"New pre-screen submitted",desc:"When someone passes the qualifying questions and submits their contact info"},
+            {key:"notifAppReceived",label:"New full application received",desc:"When an invited applicant submits their full application"},
             {key:"notifLeaseSent",label:"Lease sent for signatures",desc:"When you send a lease to a tenant"},
             {key:"notifLeaseSigned",label:"Tenant signs lease",desc:"When a tenant completes their e-signature"},
             {key:"notifPaymentReceived",label:"Payment received",desc:"When a tenant makes a payment (SD, rent, prorated rent)"},
@@ -4191,6 +4202,38 @@ export default function Page(){
           <div style={{marginTop:12,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:6,fontSize:11,color:"#9a7422"}}>
             💡 Notification emails are sent to <strong>{settings.email||"info@rentblackbear.com"}</strong>. Update your email in Company Info above.
           </div>
+        </div></div>
+
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Email Templates</h3>
+          <p style={{fontSize:11,color:"#999",marginBottom:14}}>Customize the subject line and body of notification emails sent to you. Use <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"name{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"property{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"room{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"amount{"+"}"}</code> as placeholders.</p>
+          {[
+            {key:"prescreen",label:"Pre-Screen Submitted",icon:"📋",desc:"Sent when someone completes the qualifying questions"},
+            {key:"application",label:"Full Application Received",icon:"📝",desc:"Sent when an invited applicant submits their full application"},
+            {key:"leaseSigned",label:"Lease Signed",icon:"✍️",desc:"Sent when a tenant e-signs their lease"},
+            {key:"payment",label:"Payment Received",icon:"💰",desc:"Sent when a payment is recorded"},
+          ].map(({key,label,icon,desc})=>{
+            const tpl=settings.emailTemplates||DEF_SETTINGS.emailTemplates;
+            const subjKey=key+"Subject";const bodyKey=key+"Body";
+            return(<div key={key} style={{marginBottom:16,paddingBottom:16,borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#1a1714",marginBottom:2}}>{icon} {label}</div>
+              <div style={{fontSize:10,color:"#999",marginBottom:8}}>{desc}</div>
+              <div className="fld" style={{marginBottom:6}}>
+                <label>Subject Line</label>
+                <input value={tpl[subjKey]||DEF_SETTINGS.emailTemplates[subjKey]||""} placeholder={DEF_SETTINGS.emailTemplates[subjKey]}
+                  onChange={e=>setSettings(s=>({...s,emailTemplates:{...(s.emailTemplates||DEF_SETTINGS.emailTemplates),[subjKey]:e.target.value}}))}/>
+              </div>
+              <div className="fld" style={{marginBottom:0}}>
+                <label style={{display:"flex",justifyContent:"space-between"}}>Body
+                  <button className="btn btn-out btn-sm" style={{fontSize:8}} onClick={()=>setSettings(s=>({...s,emailTemplates:{...(s.emailTemplates||DEF_SETTINGS.emailTemplates),[subjKey]:DEF_SETTINGS.emailTemplates[subjKey],[bodyKey]:DEF_SETTINGS.emailTemplates[bodyKey]}}))}>↺ Reset</button>
+                </label>
+                <textarea value={tpl[bodyKey]||DEF_SETTINGS.emailTemplates[bodyKey]||""} rows={2} placeholder={DEF_SETTINGS.emailTemplates[bodyKey]}
+                  onChange={e=>setSettings(s=>({...s,emailTemplates:{...(s.emailTemplates||DEF_SETTINGS.emailTemplates),[bodyKey]:e.target.value}}))}
+                  style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.5}}/>
+              </div>
+            </div>);
+          })}
+          <button className="btn btn-gold" style={{width:"100%",marginTop:4}} onClick={()=>save("hq-settings",settings)}>Save Email Templates</button>
         </div></div>
 
         <div className="card" style={{marginTop:12}}><div className="card-bd">
