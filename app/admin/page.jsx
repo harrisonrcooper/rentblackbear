@@ -5928,7 +5928,6 @@ export default function Page(){
       </div>
 
         {roomMode==="choice"&&<p style={{fontSize:10,color:"#999",margin:"6px 0 0"}}>Tenant sees all vacant rooms across your properties and picks one on the apply page.</p>}
-      </div>
 
       {/* ── Screening ── */}
       <div className="tp-card" style={{marginBottom:10}}><h3>Screening Package</h3>
