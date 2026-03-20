@@ -644,7 +644,10 @@ function Screening({properties}){
   const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
   const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});
   const[qs,setQs]=useState(SCREEN_QS);
-  useEffect(()=>{supaGet("hq-screen-qs").then(d=>{if(d&&Array.isArray(d)&&d.length>0)setQs(d);});},[]);
+  useEffect(()=>{supaGet("hq-screen-qs").then(d=>{if(d&&Array.isArray(d)&&d.length>0)setQs(d);});},[]); 
+  const DEF_FORM_SETTINGS={heading:"Almost There",subtext:"All fields are required.",sources:["Roomies.com","Google Search","Facebook / Instagram","Friend / Referral","Zillow / Apartments.com","Craigslist","Drive-by / Sign","Military / Contractor Network","NASA / Redstone Network","Other"]};
+  const[formSettings,setFormSettings]=useState(DEF_FORM_SETTINGS);
+  useEffect(()=>{supaGet("hq-screen-form").then(d=>{if(d&&d.heading)setFormSettings(d);});},[]); 
   const PASS=qs.length,FAIL=qs.length+1,FORM=qs.length+2,DONE=qs.length+3;
   const answer=v=>{if(v!==qs[step].pass){setStep(FAIL);return;}if(step<qs.length-1)setStep(step+1);else setStep(PASS);};
   // Phone auto-format: (256) 555-1234
@@ -690,7 +693,7 @@ function Screening({properties}){
         <div className="scr-btns"><button className="scr-btn y" onClick={()=>answer("Yes")}>Yes</button><button className="scr-btn n" onClick={()=>answer("No")}>No</button></div></div></>}
       {step===PASS&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(45,106,63,.1)",color:"var(--gn)"}}>✓</div><h3>You Pre-Qualify!</h3><p>Fill out your info and we'll be in touch within 24 hours.</p><button className="bp" style={{width:"100%"}} onClick={()=>setStep(FORM)}>Continue →</button></div>}
       {step===FAIL&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(168,58,46,.08)",color:"var(--rd)"}}>✕</div><h3>Thanks for Your Interest</h3><p>Based on your answers, our properties may not be the right fit at this time. Questions? Email <strong>{S_INFO.email}</strong></p><button className="bo" style={{width:"100%",marginTop:12}} onClick={()=>setStep(0)}>Start Over</button></div>}
-      {step===FORM&&<div style={{animation:"fadeUp .3s"}}><div className="scr-hd" style={{marginBottom:20}}><h2>Almost There</h2><p>All fields are required.</p></div>
+      {step===FORM&&<div style={{animation:"fadeUp .3s"}}><div className="scr-hd" style={{marginBottom:20}}><h2>{formSettings.heading||"Almost There"}</h2><p>{formSettings.subtext||"All fields are required."}</p></div>
         <div className="sform">
           <div className="sform-row">
             <div style={{flex:1}}><input className="sinp" placeholder="Full Name *" style={fldStyle("name")} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} onBlur={()=>setTouched({...touched,name:true})}/>{errMsg("name")}</div>
@@ -745,7 +748,7 @@ function Screening({properties}){
               })()}
             </div>
             {errMsg("moveIn")}</div>
-          <div><select className="ssel" style={fldStyle("source")} value={form.source} onChange={e=>{setForm({...form,source:e.target.value,sourceOther:""});setTouched({...touched,source:true});}} onBlur={()=>setTouched({...touched,source:true})}><option value="">How did you hear about us? *</option><option>Roomies.com</option><option>Google Search</option><option>Facebook / Instagram</option><option>Friend / Referral</option><option>Zillow / Apartments.com</option><option>Craigslist</option><option>Drive-by / Sign</option><option>Military / Contractor Network</option><option>Other</option></select>{errMsg("source")}
+          <div><select className="ssel" style={fldStyle("source")} value={form.source} onChange={e=>{setForm({...form,source:e.target.value,sourceOther:""});setTouched({...touched,source:true});}} onBlur={()=>setTouched({...touched,source:true})}><option value="">How did you hear about us? *</option>{(formSettings.sources||DEF_FORM_SETTINGS.sources).map(s=><option key={s}>{s}</option>)}</select>{errMsg("source")}
           {form.source==="Other"&&<><input className="sinp" placeholder="Please specify *" style={{marginTop:6,...fldStyle("sourceOther")}} value={form.sourceOther||""} onChange={e=>setForm({...form,sourceOther:e.target.value})} onBlur={()=>setTouched({...touched,sourceOther:true})}/>{touched.sourceOther&&!form.sourceOther?.trim()&&<div style={{color:"#c45c4a",fontSize:11,marginTop:2}}>Please tell us how you heard about us</div>}</>}</div>
           <div><textarea className="stxt" placeholder="Why are you leaving your current residence? *" style={fldStyle("reason")} value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} onBlur={()=>setTouched({...touched,reason:true})}/>{errMsg("reason")}{touched.reason&&form.reason.length>0&&form.reason.length<10&&<div style={{fontSize:10,color:"#999"}}>{form.reason.length}/10 characters</div>}</div>
           {subError&&<div style={{background:"rgba(168,58,46,.08)",color:"#a83a2e",padding:"10px 14px",borderRadius:8,fontSize:13,marginBottom:8}}>{subError}</div>}

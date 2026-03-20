@@ -285,6 +285,11 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
     paymentSubject:"💰 Payment Received — {name}",
     paymentBody:"{name} submitted a payment of {amount} for {property}.",
   },
+  screenForm:{
+    heading:"Almost There",
+    subtext:"All fields are required.",
+    sources:["Roomies.com","Google Search","Facebook / Instagram","Friend / Referral","Zillow / Apartments.com","Craigslist","Drive-by / Sign","Military / Contractor Network","NASA / Redstone Network","Other"],
+  },
   utilTemplates:[
     {id:"ut1",name:"All Included",key:"allIncluded",desc:"Landlord pays all utilities — water, sewer, garbage, electric, gas.",clause:"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, and gas. RESIDENT is responsible for no utility costs beyond the monthly rent."},
     {id:"ut2",name:"Tenant Pays — Split (First $100)",key:"first100",desc:"PM covers first $100/mo. Overage split equally among all residents.",clause:"PROPERTY MANAGER agrees to pay the first $100 of combined utilities per month. Any usage exceeding $100 per month shall be split equally among all current residents and billed on the 1st of each month."},
@@ -4245,6 +4250,31 @@ export default function Page(){
           <div className="fr"><div className="fld"><label>Headline</label><input value={settings.heroHeadline} onChange={e=>setSettings({...settings,heroHeadline:e.target.value})}/></div><div className="fld"><label>Subline</label><input value={settings.heroSubline} onChange={e=>setSettings({...settings,heroSubline:e.target.value})}/></div></div>
           <div className="fld"><label>Description</label><textarea value={settings.heroDesc} onChange={e=>setSettings({...settings,heroDesc:e.target.value})}/></div>
         </div></div>
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Pre-Screen Form</h3>
+          <p style={{fontSize:11,color:"#999",marginBottom:14}}>Customize the contact form that appears after someone passes the qualifying questions.</p>
+          <div className="fr">
+            <div className="fld"><label>Heading</label><input value={(settings.screenForm||DEF_SETTINGS.screenForm).heading} placeholder="Almost There" onChange={e=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),heading:e.target.value}}))}/></div>
+            <div className="fld"><label>Subtext</label><input value={(settings.screenForm||DEF_SETTINGS.screenForm).subtext} placeholder="All fields are required." onChange={e=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),subtext:e.target.value}}))}/></div>
+          </div>
+          <div className="fld">
+            <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              "How did you hear about us?" Options
+              <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),sources:[...(s.screenForm||DEF_SETTINGS.screenForm).sources,"New Option"]}}))}>+ Add Option</button>
+            </label>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:4}}>
+              {((settings.screenForm||DEF_SETTINGS.screenForm).sources||[]).map((src,i)=>(
+                <div key={i} style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input value={src} style={{flex:1}} onChange={e=>{const sources=[...(settings.screenForm||DEF_SETTINGS.screenForm).sources];sources[i]=e.target.value;setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),sources}}));}}/>
+                  <button className="btn btn-red btn-sm" style={{fontSize:9,flexShrink:0}} onClick={()=>{const sources=(settings.screenForm||DEF_SETTINGS.screenForm).sources.filter((_,j)=>j!==i);setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),sources}}));}}>✕</button>
+                </div>
+              ))}
+            </div>
+            <div style={{fontSize:9,color:"#999",marginTop:6}}>"Other" should always be the last option — it triggers a free-text field.</div>
+          </div>
+          <button className="btn btn-gold" style={{width:"100%",marginTop:8}} onClick={()=>{save("hq-settings",settings);save("hq-screen-form",settings.screenForm||DEF_SETTINGS.screenForm);}}>Save Pre-Screen Form Settings</button>
+        </div></div>
+
         <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Payment Reminder Template</h3>
           <p style={{fontSize:11,color:"#999",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
