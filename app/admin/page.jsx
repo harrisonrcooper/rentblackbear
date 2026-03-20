@@ -2989,6 +2989,62 @@ export default function Page(){
           })()}
         </div>}
 
+        {/* ── Pre-Screen Contact Form ── */}
+        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(x=>({...x,screenForm:!x.screenForm}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:14}}>{expanded.screenForm?"▼":"▶"}</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:700}}>📝 Pre-Screen Contact Form</div>
+                <div style={{fontSize:9,color:"#999"}}>Heading, subtext, and "How did you hear about us?" options</div>
+              </div>
+            </div>
+          </div>
+          {expanded.screenForm&&<div style={{padding:16,background:"#fff"}}>
+            <div className="fr">
+              <div className="fld"><label>Heading</label><input value={(settings.screenForm||DEF_SETTINGS.screenForm).heading} placeholder="Almost There" onChange={e=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),heading:e.target.value}}))}/></div>
+              <div className="fld"><label>Subtext</label><input value={(settings.screenForm||DEF_SETTINGS.screenForm).subtext} placeholder="All fields are required." onChange={e=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),subtext:e.target.value}}))}/></div>
+            </div>
+            <div className="fld">
+              <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                "How did you hear about us?" Options
+                <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),sources:[...(s.screenForm||DEF_SETTINGS.screenForm).sources,"New Option"]}}))}>+ Add</button>
+              </label>
+              <div style={{fontSize:9,color:"#999",marginBottom:6}}>⠿ drag to reorder · click to edit · ✕ to remove</div>
+              <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                {((settings.screenForm||DEF_SETTINGS.screenForm).sources||[]).map((src,i)=>{
+                  const sf=settings.screenForm||DEF_SETTINGS.screenForm;
+                  return(
+                  <div key={i} draggable
+                    onDragStart={e=>{e.dataTransfer.setData("srcIdx",i);}}
+                    onDragOver={e=>e.preventDefault()}
+                    onDrop={e=>{
+                      e.preventDefault();
+                      const from=Number(e.dataTransfer.getData("srcIdx"));
+                      if(from===i)return;
+                      const sources=[...sf.sources];
+                      const[moved]=sources.splice(from,1);
+                      sources.splice(i,0,moved);
+                      setSettings(s=>({...s,screenForm:{...sf,sources}}));
+                    }}
+                    style={{display:"flex",gap:6,alignItems:"center",background:"#faf9f7",borderRadius:6,padding:"4px 6px",border:"1px solid rgba(0,0,0,.06)",cursor:"grab"}}>
+                    <span style={{color:"#ccc",fontSize:13,flexShrink:0,cursor:"grab"}}>⠿</span>
+                    <input value={src} style={{flex:1,border:"none",background:"transparent",fontFamily:"inherit",fontSize:12,outline:"none",padding:0}}
+                      onChange={e=>{const sources=[...sf.sources];sources[i]=e.target.value;setSettings(s=>({...s,screenForm:{...sf,sources}}));}}/>
+                    <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1,flexShrink:0}} onClick={()=>{const sources=sf.sources.filter((_,j)=>j!==i);setSettings(s=>({...s,screenForm:{...sf,sources}}));}}>✕</button>
+                  </div>);
+                })}
+              </div>
+              <div style={{fontSize:9,color:"#999",marginTop:6}}>"Other" should stay last — it triggers a free-text field.</div>
+            </div>
+            <div style={{display:"flex",gap:8,marginTop:12}}>
+              <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-settings",settings);save("hq-screen-form",settings.screenForm||DEF_SETTINGS.screenForm);setNotifs(p=>[{id:uid(),type:"app",msg:"Pre-screen form settings saved",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);}}>🚀 Save & Publish</button>
+            </div>
+            <div style={{fontSize:9,color:"#999",marginTop:6,textAlign:"center"}}>Changes apply immediately on the public site</div>
+          </div>}
+        </div>
+
+
         {/* ── Application Fields Editor ── */}
         <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appFieldsEditor:!p.appFieldsEditor}))}>
@@ -3232,60 +3288,6 @@ export default function Page(){
           </div>);
         })}
 
-        {/* ── Pre-Screen Contact Form ── */}
-        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(x=>({...x,screenForm:!x.screenForm}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:14}}>{expanded.screenForm?"▼":"▶"}</span>
-              <div>
-                <div style={{fontSize:13,fontWeight:700}}>📝 Pre-Screen Contact Form</div>
-                <div style={{fontSize:9,color:"#999"}}>Heading, subtext, and "How did you hear about us?" options</div>
-              </div>
-            </div>
-          </div>
-          {expanded.screenForm&&<div style={{padding:16,background:"#fff"}}>
-            <div className="fr">
-              <div className="fld"><label>Heading</label><input value={(settings.screenForm||DEF_SETTINGS.screenForm).heading} placeholder="Almost There" onChange={e=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),heading:e.target.value}}))}/></div>
-              <div className="fld"><label>Subtext</label><input value={(settings.screenForm||DEF_SETTINGS.screenForm).subtext} placeholder="All fields are required." onChange={e=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),subtext:e.target.value}}))}/></div>
-            </div>
-            <div className="fld">
-              <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                "How did you hear about us?" Options
-                <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),sources:[...(s.screenForm||DEF_SETTINGS.screenForm).sources,"New Option"]}}))}>+ Add</button>
-              </label>
-              <div style={{fontSize:9,color:"#999",marginBottom:6}}>⠿ drag to reorder · click to edit · ✕ to remove</div>
-              <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                {((settings.screenForm||DEF_SETTINGS.screenForm).sources||[]).map((src,i)=>{
-                  const sf=settings.screenForm||DEF_SETTINGS.screenForm;
-                  return(
-                  <div key={i} draggable
-                    onDragStart={e=>{e.dataTransfer.setData("srcIdx",i);}}
-                    onDragOver={e=>e.preventDefault()}
-                    onDrop={e=>{
-                      e.preventDefault();
-                      const from=Number(e.dataTransfer.getData("srcIdx"));
-                      if(from===i)return;
-                      const sources=[...sf.sources];
-                      const[moved]=sources.splice(from,1);
-                      sources.splice(i,0,moved);
-                      setSettings(s=>({...s,screenForm:{...sf,sources}}));
-                    }}
-                    style={{display:"flex",gap:6,alignItems:"center",background:"#faf9f7",borderRadius:6,padding:"4px 6px",border:"1px solid rgba(0,0,0,.06)",cursor:"grab"}}>
-                    <span style={{color:"#ccc",fontSize:13,flexShrink:0,cursor:"grab"}}>⠿</span>
-                    <input value={src} style={{flex:1,border:"none",background:"transparent",fontFamily:"inherit",fontSize:12,outline:"none",padding:0}}
-                      onChange={e=>{const sources=[...sf.sources];sources[i]=e.target.value;setSettings(s=>({...s,screenForm:{...sf,sources}}));}}/>
-                    <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1,flexShrink:0}} onClick={()=>{const sources=sf.sources.filter((_,j)=>j!==i);setSettings(s=>({...s,screenForm:{...sf,sources}}));}}>✕</button>
-                  </div>);
-                })}
-              </div>
-              <div style={{fontSize:9,color:"#999",marginTop:6}}>"Other" should stay last — it triggers a free-text field.</div>
-            </div>
-            <div style={{display:"flex",gap:8,marginTop:12}}>
-              <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-settings",settings);save("hq-screen-form",settings.screenForm||DEF_SETTINGS.screenForm);setNotifs(p=>[{id:uid(),type:"app",msg:"Pre-screen form settings saved",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);}}>🚀 Save & Publish</button>
-            </div>
-            <div style={{fontSize:9,color:"#999",marginTop:6,textAlign:"center"}}>Changes apply immediately on the public site</div>
-          </div>}
-        </div>
 
       </>}
 
