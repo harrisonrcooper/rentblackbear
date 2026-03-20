@@ -5868,23 +5868,57 @@ export default function Page(){
           {selRoom?._willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>⏳ Current lease ends {fmtD(selRoom.le)} — room will be vacant by move-in date.</div>}
         </>}
 
-        {roomMode==="property"&&<>
-          <div className="fld" style={{marginBottom:selPropId?8:0}}>
-            <label>Property</label>
-            <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,inviteRent:undefined}))} style={{width:"100%"}}>
-              <option value="">Select property...</option>
-              {props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-          {selPropId&&selProp&&<div className="fld" style={{marginBottom:0}}>
-            <label>Whole-House Rent ($/mo)</label>
-            <div style={{display:"flex",alignItems:"center"}}>
-              <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
-              <input type="number" value={inviteRent||""} onChange={e=>setModal(prev=>({...prev,inviteRent:Number(e.target.value)||0}))} placeholder={selProp.wholeHouseRent?String(selProp.wholeHouseRent):"Enter amount"} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}}/>
+        {roomMode==="property"&&(()=>{
+          const isWholeProp=p=>(p.units||[]).some(u=>u.rentalMode==="wholeHouse");
+          const wholePropList=props.filter(isWholeProp);
+          const byRoomOnly=selProp&&!(selProp.units||[]).some(u=>u.rentalMode==="wholeHouse");
+          const lastLeaseEnd=selProp?allRooms(selProp).filter(r=>r.le).map(r=>r.le).sort().slice(-1)[0]:null;
+          const overrideConfirmed=!!modal.whPropOverride;
+          const showProp=!selPropId||!byRoomOnly||overrideConfirmed;
+          return(<>
+            <div className="fld" style={{marginBottom:selPropId&&showProp?8:0}}>
+              <label>Property <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— only whole-unit properties shown</span></label>
+              <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,inviteRent:undefined,inviteSD:undefined,whPropOverride:false}))} style={{width:"100%"}}>
+                <option value="">Select property...</option>
+                {wholePropList.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                {props.filter(p=>!isWholeProp(p)).length>0&&<optgroup label="──── By-bedroom only (require override) ────">
+                  {props.filter(p=>!isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{p.name} ⚠</option>)}
+                </optgroup>}
+              </select>
             </div>
-            {selProp.wholeHouseRent>0&&<div style={{fontSize:9,color:"#999",marginTop:2}}>Property default: {fmtS(selProp.wholeHouseRent)}/mo</div>}
-          </div>}
-        </>}
+            {selPropId&&byRoomOnly&&!overrideConfirmed&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"12px 14px",marginBottom:8}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#c45c4a",marginBottom:4}}>⚠ Override Required</div>
+              <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.6,marginBottom:8}}>
+                <strong>{selProp?.name}</strong> is configured for by-bedroom rental. Are you converting it to a whole-unit rental for this invite?
+                {lastLeaseEnd&&<div style={{marginTop:4,fontSize:10,color:"#999"}}>The last active bedroom lease ends on <strong>{fmtD(lastLeaseEnd)}</strong>. The property won't be fully vacant until after that date.</div>}
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button className="btn btn-red btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,whPropOverride:true}))}>Yes, override to whole unit</button>
+                <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,selPropId:"",whPropOverride:false}))}>Cancel</button>
+              </div>
+            </div>}
+            {selPropId&&selProp&&showProp&&<>
+              {byRoomOnly&&overrideConfirmed&&<div style={{fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px",marginBottom:8}}>⚠ Override active — sending as whole-unit rental. This does not change the property's rental mode setting.</div>}
+              <div className="fr" style={{gap:8,marginBottom:0}}>
+                <div className="fld" style={{marginBottom:0}}>
+                  <label>Whole-House Rent <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit to override</span></label>
+                  <div style={{display:"flex",alignItems:"center"}}>
+                    <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                    <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} placeholder={selProp.wholeHouseRent?String(selProp.wholeHouseRent):"Enter amount"} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}}/>
+                  </div>
+                  {selProp.wholeHouseRent>0&&<div style={{fontSize:9,color:"#999",marginTop:2}}>Property default: {fmtS(selProp.wholeHouseRent)}/mo</div>}
+                </div>
+                <div className="fld" style={{marginBottom:0}}>
+                  <label>Security Deposit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-fills — editable</span></label>
+                  <div style={{display:"flex",alignItems:"center"}}>
+                    <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                    <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:inviteRent||""} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
+                  </div>
+                </div>
+              </div>
+            </>}
+          </>);
+        })()}
 
         {roomMode==="choice"&&<div className="fld" style={{marginBottom:0}}>
           <label>Property Preference <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— tenant selects a room on the apply page</span></label>
@@ -5901,19 +5935,22 @@ export default function Page(){
       {/* ── Screening ── */}
       <div className="tp-card" style={{marginBottom:10}}><h3>Screening Package</h3>
         {[["credit-bg","Credit + Full BG Check","FCRA-certified · RentPrep","$49"],["credit-only","Credit Report Only","Automated SmartMove","$29"],["none","No Screening (Waived)","e.g. intern with employer BG check","$0"]].map(([v,l,sub,price])=>(
-          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:`2px solid ${pkg===v?"#d4a853":"rgba(0,0,0,.06)"}`,background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:5,transition:"all .12s"}}>
+          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v,...(v==="none"?{incomeAdd:"none"}:{})}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:`2px solid ${pkg===v?"#d4a853":"rgba(0,0,0,.06)"}`,background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:5,transition:"all .12s"}}>
             <div style={{width:13,height:13,borderRadius:"50%",border:`2px solid ${pkg===v?"#d4a853":"rgba(0,0,0,.15)"}`,background:pkg===v?"#d4a853":"transparent",flexShrink:0}}/>
             <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{l}</div><div style={{fontSize:10,color:"#999"}}>{sub}</div></div>
             <div style={{fontSize:13,fontWeight:800,color:pkg===v?"#d4a853":"#999"}}>{price}</div>
           </div>
         ))}
         <div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:8,marginTop:4,display:"flex",gap:6,flexWrap:"wrap"}}>
-          {[["none","None"],["income-only","+ Income (+$10)"],["income-employment","+ Income + Employer (+$15)"]].map(([v,l])=>(
-            <div key={v} onClick={()=>setModal(prev=>({...prev,incomeAdd:v}))} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:7,border:`2px solid ${incomeAdd===v?"#4a7c59":"rgba(0,0,0,.06)"}`,background:incomeAdd===v?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>
-              <div style={{width:11,height:11,borderRadius:"50%",border:`2px solid ${incomeAdd===v?"#4a7c59":"rgba(0,0,0,.15)"}`,background:incomeAdd===v?"#4a7c59":"transparent",flexShrink:0}}/>
-              {l}
-            </div>
-          ))}
+          {pkg==="none"
+            ?<div style={{fontSize:10,color:"#999",fontStyle:"italic",padding:"4px 0"}}>Income verification not available when screening is waived.</div>
+            :[["none","None"],["income-only","+ Income (+$10)"],["income-employment","+ Income + Employer (+$15)"]].map(([v,l])=>(
+              <div key={v} onClick={()=>setModal(prev=>({...prev,incomeAdd:v}))} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:7,border:`2px solid ${incomeAdd===v?"#4a7c59":"rgba(0,0,0,.06)"}`,background:incomeAdd===v?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>
+                <div style={{width:11,height:11,borderRadius:"50%",border:`2px solid ${incomeAdd===v?"#4a7c59":"rgba(0,0,0,.15)"}`,background:incomeAdd===v?"#4a7c59":"transparent",flexShrink:0}}/>
+                {l}
+              </div>
+            ))
+          }
         </div>
         <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:`1px solid ${totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)"}`}}>
           <span style={{fontSize:11,color:"#999"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}{pkg!=="none"?` + $${adminFee} admin`:""}</span>
