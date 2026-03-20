@@ -6918,7 +6918,7 @@ export default function Page(){
           <div className="fld" style={{marginBottom:8}}>
             <label>Assign Room <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Vacant now + rooms whose lease ends by move-in date</span></label>
             <select value={a.termRoomId||termRoom?.id||""} onChange={e=>{const r=availableRooms.find(x=>x.id===e.target.value);if(r){saveTerm("termRoomId",r.id);saveTerm("termPropId",r.propId);saveTerm("termRent",r.rent);saveTerm("termSD",r.rent);}}} style={{width:"100%"}}>
-              {!(a.termRoomId||termRoom?.id)&&<option value="">— select a room —</option>}
+              <option value="">No room selected at this time</option>
               {availableRooms.map(r=>{
                 const isSelected=r.id===(a.termRoomId||termRoom?.id);
                 const rent=isSelected?termRent:r.rent;
@@ -6937,12 +6937,15 @@ export default function Page(){
                 <label>Monthly Rent <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit if rate differs from listing</span></label>
                 <div style={{display:"flex",alignItems:"center",gap:0}}>
                   <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
-                  <input type="number" min={0} value={termRent||""} onChange={e=>{const v=Number(e.target.value)||0;saveTerm("termRent",v);saveTerm("termSD",v);}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
+                  <input type="number" min={0} value={termRent||""} onChange={e=>{const v=Number(e.target.value)||0;saveTerm("termRent",v);if(a.termSD===undefined||a.termSD===termRent)saveTerm("termSD",v);}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
                 </div>
               </div>
               <div className="fld" style={{marginBottom:0}}>
-                <label>Security Deposit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-matches rent</span></label>
-                <div style={{padding:"8px 10px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6,fontSize:13,fontWeight:700,color:"#2d6a3f"}}>{fmtS(termRent||0)}</div>
+                <label>Security Deposit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-fills from rent — editable</span></label>
+                <div style={{display:"flex",alignItems:"center",gap:0}}>
+                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                  <input type="number" min={0} value={a.termSD!==undefined?a.termSD:(termRent||"")} onChange={e=>saveTerm("termSD",Number(e.target.value)||0)} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
+                </div>
               </div>
             </div>
             {selectedAvail?._willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
