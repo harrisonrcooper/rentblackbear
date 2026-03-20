@@ -6878,11 +6878,27 @@ export default function Page(){
 
       {/* ── Room Assignment (all stages) ── */}
       {(()=>{
-        const allVacantRooms=props.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",name:"",label:"",rooms:allRooms(p)}]).flatMap(u=>(u.rooms||[]).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id,unitLabel:u.label,unitName:u.name}))));
+        const moveInDate=a.termMoveIn||a.moveIn||"";
+        const moveInMs=moveInDate?new Date(moveInDate+"T00:00:00").getTime():null;
+        // A room is assignable if: vacant now, OR occupied but lease ends on/before move-in date
+        const availableRooms=props.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",name:"",label:"",rooms:allRooms(p)}]).flatMap(u=>(u.rooms||[]).filter(r=>{
+          if(r.st==="vacant")return true;
+          if(r.st==="occupied"&&r.le&&moveInMs){
+            const leEnd=new Date(r.le+"T00:00:00").getTime();
+            return leEnd<=moveInMs;
+          }
+          return false;
+        }).map(r=>({...r,propName:p.name,propId:p.id,unitLabel:u.label,unitName:u.name,_willVacate:r.st==="occupied"&&r.le}))));
         const termProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
         const termRoom=a.termRoomId?(termProp?allRooms(termProp).find(r=>r.id===a.termRoomId):null):(termProp?allRooms(termProp).find(r=>r.name===a.room):null);
         const termRent=a.termRent!==undefined?a.termRent:(termRoom?termRoom.rent:0);
         const saveTerm=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
+        const selectedAvail=availableRooms.find(r=>r.id===(a.termRoomId||termRoom?.id));
+        const roomLabel=(r,rent)=>{
+          let label=(r.unitLabel?"Unit "+r.unitLabel+" — ":"")+r.name+" at "+(r.propName||""+" — ")+fmtS(rent)+"/mo";
+          if(r._willVacate)label+=" · lease ends "+fmtD(r.le);
+          return label;
+        };
         return(
         <div className="tp-card" style={{border:"2px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
           <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>🏠 Room Assignment</h3>
@@ -6896,17 +6912,43 @@ export default function Page(){
             </div>
             <div className="fld" style={{marginBottom:0}}>
               <label>Move-in Date</label>
-              <input type="date" value={a.termMoveIn||a.moveIn||""} onChange={e=>{saveApp(a.id,"moveIn",e.target.value);saveApp(a.id,"termMoveIn",e.target.value);}} style={{width:"100%"}}/>
+              <input type="date" value={moveInDate} onChange={e=>{saveApp(a.id,"moveIn",e.target.value);saveApp(a.id,"termMoveIn",e.target.value);}} style={{width:"100%"}}/>
             </div>
           </div>
           <div className="fld" style={{marginBottom:8}}>
-            <label>Assign Room <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Pre-filled from application — confirm or change</span></label>
-            <select value={a.termRoomId||termRoom?.id||""} onChange={e=>{const r=allVacantRooms.find(x=>x.id===e.target.value);if(r){saveTerm("termRoomId",r.id);saveTerm("termPropId",r.propId);saveTerm("termRent",r.rent);saveTerm("termSD",r.rent);}}} style={{width:"100%"}}>
-              {termRoom?<option value={termRoom.id}>{termRoom.unitLabel?"Unit "+termRoom.unitLabel+" — ":""}{termRoom.name} at {termProp?.name} — {fmtS(termRent)}/mo</option>:<option value="">No matching vacant room — select one</option>}
-              {allVacantRooms.filter(r=>r.id!==termRoom?.id).map(r=><option key={r.id} value={r.id}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name} at {r.propName} — {fmtS(r.rent)}/mo</option>)}
+            <label>Assign Room <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Vacant now + rooms whose lease ends by move-in date</span></label>
+            <select value={a.termRoomId||termRoom?.id||""} onChange={e=>{const r=availableRooms.find(x=>x.id===e.target.value);if(r){saveTerm("termRoomId",r.id);saveTerm("termPropId",r.propId);saveTerm("termRent",r.rent);saveTerm("termSD",r.rent);}}} style={{width:"100%"}}>
+              {!(a.termRoomId||termRoom?.id)&&<option value="">— select a room —</option>}
+              {availableRooms.map(r=>{
+                const isSelected=r.id===(a.termRoomId||termRoom?.id);
+                const rent=isSelected?termRent:r.rent;
+                return<option key={r.id} value={r.id}>{roomLabel(r,rent)}</option>;
+              })}
+              {/* If currently assigned room isn't in the available list, still show it */}
+              {termRoom&&!availableRooms.find(r=>r.id===termRoom.id)&&<option value={termRoom.id}>⚠ {termRoom.unitLabel?"Unit "+termRoom.unitLabel+" — ":""}{termRoom.name} at {termProp?.name} — occupied, lease not expired by move-in</option>}
             </select>
-            {!termRoom&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" not found as a vacant room — it may be occupied. Select an available room before sending the lease.</div>}
+            {termRoom&&!availableRooms.find(r=>r.id===termRoom.id)&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ This room is currently occupied and its lease doesn't end by the selected move-in date. Adjust the move-in date or select a different room.</div>}
+            {!termRoom&&!a.termRoomId&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" is not available — it may be occupied with an active lease. Select an available room.</div>}
           </div>
+          {/* Editable rent rate — shown once a room is selected */}
+          {(a.termRoomId||termRoom?.id)&&<>
+            <div className="fr" style={{gap:8,marginBottom:0}}>
+              <div className="fld" style={{marginBottom:0}}>
+                <label>Monthly Rent <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit if rate differs from listing</span></label>
+                <div style={{display:"flex",alignItems:"center",gap:0}}>
+                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                  <input type="number" min={0} value={termRent||""} onChange={e=>{const v=Number(e.target.value)||0;saveTerm("termRent",v);saveTerm("termSD",v);}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
+                </div>
+              </div>
+              <div className="fld" style={{marginBottom:0}}>
+                <label>Security Deposit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-matches rent</span></label>
+                <div style={{padding:"8px 10px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6,fontSize:13,fontWeight:700,color:"#2d6a3f"}}>{fmtS(termRent||0)}</div>
+              </div>
+            </div>
+            {selectedAvail?._willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
+              ⏳ Current lease ends {fmtD(selectedAvail.le)} — room will be vacant by move-in date.
+            </div>}
+          </>}
         </div>);
       })()}
       {(a.status==="approved"||a.status==="move-in"||a.status==="onboarding")&&<div className="tp-card"><h3>📋 Screening Summary</h3>
