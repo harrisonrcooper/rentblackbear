@@ -3,7 +3,7 @@
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
 
 const SUPA = "https://vxysaclhucdjxzcknoar.supabase.co/rest/v1";
-const KEY  = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const KEY  = process.env.SUPABASE_ANON_KEY;
 
 async function loadKey(key, fallback=[]) {
   try {
