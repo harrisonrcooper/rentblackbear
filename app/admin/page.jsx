@@ -6783,7 +6783,11 @@ export default function Page(){
         });
       }
     });
-    apps.filter(x=>x.id!==a.id&&x.status==="denied").forEach(x=>{if(((x.name||"").toLowerCase()===nm3)||((x.email||"").toLowerCase()===(a.email||"").toLowerCase()))mf.push({type:"denied",label:"⚠ Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});});
+    apps.filter(x=>x.id!==a.id&&x.status==="denied").forEach(x=>{
+      const nameMatch=(x.name||"").toLowerCase()===nm3&&nm3.length>0;
+      const emailMatch=(x.email||"").toLowerCase()===(a.email||"").toLowerCase()&&(a.email||"").length>0;
+      if(emailMatch||(nameMatch&&emailMatch))mf.push({type:"denied",label:"⚠ Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});
+    });
     const reqs=[{key:"bgCheck",label:"Background Check"},{key:"creditScore",label:"Credit Check"},{key:"incomeVerified",label:"Income Verification"},{key:"refs",label:"References"},{key:"idVerified",label:"ID Verified"}];
     const waived=a.waived||[];
     const incompleteReqs=reqs.filter(r=>!waived.includes(r.label)&&a[r.key]!=="passed"&&a[r.key]!=="verified");
