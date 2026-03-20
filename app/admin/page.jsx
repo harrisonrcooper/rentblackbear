@@ -5890,7 +5890,7 @@ export default function Page(){
               <div style={{fontSize:12,fontWeight:700,color:"#c45c4a",marginBottom:4}}>⚠ Override Required</div>
               <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.6,marginBottom:8}}>
                 <strong>{selProp?.name}</strong> is configured for by-bedroom rental. Are you converting it to a whole-unit rental for this invite?
-                {lastLeaseEnd&&<div style={{marginTop:4,fontSize:10,color:"#999"}}>The last active bedroom lease ends on <strong>{fmtD(lastLeaseEnd)}</strong>. The property won't be fully vacant until after that date.</div>}
+                {lastLeaseEnd&&<div style={{marginTop:4,fontSize:10,color:"#999"}}>The last active bedroom lease ends on <strong>{fmtD(lastLeaseEnd)}</strong>. The property will not be fully vacant until after that date.</div>}
               </div>
               <div style={{display:"flex",gap:6}}>
                 <button className="btn btn-red btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,whPropOverride:true}))}>Yes, override to whole unit</button>
@@ -5898,7 +5898,7 @@ export default function Page(){
               </div>
             </div>}
             {selPropId&&selProp&&showProp&&<>
-              {byRoomOnly&&overrideConfirmed&&<div style={{fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px",marginBottom:8}}>⚠ Override active — sending as whole-unit rental. This does not change the property's rental mode setting.</div>}
+              {byRoomOnly&&overrideConfirmed&&<div style={{fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px",marginBottom:8}}>⚠ Override active — sending as whole-unit rental. This does not change the property rental mode setting.</div>}
               <div className="fr" style={{gap:8,marginBottom:0}}>
                 <div className="fld" style={{marginBottom:0}}>
                   <label>Whole-House Rent <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit to override</span></label>
