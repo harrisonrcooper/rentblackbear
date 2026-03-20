@@ -5756,16 +5756,16 @@ export default function Page(){
 
     // ── STEP 2: Preview & Send ──────────────────────────────────────────
     if(inviteStep==="preview"){
-      const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply?invite=${a.id}`;
+      const link=(settings.siteUrl||"https://rentblackbear.com")+"/apply?invite="+a.id;
       const errors=[];
       if(roomMode==="locked"&&!selPropId)errors.push("Select a property");
       if(roomMode==="locked"&&selPropId&&!selRoomId)errors.push("Select a room or change to 'Tenant Chooses'");
       if(roomMode==="property"&&!selPropId)errors.push("Select a property");
       if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Waiver reason is required when screening is skipped");
       const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
-      const commit=(method)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],screenPkg:pkg,incomeAdd,appFee:totalFee,waiverReason:modal.waiverReason||"",property:selProp?selProp.name:a.property,room:roomMode==="property"?"Entire Property":selRoom?selRoom.name:a.room,inviteRent,inviteRoomId:selRoom?.id||null,inviteRoomMode:roomMode,inviteLink:link,sentVia:(x.sentVia?x.sentVia+", ":"")+method,history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Invited via ${method} · ${pkgLabel[pkg]} · $${totalFee}${modal.waiverReason?" · "+modal.waiverReason:""}${roomMode==="property"?" · Entire property @ "+fmtS(inviteRent)+"/mo":""}`}]}:x));setNotifs(p=>[{id:uid(),type:"app",msg:`Invite sent to ${a.name} via ${method} — ${totalFee===0?"Fee waived":"$"+totalFee}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);};
+      const commit=(method)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],screenPkg:pkg,incomeAdd,appFee:totalFee,waiverReason:modal.waiverReason||"",property:selProp?selProp.name:a.property,room:roomMode==="property"?"Entire Property":selRoom?selRoom.name:a.room,inviteRent,inviteRoomId:selRoom?.id||null,inviteRoomMode:roomMode,inviteLink:link,sentVia:(x.sentVia?x.sentVia+", ":"")+method,history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:"Invited via "+method+" · "+pkgLabel[pkg]+" · $"+totalFee+(modal.waiverReason?" · "+modal.waiverReason:"")+(roomMode==="property"?" · Entire property @ "+fmtS(inviteRent)+"/mo":"")}]}:x));setNotifs(p=>[{id:uid(),type:"app",msg:"Invite sent to "+a.name+" via "+method+" — "+(totalFee===0?"Fee waived":"$"+totalFee),date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);};
       const sendEmail=async()=>{if(!validate())return;setModal(prev=>({...prev,emailSending:true,sendErrors:[]}));try{const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:a.email,name:a.name,link,property:selProp?selProp.name:a.property,room:roomMode==="property"?"Entire Property":selRoom?selRoom.name:"",rent:inviteRent,fee:totalFee,screeningPkg:pkgLabel[pkg],note:modal.sendNote||"",waived:pkg==="none"?["Screening waived"]:[]})});const d=await res.json();if(d.ok){commit("Email");setModal(prev=>({...prev,emailSent:true,emailSending:false}));}else{setModal(prev=>({...prev,sendErrors:[d.error||"Email failed to send — check Resend config"],emailSending:false}));}}catch{setModal(prev=>({...prev,sendErrors:["Network error — check your connection and try again"],emailSending:false}));}};
-      const smsBody=encodeURIComponent(`Hey ${a.name.split(" ")[0]}! You're invited to apply at Black Bear Rentals${selProp?" — "+selProp.name:""}${selRoom?" ("+selRoom.name+")":""}${inviteRent?" at "+fmtS(inviteRent)+"/mo":""}.${modal.sendNote?"\n\n"+modal.sendNote:""}\n\nApply here: ${link}\n\n${totalFee===0?"No screening fee!":"Screening fee: $"+totalFee+" (paid at end of application)"}\n\n— Black Bear Rentals`);
+      const smsBody=encodeURIComponent("Hey "+a.name.split(" ")[0]+"! You're invited to apply at Black Bear Rentals"+(selProp?" — "+selProp.name:"")+(selRoom?" ("+selRoom.name+")":"")+(inviteRent?" at "+fmtS(inviteRent)+"/mo":"")+"."+( modal.sendNote?"\n\n"+modal.sendNote:"")+"\n\nApply here: "+link+"\n\n"+(totalFee===0?"No screening fee!":"Screening fee: $"+totalFee+" (paid at end of application)")+"\n\n— Black Bear Rentals");
       const copyLink=()=>{navigator.clipboard.writeText(link).then(()=>{setModal(prev=>({...prev,linkCopied:true}));setTimeout(()=>setModal(prev=>({...prev,linkCopied:false})),2500);});};
       return(
       <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
@@ -5798,7 +5798,7 @@ export default function Page(){
         :<div style={{display:"flex",flexDirection:"column",gap:7}}>
           <div style={{display:"flex",gap:7}}>
             <button className="btn btn-green" style={{flex:1,opacity:modal.emailSending?.6:1}} onClick={sendEmail} disabled={!!modal.emailSending}>{modal.emailSending?"Sending...":"Send Email Invite"}</button>
-            <a href={`sms:${(a.phone||"").replace(/\D/g,"")}?&body=${smsBody}`} className="btn btn-dk btn-sm" style={{flex:1,textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{if(!validate())return;commit("Text");}}>Send Text Invite</a>
+            <a href={"sms:"+(a.phone||"").replace(/\D/g,"")+"?&body="+smsBody} className="btn btn-dk btn-sm" style={{flex:1,textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{if(!validate())return;commit("Text");}}>Send Text Invite</a>
           </div>
           <button className="btn btn-out btn-sm" style={{width:"100%",color:modal.linkCopied?"#4a7c59":"#5c4a3a",borderColor:modal.linkCopied?"rgba(74,124,89,.3)":""}} onClick={copyLink}>{modal.linkCopied?"✓ Link Copied!":"Copy Invite Link"}</button>
         </div>}
@@ -5821,7 +5821,7 @@ export default function Page(){
           <h3 style={{margin:0}}>🏠 Room Assignment</h3>
           <div style={{display:"flex",gap:4}}>
             {[["locked","Lock Room"],["property","Entire Prop"],["choice","Tenant Picks"]].map(([v,l])=>(
-              <button key={v} className={`btn ${roomMode===v?"btn-dk":"btn-out"} btn-sm`} style={{fontSize:9,padding:"3px 7px"}} onClick={()=>setModal(prev=>({...prev,roomMode:v,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))}>{l}</button>
+              <button key={v} className={"btn "+(roomMode===v?"btn-dk":"btn-out")+" btn-sm"} style={{fontSize:9,padding:"3px 7px"}} onClick={()=>setModal(prev=>({...prev,roomMode:v,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))}>{l}</button>
             ))}
           </div>
         </div>
@@ -5935,8 +5935,8 @@ export default function Page(){
       {/* ── Screening ── */}
       <div className="tp-card" style={{marginBottom:10}}><h3>Screening Package</h3>
         {[["credit-bg","Credit + Full BG Check","FCRA-certified · RentPrep","$49"],["credit-only","Credit Report Only","Automated SmartMove","$29"],["none","No Screening (Waived)","e.g. intern with employer BG check","$0"]].map(([v,l,sub,price])=>(
-          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v,...(v==="none"?{incomeAdd:"none"}:{})}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:`2px solid ${pkg===v?"#d4a853":"rgba(0,0,0,.06)"}`,background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:5,transition:"all .12s"}}>
-            <div style={{width:13,height:13,borderRadius:"50%",border:`2px solid ${pkg===v?"#d4a853":"rgba(0,0,0,.15)"}`,background:pkg===v?"#d4a853":"transparent",flexShrink:0}}/>
+          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v,...(v==="none"?{incomeAdd:"none"}:{})}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.06)"),background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:5,transition:"all .12s"}}>
+            <div style={{width:13,height:13,borderRadius:"50%",border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.15)"),background:pkg===v?"#d4a853":"transparent",flexShrink:0}}/>
             <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{l}</div><div style={{fontSize:10,color:"#999"}}>{sub}</div></div>
             <div style={{fontSize:13,fontWeight:800,color:pkg===v?"#d4a853":"#999"}}>{price}</div>
           </div>
@@ -5945,14 +5945,14 @@ export default function Page(){
           {pkg==="none"
             ?<div style={{fontSize:10,color:"#999",fontStyle:"italic",padding:"4px 0"}}>Income verification not available when screening is waived.</div>
             :[["none","None"],["income-only","+ Income (+$10)"],["income-employment","+ Income + Employer (+$15)"]].map(([v,l])=>(
-              <div key={v} onClick={()=>setModal(prev=>({...prev,incomeAdd:v}))} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:7,border:`2px solid ${incomeAdd===v?"#4a7c59":"rgba(0,0,0,.06)"}`,background:incomeAdd===v?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>
-                <div style={{width:11,height:11,borderRadius:"50%",border:`2px solid ${incomeAdd===v?"#4a7c59":"rgba(0,0,0,.15)"}`,background:incomeAdd===v?"#4a7c59":"transparent",flexShrink:0}}/>
+              <div key={v} onClick={()=>setModal(prev=>({...prev,incomeAdd:v}))} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:7,border:"2px solid "+(incomeAdd===v?"#4a7c59":"rgba(0,0,0,.06)"),background:incomeAdd===v?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>
+                <div style={{width:11,height:11,borderRadius:"50%",border:"2px solid "+(incomeAdd===v?"#4a7c59":"rgba(0,0,0,.15)"),background:incomeAdd===v?"#4a7c59":"transparent",flexShrink:0}}/>
                 {l}
               </div>
             ))
           }
         </div>
-        <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:`1px solid ${totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)"}`}}>
+        <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid "+(totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)")}}>
           <span style={{fontSize:11,color:"#999"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}{pkg!=="none"?" + $"+adminFee+" admin":""}</span>
           <span style={{fontSize:16,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":fmtS(totalFee)}</span>
         </div>
