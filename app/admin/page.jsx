@@ -5260,7 +5260,7 @@ export default function Page(){
         <div className={`fld ${modal.payErrs&&modal.payErrs.method?"field-err":""}`}><label className={modal.payErrs&&modal.payErrs.method?"field-err-label":""}>Payment Method</label><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{PAY_METHODS.map(pm=>(<button key={pm} className={`btn ${modal.payMethod===pm?"btn-dk":"btn-out"} btn-sm`} style={{border:modal.payErrs&&modal.payErrs.method&&!modal.payMethod?"1px solid #c45c4a":""}} onClick={()=>setModal(prev=>({...prev,payMethod:pm,payErrs:{...(prev.payErrs||{}),method:null}}))}>  {pm}</button>))}</div>{modal.payErrs&&modal.payErrs.method&&<div className="err-msg">{modal.payErrs.method}</div>}</div>
         <div className={`fld ${modal.payErrs&&modal.payErrs.date?"field-err":""}`}><label className={modal.payErrs&&modal.payErrs.date?"field-err-label":""}>Payment Date</label><input type="date" value={modal.payDate} onChange={e=>setModal(prev=>({...prev,payDate:e.target.value,payErrs:{...(prev.payErrs||{}),date:null}}))}/>{modal.payErrs&&modal.payErrs.date&&<div className="err-msg">{modal.payErrs.date}</div>}</div>
         <div className="fld"><label>Notes</label><input value={modal.payNotes||""} onChange={e=>setModal(prev=>({...prev,payNotes:e.target.value}))} placeholder="Optional notes..."/></div>
-        <div className="mft"><button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,step:1}))}>Back</button>
+        <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,step:1}))}>Back</button>
           <button className="btn btn-green" onClick={()=>{
             const errs={};
             if(!modal.payAmount||modal.payAmount<=0)errs.amount="Enter a valid amount";
@@ -5728,1029 +5728,273 @@ export default function Page(){
   })()}
 
   {modal&&modal.type==="inviteApp"&&(()=>{const a=modal.data;
-    const adminFee=settings.adminFee??10;
+    const adminFee=settings.adminFee||10;
     const pkg=modal.pkg||"credit-bg";
-    const incomeAdd=modal.incomeAdd||"none";
+    const incomeAdd=pkg==="none"?"none":(modal.incomeAdd||"none");
     const pkgFees={"none":0,"credit-only":29,"credit-bg":49};
     const incomeAdds={"none":0,"income-only":10,"income-employment":15};
     const totalFee=pkg==="none"?0:pkgFees[pkg]+incomeAdds[incomeAdd]+adminFee;
-    const pkgLabel={"none":"No screening (waived)","credit-only":"Credit Report Only","credit-bg":"Credit Report + Full Background Check"};
-    const incomeLabel={"none":"None","income-only":"Income Verification (+$10)","income-employment":"Income + Employment (+$15)"};
+    const pkgLabel={"none":"No screening (waived)","credit-only":"Credit Report Only","credit-bg":"Credit + Full BG Check"};
+    const incomeLabel={"none":"None","income-only":"Income Verify (+$10)","income-employment":"Income + Employer (+$15)"};
     const roomMode=modal.roomMode||"locked";
     const inviteStep=modal.inviteStep||"configure";
-    // Lease-aware room list for invite
     const inviteMoveIn=modal.inviteMoveIn||a.moveIn||"";
     const inviteMoveInMs=inviteMoveIn?new Date(inviteMoveIn+"T00:00:00").getTime():null;
     const allAvailForInvite=props.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",name:"",label:"",rooms:allRooms(p)}]).flatMap(u=>(u.rooms||[]).filter(r=>{
       if(r.st==="vacant")return true;
       if(r.st==="occupied"&&r.le&&inviteMoveInMs)return new Date(r.le+"T00:00:00").getTime()<=inviteMoveInMs;
       return false;
-    }).map(r=>({...r,propName:p.name,propId:p.id,unitLabel:u.label,unitName:u.name,_willVacate:r.st==="occupied"&&r.le}))));
+    }).map(r=>({...r,propName:p.name,propId:p.id,unitLabel:u.label,unitName:u.name,willVacate:r.st==="occupied"&&!!r.le}))));
     const selPropId=modal.selPropId||(()=>{const mp=props.find(p=>p.name===a.property);return mp?mp.id:"";})();
     const selProp=props.find(p=>p.id===selPropId);
     const selRoomId=modal.selRoomId||"";
     const selRoom=allAvailForInvite.find(r=>r.id===selRoomId);
-    const inviteRent=modal.inviteRent!==undefined?modal.inviteRent:(selRoom?selRoom.rent:selProp?.wholeHouseRent||0);
-    const inviteSD=modal.inviteSD!==undefined?modal.inviteSD:inviteRent;
+    const inviteRent=modal.inviteRent!==undefined?modal.inviteRent:(selRoom?selRoom.rent:(selProp&&selProp.wholeHouseRent?selProp.wholeHouseRent:0));
+    const isWholeProp=p=>(p.units||[]).some(u=>u.rentalMode==="wholeHouse");
+    const byRoomOnly=selProp&&!isWholeProp(selProp);
+    const overrideConfirmed=!!modal.whPropOverride;
+    const lastLeaseEnd=selProp?allRooms(selProp).filter(r=>r.le).map(r=>r.le).sort().slice(-1)[0]:null;
+    const link=(settings.siteUrl||"https://rentblackbear.com")+"/apply?invite="+a.id;
     const doShake=shakeModal;
 
-    // ── STEP 2: Preview & Send ──────────────────────────────────────────
     if(inviteStep==="preview"){
-      const link=(settings.siteUrl||"https://rentblackbear.com")+"/apply?invite="+a.id;
       const errors=[];
       if(roomMode==="locked"&&!selPropId)errors.push("Select a property");
-      if(roomMode==="locked"&&selPropId&&!selRoomId)errors.push("Select a room or change to 'Tenant Chooses'");
       if(roomMode==="property"&&!selPropId)errors.push("Select a property");
-      if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Waiver reason is required when screening is skipped");
+      if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Waiver reason required when screening is skipped");
       const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
-      const commit=(method)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"invited",lastContact:TODAY.toISOString().split("T")[0],screenPkg:pkg,incomeAdd,appFee:totalFee,waiverReason:modal.waiverReason||"",property:selProp?selProp.name:a.property,room:roomMode==="property"?"Entire Property":selRoom?selRoom.name:a.room,inviteRent,inviteRoomId:selRoom?.id||null,inviteRoomMode:roomMode,inviteLink:link,sentVia:(x.sentVia?x.sentVia+", ":"")+method,history:[...(x.history||[]),{from:x.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:"Invited via "+method+" · "+pkgLabel[pkg]+" · $"+totalFee+(modal.waiverReason?" · "+modal.waiverReason:"")+(roomMode==="property"?" · Entire property @ "+fmtS(inviteRent)+"/mo":"")}]}:x));setNotifs(p=>[{id:uid(),type:"app",msg:"Invite sent to "+a.name+" via "+method+" — "+(totalFee===0?"Fee waived":"$"+totalFee),date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);};
-      const sendEmail=async()=>{if(!validate())return;setModal(prev=>({...prev,emailSending:true,sendErrors:[]}));try{const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:a.email,name:a.name,link,property:selProp?selProp.name:a.property,room:roomMode==="property"?"Entire Property":selRoom?selRoom.name:"",rent:inviteRent,fee:totalFee,screeningPkg:pkgLabel[pkg],note:modal.sendNote||"",waived:pkg==="none"?["Screening waived"]:[]})});const d=await res.json();if(d.ok){commit("Email");setModal(prev=>({...prev,emailSent:true,emailSending:false}));}else{setModal(prev=>({...prev,sendErrors:[d.error||"Email failed to send — check Resend config"],emailSending:false}));}}catch{setModal(prev=>({...prev,sendErrors:["Network error — check your connection and try again"],emailSending:false}));}};
-      const smsBody=encodeURIComponent("Hey "+a.name.split(" ")[0]+"! You're invited to apply at Black Bear Rentals"+(selProp?" — "+selProp.name:"")+(selRoom?" ("+selRoom.name+")":"")+(inviteRent?" at "+fmtS(inviteRent)+"/mo":"")+"."+( modal.sendNote?"\n\n"+modal.sendNote:"")+"\n\nApply here: "+link+"\n\n"+(totalFee===0?"No screening fee!":"Screening fee: $"+totalFee+" (paid at end of application)")+"\n\n— Black Bear Rentals");
+      const commit=(method)=>{
+        setApps(p=>p.map(x=>x.id===a.id?{...x,
+          status:"invited",lastContact:TODAY.toISOString().split("T")[0],
+          screenPkg:pkg,incomeAdd,appFee:totalFee,
+          waiverReason:modal.waiverReason||"",
+          property:selProp?selProp.name:a.property,
+          room:roomMode==="property"?"Entire Property":(selRoom?selRoom.name:a.room),
+          inviteRent,inviteRoomId:selRoom?selRoom.id:null,
+          inviteRoomMode:roomMode,inviteLink:link,
+          sentVia:(x.sentVia?x.sentVia+", ":"")+method,
+          history:[...(x.history||[]),{from:x.status,to:"invited",
+            date:TODAY.toISOString().split("T")[0],
+            note:"Invited via "+method+" - "+pkgLabel[pkg]+" - $"+totalFee+(modal.waiverReason?" - "+modal.waiverReason:"")
+          }]
+        }:x));
+        setNotifs(p=>[{id:uid(),type:"app",
+          msg:"Invite sent to "+a.name+" via "+method+" - "+(totalFee===0?"Fee waived":"$"+totalFee),
+          date:TODAY.toISOString().split("T")[0],read:false,urgent:false
+        },...p]);
+      };
+      const sendEmail=async()=>{
+        if(!validate())return;
+        setModal(prev=>({...prev,emailSending:true,sendErrors:[]}));
+        try{
+          const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({to:a.email,name:a.name,link,
+              property:selProp?selProp.name:a.property,
+              room:roomMode==="property"?"Entire Property":(selRoom?selRoom.name:""),
+              rent:inviteRent,fee:totalFee,screeningPkg:pkgLabel[pkg],
+              note:modal.sendNote||"",waived:pkg==="none"?["Screening waived"]:[]
+            })
+          });
+          const d=await res.json();
+          if(d.ok){commit("Email");setModal(prev=>({...prev,emailSent:true,emailSending:false}));}
+          else{setModal(prev=>({...prev,sendErrors:[d.error||"Email failed - check Resend config"],emailSending:false}));}
+        }catch{setModal(prev=>({...prev,sendErrors:["Network error - check connection and try again"],emailSending:false}));}
+      };
+      const phoneNum=(a.phone||"").replace(/\D/g,"");
+      const smsTxt="Hey "+a.name.split(" ")[0]+"! You are invited to apply at Black Bear Rentals"+(selProp?" - "+selProp.name:"")+(selRoom?" ("+selRoom.name+")":"")+(inviteRent?" at $"+inviteRent+"/mo":"")+". Apply: "+link+(totalFee===0?". No screening fee!":(". Fee: $"+totalFee))+" - Black Bear Rentals";
+      const smsHref="sms:"+phoneNum+"?&body="+encodeURIComponent(smsTxt);
       const copyLink=()=>{navigator.clipboard.writeText(link).then(()=>{setModal(prev=>({...prev,linkCopied:true}));setTimeout(()=>setModal(prev=>({...prev,linkCopied:false})),2500);});};
       return(
       <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-          <button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,inviteStep:"configure",sendErrors:[],emailSent:false}))}>← Back</button>
-          <h2 style={{margin:0,flex:1}}>Review & Send Invite</h2>
+          <button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,inviteStep:"configure",sendErrors:[],emailSent:false}))}>Back</button>
+          <h2 style={{margin:0,flex:1}}>Review and Send Invite</h2>
         </div>
-        {/* Summary card */}
         <div style={{background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:16,marginBottom:12}}>
           <div style={{fontSize:10,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Invite Summary</div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
             <tbody>
               <tr><td style={{padding:"5px 0",color:"#999",width:"38%",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Applicant</td><td style={{padding:"5px 0",fontWeight:700,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.name}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} · {a.phone}</td></tr>
+              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} - {a.phone}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":selRoom?selRoom.name:"Not specified"}{selRoom?._willVacate?<span style={{fontSize:9,color:"#9a7422",marginLeft:6}}>· lease ends {fmtD(selRoom.le)}</span>:null}</td></tr>
-              {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtS(inviteRent)+"/mo"}</td></tr>}
+              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":(selRoom?selRoom.name:"Not specified")}</td></tr>
+              {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${inviteRent+"/mo"}</td></tr>}
               {inviteMoveIn&&<tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtD(inviteMoveIn)}</td></tr>}
               <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Screening</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Fee (tenant)</td><td style={{padding:"5px 0",fontWeight:700,color:totalFee===0?"#4a7c59":"#d4a853",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{totalFee===0?"Free":fmtS(totalFee)}</td></tr>
+              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Fee (tenant)</td><td style={{padding:"5px 0",fontWeight:700,color:totalFee===0?"#4a7c59":"#d4a853",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{totalFee===0?"Free":"$"+totalFee}</td></tr>
               {modal.sendNote&&<tr><td style={{padding:"5px 0",color:"#999"}}>Note</td><td style={{padding:"5px 0",fontStyle:"italic",color:"#5c4a3a",fontSize:11}}>{modal.sendNote}</td></tr>}
             </tbody>
           </table>
           <div style={{marginTop:10,padding:"6px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,fontSize:10,color:"#999",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link}</div>
         </div>
         {modal.sendErrors&&modal.sendErrors.length>0&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"10px 12px",marginBottom:10,animation:"shake .4s ease"}}>
-          {modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:11,color:"#c45c4a",display:"flex",gap:6,alignItems:"center"}}><span style={{width:5,height:5,borderRadius:"50%",background:"#c45c4a",flexShrink:0,display:"inline-block"}}/>{e}</div>)}
+          {modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:11,color:"#c45c4a"}}>{e}</div>)}
         </div>}
-        {modal.emailSent?<div style={{background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,padding:"12px 14px",textAlign:"center",fontSize:13,fontWeight:700,color:"#2d6a3f"}}>✅ Invite email sent to {a.email}</div>
-        :<div style={{display:"flex",flexDirection:"column",gap:7}}>
-          <div style={{display:"flex",gap:7}}>
-            <button className="btn btn-green" style={{flex:1,opacity:modal.emailSending?.6:1}} onClick={sendEmail} disabled={!!modal.emailSending}>{modal.emailSending?"Sending...":"Send Email Invite"}</button>
-            <a href={"sms:"+(a.phone||"").replace(/\D/g,"")+"?&body="+smsBody} className="btn btn-dk btn-sm" style={{flex:1,textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{if(!validate())return;commit("Text");}}>Send Text Invite</a>
+        {modal.emailSent
+          ?<div style={{background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,padding:"12px 14px",textAlign:"center",fontSize:13,fontWeight:700,color:"#2d6a3f"}}>Invite email sent to {a.email}</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:7}}>
+            <div style={{display:"flex",gap:7}}>
+              <button className="btn btn-green" style={{flex:1,opacity:modal.emailSending?0.6:1}} onClick={sendEmail} disabled={!!modal.emailSending}>{modal.emailSending?"Sending...":"Send Email Invite"}</button>
+              <a href={smsHref} className="btn btn-dk btn-sm" style={{flex:1,textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{if(!validate())return;commit("Text");}}>Send Text Invite</a>
+            </div>
+            <button className="btn btn-out btn-sm" style={{width:"100%",color:modal.linkCopied?"#4a7c59":"#5c4a3a"}} onClick={copyLink}>{modal.linkCopied?"Link Copied":"Copy Invite Link"}</button>
           </div>
-          <button className="btn btn-out btn-sm" style={{width:"100%",color:modal.linkCopied?"#4a7c59":"#5c4a3a",borderColor:modal.linkCopied?"rgba(74,124,89,.3)":""}} onClick={copyLink}>{modal.linkCopied?"✓ Link Copied!":"Copy Invite Link"}</button>
-        </div>}
-        <div className="mft" style={{marginTop:10}}><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
+        }
+        <div className="mft" style={{marginTop:10}}>
+          <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+          <button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,inviteStep:"configure",sendErrors:[],emailSent:false}))}>Back</button>
+        </div>
       </div></div>);
     }
 
-    // ── STEP 1: Configure ───────────────────────────────────────────────
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:540}}>
       <h2 style={{marginBottom:4}}>Configure Invite</h2>
       <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span><strong>{a.name}</strong> · {a.email} · {a.phone}</span>
+        <span><strong>{a.name}</strong> - {a.email} - {a.phone}</span>
         <span style={{fontSize:10,color:"#999"}}>{a.source||""}</span>
       </div>
-
-      {/* ── Room Assignment ── */}
       <div className="tp-card" style={{marginBottom:10}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <h3 style={{margin:0}}>🏠 Room Assignment</h3>
+          <h3 style={{margin:0}}>Room Assignment</h3>
           <div style={{display:"flex",gap:4}}>
             {[["locked","Lock Room"],["property","Entire Prop"],["choice","Tenant Picks"]].map(([v,l])=>(
               <button key={v} className={"btn "+(roomMode===v?"btn-dk":"btn-out")+" btn-sm"} style={{fontSize:9,padding:"3px 7px"}} onClick={()=>setModal(prev=>({...prev,roomMode:v,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))}>{l}</button>
             ))}
           </div>
         </div>
-
         {roomMode==="locked"&&<>
           <div className="fr" style={{marginBottom:8,gap:8}}>
             <div className="fld" style={{marginBottom:0}}>
-              <label>Move-in Date <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— unlocks lease-expiring rooms</span></label>
+              <label>Move-in Date</label>
               <input type="date" value={inviteMoveIn} onChange={e=>setModal(prev=>({...prev,inviteMoveIn:e.target.value,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))} style={{width:"100%"}}/>
             </div>
             <div className="fld" style={{marginBottom:0}}>
               <label>Property</label>
               <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))} style={{width:"100%"}}>
-                <option value="">Any / No preference</option>
+                <option value="">Any</option>
                 {props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
           </div>
           <div className="fld" style={{marginBottom:selRoom?8:0}}>
             <label>Assign Room</label>
-            <select value={selRoomId} onChange={e=>{const r=allAvailForInvite.find(x=>x.id===e.target.value);setModal(prev=>({...prev,selRoomId:e.target.value,selPropId:r?r.propId:prev.selPropId,inviteRent:r?r.rent:undefined,inviteSD:r?r.rent:undefined}));}} style={{width:"100%"}}>
-              <option value="">No room selected at this time</option>
+            <select value={selRoomId} onChange={e=>{const r=allAvailForInvite.find(x=>x.id===e.target.value);setModal(prev=>({...prev,selRoomId:e.target.value,selPropId:r?r.propId:prev.selPropId,inviteRent:r?r.rent:undefined,inviteSD:r?r.rent:undefined,inviteRoomErr:false}));}} style={{width:"100%",borderColor:modal.inviteRoomErr?"#c45c4a":undefined}}>
+              <option value="">-- Select a room --</option>
+              <option value="__none__">No room decided yet</option>
               {allAvailForInvite.filter(r=>!selPropId||r.propId===selPropId).map(r=>(
-                <option key={r.id} value={r.id}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name+" at "+r.propName+" — "+fmtS(r.rent)+"/mo"+(r._willVacate?" · lease ends "+fmtD(r.le):"")}</option>
+                <option key={r.id} value={r.id}>{(r.unitLabel?"Unit "+r.unitLabel+" - ":"")+r.name+" at "+r.propName+" - $"+r.rent+"/mo"+(r._willVacate?" (lease ends "+fmtD(r.le)+")":"")}</option>
               ))}
             </select>
           </div>
+          {modal.inviteRoomErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease"}}>Please make a room selection. Choose a specific room or "No room decided yet" if undecided.</div>}
           {selRoom&&<div className="fr" style={{gap:8,marginBottom:0}}>
             <div className="fld" style={{marginBottom:0}}>
-              <label>Monthly Rent <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit to override</span></label>
+              <label>Monthly Rent</label>
               <div style={{display:"flex",alignItems:"center"}}>
                 <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
                 <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
               </div>
             </div>
             <div className="fld" style={{marginBottom:0}}>
-              <label>Security Deposit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-fills — editable</span></label>
+              <label>Security Deposit</label>
               <div style={{display:"flex",alignItems:"center"}}>
                 <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
-                <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:inviteRent||""} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
+                <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:(inviteRent||"")} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
               </div>
             </div>
           </div>}
-          {selRoom?._willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>⏳ Current lease ends {fmtD(selRoom.le)} — room will be vacant by move-in date.</div>}
+          {selRoom&&selRoom.willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>Lease ends {fmtD(selRoom.le)} - room will be vacant by move-in date.</div>}
         </>}
-
         {roomMode==="property"&&(()=>{
-          const isWholeProp=p=>(p.units||[]).some(u=>u.rentalMode==="wholeHouse");
-          const wholePropList=props.filter(isWholeProp);
-          const byRoomOnly=selProp&&!(selProp.units||[]).some(u=>u.rentalMode==="wholeHouse");
-          const lastLeaseEnd=selProp?allRooms(selProp).filter(r=>r.le).map(r=>r.le).sort().slice(-1)[0]:null;
-          const overrideConfirmed=!!modal.whPropOverride;
           const showProp=!selPropId||!byRoomOnly||overrideConfirmed;
           return(<>
             <div className="fld" style={{marginBottom:selPropId&&showProp?8:0}}>
-              <label>Property <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— only whole-unit properties shown</span></label>
+              <label>Property</label>
               <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,inviteRent:undefined,inviteSD:undefined,whPropOverride:false}))} style={{width:"100%"}}>
                 <option value="">Select property...</option>
-                {wholePropList.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                {props.filter(p=>!isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{p.name} (by-bedroom)</option>)}
+                {props.filter(p=>isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                {props.filter(p=>!isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{p.name+" (by-bedroom)"}</option>)}
               </select>
             </div>
             {selPropId&&byRoomOnly&&!overrideConfirmed&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"12px 14px",marginBottom:8}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#c45c4a",marginBottom:4}}>⚠ Override Required</div>
+              <div style={{fontSize:12,fontWeight:700,color:"#c45c4a",marginBottom:4}}>Override Required</div>
               <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.6,marginBottom:8}}>
-                <strong>{selProp?.name}</strong> is configured for by-bedroom rental. Are you converting it to a whole-unit rental for this invite?
-                {lastLeaseEnd&&<div style={{marginTop:4,fontSize:10,color:"#999"}}>The last active bedroom lease ends on <strong>{fmtD(lastLeaseEnd)}</strong>. The property will not be fully vacant until after that date.</div>}
+                <strong>{selProp?selProp.name:""}</strong> is set up for by-bedroom rental. Converting to whole-unit for this invite?
+                {lastLeaseEnd&&<div style={{marginTop:4,fontSize:10,color:"#999"}}>{"Last bedroom lease ends "+fmtD(lastLeaseEnd)+" - property will not be fully vacant until after that date."}</div>}
               </div>
               <div style={{display:"flex",gap:6}}>
                 <button className="btn btn-red btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,whPropOverride:true}))}>Yes, override to whole unit</button>
                 <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,selPropId:"",whPropOverride:false}))}>Cancel</button>
               </div>
             </div>}
-            {selPropId&&selProp&&showProp&&<>
-              {byRoomOnly&&overrideConfirmed&&<div style={{fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px",marginBottom:8}}>⚠ Override active — sending as whole-unit rental. This does not change the property rental mode setting.</div>}
-              <div className="fr" style={{gap:8,marginBottom:0}}>
-                <div className="fld" style={{marginBottom:0}}>
-                  <label>Whole-House Rent <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit to override</span></label>
-                  <div style={{display:"flex",alignItems:"center"}}>
-                    <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
-                    <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} placeholder={selProp.wholeHouseRent?String(selProp.wholeHouseRent):"Enter amount"} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}}/>
-                  </div>
-                  {selProp.wholeHouseRent>0&&<div style={{fontSize:9,color:"#999",marginTop:2}}>{"Property default: "+fmtS(selProp.wholeHouseRent)+"/mo"}</div>}
-                </div>
-                <div className="fld" style={{marginBottom:0}}>
-                  <label>Security Deposit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-fills — editable</span></label>
-                  <div style={{display:"flex",alignItems:"center"}}>
-                    <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
-                    <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:inviteRent||""} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
-                  </div>
+            {selPropId&&selProp&&showProp&&<div className="fr" style={{gap:8,marginBottom:0}}>
+              <div className="fld" style={{marginBottom:0}}>
+                <label>Whole-House Rent</label>
+                <div style={{display:"flex",alignItems:"center"}}>
+                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                  <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
                 </div>
               </div>
-            </>}
+              <div className="fld" style={{marginBottom:0}}>
+                <label>Security Deposit</label>
+                <div style={{display:"flex",alignItems:"center"}}>
+                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                  <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:(inviteRent||"")} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
+                </div>
+              </div>
+            </div>}
           </>);
         })()}
-
         {roomMode==="choice"&&<div className="fld" style={{marginBottom:0}}>
-          <label>Property Preference <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— tenant selects a room on the apply page</span></label>
+          <label>Property Preference</label>
           <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value}))} style={{width:"100%"}}>
             <option value="">No preference</option>
             {props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>}
       </div>
-
-        {roomMode==="choice"&&<p style={{fontSize:10,color:"#999",margin:"6px 0 0"}}>Tenant sees all vacant rooms across your properties and picks one on the apply page.</p>}
-
-      {/* ── Screening ── */}
-      <div className="tp-card" style={{marginBottom:10}}><h3>Screening Package</h3>
-        {[["credit-bg","Credit + Full BG Check","FCRA-certified · RentPrep","$49"],["credit-only","Credit Report Only","Automated SmartMove","$29"],["none","No Screening (Waived)","e.g. intern with employer BG check","$0"]].map(([v,l,sub,price])=>(
-          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v,...(v==="none"?{incomeAdd:"none"}:{})}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.06)"),background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:5,transition:"all .12s"}}>
+      <div className="tp-card" style={{marginBottom:10}}>
+        <h3>Screening Package</h3>
+        {[["credit-bg","Credit + Full BG Check","FCRA-certified - RentPrep","$49"],["credit-only","Credit Report Only","Automated SmartMove","$29"],["none","No Screening (Waived)","e.g. intern with employer BG check","$0"]].map(([v,l,sub,price])=>(
+          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v,...(v==="none"?{incomeAdd:"none"}:{})}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.06)"),background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:5}}>
             <div style={{width:13,height:13,borderRadius:"50%",border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.15)"),background:pkg===v?"#d4a853":"transparent",flexShrink:0}}/>
             <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{l}</div><div style={{fontSize:10,color:"#999"}}>{sub}</div></div>
             <div style={{fontSize:13,fontWeight:800,color:pkg===v?"#d4a853":"#999"}}>{price}</div>
           </div>
         ))}
-        <div style={{borderTop:"1px solid rgba(0,0,0,.05)",paddingTop:8,marginTop:4,display:"flex",gap:6,flexWrap:"wrap"}}>
-          {pkg==="none"
-            ?<div style={{fontSize:10,color:"#999",fontStyle:"italic",padding:"4px 0"}}>Income verification not available when screening is waived.</div>
-            :[["none","None"],["income-only","+ Income (+$10)"],["income-employment","+ Income + Employer (+$15)"]].map(([v,l])=>(
-              <div key={v} onClick={()=>setModal(prev=>({...prev,incomeAdd:v}))} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:7,border:"2px solid "+(incomeAdd===v?"#4a7c59":"rgba(0,0,0,.06)"),background:incomeAdd===v?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>
-                <div style={{width:11,height:11,borderRadius:"50%",border:"2px solid "+(incomeAdd===v?"#4a7c59":"rgba(0,0,0,.15)"),background:incomeAdd===v?"#4a7c59":"transparent",flexShrink:0}}/>
-                {l}
-              </div>
-            ))
-          }
-        </div>
+        {pkg!=="none"&&<div style={{display:"flex",gap:6,flexWrap:"wrap",paddingTop:8,borderTop:"1px solid rgba(0,0,0,.05)",marginTop:4}}>
+          {[["none","None"],["income-only","Income (+$10)"],["income-employment","Income + Employer (+$15)"]].map(([v,l])=>(
+            <div key={v} onClick={()=>setModal(prev=>({...prev,incomeAdd:v}))} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:7,border:"2px solid "+(incomeAdd===v?"#4a7c59":"rgba(0,0,0,.06)"),background:incomeAdd===v?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>
+              <div style={{width:11,height:11,borderRadius:"50%",border:"2px solid "+(incomeAdd===v?"#4a7c59":"rgba(0,0,0,.15)"),background:incomeAdd===v?"#4a7c59":"transparent",flexShrink:0}}/>
+              {l}
+            </div>
+          ))}
+        </div>}
+        {pkg==="none"&&<div style={{fontSize:10,color:"#999",fontStyle:"italic",padding:"6px 0"}}>Income verification not available when screening is waived.</div>}
         <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid "+(totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)")}}>
           <span style={{fontSize:11,color:"#999"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}{pkg!=="none"?" + $"+adminFee+" admin":""}</span>
-          <span style={{fontSize:16,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":fmtS(totalFee)}</span>
+          <span style={{fontSize:16,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":"$"+totalFee}</span>
         </div>
         {pkg==="none"&&<div style={{marginTop:8}}>
           <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:4}}>Waiver reason (required)</div>
-          <textarea value={modal.waiverReason||""} onChange={e=>setModal(prev=>({...prev,waiverReason:e.target.value}))} placeholder="e.g. NASA intern — employer BG check accepted." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+          <textarea value={modal.waiverReason||""} onChange={e=>setModal(prev=>({...prev,waiverReason:e.target.value}))} placeholder="e.g. NASA intern - employer BG check accepted." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
         </div>}
       </div>
-
       <div className="fld" style={{marginBottom:12}}>
-        <label>Personal Note <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— optional, included in email</span></label>
-        <textarea value={modal.sendNote||""} onChange={e=>setModal(prev=>({...prev,sendNote:e.target.value}))} placeholder="e.g. Great speaking with you today — looking forward to having you!" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit",resize:"none"}}/>
+        <label>Personal Note (optional)</label>
+        <textarea value={modal.sendNote||""} onChange={e=>setModal(prev=>({...prev,sendNote:e.target.value}))} placeholder="e.g. Great speaking with you today!" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit",resize:"none"}}/>
       </div>
-
       <div className="mft" style={{marginTop:0}}>
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-gold" onClick={()=>setModal(prev=>({...prev,inviteStep:"preview",sendErrors:[]}))}>Preview Summary →</button>
+        <button className="btn btn-gold" onClick={()=>{
+          if(roomMode==="locked"&&!selRoomId){setModal(prev=>({...prev,inviteRoomErr:true}));shakeModal();setTimeout(()=>setModal(prev=>({...prev,inviteRoomErr:false})),1500);return;}
+          setModal(prev=>({...prev,inviteStep:"preview",sendErrors:[],inviteRoomErr:false}));
+        }}>Preview Summary</button>
       </div>
     </div></div>);
   })()}
 
-  {/* ── Approval Modal: Step 1 = Charge Config, Step 2 = Review & Send ── */}
-  {modal&&modal.type==="approveConfirm"&&(()=>{
-    const a=modal.data;
-    const incReqs=modal.incompleteReqs||[];
-    const step=modal.step||1;
-
-    // Resolve property/room/unit
-    const targetProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
-    const targetRoom=a.termRoomId?(targetProp?allRooms(targetProp).find(r=>r.id===a.termRoomId):null):(targetProp?allRooms(targetProp).find(r=>r.name===a.room):null);
-    const targetUnit=targetProp?(targetProp.units||[]).find(u=>(u.rooms||[]).some(r=>r.id===targetRoom?.id)):null;
-    const rent=a.termRent!==undefined?a.termRent:(targetRoom?targetRoom.rent:0);
-    const defaultSD=a.termSD!==undefined?a.termSD:rent;
-    const termMoveIn=a.termMoveIn||a.moveIn||TODAY.toISOString().split("T")[0];
-    const existingLeases=targetRoom&&targetRoom.st==="occupied"?[{tenant:(targetRoom.tenant&&targetRoom.tenant.name)||"Unknown",leaseEnd:targetRoom.le}]:[];
-    const leaseOverlap=existingLeases.length>0;
-    const hasWarnings=incReqs.length>0||leaseOverlap;
-
-    // Proration math
-    const moveInD=new Date(termMoveIn+"T00:00:00");
-    const moveInDay=moveInD.getDate();
-    const daysInMonth=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,0).getDate();
-    const daysRemaining=daysInMonth-moveInDay+1;
-    const dailyRate=Math.ceil(rent/30);
-    const proratedAmt=dailyRate*daysRemaining;
-    const isFirstDay=moveInDay===1;
-    const under15Days=daysRemaining<=15;
-    const dayBefore=new Date(moveInD);dayBefore.setDate(dayBefore.getDate()-1);
-    const defaultDueDate=dayBefore>=TODAY?dayBefore.toISOString().split("T")[0]:termMoveIn;
-
-    // Config state from modal (Step 1 editable fields)
-    const cfg=modal.cfg||{};
-    const creditNum=parseInt((a.creditScore||"").toString().replace(/[^0-9]/g,""))||null;
-    const suggestHighRisk=creditNum&&creditNum<620;
-    const riskLevel=cfg.riskLevel||(suggestHighRisk?"high":"standard");
-    const sdAmt=cfg.sdAmt!==undefined?cfg.sdAmt:defaultSD;
-    // structure: "prorated" | "full" | "first-last"
-    // Auto-suggest: if move-in is in first 15 days of remaining month, default to "full" (prorated amount is minor, charge full)
-    const defaultStructure=isFirstDay?"full":under15Days?"full":"prorated";
-    const structure=cfg.structure||defaultStructure;
-    const sdDue=cfg.sdDue||TODAY.toISOString().split("T")[0];
-    const rentDue=cfg.rentDue||defaultDueDate;
-    // Payment plan for last month's rent
-    const lastMonthPlan=cfg.lastMonthPlan||"upfront"; // "upfront" | "installments"
-    const installmentCount=cfg.installmentCount||3;
-    const installmentStartDue=cfg.installmentStartDue||defaultDueDate;
-
-    // Build charge preview
-    const secondMonthD=new Date(moveInD.getFullYear(),moveInD.getMonth()+1,1);
-    const secondMonthDue=secondMonthD.toISOString().split("T")[0];
-    const secondMonthLabel=secondMonthD.toLocaleString("default",{month:"long",year:"numeric"});
-    const buildCharges=()=>{
-      const list=[];
-      const isWholeHouse=targetUnit?targetUnit.rentalMode==="wholeHouse":(targetProp&&(targetProp.units||[]).some(u=>u.rentalMode==="wholeHouse"));
-      list.push({cat:"Security Deposit",desc:"Security Deposit",amount:sdAmt,due:sdDue,note:"Due today — on lease signing to secure the "+(isWholeHouse?"property":"room")+"."});
-      if(isFirstDay){
-        // Move-in on the 1st — clean full month, no proration needed
-        list.push({cat:"Rent",desc:"First Month's Rent — "+moveInD.toLocaleString("default",{month:"long",year:"numeric"}),amount:rent,due:rentDue,note:"Due before move-in."});
-      } else if(structure==="prorated"){
-        // Pay only the stub days now — full rent starts next month
-        list.push({cat:"Rent",desc:"Prorated Rent ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,due:rentDue,note:"Due before move-in. Full rent of "+fmtS(rent)+" begins "+secondMonthLabel+"."});
-      } else if(structure==="full"||structure==="first-last"){
-        // Pay full month's rent upfront — covers the stub + most of next month
-        // True-up: only the prorated days are owed on the 1st of next month
-        list.push({cat:"Rent",desc:"First Month's Rent — "+moveInD.toLocaleString("default",{month:"long",year:"numeric"}),amount:rent,due:rentDue,note:"Due before move-in. Covers move-in through end of "+secondMonthLabel+"."});
-        if(!isFirstDay&&structure!=="first-last"){
-          // Full month paid upfront — only the partial days are owed on the 1st of next month
-          list.push({cat:"Rent",desc:"2nd Month Rent (partial) — "+secondMonthLabel+" ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,due:secondMonthDue,note:"Because full month was paid upfront, Only the partial days for that month are owed on the 1st."});
-        }
-      }
-      if(structure==="first-last"||riskLevel==="high"){
-        if(lastMonthPlan==="upfront"){
-          list.push({cat:"Rent",desc:"Last Month's Rent — "+((riskLevel==="high")?"High-Risk Hold":"Prepaid"),amount:rent,due:rentDue,note:"Held and applied to final month of lease."});
-        } else {
-          const freq=cfg.installmentFreq||"monthly";
-          const installMode=cfg.installMode||"count";
-          const customAmt=cfg.installmentAmt||0;
-          const finalCount=installMode==="amount"&&customAmt>0?Math.ceil(rent/customAmt):installmentCount;
-          const finalAmt=Math.ceil(rent/finalCount);
-          const freqDays={"weekly":7,"biweekly":14,"monthly":null};
-          for(let i=0;i<finalCount;i++){
-            const d=new Date(installmentStartDue+"T00:00:00");
-            if(freq==="monthly"){d.setMonth(d.getMonth()+i);}
-            else{d.setDate(d.getDate()+(i*freqDays[freq]));}
-            const freqLabel={"weekly":"wk","biweekly":"2wk","monthly":"mo"};
-            list.push({cat:"Rent",desc:"Last Month Installment "+(i+1)+"/"+finalCount+" ("+freqLabel[freq]+")",amount:finalAmt,due:d.toISOString().split("T")[0],note:"Installment toward last month's rent."});
-          }
-        }
-      }
-      return list;
-    };
-    const chargeList=buildCharges();
-    const totalDue=chargeList.reduce((s,c)=>s+c.amount,0);
-
-    // Step 1 validation
-    const step1Errors=modal.step1Errors||{};
-
-    return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:540}}>
-
-      {/* ── STEP 1: Configure Charges ── */}
-      {step===1&&<>
-        <div style={{marginBottom:16}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Step 1 of 2</div>
-          <h2 style={{margin:0}}>⚙️ Configure Charges</h2>
-          <p style={{fontSize:12,color:"#5c4a3a",marginTop:4}}>Set the charge structure before sending the lease to <strong>{a.name}</strong>. Charges will generate automatically when they sign.</p>
-        </div>
-
-        {/* Warnings */}
-        {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:12,marginBottom:14}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:6}}>⚠ Warnings — review before sending</div>
-          {incReqs.map((r,i)=><div key={i} style={{fontSize:11,color:"#9a7422",padding:"2px 0"}}>• <strong>{r.label}</strong> still pending</div>)}
-          {leaseOverlap&&<div style={{fontSize:11,color:"#c45c4a",padding:"2px 0",fontWeight:700}}>• Lease overlap — {existingLeases[0].tenant} is in this room</div>}
-        </div>}
-
-        {/* Lease summary */}
-        <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:10,padding:"10px 14px",marginBottom:14,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-          {[["Tenant",a.name],["Room",targetRoom?targetRoom.name:a.room],["Property",targetProp?targetProp.name:a.property],["Move-in",fmtD(termMoveIn)],["Monthly Rent",fmtS(rent)],["Door Code",a.passcode||"Not set"]].map(([l,v])=>(
-            <div key={l} style={{fontSize:11}}><span style={{color:"#999"}}>{l}: </span><strong>{v}</strong></div>
-          ))}
-        </div>
-
-        {/* Risk indicator — shown only, not a toggle */}
-        {suggestHighRisk&&<div style={{fontSize:11,color:"#c45c4a",fontWeight:600,marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",borderRadius:8,border:"1px solid rgba(196,92,74,.2)"}}>
-          ⚠ Credit score {a.creditScore} — First + Last Month structure is recommended. Select it below.
-        </div>}
-
-        {/* Security Deposit */}
-        <div className="fr" style={{marginBottom:12}}>
-          <div className="fld">
-            <label style={{fontSize:11,fontWeight:700}}>Security Deposit Amount</label>
-            <input type="number" value={sdAmt} onChange={e=>setModal(p=>({...p,cfg:{...cfg,sdAmt:Number(e.target.value)}}))}
-              style={{border:`1px solid ${step1Errors.sdAmt?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:6,padding:"8px 10px",fontSize:13,width:"100%",fontFamily:"inherit"}}/>
-            {step1Errors.sdAmt&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>{step1Errors.sdAmt}</div>}
-          </div>
-          <div className="fld">
-            <label style={{fontSize:11,fontWeight:700}}>SD Due Date</label>
-            <input type="date" value={sdDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,sdDue:e.target.value}}))}
-              style={{border:`1px solid ${step1Errors.sdDue?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:6,padding:"8px 10px",fontSize:13,width:"100%",fontFamily:"inherit"}}/>
-            {step1Errors.sdDue&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>{step1Errors.sdDue}</div>}
-            <div style={{fontSize:9,color:"#999",marginTop:2}}>SD is due upon lease signing to secure the room.</div>
-          </div>
-        </div>
-
-        {/* Move-in Rent Structure */}
-        <div className="fld" style={{marginBottom:12}}>
-          <label style={{fontSize:11,fontWeight:700,color:"#1a1714",textTransform:"none",letterSpacing:0}}>Move-In Rent Structure</label>
-          {under15Days&&!isFirstDay&&<div style={{fontSize:10,color:"#9a7422",fontWeight:600,margin:"4px 0 8px",padding:"6px 10px",background:"rgba(212,168,83,.08)",borderRadius:6}}>⚡ Only {daysRemaining} days left in the month — full month upfront is recommended.</div>}
-          {isFirstDay&&<div style={{fontSize:10,color:"#2d6a3f",fontWeight:600,margin:"4px 0 8px"}}>✓ Move-in is the 1st — full month, no proration needed.</div>}
-          <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:6}}>
-            {(!isFirstDay?[
-              {val:"prorated",title:"Prorated Only",line1:`${fmtS(proratedAmt)} due before move-in`,line2:`${daysRemaining} days × $${Math.ceil(dailyRate)}/day. Then full ${fmtS(rent)}/mo starting ${secondMonthLabel}.`},
-              {val:"full",title:"Full Month Upfront",line1:`${fmtS(rent)} due before move-in`,line2:`${fmtS(proratedAmt)} partial month due ${secondMonthLabel}, then full ${fmtS(rent)}/mo after.`},
-              {val:"first-last",title:"First + Last Month",line1:`${fmtS(rent)} first + ${fmtS(rent)} last due before move-in`,line2:`${fmtS(proratedAmt)} partial month due ${secondMonthLabel}. Last month held for lease duration.`}
-            ]:[
-              {val:"full",title:"Full First Month",line1:`${fmtS(rent)} due before move-in`,line2:"Move-in on the 1st — no proration needed."}
-            ]).map(opt=>(
-              <div key={opt.val}
-                onClick={()=>setModal(p=>({...p,cfg:{...cfg,structure:opt.val}}))}
-                style={{
-                  padding:"12px 14px",
-                  borderRadius:8,
-                  border:`2px solid ${structure===opt.val?"#4a7c59":"rgba(0,0,0,.1)"}`,
-                  background:structure===opt.val?"rgba(74,124,89,.06)":"#fff",
-                  cursor:"pointer",
-                  transition:"all .15s"
-                }}
-                onMouseEnter={e=>{if(structure!==opt.val)e.currentTarget.style.borderColor="rgba(74,124,89,.35)";}}
-                onMouseLeave={e=>{if(structure!==opt.val)e.currentTarget.style.borderColor="rgba(0,0,0,.1)";}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                  <div style={{
-                    width:14,height:14,borderRadius:"50%",flexShrink:0,
-                    border:`2px solid ${structure===opt.val?"#4a7c59":"#ccc"}`,
-                    background:structure===opt.val?"#4a7c59":"#fff",
-                    display:"flex",alignItems:"center",justifyContent:"center"
-                  }}>
-                    {structure===opt.val&&<div style={{width:5,height:5,borderRadius:"50%",background:"#fff"}}/>}
-                  </div>
-                  <span style={{fontSize:13,fontWeight:800,color:structure===opt.val?"#2d6a3f":"#1a1714"}}>{opt.title}</span>
-                </div>
-                <div style={{paddingLeft:22}}>
-                  <div style={{fontSize:12,fontWeight:700,color:structure===opt.val?"#4a7c59":"#3d3529",marginBottom:2}}>{opt.line1}</div>
-                  <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.5}}>{opt.line2}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Last Month Payment Plan — only if first-last or high risk */}
-        {(structure==="first-last"||riskLevel==="high")&&<div className="fld" style={{marginBottom:12}}>
-          <label style={{fontSize:11,fontWeight:700}}>Last Month's Rent — Payment Plan</label>
-          <div style={{display:"flex",gap:8,marginTop:6}}>
-            {[["upfront","Pay Upfront"],["installments","Installment Plan"]].map(([val,label])=>(
-              <button key={val} onClick={()=>setModal(p=>({...p,cfg:{...cfg,lastMonthPlan:val}}))}
-                style={{flex:1,padding:"9px",borderRadius:8,border:`2px solid ${lastMonthPlan===val?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:lastMonthPlan===val?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:12,color:lastMonthPlan===val?"#2d6a3f":"#999",cursor:"pointer",fontFamily:"inherit"}}>
-                {label}
-              </button>
-            ))}
-          </div>
-          {lastMonthPlan==="installments"&&(()=>{
-            const freq=cfg.installmentFreq||"monthly";
-            const installMode=cfg.installMode||"count"; // "count" | "amount"
-            const customAmt=cfg.installmentAmt||0;
-            const countFromAmt=customAmt>0?Math.ceil(rent/customAmt):0;
-            const freqLabel={"weekly":"week","biweekly":"2 weeks","monthly":"month"};
-            return(
-            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
-              {/* Frequency */}
-              <div className="fld" style={{marginBottom:0}}>
-                <label style={{fontSize:10}}>Payment Frequency</label>
-                <div style={{display:"flex",gap:6,marginTop:4}}>
-                  {[["weekly","Weekly"],["biweekly","Bi-Weekly"],["monthly","Monthly"]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setModal(p=>({...p,cfg:{...cfg,installmentFreq:v}}))}
-                      style={{flex:1,padding:"7px 4px",borderRadius:6,border:`2px solid ${freq===v?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:freq===v?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:freq===v?"#2d6a3f":"#5c4a3a",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}
-                      onMouseEnter={e=>{if(freq!==v){e.currentTarget.style.borderColor="rgba(74,124,89,.3)";e.currentTarget.style.background="rgba(74,124,89,.03)";}}}
-                      onMouseLeave={e=>{if(freq!==v){e.currentTarget.style.borderColor="rgba(0,0,0,.08)";e.currentTarget.style.background="#fff";}}}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Mode: set count or set amount */}
-              <div className="fld" style={{marginBottom:0}}>
-                <label style={{fontSize:10}}>Set by</label>
-                <div style={{display:"flex",gap:6,marginTop:4}}>
-                  {[["count","Number of payments"],["amount","Amount per payment"]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setModal(p=>({...p,cfg:{...cfg,installMode:v}}))}
-                      style={{flex:1,padding:"7px 4px",borderRadius:6,border:`2px solid ${installMode===v?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:installMode===v?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:installMode===v?"#2d6a3f":"#5c4a3a",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}
-                      onMouseEnter={e=>{if(installMode!==v){e.currentTarget.style.borderColor="rgba(74,124,89,.3)";e.currentTarget.style.background="rgba(74,124,89,.03)";}}}
-                      onMouseLeave={e=>{if(installMode!==v){e.currentTarget.style.borderColor="rgba(0,0,0,.08)";e.currentTarget.style.background="#fff";}}}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {installMode==="count"&&<div className="fr" style={{gap:8}}>
-                <div className="fld" style={{marginBottom:0}}>
-                  <label style={{fontSize:10}}>Number of Payments</label>
-                  <select value={installmentCount} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentCount:Number(e.target.value)}}))}
-                    style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}>
-                    {[2,3,4,6,8,12].map(n=><option key={n} value={n}>{n} payments of {fmtS(Math.ceil(rent/n))} / {freqLabel[freq]}</option>)}
-                  </select>
-                </div>
-                <div className="fld" style={{marginBottom:0}}>
-                  <label style={{fontSize:10}}>First Payment Due</label>
-                  <input type="date" value={installmentStartDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentStartDue:e.target.value}}))}
-                    style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}/>
-                </div>
-              </div>}
-              {installMode==="amount"&&<div className="fr" style={{gap:8}}>
-                <div className="fld" style={{marginBottom:0}}>
-                  <label style={{fontSize:10}}>Amount per Payment ($)</label>
-                  <input type="number" value={customAmt||""} placeholder="e.g. 200"
-                    onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentAmt:Number(e.target.value),installmentCount:Number(e.target.value)>0?Math.ceil(rent/Number(e.target.value)):p.cfg.installmentCount}}))}
-                    style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}/>
-                  {customAmt>0&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>{countFromAmt} payment{countFromAmt!==1?"s":""} of {fmtS(customAmt)} / {freqLabel[freq]}{countFromAmt*customAmt>rent?<span style={{color:"#d4a853"}}> (rounds up by {fmtS(countFromAmt*customAmt-rent)})</span>:""}</div>}
-                </div>
-                <div className="fld" style={{marginBottom:0}}>
-                  <label style={{fontSize:10}}>First Payment Due</label>
-                  <input type="date" value={installmentStartDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,installmentStartDue:e.target.value}}))}
-                    style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"7px 10px",fontSize:12,width:"100%",fontFamily:"inherit"}}/>
-                </div>
-              </div>}
-            </div>);
-          })()}
-        </div>}
-
-        {/* Rent Due Date — quick pick + optional custom */}
-        <div className="fld" style={{marginBottom:14}}>
-          <label style={{fontSize:11,fontWeight:700}}>Move-In Rent Due Date</label>
-          <div style={{display:"flex",gap:6,marginTop:6,marginBottom:8}}>
-            {[
-              ["day-before","Day Before Move-In",dayBefore.toISOString().split("T")[0]],
-              ["day-of","Day of Move-In",termMoveIn],
-              ["custom","Custom Date",cfg.customRentDue||rentDue]
-            ].map(([id,label,dateVal])=>{
-              const isSelected=(cfg.rentDueMode||"day-before")===id;
-              return(
-                <button key={id} onClick={()=>{
-                  setModal(p=>({...p,cfg:{...cfg,rentDueMode:id,rentDue:dateVal,customRentDue:id==="custom"?cfg.customRentDue||rentDue:cfg.customRentDue}}));
-                }} style={{flex:1,padding:"8px 4px",borderRadius:8,border:`2px solid ${isSelected?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:isSelected?"rgba(74,124,89,.05)":"#fff",fontWeight:700,fontSize:10,color:isSelected?"#2d6a3f":"#5c4a3a",cursor:"pointer",fontFamily:"inherit",textAlign:"center",lineHeight:1.3,transition:"all .15s"}}
-                onMouseEnter={e=>{if(!isSelected){e.currentTarget.style.borderColor="rgba(74,124,89,.3)";e.currentTarget.style.background="rgba(74,124,89,.03)";}}}
-                onMouseLeave={e=>{if(!isSelected){e.currentTarget.style.borderColor="rgba(0,0,0,.08)";e.currentTarget.style.background="#fff";}}}>
-                  {label}
-                  {id!=="custom"&&<div style={{fontSize:9,fontWeight:400,color:isSelected?"#4a7c59":"#bbb",marginTop:2}}>{fmtD(dateVal)}</div>}
-                </button>
-              );
-            })}
-          </div>
-          {(cfg.rentDueMode||"day-before")==="custom"&&<>
-            <input type="date" value={rentDue} onChange={e=>setModal(p=>({...p,cfg:{...cfg,rentDue:e.target.value,customRentDue:e.target.value}}))}
-              style={{border:`1px solid ${step1Errors.rentDue?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:6,padding:"8px 10px",fontSize:13,width:"100%",fontFamily:"inherit"}}/>
-            {step1Errors.rentDue&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>{step1Errors.rentDue}</div>}
-          </>}
-        </div>
-
-        {/* Live charge breakdown — updates as you configure */}
-        {(()=>{
-          const rows=[];
-          rows.push({label:"Security Deposit",amount:sdAmt,when:"Due today — on lease signing",future:false});
-          if(isFirstDay){
-            rows.push({label:"First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue),future:false});
-          } else if(structure==="prorated"){
-            rows.push({label:"Prorated Rent ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:"Due "+fmtD(rentDue),future:false});
-            rows.push({label:"Full Rent — "+secondMonthLabel+" onward",amount:rent,when:secondMonthLabel+" (regular monthly billing begins)",future:true});
-          } else if(structure==="full"){
-            rows.push({label:"Full First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue),future:false});
-            rows.push({label:"2nd Month Rent (partial) ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:secondMonthLabel+" — then full "+fmtS(rent)+" monthly",future:true});
-          } else if(structure==="first-last"){
-            rows.push({label:"Full First Month's Rent",amount:rent,when:"Due "+fmtD(rentDue),future:false});
-            rows.push({label:"2nd Month Rent (partial) ("+daysRemaining+" day"+(daysRemaining===1?"":"s")+" × $"+dailyRate+")",amount:proratedAmt,when:secondMonthLabel+" — then full "+fmtS(rent)+" monthly",future:true});
-            if(lastMonthPlan==="upfront"){
-              rows.push({label:"Last Month's Rent (held in reserve)",amount:rent,when:"Due "+fmtD(rentDue),future:false});
-            } else {
-              for(let i=0;i<installmentCount;i++){const d2=new Date(installmentStartDue+"T00:00:00");d2.setMonth(d2.getMonth()+i);rows.push({label:"Last Month Installment "+(i+1)+"/"+installmentCount,amount:Math.ceil(rent/installmentCount),when:"Due "+fmtD(d2.toISOString().split("T")[0]),future:false});}
-            }
-          }
-          const nowRows=rows.filter(r=>!r.future);
-          const futureRows=rows.filter(r=>r.future);
-          const totalBeforeMovein=nowRows.reduce((s,r)=>s+r.amount,0);
-          const totalFollowingMonth=futureRows.reduce((s,r)=>s+r.amount,0);
-          return(
-          <div style={{background:"rgba(26,27,24,.02)",border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:14,marginBottom:14}}>
-            <div style={{fontSize:10,fontWeight:800,color:"#1a1714",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>💳 Charge Breakdown</div>
-            {/* Due before move-in — boxed group */}
-            <div style={{border:"1px solid rgba(74,124,89,.2)",borderRadius:8,overflow:"hidden",marginBottom:futureRows.length>0?10:0}}>
-              <div style={{padding:"6px 12px",background:"rgba(74,124,89,.06)",borderBottom:"1px solid rgba(74,124,89,.12)"}}>
-                <span style={{fontSize:9,fontWeight:800,color:"#2d6a3f",textTransform:"uppercase",letterSpacing:.8}}>Due Before Move-In</span>
-              </div>
-              {nowRows.map((r,i)=>(
-                <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 12px",borderBottom:"1px solid rgba(0,0,0,.05)"}}>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{r.label}</div>
-                    <div style={{fontSize:10,color:"#4a7c59",marginTop:1}}>{r.when}</div>
-                  </div>
-                  <strong style={{fontSize:13,color:"#1a1714",flexShrink:0,marginLeft:12}}>{fmtS(r.amount)}</strong>
-                </div>
-              ))}
-              <div style={{display:"flex",justifyContent:"space-between",padding:"9px 12px",background:"rgba(74,124,89,.04)"}}>
-                <span style={{fontSize:12,fontWeight:800,color:"#1a1714"}}>Total due before move-in</span>
-                <strong style={{fontSize:13,color:"#4a7c59"}}>{fmtS(totalBeforeMovein)}</strong>
-              </div>
-            </div>
-            {/* Following month — separate boxed group */}
-            {futureRows.length>0&&(
-              <div style={{border:"1px solid rgba(212,168,83,.25)",borderRadius:8,overflow:"hidden"}}>
-                <div style={{padding:"6px 12px",background:"rgba(212,168,83,.08)",borderBottom:"1px solid rgba(212,168,83,.15)"}}>
-                  <span style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.8}}>Following Month</span>
-                </div>
-                {futureRows.map((r,i)=>(
-                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 12px",borderBottom:"1px solid rgba(0,0,0,.05)"}}>
-                    <div>
-                      <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{r.label}</div>
-                      <div style={{fontSize:10,color:"#5c4a3a",marginTop:1}}>{r.when}</div>
-                    </div>
-                    <strong style={{fontSize:13,color:"#1a1714",flexShrink:0,marginLeft:12}}>{fmtS(r.amount)}</strong>
-                  </div>
-                ))}
-                <div style={{display:"flex",justifyContent:"space-between",padding:"9px 12px",background:"rgba(212,168,83,.05)"}}>
-                  <span style={{fontSize:12,fontWeight:800,color:"#1a1714"}}>Total due on {secondMonthLabel}</span>
-                  <strong style={{fontSize:13,color:"#9a7422"}}>{fmtS(totalFollowingMonth)}</strong>
-                </div>
-              </div>
-            )}
-          </div>);
-        })()}
-
-        {/* Require bypass note if incomplete reqs */}
-        {incReqs.length>0&&<div key={`bypass-${modal.bypassShakeKey||0}`} className="fld" style={{marginBottom:12,animation:modal.bypassNoteErr?"shake .4s ease":"none"}}>
-          <label style={{fontSize:10,fontWeight:700,color:"#9a7422",textTransform:"none",letterSpacing:0}}>Why are you approving with pending items? <span style={{color:"#c45c4a"}}>*</span></label>
-          <textarea value={modal.bypassNote||""} onChange={e=>setModal(p=>({...p,bypassNote:e.target.value,bypassNoteErr:false}))} placeholder="e.g. NASA intern — employer verification accepted in lieu of BG check" rows={2}
-            style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${modal.bypassNoteErr?"#c45c4a":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
-          {modal.bypassNoteErr&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600}}>⚠ Required — explain why you're proceeding with pending items</div>}
-        </div>}
-
-        <div className="mft">
-          <button className="btn btn-out" onClick={()=>setModal({type:"app",data:a})}>← Back</button>
-          <button className="btn btn-green" onClick={()=>{
-            const errs={};
-            if(!sdAmt||sdAmt<=0)errs.sdAmt="Security deposit must be greater than $0";
-            if(!sdDue)errs.sdDue="SD due date is required";
-            if(!rentDue)errs.rentDue="Rent due date is required";
-            if(incReqs.length>0&&!(modal.bypassNote||"").trim()){setModal(p=>({...p,bypassNoteErr:true,bypassShakeKey:(p.bypassShakeKey||0)+1}));return;}
-            if(Object.keys(errs).length>0){setModal(p=>({...p,step1Errors:errs}));return;}
-            setModal(p=>({...p,step:2,step1Errors:{}}));
-          }}>Review Charges →</button>
-        </div>
-      </>}
-
-      {/* ── STEP 2: Sign & Send ── */}
-      {step===2&&<>
-        <div style={{marginBottom:16}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Step 2 of 2</div>
-          <h2 style={{margin:0}}>✍️ Sign & Send to Tenant</h2>
-          <p style={{fontSize:12,color:"#5c4a3a",marginTop:4}}>Sign as property manager first. Once you sign, the lease is sent to <strong>{a.name}</strong> to countersign. Charges generate automatically when they sign.</p>
-        </div>
-
-        {hasWarnings&&<div style={{background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:10,padding:10,marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:4}}>⚠ Sending with warnings:</div>
-          {incReqs.map((r,i)=><div key={i} style={{fontSize:11,color:"#9a7422",padding:"1px 0"}}>• {r.label} still pending</div>)}
-          {leaseOverlap&&<div style={{fontSize:11,color:"#c45c4a",fontWeight:700}}>• Lease overlap with {existingLeases[0].tenant}</div>}
-        </div>}
-
-        {/* Full lease summary — review before signing */}
-        <div style={{border:"1px solid rgba(0,0,0,.09)",borderRadius:10,overflow:"hidden",marginBottom:16}}>
-
-          {/* Dark header */}
-          <div style={{background:"#1a1714",padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div>
-              <div style={{fontFamily:"serif",fontSize:15,color:"#f5f0e8",fontWeight:700}}>{targetProp?targetProp.name:a.property}</div>
-              <div style={{fontSize:10,color:"#c4a882",marginTop:2}}>{targetRoom?targetRoom.name:a.room}</div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:18,fontWeight:900,color:"#d4a853"}}>{fmtS(rent)}<span style={{fontSize:11,fontWeight:400,color:"#c4a882"}}>/mo</span></div>
-              <div style={{fontSize:10,color:"#c4a882",marginTop:1}}>{targetRoom?.pb?"Private bath":"Shared bath"}{targetRoom?.sqft?" · "+targetRoom.sqft+" sqft":""}</div>
-            </div>
-          </div>
-
-          {/* Tenant + lease details */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-            {[
-              ["Tenant",a.name],
-              ["Email",a.email],
-              ["Phone",a.phone],
-              ["Move-In",fmtD(termMoveIn)],
-              ["Lease Start",fmtD(termMoveIn)],
-              ["Security Deposit",fmtS(sdAmt)+" — due "+fmtD(sdDue)],
-              ["Door Code",a.passcode||"Not set"],
-              ["Structure",structure==="prorated"?"Prorated":structure==="full"?"Full Month Upfront":"First + Last Month"],
-            ].map(([l,v],i)=>(
-              <div key={i} style={{padding:"9px 14px",borderBottom:"1px solid rgba(0,0,0,.04)",borderRight:i%2===0?"1px solid rgba(0,0,0,.04)":"none"}}>
-                <div style={{fontSize:9,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>{l}</div>
-                <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{v||"—"}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Charge rows — due before move-in */}
-          <div style={{padding:"10px 14px",borderBottom:"1px solid rgba(74,124,89,.12)",background:"rgba(74,124,89,.03)"}}>
-            <div style={{fontSize:9,fontWeight:800,color:"#2d6a3f",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Due Before Move-In</div>
-            {chargeList.filter(c=>c.cat==="Security Deposit"||c.due<=rentDue).map((c,i)=>(
-              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                <div>
-                  <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{c.desc}</div>
-                  <div style={{fontSize:10,color:"#4a7c59",marginTop:1}}>Due {fmtD(c.due)}</div>
-                </div>
-                <strong style={{fontSize:13,color:"#1a1714",flexShrink:0,marginLeft:12}}>{fmtS(c.amount)}</strong>
-              </div>
-            ))}
-            <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:13,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:6,paddingTop:6}}>
-              <span>Total due before move-in</span>
-              <span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
-            </div>
-          </div>
-
-          {/* Following month if applicable */}
-          {!isFirstDay&&(structure==="prorated"||structure==="full")&&(()=>{
-            const followAmt=structure==="prorated"?rent:proratedAmt;
-            const followLabel=structure==="prorated"?"Full rent begins":"Partial month rent";
-            return(
-              <div style={{padding:"10px 14px",background:"rgba(212,168,83,.03)"}}>
-                <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Following Month ({secondMonthLabel})</div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12}}>
-                  <span style={{color:"#3d3529"}}>{followLabel}</span>
-                  <strong>{fmtS(followAmt)}</strong>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* PM Signature */}
-        <div key={modal.pmSigShakeKey||0} style={{border:"2px solid rgba(0,0,0,.1)",borderRadius:10,padding:16,marginBottom:16,background:modal.pmSig?"rgba(74,124,89,.03)":"#fff",borderColor:modal.pmSig?"rgba(74,124,89,.3)":modal.pmSigErr?"#c45c4a":"rgba(0,0,0,.1)",animation:modal.pmSigErr&&!modal.pmSig?"shake .4s ease":"none"}}>
-          <div style={{fontSize:11,fontWeight:700,color:modal.pmSig?"#4a7c59":"#1a1714",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>
-            {modal.pmSig?"✓ Property Manager Signed":"Property Manager Signature"}
-          </div>
-          {/* Use saved signature option */}
-          {settings.savedSignature&&!modal.pmSig&&<div style={{marginBottom:10,padding:"10px 12px",background:"rgba(212,168,83,.05)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <img src={settings.savedSignature} alt="Saved sig" style={{maxHeight:36,maxWidth:120,border:"1px solid rgba(0,0,0,.08)",borderRadius:4,padding:3,background:"#fff"}}/>
-              <span style={{fontSize:11,color:"#5c4a3a"}}>Use saved signature</span>
-            </div>
-            <button className="btn btn-gold btn-sm" onClick={()=>setModal(p=>({...p,pmSig:settings.savedSignature,pmSigErr:false}))}>Use This</button>
-          </div>}
-          {modal.pmSig
-            ?<div>
-              <img src={modal.pmSig} alt="Your signature" style={{maxHeight:60,maxWidth:"100%",display:"block",marginBottom:8,border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:4,background:"#fff"}}/>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <div style={{fontSize:12,fontWeight:700}}>{settings.landlordName||"Carolina Cooper"}</div>
-                  <div style={{fontSize:10,color:"#999"}}>Property Manager · {new Date().toLocaleDateString()}</div>
-                </div>
-                <button className="btn btn-out btn-sm" onClick={()=>setModal(p=>({...p,pmSig:null}))}>Re-sign</button>
-              </div>
-              <label style={{display:"flex",alignItems:"center",gap:8,fontSize:11,cursor:"pointer",marginTop:10,padding:"8px 10px",background:"rgba(212,168,83,.06)",borderRadius:7,border:"1px solid rgba(212,168,83,.15)"}}>
-                <input type="checkbox" checked={modal.savePmSig||false} onChange={e=>setModal(p=>({...p,savePmSig:e.target.checked}))} style={{accentColor:"#d4a853"}}/>
-                Save as default signature
-              </label>
-            </div>
-            :<SigCanvas onSave={(data)=>setModal(p=>({...p,pmSig:data,pmSigErr:false}))} height={100}/>
-          }
-          {modal.pmSigErr&&<div style={{fontSize:10,color:"#c45c4a",marginTop:6,fontWeight:600}}>⚠ Your signature is required before sending</div>}
-        </div>
-
-        <div className="mft" style={{flexWrap:"wrap",gap:8}}>
-          <button className="btn btn-out" onClick={()=>setModal(p=>({...p,step:1}))}>← Edit Charges</button>
-          <button className="btn btn-out" style={{color:"#1d4ed8",borderColor:"rgba(59,130,246,.3)"}} onClick={()=>{
-            const template=leaseTemplate||{sections:DEF_LEASE_SECTIONS};
-            const sections=(template.sections&&template.sections.length>0?template.sections:DEF_LEASE_SECTIONS);
-            const leaseEnd=new Date(termMoveIn+"T00:00:00");leaseEnd.setFullYear(leaseEnd.getFullYear()+1);
-            const previewVars={
-              MONTHLY_RENT:fmtS(rent).replace("$",""),
-              RENT_WORDS:numberToWords(rent),
-              DAILY_RATE:Math.ceil(rent/30),
-              SECURITY_DEPOSIT:fmtS(sdAmt).replace("$",""),
-              PRORATED_RENT:fmtS(proratedAmt).replace("$",""),
-              LEASE_START:fmtD(termMoveIn),
-              LEASE_END:fmtD(leaseEnd.toISOString().split("T")[0]),
-              PROPERTY_ADDRESS:(targetProp?targetProp.name:a.property)||"",
-              PARKING_SPACE:"See property map",
-              DOOR_CODE:a.passcode||"Assigned at move-in",
-              UTILITIES_CLAUSE:(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(targetUnit?.utils||targetProp?.utils||"allIncluded"))?.clause||"See lease for utility terms.",
-              LANDLORD_NAME:settings.landlordName||"Carolina Cooper",
-            };
-            setModal(p=>({...p,previewLeaseOpen:true,previewVars,previewSections:sections}));
-          }}>👁 Preview Lease</button>
-          <button className="btn btn-green" onClick={async()=>{
-            if(!modal.pmSig){setModal(p=>({...p,pmSigErr:true,pmSigShakeKey:(p.pmSigShakeKey||0)+1}));return;}
-            // Resolve room — fall back to any prop room match by name if termRoomId isn't set
-            const resolvedRoom=targetRoom||(a.room?props.flatMap(p=>allRooms(p)).find(r=>r.name===a.room):null);
-            if(!resolvedRoom){setModal(p=>({...p,pmSigErr:false}));alert("No room assigned — go back and assign a room in the Room Assignment section.");return;}
-            const now=TODAY.toISOString().split("T")[0];
-            try{
-            const chargeConfig={
-              rent,sd:sdAmt,sdDue,rentDue,structure,riskLevel,
-              proratedDays:daysRemaining,proratedAmt,dailyRate,
-              lastMonthPlan,installmentCount,installmentStartDue,
-              generatedAt:null,charges:chargeList
-            };
-            if(modal.savePmSig&&modal.pmSig){setSettings(p=>{const u={...p,savedSignature:modal.pmSig};save("hq-settings",u);return u;});}
-            const passcode=a.passcode||null;
-            const lockActivation=passcode?{passcode,activatesAt:`${termMoveIn}T00:00:00`,status:"pending"}:null;
-            // Lease record update happens below after token is generated
-            setApps(p=>p.map(x=>x.id===a.id?{...x,
-              status:"lease-sent",lastContact:now,
-              property:targetProp?targetProp.name:a.property,
-              room:targetRoom.name,highRisk:structure==="first-last",
-              chargeConfig,lockActivation,
-              pmSignature:modal.pmSig,
-              pmSignedAt:now,
-              approvedWithPending:incReqs.length>0?(modal.bypassNote||incReqs.map(r=>r.label).join(", ")):null,
-              history:[...(x.history||[]),{from:"reviewing",to:"lease-sent",date:now,
-                note:`PM signed. Lease sent. Charge config: ${structure}, ${fmtS(totalDue)} total on signing.${incReqs.length>0?" Bypassed: "+incReqs.map(r=>r.label).join(", "):""}`}]
-            }:x));
-            setNotifs(p=>[{id:uid(),type:"app",
-              msg:`📨 Lease sent to ${a.name} — ${targetRoom.name} at ${targetProp?targetProp.name:a.property}`,
-              date:now,read:false,urgent:true},...p]);
-
-            // Generate signing token + link for tenant
-            const propName=targetProp?targetProp.name:a.property;
-            const roomObj=resolvedRoom;
-            const bathType=roomObj?.pb?"Private bath":"Shared bath";
-            const sqft=roomObj?.sqft?roomObj.sqft+"sqft":"";
-            const sigToken=uid()+uid();
-            const sigLink=`${settings.siteUrl||"https://rentblackbear.com"}/lease?token=${sigToken}`;
-            const chargeRows=chargeList.map(c=>`${c.desc}: ${fmtS(c.amount)} — due ${fmtD(c.due)}`).join(", ");
-
-            // Find existing lease or auto-create one so the signing link always works
-            const allLeases=await load("hq-leases",[]);
-            const existingLease=allLeases.find(l=>l.applicationId===a.id&&l.status!=="executed");
-            const leaseEndD=new Date(termMoveIn+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);
-            const tmpl=leaseTemplate||{sections:DEF_LEASE_SECTIONS};
-            const rentWords=numberToWords(rent);
-            const leaseVars={
-              MONTHLY_RENT:fmtS(rent).replace("$",""),
-              RENT_WORDS:rentWords,
-              DAILY_RATE:Math.ceil(rent/30),
-              SECURITY_DEPOSIT:fmtS(sdAmt).replace("$",""),
-              PRORATED_RENT:fmtS(proratedAmt).replace("$",""),
-              LEASE_START:fmtD(termMoveIn),
-              LEASE_END:fmtD(leaseEndD.toISOString().split("T")[0]),
-              PROPERTY_ADDRESS:propName,
-              PARKING_SPACE:"See property map",
-              DOOR_CODE:a.passcode||"Assigned at move-in",
-              UTILITIES_CLAUSE:(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(targetUnit?.utils||targetProp?.utils||"allIncluded"))?.clause||"See lease for utility terms.",
-              LANDLORD_NAME:settings.landlordName||tmpl.landlordName||"Carolina Cooper",
-            };
-            const leaseRecord=existingLease||{
-              id:uid(),
-              applicationId:a.id,
-              tenantName:a.name,
-              tenantEmail:a.email,
-              tenantPhone:a.phone,
-              landlordName:settings.landlordName||tmpl.landlordName||"Carolina Cooper",
-              company:tmpl.company||settings.companyName||"Black Bear Properties",
-              landlordEmail:settings.email||"info@rentblackbear.com",
-              property:propName,
-              propertyAddress:propName,
-              room:resolvedRoom.name,
-              rent,
-              sd:sdAmt,
-              proratedRent:proratedAmt,
-              moveIn:termMoveIn,
-              leaseStart:termMoveIn,
-              leaseEnd:leaseEndD.toISOString().split("T")[0],
-              doorCode:a.passcode||"",
-              sections:tmpl.sections||DEF_LEASE_SECTIONS,
-              variables:leaseVars,
-              status:"draft",
-              createdAt:now,
-              updatedAt:now,
-            };
-            const updatedLease={
-              ...leaseRecord,
-              status:"pending_tenant",
-              landlordSignature:modal.pmSig,
-              landlordSignedAt:now,
-              landlordName:settings.landlordName||tmpl.landlordName||"Carolina Cooper",
-              signingToken:sigToken,
-              signingLink:sigLink,
-              variables:leaseVars,
-              updatedAt:now,
-            };
-            const updatedLeases=existingLease
-              ?allLeases.map(l=>l.id===leaseRecord.id?updatedLease:l)
-              :[...allLeases,updatedLease];
-            // Strip sections from Supabase payload — sections are large and stored in leaseTemplate separately
-            // The signing page loads sections from hq-lease-template, not from the lease record
-            const leasesForSupabase=updatedLeases.map(l=>({...l,sections:undefined}));
-            // Force immediate Supabase write — don't rely on debounce
-            const supaRes=await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:"hq-leases",value:leasesForSupabase})});
-            if(!supaRes.ok){const errBody=await supaRes.text();console.error("Supabase hq-leases write failed:",supaRes.status,errBody);alert("Failed to save lease to database: "+errBody);return;}
-            setLeases(updatedLeases);
-
-            // Email tenant — doc ready to sign
-            // Use the saved chargeConfig charges for accuracy (not the live modal cfg which may reset)
-            const emailChargeList=chargeConfig.charges&&chargeConfig.charges.length>0?chargeConfig.charges:chargeList;
-            const emailRent=rent>0?rent:(resolvedRoom?.rent||0);
-            const emailTotal=emailChargeList.reduce((s,c)=>s+(Number(c.amount)||0),0);
-            try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-              to:a.email,
-              name:a.name,
-              type:"tenant_lease_ready",
-              subject:`Your Lease is Ready to Sign — ${roomObj?.name} at ${propName}`,
-              signingLink:sigLink,
-              property:propName,
-              room:roomObj?.name,
-              rent:emailRent,
-              moveIn:fmtD(termMoveIn),
-              totalDue:emailTotal,
-              sd:sdAmt,
-              sdDue:fmtD(sdDue),
-              chargeList:emailChargeList,
-              structure:structure,
-              proratedAmt:proratedAmt,
-              secondMonthLabel:secondMonthLabel,
-              isFirstDay:isFirstDay,
-              landlordName:settings.landlordName||"Carolina Cooper",
-              contactPhone:settings.phone||"(850) 696-8101",
-            })});}catch(e){console.error("Tenant email failed",e);}
-
-            // Email PM — full lease summary (gated by notification prefs)
-            if(settings.notifLeaseSent!==false)
-            try{await fetch("/api/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-              to:settings.pmEmail||settings.email||"blackbearhousing@gmail.com",
-              name:settings.landlordName||"Harrison",
-              type:"pm_lease_sent",
-              subject:`✅ Lease Sent — ${a.name} · ${roomObj?.name} at ${propName}`,
-              tenantName:a.name,
-              tenantEmail:a.email,
-              tenantPhone:a.phone,
-              property:propName,
-              room:roomObj?.name,
-              bath:bathType,
-              sqft,
-              rent:rent,
-              moveIn:fmtD(termMoveIn),
-              sd:sdAmt,
-              sdDue:fmtD(sdDue),
-              structure,
-              totalDue:totalDue,
-              chargeList:chargeList,
-              proratedAmt:proratedAmt,
-              secondMonthLabel:secondMonthLabel,
-              isFirstDay:isFirstDay,
-              passcode:a.passcode||"Not set",
-              signingLink:sigLink,
-              pmSignedAt:now,
-              contactPhone:settings.phone||"(850) 696-8101",
-            })});}catch(e){console.error("PM email failed",e);}
-
-            // Move to step 3 success screen
-            setModal(p=>({...p,step:3,sentAt:now,sentPropName:propName,sentRoom:roomObj?.name,sentBath:bathType,sigLink}));
-            }catch(err){console.error("Sign & send failed:",err);alert("Something went wrong: "+err.message+". Check the console for details.");}
-          }}>✅ Sign & Send to Tenant</button>
-        </div>
-      </>}
-
-      {/* ── STEP 3: Success / Lease Summary ── */}
-      {step===3&&<>
-        <div style={{textAlign:"center",padding:"8px 0 20px"}}>
-          <div style={{fontSize:40,marginBottom:12}}>📨</div>
-          <h2 style={{margin:"0 0 6px"}}>Lease Sent!</h2>
-          <p style={{fontSize:12,color:"#5c4a3a"}}>
-            <strong>{a.name}</strong> will receive their lease link to sign. Charges generate automatically when they sign.
-          </p>
-          <div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:4}}>
-            ✓ You've been emailed a copy of this summary
-          </div>
-          <div style={{fontSize:10,color:"#5c4a3a",marginTop:4}}>
-            ✓ Tenant has been emailed their signing link
-          </div>
-          {modal.sigLink&&<div style={{marginTop:10,padding:"8px 12px",background:"rgba(59,130,246,.06)",border:"1px solid rgba(59,130,246,.15)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-            <div style={{fontSize:10,color:"#1d4ed8",wordBreak:"break-all",flex:1}}>{modal.sigLink}</div>
-            <button className="btn btn-out btn-sm" style={{fontSize:9,flexShrink:0}} onClick={()=>{navigator.clipboard.writeText(modal.sigLink);}} >📋 Copy</button>
-          </div>}
-        </div>
-
-        {/* Lease summary card */}
-        <div style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:10,overflow:"hidden",marginBottom:16}}>
-
-          {/* Header */}
-          <div style={{background:"#1a1714",padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{fontFamily:"serif",fontSize:15,color:"#f5f0e8",fontWeight:700}}>{modal.sentPropName||targetProp?.name}</div>
-            <span style={{fontSize:10,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Lease Sent</span>
-          </div>
-
-          {/* Tenant + room */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0,borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-            {[
-              ["Tenant",a.name],
-              ["Email",a.email],
-              ["Room",modal.sentRoom||targetRoom?.name],
-              ["Bath",modal.sentBath||(targetRoom?.pb?"Private":"Shared")],
-              ["Move-In",fmtD(termMoveIn)],
-              ["Monthly Rent",fmtS(rent)],
-              ["Door Code",a.passcode||"Not set"],
-              ["PM Signed",new Date().toLocaleDateString()],
-            ].map(([l,v],i)=>(
-              <div key={i} style={{padding:"9px 14px",borderBottom:"1px solid rgba(0,0,0,.05)",borderRight:i%2===0?"1px solid rgba(0,0,0,.05)":"none"}}>
-                <div style={{fontSize:9,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>{l}</div>
-                <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{v||"—"}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Charges — grouped */}
-          <div style={{padding:"12px 14px",borderBottom:"1px solid rgba(74,124,89,.1)",background:"rgba(74,124,89,.03)"}}>
-            <div style={{fontSize:9,fontWeight:800,color:"#2d6a3f",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Due Before Move-In</div>
-            {chargeList.filter(c=>c.due<=rentDue||c.cat==="Security Deposit").map((c,i)=>(
-              <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                <div>
-                  <div style={{fontWeight:600,color:"#1a1714"}}>{c.desc}</div>
-                  <div style={{fontSize:10,color:"#4a7c59"}}>Due {fmtD(c.due)}</div>
-                </div>
-                <strong>{fmtS(c.amount)}</strong>
-              </div>
-            ))}
-            <div style={{display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:13,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:6,paddingTop:6}}>
-              <span>Total before move-in</span><span style={{color:"#4a7c59"}}>{fmtS(totalDue)}</span>
-            </div>
-          </div>
-
-          {/* Following month if applicable */}
-          {!isFirstDay&&(structure==="prorated"||structure==="full")&&<div style={{padding:"12px 14px",background:"rgba(212,168,83,.03)"}}>
-            <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Following Month ({secondMonthLabel})</div>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:11}}>
-              <span style={{color:"#3d3529"}}>{structure==="prorated"?"Full rent begins":"Partial month rent"}</span>
-              <strong>{fmtS(structure==="prorated"?rent:proratedAmt)}</strong>
-            </div>
-          </div>}
-        </div>
-
-        <div className="mft">
-          <button className="btn btn-out" onClick={()=>setModal(null)}>Close</button>
-          <button className="btn btn-gold" onClick={()=>setModal({type:"app",data:{...a,status:"lease-sent"}})}>View Card →</button>
-        </div>
-      </>}
-
-    </div></div>);})()}
 
   {/* ── Lease Preview Modal ── */}
   {modal&&modal.previewLeaseOpen&&(
