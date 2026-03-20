@@ -5881,9 +5881,7 @@ export default function Page(){
               <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,inviteRent:undefined,inviteSD:undefined,whPropOverride:false}))} style={{width:"100%"}}>
                 <option value="">Select property...</option>
                 {wholePropList.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                {props.filter(p=>!isWholeProp(p)).length>0&&<optgroup label="──── By-bedroom only (require override) ────">
-                  {props.filter(p=>!isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{p.name} ⚠</option>)}
-                </optgroup>}
+                {props.filter(p=>!isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{p.name} (by-bedroom)</option>)}
               </select>
             </div>
             {selPropId&&byRoomOnly&&!overrideConfirmed&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"12px 14px",marginBottom:8}}>
