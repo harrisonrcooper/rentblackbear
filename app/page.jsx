@@ -760,6 +760,8 @@ function LeaseNowModal({room,prop,onClose}){
   const[step,setStep]=useState(1);
   const[selTier,setSelTier]=useState(null);
   const[selDate,setSelDate]=useState("");
+  const[dateShake,setDateShake]=useState(false);
+  const shakeDateErr=()=>{setDateShake(true);setTimeout(()=>setDateShake(false),500);};
   const[calMonth,setCalMonth]=useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()};});
   // Pre-screen state
   const[qs,setQs]=useState(SCREEN_QS);
@@ -951,6 +953,9 @@ function LeaseNowModal({room,prop,onClose}){
             {selDate&&<div style={{marginTop:10,padding:"8px 12px",background:"rgba(74,124,89,.06)",borderRadius:6,border:"1px solid rgba(74,124,89,.12)",fontSize:11,fontWeight:600,color:"#4a7c59",textAlign:"center"}}>
               Move-in: {new Date(selDate+"T00:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}
             </div>}
+            {dateShake&&!selDate&&<div style={{marginTop:10,padding:"8px 12px",background:"rgba(196,92,74,.06)",borderRadius:6,border:"1px solid rgba(196,92,74,.2)",fontSize:11,fontWeight:700,color:"#c45c4a",textAlign:"center",animation:"shake .4s ease"}}>
+              Please select a move-in date before continuing.
+            </div>}
           </>}
 
           {/* Step 3 — Pre-screen */}
@@ -1047,7 +1052,7 @@ function LeaseNowModal({room,prop,onClose}){
             ?<button className="bo" style={{padding:"10px 20px"}} onClick={()=>setStep(s=>s-1)}>Back</button>
             :<button className="bo" style={{padding:"10px 20px"}} onClick={onClose}>Cancel</button>}
           {step===1&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selTier} onClick={()=>setStep(2)}>Next</button>}
-          {step===2&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selDate} onClick={()=>{setStep(3);setQStep(0);setFailed(false);}}>Next</button>}
+          {step===2&&<button className="bp" style={{padding:"10px 24px"}} onClick={()=>{if(!selDate){shakeDateErr();return;}setStep(3);setQStep(0);setFailed(false);}}>Next</button>}
         </div>}
         {/* Back button on pre-screen (no Next — answered by Yes/No buttons) */}
         {step===3&&!failed&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",background:"#faf9f7"}}>
