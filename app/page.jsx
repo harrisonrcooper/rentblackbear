@@ -760,6 +760,11 @@ function LeaseNowModal({room,prop,onClose}){
   const[selTier,setSelTier]=useState(null);
   const[selDate,setSelDate]=useState("");
   const[calMonth,setCalMonth]=useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()};});
+  // Pre-screen state
+  const[qs,setQs]=useState(SCREEN_QS);
+  const[qStep,setQStep]=useState(0);
+  const[failed,setFailed]=useState(false);
+  // Contact form state
   const[form,setForm]=useState({name:"",email:"",phone:"",source:"",reason:""});
   const[touched,setTouched]=useState({});
   const[submitting,setSubmitting]=useState(false);
@@ -768,13 +773,14 @@ function LeaseNowModal({room,prop,onClose}){
   const turnover=prop.turnoverDays||0;
   const lowestPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):0;
 
-  // Blocked date ranges: past + lease periods + turnover buffer
+  // Load live screen questions if available
+  useEffect(()=>{supaGet("hq-screen-qs").then(d=>{if(d&&Array.isArray(d)&&d.length>0)setQs(d);});},[]);
+
+  // Blocked date ranges: past + lease + turnover buffer
   const today=new Date();today.setHours(0,0,0,0);
   const blocked=useMemo(()=>{
     const ranges=[];
-    // Block up to today
     ranges.push({from:null,to:today});
-    // Block current lease + turnover
     if(room.le){
       const le=new Date(room.le+"T00:00:00");
       const buf=new Date(le);buf.setDate(buf.getDate()+turnover);
@@ -801,6 +807,17 @@ function LeaseNowModal({room,prop,onClose}){
   const daysInMonth=new Date(calMonth.y,calMonth.m+1,0).getDate();
   const prevMonth=()=>setCalMonth(c=>c.m===0?{y:c.y-1,m:11}:{y:c.y,m:c.m-1});
   const nextMonth=()=>setCalMonth(c=>c.m===11?{y:c.y+1,m:0}:{y:c.y,m:c.m+1});
+
+  // Pre-screen answer handler
+  const answer=(yes)=>{
+    if(!yes||qs[qStep]?.pass==="Yes"&&!yes||qs[qStep]?.pass==="No"&&yes){
+      // Wrong answer — check pass value
+    }
+    const correct=(yes&&qs[qStep]?.pass==="Yes")||(!yes&&qs[qStep]?.pass==="No");
+    if(!correct){setFailed(true);return;}
+    if(qStep<qs.length-1){setQStep(q=>q+1);}
+    else{setStep(4);} // passed all — go to contact form
+  };
 
   // Form validation
   const fmtPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(!d.length)return"";if(d.length<=3)return"("+d;if(d.length<=6)return"("+d.slice(0,3)+") "+d.slice(3);return"("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6);};
@@ -830,13 +847,16 @@ function LeaseNowModal({room,prop,onClose}){
         source:form.source,reason:form.reason,
       })});
       const d=await res.json();
-      if(d.ok)setStep(4);
+      if(d.ok)setStep(5);
       else setSubErr(d.error||"Something went wrong. Please try again.");
     }catch{setSubErr("Connection error. Try again.");}
     setSubmitting(false);
   };
 
   const errTxt=(f)=>errs[f]?<div style={{color:"#c45c4a",fontSize:10,marginTop:2}}>{errs[f]}</div>:null;
+
+  // Step labels — only show steps 1-4 (not the done screen)
+  const STEP_LABELS=["Lease Term","Move-in Date","Pre-Screen","Your Info"];
 
   return(
     <div className="mo" onClick={onClose}>
@@ -852,20 +872,21 @@ function LeaseNowModal({room,prop,onClose}){
           <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",fontSize:18,cursor:"pointer",lineHeight:1,padding:"0 0 0 12px"}}>✕</button>
         </div>
 
-        {/* Step indicator */}
-        <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-          {["Lease Term","Move-in Date","Your Info"].map((lbl,i)=>{
+        {/* Step indicator — only show on steps 1-4 */}
+        {step<=4&&!failed&&<div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+          {STEP_LABELS.map((lbl,i)=>{
             const s=i+1;const active=step===s;const done=step>s;
-            return(<div key={s} style={{flex:1,padding:"10px 6px",textAlign:"center",fontSize:9,fontWeight:700,
+            return(<div key={s} style={{flex:1,padding:"10px 4px",textAlign:"center",fontSize:8,fontWeight:700,
               color:active?"#d4a853":done?"#4a7c59":"#ccc",
               borderBottom:"2px solid "+(active?"#d4a853":done?"#4a7c59":"transparent"),
-              textTransform:"uppercase",letterSpacing:.8,transition:"all .2s"}}>
+              textTransform:"uppercase",letterSpacing:.5,transition:"all .2s"}}>
               {done?"✓ ":s+". "}{lbl}
             </div>);
           })}
-        </div>
+        </div>}
 
-        <div style={{padding:20,maxHeight:"60vh",overflowY:"auto"}}>
+        <div style={{padding:20,maxHeight:"62vh",overflowY:"auto"}}>
+
           {/* Step 1 — Lease Term */}
           {step===1&&<>
             <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Select a Lease Term</div>
@@ -907,17 +928,16 @@ function LeaseNowModal({room,prop,onClose}){
               {Array.from({length:daysInMonth}).map((_,i)=>{
                 const day=i+1;
                 const dateStr=calMonth.y+"-"+String(calMonth.m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
-                const blocked2=isBlocked(dateStr);
+                const blk=isBlocked(dateStr);
                 const selected=selDate===dateStr;
-                return(<div key={day} onClick={()=>!blocked2&&setSelDate(dateStr)}
-                  style={{textAlign:"center",padding:"8px 2px",borderRadius:6,cursor:blocked2?"not-allowed":"pointer",
+                return(<div key={day} onClick={()=>!blk&&setSelDate(dateStr)}
+                  style={{textAlign:"center",padding:"8px 2px",borderRadius:6,cursor:blk?"not-allowed":"pointer",
                     fontSize:12,fontWeight:selected?800:400,
-                    background:selected?"#d4a853":blocked2?"rgba(0,0,0,.04)":"transparent",
-                    color:selected?"#1a1714":blocked2?"#ccc":"#1a1714",
-                    border:selected?"none":blocked2?"none":"1px solid transparent",
+                    background:selected?"#d4a853":blk?"rgba(0,0,0,.04)":"transparent",
+                    color:selected?"#1a1714":blk?"#ccc":"#1a1714",
                     transition:"all .1s"}}
-                  onMouseEnter={e=>{if(!blocked2&&!selected)e.currentTarget.style.background="rgba(212,168,83,.1)";}}
-                  onMouseLeave={e=>{if(!blocked2&&!selected)e.currentTarget.style.background="transparent";}}>
+                  onMouseEnter={e=>{if(!blk&&!selected)e.currentTarget.style.background="rgba(212,168,83,.1)";}}
+                  onMouseLeave={e=>{if(!blk&&!selected)e.currentTarget.style.background="transparent";}}>
                   {day}
                 </div>);
               })}
@@ -930,10 +950,47 @@ function LeaseNowModal({room,prop,onClose}){
             </div>}
           </>}
 
-          {/* Step 3 — Info form */}
-          {step===3&&<>
-            <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Tell Us About Yourself</div>
-            <div style={{fontSize:11,color:"#999",marginBottom:14}}>A quick pre-screen — we will reach out within 24 hours.</div>
+          {/* Step 3 — Pre-screen */}
+          {step===3&&!failed&&<>
+            <div style={{textAlign:"center",marginBottom:16}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Quick Pre-Screen</div>
+              <div style={{fontSize:11,color:"#999"}}>{qs.length} quick questions to see if you qualify.</div>
+            </div>
+            {/* Progress dots */}
+            <div style={{display:"flex",gap:4,marginBottom:20,justifyContent:"center"}}>
+              {qs.map((_,i)=><div key={i} style={{flex:1,height:3,borderRadius:3,background:i<qStep?"#4a7c59":i===qStep?"#d4a853":"rgba(0,0,0,.06)",transition:"all .3s"}}/>)}
+            </div>
+            <div style={{fontSize:10,color:"#999",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Question {qStep+1} of {qs.length}</div>
+            <div style={{fontSize:15,fontWeight:700,lineHeight:1.5,marginBottom:20,color:"#1a1714"}}>{qs[qStep]?.q}</div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>answer(true)}
+                style={{flex:1,padding:14,borderRadius:10,border:"2px solid rgba(0,0,0,.08)",background:"#fff",fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",transition:"all .2s"}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor="#4a7c59"}
+                onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.08)"}>
+                Yes
+              </button>
+              <button onClick={()=>answer(false)}
+                style={{flex:1,padding:14,borderRadius:10,border:"2px solid rgba(0,0,0,.08)",background:"#fff",fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer",transition:"all .2s"}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor="#c45c4a"}
+                onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.08)"}>
+                No
+              </button>
+            </div>
+          </>}
+
+          {/* Step 3 — Failed pre-screen */}
+          {step===3&&failed&&<div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(196,92,74,.08)",color:"#c45c4a",margin:"0 auto 16px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>✕</div>
+            <div style={{fontSize:18,fontWeight:700,color:"#1a1714",marginBottom:8}}>Thanks for Your Interest</div>
+            <div style={{fontSize:13,color:"#5c4a3a",lineHeight:1.7,marginBottom:20}}>Based on your answers, our properties may not be the right fit at this time. Feel free to reach out directly with any questions.</div>
+            <button className="bo" style={{width:"100%",marginBottom:8}} onClick={()=>{setFailed(false);setQStep(0);}}>Start Over</button>
+            <button className="bp" style={{width:"100%"}} onClick={onClose}>Close</button>
+          </div>}
+
+          {/* Step 4 — Contact info */}
+          {step===4&&<>
+            <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Almost There</div>
+            <div style={{fontSize:11,color:"#999",marginBottom:14}}>You pre-qualify! Fill out your info and we will reach out within 24 hours.</div>
             {[
               {key:"name",placeholder:"Full Name *",type:"text"},
               {key:"email",placeholder:"Email *",type:"email"},
@@ -959,12 +1016,12 @@ function LeaseNowModal({room,prop,onClose}){
             {errTxt("reason")}
             {subErr&&<div style={{color:"#c45c4a",fontSize:11,marginBottom:8,padding:"6px 10px",background:"rgba(196,92,74,.04)",borderRadius:6,border:"1px solid rgba(196,92,74,.12)"}}>{subErr}</div>}
             <div style={{fontSize:9,color:"#bbb",marginTop:4}}>
-              Your selection: {selTier?.months} months at ${selTier?.price}/mo · Move-in {selDate}
+              {selTier?.months} months at ${selTier?.price}/mo · Move-in {selDate}
             </div>
           </>}
 
-          {/* Step 4 — Done */}
-          {step===4&&<div style={{textAlign:"center",padding:"20px 0"}}>
+          {/* Step 5 — Done */}
+          {step===5&&<div style={{textAlign:"center",padding:"20px 0"}}>
             <div style={{fontSize:40,marginBottom:12}}>🎉</div>
             <div style={{fontSize:18,fontWeight:800,color:"#4a7c59",marginBottom:8}}>Application Submitted!</div>
             <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:16}}>
@@ -975,22 +1032,30 @@ function LeaseNowModal({room,prop,onClose}){
             </div>
             <button className="bp" style={{width:"100%"}} onClick={onClose}>Done</button>
           </div>}
+
         </div>
 
         {/* Footer nav */}
-        {step<4&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#faf9f7"}}>
+        {!failed&&step<5&&step!==3&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#faf9f7"}}>
           {step>1
             ?<button className="bo" style={{padding:"10px 20px"}} onClick={()=>setStep(s=>s-1)}>Back</button>
             :<button className="bo" style={{padding:"10px 20px"}} onClick={onClose}>Cancel</button>}
-          {step===1&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selTier} onClick={()=>setStep(2)}>
-            Next
-          </button>}
-          {step===2&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selDate} onClick={()=>setStep(3)}>
-            Next
-          </button>}
-          {step===3&&<button className="bp" style={{padding:"10px 24px",opacity:submitting?.7:1}} disabled={submitting} onClick={submitApp}>
+          {step===1&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selTier} onClick={()=>setStep(2)}>Next</button>}
+          {step===2&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selDate} onClick={()=>{setStep(3);setQStep(0);setFailed(false);}}>Next</button>}
+          {step===4&&<button className="bp" style={{padding:"10px 24px",opacity:submitting?.7:1}} disabled={submitting} onClick={submitApp}>
             {submitting?"Submitting...":"Submit Application"}
           </button>}
+        </div>}
+        {/* Back button on pre-screen (no Next — answered by Yes/No buttons) */}
+        {step===3&&!failed&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",background:"#faf9f7"}}>
+          <button className="bo" style={{padding:"10px 20px"}} onClick={()=>{setStep(2);setQStep(0);setFailed(false);}}>Back</button>
+        </div>}
+        {/* Back button on step 4 — goes back to step 3 (re-starts pre-screen) */}
+        {step===4&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#faf9f7"}}>
+          <button className="bo" style={{padding:"10px 20px"}} onClick={()=>{setStep(3);setQStep(0);setFailed(false);}}>Back</button>
+          <button className="bp" style={{padding:"10px 24px",opacity:submitting?.7:1}} disabled={submitting} onClick={submitApp}>
+            {submitting?"Submitting...":"Submit Application"}
+          </button>
         </div>}
       </div>
     </div>
