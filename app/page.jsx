@@ -21,6 +21,9 @@ const allRoomsP=(prop)=>{
 const safeMin=(arr)=>arr.length>0?Math.min(...arr):0;
 const validCoord=(lat,lng)=>typeof lat==="number"&&typeof lng==="number"&&isFinite(lat)&&isFinite(lng)&&lat!==0&&lng!==0&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180;
 const safeMax=(arr)=>arr.length>0?Math.max(...arr):0;
+const MKP={3:0.30,6:0.18,9:0.10,12:0,15:-0.03,18:-0.05};
+const calcAutoPrice=(base,mo)=>{const m=MKP[mo]!==undefined?MKP[mo]:(mo<=6?0.20:mo<=9?0.10:mo<=12?0:mo<=15?-0.03:-0.05);return Math.round((base*(1+m))/5)*5;};
+const getActiveTiers=(r)=>{if(r.leaseTiers&&r.leaseTiers.length>0)return r.leaseTiers.filter(t=>t.enabled).sort((a,b)=>a.months-b.months);return[6,9,12,15,18].map(m=>({id:String(m),months:m,price:calcAutoPrice(r.rent,m),enabled:true}));};
 const POIS=[
   // Redstone Arsenal gates — verified coordinates
   {name:"Redstone Arsenal Gate 9",icon:"🪖",cat:"Redstone Arsenal",drive:"12 min",lat:34.6598,lng:-86.6423,desc:"Main contractor & visitor gate",url:"https://www.google.com/maps/place/Redstone+Arsenal+Gate+9"},
@@ -499,7 +502,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 `;
 
 // ─── Components ─────────────────────────────────────────────────────
-function PropertyModal({p,onClose,setLightbox,setLbIdx}){
+function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
   if(!p)return null;const minP=safeMin(allRoomsP(p).map(r=>r.rent));
   const goApply=()=>{onClose();setTimeout(()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"}),100);};
   return(<div className="mo" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
@@ -523,23 +526,57 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
       {(p.units&&p.units.length>1)?p.units.map(u=>(
         <div key={u.id} style={{marginBottom:16}}>
           <div style={{fontSize:10,fontWeight:800,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.8,marginBottom:8,padding:"4px 10px",background:"rgba(212,168,83,.08)",borderRadius:6,display:"inline-block"}}>{u.name}</div>
-          <div className="rgrid">{(u.rooms||[]).map(r=>(
-            <div key={r.id} className="rc"><div className="rm-m"><div className="rn">{r.name}<span className={`rbt ${r.pb?"rbt-p":"rbt-s"}`}>{r.pb?"Private Bath":"Shared Bath"}</span></div><div className="rd">{r.sqft?<span>{r.sqft} sqft</span>:null}<span>{r.bed} bed</span></div><div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div></div><div className="rprice">${r.rent}<small>/mo</small></div></div>
-          ))}</div>
+          <div className="rgrid">{(u.rooms||[]).map(r=>{
+            const tiers=getActiveTiers(r);const minPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):r.rent;
+            const isAvail=r.st!=="occupied";
+            return(
+            <div key={r.id} className="rc"><div className="rm-m"><div className="rn">{r.name}<span className={"rbt "+(r.pb?"rbt-p":"rbt-s")}>{r.pb?"Private Bath":"Shared Bath"}</span></div><div className="rd">{r.sqft?<span>{r.sqft} sqft</span>:null}<span>{r.bed} bed</span></div><div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div></div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
+                <div className="rprice">
+                  {tiers.length>0&&<div style={{fontSize:10,color:"#999",fontWeight:400,marginBottom:1}}>Starting at</div>}
+                  ${minPrice}<small>/mo</small>
+                </div>
+                {isAvail&&<button onClick={e=>{e.stopPropagation();onLeaseNow(r);}}
+                  style={{padding:"6px 12px",borderRadius:6,border:"1px solid #d4a853",background:"rgba(212,168,83,.1)",
+                    color:"#9a7422",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+                  Lease Now
+                </button>}
+                {!isAvail&&<div style={{fontSize:9,color:"#999",fontWeight:600,padding:"4px 8px",borderRadius:4,background:"rgba(0,0,0,.04)"}}>Occupied</div>}
+              </div>
+            </div>
+            );})}
+          </div>
         </div>
       )):(
-        <div className="rgrid">{p.rooms.map(r=>(
+        <div className="rgrid">{p.rooms.map(r=>{
+          const tiers=getActiveTiers(r);const minPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):r.rent;
+          const isAvail=r.st!=="occupied";
+          return(
           <div key={r.id} className="rc"><div className="rm-m">
-              <div className="rn">{r.name}<span className={`rbt ${r.pb?"rbt-p":"rbt-s"}`}>{r.pb?"Private Bath":"Shared Bath"}</span></div>
+              <div className="rn">{r.name}<span className={"rbt "+(r.pb?"rbt-p":"rbt-s")}>{r.pb?"Private Bath":"Shared Bath"}</span></div>
               <div className="rd">
                 {r.sqft?<span>{r.sqft} sqft</span>:null}
                 {r.bed&&<span>{r.bed} bed</span>}
                 {r.tv&&r.tv!=="None"&&<span>{r.tv} TV</span>}
-                {r.furnished!==false&&<span>✓ Furnished</span>}
+                {r.furnished!==false&&<span>Furnished</span>}
               </div>
               {(r.feat||[]).length>0&&<div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div>}
-            </div><div className="rprice">${r.rent}<small>/mo</small></div></div>
-        ))}</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
+              <div className="rprice">
+                {tiers.length>0&&<div style={{fontSize:10,color:"#999",fontWeight:400,marginBottom:1}}>Starting at</div>}
+                ${minPrice}<small>/mo</small>
+              </div>
+              {isAvail&&<button onClick={e=>{e.stopPropagation();onLeaseNow(r);}}
+                style={{padding:"6px 12px",borderRadius:6,border:"1px solid #d4a853",background:"rgba(212,168,83,.1)",
+                  color:"#9a7422",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+                Lease Now
+              </button>}
+              {!isAvail&&<div style={{fontSize:9,color:"#999",fontWeight:600,padding:"4px 8px",borderRadius:4,background:"rgba(0,0,0,.04)"}}>Occupied</div>}
+            </div>
+          </div>
+          );})}
+        </div>
       )}
       <h4 className="mst">3D Tour</h4>
       {p.tourFolder&&(p.tourScenes&&p.tourScenes.length>0) ? <VirtualTour360 tourFolder={p.tourFolder} tourScenes={p.tourScenes} propertyName={p.name}/> : <div className="phbox"><div style={{fontSize:40}}>🏠</div><h4>Coming Soon</h4><p>Insta360 walkthrough will be embedded here</p></div>}
@@ -712,6 +749,255 @@ function VirtualTour360({tourFolder,tourScenes,propertyName}){
         </div>
       </div>
       <style>{`@keyframes bbspin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
+// ─── Lease Now Modal ────────────────────────────────────────────────
+const MARKUP_PC={3:0.30,6:0.18,9:0.10,12:0,15:-0.03,18:-0.05};
+function calcAutoP(base,months){const m=MARKUP_PC[months]!==undefined?MARKUP_PC[months]:(months<=6?0.20:months<=9?0.10:months<=12?0:months<=15?-0.03:-0.05);return Math.round((base*(1+m))/5)*5;}
+function getActiveTiers(r){
+  if(r.leaseTiers&&r.leaseTiers.length>0)return r.leaseTiers.filter(t=>t.enabled).sort((a,b)=>a.months-b.months);
+  return[3,6,9,12,15,18].filter(m=>m>=6).map(m=>({id:String(m),months:m,price:calcAutoP(r.rent,m),enabled:true}));
+}
+
+function LeaseNowModal({room,prop,onClose}){
+  const[step,setStep]=useState(1);
+  const[selTier,setSelTier]=useState(null);
+  const[selDate,setSelDate]=useState("");
+  const[calMonth,setCalMonth]=useState(()=>{const d=new Date();return{y:d.getFullYear(),m:d.getMonth()};});
+  const[form,setForm]=useState({name:"",email:"",phone:"",source:"",reason:""});
+  const[touched,setTouched]=useState({});
+  const[submitting,setSubmitting]=useState(false);
+  const[subErr,setSubErr]=useState("");
+  const tiers=getActiveTiers(room);
+  const turnover=prop.turnoverDays||0;
+
+  // Blocked date ranges: past + lease periods + turnover buffer
+  const today=new Date();today.setHours(0,0,0,0);
+  const blocked=useMemo(()=>{
+    const ranges=[];
+    // Block up to today
+    ranges.push({from:null,to:today});
+    // Block current lease + turnover
+    if(room.le){
+      const le=new Date(room.le+"T00:00:00");
+      const buf=new Date(le);buf.setDate(buf.getDate()+turnover);
+      ranges.push({from:today,to:buf});
+    }
+    return ranges;
+  },[room.le,turnover]);
+
+  const isBlocked=(date)=>{
+    const d=new Date(date);d.setHours(0,0,0,0);
+    for(const r of blocked){
+      const from=r.from?new Date(r.from):null;
+      const to=new Date(r.to);
+      if(from){if(d>=from&&d<=to)return true;}
+      else{if(d<=to)return true;}
+    }
+    return false;
+  };
+
+  // Calendar helpers
+  const DAYS=["SU","MO","TU","WE","TH","FR","SA"];
+  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const firstDay=new Date(calMonth.y,calMonth.m,1).getDay();
+  const daysInMonth=new Date(calMonth.y,calMonth.m+1,0).getDate();
+  const prevMonth=()=>setCalMonth(c=>c.m===0?{y:c.y-1,m:11}:{y:c.y,m:c.m-1});
+  const nextMonth=()=>setCalMonth(c=>c.m===11?{y:c.y+1,m:0}:{y:c.y,m:c.m+1});
+
+  // Form validation
+  const fmtPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(!d.length)return"";if(d.length<=3)return"("+d;if(d.length<=6)return"("+d.slice(0,3)+") "+d.slice(3);return"("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6);};
+  const isEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const isPhone=p=>p.replace(/\D/g,"").length===10;
+  const errs={};
+  if(touched.name&&!form.name.trim())errs.name="Required";
+  if(touched.email&&!form.email)errs.email="Required";
+  else if(touched.email&&!isEmail(form.email))errs.email="Invalid email";
+  if(touched.phone&&!form.phone)errs.phone="Required";
+  else if(touched.phone&&!isPhone(form.phone))errs.phone="Invalid phone";
+  if(touched.source&&!form.source)errs.source="Required";
+  if(touched.reason&&(!form.reason||form.reason.length<10))errs.reason="At least 10 characters";
+  const canSubmit=form.name.trim()&&isEmail(form.email)&&isPhone(form.phone)&&form.source&&form.reason.length>=10;
+
+  const submitApp=async()=>{
+    setTouched({name:true,email:true,phone:true,source:true,reason:true});
+    if(!canSubmit)return;
+    setSubmitting(true);setSubErr("");
+    try{
+      const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        name:form.name,email:form.email,phone:form.phone,
+        property:prop.name,room:room.name,
+        moveIn:selDate,
+        leaseTerm:selTier?selTier.months+" months":"",
+        leasePrice:selTier?selTier.price:room.rent,
+        source:form.source,reason:form.reason,
+      })});
+      const d=await res.json();
+      if(d.ok)setStep(4);
+      else setSubErr(d.error||"Something went wrong. Please try again.");
+    }catch{setSubErr("Connection error. Try again.");}
+    setSubmitting(false);
+  };
+
+  const errTxt=(f)=>errs[f]?<div style={{color:"#c45c4a",fontSize:10,marginTop:2}}>{errs[f]}</div>:null;
+
+  return(
+    <div className="mo" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:420,padding:0,overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{background:"#1a1714",padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontSize:10,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:1.5,marginBottom:2}}>
+              {room.name} — {prop.name}
+            </div>
+            {selTier&&step>1&&<div style={{fontSize:12,color:"rgba(255,255,255,.7)",fontWeight:600}}>{selTier.months} months — ${selTier.price}/mo</div>}
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",fontSize:18,cursor:"pointer",lineHeight:1,padding:"0 0 0 12px"}}>✕</button>
+        </div>
+
+        {/* Step indicator */}
+        <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+          {["Lease Term","Move-in Date","Your Info"].map((lbl,i)=>{
+            const s=i+1;const active=step===s;const done=step>s;
+            return(<div key={s} style={{flex:1,padding:"10px 6px",textAlign:"center",fontSize:9,fontWeight:700,
+              color:active?"#d4a853":done?"#4a7c59":"#ccc",
+              borderBottom:"2px solid "+(active?"#d4a853":done?"#4a7c59":"transparent"),
+              textTransform:"uppercase",letterSpacing:.8,transition:"all .2s"}}>
+              {done?"✓ ":s+". "}{lbl}
+            </div>);
+          })}
+        </div>
+
+        <div style={{padding:20,maxHeight:"60vh",overflowY:"auto"}}>
+          {/* Step 1 — Lease Term */}
+          {step===1&&<>
+            <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Select a Lease Term</div>
+            <div style={{fontSize:11,color:"#999",marginBottom:14}}>Longer leases get a lower monthly rate.</div>
+            {tiers.length===0&&<div style={{padding:16,textAlign:"center",color:"#999",fontSize:12,border:"2px dashed rgba(0,0,0,.08)",borderRadius:8}}>No lease options configured yet. Contact us directly.</div>}
+            {tiers.map(t=>{
+              const sel=selTier?.id===t.id;
+              return(<div key={t.id} onClick={()=>setSelTier(t)}
+                style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:8,marginBottom:6,cursor:"pointer",
+                  border:"2px solid "+(sel?"#d4a853":"rgba(0,0,0,.08)"),
+                  background:sel?"rgba(212,168,83,.04)":"#fff",transition:"all .15s"}}>
+                <div style={{width:16,height:16,borderRadius:"50%",border:"2px solid "+(sel?"#d4a853":"rgba(0,0,0,.2)"),background:sel?"#d4a853":"transparent",flexShrink:0,transition:"all .15s"}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#1a1714"}}>{t.months} Month{t.months!==1?"s":""}</div>
+                  <div style={{fontSize:10,color:"#999"}}>${(t.price*t.months).toLocaleString()} total</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:16,fontWeight:800,color:sel?"#d4a853":"#1a1714"}}>${t.price}</div>
+                  <div style={{fontSize:9,color:"#999"}}>/mo</div>
+                </div>
+                {t.months===12&&<div style={{fontSize:8,fontWeight:800,color:"#4a7c59",background:"rgba(74,124,89,.1)",padding:"2px 6px",borderRadius:3}}>BEST VALUE</div>}
+              </div>);
+            })}
+          </>}
+
+          {/* Step 2 — Calendar */}
+          {step===2&&<>
+            <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:14,textAlign:"center"}}>Select a Move-In Date</div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <button onClick={prevMonth} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#999",padding:"4px 8px"}}>{"<"}</button>
+              <div style={{fontSize:13,fontWeight:700,color:"#1a1714"}}>{MONTHS[calMonth.m]} {calMonth.y}</div>
+              <button onClick={nextMonth} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#999",padding:"4px 8px"}}>{">"}</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
+              {DAYS.map(d=><div key={d} style={{textAlign:"center",fontSize:9,fontWeight:700,color:"#999",padding:"4px 0"}}>{d}</div>)}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+              {Array.from({length:firstDay}).map((_,i)=><div key={"e"+i}/>)}
+              {Array.from({length:daysInMonth}).map((_,i)=>{
+                const day=i+1;
+                const dateStr=calMonth.y+"-"+String(calMonth.m+1).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+                const blocked2=isBlocked(dateStr);
+                const selected=selDate===dateStr;
+                return(<div key={day} onClick={()=>!blocked2&&setSelDate(dateStr)}
+                  style={{textAlign:"center",padding:"8px 2px",borderRadius:6,cursor:blocked2?"not-allowed":"pointer",
+                    fontSize:12,fontWeight:selected?800:400,
+                    background:selected?"#d4a853":blocked2?"rgba(0,0,0,.04)":"transparent",
+                    color:selected?"#1a1714":blocked2?"#ccc":"#1a1714",
+                    border:selected?"none":blocked2?"none":"1px solid transparent",
+                    transition:"all .1s"}}
+                  onMouseEnter={e=>{if(!blocked2&&!selected)e.currentTarget.style.background="rgba(212,168,83,.1)";}}
+                  onMouseLeave={e=>{if(!blocked2&&!selected)e.currentTarget.style.background="transparent";}}>
+                  {day}
+                </div>);
+              })}
+            </div>
+            {room.le&&<div style={{marginTop:10,fontSize:10,color:"#999",textAlign:"center"}}>
+              {turnover>0?"Current lease ends "+room.le+" \u00b7 "+turnover+"-day turnover buffer applied":"Current lease ends "+room.le}
+            </div>}
+            {selDate&&<div style={{marginTop:10,padding:"8px 12px",background:"rgba(74,124,89,.06)",borderRadius:6,border:"1px solid rgba(74,124,89,.12)",fontSize:11,fontWeight:600,color:"#4a7c59",textAlign:"center"}}>
+              Move-in: {new Date(selDate+"T00:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}
+            </div>}
+          </>}
+
+          {/* Step 3 — Info form */}
+          {step===3&&<>
+            <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Tell Us About Yourself</div>
+            <div style={{fontSize:11,color:"#999",marginBottom:14}}>A quick pre-screen — we will reach out within 24 hours.</div>
+            {[
+              {key:"name",placeholder:"Full Name *",type:"text"},
+              {key:"email",placeholder:"Email *",type:"email"},
+              {key:"phone",placeholder:"Phone *",type:"tel"},
+            ].map(({key,placeholder,type})=>(
+              <div key={key} style={{marginBottom:8}}>
+                <input type={type} placeholder={placeholder} value={form[key]}
+                  onChange={e=>setForm({...form,[key]:key==="phone"?fmtPhone(e.target.value):e.target.value})}
+                  onBlur={()=>setTouched({...touched,[key]:true})}
+                  style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs[key]?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:12,fontFamily:"inherit",boxSizing:"border-box"}}/>
+                {errTxt(key)}
+              </div>
+            ))}
+            <select value={form.source} onChange={e=>setForm({...form,source:e.target.value})} onBlur={()=>setTouched({...touched,source:true})}
+              style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs.source?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:12,fontFamily:"inherit",marginBottom:8,boxSizing:"border-box"}}>
+              <option value="">How did you hear about us? *</option>
+              {["Roomies.com","Google Search","Facebook / Instagram","Friend / Referral","Zillow / Apartments.com","Craigslist","Drive-by / Sign","Military / Contractor Network","NASA / Redstone Network","Other"].map(s=><option key={s}>{s}</option>)}
+            </select>
+            {errTxt("source")}
+            <textarea placeholder="Why are you leaving your current residence? *" value={form.reason}
+              onChange={e=>setForm({...form,reason:e.target.value})} onBlur={()=>setTouched({...touched,reason:true})}
+              rows={3} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs.reason?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:12,fontFamily:"inherit",resize:"vertical",marginBottom:4,boxSizing:"border-box"}}/>
+            {errTxt("reason")}
+            {subErr&&<div style={{color:"#c45c4a",fontSize:11,marginBottom:8,padding:"6px 10px",background:"rgba(196,92,74,.04)",borderRadius:6,border:"1px solid rgba(196,92,74,.12)"}}>{subErr}</div>}
+            <div style={{fontSize:9,color:"#bbb",marginTop:4}}>
+              Your selection: {selTier?.months} months at ${selTier?.price}/mo · Move-in {selDate}
+            </div>
+          </>}
+
+          {/* Step 4 — Done */}
+          {step===4&&<div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:40,marginBottom:12}}>🎉</div>
+            <div style={{fontSize:18,fontWeight:800,color:"#4a7c59",marginBottom:8}}>Application Submitted!</div>
+            <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:16}}>
+              We received your info and will reach out within 24 hours. Check your email for a confirmation.
+            </div>
+            <div style={{padding:"10px 14px",background:"rgba(74,124,89,.06)",borderRadius:8,border:"1px solid rgba(74,124,89,.12)",fontSize:11,color:"#4a7c59",fontWeight:600,marginBottom:16}}>
+              {room.name} — {selTier?.months} months at ${selTier?.price}/mo · Move-in {selDate}
+            </div>
+            <button className="bp" style={{width:"100%"}} onClick={onClose}>Done</button>
+          </div>}
+        </div>
+
+        {/* Footer nav */}
+        {step<4&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#faf9f7"}}>
+          {step>1
+            ?<button className="bo" style={{padding:"10px 20px"}} onClick={()=>setStep(s=>s-1)}>Back</button>
+            :<button className="bo" style={{padding:"10px 20px"}} onClick={onClose}>Cancel</button>}
+          {step===1&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selTier} onClick={()=>setStep(2)}>
+            Next
+          </button>}
+          {step===2&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selDate} onClick={()=>setStep(3)}>
+            Next
+          </button>}
+          {step===3&&<button className="bp" style={{padding:"10px 24px",opacity:submitting?.7:1}} disabled={submitting} onClick={submitApp}>
+            {submitting?"Submitting...":"Submit Application"}
+          </button>}
+        </div>}
+      </div>
     </div>
   );
 }
@@ -940,6 +1226,7 @@ function StickyBar({properties}){
 // ─── Main Page ──────────────────────────────────────────────────────
 export default function Page(){
   const[scrolled,setScrolled]=useState(false);const[sel,setSel]=useState(null);const[mobMenu,setMobMenu]=useState(false);const[lightbox,setLightbox]=useState(null);const[lbIdx,setLbIdx]=useState(0);
+  const[leaseNow,setLeaseNow]=useState(null);
   const[calProp,setCalProp]=useState("all");const[calRoom,setCalRoom]=useState(null);const[mOff,setMOff]=useState(0);
   const[mapCat,setMapCat]=useState("all");
   const[showFlt,setShowFlt]=useState(false);
@@ -986,9 +1273,10 @@ export default function Page(){
         desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
         tourFolder:p.tourFolder||null,
         tourScenes:p.tourScenes||[],
+        turnoverDays:p.turnoverDays||0,
         imgs:(p.photos&&p.photos.length>0)?p.photos:[],
         units:p.units||[],
-        rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le})),
+        rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le,leaseTiers:r.leaseTiers||[]})),
       };
     });
   },[liveProps]);
@@ -1236,7 +1524,8 @@ export default function Page(){
     <footer className="ftr"><p>© {new Date().getFullYear()} {SI.company} — {SI.legal}. All rights reserved.</p></footer>
 
     {/* OVERLAYS */}
-    {sel&&<PropertyModal p={sel} onClose={()=>setSel(null)} setLightbox={setLightbox} setLbIdx={setLbIdx}/>}
+    {sel&&<PropertyModal p={sel} onClose={()=>setSel(null)} setLightbox={setLightbox} setLbIdx={setLbIdx} onLeaseNow={r=>setLeaseNow({room:r,prop:sel})}/>}
+    {leaseNow&&<LeaseNowModal room={leaseNow.room} prop={leaseNow.prop} onClose={()=>setLeaseNow(null)}/>}
     {lightbox&&<div onClick={()=>setLightbox(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:20,right:24,background:"none",border:"none",color:"#fff",fontSize:28,cursor:"pointer",lineHeight:1}}>✕</button>
       <button onClick={e=>{e.stopPropagation();setLbIdx(i=>Math.max(0,i-1));}} style={{position:"absolute",left:16,background:"rgba(255,255,255,.15)",border:"none",color:"#fff",fontSize:28,cursor:"pointer",padding:"8px 14px",borderRadius:6,lineHeight:1}}>‹</button>

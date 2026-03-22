@@ -889,6 +889,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
   const[tourFilesLoading,setTourFilesLoading]=useState(false);
   const[showFileBrowser,setShowFileBrowser]=useState(false);
   const[showManual,setShowManual]=useState(false);
+  const[selectedFiles,setSelectedFiles]=useState([]);
   const[manualFile,setManualFile]=useState("");
   const[manualLabel,setManualLabel]=useState("");
   const[manualFloor,setManualFloor]=useState(1);
@@ -1044,23 +1045,43 @@ function TourSceneManager({tourFolder,scenes,onChange}){
 
       {/* File browser */}
       {showFileBrowser&&<div style={{background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:8}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,flexWrap:"wrap"}}>
           <span>360/{tourFolder}/ ({tourFiles.length} files)</span>
-          <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={loadBucketFiles}>{tourFilesLoading?"Loading...":"↺ Refresh"}</button>
+          <div style={{display:"flex",gap:5,alignItems:"center"}}>
+            {tourFiles.filter(f=>!scenes.some(s=>s.file===f)).length>0&&<>
+              <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>{
+                const selectable=tourFiles.filter(f=>!scenes.some(s=>s.file===f));
+                setSelectedFiles(s=>s.length===selectable.length?[]:selectable);
+              }}>
+                {selectedFiles.length===tourFiles.filter(f=>!scenes.some(s=>s.file===f)).length?"Deselect All":"Select All"}
+              </button>
+              {selectedFiles.length>0&&<button className="btn btn-gold btn-sm" style={{fontSize:9}} onClick={()=>{
+                selectedFiles.forEach(f=>addScene(f,"",1));
+                setSelectedFiles([]);
+              }}>Add {selectedFiles.length} Selected</button>}
+            </>}
+            <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={loadBucketFiles}>{tourFilesLoading?"Loading...":"Refresh"}</button>
+          </div>
         </div>
         {tourFilesLoading&&<div style={{fontSize:11,color:"#999",textAlign:"center",padding:8}}>Loading files...</div>}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(90px,1fr))",gap:6,maxHeight:220,overflowY:"auto"}}>
           {tourFiles.map(file=>{
             const already=scenes.some(s=>s.file===file);
+            const sel=selectedFiles.includes(file);
             return(
-              <div key={file} onClick={()=>!already&&addScene(file,"",1)}
+              <div key={file} onClick={()=>{
+                if(already)return;
+                setSelectedFiles(s=>sel?s.filter(x=>x!==file):[...s,file]);
+              }}
                 style={{cursor:already?"default":"pointer",borderRadius:6,
-                  border:"1px solid "+(already?"rgba(0,0,0,.06)":"rgba(0,0,0,.1)"),overflow:"hidden",
-                  position:"relative",transition:"all .15s",opacity:already?.6:1}}
-                title={already?"Already added":"Click to add"}>
+                  border:"2px solid "+(already?"rgba(0,0,0,.06)":sel?"#d4a853":"rgba(0,0,0,.1)"),overflow:"hidden",
+                  position:"relative",transition:"all .15s",opacity:already?.6:1,
+                  background:sel?"rgba(212,168,83,.06)":"transparent"}}
+                title={already?"Already added":sel?"Click to deselect":"Click to select"}>
                 <img src={BASE_URL+file} alt={file} style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",display:"block"}}/>
                 <div style={{fontSize:7,padding:"2px 4px",background:"rgba(0,0,0,.65)",color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file}</div>
                 {already&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:700}}>Added</div>}
+                {sel&&!already&&<div style={{position:"absolute",top:3,right:3,width:16,height:16,background:"#d4a853",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#1a1714",fontWeight:900}}>✓</div>}
               </div>
             );
           })}
@@ -1094,6 +1115,85 @@ function TourSceneManager({tourFolder,scenes,onChange}){
   );
 }
 
+// ─── Lease Pricing Modal ─────────────────────────────────────────────
+const DEFAULT_DURATIONS=[3,6,9,12,15,18];
+const MARKUP_PCT={3:0.30,6:0.18,9:0.10,12:0,15:-0.03,18:-0.05};
+function calcAutoPrice(baseRent,months){
+  const markup=MARKUP_PCT[months]!==undefined?MARKUP_PCT[months]:(months<=6?0.20:months<=9?0.10:months<=12?0:months<=15?-0.03:-0.05);
+  return Math.round((baseRent*(1+markup))/5)*5;
+}
+function LeasePricingModal({room,onSave,onClose}){
+  const baseRent=Number(room.rent)||0;
+  const initTiers=(room.leaseTiers&&room.leaseTiers.length>0)
+    ?room.leaseTiers
+    :DEFAULT_DURATIONS.map(m=>({id:String(m),months:m,price:calcAutoPrice(baseRent,m),override:false,enabled:m>=6}));
+  const[tiers,setTiers]=useState(initTiers);
+  const[newMonths,setNewMonths]=useState("");
+  const updTier=(id,key,val)=>setTiers(t=>t.map(x=>x.id===id?{...x,[key]:val}:x));
+  const removeTier=(id)=>setTiers(t=>t.filter(x=>x.id!==id));
+  const addTier=()=>{
+    const m=Number(newMonths);
+    if(!m||m<1||m>60)return;
+    if(tiers.some(t=>t.months===m))return;
+    setTiers(t=>[...t,{id:String(m),months:m,price:calcAutoPrice(baseRent,m),override:false,enabled:true}].sort((a,b)=>a.months-b.months));
+    setNewMonths("");
+  };
+  return(
+    <div className="mbg" style={{zIndex:200}} onClick={onClose}>
+      <div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}}>
+        <h2>Edit Lease Pricing — {room.name}</h2>
+        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:14,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)"}}>
+          Base rent: <strong>${baseRent}/mo</strong> — Longer leases get a discount, shorter leases carry a premium. Prices auto-calculate but you can override each one.
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"60px 1fr 90px 70px 28px",gap:8,alignItems:"center",marginBottom:6,padding:"0 2px"}}>
+          <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Show</div>
+          <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Term</div>
+          <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Price/mo</div>
+          <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Total</div>
+          <div/>
+        </div>
+        {tiers.sort((a,b)=>a.months-b.months).map(t=>(
+          <div key={t.id} style={{display:"grid",gridTemplateColumns:"60px 1fr 90px 70px 28px",gap:8,alignItems:"center",marginBottom:6,padding:"8px 10px",borderRadius:8,border:"1px solid rgba(0,0,0,.06)",background:t.enabled?"#faf9f7":"rgba(0,0,0,.02)",opacity:t.enabled?1:.6}}>
+            <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontSize:11}}>
+              <input type="checkbox" checked={t.enabled} onChange={e=>updTier(t.id,"enabled",e.target.checked)} style={{accentColor:"#d4a853",width:13,height:13}}/>
+              <span style={{fontSize:10,color:t.enabled?"#4a7c59":"#999"}}>{t.enabled?"On":"Off"}</span>
+            </label>
+            <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>
+              {t.months} month{t.months!==1?"s":""}
+              {t.months===12&&<span style={{fontSize:9,color:"#d4a853",marginLeft:5,fontWeight:700}}>Standard</span>}
+              {t.months<9&&<span style={{fontSize:9,color:"#c45c4a",marginLeft:5}}>Premium</span>}
+              {t.months>12&&<span style={{fontSize:9,color:"#4a7c59",marginLeft:5}}>Discount</span>}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontSize:11,color:"#999"}}>$</span>
+              <input type="number" value={t.price} min={0} step={5}
+                onChange={e=>updTier(t.id,"price",Number(e.target.value)||0)}
+                onFocus={()=>updTier(t.id,"override",true)}
+                style={{width:"100%",padding:"4px 6px",borderRadius:5,border:"1px solid "+(t.override?"rgba(212,168,83,.5)":"rgba(0,0,0,.08)"),fontSize:11,fontFamily:"inherit"}}/>
+            </div>
+            <div style={{fontSize:10,color:"#999",textAlign:"right"}}>${(t.price*t.months).toLocaleString()}</div>
+            <button onClick={()=>removeTier(t.id)} style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:14,lineHeight:1,padding:0}}>x</button>
+          </div>
+        ))}
+        {/* Add custom duration */}
+        <div style={{display:"flex",gap:6,marginTop:10,alignItems:"center"}}>
+          <input type="number" value={newMonths} onChange={e=>setNewMonths(e.target.value)} placeholder="Months" min={1} max={60}
+            style={{width:90,padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit"}}
+            onKeyDown={e=>{if(e.key==="Enter")addTier();}}/>
+          <button className="btn btn-out btn-sm" onClick={addTier} disabled={!newMonths}>+ Add Term</button>
+          <button className="btn btn-out btn-sm" style={{marginLeft:"auto"}} onClick={()=>{
+            setTiers(DEFAULT_DURATIONS.map(m=>({id:String(m),months:m,price:calcAutoPrice(baseRent,m),override:false,enabled:m>=6})));
+          }}>Reset to Defaults</button>
+        </div>
+        <div className="mft" style={{marginTop:16}}>
+          <button className="btn btn-out" onClick={onClose}>Cancel</button>
+          <button className="btn btn-gold" onClick={()=>{onSave(tiers);onClose();}}>Save Pricing</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,onUpdateSettings}){
   const[p,setP]=useState(()=>{if(!prop)return{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]};try{return JSON.parse(JSON.stringify(prop));}catch{return{...prop,photos:prop.photos||[],units:(prop.units||[]).map(u=>({...u,rooms:(u.rooms||[])}))};} });
   const[activeUnit,setActiveUnit]=useState(0);
@@ -1103,6 +1203,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
   const[justSaved,setJustSaved]=useState(false);
   const[showUtilModal,setShowUtilModal]=useState(false);
   const[showCloseConfirm,setShowCloseConfirm]=useState(false);
+  const[leasePricingRoom,setLeasePricingRoom]=useState(null);
 
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
   const updP=(val)=>{setP(val);markUnsaved();};
@@ -1216,7 +1317,14 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
 
     {/* ── 3D Tour Scene Editor ── */}
     {p.tourFolder&&<TourSceneManager tourFolder={p.tourFolder} scenes={p.tourScenes||[]} onChange={v=>updP({...p,tourScenes:v})}/>}
-    <div className="fld"><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
+    <div className="fr">
+      <div className="fld" style={{flex:2}}><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
+      <div className="fld" style={{flex:1}}>
+        <label>Turnover Buffer <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— days between leases</span></label>
+        <input type="number" min={0} max={60} value={p.turnoverDays||""} onChange={e=>updP({...p,turnoverDays:Number(e.target.value)||0})} placeholder="e.g. 7"/>
+        {(p.turnoverDays||0)>0&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>{p.turnoverDays} days blocked after each lease ends</div>}
+      </div>
+    </div>
 
     {/* ── Section 2: Rental Configuration ── */}
     <div style={{borderTop:"2px solid rgba(0,0,0,.06)",marginTop:14,paddingTop:14}}>
@@ -1356,12 +1464,15 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
             </div>}
             {!locked&&<div className="fld"><label>Description <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— internal notes</span></label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Additional notes..."/></div>}
             {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
-            {!locked
-              ?<button className="btn btn-red btn-sm" style={{marginTop:4}} onClick={()=>{const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).filter((_,j)=>j!==i)}:u);updP({...p,units});}}>Remove Room</button>
-              :<div style={{display:"flex",gap:6,alignItems:"center",marginTop:6}}>
-                <button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease & Tenant →</button>
-                <span style={{fontSize:10,color:"#999"}}>Manage lease to edit room</span>
-              </div>}
+            <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap"}}>
+              {!locked&&<button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
+                onClick={()=>setLeasePricingRoom({room:r,idx:i})}>
+                💰 Edit Lease Pricing {(r.leaseTiers&&r.leaseTiers.length>0)?"("+r.leaseTiers.filter(t=>t.enabled).length+" active)":""}
+              </button>}
+              {!locked&&<button className="btn btn-red btn-sm" onClick={()=>{const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).filter((_,j)=>j!==i)}:u);updP({...p,units});}}>Remove Room</button>}
+              {locked&&<button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease and Tenant</button>}
+              {locked&&<span style={{fontSize:10,color:"#999"}}>Manage lease to edit room</span>}
+            </div>
           </div>);})}
       </div>}
 
@@ -1377,6 +1488,10 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
 
     {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
     {showUtilModal&&<UtilTemplatesModal settings={settings} onUpdateSettings={onUpdateSettings} onClose={()=>setShowUtilModal(false)}/>}
+    {leasePricingRoom&&<LeasePricingModal room={leasePricingRoom.room} onClose={()=>setLeasePricingRoom(null)} onSave={tiers=>{
+      const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map((r,ri)=>ri===leasePricingRoom.idx?{...r,leaseTiers:tiers}:r)}:u);
+      updP({...p,units});
+    }}/>}
 
 
     {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:"#4a7c59",textAlign:"center"}}>
