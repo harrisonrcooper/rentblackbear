@@ -878,6 +878,222 @@ const PROP_TYPES={
   ADU:{label:"ADU (Main + ADU)",units:[{name:"Main House",label:"Main"},{name:"ADU",label:"ADU"}]},
   Apartment:{label:"Apartment",units:[{name:"Unit 1",label:"1"}]},
 };
+// ─── Tour Scene Manager ─────────────────────────────────────────────
+function TourSceneManager({tourFolder,scenes,onChange}){
+  const BASE_URL=SUPA_URL+"/storage/v1/object/public/property-photos/360/"+tourFolder+"/";
+  const[thumbSize,setThumbSize]=useState(80);
+  const[dragIdx,setDragIdx]=useState(null);
+  const[dragOverIdx,setDragOverIdx]=useState(null);
+  const[editingScene,setEditingScene]=useState(null);
+  const[tourFiles,setTourFiles]=useState([]);
+  const[tourFilesLoading,setTourFilesLoading]=useState(false);
+  const[showFileBrowser,setShowFileBrowser]=useState(false);
+  const[showManual,setShowManual]=useState(false);
+  const[manualFile,setManualFile]=useState("");
+  const[manualLabel,setManualLabel]=useState("");
+  const[manualFloor,setManualFloor]=useState(1);
+
+  const loadBucketFiles=async()=>{
+    setTourFilesLoading(true);
+    try{
+      const r=await fetch(SUPA_URL+"/storage/v1/object/list/property-photos",{
+        method:"POST",
+        headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"},
+        body:JSON.stringify({prefix:"360/"+tourFolder+"/",limit:200,offset:0})
+      });
+      const d=await r.json();
+      setTourFiles(Array.isArray(d)?d.map(f=>f.name).filter(n=>n&&/\.(jpg|jpeg|png)$/i.test(n)):[]);
+    }catch{setTourFiles([]);}
+    setTourFilesLoading(false);
+  };
+
+  const addScene=(file,label,floor)=>{
+    if(scenes.some(s=>s.file===file))return;
+    onChange([...scenes,{id:uid(),file,label:label||file.replace(/\.[^.]+$/,"").replace(/-/g," "),floor:floor||1}]);
+  };
+  const removeScene=(id)=>onChange(scenes.filter(s=>s.id!==id));
+  const updScene=(id,key,val)=>onChange(scenes.map(s=>s.id===id?{...s,[key]:val}:s));
+
+  const onDragStart=(e,i)=>{setDragIdx(i);e.dataTransfer.effectAllowed="move";};
+  const onDragEnter=(i)=>setDragOverIdx(i);
+  const onDragEnd=()=>{
+    if(dragIdx!==null&&dragOverIdx!==null&&dragIdx!==dragOverIdx){
+      const arr=[...scenes];const[moved]=arr.splice(dragIdx,1);arr.splice(dragOverIdx,0,moved);onChange(arr);
+    }
+    setDragIdx(null);setDragOverIdx(null);
+  };
+
+  // Inline edit panel for the active scene
+  const editing=editingScene?scenes.find(s=>s.id===editingScene):null;
+
+  return(
+    <div style={{marginBottom:12}}>
+      {/* Header row */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <label style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.3}}>
+          3D Tour Scenes ({scenes.length} scene{scenes.length!==1?"s":""})
+        </label>
+        {scenes.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:9,color:"#bbb"}}>🔍</span>
+          <input type="range" min={60} max={200} step={10} value={thumbSize} onChange={e=>setThumbSize(Number(e.target.value))}
+            style={{width:64,accentColor:"#d4a853",cursor:"pointer"}} title="Thumbnail size"/>
+          <span style={{fontSize:9,color:"#bbb"}}>drag to reorder</span>
+        </div>}
+      </div>
+
+      {/* Inline scene edit panel */}
+      {editing&&<div style={{marginBottom:8,padding:10,background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8}}>Edit Scene</div>
+        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+          <img src={BASE_URL+editing.file} alt={editing.label}
+            style={{width:72,height:50,objectFit:"cover",borderRadius:5,flexShrink:0,border:"1px solid rgba(0,0,0,.1)"}}
+            onError={e=>{e.target.style.display="none";}}/>
+          <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
+            <div className="fr" style={{gap:6}}>
+              <div className="fld" style={{marginBottom:0,flex:2}}>
+                <label>Scene Name</label>
+                <input value={editing.label} onChange={e=>updScene(editing.id,"label",e.target.value)}
+                  style={{width:"100%"}} placeholder="e.g. Living Room"/>
+              </div>
+              <div className="fld" style={{marginBottom:0,flex:1}}>
+                <label>Floor</label>
+                <select value={editing.floor||1} onChange={e=>updScene(editing.id,"floor",Number(e.target.value))} style={{width:"100%"}}>
+                  <option value={1}>Floor 1</option>
+                  <option value={2}>Floor 2</option>
+                  <option value={3}>Floor 3</option>
+                </select>
+              </div>
+            </div>
+            <div style={{fontSize:9,color:"#999"}}>File: {editing.file}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:6,marginTop:8}}>
+          <button className="btn btn-gold btn-sm" onClick={()=>setEditingScene(null)}>Done</button>
+          <button className="btn btn-red btn-sm" onClick={()=>{removeScene(editing.id);setEditingScene(null);}}>Remove Scene</button>
+        </div>
+      </div>}
+
+      {/* Thumbnail grid */}
+      {scenes.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax("+thumbSize+"px,1fr))",gap:6,marginBottom:8}}>
+        {scenes.map((s,i)=>{
+          const isActive=dragOverIdx===i&&dragIdx!==i;
+          const isEditing=editingScene===s.id;
+          const borderColor=isActive||isEditing?"#d4a853":"rgba(0,0,0,.06)";
+          return(
+          <div key={s.id} draggable
+            onDragStart={e=>onDragStart(e,i)}
+            onDragEnter={()=>onDragEnter(i)}
+            onDragEnd={onDragEnd}
+            onDragOver={e=>e.preventDefault()}
+            style={{position:"relative",borderRadius:7,overflow:"hidden",
+              border:"2px solid "+borderColor,
+              cursor:"grab",aspectRatio:"16/9",
+              boxShadow:dragIdx===i?"0 4px 12px rgba(0,0,0,.2)":"none",
+              opacity:dragIdx===i?.5:1,transition:"border-color .1s,opacity .1s"}}>
+            {/* Floor badge */}
+            <div style={{position:"absolute",top:3,left:3,background:"rgba(0,0,0,.65)",color:"#fff",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:3,pointerEvents:"none"}}>
+              F{s.floor||1}
+            </div>
+            {/* Edit button */}
+            <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}}
+              onClick={e=>{e.stopPropagation();setEditingScene(editingScene===s.id?null:s.id);}}>
+              ✏ Edit
+            </div>
+            <img src={BASE_URL+s.file} alt={s.label}
+              style={{width:"100%",height:"100%",objectFit:"cover",display:"block",pointerEvents:"none"}}
+              onError={e=>{e.target.style.display="none";}}/>
+            {/* Scene label on hover overlay */}
+            <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(0,0,0,.55)",color:"#fff",fontSize:7,padding:"2px 4px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",pointerEvents:"none"}}>
+              {s.label}
+            </div>
+            {/* Remove */}
+            <button onClick={e=>{e.stopPropagation();if(editingScene===s.id)setEditingScene(null);removeScene(s.id);}}
+              style={{position:"absolute",top:3,right:3,width:18,height:18,borderRadius:"50%",background:"rgba(0,0,0,.65)",color:"#fff",border:"none",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3,lineHeight:1}}>
+              ×
+            </button>
+          </div>
+          );
+        })}
+        {/* Add tile */}
+        <div onClick={()=>{setShowFileBrowser(true);setShowManual(false);if(!tourFiles.length)loadBucketFiles();}}
+          style={{aspectRatio:"16/9",borderRadius:7,border:"2px dashed rgba(0,0,0,.1)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#faf9f7",gap:3}}
+          onMouseOver={e=>e.currentTarget.style.borderColor="#d4a853"}
+          onMouseOut={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.1)"}>
+          <span style={{fontSize:18}}>+</span>
+          <span style={{fontSize:8,color:"#999",fontWeight:600}}>Add</span>
+        </div>
+      </div>}
+
+      {/* Empty state */}
+      {scenes.length===0&&<div style={{border:"2px dashed rgba(0,0,0,.08)",borderRadius:8,padding:18,textAlign:"center",cursor:"pointer",marginBottom:6}}
+        onClick={()=>{setShowFileBrowser(true);if(!tourFiles.length)loadBucketFiles();}}>
+        <div style={{fontSize:22,marginBottom:4}}>🎥</div>
+        <div style={{fontSize:11,color:"#999",fontWeight:600}}>No scenes yet — click to browse bucket files</div>
+        <div style={{fontSize:9,color:"#bbb",marginTop:2}}>Or add manually below</div>
+      </div>}
+
+      {/* Add buttons */}
+      <div style={{display:"flex",gap:6,marginBottom:6}}>
+        <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>{setShowFileBrowser(v=>!v);setShowManual(false);if(!tourFiles.length)loadBucketFiles();}}>
+          {showFileBrowser?"Hide File Browser":"Browse Bucket Files"}
+        </button>
+        <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>{setShowManual(v=>!v);setShowFileBrowser(false);}}>
+          {showManual?"Hide":"Add Manually"}
+        </button>
+      </div>
+
+      {/* File browser */}
+      {showFileBrowser&&<div style={{background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:8}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span>360/{tourFolder}/ ({tourFiles.length} files)</span>
+          <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={loadBucketFiles}>{tourFilesLoading?"Loading...":"↺ Refresh"}</button>
+        </div>
+        {tourFilesLoading&&<div style={{fontSize:11,color:"#999",textAlign:"center",padding:8}}>Loading files...</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(90px,1fr))",gap:6,maxHeight:220,overflowY:"auto"}}>
+          {tourFiles.map(file=>{
+            const already=scenes.some(s=>s.file===file);
+            return(
+              <div key={file} onClick={()=>!already&&addScene(file,"",1)}
+                style={{cursor:already?"default":"pointer",borderRadius:6,
+                  border:"1px solid "+(already?"rgba(0,0,0,.06)":"rgba(0,0,0,.1)"),overflow:"hidden",
+                  position:"relative",transition:"all .15s",opacity:already?.6:1}}
+                title={already?"Already added":"Click to add"}>
+                <img src={BASE_URL+file} alt={file} style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",display:"block"}}/>
+                <div style={{fontSize:7,padding:"2px 4px",background:"rgba(0,0,0,.65)",color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file}</div>
+                {already&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:700}}>Added</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>}
+
+      {/* Manual add */}
+      {showManual&&<div style={{background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:8}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8}}>Add Scene Manually</div>
+        <div className="fr" style={{gap:6,marginBottom:6}}>
+          <input value={manualFile} onChange={e=>setManualFile(e.target.value)} placeholder="filename.jpg"
+            style={{flex:2,padding:"6px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+          <input value={manualLabel} onChange={e=>setManualLabel(e.target.value)} placeholder="Scene name"
+            style={{flex:2,padding:"6px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+          <select value={manualFloor} onChange={e=>setManualFloor(Number(e.target.value))}
+            style={{padding:"6px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",width:80}}>
+            <option value={1}>Floor 1</option><option value={2}>Floor 2</option><option value={3}>Floor 3</option>
+          </select>
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          <button className="btn btn-green btn-sm" disabled={!manualFile.trim()} onClick={()=>{
+            const f=manualFile.trim();if(!f)return;
+            if(scenes.some(s=>s.file===f)){alert("Already added.");return;}
+            addScene(f,manualLabel,manualFloor);
+            setManualFile("");setManualLabel("");setManualFloor(1);
+          }}>Add Scene</button>
+          <button className="btn btn-out btn-sm" onClick={()=>setShowManual(false)}>Cancel</button>
+        </div>
+      </div>}
+    </div>
+  );
+}
+
 function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,onUpdateSettings}){
   const[p,setP]=useState(()=>{if(!prop)return{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]};try{return JSON.parse(JSON.stringify(prop));}catch{return{...prop,photos:prop.photos||[],units:(prop.units||[]).map(u=>({...u,rooms:(u.rooms||[])}))};} });
   const[activeUnit,setActiveUnit]=useState(0);
@@ -999,162 +1215,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
     </div>
 
     {/* ── 3D Tour Scene Editor ── */}
-    {p.tourFolder&&(()=>{
-      const BASE_URL=SUPA_URL+"/storage/v1/object/public/property-photos/360/"+p.tourFolder+"/";
-      const scenes=p.tourScenes||[];
-      const updScenes=v=>updP({...p,tourScenes:v});
-      const [tourFiles,setTourFiles]=useState([]);
-      const [tourFilesLoading,setTourFilesLoading]=useState(false);
-      const [showFileBrowser,setShowFileBrowser]=useState(false);
-      const [manualFile,setManualFile]=useState("");
-      const [manualLabel,setManualLabel]=useState("");
-      const [manualFloor,setManualFloor]=useState(1);
-      const [dragIdx,setDragIdx]=useState(null);
-      const [dragOverIdx,setDragOverIdx]=useState(null);
-
-      const loadBucketFiles=async()=>{
-        setTourFilesLoading(true);
-        try{
-          const r=await fetch(SUPA_URL+"/storage/v1/object/list/property-photos",{
-            method:"POST",
-            headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"},
-            body:JSON.stringify({prefix:"360/"+p.tourFolder+"/",limit:200,offset:0})
-          });
-          const d=await r.json();
-          setTourFiles(Array.isArray(d)?d.map(f=>f.name).filter(n=>n&&(n.endsWith(".jpg")||n.endsWith(".jpeg")||n.endsWith(".png"))):[]);
-        }catch{setTourFiles([]);}
-        setTourFilesLoading(false);
-      };
-
-      const addScene=(file,label,floor)=>{
-        const alreadyAdded=scenes.some(s=>s.file===file);
-        if(alreadyAdded)return;
-        const newScene={id:uid(),file,label:label||file.replace(/\.[^.]+$/,"").replace(/-/g," "),floor:floor||1};
-        updScenes([...scenes,newScene]);
-      };
-
-      const removeScene=(id)=>updScenes(scenes.filter(s=>s.id!==id));
-      const updScene=(id,key,val)=>updScenes(scenes.map(s=>s.id===id?{...s,[key]:val}:s));
-
-      const onDragStart=(i)=>setDragIdx(i);
-      const onDragOver=(e,i)=>{e.preventDefault();setDragOverIdx(i);};
-      const onDrop=(i)=>{
-        if(dragIdx===null||dragIdx===i)return;
-        const next=[...scenes];const[moved]=next.splice(dragIdx,1);next.splice(i,0,moved);
-        updScenes(next);setDragIdx(null);setDragOverIdx(null);
-      };
-
-      return(
-        <div style={{borderTop:"2px solid rgba(212,168,83,.15)",marginTop:14,paddingTop:14}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#9a7422",letterSpacing:.3}}>3D TOUR SCENES</div>
-            <span style={{fontSize:9,color:"#999"}}>{scenes.length} scene{scenes.length!==1?"s":""}</span>
-          </div>
-
-          {/* Scene list */}
-          {scenes.length>0&&<div style={{marginBottom:10}}>
-            {scenes.map((s,i)=>(
-              <div key={s.id} draggable
-                onDragStart={()=>onDragStart(i)}
-                onDragOver={e=>onDragOver(e,i)}
-                onDrop={()=>onDrop(i)}
-                onDragEnd={()=>{setDragIdx(null);setDragOverIdx(null);}}
-                style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:4,
-                  borderRadius:8,border:"1px solid "+(dragOverIdx===i?"#d4a853":"rgba(0,0,0,.06)"),
-                  background:dragOverIdx===i?"rgba(212,168,83,.04)":"rgba(0,0,0,.02)",
-                  cursor:"grab",transition:"border-color .15s"}}>
-                {/* Thumbnail */}
-                <img src={BASE_URL+s.file} alt={s.label}
-                  style={{width:52,height:36,objectFit:"cover",borderRadius:4,flexShrink:0,border:"1px solid rgba(0,0,0,.08)"}}
-                  onError={e=>{e.target.style.display="none";}}/>
-                {/* Label */}
-                <input value={s.label} onChange={e=>updScene(s.id,"label",e.target.value)}
-                  style={{flex:1,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}
-                  placeholder="Scene name"/>
-                {/* Floor */}
-                <select value={s.floor||1} onChange={e=>updScene(s.id,"floor",Number(e.target.value))}
-                  style={{padding:"4px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",width:70}}>
-                  <option value={1}>Floor 1</option>
-                  <option value={2}>Floor 2</option>
-                  <option value={3}>Floor 3</option>
-                </select>
-                {/* Drag handle + remove */}
-                <span style={{color:"#ccc",fontSize:14,cursor:"grab",userSelect:"none"}}>⠿</span>
-                <button onClick={()=>removeScene(s.id)}
-                  style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1}}>x</button>
-              </div>
-            ))}
-          </div>}
-
-          {/* Add scenes */}
-          <div style={{display:"flex",gap:6,marginBottom:8}}>
-            <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>{setShowFileBrowser(v=>!v);if(!tourFiles.length)loadBucketFiles();}}>
-              {showFileBrowser?"Hide File Browser":"Browse Bucket Files"}
-            </button>
-            <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setManualFile(v=>v===""?"\xa0":"")}>
-              Add Manually
-            </button>
-          </div>
-
-          {/* File browser */}
-          {showFileBrowser&&<div style={{background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:8}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span>360/{p.tourFolder}/ ({tourFiles.length} files)</span>
-              <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={loadBucketFiles}>{tourFilesLoading?"Loading...":"Refresh"}</button>
-            </div>
-            {tourFilesLoading&&<div style={{fontSize:11,color:"#999",textAlign:"center",padding:8}}>Loading files...</div>}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:6,maxHeight:200,overflowY:"auto"}}>
-              {tourFiles.map(file=>{
-                const already=scenes.some(s=>s.file===file);
-                return(
-                  <div key={file} onClick={()=>!already&&addScene(file,"",1)}
-                    style={{cursor:already?"default":"pointer",opacity:already?.5:1,borderRadius:6,
-                      border:"1px solid "+(already?"rgba(0,0,0,.06)":"rgba(0,0,0,.1)"),overflow:"hidden",
-                      position:"relative",transition:"all .15s"}}
-                    title={already?"Already added":"Click to add"}>
-                    <img src={BASE_URL+file} alt={file}
-                      style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",display:"block"}}/>
-                    <div style={{fontSize:8,padding:"3px 4px",background:"rgba(0,0,0,.6)",color:"#fff",
-                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file}</div>
-                    {already&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:700}}>Added</div>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>}
-
-          {/* Manual add */}
-          {manualFile!==""&&<div style={{background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:8}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8}}>Add Scene Manually</div>
-            <div className="fr" style={{gap:6,marginBottom:6}}>
-              <input value={manualFile.trim()===""?"":manualFile} onChange={e=>setManualFile(e.target.value)}
-                placeholder="filename.jpg" style={{flex:2,padding:"6px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-              <input value={manualLabel} onChange={e=>setManualLabel(e.target.value)}
-                placeholder="Scene name" style={{flex:2,padding:"6px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-              <select value={manualFloor} onChange={e=>setManualFloor(Number(e.target.value))}
-                style={{padding:"6px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",width:80}}>
-                <option value={1}>Floor 1</option><option value={2}>Floor 2</option><option value={3}>Floor 3</option>
-              </select>
-            </div>
-            <div style={{display:"flex",gap:6}}>
-              <button className="btn btn-green btn-sm" disabled={!(manualFile||"").trim()}
-                onClick={()=>{
-                  const f=(manualFile||"").trim();
-                  if(!f)return;
-                  const already=scenes.some(s=>s.file===f);
-                  if(already){alert("That file is already in the tour.");return;}
-                  addScene(f,manualLabel,manualFloor);
-                  setManualFile("");setManualLabel("");setManualFloor(1);
-                }}>Add Scene</button>
-              <button className="btn btn-out btn-sm" onClick={()=>setManualFile("")}>Cancel</button>
-            </div>
-          </div>}
-
-          {scenes.length===0&&!showFileBrowser&&manualFile===""&&
-            <div style={{fontSize:11,color:"#ccc",textAlign:"center",padding:"12px 0",fontStyle:"italic"}}>No scenes yet. Browse files or add manually.</div>}
-        </div>
-      );
-    })()}
+    {p.tourFolder&&<TourSceneManager tourFolder={p.tourFolder} scenes={p.tourScenes||[]} onChange={v=>updP({...p,tourScenes:v})}/>}
     <div className="fld"><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
 
     {/* ── Section 2: Rental Configuration ── */}
