@@ -6654,7 +6654,10 @@ export default function Page(){
                   </div>}
                   {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
                 </div>
-                <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(r.rent)}/mo</div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(r.rent)}/mo</div>
+                  <div style={{fontSize:8,color:"#bbb",marginTop:1}}>12-mo lease</div>
+                </div>
               </div>
             );
           });
