@@ -6537,7 +6537,9 @@ export default function Page(){
       {(a.leaseTerm||a.leasePrice||a.room)&&<div className="tp-card" style={{background:"rgba(74,124,89,.03)",border:"1px solid rgba(74,124,89,.12)"}}>
         <h3 style={{color:"#4a7c59"}}>✅ Lease Preferences — Submitted by Applicant</h3>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:6}}>
+          {a.property&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>🏠 {a.property}</div>}
           {a.room&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>🛏 {a.room}</div>}
+          {a.moveIn&&a.moveIn!=="Flexible"&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>📆 {fmtD(a.moveIn)}</div>}
           {a.leaseTerm&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>📅 {a.leaseTerm}</div>}
           {a.leasePrice&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>💰 ${a.leasePrice}/mo</div>}
         </div>
