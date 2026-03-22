@@ -766,6 +766,7 @@ function LeaseNowModal({room,prop,onClose}){
   const[subErr,setSubErr]=useState("");
   const tiers=getActiveTiers(room);
   const turnover=prop.turnoverDays||0;
+  const lowestPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):0;
 
   // Blocked date ranges: past + lease periods + turnover buffer
   const today=new Date();today.setHours(0,0,0,0);
@@ -885,7 +886,7 @@ function LeaseNowModal({room,prop,onClose}){
                   <div style={{fontSize:16,fontWeight:800,color:sel?"#d4a853":"#1a1714"}}>${t.price}</div>
                   <div style={{fontSize:9,color:"#999"}}>/mo</div>
                 </div>
-                {t.months===12&&<div style={{fontSize:8,fontWeight:800,color:"#4a7c59",background:"rgba(74,124,89,.1)",padding:"2px 6px",borderRadius:3}}>BEST VALUE</div>}
+                {t.price===lowestPrice&&tiers.length>1&&<div style={{fontSize:8,fontWeight:800,color:"#4a7c59",background:"rgba(74,124,89,.1)",padding:"2px 6px",borderRadius:3}}>BEST VALUE</div>}
               </div>);
             })}
           </>}
