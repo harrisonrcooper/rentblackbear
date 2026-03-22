@@ -992,6 +992,11 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
       <div className="fld"><label>Property Photos</label><span style={{fontSize:10,color:"#999"}}>{(p.photos||[]).length} photo{(p.photos||[]).length!==1?"s":""}</span></div>
     </div>
     <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v==="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id} onFocalPoint={(x,y)=>updP({...p,focalPoint:{x,y}})}/>
+    <div className="fld">
+      <label>360 Tour Folder <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— subfolder name inside the Supabase 360/ bucket</span></label>
+      <input value={p.tourFolder||""} onChange={e=>updP({...p,tourFolder:e.target.value})} placeholder="e.g. 908-lee-drive" style={{width:"100%"}}/>
+      {p.tourFolder&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>Tour URL: property-photos/360/{p.tourFolder}/</div>}
+    </div>
     <div className="fld"><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
 
     {/* ── Section 2: Rental Configuration ── */}

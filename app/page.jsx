@@ -541,9 +541,181 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
             </div><div className="rprice">${r.rent}<small>/mo</small></div></div>
         ))}</div>
       )}
-      <h4 className="mst">3D Tour</h4><div className="phbox"><div style={{fontSize:40}}>🏠</div><h4>Coming Soon</h4><p>Insta360 walkthrough will be embedded here</p></div>
+      <h4 className="mst">3D Tour</h4>
+      {p.tourFolder ? <VirtualTour360 tourFolder={p.tourFolder} propertyName={p.name}/> : <div className="phbox"><div style={{fontSize:40}}>🏠</div><h4>Coming Soon</h4><p>Insta360 walkthrough will be embedded here</p></div>}
       <div className="mcta"><button className="bp" onClick={goApply}>Apply for a Room</button><button className="bo" onClick={goApply}>Schedule a Tour</button></div>
     </div></div></div>);
+}
+
+
+// ─── 360 Virtual Tour ───────────────────────────────────────────────
+const SUPA_STORAGE="https://vxysaclhucdjxzcknoar.supabase.co/storage/v1/object/public/property-photos/360/";
+
+const SCENE_DEFS=[
+  {id:"floor1-foyer",            label:"Foyer",                   file:"floor1-foyer.jpg",            floor:1},
+  {id:"floor1-kitchen-1",        label:"Kitchen",                 file:"floor1-kitchen-1.jpg",         floor:1},
+  {id:"floor1-kitchen-2",        label:"Kitchen (2)",             file:"floor1-kitchen-2.jpg",         floor:1},
+  {id:"floor1-kitchen-3",        label:"Kitchen (3)",             file:"floor1-kitchen-3.jpg",         floor:1},
+  {id:"floor1-bedroom1-entrance",label:"Bedroom 1 Entrance",      file:"floor1-bedroom1-entrance.jpg", floor:1},
+  {id:"floor1-bedroom1-1",       label:"Bedroom 1",               file:"floor1-bedroom1-1.jpg",        floor:1},
+  {id:"floor1-bedroom1-2",       label:"Bedroom 1 (2)",           file:"floor1-bedroom1-2.jpg",        floor:1},
+  {id:"floor1-bedroom1-3",       label:"Bedroom 1 (3)",           file:"floor1-bedroom1-3.jpg",        floor:1},
+  {id:"floor1-bedroom2-entrance",label:"Bedroom 2 Entrance",      file:"floor1-bedroom2-entrance.jpg", floor:1},
+  {id:"floor1-bedroom2-1",       label:"Bedroom 2",               file:"floor1-bedroom2-1.jpg",        floor:1},
+  {id:"floor1-bathroom1-entrance",label:"Bathroom Entrance",      file:"floor1-bathroom1-entrance.jpg",floor:1},
+  {id:"floor1-bathroom1-1",      label:"Bathroom",                file:"floor1-bathroom1-1.jpg",       floor:1},
+  {id:"floor1-bathroom1-2",      label:"Bathroom (2)",            file:"floor1-bathroom1-2.jpg",       floor:1},
+  {id:"floor2-hallway-1",        label:"Hallway",                 file:"floor2-hallway-1.jpg",         floor:2},
+  {id:"floor2-hallway-2",        label:"Hallway (2)",             file:"floor2-hallway-2.jpg",         floor:2},
+  {id:"floor2-hallway-3",        label:"Hallway (3)",             file:"floor2-hallway-3.jpg",         floor:2},
+  {id:"floor2-primary-suite-1",  label:"Primary Suite",           file:"floor2-primary-suite-1.jpg",   floor:2},
+  {id:"floor2-primary-suite-2",  label:"Primary Suite (2)",       file:"floor2-primary-suite-2.jpg",   floor:2},
+  {id:"floor2-primary-suite-bathroom-1",label:"Primary Bathroom", file:"floor2-primary-suite-bathroom-1.jpg",floor:2},
+  {id:"floor2-primary-suite-closet-1",  label:"Primary Closet",   file:"floor2-primary-suite-closet-1.jpg",  floor:2},
+  {id:"floor2-bedroom3-1",       label:"Bedroom 3",               file:"floor2-bedroom3-1.jpg",        floor:2},
+  {id:"floor2-bedroom4-1",       label:"Bedroom 4",               file:"floor2-bedroom4-1.jpg",        floor:2},
+  {id:"floor2-bathroom2-1",      label:"Bathroom 2",              file:"floor2-bathroom2-1.jpg",       floor:2},
+  {id:"floor2-bathroom2-2",      label:"Bathroom 2 (2)",          file:"floor2-bathroom2-2.jpg",       floor:2},
+];
+
+function VirtualTour360({tourFolder,propertyName}){
+  const viewerRef=useRef(null);
+  const pannellumRef=useRef(null);
+  const[ready,setReady]=useState(false);
+  const[loading,setLoading]=useState(true);
+  const[activeScene,setActiveScene]=useState(SCENE_DEFS[0].id);
+  const[activeFloor,setActiveFloor]=useState(1);
+
+  // Load Pannellum from CDN once
+  useEffect(()=>{
+    if(typeof window==="undefined")return;
+    if(document.getElementById("pn-css")){setReady(true);return;}
+    const css=document.createElement("link");css.id="pn-css";css.rel="stylesheet";
+    css.href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css";
+    document.head.appendChild(css);
+    const js=document.createElement("script");
+    js.src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js";
+    js.onload=()=>setReady(true);
+    document.head.appendChild(js);
+  },[]);
+
+  // Build and init viewer when ready or scene changes
+  useEffect(()=>{
+    if(!ready||!viewerRef.current||typeof window==="undefined"||!window.pannellum)return;
+    setLoading(true);
+    if(pannellumRef.current){pannellumRef.current.destroy();pannellumRef.current=null;}
+    const base=SUPA_STORAGE+tourFolder+"/";
+    const scenes={};
+    SCENE_DEFS.forEach(s=>{scenes[s.id]={title:s.label,panorama:base+s.file,hotSpots:[]};});
+    pannellumRef.current=window.pannellum.viewer(viewerRef.current,{
+      default:{firstScene:activeScene,sceneFadeDuration:400,autoLoad:true,showControls:false},scenes
+    });
+    pannellumRef.current.on("load",()=>setLoading(false));
+    pannellumRef.current.on("error",()=>setLoading(false));
+    return()=>{if(pannellumRef.current){pannellumRef.current.destroy();pannellumRef.current=null;}};
+  },[ready,activeScene,tourFolder]);
+
+  const goScene=(id)=>{setActiveScene(id);setActiveFloor(id.startsWith("floor1")?1:2);};
+  const floorScenes=SCENE_DEFS.filter(s=>s.floor===activeFloor);
+  const idx=SCENE_DEFS.findIndex(s=>s.id===activeScene);
+  const prev=SCENE_DEFS[idx-1];const next=SCENE_DEFS[idx+1];
+  const current=SCENE_DEFS.find(s=>s.id===activeScene);
+
+  return(
+    <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(212,168,83,.2)",background:"#1a1714",marginBottom:16}}>
+      {/* Header */}
+      <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(212,168,83,.12)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:2,marginBottom:1}}>Virtual Tour</div>
+          <div style={{fontSize:13,color:"#f5f0e8",fontWeight:700}}>{propertyName}</div>
+        </div>
+        <div style={{display:"flex",gap:5}}>
+          {[1,2].map(f=>(
+            <button key={f} onClick={()=>{setActiveFloor(f);goScene(SCENE_DEFS.find(s=>s.floor===f).id);}}
+              style={{padding:"5px 12px",borderRadius:5,border:"1px solid "+(activeFloor===f?"#d4a853":"rgba(255,255,255,.1)"),
+                background:activeFloor===f?"rgba(212,168,83,.15)":"transparent",
+                color:activeFloor===f?"#d4a853":"rgba(255,255,255,.4)",fontSize:10,fontWeight:700,
+                cursor:"pointer",letterSpacing:1,textTransform:"uppercase",fontFamily:"inherit"}}>
+              Floor {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{display:"flex"}}>
+        {/* Room list */}
+        <div style={{width:160,borderRight:"1px solid rgba(212,168,83,.08)",overflowY:"auto",maxHeight:420,flexShrink:0}}>
+          {floorScenes.map(s=>{
+            const active=activeScene===s.id;
+            return(
+              <button key={s.id} onClick={()=>goScene(s.id)}
+                style={{display:"block",width:"100%",textAlign:"left",padding:"8px 14px",
+                  background:active?"rgba(212,168,83,.1)":"transparent",
+                  borderLeft:"3px solid "+(active?"#d4a853":"transparent"),
+                  color:active?"#d4a853":"rgba(255,255,255,.5)",fontSize:10,
+                  fontWeight:active?700:400,cursor:"pointer",border:"none",
+                  borderBottom:"1px solid rgba(255,255,255,.03)",fontFamily:"inherit",lineHeight:1.4}}>
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Viewer */}
+        <div style={{flex:1,position:"relative",height:420}}>
+          {loading&&(
+            <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#1a1714",zIndex:10,gap:10}}>
+              <div style={{width:32,height:32,border:"2px solid rgba(212,168,83,.2)",borderTopColor:"#d4a853",borderRadius:"50%",animation:"bbspin 1s linear infinite"}}/>
+              <div style={{color:"rgba(255,255,255,.3)",fontSize:10,letterSpacing:1}}>Loading 360 view...</div>
+            </div>
+          )}
+          <div ref={viewerRef} style={{width:"100%",height:"100%"}}/>
+          {/* Room + floor badge */}
+          <div style={{position:"absolute",top:10,left:10,background:"rgba(26,23,20,.8)",backdropFilter:"blur(6px)",borderRadius:5,padding:"4px 8px",border:"1px solid rgba(212,168,83,.15)",zIndex:5,pointerEvents:"none"}}>
+            <div style={{fontSize:8,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Floor {activeFloor}</div>
+            <div style={{fontSize:11,color:"#f5f0e8",fontWeight:600}}>{current&&current.label}</div>
+          </div>
+          {/* Controls */}
+          <div style={{position:"absolute",bottom:10,right:10,display:"flex",gap:4,zIndex:5}}>
+            {[["↑",()=>pannellumRef.current?.setPitch((pannellumRef.current.getPitch()||0)+15)],
+              ["↓",()=>pannellumRef.current?.setPitch((pannellumRef.current.getPitch()||0)-15)],
+              ["←",()=>pannellumRef.current?.setYaw((pannellumRef.current.getYaw()||0)-30)],
+              ["→",()=>pannellumRef.current?.setYaw((pannellumRef.current.getYaw()||0)+30)],
+              ["+",()=>pannellumRef.current?.setHfov(Math.max(30,(pannellumRef.current.getHfov()||100)-15))],
+              ["−",()=>pannellumRef.current?.setHfov(Math.min(120,(pannellumRef.current.getHfov()||100)+15))]
+            ].map(([lbl,fn])=>(
+              <button key={lbl} onClick={fn}
+                style={{width:28,height:28,borderRadius:5,border:"1px solid rgba(255,255,255,.12)",
+                  background:"rgba(26,23,20,.8)",color:"rgba(255,255,255,.7)",fontSize:12,
+                  cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
+                  fontFamily:"monospace",backdropFilter:"blur(4px)"}}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{padding:"8px 14px",borderTop:"1px solid rgba(212,168,83,.08)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:9,color:"rgba(255,255,255,.25)",letterSpacing:.5}}>Click and drag to look around</div>
+        <div style={{display:"flex",gap:5}}>
+          <button disabled={!prev} onClick={()=>prev&&goScene(prev.id)}
+            style={{padding:"4px 10px",borderRadius:5,border:"1px solid rgba(255,255,255,.08)",background:"transparent",
+              color:prev?"rgba(255,255,255,.5)":"rgba(255,255,255,.15)",fontSize:10,cursor:prev?"pointer":"default",fontFamily:"inherit"}}>
+            Prev
+          </button>
+          <button disabled={!next} onClick={()=>next&&goScene(next.id)}
+            style={{padding:"4px 10px",borderRadius:5,border:"1px solid "+(next?"#d4a853":"rgba(255,255,255,.08)"),
+              background:next?"rgba(212,168,83,.08)":"transparent",
+              color:next?"#d4a853":"rgba(255,255,255,.15)",fontSize:10,cursor:next?"pointer":"default",fontFamily:"inherit"}}>
+            Next
+          </button>
+        </div>
+      </div>
+      <style>{`@keyframes bbspin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 }
 
 // ─── Interactive Map ────────────────────────────────────────────────
@@ -641,7 +813,7 @@ function Chat(){
 
 function Screening({properties}){
   const PROPS=properties||[];
-  const[step,setStep]=useState(0);const[form,setForm]=useState({firstName:"",lastName:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
+  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
   const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});
   const[qs,setQs]=useState(SCREEN_QS);
   useEffect(()=>{supaGet("hq-screen-qs").then(d=>{if(d&&Array.isArray(d)&&d.length>0)setQs(d);});},[]); 
@@ -655,8 +827,7 @@ function Screening({properties}){
   const isValidEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const isValidPhone=p=>p.replace(/\D/g,"").length===10;
   const errs={};
-  if(touched.firstName&&!form.firstName.trim())errs.firstName="First name is required";
-  if(touched.lastName&&!form.lastName.trim())errs.lastName="Last name is required";
+  if(touched.name&&!form.name.trim())errs.name="Full name is required";
   if(touched.email&&!form.email)errs.email="Email is required";
   else if(touched.email&&!isValidEmail(form.email))errs.email="Enter a valid email address";
   if(touched.phone&&!form.phone)errs.phone="Phone is required";
@@ -668,14 +839,13 @@ function Screening({properties}){
   if(touched.sourceOther&&form.source==="Other"&&!form.sourceOther?.trim())errs.sourceOther="Please tell us how you heard about us";
   if(touched.reason&&!form.reason)errs.reason="This field is required";
   else if(touched.reason&&form.reason.length<10)errs.reason="Please provide at least 10 characters";
-  const canSubmit=form.firstName.trim()&&form.lastName.trim()&&isValidEmail(form.email)&&isValidPhone(form.phone)&&form.property&&form.moveIn&&form.source&&(form.source!=="Other"||form.sourceOther?.trim())&&form.reason.length>=10;
-  const touchAll=()=>setTouched({firstName:true,lastName:true,email:true,phone:true,property:true,moveIn:true,source:true,sourceOther:true,reason:true});
+  const canSubmit=form.name.trim()&&isValidEmail(form.email)&&isValidPhone(form.phone)&&form.property&&form.moveIn&&form.source&&(form.source!=="Other"||form.sourceOther?.trim())&&form.reason.length>=10;
+  const touchAll=()=>setTouched({name:true,email:true,phone:true,property:true,moveIn:true,source:true,sourceOther:true,reason:true});
   const submitApp=async()=>{
     touchAll();if(!canSubmit){setSubError("Please complete all required fields.");return;}
     setSubmitting(true);setSubError("");
     try{
-      const fullName=`${form.firstName} ${form.lastName}`.trim();
-      const submitData={...form,name:fullName,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
+      const submitData={...form,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
       const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(submitData)});
       const d=await res.json();
       if(d.ok){
@@ -698,13 +868,10 @@ function Screening({properties}){
       {step===FORM&&<div style={{animation:"fadeUp .3s"}}><div className="scr-hd" style={{marginBottom:20}}><h2>{formSettings.heading||"Almost There"}</h2><p>{formSettings.subtext||"All fields are required."}</p></div>
         <div className="sform">
           <div className="sform-row">
-            <div style={{flex:1}}><input className="sinp" placeholder="First Name *" style={fldStyle("firstName")} value={form.firstName} onChange={e=>setForm({...form,firstName:e.target.value})} onBlur={()=>setTouched({...touched,firstName:true})}/>{errMsg("firstName")}</div>
-            <div style={{flex:1}}><input className="sinp" placeholder="Last Name *" style={fldStyle("lastName")} value={form.lastName} onChange={e=>setForm({...form,lastName:e.target.value})} onBlur={()=>setTouched({...touched,lastName:true})}/>{errMsg("lastName")}</div>
-          </div>
-          <div className="sform-row">
+            <div style={{flex:1}}><input className="sinp" placeholder="Full Name *" style={fldStyle("name")} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} onBlur={()=>setTouched({...touched,name:true})}/>{errMsg("name")}</div>
             <div style={{flex:1}}><input className="sinp" placeholder="Phone *" type="tel" style={fldStyle("phone")} value={form.phone} onChange={e=>setForm({...form,phone:fmtPhone(e.target.value)})} onBlur={()=>setTouched({...touched,phone:true})}/>{errMsg("phone")}</div>
-            <div style={{flex:1}}><input className="sinp" placeholder="Email *" type="email" style={fldStyle("email")} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onBlur={()=>setTouched({...touched,email:true})}/>{errMsg("email")}</div>
           </div>
+          <div><input className="sinp" placeholder="Email *" type="email" style={fldStyle("email")} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onBlur={()=>setTouched({...touched,email:true})}/>{errMsg("email")}</div>
           <div><select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}><option value="">Property interested in? *</option>{PROPS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>{errMsg("property")}</div>
           <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
             <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
@@ -759,7 +926,7 @@ function Screening({properties}){
           {subError&&<div style={{background:"rgba(168,58,46,.08)",color:"#a83a2e",padding:"10px 14px",borderRadius:8,fontSize:13,marginBottom:8}}>{subError}</div>}
           <button className="scr-sub" disabled={submitting} onClick={submitApp}>{submitting?"Submitting...":"Submit Application →"}</button>
         </div></div>}
-      {step===DONE&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.firstName?`, ${form.firstName}`:""}! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
+      {step===DONE&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
     </div></div></section>
   );
 }
