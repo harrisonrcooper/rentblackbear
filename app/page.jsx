@@ -89,6 +89,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-5px)}30%{transform:translateX(5px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}80%{transform:translateX(-1px)}}
 @keyframes chatOpen{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes dotBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
 .fu{animation:fadeUp .7s ease-out both}.fu1{animation-delay:.1s}.fu2{animation-delay:.2s}.fu3{animation-delay:.3s}.fu4{animation-delay:.4s}
@@ -769,6 +770,8 @@ function LeaseNowModal({room,prop,onClose}){
   const[touched,setTouched]=useState({});
   const[submitting,setSubmitting]=useState(false);
   const[subErr,setSubErr]=useState("");
+  const[formShake,setFormShake]=useState(false);
+  const shakeForm=()=>{setFormShake(true);setTimeout(()=>setFormShake(false),500);};
   const tiers=getActiveTiers(room);
   const turnover=prop.turnoverDays||0;
   const lowestPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):0;
@@ -835,7 +838,7 @@ function LeaseNowModal({room,prop,onClose}){
 
   const submitApp=async()=>{
     setTouched({name:true,email:true,phone:true,source:true,reason:true});
-    if(!canSubmit)return;
+    if(!canSubmit){shakeForm();return;}
     setSubmitting(true);setSubErr("");
     try{
       const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
@@ -988,7 +991,7 @@ function LeaseNowModal({room,prop,onClose}){
           </div>}
 
           {/* Step 4 — Contact info */}
-          {step===4&&<>
+          {step===4&&<div style={{animation:formShake?"shake .4s ease":undefined}}>
             <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Almost There</div>
             <div style={{fontSize:11,color:"#999",marginBottom:14}}>You pre-qualify! Fill out your info and we will reach out within 24 hours.</div>
             {[
@@ -1018,7 +1021,7 @@ function LeaseNowModal({room,prop,onClose}){
             <div style={{fontSize:9,color:"#bbb",marginTop:4}}>
               {selTier?.months} months at ${selTier?.price}/mo · Move-in {selDate}
             </div>
-          </>}
+          </div>}
 
           {/* Step 5 — Done */}
           {step===5&&<div style={{textAlign:"center",padding:"20px 0"}}>

@@ -1422,7 +1422,14 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
             {locked&&<div style={{position:"absolute",top:6,right:8}}><span className="badge b-green" style={{fontSize:8}}>🔗 {r.tenant.name}</span></div>}
             <div className="fr3">
               <div className="fld"><label>Name</label><input value={r.name} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"name",e.target.value)}/></div>
-              <div className="fld"><label>Rent $/mo</label><input type="number" value={r.rent} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"rent",e.target.value)}/></div>
+              <div className="fld">
+                <label>Rent $/mo</label>
+                <input type="number" value={r.rent} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"rent",e.target.value)}/>
+                {!locked&&<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#9a7422",borderColor:"rgba(212,168,83,.3)",marginTop:4,width:"100%"}}
+                  onClick={()=>setLeasePricingRoom({room:r,idx:i})}>
+                  💰 Lease Pricing {(r.leaseTiers&&r.leaseTiers.length>0)?"("+r.leaseTiers.filter(t=>t.enabled).length+" tiers)":"(set up)"}
+                </button>}
+              </div>
               <div className="fld"><label>Bath</label><select value={String(r.pb)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"pb",e.target.value)}><option value="true">Private</option><option value="false">Shared</option></select></div>
             </div>
             <div className="fr3">
@@ -1465,10 +1472,6 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
             {!locked&&<div className="fld"><label>Description <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— internal notes</span></label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Additional notes..."/></div>}
             {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
             <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap"}}>
-              {!locked&&<button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
-                onClick={()=>setLeasePricingRoom({room:r,idx:i})}>
-                💰 Edit Lease Pricing {(r.leaseTiers&&r.leaseTiers.length>0)?"("+r.leaseTiers.filter(t=>t.enabled).length+" active)":""}
-              </button>}
               {!locked&&<button className="btn btn-red btn-sm" onClick={()=>{const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).filter((_,j)=>j!==i)}:u);updP({...p,units});}}>Remove Room</button>}
               {locked&&<button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease and Tenant</button>}
               {locked&&<span style={{fontSize:10,color:"#999"}}>Manage lease to edit room</span>}
