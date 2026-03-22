@@ -986,6 +986,7 @@ export default function Page(){
         utils:firstUnit?.utils||p.utils||"allIncluded",
         clean:firstUnit?.clean||p.clean||"Biweekly",
         desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
+        tourFolder:p.tourFolder||null,
         imgs:(p.photos&&p.photos.length>0)?p.photos:[],
         units:p.units||[],
         rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le})),
