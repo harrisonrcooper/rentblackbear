@@ -881,6 +881,8 @@ const PROP_TYPES={
 // ─── Tour Scene Manager ─────────────────────────────────────────────
 function TourSceneManager({tourFolder,scenes,onChange}){
   const BASE_URL=SUPA_URL+"/storage/v1/object/public/property-photos/360/"+tourFolder+"/";
+  // Use Supabase image transform for small thumbnails — avoids loading 72MP files in the editor
+  const thumbURL=(file,w=200)=>SUPA_URL+"/storage/v1/render/image/public/property-photos/360/"+tourFolder+"/"+file+"?width="+w+"&quality=55&resize=cover";
   const[thumbSize,setThumbSize]=useState(80);
   const[dragIdx,setDragIdx]=useState(null);
   const[dragOverIdx,setDragOverIdx]=useState(null);
@@ -946,7 +948,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
       {editing&&<div style={{marginBottom:8,padding:10,background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8}}>
         <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8}}>Edit Scene</div>
         <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-          <img src={BASE_URL+editing.file} alt={editing.label}
+          <img src={thumbURL(editing.file,300)} alt={editing.label}
             style={{width:72,height:50,objectFit:"cover",borderRadius:5,flexShrink:0,border:"1px solid rgba(0,0,0,.1)"}}
             onError={e=>{e.target.style.display="none";}}/>
           <div style={{flex:1,display:"flex",flexDirection:"column",gap:6}}>
@@ -1000,7 +1002,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
               onClick={e=>{e.stopPropagation();setEditingScene(editingScene===s.id?null:s.id);}}>
               ✏ Edit
             </div>
-            <img src={BASE_URL+s.file} alt={s.label}
+            <img src={thumbURL(s.file)} alt={s.label}
               style={{width:"100%",height:"100%",objectFit:"cover",display:"block",pointerEvents:"none"}}
               onError={e=>{e.target.style.display="none";}}/>
             {/* Scene label on hover overlay */}
@@ -1078,7 +1080,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
                   position:"relative",transition:"all .15s",opacity:already?.6:1,
                   background:sel?"rgba(212,168,83,.06)":"transparent"}}
                 title={already?"Already added":sel?"Click to deselect":"Click to select"}>
-                <img src={BASE_URL+file} alt={file} style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",display:"block"}}/>
+                <img src={thumbURL(file)} alt={file} style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",display:"block"}}/>
                 <div style={{fontSize:7,padding:"2px 4px",background:"rgba(0,0,0,.65)",color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file}</div>
                 {already&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:700}}>Added</div>}
                 {sel&&!already&&<div style={{position:"absolute",top:3,right:3,width:16,height:16,background:"#d4a853",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#1a1714",fontWeight:900}}>✓</div>}

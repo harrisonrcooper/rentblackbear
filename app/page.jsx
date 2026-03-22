@@ -992,6 +992,9 @@ function LeaseNowModal({room,prop,onClose}){
 
           {/* Step 4 — Contact info */}
           {step===4&&<div style={{animation:formShake?"shake .4s ease":undefined}}>
+            {formShake&&!canSubmit&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,color:"#c45c4a",fontSize:11,fontWeight:700}}>
+              Please fill in all required fields before submitting.
+            </div>}
             <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Almost There</div>
             <div style={{fontSize:11,color:"#999",marginBottom:14}}>You pre-qualify! Fill out your info and we will reach out within 24 hours.</div>
             {[
@@ -1038,16 +1041,13 @@ function LeaseNowModal({room,prop,onClose}){
 
         </div>
 
-        {/* Footer nav */}
-        {!failed&&step<5&&step!==3&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#faf9f7"}}>
+        {/* Footer nav — steps 1 and 2 only */}
+        {!failed&&(step===1||step===2)&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#faf9f7"}}>
           {step>1
             ?<button className="bo" style={{padding:"10px 20px"}} onClick={()=>setStep(s=>s-1)}>Back</button>
             :<button className="bo" style={{padding:"10px 20px"}} onClick={onClose}>Cancel</button>}
           {step===1&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selTier} onClick={()=>setStep(2)}>Next</button>}
           {step===2&&<button className="bp" style={{padding:"10px 24px"}} disabled={!selDate} onClick={()=>{setStep(3);setQStep(0);setFailed(false);}}>Next</button>}
-          {step===4&&<button className="bp" style={{padding:"10px 24px",opacity:submitting?.7:1}} disabled={submitting} onClick={submitApp}>
-            {submitting?"Submitting...":"Submit Application"}
-          </button>}
         </div>}
         {/* Back button on pre-screen (no Next — answered by Yes/No buttons) */}
         {step===3&&!failed&&<div style={{padding:"12px 20px",borderTop:"1px solid rgba(0,0,0,.06)",background:"#faf9f7"}}>
@@ -1161,7 +1161,8 @@ function Chat(){
 function Screening({properties}){
   const PROPS=properties||[];
   const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
-  const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});
+  const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});const[formShake,setFormShake]=useState(false);
+  const shakeForm=()=>{setFormShake(true);setTimeout(()=>setFormShake(false),500);};
   const[qs,setQs]=useState(SCREEN_QS);
   useEffect(()=>{supaGet("hq-screen-qs").then(d=>{if(d&&Array.isArray(d)&&d.length>0)setQs(d);});},[]); 
   const DEF_FORM_SETTINGS={heading:"Almost There",subtext:"All fields are required.",sources:["Roomies.com","Google Search","Facebook / Instagram","Friend / Referral","Zillow / Apartments.com","Craigslist","Drive-by / Sign","Military / Contractor Network","NASA / Redstone Network","Other"]};
@@ -1189,7 +1190,7 @@ function Screening({properties}){
   const canSubmit=form.name.trim()&&isValidEmail(form.email)&&isValidPhone(form.phone)&&form.property&&form.moveIn&&form.source&&(form.source!=="Other"||form.sourceOther?.trim())&&form.reason.length>=10;
   const touchAll=()=>setTouched({name:true,email:true,phone:true,property:true,moveIn:true,source:true,sourceOther:true,reason:true});
   const submitApp=async()=>{
-    touchAll();if(!canSubmit){setSubError("Please complete all required fields.");return;}
+    touchAll();if(!canSubmit){setSubError("Please complete all required fields.");shakeForm();return;}
     setSubmitting(true);setSubError("");
     try{
       const submitData={...form,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
@@ -1212,7 +1213,11 @@ function Screening({properties}){
         <div className="scr-btns"><button className="scr-btn y" onClick={()=>answer("Yes")}>Yes</button><button className="scr-btn n" onClick={()=>answer("No")}>No</button></div></div></>}
       {step===PASS&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(45,106,63,.1)",color:"var(--gn)"}}>✓</div><h3>You Pre-Qualify!</h3><p>Fill out your info and we'll be in touch within 24 hours.</p><button className="bp" style={{width:"100%"}} onClick={()=>setStep(FORM)}>Continue →</button></div>}
       {step===FAIL&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(168,58,46,.08)",color:"var(--rd)"}}>✕</div><h3>Thanks for Your Interest</h3><p>Based on your answers, our properties may not be the right fit at this time. Questions? Email <strong>{S_INFO.email}</strong></p><button className="bo" style={{width:"100%",marginTop:12}} onClick={()=>setStep(0)}>Start Over</button></div>}
-      {step===FORM&&<div style={{animation:"fadeUp .3s"}}><div className="scr-hd" style={{marginBottom:20}}><h2>{formSettings.heading||"Almost There"}</h2><p>{formSettings.subtext||"All fields are required."}</p></div>
+      {step===FORM&&<div style={{animation:formShake?"shake .4s ease":"fadeUp .3s"}}>
+        {formShake&&!canSubmit&&<div style={{marginBottom:16,padding:"10px 14px",background:"rgba(168,58,46,.08)",border:"1px solid rgba(168,58,46,.15)",borderRadius:8,color:"#a83a2e",fontSize:12,fontWeight:700}}>
+          Please fill in all required fields before submitting.
+        </div>}
+        <div className="scr-hd" style={{marginBottom:20}}><h2>{formSettings.heading||"Almost There"}</h2><p>{formSettings.subtext||"All fields are required."}</p></div>
         <div className="sform">
           <div className="sform-row">
             <div style={{flex:1}}><input className="sinp" placeholder="Full Name *" style={fldStyle("name")} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} onBlur={()=>setTouched({...touched,name:true})}/>{errMsg("name")}</div>
@@ -1272,7 +1277,8 @@ function Screening({properties}){
           <div><textarea className="stxt" placeholder="Why are you leaving your current residence? *" style={fldStyle("reason")} value={form.reason} onChange={e=>setForm({...form,reason:e.target.value})} onBlur={()=>setTouched({...touched,reason:true})}/>{errMsg("reason")}{touched.reason&&form.reason.length>0&&form.reason.length<10&&<div style={{fontSize:10,color:"#999"}}>{form.reason.length}/10 characters</div>}</div>
           {subError&&<div style={{background:"rgba(168,58,46,.08)",color:"#a83a2e",padding:"10px 14px",borderRadius:8,fontSize:13,marginBottom:8}}>{subError}</div>}
           <button className="scr-sub" disabled={submitting} onClick={submitApp}>{submitting?"Submitting...":"Submit Application →"}</button>
-        </div></div>}
+        </div>
+      </div>}
       {step===DONE&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
     </div></div></section>
   );
