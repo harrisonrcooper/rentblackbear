@@ -34,7 +34,7 @@ function applyTemplate(str, vars) {
 export async function POST(request) {
   try {
     const data = await request.json();
-    const { name, email, phone, property, moveIn, income, source, reason } = data;
+    const { name, email, phone, property, moveIn, income, source, reason, room, leaseTerm, leasePrice } = data;
     const s = await getSettings();
     const resendKey = process.env.RESEND_API_KEY;
 
@@ -45,7 +45,9 @@ export async function POST(request) {
       id: Math.random().toString(36).slice(2),
       name, email, phone,
       property: property || "",
-      room: "",
+      room: room || "",
+      leaseTerm: leaseTerm || "",
+      leasePrice: leasePrice || "",
       moveIn: moveIn || "Flexible",
       income: income || "",
       source: source || "",
@@ -89,6 +91,9 @@ export async function POST(request) {
                 <tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Email</td><td style="padding:5px 0;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${email}</td></tr>
                 <tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Phone</td><td style="padding:5px 0;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${phone||"—"}</td></tr>
                 <tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Property</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${property||"Not specified"}</td></tr>
+                ${room ? `<tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Room Preference</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${room}</td></tr>` : ""}
+                ${leaseTerm ? `<tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Lease Term</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${leaseTerm}</td></tr>` : ""}
+                ${leasePrice ? `<tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Agreed Rate</td><td style="padding:5px 0;font-weight:700;color:#4a7c59;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">$${leasePrice}/mo</td></tr>` : ""}
                 <tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Move-in</td><td style="padding:5px 0;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${moveIn||"Flexible"}</td></tr>
                 <tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Income</td><td style="padding:5px 0;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${income||"Not provided"}</td></tr>
                 <tr><td style="padding:5px 0;color:#5c4a3a;">Source</td><td style="padding:5px 0;text-align:right;">${source||"—"}</td></tr>
@@ -130,6 +135,9 @@ export async function POST(request) {
               <table style="width:100%;border-collapse:collapse;font-size:13px;">
                 <tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Name</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${name}</td></tr>
                 ${property ? `<tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Property</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${property}</td></tr>` : ""}
+                ${room ? `<tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Room</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${room}</td></tr>` : ""}
+                ${leaseTerm ? `<tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Lease Term</td><td style="padding:5px 0;font-weight:700;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">${leaseTerm}</td></tr>` : ""}
+                ${leasePrice ? `<tr><td style="padding:5px 0;color:#5c4a3a;border-bottom:1px solid rgba(0,0,0,.05);">Monthly Rate</td><td style="padding:5px 0;font-weight:700;color:#4a7c59;text-align:right;border-bottom:1px solid rgba(0,0,0,.05);">$${leasePrice}/mo</td></tr>` : ""}
                 <tr><td style="padding:5px 0;color:#5c4a3a;">Preferred Move-in</td><td style="padding:5px 0;text-align:right;">${moveIn || "Flexible"}</td></tr>
               </table>
             </div>

@@ -6533,6 +6533,17 @@ export default function Page(){
         </div>
       </div>
 
+      {/* ── Lease Preference (from Lease Now flow) ── */}
+      {(a.leaseTerm||a.leasePrice||a.room)&&<div className="tp-card" style={{background:"rgba(74,124,89,.03)",border:"1px solid rgba(74,124,89,.12)"}}>
+        <h3 style={{color:"#4a7c59"}}>✅ Lease Preferences — Submitted by Applicant</h3>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:6}}>
+          {a.room&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>🛏 {a.room}</div>}
+          {a.leaseTerm&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>📅 {a.leaseTerm}</div>}
+          {a.leasePrice&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>💰 ${a.leasePrice}/mo</div>}
+        </div>
+        <div style={{fontSize:9,color:"#999",marginTop:8}}>These are the terms the applicant agreed to when they clicked Lease Now. Use as reference when assigning room and setting rent.</div>
+      </div>}
+
 
       {a.status==="reviewing"&&<div className="tp-card"><h3>📋 Review Checklist</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"not-started";return(
