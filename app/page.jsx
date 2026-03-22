@@ -542,7 +542,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx}){
         ))}</div>
       )}
       <h4 className="mst">3D Tour</h4>
-      {p.tourFolder ? <VirtualTour360 tourFolder={p.tourFolder} propertyName={p.name}/> : <div className="phbox"><div style={{fontSize:40}}>🏠</div><h4>Coming Soon</h4><p>Insta360 walkthrough will be embedded here</p></div>}
+      {p.tourFolder&&(p.tourScenes&&p.tourScenes.length>0) ? <VirtualTour360 tourFolder={p.tourFolder} tourScenes={p.tourScenes} propertyName={p.name}/> : <div className="phbox"><div style={{fontSize:40}}>🏠</div><h4>Coming Soon</h4><p>Insta360 walkthrough will be embedded here</p></div>}
       <div className="mcta"><button className="bp" onClick={goApply}>Apply for a Room</button><button className="bo" onClick={goApply}>Schedule a Tour</button></div>
     </div></div></div>);
 }
@@ -578,15 +578,16 @@ const SCENE_DEFS=[
   {id:"floor2-bathroom2-2",      label:"Bathroom 2 (2)",          file:"floor2-bathroom2-2.jpg",       floor:2},
 ];
 
-function VirtualTour360({tourFolder,propertyName}){
+function VirtualTour360({tourFolder,tourScenes,propertyName}){
+  const scenes=tourScenes||[];
+  const floors=[...new Set(scenes.map(s=>s.floor||1))].sort();
   const viewerRef=useRef(null);
   const pannellumRef=useRef(null);
   const[ready,setReady]=useState(false);
   const[loading,setLoading]=useState(true);
-  const[activeScene,setActiveScene]=useState(SCENE_DEFS[0].id);
-  const[activeFloor,setActiveFloor]=useState(1);
+  const[activeScene,setActiveScene]=useState(scenes[0]?.id||"");
+  const[activeFloor,setActiveFloor]=useState(scenes[0]?.floor||1);
 
-  // Load Pannellum from CDN once
   useEffect(()=>{
     if(typeof window==="undefined")return;
     if(document.getElementById("pn-css")){setReady(true);return;}
@@ -599,39 +600,44 @@ function VirtualTour360({tourFolder,propertyName}){
     document.head.appendChild(js);
   },[]);
 
-  // Build and init viewer when ready or scene changes
   useEffect(()=>{
-    if(!ready||!viewerRef.current||typeof window==="undefined"||!window.pannellum)return;
+    if(!ready||!viewerRef.current||!window.pannellum||scenes.length===0)return;
     setLoading(true);
     if(pannellumRef.current){pannellumRef.current.destroy();pannellumRef.current=null;}
     const base=SUPA_STORAGE+tourFolder+"/";
-    const scenes={};
-    SCENE_DEFS.forEach(s=>{scenes[s.id]={title:s.label,panorama:base+s.file,hotSpots:[]};});
+    const sceneMap={};
+    scenes.forEach(s=>{sceneMap[s.id]={title:s.label,panorama:base+s.file,hotSpots:[]};});
     pannellumRef.current=window.pannellum.viewer(viewerRef.current,{
-      default:{firstScene:activeScene,sceneFadeDuration:400,autoLoad:true,showControls:false},scenes
+      default:{firstScene:activeScene||scenes[0].id,sceneFadeDuration:400,autoLoad:true,showControls:false},
+      scenes:sceneMap
     });
     pannellumRef.current.on("load",()=>setLoading(false));
     pannellumRef.current.on("error",()=>setLoading(false));
     return()=>{if(pannellumRef.current){pannellumRef.current.destroy();pannellumRef.current=null;}};
-  },[ready,activeScene,tourFolder]);
+  },[ready,activeScene,tourFolder,scenes]);
 
-  const goScene=(id)=>{setActiveScene(id);setActiveFloor(id.startsWith("floor1")?1:2);};
-  const floorScenes=SCENE_DEFS.filter(s=>s.floor===activeFloor);
-  const idx=SCENE_DEFS.findIndex(s=>s.id===activeScene);
-  const prev=SCENE_DEFS[idx-1];const next=SCENE_DEFS[idx+1];
-  const current=SCENE_DEFS.find(s=>s.id===activeScene);
+  const goScene=(id)=>{
+    const s=scenes.find(x=>x.id===id);
+    setActiveScene(id);
+    if(s)setActiveFloor(s.floor||1);
+  };
+  const floorScenes=scenes.filter(s=>(s.floor||1)===activeFloor);
+  const idx=scenes.findIndex(s=>s.id===activeScene);
+  const prev=scenes[idx-1];const next=scenes[idx+1];
+  const current=scenes.find(s=>s.id===activeScene);
+
+  if(scenes.length===0)return null;
 
   return(
     <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(212,168,83,.2)",background:"#1a1714",marginBottom:16}}>
-      {/* Header */}
       <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(212,168,83,.12)",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div>
           <div style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:2,marginBottom:1}}>Virtual Tour</div>
           <div style={{fontSize:13,color:"#f5f0e8",fontWeight:700}}>{propertyName}</div>
         </div>
-        <div style={{display:"flex",gap:5}}>
-          {[1,2].map(f=>(
-            <button key={f} onClick={()=>{setActiveFloor(f);goScene(SCENE_DEFS.find(s=>s.floor===f).id);}}
+        {floors.length>1&&<div style={{display:"flex",gap:5}}>
+          {floors.map(f=>(
+            <button key={f} onClick={()=>{setActiveFloor(f);const fs=scenes.find(s=>(s.floor||1)===f);if(fs)goScene(fs.id);}}
               style={{padding:"5px 12px",borderRadius:5,border:"1px solid "+(activeFloor===f?"#d4a853":"rgba(255,255,255,.1)"),
                 background:activeFloor===f?"rgba(212,168,83,.15)":"transparent",
                 color:activeFloor===f?"#d4a853":"rgba(255,255,255,.4)",fontSize:10,fontWeight:700,
@@ -639,11 +645,9 @@ function VirtualTour360({tourFolder,propertyName}){
               Floor {f}
             </button>
           ))}
-        </div>
+        </div>}
       </div>
-
       <div style={{display:"flex"}}>
-        {/* Room list */}
         <div style={{width:160,borderRight:"1px solid rgba(212,168,83,.08)",overflowY:"auto",maxHeight:420,flexShrink:0}}>
           {floorScenes.map(s=>{
             const active=activeScene===s.id;
@@ -660,8 +664,6 @@ function VirtualTour360({tourFolder,propertyName}){
             );
           })}
         </div>
-
-        {/* Viewer */}
         <div style={{flex:1,position:"relative",height:420}}>
           {loading&&(
             <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#1a1714",zIndex:10,gap:10}}>
@@ -670,12 +672,10 @@ function VirtualTour360({tourFolder,propertyName}){
             </div>
           )}
           <div ref={viewerRef} style={{width:"100%",height:"100%"}}/>
-          {/* Room + floor badge */}
           <div style={{position:"absolute",top:10,left:10,background:"rgba(26,23,20,.8)",backdropFilter:"blur(6px)",borderRadius:5,padding:"4px 8px",border:"1px solid rgba(212,168,83,.15)",zIndex:5,pointerEvents:"none"}}>
             <div style={{fontSize:8,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Floor {activeFloor}</div>
             <div style={{fontSize:11,color:"#f5f0e8",fontWeight:600}}>{current&&current.label}</div>
           </div>
-          {/* Controls */}
           <div style={{position:"absolute",bottom:10,right:10,display:"flex",gap:4,zIndex:5}}>
             {[["↑",()=>pannellumRef.current?.setPitch((pannellumRef.current.getPitch()||0)+15)],
               ["↓",()=>pannellumRef.current?.setPitch((pannellumRef.current.getPitch()||0)-15)],
@@ -695,8 +695,6 @@ function VirtualTour360({tourFolder,propertyName}){
           </div>
         </div>
       </div>
-
-      {/* Footer */}
       <div style={{padding:"8px 14px",borderTop:"1px solid rgba(212,168,83,.08)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{fontSize:9,color:"rgba(255,255,255,.25)",letterSpacing:.5}}>Click and drag to look around</div>
         <div style={{display:"flex",gap:5}}>
@@ -987,6 +985,7 @@ export default function Page(){
         clean:firstUnit?.clean||p.clean||"Biweekly",
         desc:p.desc||"",lat:p.lat||0,lng:p.lng||0,
         tourFolder:p.tourFolder||null,
+        tourScenes:p.tourScenes||[],
         imgs:(p.photos&&p.photos.length>0)?p.photos:[],
         units:p.units||[],
         rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le})),
