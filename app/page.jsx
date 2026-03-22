@@ -754,12 +754,6 @@ function VirtualTour360({tourFolder,tourScenes,propertyName}){
 }
 
 // ─── Lease Now Modal ────────────────────────────────────────────────
-const MARKUP_PC={3:0.30,6:0.18,9:0.10,12:0,15:-0.03,18:-0.05};
-function calcAutoP(base,months){const m=MARKUP_PC[months]!==undefined?MARKUP_PC[months]:(months<=6?0.20:months<=9?0.10:months<=12?0:months<=15?-0.03:-0.05);return Math.round((base*(1+m))/5)*5;}
-function getActiveTiers(r){
-  if(r.leaseTiers&&r.leaseTiers.length>0)return r.leaseTiers.filter(t=>t.enabled).sort((a,b)=>a.months-b.months);
-  return[3,6,9,12,15,18].filter(m=>m>=6).map(m=>({id:String(m),months:m,price:calcAutoP(r.rent,m),enabled:true}));
-}
 
 function LeaseNowModal({room,prop,onClose}){
   const[step,setStep]=useState(1);
