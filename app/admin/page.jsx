@@ -4754,7 +4754,7 @@ export default function Page(){
                     <td/>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800}}>{fmtS(filtMg.reduce((s,mg)=>s+(mg.monthlyPI||0),0))}/mo</td>
                     <td colSpan={2}/>
-                  </tfoot>}
+                  </tr></tfoot>}
                 </table>
               </div>}
 
