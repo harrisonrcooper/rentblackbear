@@ -2428,10 +2428,14 @@ export default function Page(){
       {tabs.slice(7,8).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">Operations</div>
       {tabs.slice(8,11).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">Website</div>
-      {tabs.slice(11,15).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      <div className="s-lbl">Financials</div>
+      {tabs.slice(11,12).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      <button className="sn" style={{color:"#4a7c59",fontWeight:600}} onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}><span className="sn-i" style={{color:"#4a7c59"}}>＋</span>Add Expense</button>
+      {tabs.slice(12,13).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      <div className="s-lbl">Portfolio</div>
+      {tabs.slice(13,14).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">System</div>
-      {tabs.slice(15).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      {tabs.slice(14).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-ft">
         <a href="#">🌐 View Public Site</a>
       </div>
@@ -6679,7 +6683,6 @@ export default function Page(){
       if(!f.date)e.date="Date is required";
       if(!f.propId)e.propId="Property is required";
       if(!f.category)e.category="Category is required";
-      if(!f.description?.trim())e.description="Description is required";
       if(!f.amount||Number(f.amount)<=0)e.amount="Amount must be greater than $0";
       if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
       const rec={...f,amount:Number(f.amount),propName:f.propId==="shared"?"Shared":(props.find(p=>p.id===f.propId)||{}).name||""};
@@ -6864,9 +6867,8 @@ export default function Page(){
       </div>
 
       {/* Description */}
-      <div className="fld"><label style={{color:errs.description?"#c45c4a":undefined}}>Description *</label>
-        <input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Replaced water heater, quarterly pest control..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>
-        {errs.description&&<div className="err-msg">{errs.description}</div>}
+      <div className="fld"><label>Description</label>
+        <input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Replaced water heater, quarterly pest control..."/>
       </div>
 
       {/* Payment Method */}
