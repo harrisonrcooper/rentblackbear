@@ -1595,14 +1595,14 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
               <div className="fld"><label>TV Size</label><select value={r.tv||'55"'} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"tv",e.target.value)}><option value='75"'>75"</option><option value='65"'>65"</option><option value='55"'>55"</option><option value='50"'>50"</option><option value='43"'>43"</option><option value='42"'>42"</option><option value='32"'>32"</option><option value="None">None</option></select></div>
             </div>
             <div className="fr3">
-              <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:r.ownerOccupied?"rgba(59,130,246,.06)":locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:r.ownerOccupied?"#1d4ed8":locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{r.ownerOccupied?"🏠 Owner Occupied":locked?`Occupied — ${r.tenant.name}`:"Vacant"}</div></div>
+              <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:r.ownerOccupied?"rgba(59,130,246,.06)":locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:r.ownerOccupied?"#1d4ed8":locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{r.ownerOccupied?"Owner Occupied":locked?("Occupied — "+(r.tenant.name)):"Vacant"}</div></div>
               <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
               <div className="fld"><label>Furnished</label><select value={String(r.furnished!==false)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"furnished",e.target.value==="true")}><option value="true">✓ Furnished</option><option value="false">Unfurnished</option></select></div>
             </div>
             {!locked&&<div style={{marginBottom:8}}>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:r.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",borderRadius:7,border:`1px solid ${r.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"}`,background:r.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:r.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",borderRadius:7,border:"1px solid "+(r.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"),background:r.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
                 <input type="checkbox" checked={!!r.ownerOccupied} onChange={e=>updRoom(i,"ownerOccupied",e.target.checked)} style={{accentColor:"#3b82f6",width:14,height:14}}/>
-                🏠 Owner Occupied — exclude from rent, financials, and public listings
+                Owner Occupied - exclude from rent, financials, and public listings
               </label>
             </div>
             <div className="fr" style={{alignItems:"flex-end",gap:8}}>
@@ -1668,9 +1668,9 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
                 {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
               </div>)}
             </div>}
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:curUnit.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",marginTop:8,borderRadius:7,border:`1px solid ${curUnit.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"}`,background:curUnit.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:curUnit.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",marginTop:8,borderRadius:7,border:"1px solid "+(curUnit.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"),background:curUnit.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
               <input type="checkbox" checked={!!curUnit.ownerOccupied} onChange={e=>updUnit("ownerOccupied",e.target.checked)} style={{accentColor:"#3b82f6",width:14,height:14}}/>
-              🏠 Owner Occupied — exclude from rent, financials, and public listings
+              Owner Occupied - exclude from rent, financials, and public listings
             </label>
           </>);
         })()}
