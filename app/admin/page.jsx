@@ -1641,7 +1641,13 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
               </button>}
               {!locked&&<button className="btn btn-red btn-sm" onClick={()=>{const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).filter((_,j)=>j!==i)}:u);updP({...p,units});}}>Remove Room</button>}
               {locked&&<button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease and Tenant</button>}
-              {locked&&<span style={{fontSize:10,color:"#999"}}>Manage lease to edit room</span>}
+              {locked&&<button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>{
+                // Archive tenant and clear room — works on local PropEditor state
+                setArchive(prev=>[{id:uid(),name:r.tenant.name,email:r.tenant.email||"",phone:r.tenant.phone||"",roomName:r.name,propName:p.name,rent:r.rent,moveIn:r.tenant.moveIn||"",leaseEnd:r.le||"",terminatedDate:TODAY.toISOString().split("T")[0],reason:"Removed via property editor",sdStatus:"unknown",sdNote:"",archivedOn:TODAY.toISOString().split("T")[0]},...prev]);
+                const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map((rm,ri)=>ri===i?{...rm,st:"vacant",le:null,tenant:null}:rm)}:u);
+                updP({...p,units});
+              }}>Remove Tenant</button>}
+              {locked&&<span style={{fontSize:10,color:"#999"}}>Save Changes after removing</span>}
             </div>
           </div>);})}
       </div>}
@@ -1660,7 +1666,15 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
                 {!anyOcc&&<div style={{fontSize:10,color:"#999",marginTop:2}}>No active tenant — ready to lease</div>}
               </div>
               {anyOcc
-                ?<button className="btn btn-dk btn-sm" style={{fontSize:10}} onClick={()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name);}}}>View Tenant</button>
+                ?<div style={{display:"flex",gap:4}}>
+                  <button className="btn btn-dk btn-sm" style={{fontSize:10}} onClick={()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name);}}}>View Tenant</button>
+                  <button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>{
+                    const rep=rooms.find(r=>r.tenant);
+                    if(rep)setArchive(prev=>[{id:uid(),name:rep.tenant.name,email:rep.tenant.email||"",phone:rep.tenant.phone||"",roomName:curUnit.name||p.name,propName:p.name,rent:curUnit.rent||0,moveIn:rep.tenant.moveIn||"",leaseEnd:rep.le||"",terminatedDate:TODAY.toISOString().split("T")[0],reason:"Removed via property editor",sdStatus:"unknown",sdNote:"",archivedOn:TODAY.toISOString().split("T")[0]},...prev]);
+                    const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map(rm=>({...rm,st:"vacant",le:null,tenant:null}))}:u);
+                    updP({...p,units});
+                  }}>Remove Tenant</button>
+                </div>
                 :<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>}
             </div>
             {rooms.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
