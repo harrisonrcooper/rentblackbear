@@ -183,6 +183,7 @@ const updateRoomInProp=(prop,roomId,updater)=>({...prop,units:(prop.units||[]).m
 const DEF_PAYMENTS={};// {roomId: {month: amount}} - quick lookup (computed from charges)
 const CHARGE_CATS=["Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
 const PAY_METHODS=["Zelle","Venmo","Cash","Check","CashApp","Bank Transfer","Stripe/ACH","Credit Card","Other"];
+const ACH_METHODS=["Bank Transfer","Stripe/ACH"]; // locked — no edit on paid charges
 // Charges: source of truth for all money owed/paid
 const DEF_CHARGES=[
   // ─── Marcus Johnson (r1, Holmes House, $850/mo) — reliable payer ───
@@ -2159,7 +2160,7 @@ export default function Page(){
   ];
 
   // ── Charge helpers ──
-  const chargeStatus=(c)=>{if(c.waived)return"waived";if(c.amountPaid>=c.amount)return"paid";if(c.amountPaid>0)return"partial";const due=new Date(c.dueDate+"T00:00:00");if(TODAY>due)return"pastdue";return"unpaid";};
+  const chargeStatus=(c)=>{if(c.voided)return"voided";if(c.waived)return"waived";if(c.amountPaid>=c.amount)return"paid";if(c.amountPaid>0)return"partial";const due=new Date(c.dueDate+"T00:00:00");if(TODAY>due)return"pastdue";return"unpaid";};
   const getChargesForPeriod=(period)=>{const y=TODAY.getFullYear(),mo=TODAY.getMonth();
     if(period==="mtd")return charges.filter(c=>{const d=new Date(c.dueDate+"T00:00:00");return d.getFullYear()===y&&d.getMonth()===mo;});
     if(period==="ytd")return charges.filter(c=>{const d=new Date(c.dueDate+"T00:00:00");return d.getFullYear()===y;});
@@ -2801,7 +2802,7 @@ export default function Page(){
         };
         const filteredCharges=applyFilters(payPeriod==="all"?charges:pCharges);
         const stColor={paid:"#4a7c59",unpaid:"#3b82f6",pastdue:"#c45c4a",partial:"#d4a853",waived:"#999"};
-        const stBadge={paid:"b-green",unpaid:"b-blue",pastdue:"b-red",partial:"b-gold",waived:"b-gray"};
+        const stBadge={paid:"b-green",unpaid:"b-blue",pastdue:"b-red",partial:"b-gold",waived:"b-gray",voided:"b-gray"};
 
         return(<>
         {/* Main sub-tabs — big and prominent */}
@@ -2861,7 +2862,10 @@ export default function Page(){
             <input type="date" value={payFilters.dateTo} onChange={e=>setPayFilters({...payFilters,dateTo:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10}} placeholder="To"/>
             <button className="btn btn-out btn-sm" onClick={()=>setPayFilters({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""})}>Reset</button>
           </div>
-          <div style={{fontSize:10,color:"#999",marginBottom:8}}>{filteredCharges.length} charge{filteredCharges.length!==1?"s":""} · {periodLabel}</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:10,color:"#999"}}>{filteredCharges.length} charge{filteredCharges.length!==1?"s":""} · {periodLabel}</div>
+            {payFilters.tenant&&<button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"clearLedger",tenant:payFilters.tenant,confirm:""})}>🗑 Clear Ledger — {payFilters.tenant}</button>}
+          </div>
           {/* Column headers */}
           <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"8px 14px",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,borderBottom:"2px solid rgba(0,0,0,.06)"}}>
             <div>Due Date</div><div>Category</div><div>Tenant / Room</div><div>Status</div><div>Deposit</div><div style={{textAlign:"right"}}>Amount</div>
@@ -2948,16 +2952,32 @@ export default function Page(){
                   </div>);
                 })}
 
-                {/* Unpaid/Late: action buttons */}
-                {st!=="paid"&&st!=="waived"&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:c.payments.length?8:0}}>
-                  <button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>💰 Record Payment</button>
-                  <button className="btn btn-dk btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null});}}>📣 Send Reminder</button>
-                  <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"createCharge",roomId:c.roomId,category:c.category,desc:c.desc,amount:c.amount,dueDate:c.dueDate,notes:"Editing #"+c.id.slice(0,6)});}}>✏️ Edit</button>
-                  <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc});}}> 🗑 Delete</button>
-                  {st==="pastdue"&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"waiveCharge",chargeId:c.id,reason:""});}}> ⏹ Stop Late Fees</button>}
-                </div>}
+                {/* Actions — full matrix based on status and payment method */}
+                {(()=>{
+                  const paidViaAch=st==="paid"&&c.payments.some(p=>ACH_METHODS.includes(p.method));
+                  const paidViaManual=st==="paid"&&!paidViaAch;
+                  return(
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
+                    {/* Record payment — unpaid/partial/pastdue only */}
+                    {(st==="unpaid"||st==="partial"||st==="pastdue")&&<button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>💰 Record Payment</button>}
+                    {/* Reminder — unpaid/partial/pastdue only */}
+                    {(st==="unpaid"||st==="partial"||st==="pastdue")&&<button className="btn btn-dk btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null});}}>📣 Reminder</button>}
+                    {/* Edit — not voided/waived/ACH-paid */}
+                    {st!=="voided"&&st!=="waived"&&!paidViaAch&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"editCharge",charge:{...c},isPaid:paidViaManual,editReason:"",editNote:""});}}>{paidViaManual?"✏️ Edit (reason req.)":"✏️ Edit"}</button>}
+                    {/* Void — anything not already voided or waived */}
+                    {st!=="voided"&&st!=="waived"&&<button className="btn btn-out btn-sm" style={{color:"#9a7422"}} onClick={e=>{e.stopPropagation();setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""});}}>⊘ Void</button>}
+                    {/* Delete — only unpaid charges (no payment ever recorded) */}
+                    {(st==="unpaid"||st==="pastdue")&&c.payments.length===0&&<button className="btn btn-out btn-sm" style={{color:"#c45c4a"}} onClick={e=>{e.stopPropagation();setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc});}}>🗑 Delete</button>}
+                    {/* Waive late fees — pastdue only */}
+                    {st==="pastdue"&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"waiveCharge",chargeId:c.id,reason:""});}}> ⏹ Waive</button>}
+                  </div>);
+                })()}
 
                 {st==="waived"&&<div style={{background:"rgba(0,0,0,.03)",borderRadius:6,padding:8,fontSize:11,color:"#999",marginTop:8}}>Waived{c.waivedReason?`: ${c.waivedReason}`:""}</div>}
+                {st==="voided"&&<div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.12)",borderRadius:6,padding:"10px 12px",fontSize:11,marginTop:8}}>
+                  <div style={{fontWeight:700,color:"#c45c4a",marginBottom:4}}>⊘ Voided {c.voidedDate?`on ${fmtD(c.voidedDate)}`:""}</div>
+                  <div style={{color:"#5c4a3a"}}>{c.voidedReason||"No reason recorded"}</div>
+                </div>}
               </div>}
             </div>);})}
           {filteredCharges.length===0&&<div style={{textAlign:"center",padding:24,color:"#999"}}>No charges match your filters</div>}
@@ -5821,7 +5841,111 @@ export default function Page(){
     </div></div>
   )}
 
-  {/* New Idea Modal */}
+  {/* Edit Charge */}
+  {modal&&modal.type==="editCharge"&&(()=>{
+    const c=modal.charge;const isPaid=modal.isPaid;const shake=modal.shake||false;const errs=modal.errs||{};
+    const upd=(k,v)=>setModal(p=>({...p,charge:{...p.charge,[k]:v},errs:{...(p.errs||{}),[k]:null}}));
+    const save=()=>{
+      const e={};
+      if(!c.amount||Number(c.amount)<=0)e.amount="Required";
+      if(!c.dueDate)e.dueDate="Required";
+      if(!c.desc?.trim())e.desc="Required";
+      if(isPaid&&!(modal.editReason||"").trim())e.editReason="Reason required for editing a paid charge";
+      if(Object.keys(e).length){setModal(p=>({...p,errs:e,shake:true}));setTimeout(()=>setModal(p=>({...p,shake:false})),500);return;}
+      const auditNote=isPaid?{editedAt:TODAY.toISOString().split("T")[0],editedReason:modal.editReason,editNote:modal.editNote||"",origAmount:modal.charge.amount}:null;
+      setCharges(p=>p.map(x=>x.id===c.id?{...x,amount:Number(c.amount),dueDate:c.dueDate,desc:c.desc,category:c.category,editAudit:auditNote||x.editAudit}:x));
+      setModal(null);
+    };
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460,animation:shake?"shake .4s ease":undefined}}>
+      <h2 style={{marginBottom:4}}>✏️ Edit Charge</h2>
+      <div style={{fontSize:11,color:"#999",marginBottom:14}}>{c.tenantName} · {c.propName}</div>
+      {isPaid&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9a7422",fontWeight:600}}>⚠ This charge has been paid. A reason and audit note are required.</div>}
+      <div className="fr3">
+        <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($){errs.amount&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.amount}</span>}</label><input type="number" value={c.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/></div>
+        <div className="fld"><label style={{color:errs.dueDate?"#c45c4a":undefined}}>Due Date</label><input type="date" value={c.dueDate||""} onChange={e=>upd("dueDate",e.target.value)}/></div>
+        <div className="fld"><label>Category</label><select value={c.category||""} onChange={e=>upd("category",e.target.value)}>{CHARGE_CATS.map(x=><option key={x}>{x}</option>)}</select></div>
+      </div>
+      <div className="fld"><label style={{color:errs.desc?"#c45c4a":undefined}}>Description</label><input value={c.desc||""} onChange={e=>upd("desc",e.target.value)} style={{borderColor:errs.desc?"#c45c4a":undefined}}/></div>
+      {isPaid&&<>
+        <div className="fld"><label style={{color:errs.editReason?"#c45c4a":undefined}}>Reason for Edit * {errs.editReason&&<span style={{fontWeight:400,fontSize:9,color:"#c45c4a"}}>{errs.editReason}</span>}</label><input value={modal.editReason||""} onChange={e=>setModal(p=>({...p,editReason:e.target.value,errs:{...(p.errs||{}),editReason:null}}))} placeholder="e.g. Billing error, wrong amount entered..." style={{borderColor:errs.editReason?"#c45c4a":undefined}}/></div>
+        <div className="fld"><label>Additional Notes (optional)</label><input value={modal.editNote||""} onChange={e=>setModal(p=>({...p,editNote:e.target.value}))} placeholder="Any additional context..."/></div>
+      </>}
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>Save Changes</button></div>
+    </div></div>);
+  })()}
+
+  {/* Void Charge */}
+  {modal&&modal.type==="voidCharge"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,animation:modal.shake?"shake .4s ease":undefined}}>
+      <h2>⊘ Void Charge</h2>
+      <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
+        <div style={{fontWeight:700}}>{modal.tenantName}</div>
+        <div style={{color:"#999",marginTop:2}}>{modal.category} — {modal.desc} · {fmtS(modal.amount)}</div>
+      </div>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:12,lineHeight:1.6}}>Voiding sets this charge to $0 and leaves an audit trail. Any recorded payments will be reversed. This cannot be undone.</p>
+      <div className={`fld ${modal.voidReasonErr?"field-err":""}`}>
+        <label className={modal.voidReasonErr?"field-err-label":""}>Reason * (required)</label>
+        <textarea value={modal.voidReason||""} onChange={e=>setModal(p=>({...p,voidReason:e.target.value,voidReasonErr:false}))} placeholder="e.g. Charge created in error, tenant moved out before billing period..." rows={2} autoFocus/>
+        {modal.voidReasonErr&&<div className="err-msg">Reason is required</div>}
+      </div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-red" onClick={()=>{
+          if(!(modal.voidReason||"").trim()){setModal(p=>({...p,voidReasonErr:true}));shakeModal();return;}
+          setCharges(p=>p.map(c=>c.id===modal.chargeId?{...c,voided:true,voidedDate:TODAY.toISOString().split("T")[0],voidedReason:modal.voidReason,amountPaid:0,payments:[]}:c));
+          setExpCharge(null);setModal(null);
+        }}>Confirm Void</button>
+      </div>
+    </div></div>
+  )}
+
+  {/* Clear Tenant Ledger */}
+  {modal&&modal.type==="clearLedger"&&(()=>{
+    const tenantCharges=charges.filter(c=>c.tenantName===modal.tenant);
+    const outstanding=tenantCharges.filter(c=>!c.voided&&!c.waived&&c.amountPaid<c.amount);
+    const paid=tenantCharges.filter(c=>c.amountPaid>=c.amount&&!c.voided&&!c.waived);
+    const alreadyVoided=tenantCharges.filter(c=>c.voided||c.waived);
+    const confirmMatch=(modal.confirm||"").toUpperCase()==="DELETE";
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+      <h2>🗑 Clear Ledger — {modal.tenant}</h2>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,margin:"14px 0"}}>
+        <div style={{background:"rgba(196,92,74,.06)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#c45c4a"}}>{outstanding.length}</div><div style={{fontSize:9,color:"#999",marginTop:2}}>Outstanding</div></div>
+        <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{paid.length}</div><div style={{fontSize:9,color:"#999",marginTop:2}}>Paid</div></div>
+        <div style={{background:"rgba(0,0,0,.03)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#999"}}>{alreadyVoided.length}</div><div style={{fontSize:9,color:"#999",marginTop:2}}>Voided/Waived</div></div>
+      </div>
+
+      <div style={{border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,marginBottom:12,background:"rgba(212,168,83,.02)"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:6}}>OPTION A — Void All Outstanding</div>
+        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10,lineHeight:1.5}}>Voids {outstanding.length} outstanding charge{outstanding.length!==1?"s":""}, leaving paid charges intact. Requires a reason. Leaves full audit trail.</div>
+        <div className="fld" style={{marginBottom:8}}>
+          <label>Reason for voiding outstanding charges *</label>
+          <input value={modal.voidReason||""} onChange={e=>setModal(p=>({...p,voidReason:e.target.value}))} placeholder="e.g. Tenant never moved in, billing error..." />
+        </div>
+        <button className="btn btn-gold btn-sm" onClick={()=>{
+          if(!(modal.voidReason||"").trim()){setModal(p=>({...p,voidReasonErr:true}));return;}
+          setCharges(p=>p.map(c=>c.tenantName===modal.tenant&&!c.voided&&!c.waived&&c.amountPaid<c.amount?{...c,voided:true,voidedDate:TODAY.toISOString().split("T")[0],voidedReason:modal.voidReason,amountPaid:0,payments:[]}:c));
+          setModal(null);
+        }}>Void {outstanding.length} Outstanding Charge{outstanding.length!==1?"s":""}</button>
+        {modal.voidReasonErr&&!(modal.voidReason||"").trim()&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4}}>Reason is required</div>}
+      </div>
+
+      <div style={{border:"1px solid rgba(196,92,74,.2)",borderRadius:10,padding:14,background:"rgba(196,92,74,.02)"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#c45c4a",marginBottom:6}}>OPTION B — Hard Delete All ({tenantCharges.length} charges)</div>
+        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10,lineHeight:1.5}}>Permanently deletes ALL charges including paid ones. No audit trail. Use only if tenant never existed or data was entered in error.</div>
+        <div className="fld" style={{marginBottom:8}}>
+          <label>Type DELETE to confirm</label>
+          <input value={modal.confirm||""} onChange={e=>setModal(p=>({...p,confirm:e.target.value}))} placeholder="DELETE" style={{borderColor:modal.confirm&&!confirmMatch?"#c45c4a":undefined}}/>
+        </div>
+        <button className="btn btn-red btn-sm" disabled={!confirmMatch} style={{opacity:confirmMatch?1:0.4}} onClick={()=>{
+          setCharges(p=>p.filter(c=>c.tenantName!==modal.tenant));
+          setModal(null);
+        }}>Hard Delete All Charges for {modal.tenant}</button>
+      </div>
+
+      <div className="mft" style={{marginTop:14}}><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button></div>
+    </div></div>);
+  })()}
   {modal&&(modal.type==="newIdea"||modal.type==="editIdea")&&(()=>{
     const isEdit=modal.type==="editIdea";
     const idea=isEdit?modal.idea:modal;
