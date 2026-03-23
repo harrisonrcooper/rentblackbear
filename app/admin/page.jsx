@@ -2430,7 +2430,7 @@ export default function Page(){
       {tabs.slice(8,11).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">Financials</div>
       {tabs.slice(11,12).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <button className="sn" style={{color:"#4a7c59",fontWeight:600}} onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}><span className="sn-i" style={{color:"#4a7c59"}}>＋</span>Add Expense</button>
+      <button className="sn" onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}><span className="sn-i">＋</span>Add Expense</button>
       {tabs.slice(12,13).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">Portfolio</div>
       {tabs.slice(13,14).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
@@ -6678,7 +6678,7 @@ export default function Page(){
     // Property cascade
     const selPr=f.propId&&f.propId!=="shared"?props.find(p=>p.id===f.propId):null;
     const units=selPr?.units||[];
-    const save=()=>{
+    const save=async()=>{
       const e={};
       if(!f.date)e.date="Date is required";
       if(!f.propId)e.propId="Property is required";
@@ -6686,8 +6686,18 @@ export default function Page(){
       if(!f.amount||Number(f.amount)<=0)e.amount="Amount must be greater than $0";
       if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
       const rec={...f,amount:Number(f.amount),propName:f.propId==="shared"?"Shared":(props.find(p=>p.id===f.propId)||{}).name||""};
+      delete rec.receiptFile;
+      const newId=isEdit?modal.editId:uid();
+      if(f.receiptFile){
+        const ext=f.receiptFile.name.split(".").pop()||"jpg";
+        const path="receipts/"+newId+"-"+Date.now()+"."+ext;
+        try{
+          const r=await fetch(SUPA_URL+"/storage/v1/object/receipts/"+path,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":f.receiptFile.type,"x-upsert":"true"},body:f.receiptFile});
+          if(r.ok)rec.receiptUrl=SUPA_URL+"/storage/v1/object/public/receipts/"+path;
+        }catch(e){console.error("Receipt upload failed:",e);}
+      }
       if(isEdit){setExpenses(p=>p.map(x=>x.id===modal.editId?{...x,...rec}:x));}
-      else{setExpenses(p=>[{id:uid(),createdAt:TODAY.toISOString(),...rec},...p]);}
+      else{setExpenses(p=>[{id:newId,createdAt:TODAY.toISOString(),...rec},...p]);}
       setModal(null);
     };
     const handleBackdrop=(e)=>{
@@ -6881,6 +6891,52 @@ export default function Page(){
       {/* Notes */}
       <div className="fld"><label>Notes</label>
         <input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Optional notes"/>
+      </div>
+
+      {/* Receipt upload + AI scan */}
+      <div className="fld">
+        <label>Receipt</label>
+        {f.receiptFile
+          ?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8}}>
+            <span style={{fontSize:11,color:"#4a7c59",fontWeight:600,flex:1}}>{f.receiptFile.name}</span>
+            <button type="button" style={{fontSize:9,color:"#c45c4a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>upd("receiptFile",null)}>Remove</button>
+          </div>
+          :<div style={{border:"2px dashed rgba(0,0,0,.1)",borderRadius:8,padding:"16px",textAlign:"center",cursor:"pointer",position:"relative"}}
+            onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor="#d4a853";}}
+            onDragLeave={e=>{e.currentTarget.style.borderColor="rgba(0,0,0,.1)";}}
+            onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="rgba(0,0,0,.1)";const file=e.dataTransfer.files[0];if(file)upd("receiptFile",file);}}>
+            <label style={{cursor:"pointer",display:"block"}}>
+              <div style={{fontSize:12,color:"#999",marginBottom:4}}>📎 Click or drag to attach receipt</div>
+              <div style={{fontSize:10,color:"#ccc"}}>Photo, screenshot, or PDF</div>
+              <input type="file" accept="image/*,.pdf" capture="environment" style={{display:"none"}} onChange={e=>{const file=e.target.files[0];if(file)upd("receiptFile",file);}}/>
+            </label>
+          </div>}
+        {f.receiptFile&&!modal._scanning&&!modal._scanned&&<button type="button" className="btn btn-out btn-sm" style={{marginTop:6,fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}} onClick={async()=>{
+          setModal(p=>({...p,_scanning:true,_scanErr:null}));
+          try{
+            const reader=new FileReader();
+            const base64=await new Promise((res,rej)=>{reader.onload=()=>res(reader.result.split(",")[1]);reader.onerror=rej;reader.readAsDataURL(f.receiptFile);});
+            const mediaType=f.receiptFile.type||"image/jpeg";
+            const r=await fetch("/api/receipt-scan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({image:base64,mediaType})});
+            const data=await r.json();
+            if(data.ok&&data.fields){
+              const flds=data.fields;
+              if(flds.date&&!f.date)upd("date",flds.date);
+              if(flds.amount&&(!f.amount||f.amount===""))upd("amount",String(flds.amount));
+              if(flds.vendor){upd("vendor",flds.vendor);
+                if(!vendors.some(v=>v.name.toLowerCase()===flds.vendor.toLowerCase()))setVendors(p=>[{id:uid(),name:flds.vendor,phone:"",email:"",notes:"Auto-added from receipt scan"},...p]);
+              }
+              if(flds.description&&!f.description)upd("description",flds.description);
+              if(flds.category){const match=SCHED_E_CATS.find(c=>c.label.toLowerCase()===flds.category.toLowerCase());if(match)upd("category",match.label);}
+              setModal(p=>({...p,_scanning:false,_scanned:true}));
+            } else {
+              setModal(p=>({...p,_scanning:false,_scanErr:data.error||"Could not read receipt"}));
+            }
+          }catch(err){setModal(p=>({...p,_scanning:false,_scanErr:"Scan failed: "+err.message}));}
+        }}>🔍 Scan receipt with AI — auto-fill fields</button>}
+        {modal._scanning&&<div style={{marginTop:6,fontSize:11,color:"#9a7422",display:"flex",alignItems:"center",gap:6}}><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⏳</span> Reading receipt...</div>}
+        {modal._scanned&&<div style={{marginTop:6,fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Fields auto-filled from receipt. Review and adjust if needed.</div>}
+        {modal._scanErr&&<div className="err-msg" style={{marginTop:4}}>{modal._scanErr}</div>}
       </div>
 
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Expense"}</button></div>
