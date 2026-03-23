@@ -1640,14 +1640,12 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                 + Add Existing Tenant
               </button>}
               {!locked&&<button className="btn btn-red btn-sm" onClick={()=>{const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).filter((_,j)=>j!==i)}:u);updP({...p,units});}}>Remove Room</button>}
-              {locked&&<button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease and Tenant</button>}
-              {locked&&<button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>{
-                if(onRemoveTenant)onRemoveTenant(r,p.name,()=>{
-                  const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map((rm,ri)=>ri===i?{...rm,st:"vacant",le:null,tenant:null}:rm)}:u);
-                  updP({...p,units});
-                });
-              }}>Remove Tenant</button>}
-              {locked&&<span style={{fontSize:10,color:"#999"}}>Save Changes after removing</span>}
+              {locked&&<button className="btn btn-gold btn-sm" onClick={()=>{
+                // Save current PropEditor state to global props first so tenant modal can find the room
+                onSave(p);
+                setTimeout(()=>{if(onViewTenant)onViewTenant(r,p.name);},150);
+              }}>📄 Manage Lease / Terminate</button>}
+              {locked&&<span style={{fontSize:10,color:"#999"}}>Save required to manage lease</span>}
             </div>
           </div>);})}
       </div>}
@@ -1666,15 +1664,10 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                 {!anyOcc&&<div style={{fontSize:10,color:"#999",marginTop:2}}>No active tenant — ready to lease</div>}
               </div>
               {anyOcc
-                ?<div style={{display:"flex",gap:4}}>
-                  <button className="btn btn-dk btn-sm" style={{fontSize:10}} onClick={()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name);}}}>View Tenant</button>
-                  <button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>{
-                    if(onRemoveTenant)onRemoveTenant({...rooms.find(r=>r.tenant),name:curUnit.name||p.name,rent:curUnit.rent||0},p.name,()=>{
-                      const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map(rm=>({...rm,st:"vacant",le:null,tenant:null}))}:u);
-                      updP({...p,units});
-                    });
-                  }}>Remove Tenant</button>
-                </div>
+                ?<button className="btn btn-gold btn-sm" style={{fontSize:10}} onClick={()=>{
+                    onSave(p);
+                    setTimeout(()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name);}},150);
+                  }}>📄 Manage Lease / Terminate</button>
                 :<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>}
             </div>
             {rooms.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
@@ -7339,11 +7332,13 @@ export default function Page(){
     </div></div>);})()}
 
   {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp}
-    onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean||r.clean}});}}
-    onRemoveTenant={(r,propName,clearRoom)=>{
-      if(!r||!r.tenant)return;
-      setArchive(prev=>[{id:uid(),name:r.tenant.name,email:r.tenant.email||"",phone:r.tenant.phone||"",roomName:r.name,propName,rent:r.rent||0,moveIn:r.tenant.moveIn||"",leaseEnd:r.le||"",terminatedDate:TODAY.toISOString().split("T")[0],reason:"Removed via property editor",sdStatus:"unknown",sdNote:"",archivedOn:TODAY.toISOString().split("T")[0]},...prev]);
-      clearRoom();
+    onViewTenant={(r,propName)=>{
+      // PropEditor already called onSave(p) before this — props is up to date
+      // Find the room in freshly saved props so tenant modal has correct data
+      const freshProp=props.find(p=>p.name===propName)||(isNewProp?null:editProp);
+      const freshRoom=freshProp?allRooms(freshProp).find(x=>x.id===r.id)||r:r;
+      const freshUnit=freshProp?(freshProp.units||[]).find(u=>(u.rooms||[]).some(x=>x.id===r.id)):null;
+      setModal({type:"tenant",data:{...freshRoom,propName,unitId:freshUnit?.id,isWholeUnit:!!(freshUnit&&(freshUnit.rentalMode||"byRoom")==="wholeHouse"),propUtils:freshUnit?.utils||freshProp?.utils||r.utils,propClean:freshUnit?.clean||freshProp?.clean||r.clean}});
     }}
     settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}} onDelete={id=>{setProps(prev=>prev.filter(x=>x.id!==id));setEditProp(null);}}/>}
 
