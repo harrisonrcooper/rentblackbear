@@ -203,6 +203,7 @@ const SCHED_E_CATS=[
 ];
 const SCHED_E_CAT_LABELS=SCHED_E_CATS.map(c=>c.label);
 const IMPROVEMENT_TYPES=["Addition","Appliance","Flooring","HVAC","Landscaping","Plumbing","Electrical","Roof","Windows","Other"];
+const STARTER_SUBCATS=["Painting","Plumbing","Electrical","HVAC","Appliance Repair","Flooring","Landscaping","Pest Control","Cleaning","Lock & Security","Window & Door","Roofing","Structural","Insurance Claim","Other"];
 // Charges: source of truth for all money owed/paid
 const DEF_CHARGES=[
   // ─── Marcus Johnson (r1, Holmes House, $850/mo) — reliable payer ───
@@ -2005,6 +2006,8 @@ export default function Page(){
   const[mortgages,setMortgages]=useState([]);
   const[vendors,setVendors]=useState([]);
   const[improvements,setImprovements]=useState([]);
+  const[subcats,setSubcats]=useState(STARTER_SUBCATS.map((l,i)=>({id:"sc"+i,label:l})));
+  const[acctOverviewMode,setAcctOverviewMode]=useState("property"); // "property" | "unit"
   const[payPeriod,setPayPeriod]=useState("mtd");
   const[payFilters,setPayFilters]=useState({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""});
   const[depFilters,setDepFilters]=useState({property:"",tenant:"",lease:"",dateFrom:"",dateTo:""});
@@ -2065,7 +2068,7 @@ export default function Page(){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[])]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS.map((l,i)=>({id:"sc"+i,label:l})))]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
@@ -2108,10 +2111,10 @@ export default function Page(){
         if(!found)console.warn("⚠ Could not geocode:",prop.name,prop.addr);
       }
     }
-    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setLoaded(true);
+    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(sbc);setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,vendors,improvements,loaded]);
+  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,vendors,improvements,subcats,loaded]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   const m=useMemo(()=>{
@@ -4549,71 +4552,127 @@ export default function Page(){
         {acctSubTab==="overview"&&(()=>{
           const filtProps=acctPropId==="all"?props:props.filter(p=>p.id===acctPropId);
           return(<>
-            {/* Per-property breakdown table */}
-            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:14}}>
-              <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>By Property — {acctFrom.slice(0,7)} to {acctTo.slice(0,7)}</div>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Property","Gross Income","Expenses","NOI","NOI Margin","Annual Debt Svc","DSCR"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {filtProps.map((pr,i)=>{
-                    const inc=allCollected.filter(p=>p.propName===pr.name&&p.date>=acctFrom&&p.date<=acctTo).reduce((s,p)=>s+p.amount,0);
-                    const exp=expenses.filter(e=>e.propId===pr.id&&e.date>=acctFrom&&e.date<=acctTo).reduce((s,e)=>s+e.amount,0);
-                    const noi=inc-exp;
-                    const margin=inc>0?Math.round(noi/inc*100):null;
-                    const mg=mortgages.filter(m=>m.propId===pr.id);
-                    const debt=mg.reduce((s,m)=>s+(m.monthlyPI||0)*12,0);
-                    const prDSCR=debt>0?(noi/debt):null;
-                    return(
-                    <tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"9px 14px",fontWeight:700,fontSize:12}}>{pr.name}</td>
-                      <td style={{padding:"9px 14px",textAlign:"right",color:"#4a7c59",fontWeight:700}}>{fmtS(inc)}</td>
-                      <td style={{padding:"9px 14px",textAlign:"right",color:"#c45c4a",fontWeight:700}}>{fmtS(exp)}</td>
-                      <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:noi>=0?"#4a7c59":"#c45c4a"}}>{fmtS(noi)}</td>
-                      <td style={{padding:"9px 14px",textAlign:"right",color:margin===null?"#999":margin>=50?"#4a7c59":margin>=25?"#d4a853":"#c45c4a",fontWeight:600}}>{margin!==null?margin+"%":"—"}</td>
-                      <td style={{padding:"9px 14px",textAlign:"right",color:"#5c4a3a"}}>{debt>0?fmtS(debt):"—"}</td>
-                      <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:prDSCR===null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"}}>{prDSCR!==null?prDSCR.toFixed(2)+"x":"—"}</td>
-                    </tr>);
-                  })}
-                </tbody>
-                <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
-                  <td style={{padding:"10px 14px",fontWeight:800}}>Portfolio Total</td>
-                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalIncome)}</td>
-                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalExp)}</td>
-                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:totalNOI>=0?"#4a7c59":"#c45c4a",fontSize:13}}>{fmtS(totalNOI)}</td>
-                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700,color:"#999"}}>{totalIncome>0?Math.round(totalNOI/totalIncome*100)+"%":"—"}</td>
-                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700}}>{annualDebt>0?fmtS(annualDebt):"—"}</td>
-                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:dscr===null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a"}}>{dscr!==null?dscr.toFixed(2)+"x":"—"}</td>
-                </tr></tfoot>
-              </table>
+            {/* Toggle */}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <span style={{fontSize:11,color:"#999",fontWeight:500}}>View by:</span>
+              <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
+                {[["property","Property"],["unit","Unit / Room"]].map(([k,l])=>(
+                  <button key={k} onClick={()=>setAcctOverviewMode(k)}
+                    style={{padding:"5px 14px",fontSize:11,fontWeight:acctOverviewMode===k?700:500,background:acctOverviewMode===k?"#3c3228":"transparent",color:acctOverviewMode===k?"#fff":"#999",border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:k==="unit"?"1px solid rgba(0,0,0,.1)":"none"}}>
+                    {l}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Expense breakdown by category */}
-            {filtExpenses.length>0&&(()=>{
-              const byCat={};filtExpenses.forEach(e=>{byCat[e.category]=(byCat[e.category]||0)+e.amount;});
-              const sorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
-              return(
-              <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
-                <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>Expense Breakdown by Category</div>
-                <div style={{padding:"12px 16px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
-                  {sorted.map(([cat,amt])=>{
-                    const pct=totalExp>0?Math.round(amt/totalExp*100):0;
-                    return(
-                    <div key={cat} style={{padding:"8px 10px",borderRadius:7,border:"1px solid rgba(0,0,0,.05)",background:"rgba(0,0,0,.01)"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                        <span style={{fontSize:10,fontWeight:600,color:"#5c4a3a"}}>{cat}</span>
-                        <span style={{fontSize:11,fontWeight:800,color:"#c45c4a"}}>{fmtS(amt)}</span>
+            {/* By Property */}
+            {acctOverviewMode==="property"&&<>
+              <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:14}}>
+                <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>By Property — {acctFrom.slice(0,7)} to {acctTo.slice(0,7)}</div>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                  <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                    {["Property","Gross Income","Expenses","NOI","NOI Margin","Annual Debt Svc","DSCR"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {filtProps.map((pr,i)=>{
+                      const inc=allCollected.filter(p=>p.propName===pr.name&&p.date>=acctFrom&&p.date<=acctTo).reduce((s,p)=>s+p.amount,0);
+                      const exp=expenses.filter(e=>e.propId===pr.id&&e.date>=acctFrom&&e.date<=acctTo).reduce((s,e)=>s+e.amount,0);
+                      const noi=inc-exp;const margin=inc>0?Math.round(noi/inc*100):null;
+                      const mg=mortgages.filter(m=>m.propId===pr.id);
+                      const debt=mg.reduce((s,m)=>s+(m.monthlyPI||0)*12,0);
+                      const prDSCR=debt>0?(noi/debt):null;
+                      return(<tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                        <td style={{padding:"9px 14px",fontWeight:700,fontSize:12}}>{pr.name}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",color:"#4a7c59",fontWeight:700}}>{fmtS(inc)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",color:"#c45c4a",fontWeight:700}}>{fmtS(exp)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:noi>=0?"#4a7c59":"#c45c4a"}}>{fmtS(noi)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",color:margin===null?"#999":margin>=50?"#4a7c59":margin>=25?"#d4a853":"#c45c4a",fontWeight:600}}>{margin!==null?margin+"%":"—"}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",color:"#5c4a3a"}}>{debt>0?fmtS(debt):"—"}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:prDSCR===null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"}}>{prDSCR!==null?prDSCR.toFixed(2)+"x":"—"}</td>
+                      </tr>);
+                    })}
+                  </tbody>
+                  <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                    <td style={{padding:"10px 14px",fontWeight:800}}>Portfolio Total</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalIncome)}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalExp)}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:totalNOI>=0?"#4a7c59":"#c45c4a",fontSize:13}}>{fmtS(totalNOI)}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700,color:"#999"}}>{totalIncome>0?Math.round(totalNOI/totalIncome*100)+"%":"—"}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700}}>{annualDebt>0?fmtS(annualDebt):"—"}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:dscr===null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a"}}>{dscr!==null?dscr.toFixed(2)+"x":"—"}</td>
+                  </tr></tfoot>
+                </table>
+              </div>
+
+              {/* Expense by category breakdown */}
+              {filtExpenses.length>0&&(()=>{
+                const byCat={};filtExpenses.forEach(e=>{byCat[e.category]=(byCat[e.category]||0)+e.amount;});
+                const sorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+                const bySubcat={};filtExpenses.filter(e=>e.subcategory).forEach(e=>{bySubcat[e.subcategory]=(bySubcat[e.subcategory]||0)+e.amount;});
+                const subcatSorted=Object.entries(bySubcat).sort((a,b)=>b[1]-a[1]);
+                return(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                  {[["By Schedule E Category",sorted],["By Subcategory (internal)",subcatSorted]].map(([title,items])=>(
+                    <div key={title} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+                      <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>{title}</div>
+                      <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:6}}>
+                        {items.length===0&&<div style={{fontSize:11,color:"#999",padding:"8px 0"}}>None recorded</div>}
+                        {items.map(([cat,amt])=>{
+                          const pct=totalExp>0?Math.round(amt/totalExp*100):0;
+                          return(<div key={cat}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                              <span style={{fontSize:10,fontWeight:600,color:"#5c4a3a"}}>{cat}</span>
+                              <span style={{fontSize:11,fontWeight:800,color:"#c45c4a"}}>{fmtS(amt)} <span style={{fontSize:9,color:"#999",fontWeight:400}}>{pct}%</span></span>
+                            </div>
+                            <div style={{height:3,borderRadius:2,background:"#e5e3df"}}>
+                              <div style={{height:"100%",borderRadius:2,background:"#c45c4a",width:pct+"%"}}/>
+                            </div>
+                          </div>);
+                        })}
                       </div>
-                      <div style={{height:3,borderRadius:2,background:"#e5e3df"}}>
-                        <div style={{height:"100%",borderRadius:2,background:"#c45c4a",width:pct+"%"}}/>
-                      </div>
-                      <div style={{fontSize:9,color:"#999",marginTop:3}}>{pct}% of total expenses</div>
-                    </div>);
-                  })}
+                    </div>
+                  ))}
+                </div>);
+              })()}
+            </>}
+
+            {/* By Unit */}
+            {acctOverviewMode==="unit"&&filtProps.map(pr=>{
+              const units=pr.units||[];
+              const prExpenses=expenses.filter(e=>e.propId===pr.id&&e.date>=acctFrom&&e.date<=acctTo);
+              const propWideExp=prExpenses.filter(e=>!e.unitId);
+              const propWideAmt=propWideExp.reduce((s,e)=>s+e.amount,0);
+              return(<div key={pr.id} style={{marginBottom:16}}>
+                <div style={{fontSize:12,fontWeight:800,color:"#3c3228",marginBottom:8,paddingBottom:6,borderBottom:"2px solid rgba(0,0,0,.06)"}}>{pr.name}</div>
+                <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:8}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                    <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                      {["Unit / Room","Income","Expenses","NOI"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Unit / Room"?"left":"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {units.map((u,i)=>{
+                        // Income: sum of payments from rooms in this unit
+                        const uRoomIds=(u.rooms||[]).map(r=>r.id);
+                        const uInc=allCollected.filter(p=>p.date>=acctFrom&&p.date<=acctTo&&charges.find(c=>c.id===p.chargeId&&uRoomIds.includes(c.roomId))).reduce((s,p)=>s+p.amount,0);
+                        const uExp=prExpenses.filter(e=>e.unitId===u.id).reduce((s,e)=>s+e.amount,0);
+                        const uNOI=uInc-uExp;
+                        return(<tr key={u.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                          <td style={{padding:"8px 14px",fontWeight:600}}>{u.name||("Unit "+(i+1))}</td>
+                          <td style={{padding:"8px 14px",textAlign:"right",color:"#4a7c59"}}>{uInc>0?fmtS(uInc):"—"}</td>
+                          <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>{uExp>0?fmtS(uExp):"—"}</td>
+                          <td style={{padding:"8px 14px",textAlign:"right",fontWeight:700,color:uNOI>=0?"#4a7c59":"#c45c4a"}}>{(uInc>0||uExp>0)?fmtS(uNOI):"—"}</td>
+                        </tr>);
+                      })}
+                      {propWideAmt>0&&<tr style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:"rgba(212,168,83,.02)"}}>
+                        <td style={{padding:"8px 14px",color:"#9a7422",fontStyle:"italic",fontSize:10}}>Property-wide (no unit assigned)</td>
+                        <td style={{padding:"8px 14px",textAlign:"right"}}>—</td>
+                        <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>{fmtS(propWideAmt)}</td>
+                        <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>({fmtS(propWideAmt)})</td>
+                      </tr>}
+                    </tbody>
+                  </table>
                 </div>
               </div>);
-            })()}
+            })}
           </>);
         })()}
 
@@ -4675,21 +4734,23 @@ export default function Page(){
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Date","Property","Category","Vendor","Description","Method","Receipt","Amount",""].map(h=>(
+                  {["Date","Property","Unit / Room","Category","Subcategory","Vendor","Description","Method","Receipt","Amount",""].map(h=>(
                     <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>
-                  {sorted.length===0&&<tr><td colSpan={9} style={{padding:32,textAlign:"center",color:"#999",fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
+                  {sorted.length===0&&<tr><td colSpan={11} style={{padding:32,textAlign:"center",color:"#999",fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
                   {sorted.map((e,i)=>(
                     <tr key={e.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{e.date}</td>
                       <td style={{padding:"8px 14px",fontSize:10}}>{(props.find(p=>p.id===e.propId)||{}).name||"—"}</td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.unitName?(e.roomName?e.unitName+" / "+e.roomName:e.unitName):e.roomName||"—"}</td>
                       <td style={{padding:"8px 14px"}}>
                         <span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span>
                       </td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#ccc"}}>—</span>}</td>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>
-                      <td style={{padding:"8px 14px",fontWeight:600,maxWidth:200}}>{e.description}</td>
+                      <td style={{padding:"8px 14px",fontWeight:600,maxWidth:180}}>{e.description}</td>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#999"}}>{e.paymentMethod||"—"}</td>
                       <td style={{padding:"8px 14px"}}>
                         {e.receiptUrl
@@ -4707,7 +4768,7 @@ export default function Page(){
                   ))}
                 </tbody>
                 {sorted.length>0&&<tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
-                  <td colSpan={7} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Expenses</td>
+                  <td colSpan={9} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Expenses</td>
                   <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",fontSize:14}}>{fmtS(totalExp)}</td>
                   <td/>
                 </tr></tfoot>}
@@ -4781,8 +4842,19 @@ export default function Page(){
           const filtImprove=improvements.filter(im=>acctPropId==="all"||im.propId===acctPropId);
           const totalImprove=filtImprove.reduce((s,im)=>s+im.amount,0);
           return(<>
-            <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:11,color:"#3b82f6",lineHeight:1.6}}>
-              <strong>Capital Improvements are NOT deducted on Schedule E.</strong> They are added to your property cost basis and depreciated over 27.5 years. Track them here and give the list to your CPA each year.
+            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"14px 16px",marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:800,color:"#3c3228",marginBottom:8}}>Expense vs. Capital Improvement — What's the difference?</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,fontSize:11}}>
+                <div style={{padding:"10px 12px",borderRadius:8,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)"}}>
+                  <div style={{fontWeight:700,color:"#4a7c59",marginBottom:4}}>Expense (Schedule E)</div>
+                  <div style={{color:"#5c4a3a",lineHeight:1.6}}>Deducted in full <strong>this year</strong>. Restores the property to its original condition — fixing what broke, not making it better. Examples: fixing a leaky faucet, repainting worn walls, replacing a broken appliance with a similar one, pest control, cleaning.</div>
+                </div>
+                <div style={{padding:"10px 12px",borderRadius:8,background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)"}}>
+                  <div style={{fontWeight:700,color:"#3b82f6",marginBottom:4}}>Capital Improvement</div>
+                  <div style={{color:"#5c4a3a",lineHeight:1.6}}>Added to your <strong>cost basis</strong>, depreciated over 27.5 years — NOT deducted this year. Adds value or extends the property's useful life. Examples: new roof, full HVAC replacement, addition, new flooring throughout, new appliances that upgrade the unit.</div>
+                </div>
+              </div>
+              <div style={{marginTop:10,fontSize:10,color:"#9a7422",padding:"6px 10px",background:"rgba(212,168,83,.06)",borderRadius:6}}>When in doubt, ask your CPA. The IRS scrutinizes this distinction closely. If it improves, extends, or adapts — it's CapEx.</div>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{fontSize:11,color:"#999"}}>{filtImprove.length} improvement{filtImprove.length!==1?"s":""} · {fmtS(totalImprove)} total cost basis additions</div>
@@ -4793,7 +4865,7 @@ export default function Page(){
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                    {["Date","Property","Type","Description","Contractor","Receipt","Amount",""].map(h=>(
+                    {["Date","Property","Type","Subcategory","Description","Contractor","Receipt","Amount",""].map(h=>(
                       <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
                     ))}
                   </tr></thead>
@@ -4803,6 +4875,7 @@ export default function Page(){
                         <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{im.date}</td>
                         <td style={{padding:"8px 14px",fontSize:10}}>{(props.find(p=>p.id===im.propId)||{}).name||"—"}</td>
                         <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{im.improvementType||"—"}</span></td>
+                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.subcategory||<span style={{color:"#ccc"}}>—</span>}</td>
                         <td style={{padding:"8px 14px",fontWeight:600}}>{im.description}</td>
                         <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.contractor||"—"}</td>
                         <td style={{padding:"8px 14px"}}>
@@ -4829,7 +4902,7 @@ export default function Page(){
                     ))}
                   </tbody>
                   <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
-                    <td colSpan={6} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Cost Basis Additions</td>
+                    <td colSpan={7} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Cost Basis Additions</td>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#3b82f6",fontSize:14}}>{fmtS(totalImprove)}</td>
                     <td/>
                   </tr></tfoot>
@@ -6617,13 +6690,64 @@ export default function Page(){
           <span style={{fontSize:9,color:"#999"}}>or keep typing</span>
         </div>}
       </div>
-      <div className="fr3">
-        <div className="fld"><label>Payment Method</label>
-          <select value={f.paymentMethod||""} onChange={e=>upd("paymentMethod",e.target.value)}>
-            <option value="">— Select —</option>{PAY_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
-          </select></div>
-        <div className="fld" style={{gridColumn:"span 2"}}><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Optional notes"/></div>
-      </div>
+      {/* Subcategory combobox */}
+      {(()=>{
+        const subcatInput=f.subcategory||"";
+        const subcatMatches=subcatInput.trim()?subcats.filter(s=>s.label.toLowerCase().includes(subcatInput.toLowerCase())):subcats;
+        const exactSubcat=subcats.some(s=>s.label.toLowerCase()===subcatInput.toLowerCase().trim());
+        return(
+        <div className="fld" style={{position:"relative"}}>
+          <label>Subcategory <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— internal only, not exported to CPA reports</span></label>
+          <input value={subcatInput} onChange={e=>upd("subcategory",e.target.value)} placeholder="e.g. Painting, Plumbing, Electrical..." autoComplete="off"/>
+          {subcatInput.trim()&&subcatMatches.length>0&&!exactSubcat&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:"0 0 8px 8px",boxShadow:"0 4px 12px rgba(0,0,0,.1)",zIndex:100,maxHeight:140,overflowY:"auto"}}>
+            {subcatMatches.map(s=><div key={s.id} style={{padding:"7px 12px",cursor:"pointer",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.04)"}}
+              onMouseDown={e=>{e.preventDefault();upd("subcategory",s.label);}}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(212,168,83,.06)"}
+              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              {s.label}
+            </div>)}
+          </div>}
+          {subcatInput.trim()&&!exactSubcat&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
+            <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}}
+              onClick={()=>{setSubcats(p=>[...p,{id:uid(),label:subcatInput.trim()}]);upd("subcategory",subcatInput.trim());}}>
+              Save "{subcatInput.trim()}" as subcategory
+            </button>
+          </div>}
+        </div>);
+      })()}
+      {/* Unit / Room (optional) */}
+      {(()=>{
+        const selPr=props.find(p=>p.id===f.propId);
+        const units=selPr?.units||[];
+        const selUnit=units.find(u=>u.id===f.unitId);
+        const rooms=selUnit?.rooms||[];
+        if(!selPr||units.length===0)return null;
+        return(
+        <div className="fr3">
+          <div className="fld"><label>Unit <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— optional</span></label>
+            <select value={f.unitId||""} onChange={e=>{const u=units.find(x=>x.id===e.target.value);upd("unitId",e.target.value);upd("unitName",u?.name||"");upd("roomId","");upd("roomName","");}}>
+              <option value="">— Whole property —</option>
+              {units.map(u=><option key={u.id} value={u.id}>{u.name||("Unit "+(units.indexOf(u)+1))}</option>)}
+            </select>
+          </div>
+          <div className="fld"><label>Room <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— optional</span></label>
+            <select value={f.roomId||""} onChange={e=>{const r=rooms.find(x=>x.id===e.target.value);upd("roomId",e.target.value);upd("roomName",r?.name||"");}} disabled={!f.unitId}>
+              <option value="">— Whole unit —</option>
+              {rooms.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+          </div>
+          <div className="fld"><label>Payment Method</label>
+            <select value={f.paymentMethod||""} onChange={e=>upd("paymentMethod",e.target.value)}>
+              <option value="">— Select —</option>{PAY_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
+            </select></div>
+        </div>);
+      })()}
+      {/* Payment method (when no unit cascade shown) */}
+      {(!props.find(p=>p.id===f.propId)||!(props.find(p=>p.id===f.propId)?.units||[]).length)&&<div className="fld"><label>Payment Method</label>
+        <select value={f.paymentMethod||""} onChange={e=>upd("paymentMethod",e.target.value)}>
+          <option value="">— Select —</option>{PAY_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
+        </select></div>}
+      <div className="fld"><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Optional notes"/></div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Expense"}</button></div>
     </div></div>);
   })()}
@@ -6675,7 +6799,32 @@ export default function Page(){
           </select>{errs.improvementType&&<div className="err-msg">{errs.improvementType}</div>}</div>
         <div className="fld" style={{gridColumn:"span 2"}}><label>Contractor / Vendor</label><input value={f.contractor||""} onChange={e=>upd("contractor",e.target.value)} placeholder="e.g. Huntsville HVAC, ABC Roofing..."/></div>
       </div>
-      <div className="fld"><label style={{color:errs.description?"#c45c4a":undefined}}>Description *</label><input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Full HVAC replacement — unit A, new 30yr architectural shingle roof..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>{errs.description&&<div className="err-msg">{errs.description}</div>}</div>
+      <div className="fld"><label>Description *</label><input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Full HVAC replacement — unit A, new 30yr architectural shingle roof..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>{errs.description&&<div className="err-msg">{errs.description}</div>}</div>
+      {/* Subcategory combobox */}
+      {(()=>{
+        const subcatInput=f.subcategory||"";
+        const subcatMatches=subcatInput.trim()?subcats.filter(s=>s.label.toLowerCase().includes(subcatInput.toLowerCase())):subcats;
+        const exactSubcat=subcats.some(s=>s.label.toLowerCase()===subcatInput.toLowerCase().trim());
+        return(
+        <div className="fld" style={{position:"relative"}}>
+          <label>Subcategory <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— internal tracking only</span></label>
+          <input value={subcatInput} onChange={e=>upd("subcategory",e.target.value)} placeholder="e.g. HVAC, Roofing, Electrical..." autoComplete="off"/>
+          {subcatInput.trim()&&subcatMatches.length>0&&!exactSubcat&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:"0 0 8px 8px",boxShadow:"0 4px 12px rgba(0,0,0,.1)",zIndex:100,maxHeight:140,overflowY:"auto"}}>
+            {subcatMatches.map(s=><div key={s.id} style={{padding:"7px 12px",cursor:"pointer",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.04)"}}
+              onMouseDown={e=>{e.preventDefault();upd("subcategory",s.label);}}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(212,168,83,.06)"}
+              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              {s.label}
+            </div>)}
+          </div>}
+          {subcatInput.trim()&&!exactSubcat&&<div style={{marginTop:4}}>
+            <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}}
+              onClick={()=>{setSubcats(p=>[...p,{id:uid(),label:subcatInput.trim()}]);upd("subcategory",subcatInput.trim());}}>
+              Save "{subcatInput.trim()}" as subcategory
+            </button>
+          </div>}
+        </div>);
+      })()}
       <div className="fld"><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Warranty info, permit numbers, etc."/></div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Improvement"}</button></div>
     </div></div>);
