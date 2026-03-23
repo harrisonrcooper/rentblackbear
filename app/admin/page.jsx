@@ -5653,7 +5653,14 @@ export default function Page(){
             if((modal.termConfirm||"").trim()!==r.tenant.name)e.confirm=`Must match exactly: "${r.tenant.name}"`;
             if(Object.keys(e).length){setModal(prev=>({...prev,termErrs:e}));shakeModal();return;}
             setArchive(prev=>[{id:uid(),name:r.tenant.name,email:r.tenant.email,phone:r.tenant.phone,roomName:r.name,propName:r.propName,rent:r.rent,moveIn:r.tenant.moveIn,leaseEnd:r.le,terminatedDate:modal.termDate,reason:modal.termNotes,sdStatus:modal.termSdStatus,sdNote:modal.termSdNote||"",payments:payments[r.id]||{},archivedOn:TODAY.toISOString().split("T")[0]},...prev]);
-            setProps(p=>updateRoomInProps(p,r.id,rm=>({...rm,st:"vacant",le:null,tenant:null})));
+            // Detect whole-house unit — clear all rooms in unit; for by-room clear just this room
+            const termUnit=r.unitId?props.flatMap(p=>p.units||[]).find(u=>u.id===r.unitId):null;
+            const termIsWhole=!!(termUnit&&(termUnit.rentalMode||"byRoom")==="wholeHouse");
+            if(termIsWhole&&r.unitId){
+              setProps(prev=>prev.map(p=>({...p,units:(p.units||[]).map(u=>u.id===r.unitId?{...u,rooms:(u.rooms||[]).map(rm=>({...rm,st:"vacant",le:null,tenant:null}))}:u)})));
+            } else {
+              setProps(prev=>updateRoomInProps(prev,r.id,rm=>({...rm,st:"vacant",le:null,tenant:null})));
+            }
             setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease terminated: ${r.tenant.name} — ${r.name} at ${r.propName}. SD: ${modal.termSdStatus}. Reason: ${modal.termNotes}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
             setModal(null);
           }}>Confirm Termination</button>
