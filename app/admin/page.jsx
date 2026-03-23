@@ -1635,7 +1635,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
             {!locked&&<div className="fld"><label>Description <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— internal notes</span></label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Additional notes..."/></div>}
             {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
             <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap"}}>
-              {!locked&&<button className="btn btn-green btn-sm" style={{fontSize:10}}
+              {!locked&&!r.ownerOccupied&&<button className="btn btn-green btn-sm" style={{fontSize:10}}
                 onClick={()=>setAddTenantRoom({roomIdx:i,unitIdx:activeUnit})}>
                 + Add Existing Tenant
               </button>}
@@ -1668,11 +1668,11 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                     onSave(p);
                     setTimeout(()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name);}},150);
                   }}>📄 Manage Lease / Terminate</button>
-                :<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>}
+                :{!curUnit.ownerOccupied&&<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>}}
             </div>
             {rooms.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
-              {rooms.map(r=><div key={r.id} style={{padding:"4px 9px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:9,background:"#faf9f7",color:r.st==="occupied"?"#4a7c59":"#999"}}>
-                {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
+              {rooms.map(r=><div key={r.id} style={{padding:"4px 9px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:9,background:"#faf9f7",color:r.ownerOccupied?"#1d4ed8":r.st==="occupied"?"#4a7c59":"#999"}}>
+                {r.name} — {r.ownerOccupied?"Owner Occupied":r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
               </div>)}
             </div>}
             <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:curUnit.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",marginTop:8,borderRadius:7,border:"1px solid "+(curUnit.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"),background:curUnit.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
@@ -4812,7 +4812,7 @@ export default function Page(){
                       <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
                         <div style={{fontSize:14,fontWeight:800}}>{fmtS(u.rent)}</div>
                       </div>
-                      <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{if(uOcc){const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}else{setTab("applications");setBulkSel([])}}}>{uOcc?"👤 View Tenant":"+ Find Tenant"}</button>
+                      <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{if(uOcc){const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}else if(!u.ownerOccupied){setTab("applications");setBulkSel([])}}}>{uOcc?"👤 View Tenant":u.ownerOccupied?"🏠 Owner":"+ Find Tenant"}</button>
                     </div>
                   ):(
                     <>
@@ -4829,6 +4829,7 @@ export default function Page(){
                           </div>
                           {occ
                             ?<div style={{fontSize:10,color:"#999",marginTop:1}}>{r.tenant.name} · ends {fmtD(r.le)}{dl&&dl<=90?<span style={{color:dl<=30?"#c45c4a":"#d4a853",fontWeight:700,marginLeft:4}}>⚠ {dl}d</span>:null}</div>
+                            :r.ownerOccupied?<div style={{fontSize:10,color:"#1d4ed8",fontWeight:600,marginTop:1}}>Owner Occupied</div>
                             :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(r.rent)}/mo lost</div>}
                         </div>
                         <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
@@ -4840,6 +4841,7 @@ export default function Page(){
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData})}>👤 Profile</button>
                             <button className="btn btn-gold btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData,startSection:"lease"})}>📄 Lease</button>
                           </div>
+                          :r.ownerOccupied?<span style={{fontSize:9,color:"#1d4ed8",fontWeight:600,padding:"4px 8px",background:"rgba(59,130,246,.06)",borderRadius:4}}>Owner</span>
                           :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}> + Find Tenant</button>}
                       </div>);})}
                     </>
