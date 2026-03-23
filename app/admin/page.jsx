@@ -1216,6 +1216,136 @@ function LeasePricingModal({room,onSave,onClose}){
   );
 }
 
+function AddExistingTenantModal({room,propName,onSave,onClose}){
+  const today=TODAY.toISOString().split("T")[0];
+  const[form,setForm]=useState({
+    name:"",email:"",phone:"",
+    moveIn:today,leaseEnd:"",
+    rent:room.rent||"",sd:room.rent||"",
+    doorCode:"",notes:"",
+    gender:"",occupationType:"",
+  });
+  const[errs,setErrs]=useState({});
+  const[shake,setShake]=useState(false);
+  const fmtPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(!d.length)return"";if(d.length<=3)return"("+d;if(d.length<=6)return"("+d.slice(0,3)+") "+d.slice(3);return"("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6);};
+  const validate=()=>{
+    const e={};
+    if(!form.name.trim())e.name="Required";
+    if(!form.email.trim())e.email="Required";
+    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))e.email="Invalid email";
+    if(!form.phone.trim())e.phone="Required";
+    if(!form.moveIn)e.moveIn="Required";
+    if(!form.leaseEnd)e.leaseEnd="Required";
+    if(!form.rent||Number(form.rent)<=0)e.rent="Required";
+    return e;
+  };
+  const submit=()=>{
+    const e=validate();
+    if(Object.keys(e).length){setErrs(e);setShake(true);setTimeout(()=>setShake(false),500);return;}
+    onSave({
+      tenant:{
+        name:form.name.trim(),email:form.email.trim(),phone:form.phone,
+        moveIn:form.moveIn,gender:form.gender,occupationType:form.occupationType,
+        doorCode:form.doorCode,notes:form.notes,
+      },
+      rent:Number(form.rent),
+      sd:Number(form.sd)||Number(form.rent),
+      le:form.leaseEnd,
+      st:"occupied",
+    });
+  };
+  const fld=(key,label,type="text",placeholder="")=>(
+    <div className="fld" style={{marginBottom:8}}>
+      <label style={{color:errs[key]?"#c45c4a":undefined}}>{label}{errs[key]&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs[key]}</span>}</label>
+      <input type={type} value={form[key]||""} placeholder={placeholder}
+        style={{width:"100%",borderColor:errs[key]?"#c45c4a":undefined}}
+        onChange={e=>{
+          const v=key==="phone"?fmtPhone(e.target.value):e.target.value;
+          setForm(p=>({...p,[key]:v}));
+          if(errs[key])setErrs(p=>({...p,[key]:null}));
+          if(key==="rent"&&!form.sdTouched)setForm(p=>({...p,rent:v,sd:v}));
+        }}/>
+    </div>
+  );
+  return(
+  <div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520,animation:shake?"shake .4s ease":undefined}}>
+    <h2 style={{marginBottom:4}}>Add Existing Tenant</h2>
+    <div style={{fontSize:11,color:"#999",marginBottom:14}}>
+      Adding tenant to <strong>{room.name}</strong> at <strong>{propName}</strong>. This will mark the room as occupied immediately.
+    </div>
+    {shake&&Object.keys(errs).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,color:"#c45c4a",fontSize:11,fontWeight:700}}>
+      Please fill in all required fields.
+    </div>}
+
+    <div style={{background:"rgba(74,124,89,.03)",border:"1px solid rgba(74,124,89,.1)",borderRadius:10,padding:12,marginBottom:12}}>
+      <div style={{fontSize:10,fontWeight:800,color:"#2d6a3f",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Tenant Info</div>
+      {fld("name","Full Name *","text","Jane Smith")}
+      <div className="fr">
+        {fld("email","Email *","email","jane@email.com")}
+        {fld("phone","Phone *","tel","(256) 555-0000")}
+      </div>
+      <div className="fr">
+        <div className="fld" style={{marginBottom:8}}>
+          <label>Occupation Type</label>
+          <select value={form.occupationType} onChange={e=>setForm(p=>({...p,occupationType:e.target.value}))} style={{width:"100%"}}>
+            <option value="">Select...</option>
+            <option>Intern</option><option>DoD Contractor</option><option>Military</option>
+            <option>Remote Worker</option><option>Student</option><option>Travel Nurse</option><option>Other</option>
+          </select>
+        </div>
+        <div className="fld" style={{marginBottom:8}}>
+          <label>Gender</label>
+          <select value={form.gender} onChange={e=>setForm(p=>({...p,gender:e.target.value}))} style={{width:"100%"}}>
+            <option value="">Prefer not to say</option>
+            <option>Male</option><option>Female</option><option>Non-binary</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div style={{background:"rgba(59,130,246,.03)",border:"1px solid rgba(59,130,246,.1)",borderRadius:10,padding:12,marginBottom:12}}>
+      <div style={{fontSize:10,fontWeight:800,color:"#1d4ed8",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Lease Terms</div>
+      <div className="fr3">
+        {fld("moveIn","Move-in Date *","date")}
+        {fld("leaseEnd","Lease End Date *","date")}
+        {fld("doorCode","Door Code","text","1234")}
+      </div>
+      <div className="fr">
+        <div className="fld" style={{marginBottom:0}}>
+          <label style={{color:errs.rent?"#c45c4a":undefined}}>Monthly Rent * {errs.rent&&<span style={{fontWeight:400,fontSize:9,color:"#c45c4a"}}>{errs.rent}</span>}</label>
+          <div style={{display:"flex",alignItems:"center"}}>
+            <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+            <input type="number" value={form.rent} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",borderColor:errs.rent?"#c45c4a":undefined,width:"100%"}}
+              onChange={e=>{setForm(p=>({...p,rent:e.target.value,sd:p.sdTouched?p.sd:e.target.value}));if(errs.rent)setErrs(p=>({...p,rent:null}));}} placeholder="0"/>
+          </div>
+        </div>
+        <div className="fld" style={{marginBottom:0}}>
+          <label>Security Deposit</label>
+          <div style={{display:"flex",alignItems:"center"}}>
+            <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+            <input type="number" value={form.sd} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%"}}
+              onChange={e=>setForm(p=>({...p,sd:e.target.value,sdTouched:true}))} placeholder="0"/>
+          </div>
+          <div style={{fontSize:9,color:"#999",marginTop:3}}>Auto-fills from rent — edit if different</div>
+        </div>
+      </div>
+    </div>
+
+    <div className="fld" style={{marginBottom:14}}>
+      <label>Internal Notes</label>
+      <textarea value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}
+        placeholder="Any notes about this tenant or lease situation..."
+        rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+    </div>
+
+    <div className="mft">
+      <button className="btn btn-out" onClick={onClose}>Cancel</button>
+      <button className="btn btn-green" onClick={submit}>Add Tenant → Mark Occupied</button>
+    </div>
+  </div></div>
+  );
+}
+
 function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,onUpdateSettings}){
   const[p,setP]=useState(()=>{if(!prop)return{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]};try{return JSON.parse(JSON.stringify(prop));}catch{return{...prop,photos:prop.photos||[],units:(prop.units||[]).map(u=>({...u,rooms:(u.rooms||[])}))};} });
   const[activeUnit,setActiveUnit]=useState(0);
@@ -1227,6 +1357,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
   const[showCloseConfirm,setShowCloseConfirm]=useState(false);
   const[leasePricingRoom,setLeasePricingRoom]=useState(null);
   const[mirrorTarget,setMirrorTarget]=useState(null); // index of unit to mirror INTO
+  const[addTenantRoom,setAddTenantRoom]=useState(null); // {roomIdx, unitIdx} — opens Add Existing Tenant panel
 
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
   const updP=(val)=>{setP(val);markUnsaved();};
@@ -1498,6 +1629,10 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
             {!locked&&<div className="fld"><label>Description <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— internal notes</span></label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Additional notes..."/></div>}
             {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
             <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap"}}>
+              {!locked&&<button className="btn btn-green btn-sm" style={{fontSize:10}}
+                onClick={()=>setAddTenantRoom({roomIdx:i,unitIdx:activeUnit})}>
+                + Add Existing Tenant
+              </button>}
               {!locked&&<button className="btn btn-red btn-sm" onClick={()=>{const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).filter((_,j)=>j!==i)}:u);updP({...p,units});}}>Remove Room</button>}
               {locked&&<button className="btn btn-dk btn-sm" onClick={()=>{if(onViewTenant)onViewTenant(r,p.name);}}>View Lease and Tenant</button>}
               {locked&&<span style={{fontSize:10,color:"#999"}}>Manage lease to edit room</span>}
@@ -1521,6 +1656,16 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
       const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map((r,ri)=>ri===leasePricingRoom.idx?{...r,leaseTiers:tiers}:r)}:u);
       updP({...p,units});
     }}/>}
+    {addTenantRoom!==null&&(()=>{
+      const u=(p.units||[])[addTenantRoom.unitIdx];
+      const r=(u?.rooms||[])[addTenantRoom.roomIdx];
+      if(!r)return null;
+      return(<AddExistingTenantModal room={r} propName={p.name} onClose={()=>setAddTenantRoom(null)} onSave={data=>{
+        const units=(p.units||[]).map((u2,ui)=>ui===addTenantRoom.unitIdx?{...u2,rooms:(u2.rooms||[]).map((rm,ri)=>ri===addTenantRoom.roomIdx?{...rm,...data}:rm)}:u2);
+        updP({...p,units});
+        setAddTenantRoom(null);
+      }}/> );
+    })()}
     {mirrorTarget!==null&&<div className="mbg" onClick={()=>setMirrorTarget(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400,textAlign:"center"}}>
       <div style={{fontSize:28,marginBottom:12}}>⧉</div>
       <h2 style={{marginBottom:8}}>Mirror Unit A</h2>
@@ -2218,7 +2363,11 @@ export default function Page(){
       {/* ═══ TENANTS ═══ */}
       {tab==="tenants"&&<>
         <div className="sec-hd"><div><h2>Tenants</h2><p>{allTenants.length} current · {archive.length} past</p></div>
-          <div style={{display:"flex",gap:4}}><button className={`btn ${!drill||drill!=="archive"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setDrill(null)}>Current ({allTenants.length})</button><button className={`btn ${drill==="archive"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setDrill("archive")}>Past Tenants ({archive.length})</button></div>
+          <div style={{display:"flex",gap:4}}>
+            <button className="btn btn-green btn-sm" onClick={()=>setModal({type:"addExistingTenant",propId:"",unitId:"",roomId:"",form:{name:"",email:"",phone:"",moveIn:TODAY.toISOString().split("T")[0],leaseEnd:"",rent:"",sd:"",doorCode:"",notes:"",gender:"",occupationType:""}})}>+ Add Existing Tenant</button>
+            <button className={`btn ${!drill||drill!=="archive"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setDrill(null)}>Current ({allTenants.length})</button>
+            <button className={`btn ${drill==="archive"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setDrill("archive")}>Past Tenants ({archive.length})</button>
+          </div>
         </div>
 
         {/* Current tenants */}
@@ -6497,6 +6646,160 @@ export default function Page(){
       </div>
     </div>
   )}
+
+  {/* Add Existing Tenant (from Tenants tab) */}
+  {modal&&modal.type==="addExistingTenant"&&(()=>{
+    const mf=modal.form||{};
+    const selProp=modal.propId?props.find(p=>p.id===modal.propId):null;
+    // Available items respect rentalMode
+    const availItems=selProp?leaseableItems(selProp).filter(i=>i.st==="vacant"):[];
+    const selItem=modal.roomId?availItems.find(i=>i.id===modal.roomId):null;
+    const errs=modal.errs||{};
+    const shake=modal.shake||false;
+    const fmtPhone=v=>{const d=v.replace(/\D/g,"").slice(0,10);if(!d.length)return"";if(d.length<=3)return"("+d;if(d.length<=6)return"("+d.slice(0,3)+") "+d.slice(3);return"("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6);};
+    const upd=(k,v)=>setModal(prev=>({...prev,form:{...(prev.form||{}),[k]:v},errs:{...(prev.errs||{}),[k]:null}}));
+    const validate=()=>{
+      const e={};
+      if(!mf.name?.trim())e.name="Required";
+      if(!mf.email?.trim())e.email="Required";
+      else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mf.email))e.email="Invalid";
+      if(!mf.phone?.trim())e.phone="Required";
+      if(!modal.propId)e.prop="Required";
+      if(!modal.roomId)e.room="Required";
+      if(!mf.moveIn)e.moveIn="Required";
+      if(!mf.leaseEnd)e.leaseEnd="Required";
+      if(!mf.rent||Number(mf.rent)<=0)e.rent="Required";
+      return e;
+    };
+    const save=()=>{
+      const e=validate();
+      if(Object.keys(e).length){setModal(p=>({...p,errs:e,shake:true}));setTimeout(()=>setModal(p=>({...p,shake:false})),500);return;}
+      // Write tenant into the room/unit in props
+      setProps(prev=>prev.map(pr=>{
+        if(pr.id!==modal.propId)return pr;
+        return{...pr,units:(pr.units||[]).map(u=>{
+          if(selItem?.isWholeUnit){
+            if(u.id!==selItem.unitId)return u;
+            // Whole unit — mark all rooms occupied under this unit tenant
+            return{...u,st:"occupied",le:mf.leaseEnd,tenant:{name:mf.name.trim(),email:mf.email.trim(),phone:mf.phone,moveIn:mf.moveIn,gender:mf.gender,occupationType:mf.occupationType,doorCode:mf.doorCode,notes:mf.notes},rent:Number(mf.rent),
+              rooms:(u.rooms||[]).map(r=>({...r,st:"occupied",le:mf.leaseEnd,tenant:{name:mf.name.trim(),email:mf.email.trim(),phone:mf.phone,moveIn:mf.moveIn}}))};
+          }
+          return{...u,rooms:(u.rooms||[]).map(r=>{
+            if(r.id!==modal.roomId)return r;
+            return{...r,st:"occupied",le:mf.leaseEnd,rent:Number(mf.rent),
+              tenant:{name:mf.name.trim(),email:mf.email.trim(),phone:mf.phone,moveIn:mf.moveIn,gender:mf.gender,occupationType:mf.occupationType,doorCode:mf.doorCode,notes:mf.notes}};
+          })};
+        })};
+      }));
+      // Auto-generate a rent charge
+      if(selItem){
+        const mk=mf.moveIn.slice(0,7);
+        createCharge({roomId:selItem.isWholeUnit?selItem.unitId:selItem.id,tenantName:mf.name.trim(),propName:selProp.name,roomName:selItem.name,category:"Rent",desc:mk+" Rent",amount:Number(mf.rent),dueDate:mf.moveIn.slice(0,7)+"-01",sent:false,sentDate:TODAY.toISOString().split("T")[0]});
+      }
+      setNotifs(p=>[{id:uid(),type:"lease",msg:`Existing tenant added: ${mf.name.trim()} → ${selItem?.name} at ${selProp?.name}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+      setModal(null);
+    };
+    const efld=(key,label,type="text",placeholder="")=>(
+      <div className="fld" style={{marginBottom:8}}>
+        <label style={{color:errs[key]?"#c45c4a":undefined}}>{label}{errs[key]&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs[key]}</span>}</label>
+        <input type={type} value={mf[key]||""} placeholder={placeholder} style={{width:"100%",borderColor:errs[key]?"#c45c4a":undefined}}
+          onChange={e=>upd(key,type==="tel"?fmtPhone(e.target.value):e.target.value)}/>
+      </div>
+    );
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560,maxHeight:"92vh",overflowY:"auto",animation:shake?"shake .4s ease":undefined}}>
+      <h2 style={{marginBottom:4}}>Add Existing Tenant</h2>
+      <div style={{fontSize:11,color:"#999",marginBottom:14}}>Manually onboard a tenant who is already living in your property. This will mark the room as occupied immediately.</div>
+      {shake&&Object.keys(errs).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,color:"#c45c4a",fontSize:11,fontWeight:700}}>Please fill in all required fields.</div>}
+
+      <div style={{background:"rgba(74,124,89,.03)",border:"1px solid rgba(74,124,89,.1)",borderRadius:10,padding:12,marginBottom:12}}>
+        <div style={{fontSize:10,fontWeight:800,color:"#2d6a3f",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Tenant Info</div>
+        {efld("name","Full Name *","text","Jane Smith")}
+        <div className="fr">
+          {efld("email","Email *","email","jane@email.com")}
+          {efld("phone","Phone *","tel","(256) 555-0000")}
+        </div>
+        <div className="fr">
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Occupation Type</label>
+            <select value={mf.occupationType||""} onChange={e=>upd("occupationType",e.target.value)} style={{width:"100%"}}>
+              <option value="">Select...</option>
+              <option>Intern</option><option>DoD Contractor</option><option>Military</option>
+              <option>Remote Worker</option><option>Student</option><option>Travel Nurse</option><option>Other</option>
+            </select>
+          </div>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Gender</label>
+            <select value={mf.gender||""} onChange={e=>upd("gender",e.target.value)} style={{width:"100%"}}>
+              <option value="">Prefer not to say</option>
+              <option>Male</option><option>Female</option><option>Non-binary</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style={{background:"rgba(212,168,83,.03)",border:"1px solid rgba(212,168,83,.12)",borderRadius:10,padding:12,marginBottom:12}}>
+        <div style={{fontSize:10,fontWeight:800,color:"#9a7422",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Property &amp; Room</div>
+        <div className="fr" style={{marginBottom:8,gap:8}}>
+          <div className="fld" style={{marginBottom:0}}>
+            <label style={{color:errs.prop?"#c45c4a":undefined}}>Property *{errs.prop&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.prop}</span>}</label>
+            <select value={modal.propId||""} onChange={e=>setModal(p=>({...p,propId:e.target.value,roomId:"",errs:{...(p.errs||{}),prop:null,room:null}}))} style={{width:"100%",borderColor:errs.prop?"#c45c4a":undefined}}>
+              <option value="">Select property...</option>
+              {props.map(pr=><option key={pr.id} value={pr.id}>{pr.name}</option>)}
+            </select>
+          </div>
+          <div className="fld" style={{marginBottom:0}}>
+            <label style={{color:errs.room?"#c45c4a":undefined}}>Room / Unit *{errs.room&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.room}</span>}</label>
+            <select value={modal.roomId||""} onChange={e=>setModal(p=>({...p,roomId:e.target.value,form:{...p.form,rent:availItems.find(i=>i.id===e.target.value)?.rent||p.form?.rent||"",sd:availItems.find(i=>i.id===e.target.value)?.rent||p.form?.sd||""},errs:{...(p.errs||{}),room:null}}))} style={{width:"100%",borderColor:errs.room?"#c45c4a":undefined}} disabled={!modal.propId}>
+              <option value="">{modal.propId?"Select room...":"Select property first"}</option>
+              {availItems.map(i=><option key={i.id} value={i.id}>{i.name}{i.isWholeUnit?" (Whole Unit)":""} — {fmtS(i.rent)}/mo</option>)}
+              {selProp&&availItems.length===0&&<option disabled>No vacant rooms</option>}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style={{background:"rgba(59,130,246,.03)",border:"1px solid rgba(59,130,246,.1)",borderRadius:10,padding:12,marginBottom:12}}>
+        <div style={{fontSize:10,fontWeight:800,color:"#1d4ed8",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Lease Terms</div>
+        <div className="fr3">
+          {efld("moveIn","Move-in Date *","date")}
+          {efld("leaseEnd","Lease End Date *","date")}
+          {efld("doorCode","Door Code","text","1234")}
+        </div>
+        <div className="fr">
+          <div className="fld" style={{marginBottom:0}}>
+            <label style={{color:errs.rent?"#c45c4a":undefined}}>Monthly Rent *{errs.rent&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.rent}</span>}</label>
+            <div style={{display:"flex",alignItems:"center"}}>
+              <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+              <input type="number" value={mf.rent||""} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%",borderColor:errs.rent?"#c45c4a":undefined}}
+                onChange={e=>{upd("rent",e.target.value);if(!mf.sdTouched)upd("sd",e.target.value);}} placeholder="0"/>
+            </div>
+          </div>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Security Deposit</label>
+            <div style={{display:"flex",alignItems:"center"}}>
+              <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+              <input type="number" value={mf.sd||""} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%"}}
+                onChange={e=>{upd("sd",e.target.value);upd("sdTouched",true);}} placeholder="0"/>
+            </div>
+            <div style={{fontSize:9,color:"#999",marginTop:3}}>Auto-fills from rent</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="fld" style={{marginBottom:14}}>
+        <label>Internal Notes</label>
+        <textarea value={mf.notes||""} onChange={e=>upd("notes",e.target.value)}
+          placeholder="How long have they lived here? Anything to note about the lease situation..."
+          rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+      </div>
+
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-green" onClick={save}>Add Tenant → Mark Occupied</button>
+      </div>
+    </div></div>);
+  })()}
 
   {/* Deny Modal */}
   {modal&&modal.type==="denyApp"&&(
