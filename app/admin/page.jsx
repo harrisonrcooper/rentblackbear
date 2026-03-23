@@ -4759,10 +4759,14 @@ export default function Page(){
             }catch(e){alert("Upload error: "+e.message);}
           };
           const sorted=filtExpenses.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
+          const attachedCount=sorted.filter(e=>e.receiptUrl).length;
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
-              <div style={{fontSize:11,color:"#999"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total · Schedule E categories</div>
-              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}})}>+ Add Expense</button>
+              <div style={{fontSize:11,color:"#999"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total{attachedCount>0?" · "+attachedCount+" receipt"+((attachedCount!==1)?"s":"")+" attached":""}</div>
+              <div style={{display:"flex",gap:6}}>
+                {sorted.length>0&&<button className="btn btn-out btn-sm" onClick={()=>setModal({type:"exportExpenses",expenses:sorted,attachedCount})}>↓ Export</button>}
+                <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}})}>+ Add Expense</button>
+              </div>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
@@ -4791,8 +4795,8 @@ export default function Page(){
                       <td style={{padding:"8px 14px",fontSize:10,color:"#999"}}>{e.paymentMethod||"—"}</td>
                       <td style={{padding:"8px 14px"}}>
                         {e.receiptUrl
-                          ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#3b82f6",fontWeight:600,textDecoration:"none"}}>View</a>
-                          :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600}}>Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
+                          ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#4a7c59",fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}>📎 Attached</a>
+                          :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
                       </td>
                       <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>
                       <td style={{padding:"8px 14px"}}>
@@ -6952,6 +6956,72 @@ export default function Page(){
         <button className="btn btn-red" onClick={()=>{setExpenses(p=>p.filter(e=>e.id!==modal.expId));setModal(null);}}>Delete</button></div>
     </div></div>
   )}
+
+  {/* ── Export Expenses ── */}
+  {modal&&modal.type==="exportExpenses"&&(()=>{
+    const exps=modal.expenses||[];
+    const attached=modal.attachedCount||0;
+    const includeReceipts=modal._includeReceipts||false;
+    const exporting=modal._exporting||false;
+
+    const doExport=async()=>{
+      setModal(p=>({...p,_exporting:true}));
+      // Build CSV
+      const headers=["Date","Property","Unit","Room","Category","Subcategory","Vendor","Description","Payment Method","Amount","Notes"];
+      if(includeReceipts)headers.push("Receipt URL");
+      const rows=exps.map(e=>{
+        const row=[e.date,(e.propId==="shared"?"Shared — All Properties":e.propName||""),e.unitName||"",e.roomName||"",e.category||"",e.subcategory||"",e.vendor||"",e.description||"",e.paymentMethod||"",e.amount||0,e.notes||""];
+        if(includeReceipts)row.push(e.receiptUrl||"");
+        return row;
+      });
+      const csv=[headers.join(","),...rows.map(r=>r.map(v=>JSON.stringify(String(v))).join(","))].join("\n");
+      const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download="expenses-"+new Date().toISOString().split("T")[0]+".csv";a.click();
+
+      // Download receipts as individual files if requested
+      if(includeReceipts&&attached>0){
+        const receiptExps=exps.filter(e=>e.receiptUrl);
+        for(const e of receiptExps){
+          try{
+            const link=document.createElement("a");link.href=e.receiptUrl;link.target="_blank";link.download=(e.date||"")+"_"+(e.vendor||e.category||"receipt").replace(/[^a-zA-Z0-9]/g,"_");link.click();
+            await new Promise(r=>setTimeout(r,500));
+          }catch(err){console.error("Failed to download receipt:",err);}
+        }
+      }
+      setModal(null);
+    };
+
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+      <h2 style={{marginBottom:4}}>Export Expenses</h2>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>{exps.length} expense{exps.length!==1?"s":""} · {fmtS(exps.reduce((s,e)=>s+e.amount,0))} total</p>
+
+      <div style={{background:"#f8f7f4",borderRadius:8,padding:"14px 16px",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#3c3228",marginBottom:8}}>Export will include:</div>
+        <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.8}}>
+          CSV file with date, property, category, subcategory, vendor, description, payment method, amount, and notes.
+        </div>
+      </div>
+
+      {attached>0&&<div style={{marginBottom:16}}>
+        <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"12px 16px",border:"1px solid rgba(0,0,0,.08)",borderRadius:8,background:includeReceipts?"rgba(74,124,89,.04)":"#fff"}}>
+          <input type="checkbox" checked={includeReceipts} onChange={e=>setModal(p=>({...p,_includeReceipts:e.target.checked}))} style={{width:16,height:16,accentColor:"#4a7c59"}}/>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Include receipt attachments</div>
+            <div style={{fontSize:10,color:"#999",marginTop:2}}>{attached} receipt{attached!==1?"s":""} will be downloaded alongside the CSV. Receipt URLs will be added as a column.</div>
+          </div>
+        </label>
+      </div>}
+
+      {attached===0&&<div style={{fontSize:11,color:"#999",marginBottom:16,padding:"8px 12px",background:"#f8f7f4",borderRadius:6}}>No receipts attached to these expenses.</div>}
+
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-gold" onClick={doExport} disabled={exporting}>
+          {exporting?"Exporting...":"Export CSV"+(includeReceipts?" + Receipts":"")}
+        </button>
+      </div>
+    </div></div>);
+  })()}
 
   {/* ── Add / Edit Improvement ── */}
   {modal&&modal.type==="addImprovement"&&(()=>{
