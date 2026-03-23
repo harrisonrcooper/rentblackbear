@@ -1206,6 +1206,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
   const[showUtilModal,setShowUtilModal]=useState(false);
   const[showCloseConfirm,setShowCloseConfirm]=useState(false);
   const[leasePricingRoom,setLeasePricingRoom]=useState(null);
+  const[mirrorTarget,setMirrorTarget]=useState(null); // index of unit to mirror INTO
 
   const markUnsaved=()=>{setUnsaved(true);setJustSaved(false);};
   const updP=(val)=>{setP(val);markUnsaved();};
@@ -1338,18 +1339,21 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
         {/* Unit tabs — show for multi-unit, always */}
         {(p.units||[]).length>1&&<div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
           {(p.units||[]).map((u,i)=>(
-            <button key={u.id} onClick={()=>setActiveUnit(i)} style={{
-              padding:"5px 12px",borderRadius:7,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-              background:i===activeUnit?"#1a1714":"#fff",color:i===activeUnit?"#d4a853":"#5c4a3a",
-              borderColor:i===activeUnit?"#1a1714":"rgba(0,0,0,.1)",transition:"all .15s",
-            }}>{u.name||`Unit ${i+1}`}
-            <span style={{fontSize:9,fontWeight:400,opacity:.6,marginLeft:4}}>{u.rentalMode==="wholeHouse"?"whole":"by room"}</span>
-            </button>
+            <div key={u.id} style={{display:"flex",alignItems:"center",gap:3}}>
+              <button onClick={()=>setActiveUnit(i)} style={{
+                padding:"5px 12px",borderRadius:7,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                background:i===activeUnit?"#1a1714":"#fff",color:i===activeUnit?"#d4a853":"#5c4a3a",
+                borderColor:i===activeUnit?"#1a1714":"rgba(0,0,0,.1)",transition:"all .15s",
+              }}>{u.name||`Unit ${i+1}`}
+              <span style={{fontSize:9,fontWeight:400,opacity:.6,marginLeft:4}}>{u.rentalMode==="wholeHouse"?"whole":"by room"}</span>
+              </button>
+              {i>0&&<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#9a7422",borderColor:"rgba(212,168,83,.3)",padding:"3px 7px"}}
+                title={"Copy Unit A settings to "+u.name}
+                onClick={()=>setMirrorTarget(i)}>
+                ⧉
+              </button>}
+            </div>
           ))}
-          {activeUnit>0&&<button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
-            onClick={()=>{if(window.confirm(`Copy all settings from ${(p.units||[])[0]?.name||"Unit A"} to ${curUnit?.name}? Rooms will be vacant copies.`))mirrorFromA(activeUnit);}}>
-            ⧉ Mirror
-          </button>}
           <button className="btn btn-out btn-sm" onClick={addUnit} title="Add another unit to this property">+ Unit</button>
         </div>}
       </div>
@@ -1497,6 +1501,20 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
       const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map((r,ri)=>ri===leasePricingRoom.idx?{...r,leaseTiers:tiers}:r)}:u);
       updP({...p,units});
     }}/>}
+    {mirrorTarget!==null&&<div className="mbg" onClick={()=>setMirrorTarget(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400,textAlign:"center"}}>
+      <div style={{fontSize:28,marginBottom:12}}>⧉</div>
+      <h2 style={{marginBottom:8}}>Mirror Unit A</h2>
+      <p style={{fontSize:13,color:"#5c4a3a",marginBottom:6,lineHeight:1.6}}>
+        Copy all settings from <strong>{(p.units||[])[0]?.name||"Unit A"}</strong> to <strong>{(p.units||[])[mirrorTarget]?.name||"Unit B"}</strong>?
+      </p>
+      <p style={{fontSize:11,color:"#999",marginBottom:20,lineHeight:1.5}}>
+        Rental mode, utilities, cleaning schedule, room layout, and features will be copied. All rooms will be set to vacant — existing tenant data will not be affected.
+      </p>
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setMirrorTarget(null)}>Cancel</button>
+        <button className="btn btn-gold" onClick={()=>{mirrorFromA(mirrorTarget);setMirrorTarget(null);}}>Yes, Mirror Unit A →</button>
+      </div>
+    </div></div>}
 
 
     {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:"#4a7c59",textAlign:"center"}}>
