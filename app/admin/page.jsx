@@ -203,7 +203,23 @@ const SCHED_E_CATS=[
 ];
 const SCHED_E_CAT_LABELS=SCHED_E_CATS.map(c=>c.label);
 const IMPROVEMENT_TYPES=["Addition","Appliance","Flooring","HVAC","Landscaping","Plumbing","Electrical","Roof","Windows","Other"];
-const STARTER_SUBCATS=["Painting","Plumbing","Electrical","HVAC","Appliance Repair","Flooring","Landscaping","Pest Control","Cleaning","Lock & Security","Window & Door","Roofing","Structural","Insurance Claim","Other"];
+const STARTER_SUBCATS_BY_CAT={
+  "Advertising":[{id:"sc-ad1",label:"Listing Fees"},{id:"sc-ad2",label:"Signage"},{id:"sc-ad3",label:"Online Ads"},{id:"sc-ad4",label:"Photography"},{id:"sc-ad5",label:"Print / Flyers"}],
+  "Auto & Travel":[{id:"sc-at1",label:"Mileage"},{id:"sc-at2",label:"Gas"},{id:"sc-at3",label:"Tolls / Parking"},{id:"sc-at4",label:"Flights"},{id:"sc-at5",label:"Hotel / Lodging"}],
+  "Cleaning & Maintenance":[{id:"sc-cm1",label:"Routine Cleaning"},{id:"sc-cm2",label:"Landscaping"},{id:"sc-cm3",label:"Pest Control"},{id:"sc-cm4",label:"Snow Removal"},{id:"sc-cm5",label:"Trash Hauling"},{id:"sc-cm6",label:"Pressure Washing"}],
+  "Commissions":[{id:"sc-co1",label:"Leasing Agent"},{id:"sc-co2",label:"Referral Fee"},{id:"sc-co3",label:"Broker Fee"}],
+  "Insurance":[{id:"sc-in1",label:"Hazard / Dwelling"},{id:"sc-in2",label:"Liability"},{id:"sc-in3",label:"Umbrella"},{id:"sc-in4",label:"Flood"},{id:"sc-in5",label:"Renters (Landlord-paid)"}],
+  "Legal & Professional Fees":[{id:"sc-lp1",label:"CPA / Tax Prep"},{id:"sc-lp2",label:"Attorney"},{id:"sc-lp3",label:"Bookkeeping"},{id:"sc-lp4",label:"Eviction Filing"},{id:"sc-lp5",label:"Entity Formation"}],
+  "Management Fees":[{id:"sc-mf1",label:"PM Software"},{id:"sc-mf2",label:"PM Company Fee"},{id:"sc-mf3",label:"Leasing Fee"},{id:"sc-mf4",label:"Tenant Placement"}],
+  "Mortgage Interest":[{id:"sc-mi1",label:"Bank Mortgage"},{id:"sc-mi2",label:"HELOC"},{id:"sc-mi3",label:"Refi Costs"}],
+  "Other Interest":[{id:"sc-oi1",label:"Hard Money"},{id:"sc-oi2",label:"Seller Finance"},{id:"sc-oi3",label:"Private Lender"}],
+  "Repairs":[{id:"sc-rp1",label:"Painting"},{id:"sc-rp2",label:"Plumbing"},{id:"sc-rp3",label:"Electrical"},{id:"sc-rp4",label:"HVAC"},{id:"sc-rp5",label:"Appliance Repair"},{id:"sc-rp6",label:"Flooring"},{id:"sc-rp7",label:"Lock & Security"},{id:"sc-rp8",label:"Roofing"},{id:"sc-rp9",label:"Structural"},{id:"sc-rp10",label:"Window & Door"},{id:"sc-rp11",label:"Other"}],
+  "Supplies":[{id:"sc-su1",label:"Cleaning Supplies"},{id:"sc-su2",label:"Small Tools"},{id:"sc-su3",label:"Hardware"},{id:"sc-su4",label:"Light Bulbs / Filters"},{id:"sc-su5",label:"Paint / Caulk"}],
+  "Taxes — Property":[{id:"sc-tx1",label:"Annual Property Tax"},{id:"sc-tx2",label:"Special Assessment"}],
+  "Utilities":[{id:"sc-ut1",label:"Electric"},{id:"sc-ut2",label:"Gas"},{id:"sc-ut3",label:"Water / Sewer"},{id:"sc-ut4",label:"Trash"},{id:"sc-ut5",label:"Internet / WiFi"},{id:"sc-ut6",label:"Cable / TV"}],
+  "Depreciation":[{id:"sc-dp1",label:"Building"},{id:"sc-dp2",label:"Appliances"},{id:"sc-dp3",label:"Cost Seg Study"}],
+  "Other":[{id:"sc-ot1",label:"Bank Fees"},{id:"sc-ot2",label:"Permits / Licenses"},{id:"sc-ot3",label:"HOA Dues"},{id:"sc-ot4",label:"Miscellaneous"}],
+};
 // Charges: source of truth for all money owed/paid
 const DEF_CHARGES=[
   // ─── Marcus Johnson (r1, Holmes House, $850/mo) — reliable payer ───
@@ -2006,7 +2022,7 @@ export default function Page(){
   const[mortgages,setMortgages]=useState([]);
   const[vendors,setVendors]=useState([]);
   const[improvements,setImprovements]=useState([]);
-  const[subcats,setSubcats]=useState(STARTER_SUBCATS.map((l,i)=>({id:"sc"+i,label:l})));
+  const[subcats,setSubcats]=useState(STARTER_SUBCATS_BY_CAT);
   const[acctOverviewMode,setAcctOverviewMode]=useState("property"); // "property" | "unit"
   const[payPeriod,setPayPeriod]=useState("mtd");
   const[payFilters,setPayFilters]=useState({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""});
@@ -2068,7 +2084,7 @@ export default function Page(){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS.map((l,i)=>({id:"sc"+i,label:l})))]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS_BY_CAT)]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
@@ -2111,7 +2127,7 @@ export default function Page(){
         if(!found)console.warn("⚠ Could not geocode:",prop.name,prop.addr);
       }
     }
-    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(sbc);setLoaded(true);
+    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,vendors,improvements,subcats,loaded]);
@@ -4455,13 +4471,23 @@ export default function Page(){
           if(acctCat!=="all"&&p.category!==acctCat)return false;
           return true;
         });
-        const filtExpenses=expenses.filter(e=>{
-          if(e.date<acctFrom||e.date>acctTo)return false;
-          if(acctPropId!=="all"&&e.propId!==acctPropId)return false;
-          if(acctCat!=="all"&&e.category!==acctCat)return false;
-          if(acctVendor!=="all"&&e.vendor!==acctVendor)return false;
-          return true;
-        });
+        const propCount=props.length||1;
+        const filtExpenses=(()=>{
+          const result=[];
+          for(const e of expenses){
+            if(e.date<acctFrom||e.date>acctTo)continue;
+            if(acctCat!=="all"&&e.category!==acctCat)continue;
+            if(acctVendor!=="all"&&e.vendor!==acctVendor)continue;
+            if(e.propId==="shared"){
+              if(acctPropId==="all"){result.push(e);}
+              else{result.push({...e,_isShared:true,_fullAmount:e.amount,amount:Math.round(e.amount/propCount*100)/100});}
+            } else {
+              if(acctPropId!=="all"&&e.propId!==acctPropId)continue;
+              result.push(e);
+            }
+          }
+          return result;
+        })();
 
         const totalIncome=filtIncome.reduce((s,p)=>s+p.amount,0);
         const totalExp=filtExpenses.reduce((s,e)=>s+e.amount,0);
@@ -4539,10 +4565,11 @@ export default function Page(){
         </div>
 
         {/* ── Sub-tabs ── */}
-        <div style={{display:"flex",gap:4,marginBottom:16,borderBottom:"2px solid rgba(0,0,0,.06)",paddingBottom:0}}>
+        <div style={{display:"flex",gap:0,marginBottom:16,position:"relative",paddingBottom:0}}>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:"rgba(0,0,0,.08)",zIndex:0}}/>
           {[["overview","Overview"],["income","Income"],["expenses","Expenses"],["improvements","Capital Improvements"],["mortgages","Mortgages"],["vendors","Vendors"]].map(([k,l])=>(
             <button key={k} onClick={()=>{setAcctSubTab(k);setF("category","all");setF("tenant","all");setF("vendor","all");}}
-              style={{padding:"8px 16px",fontSize:12,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#999",background:"transparent",border:"none",borderBottom:acctSubTab===k?"2px solid #3c3228":"2px solid transparent",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap"}}>
+              style={{padding:"10px 22px",fontSize:13,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#999",background:acctSubTab===k?"#fff":"transparent",border:acctSubTab===k?"1px solid rgba(0,0,0,.08)":"1px solid transparent",borderBottom:acctSubTab===k?"2px solid #fff":"2px solid transparent",borderRadius:acctSubTab===k?"10px 10px 0 0":"10px 10px 0 0",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap",position:"relative",zIndex:acctSubTab===k?3:1}}>
               {l}
             </button>
           ))}
@@ -4576,7 +4603,9 @@ export default function Page(){
                   <tbody>
                     {filtProps.map((pr,i)=>{
                       const inc=allCollected.filter(p=>p.propName===pr.name&&p.date>=acctFrom&&p.date<=acctTo).reduce((s,p)=>s+p.amount,0);
-                      const exp=expenses.filter(e=>e.propId===pr.id&&e.date>=acctFrom&&e.date<=acctTo).reduce((s,e)=>s+e.amount,0);
+                      const directExp=expenses.filter(e=>e.propId===pr.id&&e.date>=acctFrom&&e.date<=acctTo).reduce((s,e)=>s+e.amount,0);
+                      const sharedExp=expenses.filter(e=>e.propId==="shared"&&e.date>=acctFrom&&e.date<=acctTo).reduce((s,e)=>s+Math.round(e.amount/propCount*100)/100,0);
+                      const exp=directExp+sharedExp;
                       const noi=inc-exp;const margin=inc>0?Math.round(noi/inc*100):null;
                       const mg=mortgages.filter(m=>m.propId===pr.id);
                       const debt=mg.reduce((s,m)=>s+(m.monthlyPI||0)*12,0);
@@ -4638,7 +4667,7 @@ export default function Page(){
             {/* By Unit */}
             {acctOverviewMode==="unit"&&filtProps.map(pr=>{
               const units=pr.units||[];
-              const prExpenses=expenses.filter(e=>e.propId===pr.id&&e.date>=acctFrom&&e.date<=acctTo);
+              const prExpenses=[...expenses.filter(e=>e.propId===pr.id&&e.date>=acctFrom&&e.date<=acctTo),...expenses.filter(e=>e.propId==="shared"&&e.date>=acctFrom&&e.date<=acctTo).map(e=>({...e,amount:Math.round(e.amount/propCount*100)/100,_isShared:true}))];
               const propWideExp=prExpenses.filter(e=>!e.unitId);
               const propWideAmt=propWideExp.reduce((s,e)=>s+e.amount,0);
               return(<div key={pr.id} style={{marginBottom:16}}>
@@ -4728,8 +4757,8 @@ export default function Page(){
           const sorted=filtExpenses.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
-              <div style={{fontSize:11,color:"#999"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total" · Schedule E categories"</div>
-              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),category:expCats[0],description:"",vendor:"",amount:"",paymentMethod:"",notes:""},errs:{}})}>+ Add Expense</button>
+              <div style={{fontSize:11,color:"#999"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total · Schedule E categories</div>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}})}>+ Add Expense</button>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
@@ -4741,9 +4770,13 @@ export default function Page(){
                 <tbody>
                   {sorted.length===0&&<tr><td colSpan={11} style={{padding:32,textAlign:"center",color:"#999",fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
                   {sorted.map((e,i)=>(
-                    <tr key={e.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                    <tr key={e.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:e._isShared?"rgba(59,130,246,.02)":i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{e.date}</td>
-                      <td style={{padding:"8px 14px",fontSize:10}}>{(props.find(p=>p.id===e.propId)||{}).name||"—"}</td>
+                      <td style={{padding:"8px 14px",fontSize:10}}>
+                        {e.propId==="shared"||e._isShared
+                          ?<span style={{display:"inline-flex",alignItems:"center",gap:4}}>{e._isShared?(props.find(p=>p.id===acctPropId)||{}).name||"Shared":<span style={{color:"#5c4a3a"}}>All Properties</span>} <span style={{fontSize:8,padding:"1px 6px",borderRadius:100,background:"rgba(59,130,246,.1)",color:"#3b82f6",fontWeight:700,whiteSpace:"nowrap"}}>SHARED{e._isShared?" · "+fmtS(e._fullAmount)+" total":""}</span></span>
+                          :(props.find(p=>p.id===e.propId)||{}).name||"—"}
+                      </td>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.unitName?(e.roomName?e.unitName+" / "+e.roomName:e.unitName):e.roomName||"—"}</td>
                       <td style={{padding:"8px 14px"}}>
                         <span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span>
@@ -4960,7 +4993,7 @@ export default function Page(){
         // Filtered data helpers
         const rCharges=charges.filter(c=>c.dueDate>=rFrom&&c.dueDate<=rTo&&(reportProp==="all"||rProps.some(p=>p.name===c.propName)));
         const rPayments=charges.flatMap(c=>c.payments.map(p=>({...p,propName:c.propName,tenantName:c.tenantName,category:c.category,chargeId:c.id}))).filter(p=>p.date>=rFrom&&p.date<=rTo&&(reportProp==="all"||rProps.some(x=>x.name===p.propName)));
-        const rExpenses=expenses.filter(e=>e.date>=rFrom&&e.date<=rTo&&(reportProp==="all"||rProps.some(p=>p.id===e.propId)));
+        const rExpenses=expenses.filter(e=>e.date>=rFrom&&e.date<=rTo&&(reportProp==="all"||rProps.some(p=>p.id===e.propId)||e.propId==="shared"));
         const rMortgages=mortgages.filter(mg=>reportProp==="all"||rProps.some(p=>p.id===mg.propId));
         const totalIncome=rPayments.reduce((s,p)=>s+p.amount,0);
         const totalExp=rExpenses.reduce((s,e)=>s+e.amount,0);
@@ -5074,7 +5107,9 @@ export default function Page(){
                 <tbody>
                   {rProps.map((pr,i)=>{
                     const inc=rPayments.filter(p=>p.propName===pr.name).reduce((s,p)=>s+p.amount,0);
-                    const exp=rExpenses.filter(e=>e.propId===pr.id).reduce((s,e)=>s+e.amount,0);
+                    const directExp=rExpenses.filter(e=>e.propId===pr.id).reduce((s,e)=>s+e.amount,0);
+                    const sharedAlloc=rExpenses.filter(e=>e.propId==="shared").reduce((s,e)=>s+Math.round(e.amount/(props.length||1)*100)/100,0);
+                    const exp=directExp+sharedAlloc;
                     const noi=inc-exp;const margin=inc>0?Math.round(noi/inc*100):0;
                     return(<tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                       <td style={{padding:"8px 12px",fontWeight:700}}>{pr.name}</td>
@@ -5101,7 +5136,7 @@ export default function Page(){
             return(<>
               {rProps.map(pr=>{
                 const prIncome=rPayments.filter(p=>p.propName===pr.name).reduce((s,p)=>s+p.amount,0);
-                const prExp=rExpenses.filter(e=>e.propId===pr.id);
+                const prExp=[...rExpenses.filter(e=>e.propId===pr.id),...rExpenses.filter(e=>e.propId==="shared").map(e=>({...e,amount:Math.round(e.amount/(props.length||1)*100)/100}))];
                 const expByLine={};prExp.forEach(e=>{expByLine[e.category]=(expByLine[e.category]||0)+e.amount;});
                 const totalExp=prExp.reduce((s,e)=>s+e.amount,0);
                 const mg=rMortgages.filter(m=>m.propId===pr.id);
@@ -6628,128 +6663,217 @@ export default function Page(){
   {modal&&modal.type==="addExpense"&&(()=>{
     const isEdit=!!modal.editId;
     const f=modal.form||{};const errs=modal.errs||{};
-    const upd=(k,v)=>setModal(p=>({...p,form:{...p.form,[k]:v},errs:{...(p.errs||{}),[k]:null}}));
+    const backdropMsg=modal._backdropMsg||"";
+    const upd=(k,v)=>setModal(p=>({...p,form:{...p.form,[k]:v},errs:{...(p.errs||{}),[k]:null},_backdropMsg:""}));
     const selCat=SCHED_E_CATS.find(c=>c.label===f.category);
-    // Vendor combobox logic
-    const vendorInput=f.vendor||"";
-    const vendorMatches=vendorInput.trim()?vendors.filter(v=>v.name.toLowerCase().includes(vendorInput.toLowerCase())):vendors;
-    const exactMatch=vendors.some(v=>v.name.toLowerCase()===vendorInput.toLowerCase().trim());
-    const showVendorSave=vendorInput.trim()&&!exactMatch;
-    const showVendorDropdown=vendorInput.trim()&&vendorMatches.length>0&&!exactMatch;
+    const catSubcats=(subcats&&subcats[f.category])||[];
+    const showSubcatMgr=modal._subcatMgr||false;
+    const showVendorMgr=modal._vendorMgr||false;
+    const subcatEditName=modal._subcatEdit||"";
+    const vendorEditForm=modal._vendorEdit||null;
+    // Property cascade
+    const selPr=f.propId&&f.propId!=="shared"?props.find(p=>p.id===f.propId):null;
+    const units=selPr?.units||[];
+    const selUnit=units.find(u=>u.id===f.unitId);
+    const rooms=selUnit?.rooms||[];
+    const hasUnits=selPr&&units.length>0;
+    const hasBedrooms=rooms.length>0;
     const save=()=>{
       const e={};
-      if(!f.date)e.date="Required";
-      if(!f.propId)e.propId="Required";
-      if(!f.category)e.category="Required";
-      if(!f.description?.trim())e.description="Required";
-      if(!f.amount||Number(f.amount)<=0)e.amount="Must be > 0";
+      if(!f.date)e.date="Date is required";
+      if(!f.propId)e.propId="Property is required";
+      if(!f.category)e.category="Category is required";
+      if(!f.description?.trim())e.description="Description is required";
+      if(!f.amount||Number(f.amount)<=0)e.amount="Amount must be greater than $0";
       if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
-      const rec={...f,amount:Number(f.amount),propName:(props.find(p=>p.id===f.propId)||{}).name||""};
+      const rec={...f,amount:Number(f.amount),propName:f.propId==="shared"?"Shared":(props.find(p=>p.id===f.propId)||{}).name||""};
       if(isEdit){setExpenses(p=>p.map(x=>x.id===modal.editId?{...x,...rec}:x));}
       else{setExpenses(p=>[{id:uid(),createdAt:TODAY.toISOString(),...rec},...p]);}
       setModal(null);
     };
+    const handleBackdrop=(e)=>{
+      if(e.target===e.currentTarget){
+        setModal(p=>({...p,_backdropMsg:"Click Save or Cancel to close this window"}));
+        shakeModal();
+      }
+    };
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
-      <h2 style={{marginBottom:4}}>{isEdit?"Edit Expense":"Add Expense"}</h2>
-      <div className="fr3">
-        <div className="fld"><label style={{color:errs.date?"#c45c4a":undefined}}>Date *</label><input type="date" value={f.date||""} onChange={e=>upd("date",e.target.value)} style={{borderColor:errs.date?"#c45c4a":undefined}}/>{errs.date&&<div className="err-msg">{errs.date}</div>}</div>
-        <div className="fld"><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
-          <select value={f.propId||""} onChange={e=>upd("propId",e.target.value)} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
-            <option value="">— Select —</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>{errs.propId&&<div className="err-msg">{errs.propId}</div>}</div>
-        <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($) *</label><input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/>{errs.amount&&<div className="err-msg">{errs.amount}</div>}</div>
+    <div className="mbg" onClick={handleBackdrop}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
+      <h2 style={{marginBottom:16,fontSize:18}}>{isEdit?"Edit Expense":"Add Expense"}</h2>
+      {backdropMsg&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:11,color:"#c45c4a",fontWeight:600,textAlign:"center"}}>{backdropMsg}</div>}
+
+      {/* Date */}
+      <div className="fld"><label style={{color:errs.date?"#c45c4a":undefined}}>Date *</label>
+        <input type="date" value={f.date||""} onChange={e=>upd("date",e.target.value)} style={{borderColor:errs.date?"#c45c4a":undefined}}/>
+        {errs.date&&<div className="err-msg">{errs.date}</div>}
       </div>
-      {/* Category with Schedule E hint */}
+
+      {/* Amount */}
+      <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount paid *</label>
+        <div style={{position:"relative"}}>
+          <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+          <input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>upd("amount",e.target.value)} placeholder="0.00" style={{paddingLeft:28,borderColor:errs.amount?"#c45c4a":undefined}}/>
+        </div>
+        {errs.amount&&<div className="err-msg">{errs.amount}</div>}
+      </div>
+
+      {/* Property — with "Shared across all properties" */}
+      <div className="fld"><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
+        <select value={f.propId||""} onChange={e=>{upd("propId",e.target.value);upd("unitId","");upd("unitName","");upd("roomId","");upd("roomName","");}} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
+          <option value="">— Select —</option>
+          <option value="shared">Shared across all properties</option>
+          {props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        {f.propId==="shared"&&<div style={{fontSize:10,color:"#3b82f6",marginTop:4,padding:"4px 8px",background:"rgba(59,130,246,.04)",borderRadius:4}}>Cost will be split equally across {props.length} propert{props.length===1?"y":"ies"} in reports and overview.</div>}
+        {errs.propId&&<div className="err-msg">{errs.propId}</div>}
+      </div>
+
+      {/* Unit (conditional) */}
+      {hasUnits&&<div className="fld"><label>Unit</label>
+        <select value={f.unitId||""} onChange={e=>{const u=units.find(x=>x.id===e.target.value);upd("unitId",e.target.value);upd("unitName",u?.name||"");upd("roomId","");upd("roomName","");}}>
+          <option value="">— Whole property —</option>
+          {units.map(u=><option key={u.id} value={u.id}>{u.name||("Unit "+(units.indexOf(u)+1))}</option>)}
+        </select>
+      </div>}
+
+      {/* Bedroom (conditional — only if unit selected and has rooms) */}
+      {hasBedrooms&&f.unitId&&<div className="fld"><label>Bedroom</label>
+        <select value={f.roomId||""} onChange={e=>{const r=rooms.find(x=>x.id===e.target.value);upd("roomId",e.target.value);upd("roomName",r?.name||"");}}>
+          <option value="">— Whole unit —</option>
+          {rooms.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+        </select>
+      </div>}
+
+      {/* Category */}
       <div className="fld">
-        <label style={{color:errs.category?"#c45c4a":undefined}}>Category * <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— Schedule E</span></label>
-        <select value={f.category||""} onChange={e=>upd("category",e.target.value)} style={{borderColor:errs.category?"#c45c4a":undefined}}>
-          <option value="">— Select a Schedule E category —</option>
-          {SCHED_E_CATS.map(c=><option key={c.id} value={c.label}>Line {c.line} — {c.label}</option>)}
+        <label style={{color:errs.category?"#c45c4a":undefined}}>Expense category *</label>
+        <select value={f.category||""} onChange={e=>{upd("category",e.target.value);upd("subcategory","");}} style={{borderColor:errs.category?"#c45c4a":undefined}}>
+          <option value="">— Select a category —</option>
+          {SCHED_E_CATS.map(c=><option key={c.id} value={c.label}>{c.label}</option>)}
         </select>
         {selCat&&<div style={{fontSize:10,color:"#9a7422",marginTop:4,padding:"4px 8px",background:"rgba(212,168,83,.06)",borderRadius:4}}>{selCat.hint}</div>}
         {errs.category&&<div className="err-msg">{errs.category}</div>}
       </div>
-      <div className="fld"><label style={{color:errs.description?"#c45c4a":undefined}}>Description *</label><input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Replaced water heater Unit B, quarterly pest control..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>{errs.description&&<div className="err-msg">{errs.description}</div>}</div>
-      {/* Vendor combobox */}
-      <div className="fld" style={{position:"relative"}}>
-        <label>Vendor / Payee</label>
-        <input value={vendorInput} onChange={e=>upd("vendor",e.target.value)} placeholder="Type vendor name or select from saved list..." autoComplete="off"/>
-        {showVendorDropdown&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:"0 0 8px 8px",boxShadow:"0 4px 12px rgba(0,0,0,.1)",zIndex:100,maxHeight:160,overflowY:"auto"}}>
-          {vendorMatches.map(v=><div key={v.id} style={{padding:"8px 12px",cursor:"pointer",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.04)"}}
-            onMouseDown={e=>{e.preventDefault();upd("vendor",v.name);}}
-            onMouseEnter={e=>e.currentTarget.style.background="rgba(212,168,83,.06)"}
-            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-            <div style={{fontWeight:600}}>{v.name}</div>
-            {v.phone&&<div style={{fontSize:9,color:"#999"}}>{v.phone}</div>}
-          </div>)}
-        </div>}
-        {showVendorSave&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
-          <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}}
-            onClick={()=>{setVendors(p=>[{id:uid(),name:vendorInput.trim(),phone:"",email:"",notes:""},...p]);upd("vendor",vendorInput.trim());}}>
-            Save "{vendorInput.trim()}" as vendor
+
+      {/* Subcategory — per-category dropdown with inline manager */}
+      {f.category&&<div className="fld" style={{position:"relative"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <label>Subcategory</label>
+          <button type="button" style={{fontSize:9,color:"#9a7422",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"2px 4px"}} onClick={()=>setModal(p=>({...p,_subcatMgr:!p._subcatMgr,_vendorMgr:false}))}>
+            {showSubcatMgr?"Done":"Manage"}
           </button>
-          <span style={{fontSize:9,color:"#999"}}>or keep typing</span>
+        </div>
+        {!showSubcatMgr&&<>
+          <select value={f.subcategory||""} onChange={e=>upd("subcategory",e.target.value)}>
+            <option value="">— None —</option>
+            {catSubcats.map(s=><option key={s.id} value={s.label}>{s.label}</option>)}
+          </select>
+        </>}
+        {showSubcatMgr&&<div style={{border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:10,background:"rgba(212,168,83,.03)",marginTop:4}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Manage subcategories for {f.category}</div>
+          {catSubcats.map(s=><div key={s.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+            {modal._subcatRenameId===s.id
+              ?<><input value={subcatEditName} onChange={e=>setModal(p=>({...p,_subcatEdit:e.target.value}))} style={{flex:1,fontSize:11,padding:"4px 8px"}} autoFocus/>
+                <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59"}} onClick={()=>{
+                  if(!subcatEditName.trim())return;
+                  const cat=f.category;
+                  setSubcats(p=>({...p,[cat]:(p[cat]||[]).map(x=>x.id===s.id?{...x,label:subcatEditName.trim()}:x)}));
+                  if(f.subcategory===s.label)upd("subcategory",subcatEditName.trim());
+                  setModal(p=>({...p,_subcatRenameId:null,_subcatEdit:""}));
+                }}>Save</button>
+                <button type="button" className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal(p=>({...p,_subcatRenameId:null,_subcatEdit:""}))}>Cancel</button>
+              </>
+              :<><span style={{flex:1,fontSize:11,color:"#5c4a3a"}}>{s.label}</span>
+                <button type="button" style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>setModal(p=>({...p,_subcatRenameId:s.id,_subcatEdit:s.label}))}>Rename</button>
+                <button type="button" style={{fontSize:9,color:"#c45c4a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>{
+                  const cat=f.category;
+                  setSubcats(p=>({...p,[cat]:(p[cat]||[]).filter(x=>x.id!==s.id)}));
+                  if(f.subcategory===s.label)upd("subcategory","");
+                }}>Delete</button>
+              </>}
+          </div>)}
+          {catSubcats.length===0&&<div style={{fontSize:10,color:"#999",padding:"6px 0"}}>No subcategories yet for {f.category}.</div>}
+          <div style={{display:"flex",gap:4,marginTop:6}}>
+            <input value={modal._newSubcat||""} onChange={e=>setModal(p=>({...p,_newSubcat:e.target.value}))} placeholder="New subcategory..." style={{flex:1,fontSize:11,padding:"4px 8px"}}
+              onKeyDown={e=>{if(e.key==="Enter"&&(modal._newSubcat||"").trim()){const cat=f.category;setSubcats(p=>({...p,[cat]:[...(p[cat]||[]),{id:uid(),label:modal._newSubcat.trim()}]}));setModal(p=>({...p,_newSubcat:""}));}}}/>
+            <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59"}} onClick={()=>{
+              if(!(modal._newSubcat||"").trim())return;
+              const cat=f.category;
+              setSubcats(p=>({...p,[cat]:[...(p[cat]||[]),{id:uid(),label:modal._newSubcat.trim()}]}));
+              setModal(p=>({...p,_newSubcat:""}));
+            }}>+ Add</button>
+          </div>
+        </div>}
+      </div>}
+
+      {/* Vendor — dropdown with inline manager */}
+      <div className="fld" style={{position:"relative"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <label>Vendor / Payee</label>
+          <button type="button" style={{fontSize:9,color:"#9a7422",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"2px 4px"}} onClick={()=>setModal(p=>({...p,_vendorMgr:!p._vendorMgr,_subcatMgr:false}))}>
+            {showVendorMgr?"Done":"Manage"}
+          </button>
+        </div>
+        {!showVendorMgr&&<>
+          <select value={f.vendor||""} onChange={e=>upd("vendor",e.target.value)}>
+            <option value="">— None —</option>
+            {vendors.slice().sort((a,b)=>a.name?.localeCompare(b.name||"")||0).map(v=><option key={v.id} value={v.name}>{v.name}</option>)}
+          </select>
+        </>}
+        {showVendorMgr&&<div style={{border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:10,background:"rgba(212,168,83,.03)",marginTop:4}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Manage vendors</div>
+          {vendors.slice().sort((a,b)=>a.name?.localeCompare(b.name||"")||0).map(v=><div key={v.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+            {modal._vendorRenameId===v.id
+              ?<><input value={(vendorEditForm||{}).name||""} onChange={e=>setModal(p=>({...p,_vendorEdit:{...(p._vendorEdit||{}),name:e.target.value}}))} style={{flex:1,fontSize:11,padding:"4px 8px"}} placeholder="Vendor name" autoFocus/>
+                <input value={(vendorEditForm||{}).phone||""} onChange={e=>setModal(p=>({...p,_vendorEdit:{...(p._vendorEdit||{}),phone:e.target.value}}))} style={{width:100,fontSize:11,padding:"4px 8px"}} placeholder="Phone"/>
+                <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59"}} onClick={()=>{
+                  if(!(vendorEditForm||{}).name?.trim())return;
+                  const oldName=v.name;
+                  setVendors(p=>p.map(x=>x.id===v.id?{...x,...vendorEditForm,name:vendorEditForm.name.trim()}:x));
+                  if(f.vendor===oldName)upd("vendor",vendorEditForm.name.trim());
+                  setModal(p=>({...p,_vendorRenameId:null,_vendorEdit:null}));
+                }}>Save</button>
+                <button type="button" className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal(p=>({...p,_vendorRenameId:null,_vendorEdit:null}))}>Cancel</button>
+              </>
+              :<><span style={{flex:1,fontSize:11,color:"#5c4a3a"}}>{v.name}{v.phone?<span style={{color:"#999",marginLeft:6,fontSize:9}}>{v.phone}</span>:""}</span>
+                <button type="button" style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>setModal(p=>({...p,_vendorRenameId:v.id,_vendorEdit:{name:v.name,phone:v.phone||"",email:v.email||""}}))}>Edit</button>
+                <button type="button" style={{fontSize:9,color:"#c45c4a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>{
+                  setVendors(p=>p.filter(x=>x.id!==v.id));
+                  if(f.vendor===v.name)upd("vendor","");
+                }}>Delete</button>
+              </>}
+          </div>)}
+          {vendors.length===0&&<div style={{fontSize:10,color:"#999",padding:"6px 0"}}>No vendors saved yet.</div>}
+          <div style={{display:"flex",gap:4,marginTop:6}}>
+            <input value={modal._newVendor||""} onChange={e=>setModal(p=>({...p,_newVendor:e.target.value}))} placeholder="New vendor name..." style={{flex:1,fontSize:11,padding:"4px 8px"}}
+              onKeyDown={e=>{if(e.key==="Enter"&&(modal._newVendor||"").trim()){setVendors(p=>[{id:uid(),name:modal._newVendor.trim(),phone:"",email:"",notes:""},...p]);setModal(p=>({...p,_newVendor:""}));}}}/>
+            <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59"}} onClick={()=>{
+              if(!(modal._newVendor||"").trim())return;
+              setVendors(p=>[{id:uid(),name:modal._newVendor.trim(),phone:"",email:"",notes:""},...p]);
+              setModal(p=>({...p,_newVendor:""}));
+            }}>+ Add</button>
+          </div>
         </div>}
       </div>
-      {/* Subcategory combobox */}
-      {(()=>{
-        const subcatInput=f.subcategory||"";
-        const subcatMatches=subcatInput.trim()?subcats.filter(s=>s.label.toLowerCase().includes(subcatInput.toLowerCase())):subcats;
-        const exactSubcat=subcats.some(s=>s.label.toLowerCase()===subcatInput.toLowerCase().trim());
-        return(
-        <div className="fld" style={{position:"relative"}}>
-          <label>Subcategory <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— internal only, not exported to CPA reports</span></label>
-          <input value={subcatInput} onChange={e=>upd("subcategory",e.target.value)} placeholder="e.g. Painting, Plumbing, Electrical..." autoComplete="off"/>
-          {subcatInput.trim()&&subcatMatches.length>0&&!exactSubcat&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:"0 0 8px 8px",boxShadow:"0 4px 12px rgba(0,0,0,.1)",zIndex:100,maxHeight:140,overflowY:"auto"}}>
-            {subcatMatches.map(s=><div key={s.id} style={{padding:"7px 12px",cursor:"pointer",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.04)"}}
-              onMouseDown={e=>{e.preventDefault();upd("subcategory",s.label);}}
-              onMouseEnter={e=>e.currentTarget.style.background="rgba(212,168,83,.06)"}
-              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-              {s.label}
-            </div>)}
-          </div>}
-          {subcatInput.trim()&&!exactSubcat&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
-            <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}}
-              onClick={()=>{setSubcats(p=>[...p,{id:uid(),label:subcatInput.trim()}]);upd("subcategory",subcatInput.trim());}}>
-              Save "{subcatInput.trim()}" as subcategory
-            </button>
-          </div>}
-        </div>);
-      })()}
-      {/* Unit / Room (optional) */}
-      {(()=>{
-        const selPr=props.find(p=>p.id===f.propId);
-        const units=selPr?.units||[];
-        const selUnit=units.find(u=>u.id===f.unitId);
-        const rooms=selUnit?.rooms||[];
-        if(!selPr||units.length===0)return null;
-        return(
-        <div className="fr3">
-          <div className="fld"><label>Unit <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— optional</span></label>
-            <select value={f.unitId||""} onChange={e=>{const u=units.find(x=>x.id===e.target.value);upd("unitId",e.target.value);upd("unitName",u?.name||"");upd("roomId","");upd("roomName","");}}>
-              <option value="">— Whole property —</option>
-              {units.map(u=><option key={u.id} value={u.id}>{u.name||("Unit "+(units.indexOf(u)+1))}</option>)}
-            </select>
-          </div>
-          <div className="fld"><label>Room <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— optional</span></label>
-            <select value={f.roomId||""} onChange={e=>{const r=rooms.find(x=>x.id===e.target.value);upd("roomId",e.target.value);upd("roomName",r?.name||"");}} disabled={!f.unitId}>
-              <option value="">— Whole unit —</option>
-              {rooms.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
-          </div>
-          <div className="fld"><label>Payment Method</label>
-            <select value={f.paymentMethod||""} onChange={e=>upd("paymentMethod",e.target.value)}>
-              <option value="">— Select —</option>{PAY_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
-            </select></div>
-        </div>);
-      })()}
-      {/* Payment method (when no unit cascade shown) */}
-      {(!props.find(p=>p.id===f.propId)||!(props.find(p=>p.id===f.propId)?.units||[]).length)&&<div className="fld"><label>Payment Method</label>
+
+      {/* Description */}
+      <div className="fld"><label style={{color:errs.description?"#c45c4a":undefined}}>Description *</label>
+        <input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Replaced water heater, quarterly pest control..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>
+        {errs.description&&<div className="err-msg">{errs.description}</div>}
+      </div>
+
+      {/* Payment Method */}
+      <div className="fld"><label>Payment method</label>
         <select value={f.paymentMethod||""} onChange={e=>upd("paymentMethod",e.target.value)}>
           <option value="">— Select —</option>{PAY_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
-        </select></div>}
-      <div className="fld"><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Optional notes"/></div>
+        </select>
+      </div>
+
+      {/* Notes */}
+      <div className="fld"><label>Notes</label>
+        <input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Optional notes"/>
+      </div>
+
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Expense"}</button></div>
     </div></div>);
   })()}
@@ -6804,9 +6928,10 @@ export default function Page(){
       <div className="fld"><label>Description *</label><input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Full HVAC replacement — unit A, new 30yr architectural shingle roof..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>{errs.description&&<div className="err-msg">{errs.description}</div>}</div>
       {/* Subcategory combobox */}
       {(()=>{
+        const allSubcatList=Object.values(subcats||{}).flat();
         const subcatInput=f.subcategory||"";
-        const subcatMatches=subcatInput.trim()?subcats.filter(s=>s.label.toLowerCase().includes(subcatInput.toLowerCase())):subcats;
-        const exactSubcat=subcats.some(s=>s.label.toLowerCase()===subcatInput.toLowerCase().trim());
+        const subcatMatches=subcatInput.trim()?allSubcatList.filter(s=>s.label.toLowerCase().includes(subcatInput.toLowerCase())):allSubcatList;
+        const exactSubcat=allSubcatList.some(s=>s.label.toLowerCase()===subcatInput.toLowerCase().trim());
         return(
         <div className="fld" style={{position:"relative"}}>
           <label>Subcategory <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— internal tracking only</span></label>
@@ -6821,7 +6946,7 @@ export default function Page(){
           </div>}
           {subcatInput.trim()&&!exactSubcat&&<div style={{marginTop:4}}>
             <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}}
-              onClick={()=>{setSubcats(p=>[...p,{id:uid(),label:subcatInput.trim()}]);upd("subcategory",subcatInput.trim());}}>
+              onClick={()=>{const cat="Other";setSubcats(p=>({...p,[cat]:[...(p[cat]||[]),{id:uid(),label:subcatInput.trim()}]}));upd("subcategory",subcatInput.trim());}}>
               Save "{subcatInput.trim()}" as subcategory
             </button>
           </div>}
