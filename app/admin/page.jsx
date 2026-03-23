@@ -171,7 +171,7 @@ const leaseableItems=(prop,propName)=>{
         allWhole:true,baths:u.baths,sqft:u.sqft,beds:rooms.length,
       }];
     }
-    return(u.rooms||[]).map(r=>({...r,propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,allWhole:false}));
+    return(u.rooms||[]).map(r=>({...r,st:r.st||(r.tenant?"occupied":"vacant"),propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,allWhole:false}));
   });
 };
 // Update a room by ID inside its unit, preserving hierarchy
@@ -6677,7 +6677,7 @@ export default function Page(){
     const mf=modal.form||{};
     const selProp=modal.propId?props.find(p=>p.id===modal.propId):null;
     // Available items respect rentalMode
-    const availItems=selProp?leaseableItems(selProp).filter(i=>i.st==="vacant"):[];
+    const availItems=selProp?leaseableItems(selProp).filter(i=>(i.st||"vacant")!=="occupied"):[];
     const selItem=modal.roomId?availItems.find(i=>i.id===modal.roomId):null;
     const errs=modal.errs||{};
     const shake=modal.shake||false;
@@ -6699,29 +6699,31 @@ export default function Page(){
     const save=()=>{
       const e=validate();
       if(Object.keys(e).length){setModal(p=>({...p,errs:e,shake:true}));setTimeout(()=>setModal(p=>({...p,shake:false})),500);return;}
+      // Re-resolve prop and item fresh at call time — avoids stale closure
+      const currentProp=props.find(p=>p.id===modal.propId);
+      if(!currentProp){setModal(p=>({...p,errs:{...p.errs,prop:"Property not found"}}));return;}
+      const currentItems=leaseableItems(currentProp);
+      const currentItem=currentItems.find(i=>i.id===modal.roomId);
+      if(!currentItem){setModal(p=>({...p,errs:{...p.errs,room:"Room not found — try re-selecting"}}));return;}
+      const tenantData={name:mf.name.trim(),email:mf.email.trim(),phone:mf.phone,moveIn:mf.moveIn,gender:mf.gender||"",occupationType:mf.occupationType||"",doorCode:mf.doorCode||"",notes:mf.notes||""};
       // Write tenant into the room/unit in props
       setProps(prev=>prev.map(pr=>{
         if(pr.id!==modal.propId)return pr;
         return{...pr,units:(pr.units||[]).map(u=>{
-          if(selItem?.isWholeUnit){
-            if(u.id!==selItem.unitId)return u;
-            // Whole unit — mark all rooms occupied under this unit tenant
-            return{...u,st:"occupied",le:mf.leaseEnd,tenant:{name:mf.name.trim(),email:mf.email.trim(),phone:mf.phone,moveIn:mf.moveIn,gender:mf.gender,occupationType:mf.occupationType,doorCode:mf.doorCode,notes:mf.notes},rent:Number(mf.rent),
-              rooms:(u.rooms||[]).map(r=>({...r,st:"occupied",le:mf.leaseEnd,tenant:{name:mf.name.trim(),email:mf.email.trim(),phone:mf.phone,moveIn:mf.moveIn}}))};
+          if(currentItem.isWholeUnit){
+            if(u.id!==currentItem.unitId)return u;
+            return{...u,rooms:(u.rooms||[]).map(r=>({...r,st:"occupied",le:mf.leaseEnd,rent:Number(mf.rent),tenant:tenantData}))};
           }
           return{...u,rooms:(u.rooms||[]).map(r=>{
             if(r.id!==modal.roomId)return r;
-            return{...r,st:"occupied",le:mf.leaseEnd,rent:Number(mf.rent),
-              tenant:{name:mf.name.trim(),email:mf.email.trim(),phone:mf.phone,moveIn:mf.moveIn,gender:mf.gender,occupationType:mf.occupationType,doorCode:mf.doorCode,notes:mf.notes}};
+            return{...r,st:"occupied",le:mf.leaseEnd,rent:Number(mf.rent),tenant:tenantData};
           })};
         })};
       }));
-      // Auto-generate a rent charge
-      if(selItem){
-        const mk=mf.moveIn.slice(0,7);
-        createCharge({roomId:selItem.isWholeUnit?selItem.unitId:selItem.id,tenantName:mf.name.trim(),propName:selProp.name,roomName:selItem.name,category:"Rent",desc:mk+" Rent",amount:Number(mf.rent),dueDate:mf.moveIn.slice(0,7)+"-01",sent:false,sentDate:TODAY.toISOString().split("T")[0]});
-      }
-      setNotifs(p=>[{id:uid(),type:"lease",msg:`Existing tenant added: ${mf.name.trim()} → ${selItem?.name} at ${selProp?.name}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+      // Auto-generate a rent charge for the move-in month
+      const mk=mf.moveIn.slice(0,7);
+      createCharge({roomId:currentItem.isWholeUnit?currentItem.unitId:currentItem.id,tenantName:tenantData.name,propName:currentProp.name,roomName:currentItem.name,category:"Rent",desc:mk+" Rent",amount:Number(mf.rent),dueDate:mk+"-01",sent:false,sentDate:TODAY.toISOString().split("T")[0]});
+      setNotifs(p=>[{id:uid(),type:"lease",msg:`Existing tenant added: ${tenantData.name} → ${currentItem.name} at ${currentProp.name}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
       setModal(null);
     };
     const efld=(key,label,type="text",placeholder="")=>(
