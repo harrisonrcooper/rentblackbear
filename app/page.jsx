@@ -506,10 +506,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
   if(!p)return null;
   const isWhole=p.allWholeHouse;
-  // For mixed properties, show byRoom prices from byRoom units
-  const byRoomRents=(p.units||[]).flatMap(u=>(u.rentalMode||"byRoom")==="byRoom"?(u.rooms||[]).map(r=>r.rent):[]);
-  const wholeRents=(p.units||[]).filter(u=>(u.rentalMode||"byRoom")==="wholeHouse").map(u=>u.rent||0);
-  const minP=isWhole?p.wholeRent:byRoomRents.length>0?safeMin(byRoomRents):safeMin(allRoomsP(p).map(r=>r.rent));
+  const byRoomRents=(p.units||[]).flatMap(u=>(u.rentalMode||"byRoom")==="byRoom"?(u.rooms||[]).filter(r=>(r.st||"vacant")==="vacant").map(r=>r.rent):[]);
+  const wholeVacantRents=(p.units||[]).filter(u=>(u.rentalMode||"byRoom")==="wholeHouse"&&(u.rooms||[]).every(r=>(r.st||"vacant")==="vacant")).map(u=>u.rent||0);
+  const allVacantRents=[...byRoomRents,...wholeVacantRents];
+  const minP=allVacantRents.length>0?safeMin(allVacantRents):null;
   const goApply=()=>{onClose();setTimeout(()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"}),100);};
   return(<div className="mo" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <button className="mx" onClick={onClose}>✕</button>
@@ -529,7 +529,8 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
           {!isWhole&&<div className="mib"><div className="l">Rooms</div><div className="v">{allRoomsP(p).length}</div></div>}
           {isWhole&&<div className="mib"><div className="l">Beds</div><div className="v">{allRoomsP(p).length}</div></div>}
           <div className="mib"><div className="l">Baths</div><div className="v">{p.baths}</div></div>
-          <div className="mib"><div className="l">{isWhole?"Rent":"From"}</div><div className="v">${minP}<small>/mo</small></div></div>
+          {minP!=null&&<div className="mib"><div className="l">{isWhole?"Rent":"From"}</div><div className="v">${minP}<small>/mo</small></div></div>}
+          {minP==null&&<div className="mib"><div className="l">Status</div><div className="v" style={{fontSize:11,color:"#c45c4a"}}>Fully Leased</div></div>}
         </div></div>
       <p className="mdesc">{p.desc}</p>
       <div className="istrip"><div className="ii">📶 WiFi</div><div className="ii">🛋️ Furnished</div><div className="ii">🅿️ Parking</div><div className="ii">🧹 {p.clean} Cleaning</div>{p.utils==="allIncluded"?<div className="ii">💡 All Utilities</div>:<div className="ii pt">💡 First $100 Covered · Overage Split</div>}</div>
@@ -1358,8 +1359,8 @@ function StickyBar({properties}){
   const[vis,setVis]=useState(false);const[dismissed,setDismissed]=useState(false);
   useEffect(()=>{const h=()=>{if(!dismissed)setVis(window.scrollY>500);};window.addEventListener("scroll",h);return()=>window.removeEventListener("scroll",h);},[dismissed]);
   if(dismissed)return null;
-  const minRent=properties&&properties.length?safeMin(properties.flatMap(p=>allRoomsP(p).map(r=>r.rent)))||600:600;
-  return(<div className={`stk ${vis?"vis":""}`}><div className="stk-txt">Rooms from <strong>${minRent}/mo</strong> · Everything included</div><button className="stk-btn" onClick={()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"})}>Apply Now →</button><button className="stk-x" onClick={()=>setDismissed(true)}>✕</button></div>);
+  const minRent=properties&&properties.length?safeMin(properties.flatMap(p=>(p.units||[]).flatMap(u=>(u.rentalMode||"byRoom")==="wholeHouse"?((u.rooms||[]).every(r=>(r.st||"vacant")==="vacant")?[u.rent||0]:[]):(u.rooms||[]).filter(r=>(r.st||"vacant")==="vacant").map(r=>r.rent))))||null:null;
+  return(<div className={`stk ${vis?"vis":""}`}><div className="stk-txt">{minRent?<>Rooms from <strong>${minRent}/mo</strong> · Everything included</>:<>Fully leased · Join the waitlist</>}</div><button className="stk-btn" onClick={()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"})}>Apply Now →</button><button className="stk-x" onClick={()=>setDismissed(true)}>✕</button></div>);
 }
 
 // ─── Main Page ──────────────────────────────────────────────────────
@@ -1551,13 +1552,16 @@ export default function Page(){
     <section className="sec" id="properties"><div className="sec-inner"><div className="sh"><div className="sl">Our Portfolio</div><h2 className="st">Find Your Room</h2><p className="ss">Browse by house, compare pricing, and pick the bedroom that fits you.</p></div>
       <div className="pgrid">{P.map(p=>{
         const isWhole=p.allWholeHouse;
-        const pr=allRoomsP(p).map(r=>r.rent);
-        const displayPrice=isWhole?p.wholeRent:null;
+        const vacantByRoomRents=(p.units||[]).flatMap(u=>(u.rentalMode||"byRoom")==="byRoom"?(u.rooms||[]).filter(r=>(r.st||"vacant")==="vacant").map(r=>r.rent):[]);
+        const wholeUnit=p.units&&p.units.length>0?p.units.find(u=>(u.rentalMode||"byRoom")==="wholeHouse"):null;
+        const wholeVacant=wholeUnit&&(wholeUnit.rooms||[]).every(r=>(r.st||"vacant")==="vacant");
+        const hasVacant=isWhole?wholeVacant:vacantByRoomRents.length>0;
         return(
         <div key={p.id} className="pcard" onClick={()=>setSel(p)}>{p.imgs&&p.imgs.length>0?<img src={p.imgs[0]} alt={p.name} className="pimg"/>:<div className="pimg" style={{background:"#2c2520",display:"flex",alignItems:"center",justifyContent:"center",color:"#d4a853",fontSize:32}}>🐻</div>}<div className="pinfo"><div className="ptags"><span className={"tag "+(p.status==="Available"?"t-av":"t-cs")}>{p.status}</span><span className={"tag "+(p.typeTag==="SFH"?"t-sfh":"t-th")}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr">
-          {isWhole
-            ?<span className="ppr">${displayPrice||"—"}<small>/mo</small></span>
-            :<span className="ppr">${safeMin(pr)||"—"}–${safeMax(pr)||"—"}<small>/mo per room</small></span>}
+          {hasVacant?(isWhole
+            ?<span className="ppr">${p.wholeRent||"—"}<small>/mo</small></span>
+            :<span className="ppr">${safeMin(vacantByRoomRents)||"—"}–${safeMax(vacantByRoomRents)||"—"}<small>/mo per room</small></span>)
+            :<span className="ppr" style={{fontSize:13,color:"#c45c4a",fontFamily:"var(--fb)"}}>Fully Leased</span>}
           <span className="pbc">{isWhole?"Whole property":allRoomsP(p).length+" rooms"}</span>
         </div></div></div>
         );})}</div>
