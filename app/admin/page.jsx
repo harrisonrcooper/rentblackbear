@@ -2316,7 +2316,27 @@ export default function Page(){
   if(!loaded)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"inherit"}}>Loading...</div>);
 
   // All tenants flat list
-  const allTenants=props.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).filter(r=>r.tenant).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean}))));
+  const allTenants=props.flatMap(p=>(p.units||[]).flatMap(u=>{
+    const isWhole=(u.rentalMode||"byRoom")==="wholeHouse";
+    if(isWhole){
+      // Whole unit — show one entry using the first occupied room's tenant data
+      const occupiedRoom=(u.rooms||[]).find(r=>r.tenant);
+      if(!occupiedRoom)return[];
+      return[{...occupiedRoom,name:u.name||(p.name+" Unit"),propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:true}];
+    }
+    // By-room — one entry per occupied room
+    return(u.rooms||[]).filter(r=>r.tenant).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false}));
+  }));
+  // Same logic for financial operations — one row per lease, not per room
+  const occLeases=props.flatMap(pr=>(pr.units||[]).flatMap(u=>{
+    const isWhole=(u.rentalMode||"byRoom")==="wholeHouse";
+    if(isWhole){
+      const rep=(u.rooms||[]).find(r=>r.st==="occupied"&&r.tenant);
+      if(!rep)return[];
+      return[{...rep,name:u.name||(pr.name+" Unit"),propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:true}];
+    }
+    return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
+  }));
 
   return(<><style>{S}</style><div className="app">
     {/* Mobile header */}
@@ -2945,7 +2965,7 @@ export default function Page(){
           const totalDeposited=filtered.reduce((s,p)=>s+p.amount,0);
 
           // SD section
-          const sdTenants=props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
+          const sdTenants=occLeases;
           const totalSD=sdTenants.reduce((s,r)=>{const sd=sdLedger.find(x=>x.roomId===r.id);return s+((sd&&sd.amountHeld)||r.rent);},0);
 
           return(<>
@@ -4348,7 +4368,7 @@ export default function Page(){
 
         {/* ── Tenant Ledgers ── */}
         {(()=>{
-          const tenantRooms=props.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).filter(r=>r.tenant).map(r=>({...r,propName:p.name,unitId:u.id,unitName:u.name,unitLabel:u.label,propUtils:u.utils||p.utils}))));
+          const tenantRooms=occLeases.map(r=>({...r,propName:r.propName,unitId:r.unitId,unitName:r.unitName,unitLabel:r.unitLabel,propUtils:r.propUtils}));
           const selRoom=ledgerTenant!=="all"?tenantRooms.find(r=>r.id===ledgerTenant):null;
 
           // Build ledger entries from charges: each charge = debit, each payment = credit
@@ -5835,7 +5855,7 @@ export default function Page(){
   })()}
 
   {modal&&modal.type==="recordPay"&&(()=>{
-    const occRooms=props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
+    const occRooms=occLeases;
     const selRoom=occRooms.find(r=>r.id===modal.selRoom);
     const roomCharges=charges.filter(c=>c.roomId===modal.selRoom&&chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
     const selCh=charges.find(c=>c.id===modal.selCharge);
@@ -5935,7 +5955,7 @@ export default function Page(){
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
-    const occRooms=props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
+    const occRooms=occLeases;
     const selRoom=occRooms.find(r=>r.id===modal.roomId);
     const errs=modal.chErrs||{};
     const submit=()=>{
@@ -5979,7 +5999,7 @@ export default function Page(){
 
   {/* Add Credit */}
   {modal&&modal.type==="addCredit"&&(()=>{
-    const occRooms=props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name})));
+    const occRooms=occLeases;
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
       <h2>Add Credit</h2>
@@ -5993,7 +6013,7 @@ export default function Page(){
 
   {/* Return SD */}
   {modal&&modal.type==="returnSD"&&(()=>{
-    const tenantList=[...archive.map(a=>({id:a.id,name:a.name,roomName:a.roomName,propName:a.propName,rent:a.rent,type:"past"})),...props.flatMap(pr=>allRooms(pr).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({id:r.id,name:r.tenant.name,roomName:r.name,propName:pr.name,rent:r.rent,type:"current"})))];
+    const tenantList=[...archive.map(a=>({id:a.id,name:a.name,roomName:a.roomName,propName:a.propName,rent:a.rent,type:"past"})),...occLeases.map(r=>({id:r.id,name:r.tenant.name,roomName:r.name,propName:r.propName,rent:r.rent,type:"current"}))];
     const sel=tenantList.find(t=>t.id===modal.roomId);
     const sdHeld=(sel&&sel.rent)||0;
     const deductions=modal.deductions||[];
