@@ -1982,6 +1982,7 @@ export default function Page(){
   const[sdLedger,setSdLedger]=useState(DEF_SD_LEDGER);
   const[paySubTab,setPaySubTab]=useState("overview");
   const[acctSubTab,setAcctSubTab]=useState("overview");
+  const[acctFilters,setAcctFilters]=useState({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0],propId:"all",tenant:"all",category:"all",vendor:"all"});
   const[reportPeriod,setReportPeriod]=useState({from:"",to:""});
   const[reportProp,setReportProp]=useState("all");
   const[activeReport,setActiveReport]=useState(null);
@@ -4413,105 +4414,228 @@ export default function Page(){
 
       {/* ═══ ACCOUNTING ═══ */}
       {tab==="accounting"&&(()=>{
-        // ── Derived accounting data ──
-        const curYear=TODAY.getFullYear();
-        const curMonth=TODAY.getMonth();
-        const ytdFrom=`${curYear}-01-01`;
-        const ytdTo=TODAY.toISOString().split("T")[0];
-        const expCats=coaMode==="full"?EXP_CATS_FULL:EXP_CATS_SIMPLE;
-        const normalizeExpCat=(cat)=>coaMode==="full"?(SIMPLE_TO_FULL[cat]||cat):cat;
+        // ── Accounting-specific filter state (separate from Reports tab) ──
+        const acctFrom=acctFilters.from||(TODAY.getFullYear()+"-01-01");
+        const acctTo=acctFilters.to||TODAY.toISOString().split("T")[0];
+        const acctPropId=acctFilters.propId||"all";
+        const acctTenant=acctFilters.tenant||"all";
+        const acctCat=acctFilters.category||"all";
+        const acctVendor=acctFilters.vendor||"all";
 
-        // Income: collected payments from charges
-        const collectedPayments=charges.flatMap(c=>c.payments.map(p=>({...p,propName:c.propName,propId:c.roomId,category:c.category,tenantName:c.tenantName,chargeId:c.id})));
-        const ytdIncome=collectedPayments.filter(p=>p.date>=ytdFrom&&p.date<=ytdTo).reduce((s,p)=>s+p.amount,0);
-        const ytdExpenses=expenses.filter(e=>e.date>=ytdFrom&&e.date<=ytdTo).reduce((s,e)=>s+e.amount,0);
-        const ytdNOI=ytdIncome-ytdExpenses;
-        const totalDebtService=mortgages.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
-        const dscr=totalDebtService>0?(ytdNOI/totalDebtService):null;
+        // ── Collected payments (income) — fix propId to use prop lookup ──
+        const allCollected=charges.flatMap(c=>{
+          const pr=props.find(p=>allRooms(p).some(r=>r.id===c.roomId))||{};
+          return c.payments.map(p=>({...p,propName:c.propName,propId:pr.id||"",category:c.category,tenantName:c.tenantName,chargeId:c.id,roomName:c.roomName}));
+        });
+
+        // ── Apply filters ──
+        const filtIncome=allCollected.filter(p=>{
+          if(p.date<acctFrom||p.date>acctTo)return false;
+          if(acctPropId!=="all"&&(props.find(x=>x.id===acctPropId)||{}).name!==p.propName)return false;
+          if(acctTenant!=="all"&&p.tenantName!==acctTenant)return false;
+          if(acctCat!=="all"&&p.category!==acctCat)return false;
+          return true;
+        });
+        const filtExpenses=expenses.filter(e=>{
+          if(e.date<acctFrom||e.date>acctTo)return false;
+          if(acctPropId!=="all"&&e.propId!==acctPropId)return false;
+          if(acctCat!=="all"&&e.category!==acctCat)return false;
+          if(acctVendor!=="all"&&e.vendor!==acctVendor)return false;
+          return true;
+        });
+
+        const totalIncome=filtIncome.reduce((s,p)=>s+p.amount,0);
+        const totalExp=filtExpenses.reduce((s,e)=>s+e.amount,0);
+        const totalNOI=totalIncome-totalExp;
+        const filtMortgages=acctPropId==="all"?mortgages:mortgages.filter(mg=>mg.propId===acctPropId);
+        const annualDebt=filtMortgages.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
+        const dscr=annualDebt>0?(totalNOI/annualDebt):null;
+
+        // ── Filter option lists ──
+        const tenantOptions=[...new Set(allCollected.map(p=>p.tenantName))].sort();
+        const incomeCatOptions=[...new Set(allCollected.map(p=>p.category))].sort();
+        const expCatOptions=[...new Set(expenses.map(e=>e.category))].sort();
+        const vendorOptions=[...new Set(expenses.filter(e=>e.vendor).map(e=>e.vendor))].sort();
+        const expCats=coaMode==="full"?EXP_CATS_FULL:EXP_CATS_SIMPLE;
+
+        const setF=(k,v)=>setAcctFilters(prev=>({...prev,[k]:v}));
+        const resetFilters=()=>setAcctFilters({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0],propId:"all",tenant:"all",category:"all",vendor:"all"});
 
         return(<>
+        {/* ── Header ── */}
         <div className="sec-hd">
-          <div><h2>📒 Accounting</h2></div>
+          <div>
+            <h2 style={{margin:0}}>Accounting</h2>
+            <div style={{fontSize:11,color:"#999",marginTop:2}}>
+              {acctFrom} — {acctTo}{acctPropId!=="all"?" · "+(props.find(p=>p.id===acctPropId)||{}).name:""}
+            </div>
+          </div>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            <button className="btn btn-sm btn-out" style={{fontSize:9,color:coaMode==="simple"?"#d4a853":"#999",borderColor:coaMode==="simple"?"rgba(212,168,83,.4)":"rgba(0,0,0,.1)",fontWeight:coaMode==="simple"?700:400}} onClick={()=>setCoaMode("simple")}>Simple</button>
-            <button className="btn btn-sm btn-out" style={{fontSize:9,color:coaMode==="full"?"#d4a853":"#999",borderColor:coaMode==="full"?"rgba(212,168,83,.4)":"rgba(0,0,0,.1)",fontWeight:coaMode==="full"?700:400}} onClick={()=>setCoaMode("full")}>Full COA</button>
+            <span style={{fontSize:10,color:"#999"}}>COA Mode:</span>
+            <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
+              <button onClick={()=>setCoaMode("simple")} style={{padding:"4px 10px",fontSize:10,fontWeight:600,background:coaMode==="simple"?"#3c3228":"transparent",color:coaMode==="simple"?"#fff":"#999",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Simple</button>
+              <button onClick={()=>setCoaMode("full")} style={{padding:"4px 10px",fontSize:10,fontWeight:600,background:coaMode==="full"?"#3c3228":"transparent",color:coaMode==="full"?"#fff":"#999",border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:"1px solid rgba(0,0,0,.1)"}}>Full COA</button>
+            </div>
+            {coaMode==="full"&&<span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"2px 7px",borderRadius:4,fontWeight:600}}>Schedule E mapped</span>}
           </div>
         </div>
 
-        {/* KPI strip */}
+        {/* ── Global filter bar ── */}
+        <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"12px 14px",marginBottom:14,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+          <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
+          <span style={{fontSize:11,color:"#999",flexShrink:0}}>to</span>
+          <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
+          <div style={{width:1,height:20,background:"rgba(0,0,0,.08)",flexShrink:0}}/>
+          <select value={acctPropId} onChange={e=>setF("propId",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+            <option value="all">All Properties</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          {acctSubTab==="income"&&<>
+            <select value={acctTenant} onChange={e=>setF("tenant",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+              <option value="all">All Tenants</option>{tenantOptions.map(t=><option key={t} value={t}>{t}</option>)}
+            </select>
+            <select value={acctCat} onChange={e=>setF("category",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+              <option value="all">All Categories</option>{incomeCatOptions.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+          </>}
+          {acctSubTab==="expenses"&&<>
+            <select value={acctCat} onChange={e=>setF("category",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+              <option value="all">All Categories</option>{expCatOptions.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={acctVendor} onChange={e=>setF("vendor",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+              <option value="all">All Vendors</option>{vendorOptions.map(v=><option key={v} value={v}>{v}</option>)}
+            </select>
+          </>}
+          <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={()=>{setReportPeriod({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0]});setF("from",TODAY.getFullYear()+"-01-01");setF("to",TODAY.toISOString().split("T")[0]);}}>YTD</button>
+          <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={()=>{const y=TODAY.getFullYear()-1;setF("from",y+"-01-01");setF("to",y+"-12-31");}}>Last Year</button>
+          <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={resetFilters}>Reset</button>
+        </div>
+
+        {/* ── KPI strip ── */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
-          {[["YTD Income",ytdIncome,"#4a7c59"],["YTD Expenses",ytdExpenses,"#c45c4a"],["YTD NOI",ytdNOI,ytdNOI>=0?"#4a7c59":"#c45c4a"],["DSCR",dscr!=null?dscr.toFixed(2)+"x":"—",dscr==null?"#999":dscr>=1.25?"#4a7c59":"#c45c4a"]].map(([label,val,color])=>(
-            <div key={label} style={{background:"#fff",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(0,0,0,.06)"}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>{label}</div>
-              <div style={{fontSize:20,fontWeight:800,color}}>{typeof val==="number"?fmtS(val):val}</div>
+          {[
+            {label:"Gross Income",value:totalIncome,color:"#4a7c59",sub:filtIncome.length+" payments"},
+            {label:"Total Expenses",value:totalExp,color:"#c45c4a",sub:filtExpenses.length+" line items"},
+            {label:"Net Operating Income",value:totalNOI,color:totalNOI>=0?"#4a7c59":"#c45c4a",sub:totalIncome>0?Math.round(totalNOI/totalIncome*100)+"% margin":"—"},
+            {label:"DSCR",value:dscr!=null?dscr.toFixed(2)+"x":"—",color:dscr==null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a",sub:dscr==null?"No mortgages":dscr>=1.25?"Strong coverage":dscr>=1.0?"Marginal":"At risk"},
+          ].map(({label,value,color,sub})=>(
+            <div key={label} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid rgba(0,0,0,.06)"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{label}</div>
+              <div style={{fontSize:22,fontWeight:800,color,lineHeight:1}}>{typeof value==="number"?fmtS(value):value}</div>
+              <div style={{fontSize:10,color:"#999",marginTop:4}}>{sub}</div>
             </div>
           ))}
         </div>
 
-        {/* Sub-tabs */}
-        <div className="tabs" style={{marginBottom:16}}>
-          {[["overview","📊 Overview"],["income","💰 Income"],["expenses","💸 Expenses"],["mortgages","🏦 Mortgages"]].map(([k,l])=>(
-            <button key={k} className={"tab "+(acctSubTab===k?"on":"")} onClick={()=>setAcctSubTab(k)}>{l}</button>
+        {/* ── Sub-tabs ── */}
+        <div className="tabs" style={{marginBottom:14}}>
+          {[["overview","Overview"],["income","Income"],["expenses","Expenses"],["mortgages","Mortgages"]].map(([k,l])=>(
+            <button key={k} className={"tab "+(acctSubTab===k?"on":"")} onClick={()=>{setAcctSubTab(k);setF("category","all");setF("tenant","all");setF("vendor","all");}}>{l}</button>
           ))}
         </div>
 
         {/* ── OVERVIEW ── */}
         {acctSubTab==="overview"&&(()=>{
+          const filtProps=acctPropId==="all"?props:props.filter(p=>p.id===acctPropId);
           return(<>
-            {props.map(pr=>{
-              const prIncome=collectedPayments.filter(p=>p.propName===pr.name&&p.date>=ytdFrom).reduce((s,p)=>s+p.amount,0);
-              const prExp=expenses.filter(e=>e.propId===pr.id&&e.date>=ytdFrom).reduce((s,e)=>s+e.amount,0);
-              const prMg=mortgages.filter(mg=>mg.propId===pr.id);
-              const prDebt=prMg.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
-              const prNOI=prIncome-prExp;
-              const prDSCR=prDebt>0?(prNOI/prDebt):null;
+            {/* Per-property breakdown table */}
+            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:14}}>
+              <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>By Property — {acctFrom.slice(0,7)} to {acctTo.slice(0,7)}</div>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                  {["Property","Gross Income","Expenses","NOI","NOI Margin","Annual Debt Svc","DSCR"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {filtProps.map((pr,i)=>{
+                    const inc=allCollected.filter(p=>p.propName===pr.name&&p.date>=acctFrom&&p.date<=acctTo).reduce((s,p)=>s+p.amount,0);
+                    const exp=expenses.filter(e=>e.propId===pr.id&&e.date>=acctFrom&&e.date<=acctTo).reduce((s,e)=>s+e.amount,0);
+                    const noi=inc-exp;
+                    const margin=inc>0?Math.round(noi/inc*100):null;
+                    const mg=mortgages.filter(m=>m.propId===pr.id);
+                    const debt=mg.reduce((s,m)=>s+(m.monthlyPI||0)*12,0);
+                    const prDSCR=debt>0?(noi/debt):null;
+                    return(
+                    <tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"9px 14px",fontWeight:700,fontSize:12}}>{pr.name}</td>
+                      <td style={{padding:"9px 14px",textAlign:"right",color:"#4a7c59",fontWeight:700}}>{fmtS(inc)}</td>
+                      <td style={{padding:"9px 14px",textAlign:"right",color:"#c45c4a",fontWeight:700}}>{fmtS(exp)}</td>
+                      <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:noi>=0?"#4a7c59":"#c45c4a"}}>{fmtS(noi)}</td>
+                      <td style={{padding:"9px 14px",textAlign:"right",color:margin===null?"#999":margin>=50?"#4a7c59":margin>=25?"#d4a853":"#c45c4a",fontWeight:600}}>{margin!==null?margin+"%":"—"}</td>
+                      <td style={{padding:"9px 14px",textAlign:"right",color:"#5c4a3a"}}>{debt>0?fmtS(debt):"—"}</td>
+                      <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:prDSCR===null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"}}>{prDSCR!==null?prDSCR.toFixed(2)+"x":"—"}</td>
+                    </tr>);
+                  })}
+                </tbody>
+                <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                  <td style={{padding:"10px 14px",fontWeight:800}}>Portfolio Total</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalIncome)}</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalExp)}</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:totalNOI>=0?"#4a7c59":"#c45c4a",fontSize:13}}>{fmtS(totalNOI)}</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700,color:"#999"}}>{totalIncome>0?Math.round(totalNOI/totalIncome*100)+"%":"—"}</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700}}>{annualDebt>0?fmtS(annualDebt):"—"}</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:dscr===null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a"}}>{dscr!==null?dscr.toFixed(2)+"x":"—"}</td>
+                </tr></tfoot>
+              </table>
+            </div>
+
+            {/* Expense breakdown by category */}
+            {filtExpenses.length>0&&(()=>{
+              const byCat={};filtExpenses.forEach(e=>{byCat[e.category]=(byCat[e.category]||0)+e.amount;});
+              const sorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
               return(
-              <div key={pr.id} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid rgba(0,0,0,.06)",marginBottom:10}}>
-                <div style={{fontWeight:800,fontSize:13,marginBottom:10}}>{pr.name}</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
-                  {[["Income YTD",prIncome,"#4a7c59"],["Expenses YTD",prExp,"#c45c4a"],["NOI",prNOI,prNOI>=0?"#4a7c59":"#c45c4a"],["Debt Service",prDebt,"#999"],["DSCR",prDSCR!=null?prDSCR.toFixed(2)+"x":"—",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":"#c45c4a"]].map(([lbl,v,clr])=>(
-                    <div key={lbl} style={{textAlign:"center",padding:"8px 4px",background:"rgba(0,0,0,.02)",borderRadius:6}}>
-                      <div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.4,marginBottom:3}}>{lbl}</div>
-                      <div style={{fontSize:14,fontWeight:800,color:clr}}>{typeof v==="number"?fmtS(v):v}</div>
-                    </div>
-                  ))}
+              <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+                <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>Expense Breakdown by Category</div>
+                <div style={{padding:"12px 16px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+                  {sorted.map(([cat,amt])=>{
+                    const pct=totalExp>0?Math.round(amt/totalExp*100):0;
+                    return(
+                    <div key={cat} style={{padding:"8px 10px",borderRadius:7,border:"1px solid rgba(0,0,0,.05)",background:"rgba(0,0,0,.01)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                        <span style={{fontSize:10,fontWeight:600,color:"#5c4a3a"}}>{cat}</span>
+                        <span style={{fontSize:11,fontWeight:800,color:"#c45c4a"}}>{fmtS(amt)}</span>
+                      </div>
+                      <div style={{height:3,borderRadius:2,background:"#e5e3df"}}>
+                        <div style={{height:"100%",borderRadius:2,background:"#c45c4a",width:pct+"%"}}/>
+                      </div>
+                      <div style={{fontSize:9,color:"#999",marginTop:3}}>{pct}% of total expenses</div>
+                    </div>);
+                  })}
                 </div>
               </div>);
-            })}
+            })()}
           </>);
         })()}
 
         {/* ── INCOME ── */}
         {acctSubTab==="income"&&(()=>{
-          const selPropIncome=reportProp==="all"?collectedPayments:collectedPayments.filter(p=>p.propName===(props.find(x=>x.id===reportProp)||{}).name);
-          const byMonth={};selPropIncome.forEach(p=>{const m=p.date?.slice(0,7)||"";if(!byMonth[m])byMonth[m]=0;byMonth[m]+=p.amount;});
-          const months=Object.keys(byMonth).sort().reverse();
+          const sorted=filtIncome.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
           return(<>
-            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
-              <select value={reportProp} onChange={e=>setReportProp(e.target.value)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-                <option value="all">All Properties</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={{fontSize:11,color:"#999"}}>{sorted.length} payment{sorted.length!==1?"s":""} · {fmtS(totalIncome)} collected</div>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Month","Property","Tenant","Category","Amount"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}
+                  {["Date","Property","Room","Tenant","Category","Method","Amount"].map(h=>(
+                    <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
                 </tr></thead>
                 <tbody>
-                  {selPropIncome.sort((a,b)=>b.date?.localeCompare(a.date||"")||0).map((p,i)=>(
+                  {sorted.length===0&&<tr><td colSpan={7} style={{padding:32,textAlign:"center",color:"#999",fontSize:11}}>No income in this period. Payments are recorded in the Payments tab.</td></tr>}
+                  {sorted.map((p,i)=>(
                     <tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 12px",fontSize:10,color:"#999",fontFamily:"monospace"}}>{p.date?.slice(0,7)}</td>
-                      <td style={{padding:"8px 12px",fontSize:11}}>{p.propName}</td>
-                      <td style={{padding:"8px 12px",fontSize:11,fontWeight:600}}>{p.tenantName}</td>
-                      <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 7px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{p.category}</span></td>
-                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{p.date}</td>
+                      <td style={{padding:"8px 14px",fontSize:11}}>{p.propName}</td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#999"}}>{p.roomName||"—"}</td>
+                      <td style={{padding:"8px 14px",fontWeight:600}}>{p.tenantName}</td>
+                      <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{p.category}</span></td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{p.method||"—"}</td>
+                      <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</td>
                     </tr>
                   ))}
-                  {selPropIncome.length===0&&<tr><td colSpan={5} style={{padding:24,textAlign:"center",color:"#999"}}>No income recorded yet.</td></tr>}
                 </tbody>
-                {selPropIncome.length>0&&<tfoot><tr style={{borderTop:"2px solid rgba(0,0,0,.08)",background:"#f8f7f4"}}>
-                  <td colSpan={4} style={{padding:"10px 12px",fontWeight:800,fontSize:12}}>Total</td>
-                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59",fontSize:14}}>{fmtS(selPropIncome.reduce((s,p)=>s+p.amount,0))}</td>
+                {sorted.length>0&&<tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                  <td colSpan={6} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Collected</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59",fontSize:14}}>{fmtS(totalIncome)}</td>
                 </tr></tfoot>}
               </table>
             </div>
@@ -4520,7 +4644,6 @@ export default function Page(){
 
         {/* ── EXPENSES ── */}
         {acctSubTab==="expenses"&&(()=>{
-          const selExpenses=reportProp==="all"?expenses:expenses.filter(e=>e.propId===reportProp);
           const uploadReceipt=async(file,expId)=>{
             if(!file)return;
             const ext=file.name.split(".").pop()||"jpg";
@@ -4528,51 +4651,52 @@ export default function Page(){
             try{
               const r=await fetch(SUPA_URL+"/storage/v1/object/receipts/"+path,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},body:file});
               if(!r.ok){alert("Upload failed: "+r.status);return;}
-              const url=SUPA_URL+"/storage/v1/object/public/receipts/"+path;
-              setExpenses(prev=>prev.map(e=>e.id===expId?{...e,receiptUrl:url}:e));
+              setExpenses(prev=>prev.map(e=>e.id===expId?{...e,receiptUrl:SUPA_URL+"/storage/v1/object/public/receipts/"+path}:e));
             }catch(e){alert("Upload error: "+e.message);}
           };
+          const sorted=filtExpenses.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
           return(<>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <select value={reportProp} onChange={e=>setReportProp(e.target.value)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-                  <option value="all">All Properties</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                <span style={{fontSize:10,color:"#999"}}>{selExpenses.length} expense{selExpenses.length!==1?"s":""} · {fmtS(selExpenses.reduce((s,e)=>s+e.amount,0))} total</span>
-              </div>
-              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:props[0]?.id||"",category:expCats[0],description:"",vendor:"",amount:"",paymentMethod:"",notes:""},errs:{}})}>+ Add Expense</button>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+              <div style={{fontSize:11,color:"#999"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total{coaMode==="full"?" · Full COA (Schedule E)":" · Simple mode"}</div>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),category:expCats[0],description:"",vendor:"",amount:"",paymentMethod:"",notes:""},errs:{}})}>+ Add Expense</button>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Date","Property","Category","Vendor","Description","Receipt","Amount",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}
+                  {["Date","Property","Category","Vendor","Description","Method","Receipt","Amount",""].map(h=>(
+                    <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
                 </tr></thead>
                 <tbody>
-                  {selExpenses.sort((a,b)=>b.date?.localeCompare(a.date||"")||0).map((e,i)=>(
+                  {sorted.length===0&&<tr><td colSpan={9} style={{padding:32,textAlign:"center",color:"#999",fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
+                  {sorted.map((e,i)=>(
                     <tr key={e.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 12px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{e.date}</td>
-                      <td style={{padding:"8px 12px",fontSize:10}}>{(props.find(p=>p.id===e.propId)||{}).name||"—"}</td>
-                      <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 7px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700}}>{e.category}</span></td>
-                      <td style={{padding:"8px 12px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>
-                      <td style={{padding:"8px 12px",fontSize:11,fontWeight:600}}>{e.description}</td>
-                      <td style={{padding:"8px 12px"}}>
-                        {e.receiptUrl?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#3b82f6"}}>📎 View</a>
-                          :<label style={{fontSize:10,color:"#999",cursor:"pointer"}}>📎 Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{e.date}</td>
+                      <td style={{padding:"8px 14px",fontSize:10}}>{(props.find(p=>p.id===e.propId)||{}).name||"—"}</td>
+                      <td style={{padding:"8px 14px"}}>
+                        <span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span>
                       </td>
-                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a",whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>
-                      <td style={{padding:"8px 12px"}}>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>
+                      <td style={{padding:"8px 14px",fontWeight:600,maxWidth:200}}>{e.description}</td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#999"}}>{e.paymentMethod||"—"}</td>
+                      <td style={{padding:"8px 14px"}}>
+                        {e.receiptUrl
+                          ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#3b82f6",fontWeight:600,textDecoration:"none"}}>View</a>
+                          :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600}}>Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
+                      </td>
+                      <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>
+                      <td style={{padding:"8px 14px"}}>
                         <div style={{display:"flex",gap:4}}>
-                          <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addExpense",editId:e.id,form:{...e},errs:{}})}>✏️</button>
-                          <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteExpense",expId:e.id,description:e.description})}>🗑</button>
+                          <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addExpense",editId:e.id,form:{...e},errs:{}})}>Edit</button>
+                          <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteExpense",expId:e.id,description:e.description})}>Delete</button>
                         </div>
                       </td>
                     </tr>
                   ))}
-                  {selExpenses.length===0&&<tr><td colSpan={8} style={{padding:24,textAlign:"center",color:"#999"}}>No expenses yet. Click "+ Add Expense" to get started.</td></tr>}
                 </tbody>
-                {selExpenses.length>0&&<tfoot><tr style={{borderTop:"2px solid rgba(0,0,0,.08)",background:"#f8f7f4"}}>
-                  <td colSpan={6} style={{padding:"10px 12px",fontWeight:800,fontSize:12}}>Total Expenses</td>
-                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a",fontSize:14}}>{fmtS(selExpenses.reduce((s,e)=>s+e.amount,0))}</td>
+                {sorted.length>0&&<tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                  <td colSpan={7} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Expenses</td>
+                  <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",fontSize:14}}>{fmtS(totalExp)}</td>
                   <td/>
                 </tr></tfoot>}
               </table>
@@ -4582,45 +4706,61 @@ export default function Page(){
 
         {/* ── MORTGAGES ── */}
         {acctSubTab==="mortgages"&&(()=>{
+          const filtMg=acctPropId==="all"?mortgages:mortgages.filter(mg=>mg.propId===acctPropId);
           return(<>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div><h3 style={{margin:0}}>Mortgage Register</h3><p style={{fontSize:11,color:"#999",margin:"2px 0 0"}}>One record per loan. Used for DSCR calculations and Schedule E.</p></div>
-              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addMortgage",form:{propId:props[0]?.id||"",lender:"",originalBalance:"",currentBalance:"",interestRate:"",monthlyPI:"",startDate:"",maturityDate:"",accountLast4:"",notes:""},errs:{}})}>+ Add Mortgage</button>
-            </div>
-            {mortgages.length===0&&<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>No mortgages recorded. Add one to enable DSCR calculations.</div>}
-            {mortgages.map((mg,i)=>{
-              const pr=props.find(p=>p.id===mg.propId);
-              const annualPI=(mg.monthlyPI||0)*12;
-              const annualInterest=(mg.currentBalance||0)*(mg.interestRate||0)/100;
-              return(
-              <div key={mg.id} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid rgba(0,0,0,.06)",marginBottom:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                  <div><div style={{fontWeight:800,fontSize:13}}>{mg.lender||"Unnamed Lender"}</div><div style={{fontSize:11,color:"#999",marginTop:2}}>{pr?.name||"—"}{mg.accountLast4?" · ****"+mg.accountLast4:""}</div></div>
-                  <div style={{display:"flex",gap:4}}>
-                    <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addMortgage",editId:mg.id,form:{...mg},errs:{}})}>✏️ Edit</button>
-                    <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteMortgage",mgId:mg.id,lender:mg.lender})}>🗑</button>
-                  </div>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
-                  {[["Original Loan",fmtS(mg.originalBalance||0),"#5c4a3a"],["Current Balance",fmtS(mg.currentBalance||0),"#c45c4a"],["Rate",(mg.interestRate||0)+"%","#5c4a3a"],["Monthly P&I",fmtS(mg.monthlyPI||0),"#5c4a3a"],["Est. Annual Interest",fmtS(annualInterest),"#9a7422"]].map(([lbl,v,clr])=>(
-                    <div key={lbl} style={{textAlign:"center",padding:"8px 4px",background:"rgba(0,0,0,.02)",borderRadius:6}}>
-                      <div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.4,marginBottom:3}}>{lbl}</div>
-                      <div style={{fontSize:13,fontWeight:800,color:clr}}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-                {mg.startDate&&<div style={{fontSize:10,color:"#999",marginTop:8}}>Term: {mg.startDate} → {mg.maturityDate||"—"}</div>}
-                {mg.notes&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,fontStyle:"italic"}}>{mg.notes}</div>}
-              </div>);
-            })}
-            {/* Portfolio totals */}
-            {mortgages.length>0&&<div style={{background:"rgba(59,130,246,.04)",borderRadius:10,padding:"12px 16px",border:"1px solid rgba(59,130,246,.1)",marginTop:4}}>
-              <div style={{fontWeight:800,fontSize:12,marginBottom:8,color:"#3b82f6"}}>Portfolio Debt Summary</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-                {[["Total Outstanding",fmtS(mortgages.reduce((s,mg)=>s+(mg.currentBalance||0),0))],["Total Monthly P&I",fmtS(mortgages.reduce((s,mg)=>s+(mg.monthlyPI||0),0))],["Portfolio DSCR",dscr!=null?dscr.toFixed(2)+"x":"—"]].map(([lbl,v])=>(
-                  <div key={lbl} style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.4}}>{lbl}</div><div style={{fontSize:16,fontWeight:800}}>{v}</div></div>
-                ))}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Mortgage Register</div>
+                <div style={{fontSize:10,color:"#999",marginTop:1}}>One record per loan. Feeds DSCR and Schedule E Line 12.</div>
               </div>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addMortgage",form:{propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),lender:"",originalBalance:"",currentBalance:"",interestRate:"",monthlyPI:"",startDate:"",maturityDate:"",accountLast4:"",notes:""},errs:{}})}>+ Add Mortgage</button>
+            </div>
+
+            {filtMg.length===0
+              ?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No mortgages on record. Add one to enable DSCR and Schedule E interest calculations.</div>
+              :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                  <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                    {["Property","Lender","Account","Orig. Balance","Current Balance","Rate","Monthly P&I","Maturity",""].map(h=>(
+                      <th key={h} style={{padding:"9px 14px",textAlign:["Orig. Balance","Current Balance","Rate","Monthly P&I"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {filtMg.map((mg,i)=>{
+                      const pr=props.find(p=>p.id===mg.propId);
+                      const annualInterest=(mg.currentBalance||0)*(mg.interestRate||0)/100;
+                      return(
+                      <tr key={mg.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                        <td style={{padding:"9px 14px",fontWeight:700}}>{pr?.name||"—"}</td>
+                        <td style={{padding:"9px 14px"}}>{mg.lender||"—"}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:"#999",fontFamily:"monospace"}}>{mg.accountLast4?"****"+mg.accountLast4:"—"}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",color:"#5c4a3a"}}>{fmtS(mg.originalBalance||0)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:700,color:"#c45c4a"}}>{fmtS(mg.currentBalance||0)}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right"}}>{(mg.interestRate||0)+"%"}</td>
+                        <td style={{padding:"9px 14px",textAlign:"right",fontWeight:700}}>{fmtS(mg.monthlyPI||0)}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:"#999"}}>{mg.maturityDate||"—"}</td>
+                        <td style={{padding:"9px 14px"}}>
+                          <div style={{display:"flex",gap:4}}>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addMortgage",editId:mg.id,form:{...mg},errs:{}})}>Edit</button>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteMortgage",mgId:mg.id,lender:mg.lender})}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>);
+                    })}
+                  </tbody>
+                  <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                    <td colSpan={4} style={{padding:"10px 14px",fontWeight:800}}>Portfolio Total</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(filtMg.reduce((s,mg)=>s+(mg.currentBalance||0),0))}</td>
+                    <td/>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800}}>{fmtS(filtMg.reduce((s,mg)=>s+(mg.monthlyPI||0),0))}/mo</td>
+                    <td colSpan={2}/>
+                  </tfoot>}
+                </table>
+              </div>}
+
+            {/* Est. annual interest note for Schedule E */}
+            {filtMg.length>0&&<div style={{marginTop:10,padding:"10px 14px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)",fontSize:11,color:"#9a7422"}}>
+              <strong>Est. Annual Interest (Schedule E Line 12):</strong> {fmtS(filtMg.reduce((s,mg)=>s+(mg.currentBalance||0)*(mg.interestRate||0)/100,0))} — based on current balances and rates. Use your actual 1098 form for exact figures.
             </div>}
           </>);
         })()}
