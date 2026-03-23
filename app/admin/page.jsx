@@ -184,6 +184,10 @@ const DEF_PAYMENTS={};// {roomId: {month: amount}} - quick lookup (computed from
 const CHARGE_CATS=["Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
 const PAY_METHODS=["Zelle","Venmo","Cash","Check","CashApp","Bank Transfer","Stripe/ACH","Credit Card","Other"];
 const ACH_METHODS=["Bank Transfer","Stripe/ACH"]; // locked — no edit on paid charges
+const EXP_CATS_SIMPLE=["Mortgage Interest","Repairs & Maintenance","Insurance","Property Tax","Utilities","Cleaning & Supplies","Advertising & Leasing","Management Fees","Professional Services","Other"];
+const EXP_CATS_FULL=["Auto & Travel (L6)","Cleaning & Maintenance (L7)","Commissions (L8)","Insurance (L9)","Legal & Professional (L10)","Management Fees (L11)","Mortgage Interest - Bank (L12)","Other Interest (L13)","Repairs (L14)","Supplies (L15)","Taxes - Property (L16)","Utilities (L17)","Depreciation (L18)","Other (L19)"];
+const SIMPLE_TO_FULL={"Mortgage Interest":"Mortgage Interest - Bank (L12)","Repairs & Maintenance":"Repairs (L14)","Insurance":"Insurance (L9)","Property Tax":"Taxes - Property (L16)","Utilities":"Utilities (L17)","Cleaning & Supplies":"Cleaning & Maintenance (L7)","Advertising & Leasing":"Commissions (L8)","Management Fees":"Management Fees (L11)","Professional Services":"Legal & Professional (L10)","Other":"Other (L19)"};
+const SCHED_E_LINES={"Auto & Travel (L6)":6,"Cleaning & Maintenance (L7)":7,"Commissions (L8)":8,"Insurance (L9)":9,"Legal & Professional (L10)":10,"Management Fees (L11)":11,"Mortgage Interest - Bank (L12)":12,"Other Interest (L13)":13,"Repairs (L14)":14,"Supplies (L15)":15,"Taxes - Property (L16)":16,"Utilities (L17)":17,"Depreciation (L18)":18,"Other (L19)":19};
 // Charges: source of truth for all money owed/paid
 const DEF_CHARGES=[
   // ─── Marcus Johnson (r1, Holmes House, $850/mo) — reliable payer ───
@@ -1977,6 +1981,13 @@ export default function Page(){
   const[credits,setCredits]=useState(DEF_CREDITS);
   const[sdLedger,setSdLedger]=useState(DEF_SD_LEDGER);
   const[paySubTab,setPaySubTab]=useState("overview");
+  const[acctSubTab,setAcctSubTab]=useState("overview");
+  const[reportPeriod,setReportPeriod]=useState({from:"",to:""});
+  const[reportProp,setReportProp]=useState("all");
+  const[activeReport,setActiveReport]=useState(null);
+  const[coaMode,setCoaMode]=useState("simple"); // "simple" | "full"
+  const[expenses,setExpenses]=useState([]);
+  const[mortgages,setMortgages]=useState([]);
   const[payPeriod,setPayPeriod]=useState("mtd");
   const[payFilters,setPayFilters]=useState({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""});
   const[depFilters,setDepFilters]=useState({property:"",tenant:"",lease:"",dateFrom:"",dateTo:""});
@@ -2037,7 +2048,7 @@ export default function Page(){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[])]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
@@ -2080,10 +2091,10 @@ export default function Page(){
         if(!found)console.warn("⚠ Could not geocode:",prop.name,prop.addr);
       }
     }
-    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setLoaded(true);
+    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,loaded]);
+  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,loaded]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   const m=useMemo(()=>{
@@ -2326,6 +2337,7 @@ export default function Page(){
     {id:"leases",i:<IconFile/>,l:"Leases & Docs",badge:pendingLeases||null},
     {id:"documents",i:<IconFolder/>,l:"Documents"},
     {id:"accounting",i:<IconBook/>,l:"Accounting"},
+    {id:"reports",i:<IconTrending/>,l:"Reports"},
     {id:"properties",i:<IconHome/>,l:"Properties"},
     {id:"site-settings",i:<IconGlobe/>,l:"Site Settings"},
     {id:"theme",i:<IconPalette/>,l:"Theme Editor"},
@@ -4400,122 +4412,601 @@ export default function Page(){
       </>}
 
       {/* ═══ ACCOUNTING ═══ */}
-      {tab==="accounting"&&<>
-        {(()=>{const inc=txns.filter(t=>t.type==="income").reduce((s,t)=>s+t.amount,0);const exp=txns.filter(t=>t.type==="expense").reduce((s,t)=>s+t.amount,0);return(
-          <div className="acct-summary">
-            <div className="acct-card"><div className="kl">💰 Income</div><div className="kv kg">{fmtS(inc)}</div></div>
-            <div className="acct-card"><div className="kl">💸 Expenses</div><div className="kv kb">{fmtS(exp)}</div></div>
-            <div className="acct-card"><div className="kl">📊 Net</div><div className="kv" style={{color:inc-exp>=0?"#4a7c59":"#c45c4a"}}>{fmtS(inc-exp)}</div></div>
-          </div>);
-        })()}
+      {tab==="accounting"&&(()=>{
+        // ── Derived accounting data ──
+        const curYear=TODAY.getFullYear();
+        const curMonth=TODAY.getMonth();
+        const ytdFrom=`${curYear}-01-01`;
+        const ytdTo=TODAY.toISOString().split("T")[0];
+        const expCats=coaMode==="full"?EXP_CATS_FULL:EXP_CATS_SIMPLE;
+        const normalizeExpCat=(cat)=>coaMode==="full"?(SIMPLE_TO_FULL[cat]||cat):cat;
 
-        {/* ── Tenant Ledgers ── */}
-        {(()=>{
-          const tenantRooms=occLeases.map(r=>({...r,propName:r.propName,unitId:r.unitId,unitName:r.unitName,unitLabel:r.unitLabel,propUtils:r.propUtils}));
-          const selRoom=ledgerTenant!=="all"?tenantRooms.find(r=>r.id===ledgerTenant):null;
+        // Income: collected payments from charges
+        const collectedPayments=charges.flatMap(c=>c.payments.map(p=>({...p,propName:c.propName,propId:c.roomId,category:c.category,tenantName:c.tenantName,chargeId:c.id})));
+        const ytdIncome=collectedPayments.filter(p=>p.date>=ytdFrom&&p.date<=ytdTo).reduce((s,p)=>s+p.amount,0);
+        const ytdExpenses=expenses.filter(e=>e.date>=ytdFrom&&e.date<=ytdTo).reduce((s,e)=>s+e.amount,0);
+        const ytdNOI=ytdIncome-ytdExpenses;
+        const totalDebtService=mortgages.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
+        const dscr=totalDebtService>0?(ytdNOI/totalDebtService):null;
 
-          // Build ledger entries from charges: each charge = debit, each payment = credit
-          const buildLedger=(roomId)=>{
-            const roomCharges=charges.filter(c=>roomId==="all"||c.roomId===roomId)
-              .sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-            const entries=[];
-            roomCharges.forEach(c=>{
-              // Debit: charge posted
-              entries.push({id:c.id+"-d",date:c.createdDate||c.dueDate,desc:c.desc,category:c.category,type:"debit",amount:c.amount,tenant:c.tenantName,property:c.propName,room:c.roomName,chargeId:c.id,status:chargeStatus(c)});
-              // Credits: payments received
-              (c.payments||[]).forEach(p=>{
-                entries.push({id:p.id,date:p.date,desc:`Payment — ${p.method}${p.notes?` (${p.notes})`:""}`,category:"Payment",type:"credit",amount:p.amount,tenant:c.tenantName,property:c.propName,room:c.roomName,chargeId:c.id});
-              });
-            });
-            // Sort by date then debit before credit on same day
-            entries.sort((a,b)=>{const d=new Date(a.date)-new Date(b.date);if(d!==0)return d;return a.type==="debit"?-1:1;});
-            // Compute running balance
-            let bal=0;
-            return entries.map(e=>{bal+=e.type==="debit"?e.amount:-e.amount;return{...e,balance:bal};});
-          };
+        return(<>
+        <div className="sec-hd">
+          <div><h2>📒 Accounting</h2></div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <button className="btn btn-sm btn-out" style={{fontSize:9,color:coaMode==="simple"?"#d4a853":"#999",borderColor:coaMode==="simple"?"rgba(212,168,83,.4)":"rgba(0,0,0,.1)",fontWeight:coaMode==="simple"?700:400}} onClick={()=>setCoaMode("simple")}>Simple</button>
+            <button className="btn btn-sm btn-out" style={{fontSize:9,color:coaMode==="full"?"#d4a853":"#999",borderColor:coaMode==="full"?"rgba(212,168,83,.4)":"rgba(0,0,0,.1)",fontWeight:coaMode==="full"?700:400}} onClick={()=>setCoaMode("full")}>Full COA</button>
+          </div>
+        </div>
 
-          const entries=buildLedger(ledgerTenant);
-          const totalDebits=entries.filter(e=>e.type==="debit").reduce((s,e)=>s+e.amount,0);
-          const totalCredits=entries.filter(e=>e.type==="credit").reduce((s,e)=>s+e.amount,0);
-          const runningBalance=totalDebits-totalCredits;
+        {/* KPI strip */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
+          {[["YTD Income",ytdIncome,"#4a7c59"],["YTD Expenses",ytdExpenses,"#c45c4a"],["YTD NOI",ytdNOI,ytdNOI>=0?"#4a7c59":"#c45c4a"],["DSCR",dscr!=null?dscr.toFixed(2)+"x":"—",dscr==null?"#999":dscr>=1.25?"#4a7c59":"#c45c4a"]].map(([label,val,color])=>(
+            <div key={label} style={{background:"#fff",borderRadius:10,padding:"12px 14px",border:"1px solid rgba(0,0,0,.06)"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>{label}</div>
+              <div style={{fontSize:20,fontWeight:800,color}}>{typeof val==="number"?fmtS(val):val}</div>
+            </div>
+          ))}
+        </div>
 
+        {/* Sub-tabs */}
+        <div className="tabs" style={{marginBottom:16}}>
+          {[["overview","📊 Overview"],["income","💰 Income"],["expenses","💸 Expenses"],["mortgages","🏦 Mortgages"]].map(([k,l])=>(
+            <button key={k} className={"tab "+(acctSubTab===k?"on":"")} onClick={()=>setAcctSubTab(k)}>{l}</button>
+          ))}
+        </div>
+
+        {/* ── OVERVIEW ── */}
+        {acctSubTab==="overview"&&(()=>{
           return(<>
-            <div className="sec-hd" style={{marginTop:20}}>
-              <div><h2>📒 Tenant Ledger</h2><p style={{fontSize:10,color:"#999"}}>Charges (debits) and payments (credits) — professional double-entry view</p></div>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <select value={ledgerTenant} onChange={e=>setLedgerTenant(e.target.value)} style={{padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-                  <option value="all">All Tenants</option>
-                  {tenantRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} — {r.propName}{r.unitLabel?" Unit "+r.unitLabel:""} {r.name}</option>)}
-                </select>
-                <button className="btn btn-out btn-sm" onClick={()=>window.print()}>🖨 Print</button>
-              </div>
-            </div>
-
-            {/* Summary strip */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:14}}>
-              <div style={{background:"rgba(196,92,74,.04)",borderRadius:8,padding:10,textAlign:"center",border:"1px solid rgba(196,92,74,.08)"}}><div style={{fontSize:8,color:"#c45c4a",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Total Charged</div><div style={{fontSize:18,fontWeight:800,color:"#c45c4a"}}>{fmtS(totalDebits)}</div></div>
-              <div style={{background:"rgba(74,124,89,.04)",borderRadius:8,padding:10,textAlign:"center",border:"1px solid rgba(74,124,89,.08)"}}><div style={{fontSize:8,color:"#4a7c59",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Total Paid</div><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{fmtS(totalCredits)}</div></div>
-              <div style={{background:runningBalance>0?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:8,padding:10,textAlign:"center",border:`1px solid ${runningBalance>0?"rgba(196,92,74,.08)":"rgba(74,124,89,.08)"}`}}><div style={{fontSize:8,color:runningBalance>0?"#c45c4a":"#4a7c59",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Balance Due</div><div style={{fontSize:18,fontWeight:800,color:runningBalance>0?"#c45c4a":"#4a7c59"}}>{fmtS(runningBalance)}</div></div>
-              <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:10,textAlign:"center",border:"1px solid rgba(0,0,0,.04)"}}><div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Entries</div><div style={{fontSize:18,fontWeight:800}}>{entries.length}</div></div>
-            </div>
-
-            {/* Ledger table */}
-            <div className="card"><div style={{overflowX:"auto"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                <thead>
-                  <tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                    <th style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,whiteSpace:"nowrap"}}>Date</th>
-                    {ledgerTenant==="all"&&<th style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8}}>Tenant</th>}
-                    <th style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8}}>Description</th>
-                    <th style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8}}>Category</th>
-                    <th style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#c45c4a",textTransform:"uppercase",letterSpacing:.8}}>Debit (Charge)</th>
-                    <th style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.8}}>Credit (Payment)</th>
-                    <th style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8}}>Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entries.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#999"}}>No ledger entries yet.</td></tr>}
-                  {entries.map((e,i)=>{
-                    const isDebit=e.type==="debit";
-                    const isOverdue=isDebit&&e.status==="pastdue";
-                    return(
-                    <tr key={e.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:isOverdue?"rgba(196,92,74,.02)":i%2===0?"#fff":"rgba(0,0,0,.005)"}}>
-                      <td style={{padding:"8px 12px",color:"#999",whiteSpace:"nowrap",fontFamily:"monospace",fontSize:10}}>{e.date}</td>
-                      {ledgerTenant==="all"&&<td style={{padding:"8px 12px",fontWeight:600,fontSize:11,whiteSpace:"nowrap"}}>{e.tenant}</td>}
-                      <td style={{padding:"8px 12px",color:"#3c3228"}}>{e.desc}{isOverdue&&<span style={{marginLeft:6,fontSize:9,color:"#c45c4a",fontWeight:700}}>⚠ OVERDUE</span>}</td>
-                      <td style={{padding:"8px 12px"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:100,background:e.category==="Payment"?"rgba(74,124,89,.08)":e.category==="Rent"?"rgba(59,130,246,.08)":e.category==="Late Fee"?"rgba(196,92,74,.08)":"rgba(0,0,0,.04)",color:e.category==="Payment"?"#4a7c59":e.category==="Rent"?"#3b82f6":e.category==="Late Fee"?"#c45c4a":"#5c4a3a"}}>{e.category}</span></td>
-                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:isDebit?700:400,color:isDebit?"#c45c4a":"#ccc"}}>{isDebit?fmtS(e.amount):"—"}</td>
-                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:!isDebit?700:400,color:!isDebit?"#4a7c59":"#ccc"}}>{!isDebit?fmtS(e.amount):"—"}</td>
-                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:e.balance>0?"#c45c4a":e.balance<0?"#3b82f6":"#4a7c59",whiteSpace:"nowrap"}}>{e.balance===0?"—":fmtS(e.balance)}</td>
-                    </tr>);
-                  })}
-                </tbody>
-                {entries.length>0&&<tfoot>
-                  <tr style={{borderTop:"2px solid rgba(0,0,0,.08)",background:"#f8f7f4"}}>
-                    <td colSpan={ledgerTenant==="all"?3:2} style={{padding:"10px 12px",fontWeight:800,fontSize:12}}>Totals</td>
-                    <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalDebits)}</td>
-                    <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalCredits)}</td>
-                    <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:runningBalance>0?"#c45c4a":"#4a7c59"}}>{fmtS(runningBalance)}</td>
-                  </tr>
-                </tfoot>}
-              </table>
-            </div></div>
+            {props.map(pr=>{
+              const prIncome=collectedPayments.filter(p=>p.propName===pr.name&&p.date>=ytdFrom).reduce((s,p)=>s+p.amount,0);
+              const prExp=expenses.filter(e=>e.propId===pr.id&&e.date>=ytdFrom).reduce((s,e)=>s+e.amount,0);
+              const prMg=mortgages.filter(mg=>mg.propId===pr.id);
+              const prDebt=prMg.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
+              const prNOI=prIncome-prExp;
+              const prDSCR=prDebt>0?(prNOI/prDebt):null;
+              return(
+              <div key={pr.id} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid rgba(0,0,0,.06)",marginBottom:10}}>
+                <div style={{fontWeight:800,fontSize:13,marginBottom:10}}>{pr.name}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
+                  {[["Income YTD",prIncome,"#4a7c59"],["Expenses YTD",prExp,"#c45c4a"],["NOI",prNOI,prNOI>=0?"#4a7c59":"#c45c4a"],["Debt Service",prDebt,"#999"],["DSCR",prDSCR!=null?prDSCR.toFixed(2)+"x":"—",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":"#c45c4a"]].map(([lbl,v,clr])=>(
+                    <div key={lbl} style={{textAlign:"center",padding:"8px 4px",background:"rgba(0,0,0,.02)",borderRadius:6}}>
+                      <div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.4,marginBottom:3}}>{lbl}</div>
+                      <div style={{fontSize:14,fontWeight:800,color:clr}}>{typeof v==="number"?fmtS(v):v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>);
+            })}
           </>);
         })()}
 
-        {/* ── P&L by Property ── */}
-        <div className="sec-hd" style={{marginTop:24}}><div><h2>P&L by Property</h2></div>
-          <button className="btn btn-gold" onClick={()=>setTxns(p=>[{id:uid(),date:TODAY.toISOString().split("T")[0],type:"expense",desc:"New Expense",amount:0,propId:"p1",cat:"Other"},...p])}>+ Add Transaction</button></div>
-        <div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Date</th><th>Description</th><th>Property</th><th>Category</th><th style={{textAlign:"right"}}>Amount</th></tr></thead><tbody>
-          {txns.map(t=>{const pr=props.find(p=>p.id===t.propId);return(
-            <tr key={t.id}><td>{t.date}</td><td style={{fontWeight:600}}>{t.desc}</td><td>{(pr&&pr.name)||"—"}</td><td><span className={`badge ${t.type==="income"?"b-green":"b-red"}`}>{t.cat}</span></td>
-              <td style={{textAlign:"right",fontWeight:800,color:t.type==="income"?"#4a7c59":"#c45c4a"}}>{t.type==="income"?"+":"-"}{fmtS(t.amount)}</td></tr>);})}
-        </tbody></table></div></div>
-        {props.map((p,idx)=>{const inc=txns.filter(t=>t.propId===p.id&&t.type==="income").reduce((s,t)=>s+t.amount,0);const exp=txns.filter(t=>t.propId===p.id&&t.type==="expense").reduce((s,t)=>s+t.amount,0);return(
-          <div key={p.id} className="row"><div className="row-i"><div className="row-t">{p.name}</div><div className="row-s">{p.type} · {allRooms(p).length} rooms</div></div>
-            <div style={{display:"flex",gap:16,alignItems:"center"}}><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Income</div><div style={{fontWeight:800,color:"#4a7c59",fontSize:13}}>{fmtS(inc)}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Expense</div><div style={{fontWeight:800,color:"#c45c4a",fontSize:13}}>{fmtS(exp)}</div></div><div style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999"}}>Net</div><div style={{fontWeight:800,color:inc-exp>=0?"#4a7c59":"#c45c4a",fontSize:13}}>{fmtS(inc-exp)}</div></div></div>
-          </div>);})}
-      </>}
+        {/* ── INCOME ── */}
+        {acctSubTab==="income"&&(()=>{
+          const selPropIncome=reportProp==="all"?collectedPayments:collectedPayments.filter(p=>p.propName===(props.find(x=>x.id===reportProp)||{}).name);
+          const byMonth={};selPropIncome.forEach(p=>{const m=p.date?.slice(0,7)||"";if(!byMonth[m])byMonth[m]=0;byMonth[m]+=p.amount;});
+          const months=Object.keys(byMonth).sort().reverse();
+          return(<>
+            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12,flexWrap:"wrap"}}>
+              <select value={reportProp} onChange={e=>setReportProp(e.target.value)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+                <option value="all">All Properties</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                  {["Month","Property","Tenant","Category","Amount"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {selPropIncome.sort((a,b)=>b.date?.localeCompare(a.date||"")||0).map((p,i)=>(
+                    <tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"8px 12px",fontSize:10,color:"#999",fontFamily:"monospace"}}>{p.date?.slice(0,7)}</td>
+                      <td style={{padding:"8px 12px",fontSize:11}}>{p.propName}</td>
+                      <td style={{padding:"8px 12px",fontSize:11,fontWeight:600}}>{p.tenantName}</td>
+                      <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 7px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{p.category}</span></td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</td>
+                    </tr>
+                  ))}
+                  {selPropIncome.length===0&&<tr><td colSpan={5} style={{padding:24,textAlign:"center",color:"#999"}}>No income recorded yet.</td></tr>}
+                </tbody>
+                {selPropIncome.length>0&&<tfoot><tr style={{borderTop:"2px solid rgba(0,0,0,.08)",background:"#f8f7f4"}}>
+                  <td colSpan={4} style={{padding:"10px 12px",fontWeight:800,fontSize:12}}>Total</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59",fontSize:14}}>{fmtS(selPropIncome.reduce((s,p)=>s+p.amount,0))}</td>
+                </tr></tfoot>}
+              </table>
+            </div>
+          </>);
+        })()}
+
+        {/* ── EXPENSES ── */}
+        {acctSubTab==="expenses"&&(()=>{
+          const selExpenses=reportProp==="all"?expenses:expenses.filter(e=>e.propId===reportProp);
+          const uploadReceipt=async(file,expId)=>{
+            if(!file)return;
+            const ext=file.name.split(".").pop()||"jpg";
+            const path="receipts/"+expId+"-"+Date.now()+"."+ext;
+            try{
+              const r=await fetch(SUPA_URL+"/storage/v1/object/receipts/"+path,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},body:file});
+              if(!r.ok){alert("Upload failed: "+r.status);return;}
+              const url=SUPA_URL+"/storage/v1/object/public/receipts/"+path;
+              setExpenses(prev=>prev.map(e=>e.id===expId?{...e,receiptUrl:url}:e));
+            }catch(e){alert("Upload error: "+e.message);}
+          };
+          return(<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <select value={reportProp} onChange={e=>setReportProp(e.target.value)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+                  <option value="all">All Properties</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <span style={{fontSize:10,color:"#999"}}>{selExpenses.length} expense{selExpenses.length!==1?"s":""} · {fmtS(selExpenses.reduce((s,e)=>s+e.amount,0))} total</span>
+              </div>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:props[0]?.id||"",category:expCats[0],description:"",vendor:"",amount:"",paymentMethod:"",notes:""},errs:{}})}>+ Add Expense</button>
+            </div>
+            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                  {["Date","Property","Category","Vendor","Description","Receipt","Amount",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {selExpenses.sort((a,b)=>b.date?.localeCompare(a.date||"")||0).map((e,i)=>(
+                    <tr key={e.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"8px 12px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{e.date}</td>
+                      <td style={{padding:"8px 12px",fontSize:10}}>{(props.find(p=>p.id===e.propId)||{}).name||"—"}</td>
+                      <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 7px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700}}>{e.category}</span></td>
+                      <td style={{padding:"8px 12px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>
+                      <td style={{padding:"8px 12px",fontSize:11,fontWeight:600}}>{e.description}</td>
+                      <td style={{padding:"8px 12px"}}>
+                        {e.receiptUrl?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#3b82f6"}}>📎 View</a>
+                          :<label style={{fontSize:10,color:"#999",cursor:"pointer"}}>📎 Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
+                      </td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a",whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>
+                      <td style={{padding:"8px 12px"}}>
+                        <div style={{display:"flex",gap:4}}>
+                          <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addExpense",editId:e.id,form:{...e},errs:{}})}>✏️</button>
+                          <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteExpense",expId:e.id,description:e.description})}>🗑</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {selExpenses.length===0&&<tr><td colSpan={8} style={{padding:24,textAlign:"center",color:"#999"}}>No expenses yet. Click "+ Add Expense" to get started.</td></tr>}
+                </tbody>
+                {selExpenses.length>0&&<tfoot><tr style={{borderTop:"2px solid rgba(0,0,0,.08)",background:"#f8f7f4"}}>
+                  <td colSpan={6} style={{padding:"10px 12px",fontWeight:800,fontSize:12}}>Total Expenses</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a",fontSize:14}}>{fmtS(selExpenses.reduce((s,e)=>s+e.amount,0))}</td>
+                  <td/>
+                </tr></tfoot>}
+              </table>
+            </div>
+          </>);
+        })()}
+
+        {/* ── MORTGAGES ── */}
+        {acctSubTab==="mortgages"&&(()=>{
+          return(<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div><h3 style={{margin:0}}>Mortgage Register</h3><p style={{fontSize:11,color:"#999",margin:"2px 0 0"}}>One record per loan. Used for DSCR calculations and Schedule E.</p></div>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addMortgage",form:{propId:props[0]?.id||"",lender:"",originalBalance:"",currentBalance:"",interestRate:"",monthlyPI:"",startDate:"",maturityDate:"",accountLast4:"",notes:""},errs:{}})}>+ Add Mortgage</button>
+            </div>
+            {mortgages.length===0&&<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>No mortgages recorded. Add one to enable DSCR calculations.</div>}
+            {mortgages.map((mg,i)=>{
+              const pr=props.find(p=>p.id===mg.propId);
+              const annualPI=(mg.monthlyPI||0)*12;
+              const annualInterest=(mg.currentBalance||0)*(mg.interestRate||0)/100;
+              return(
+              <div key={mg.id} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid rgba(0,0,0,.06)",marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div><div style={{fontWeight:800,fontSize:13}}>{mg.lender||"Unnamed Lender"}</div><div style={{fontSize:11,color:"#999",marginTop:2}}>{pr?.name||"—"}{mg.accountLast4?" · ****"+mg.accountLast4:""}</div></div>
+                  <div style={{display:"flex",gap:4}}>
+                    <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addMortgage",editId:mg.id,form:{...mg},errs:{}})}>✏️ Edit</button>
+                    <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteMortgage",mgId:mg.id,lender:mg.lender})}>🗑</button>
+                  </div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6}}>
+                  {[["Original Loan",fmtS(mg.originalBalance||0),"#5c4a3a"],["Current Balance",fmtS(mg.currentBalance||0),"#c45c4a"],["Rate",(mg.interestRate||0)+"%","#5c4a3a"],["Monthly P&I",fmtS(mg.monthlyPI||0),"#5c4a3a"],["Est. Annual Interest",fmtS(annualInterest),"#9a7422"]].map(([lbl,v,clr])=>(
+                    <div key={lbl} style={{textAlign:"center",padding:"8px 4px",background:"rgba(0,0,0,.02)",borderRadius:6}}>
+                      <div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.4,marginBottom:3}}>{lbl}</div>
+                      <div style={{fontSize:13,fontWeight:800,color:clr}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+                {mg.startDate&&<div style={{fontSize:10,color:"#999",marginTop:8}}>Term: {mg.startDate} → {mg.maturityDate||"—"}</div>}
+                {mg.notes&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,fontStyle:"italic"}}>{mg.notes}</div>}
+              </div>);
+            })}
+            {/* Portfolio totals */}
+            {mortgages.length>0&&<div style={{background:"rgba(59,130,246,.04)",borderRadius:10,padding:"12px 16px",border:"1px solid rgba(59,130,246,.1)",marginTop:4}}>
+              <div style={{fontWeight:800,fontSize:12,marginBottom:8,color:"#3b82f6"}}>Portfolio Debt Summary</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                {[["Total Outstanding",fmtS(mortgages.reduce((s,mg)=>s+(mg.currentBalance||0),0))],["Total Monthly P&I",fmtS(mortgages.reduce((s,mg)=>s+(mg.monthlyPI||0),0))],["Portfolio DSCR",dscr!=null?dscr.toFixed(2)+"x":"—"]].map(([lbl,v])=>(
+                  <div key={lbl} style={{textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.4}}>{lbl}</div><div style={{fontSize:16,fontWeight:800}}>{v}</div></div>
+                ))}
+              </div>
+            </div>}
+          </>);
+        })()}
+        </>);
+      })()}
+
+      {/* ═══ REPORTS ═══ */}
+      {tab==="reports"&&(()=>{
+        const rFrom=reportPeriod.from||(TODAY.getFullYear()+"-01-01");
+        const rTo=reportPeriod.to||TODAY.toISOString().split("T")[0];
+        const rProps=reportProp==="all"?props:props.filter(p=>p.id===reportProp);
+
+        // Filtered data helpers
+        const rCharges=charges.filter(c=>c.dueDate>=rFrom&&c.dueDate<=rTo&&(reportProp==="all"||rProps.some(p=>p.name===c.propName)));
+        const rPayments=charges.flatMap(c=>c.payments.map(p=>({...p,propName:c.propName,tenantName:c.tenantName,category:c.category,chargeId:c.id}))).filter(p=>p.date>=rFrom&&p.date<=rTo&&(reportProp==="all"||rProps.some(x=>x.name===p.propName)));
+        const rExpenses=expenses.filter(e=>e.date>=rFrom&&e.date<=rTo&&(reportProp==="all"||rProps.some(p=>p.id===e.propId)));
+        const rMortgages=mortgages.filter(mg=>reportProp==="all"||rProps.some(p=>p.id===mg.propId));
+        const totalIncome=rPayments.reduce((s,p)=>s+p.amount,0);
+        const totalExp=rExpenses.reduce((s,e)=>s+e.amount,0);
+        const totalNOI=totalIncome-totalExp;
+        const annualDebt=rMortgages.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
+        const rDSCR=annualDebt>0?(totalNOI/annualDebt):null;
+
+        const printReport=()=>window.print();
+        const exportCSV=(rows,headers,filename)=>{
+          const csv=[headers.join(","),...rows.map(r=>headers.map(h=>JSON.stringify(r[h]||"")).join(","))].join("\n");
+          const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=filename+".csv";a.click();
+        };
+
+        const reports=[
+          {id:"rentroll",icon:"📋",title:"Rent Roll",desc:"Live snapshot of all units — tenant, lease dates, rent, status"},
+          {id:"pnl",icon:"📊",title:"P&L by Property",desc:"Income minus expenses per property — Net Operating Income"},
+          {id:"schede",icon:"🧾",title:"Schedule E Summary",desc:"All 19 Schedule E lines per property — ready for your CPA"},
+          {id:"cashflow",icon:"💵",title:"Cash Flow Statement",desc:"Collected rent minus expenses minus debt service"},
+          {id:"aging",icon:"⏱",title:"AR Aging",desc:"Outstanding receivables bucketed: current, 30, 60, 90+ days"},
+          {id:"sdledger",icon:"🔒",title:"SD Liability Ledger",desc:"Security deposits held — liability for your balance sheet"},
+          {id:"occupancy",icon:"🏠",title:"Occupancy Report",desc:"Occupancy rate, vacancy days, and lost revenue per property"},
+          {id:"trailing12",icon:"📈",title:"Trailing 12 Income",desc:"Month-by-month collected rent for the past 12 months"},
+          {id:"dscr",icon:"🏦",title:"DSCR Report",desc:"Debt Service Coverage Ratio — required for refi/acquisition loans"},
+          {id:"tenantledger",icon:"📒",title:"Tenant Ledger",desc:"Full charge and payment history per tenant — printable statement"},
+        ];
+
+        return(<>
+        <div className="sec-hd"><div><h2>📊 Reports</h2></div></div>
+
+        {/* Filters */}
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:16,padding:"12px 14px",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>
+          <select value={reportProp} onChange={e=>setReportProp(e.target.value)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+            <option value="all">All Properties</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <input type="date" value={reportPeriod.from} onChange={e=>setReportPeriod(p=>({...p,from:e.target.value}))} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
+          <span style={{fontSize:11,color:"#999"}}>to</span>
+          <input type="date" value={reportPeriod.to} onChange={e=>setReportPeriod(p=>({...p,to:e.target.value}))} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
+          <button className="btn btn-out btn-sm" onClick={()=>{setReportPeriod({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0]});}}>YTD</button>
+          <button className="btn btn-out btn-sm" onClick={()=>{const y=TODAY.getFullYear()-1;setReportPeriod({from:y+"-01-01",to:y+"-12-31"});}}>Last Year</button>
+          <button className="btn btn-out btn-sm" onClick={()=>{const m=String(TODAY.getMonth()+1).padStart(2,"0");setReportPeriod({from:TODAY.getFullYear()+"-"+m+"-01",to:rTo});}}>MTD</button>
+        </div>
+
+        {/* Report cards grid (when none active) */}
+        {!activeReport&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:10}}>
+          {reports.map(r=>(
+            <div key={r.id} style={{background:"#fff",borderRadius:10,padding:"16px",border:"1px solid rgba(0,0,0,.06)",cursor:"pointer",transition:"all .15s"}}
+              onClick={()=>setActiveReport(r.id)}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(212,168,83,.4)";e.currentTarget.style.background="rgba(212,168,83,.02)";}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(0,0,0,.06)";e.currentTarget.style.background="#fff";}}>
+              <div style={{fontSize:24,marginBottom:8}}>{r.icon}</div>
+              <div style={{fontWeight:800,fontSize:13,marginBottom:4}}>{r.title}</div>
+              <div style={{fontSize:11,color:"#999",lineHeight:1.5}}>{r.desc}</div>
+              <div style={{marginTop:10,fontSize:10,color:"#d4a853",fontWeight:700}}>Open →</div>
+            </div>
+          ))}
+        </div>}
+
+        {/* Active report */}
+        {activeReport&&(()=>{
+          const rep=reports.find(r=>r.id===activeReport);
+          return(<>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <button className="btn btn-out btn-sm" onClick={()=>setActiveReport(null)}>← Back</button>
+              <h3 style={{margin:0,fontSize:15}}>{rep.icon} {rep.title}</h3>
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              <button className="btn btn-out btn-sm" onClick={printReport}>🖨 Print / PDF</button>
+            </div>
+          </div>
+
+          {/* ── Rent Roll ── */}
+          {activeReport==="rentroll"&&(()=>{
+            const rows=rProps.flatMap(pr=>(pr.units||[]).flatMap(u=>{
+              if(u.ownerOccupied)return[];
+              const isWhole=(u.rentalMode||"byRoom")==="wholeHouse";
+              if(isWhole){const rep=(u.rooms||[]).find(r=>r.tenant);return[{prop:pr.name,unit:u.name||pr.name,type:"Whole Unit",tenant:rep?.tenant?.name||"Vacant",rent:fmtS(u.rent||0),moveIn:rep?.tenant?.moveIn||"—",leaseEnd:rep?.le||"—",status:rep?"Occupied":"Vacant"}];}
+              return(u.rooms||[]).filter(r=>!r.ownerOccupied).map(r=>({prop:pr.name,unit:r.name,type:"By Room",tenant:r.tenant?.name||"Vacant",rent:fmtS(r.rent),moveIn:r.tenant?.moveIn||"—",leaseEnd:r.le||"—",status:r.st==="occupied"?"Occupied":"Vacant"}));
+            }));
+            return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                  {["Property","Unit","Type","Tenant","Rent/Mo","Move-In","Lease End","Status"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {rows.map((r,i)=><tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                    <td style={{padding:"8px 12px",fontWeight:600}}>{r.prop}</td><td style={{padding:"8px 12px"}}>{r.unit}</td><td style={{padding:"8px 12px",fontSize:10,color:"#999"}}>{r.type}</td>
+                    <td style={{padding:"8px 12px",fontWeight:r.tenant!=="Vacant"?700:400,color:r.tenant==="Vacant"?"#c45c4a":"inherit"}}>{r.tenant}</td>
+                    <td style={{padding:"8px 12px",fontWeight:700}}>{r.rent}</td>
+                    <td style={{padding:"8px 12px",fontSize:10,color:"#999",fontFamily:"monospace"}}>{r.moveIn}</td>
+                    <td style={{padding:"8px 12px",fontSize:10,color:"#999",fontFamily:"monospace"}}>{r.leaseEnd}</td>
+                    <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,fontWeight:700,background:r.status==="Occupied"?"rgba(74,124,89,.08)":"rgba(196,92,74,.08)",color:r.status==="Occupied"?"#4a7c59":"#c45c4a"}}>{r.status}</span></td>
+                  </tr>)}
+                </tbody>
+                <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                  <td colSpan={4} style={{padding:"10px 12px",fontWeight:800}}>Totals: {rows.length} units · {rows.filter(r=>r.status==="Occupied").length} occupied · {rows.filter(r=>r.status==="Vacant").length} vacant</td>
+                  <td style={{padding:"10px 12px",fontWeight:800,color:"#4a7c59"}}>{fmtS(rProps.flatMap(pr=>(pr.units||[]).flatMap(u=>(u.rentalMode||"byRoom")==="wholeHouse"?[u.rent||0]:(u.rooms||[]).map(r=>r.rent))).reduce((s,r)=>s+r,0))}/mo potential</td>
+                  <td colSpan={3}/>
+                </tr></tfoot>
+              </table>
+            </div>);
+          })()}
+
+          {/* ── P&L by Property ── */}
+          {activeReport==="pnl"&&(()=>{
+            return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                  {["Property","Gross Income","Total Expenses","NOI","Margin"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {rProps.map((pr,i)=>{
+                    const inc=rPayments.filter(p=>p.propName===pr.name).reduce((s,p)=>s+p.amount,0);
+                    const exp=rExpenses.filter(e=>e.propId===pr.id).reduce((s,e)=>s+e.amount,0);
+                    const noi=inc-exp;const margin=inc>0?Math.round(noi/inc*100):0;
+                    return(<tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"8px 12px",fontWeight:700}}>{pr.name}</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",color:"#4a7c59",fontWeight:700}}>{fmtS(inc)}</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",color:"#c45c4a",fontWeight:700}}>{fmtS(exp)}</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:noi>=0?"#4a7c59":"#c45c4a"}}>{fmtS(noi)}</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",color:margin>=0?"#4a7c59":"#c45c4a",fontWeight:700}}>{margin}%</td>
+                    </tr>);
+                  })}
+                </tbody>
+                <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                  <td style={{padding:"10px 12px",fontWeight:800}}>Portfolio Total</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalIncome)}</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalExp)}</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:totalNOI>=0?"#4a7c59":"#c45c4a",fontSize:14}}>{fmtS(totalNOI)}</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800}}>{totalIncome>0?Math.round(totalNOI/totalIncome*100):0}%</td>
+                </tr></tfoot>
+              </table>
+            </div>);
+          })()}
+
+          {/* ── Schedule E ── */}
+          {activeReport==="schede"&&(()=>{
+            return(<>
+              {rProps.map(pr=>{
+                const prIncome=rPayments.filter(p=>p.propName===pr.name).reduce((s,p)=>s+p.amount,0);
+                const prExp=rExpenses.filter(e=>e.propId===pr.id);
+                const expByLine={};prExp.forEach(e=>{const fullCat=SIMPLE_TO_FULL[e.category]||e.category;expByLine[fullCat]=(expByLine[fullCat]||0)+e.amount;});
+                const totalExp=prExp.reduce((s,e)=>s+e.amount,0);
+                const mg=rMortgages.filter(m=>m.propId===pr.id);
+                const mgInterest=mg.reduce((s,m)=>s+(m.currentBalance||0)*(m.interestRate||0)/100,0);
+                if(expByLine["Mortgage Interest - Bank (L12)"])expByLine["Mortgage Interest - Bank (L12)"]+=mgInterest;
+                else if(mg.length>0)expByLine["Mortgage Interest - Bank (L12)"]=mgInterest;
+                return(
+                <div key={pr.id} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",marginBottom:12,overflow:"hidden"}}>
+                  <div style={{padding:"12px 16px",borderBottom:"2px solid rgba(0,0,0,.06)",fontWeight:800,fontSize:13,background:"#f8f7f4"}}>{pr.name} — Schedule E Summary ({rFrom.slice(0,4)})</div>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                    <tbody>
+                      <tr style={{background:"rgba(74,124,89,.04)"}}><td style={{padding:"8px 16px",fontWeight:700,color:"#4a7c59"}}>Line 3 — Gross Rents Received</td><td style={{padding:"8px 16px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(prIncome)}</td></tr>
+                      {EXP_CATS_FULL.map(cat=>{const amt=expByLine[cat]||0;return amt>0?(
+                        <tr key={cat} style={{borderTop:"1px solid rgba(0,0,0,.03)"}}><td style={{padding:"8px 16px",color:"#5c4a3a"}}>{cat}</td><td style={{padding:"8px 16px",textAlign:"right",fontWeight:700,color:"#c45c4a"}}>{fmtS(amt)}</td></tr>
+                      ):null;})}
+                      <tr style={{borderTop:"2px solid rgba(0,0,0,.08)",background:"rgba(59,130,246,.04)"}}><td style={{padding:"10px 16px",fontWeight:800,color:"#3b82f6"}}>Line 22 — Total Expenses</td><td style={{padding:"10px 16px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalExp)}</td></tr>
+                      <tr style={{background:"rgba(74,124,89,.04)"}}><td style={{padding:"10px 16px",fontWeight:800,color:"#4a7c59"}}>Net Income / (Loss)</td><td style={{padding:"10px 16px",textAlign:"right",fontWeight:800,fontSize:14,color:(prIncome-totalExp)>=0?"#4a7c59":"#c45c4a"}}>{fmtS(prIncome-totalExp)}</td></tr>
+                    </tbody>
+                  </table>
+                </div>);
+              })}
+            </>);
+          })()}
+
+          {/* ── Cash Flow ── */}
+          {activeReport==="cashflow"&&(()=>{
+            const debtService=rMortgages.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
+            const fcf=totalNOI-debtService;
+            return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                <tbody>
+                  {[["Gross Rent Collected",totalIncome,"#4a7c59",false],["Total Operating Expenses",-totalExp,"#c45c4a",false],["Net Operating Income (NOI)",totalNOI,totalNOI>=0?"#4a7c59":"#c45c4a",true],["Annual Debt Service (P&I)",-debtService,"#9a7422",false],["Free Cash Flow",fcf,fcf>=0?"#4a7c59":"#c45c4a",true]].map(([label,val,color,bold])=>(
+                    <tr key={label} style={{borderBottom:"1px solid rgba(0,0,0,.04)",background:bold?"rgba(0,0,0,.02)":"#fff"}}>
+                      <td style={{padding:"12px 16px",fontWeight:bold?800:500,color:bold?"#1a1714":"#5c4a3a"}}>{label}</td>
+                      <td style={{padding:"12px 16px",textAlign:"right",fontWeight:bold?800:600,color,fontSize:bold?15:13}}>{val<0?"("+fmtS(Math.abs(val))+")":fmtS(val)}</td>
+                    </tr>
+                  ))}
+                  <tr style={{background:"rgba(212,168,83,.06)",borderTop:"2px solid rgba(212,168,83,.2)"}}>
+                    <td style={{padding:"12px 16px",fontWeight:800,color:"#9a7422"}}>DSCR</td>
+                    <td style={{padding:"12px 16px",textAlign:"right",fontWeight:800,color:rDSCR==null?"#999":rDSCR>=1.25?"#4a7c59":"#c45c4a",fontSize:16}}>{rDSCR!=null?rDSCR.toFixed(2)+"x":"N/A — no mortgages"}</td>
+                  </tr>
+                </tbody>
+              </table>
+              {rDSCR!=null&&<div style={{padding:"10px 16px",fontSize:11,color:"#999",borderTop:"1px solid rgba(0,0,0,.04)"}}>Lenders typically require DSCR ≥ 1.25. {rDSCR>=1.25?"✅ You qualify.":"⚠️ Below typical lender threshold."}</div>}
+            </div>);
+          })()}
+
+          {/* ── AR Aging ── */}
+          {activeReport==="aging"&&(()=>{
+            const unpaid=charges.filter(c=>!c.voided&&!c.waived&&c.amountPaid<c.amount&&(reportProp==="all"||rProps.some(p=>p.name===c.propName)));
+            const buckets={"Current":[0,30],"31-60 Days":[31,60],"61-90 Days":[61,90],"90+ Days":[91,9999]};
+            return(<>
+              {Object.entries(buckets).map(([label,[min,max]])=>{
+                const rows=unpaid.filter(c=>{const dl=Math.ceil((TODAY-new Date(c.dueDate+"T00:00:00"))/(1e3*60*60*24));return dl>=min&&dl<=max;});
+                if(rows.length===0)return null;
+                return(<div key={label} style={{marginBottom:12}}>
+                  <div style={{fontWeight:700,fontSize:12,color:min>60?"#c45c4a":min>30?"#d4a853":"#5c4a3a",marginBottom:6}}>{label} ({rows.length} charges · {fmtS(rows.reduce((s,c)=>s+c.amount-c.amountPaid,0))} outstanding)</div>
+                  <div style={{background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                      <thead><tr style={{background:"#f8f7f4"}}>{["Tenant","Property","Description","Due Date","Balance"].map(h=><th key={h} style={{padding:"7px 12px",textAlign:h==="Balance"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
+                      <tbody>{rows.map((c,i)=><tr key={c.id} style={{borderTop:"1px solid rgba(0,0,0,.03)"}}><td style={{padding:"7px 12px",fontWeight:600}}>{c.tenantName}</td><td style={{padding:"7px 12px",fontSize:10,color:"#999"}}>{c.propName}</td><td style={{padding:"7px 12px"}}>{c.desc}</td><td style={{padding:"7px 12px",fontSize:10,fontFamily:"monospace",color:"#c45c4a"}}>{c.dueDate}</td><td style={{padding:"7px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(c.amount-c.amountPaid)}</td></tr>)}</tbody>
+                    </table>
+                  </div>
+                </div>);
+              })}
+              <div style={{background:"rgba(196,92,74,.06)",borderRadius:8,padding:"12px 16px",border:"1px solid rgba(196,92,74,.1)",marginTop:4}}>
+                <span style={{fontWeight:800,color:"#c45c4a"}}>Total Outstanding AR: </span><span style={{fontWeight:800,fontSize:16,color:"#c45c4a"}}>{fmtS(unpaid.reduce((s,c)=>s+c.amount-c.amountPaid,0))}</span>
+              </div>
+            </>);
+          })()}
+
+          {/* ── SD Liability Ledger ── */}
+          {activeReport==="sdledger"&&(()=>{
+            const rows=sdLedger.filter(s=>reportProp==="all"||rProps.some(p=>p.name===s.propName));
+            const totalHeld=rows.reduce((s,r)=>s+(r.amountHeld||0),0);
+            const totalDed=rows.reduce((s,r)=>s+(r.deductions||[]).reduce((d,x)=>d+x.amount,0),0);
+            return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Tenant","Property","Room","SD Held","Deductions","Net Liability","Status"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["SD Held","Deductions","Net Liability"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {rows.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#999"}}>No security deposit records found.</td></tr>}
+                  {rows.map((r,i)=>{const ded=((r.deductions||[]).reduce((s,d)=>s+d.amount,0));const net=r.amountHeld-ded;return(
+                    <tr key={r.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"8px 12px",fontWeight:600}}>{r.tenantName}</td><td style={{padding:"8px 12px",fontSize:10}}>{r.propName}</td><td style={{padding:"8px 12px",fontSize:10,color:"#999"}}>{r.roomName}</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:700}}>{fmtS(r.amountHeld||0)}</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",color:"#c45c4a"}}>{ded>0?fmtS(ded):"—"}</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#9a7422"}}>{fmtS(net)}</td>
+                      <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 7px",borderRadius:100,fontWeight:700,background:r.returned?"rgba(74,124,89,.08)":"rgba(212,168,83,.1)",color:r.returned?"#4a7c59":"#9a7422"}}>{r.returned?"Returned":"Held"}</span></td>
+                    </tr>);})}
+                </tbody>
+                <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                  <td colSpan={3} style={{padding:"10px 12px",fontWeight:800}}>Total SD Liability</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800}}>{fmtS(totalHeld)}</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalDed)}</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#9a7422",fontSize:14}}>{fmtS(totalHeld-totalDed)}</td>
+                  <td/>
+                </tr></tfoot>
+              </table>
+            </div>);
+          })()}
+
+          {/* ── Occupancy Report ── */}
+          {activeReport==="occupancy"&&(()=>{
+            return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Property","Total Units","Occupied","Vacant","Occ Rate","Potential Rent","Actual Rent","Vacancy Loss"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Potential Rent","Actual Rent","Vacancy Loss"].includes(h)?"right":"center",textAlign:h==="Property"?"left":"center",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {rProps.map((pr,i)=>{
+                    const rooms=allRooms(pr).filter(r=>!r.ownerOccupied);
+                    const occ=rooms.filter(r=>r.st==="occupied");
+                    const vac=rooms.filter(r=>r.st!=="occupied");
+                    const potRent=rooms.reduce((s,r)=>s+r.rent,0);
+                    const actRent=occ.reduce((s,r)=>s+r.rent,0);
+                    const occRate=rooms.length?Math.round(occ.length/rooms.length*100):0;
+                    return(<tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"8px 12px",fontWeight:700}}>{pr.name}</td>
+                      <td style={{padding:"8px 12px",textAlign:"center"}}>{rooms.length}</td>
+                      <td style={{padding:"8px 12px",textAlign:"center",color:"#4a7c59",fontWeight:700}}>{occ.length}</td>
+                      <td style={{padding:"8px 12px",textAlign:"center",color:vac.length>0?"#c45c4a":"#999",fontWeight:vac.length>0?700:400}}>{vac.length}</td>
+                      <td style={{padding:"8px 12px",textAlign:"center"}}><span style={{fontWeight:800,color:occRate>=90?"#4a7c59":occRate>=70?"#d4a853":"#c45c4a"}}>{occRate}%</span></td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:600}}>{fmtS(potRent)}/mo</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:700,color:"#4a7c59"}}>{fmtS(actRent)}/mo</td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:700,color:potRent-actRent>0?"#c45c4a":"#4a7c59"}}>{fmtS(potRent-actRent)}/mo</td>
+                    </tr>);
+                  })}
+                </tbody>
+              </table>
+            </div>);
+          })()}
+
+          {/* ── Trailing 12 ── */}
+          {activeReport==="trailing12"&&(()=>{
+            const months=Array.from({length:12},(_,i)=>{const d=new Date(TODAY);d.setMonth(d.getMonth()-11+i);return d.toISOString().slice(0,7);});
+            return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                  <th style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Month</th>
+                  {rProps.map(p=><th key={p.id} style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>{p.name}</th>)}
+                  <th style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Total</th>
+                </tr></thead>
+                <tbody>
+                  {months.map((mo,i)=>{
+                    const moPays=rPayments.filter(p=>p.date?.slice(0,7)===mo);
+                    const total=moPays.reduce((s,p)=>s+p.amount,0);
+                    return(<tr key={mo} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"8px 12px",fontFamily:"monospace",fontSize:11,color:"#5c4a3a"}}>{mo}</td>
+                      {rProps.map(p=>{const amt=moPays.filter(x=>x.propName===p.name).reduce((s,x)=>s+x.amount,0);return<td key={p.id} style={{padding:"8px 12px",textAlign:"right",color:amt>0?"#4a7c59":"#ccc"}}>{amt>0?fmtS(amt):"—"}</td>;})}
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:total>0?"#4a7c59":"#999"}}>{total>0?fmtS(total):"—"}</td>
+                    </tr>);
+                  })}
+                </tbody>
+                <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                  <td style={{padding:"10px 12px",fontWeight:800}}>12-Month Total</td>
+                  {rProps.map(p=>{const amt=rPayments.filter(x=>x.propName===p.name).reduce((s,x)=>s+x.amount,0);return<td key={p.id} style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(amt)}</td>;})}
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59",fontSize:14}}>{fmtS(rPayments.reduce((s,p)=>s+p.amount,0))}</td>
+                </tr></tfoot>
+              </table>
+            </div>);
+          })()}
+
+          {/* ── DSCR Report ── */}
+          {activeReport==="dscr"&&(()=>{
+            if(rMortgages.length===0)return<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>No mortgages on record. Add mortgages in the Accounting → Mortgages tab first.</div>;
+            return(<>
+              {rProps.map(pr=>{
+                const prInc=rPayments.filter(p=>p.propName===pr.name).reduce((s,p)=>s+p.amount,0);
+                const prExp=rExpenses.filter(e=>e.propId===pr.id).reduce((s,e)=>s+e.amount,0);
+                const prNOI=prInc-prExp;
+                const prMg=rMortgages.filter(mg=>mg.propId===pr.id);
+                const prDebt=prMg.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
+                const prDSCR=prDebt>0?(prNOI/prDebt):null;
+                if(prMg.length===0)return null;
+                return(
+                <div key={pr.id} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"16px",marginBottom:10}}>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:12}}>{pr.name}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
+                    {[["NOI",fmtS(prNOI),prNOI>=0?"#4a7c59":"#c45c4a"],["Debt Service",fmtS(prDebt),"#9a7422"],["DSCR",prDSCR!=null?prDSCR.toFixed(2)+"x":"—",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"],["Status",prDSCR==null?"No debt":prDSCR>=1.25?"✅ Strong":prDSCR>=1.0?"⚠️ Marginal":"❌ At Risk",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"]].map(([lbl,v,clr])=>(
+                      <div key={lbl} style={{textAlign:"center",padding:"10px",background:"rgba(0,0,0,.02)",borderRadius:8}}>
+                        <div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",marginBottom:4}}>{lbl}</div>
+                        <div style={{fontSize:16,fontWeight:800,color:clr}}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {prMg.map(mg=><div key={mg.id} style={{fontSize:11,color:"#999",padding:"6px 0",borderTop:"1px solid rgba(0,0,0,.04)"}}>{mg.lender} · Balance: {fmtS(mg.currentBalance||0)} · Rate: {mg.interestRate||0}% · P&I: {fmtS(mg.monthlyPI||0)}/mo</div>)}
+                </div>);
+              })}
+            </>);
+          })()}
+
+          {/* ── Tenant Ledger (report version) ── */}
+          {activeReport==="tenantledger"&&(()=>{
+            const[selTenant,setSelTenantReport]=useState("all");
+            const tenantNames=[...new Set(charges.map(c=>c.tenantName))].sort();
+            const selCharges=selTenant==="all"?charges:charges.filter(c=>c.tenantName===selTenant);
+            const entries=selCharges.flatMap(c=>[
+              {date:c.createdDate||c.dueDate,desc:c.desc,category:c.category,type:"debit",amount:c.amount,tenant:c.tenantName,prop:c.propName,status:chargeStatus(c)},
+              ...(c.payments||[]).map(p=>({date:p.date,desc:"Payment — "+p.method,category:"Payment",type:"credit",amount:p.amount,tenant:c.tenantName,prop:c.propName}))
+            ]).sort((a,b)=>a.date?.localeCompare(b.date||"")||0);
+            let bal=0;const withBal=entries.map(e=>{bal+=e.type==="debit"?e.amount:-e.amount;return{...e,balance:bal};});
+            return(<>
+              <div style={{marginBottom:12}}>
+                <select value={selTenant} onChange={e=>setSelTenantReport(e.target.value)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+                  <option value="all">All Tenants</option>{tenantNames.map(n=><option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                  <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Date","Tenant","Description","Category","Debit","Credit","Balance"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Debit","Credit","Balance"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {withBal.map((e,i)=><tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"7px 12px",fontSize:10,fontFamily:"monospace",color:"#999",whiteSpace:"nowrap"}}>{e.date}</td>
+                      <td style={{padding:"7px 12px",fontWeight:600,fontSize:10}}>{e.tenant}</td>
+                      <td style={{padding:"7px 12px"}}>{e.desc}</td>
+                      <td style={{padding:"7px 12px"}}><span style={{fontSize:9,padding:"2px 6px",borderRadius:100,background:e.category==="Payment"?"rgba(74,124,89,.08)":"rgba(59,130,246,.08)",color:e.category==="Payment"?"#4a7c59":"#3b82f6",fontWeight:700}}>{e.category}</span></td>
+                      <td style={{padding:"7px 12px",textAlign:"right",color:e.type==="debit"?"#c45c4a":"#ccc",fontWeight:e.type==="debit"?700:400}}>{e.type==="debit"?fmtS(e.amount):"—"}</td>
+                      <td style={{padding:"7px 12px",textAlign:"right",color:e.type==="credit"?"#4a7c59":"#ccc",fontWeight:e.type==="credit"?700:400}}>{e.type==="credit"?fmtS(e.amount):"—"}</td>
+                      <td style={{padding:"7px 12px",textAlign:"right",fontWeight:800,color:e.balance>0?"#c45c4a":e.balance<0?"#3b82f6":"#4a7c59"}}>{e.balance===0?"$0":fmtS(e.balance)}</td>
+                    </tr>)}
+                    {withBal.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#999"}}>No records found.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </>);
+          })()}
+
+          </>);
+        })()}
+        </>);
+      })()}
 
       {/* ═══ NOTIFICATIONS ═══ */}
       {tab==="notifications"&&<>
@@ -5808,6 +6299,120 @@ export default function Page(){
       </>}
     </div></div>);
   })()}
+
+  {/* ── Add / Edit Expense ── */}
+  {modal&&modal.type==="addExpense"&&(()=>{
+    const isEdit=!!modal.editId;
+    const f=modal.form||{};const errs=modal.errs||{};
+    const upd=(k,v)=>setModal(p=>({...p,form:{...p.form,[k]:v},errs:{...(p.errs||{}),[k]:null}}));
+    const expCats=coaMode==="full"?EXP_CATS_FULL:EXP_CATS_SIMPLE;
+    const save=()=>{
+      const e={};
+      if(!f.date)e.date="Required";
+      if(!f.propId)e.propId="Required";
+      if(!f.category)e.category="Required";
+      if(!f.description?.trim())e.description="Required";
+      if(!f.amount||Number(f.amount)<=0)e.amount="Must be > 0";
+      if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
+      const rec={...f,amount:Number(f.amount),propName:(props.find(p=>p.id===f.propId)||{}).name||""};
+      if(isEdit){setExpenses(p=>p.map(x=>x.id===modal.editId?{...x,...rec}:x));}
+      else{setExpenses(p=>[{id:uid(),createdAt:TODAY.toISOString(),...rec},...p]);}
+      setModal(null);
+    };
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}}>
+      <h2>{isEdit?"✏️ Edit Expense":"+ Add Expense"}</h2>
+      <div className="fr3">
+        <div className="fld"><label style={{color:errs.date?"#c45c4a":undefined}}>Date *</label><input type="date" value={f.date||""} onChange={e=>upd("date",e.target.value)} style={{borderColor:errs.date?"#c45c4a":undefined}}/>{errs.date&&<div className="err-msg">{errs.date}</div>}</div>
+        <div className="fld"><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
+          <select value={f.propId||""} onChange={e=>upd("propId",e.target.value)} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
+            <option value="">— Select —</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>{errs.propId&&<div className="err-msg">{errs.propId}</div>}</div>
+        <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($) *</label><input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/>{errs.amount&&<div className="err-msg">{errs.amount}</div>}</div>
+      </div>
+      <div className="fr3">
+        <div className="fld" style={{gridColumn:"span 2"}}><label style={{color:errs.category?"#c45c4a":undefined}}>Category * <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— {coaMode==="full"?"Full COA":"Simple"} mode</span></label>
+          <select value={f.category||""} onChange={e=>upd("category",e.target.value)} style={{borderColor:errs.category?"#c45c4a":undefined}}>
+            <option value="">— Select —</option>{expCats.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>{errs.category&&<div className="err-msg">{errs.category}</div>}</div>
+        <div className="fld"><label>Payment Method</label>
+          <select value={f.paymentMethod||""} onChange={e=>upd("paymentMethod",e.target.value)}>
+            <option value="">— Select —</option>{PAY_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
+          </select></div>
+      </div>
+      <div className="fld"><label style={{color:errs.description?"#c45c4a":undefined}}>Description *</label><input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Replaced HVAC filter, quarterly pest control..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>{errs.description&&<div className="err-msg">{errs.description}</div>}</div>
+      <div className="fr3">
+        <div className="fld" style={{gridColumn:"span 2"}}><label>Vendor / Payee</label><input value={f.vendor||""} onChange={e=>upd("vendor",e.target.value)} placeholder="e.g. Home Depot, State Farm, Huntsville Pest..."/></div>
+        <div className="fld"><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Optional notes"/></div>
+      </div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Expense"}</button></div>
+    </div></div>);
+  })()}
+
+  {/* ── Delete Expense ── */}
+  {modal&&modal.type==="deleteExpense"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
+      <h2>🗑 Delete Expense?</h2>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}><strong>{modal.description}</strong> — this will be permanently deleted.</p>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-red" onClick={()=>{setExpenses(p=>p.filter(e=>e.id!==modal.expId));setModal(null);}}>Delete</button></div>
+    </div></div>
+  )}
+
+  {/* ── Add / Edit Mortgage ── */}
+  {modal&&modal.type==="addMortgage"&&(()=>{
+    const isEdit=!!modal.editId;
+    const f=modal.form||{};const errs=modal.errs||{};
+    const upd=(k,v)=>setModal(p=>({...p,form:{...p.form,[k]:v},errs:{...(p.errs||{}),[k]:null}}));
+    const save=()=>{
+      const e={};
+      if(!f.propId)e.propId="Required";
+      if(!f.lender?.trim())e.lender="Required";
+      if(!f.currentBalance||Number(f.currentBalance)<=0)e.currentBalance="Required";
+      if(!f.monthlyPI||Number(f.monthlyPI)<=0)e.monthlyPI="Required";
+      if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
+      const rec={...f,originalBalance:Number(f.originalBalance||0),currentBalance:Number(f.currentBalance),interestRate:Number(f.interestRate||0),monthlyPI:Number(f.monthlyPI),propName:(props.find(p=>p.id===f.propId)||{}).name||""};
+      if(isEdit){setMortgages(p=>p.map(x=>x.id===modal.editId?{...x,...rec}:x));}
+      else{setMortgages(p=>[{id:uid(),...rec},...p]);}
+      setModal(null);
+    };
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
+      <h2>{isEdit?"✏️ Edit Mortgage":"🏦 Add Mortgage"}</h2>
+      <div className="fr3">
+        <div className="fld" style={{gridColumn:"span 2"}}><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
+          <select value={f.propId||""} onChange={e=>upd("propId",e.target.value)} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
+            <option value="">— Select —</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>{errs.propId&&<div className="err-msg">{errs.propId}</div>}</div>
+        <div className="fld"><label style={{color:errs.lender?"#c45c4a":undefined}}>Lender *</label><input value={f.lender||""} onChange={e=>upd("lender",e.target.value)} placeholder="e.g. Redstone FCU" style={{borderColor:errs.lender?"#c45c4a":undefined}}/>{errs.lender&&<div className="err-msg">{errs.lender}</div>}</div>
+      </div>
+      <div className="fr3">
+        <div className="fld"><label>Original Loan Amount</label><input type="number" value={f.originalBalance||""} onChange={e=>upd("originalBalance",e.target.value)} placeholder="0"/></div>
+        <div className="fld"><label style={{color:errs.currentBalance?"#c45c4a":undefined}}>Current Balance *</label><input type="number" value={f.currentBalance||""} onChange={e=>upd("currentBalance",e.target.value)} style={{borderColor:errs.currentBalance?"#c45c4a":undefined}}/>{errs.currentBalance&&<div className="err-msg">{errs.currentBalance}</div>}</div>
+        <div className="fld"><label>Interest Rate (%)</label><input type="number" step="0.01" value={f.interestRate||""} onChange={e=>upd("interestRate",e.target.value)} placeholder="6.75"/></div>
+      </div>
+      <div className="fr3">
+        <div className="fld"><label style={{color:errs.monthlyPI?"#c45c4a":undefined}}>Monthly P&I *</label><input type="number" value={f.monthlyPI||""} onChange={e=>upd("monthlyPI",e.target.value)} style={{borderColor:errs.monthlyPI?"#c45c4a":undefined}}/>{errs.monthlyPI&&<div className="err-msg">{errs.monthlyPI}</div>}</div>
+        <div className="fld"><label>Loan Start Date</label><input type="date" value={f.startDate||""} onChange={e=>upd("startDate",e.target.value)}/></div>
+        <div className="fld"><label>Maturity Date</label><input type="date" value={f.maturityDate||""} onChange={e=>upd("maturityDate",e.target.value)}/></div>
+      </div>
+      <div className="fr3">
+        <div className="fld"><label>Account Last 4</label><input maxLength={4} value={f.accountLast4||""} onChange={e=>upd("accountLast4",e.target.value)} placeholder="1234"/></div>
+        <div className="fld" style={{gridColumn:"span 2"}}><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="e.g. 30-yr fixed, escrowed taxes and insurance"/></div>
+      </div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Mortgage"}</button></div>
+    </div></div>);
+  })()}
+
+  {/* ── Delete Mortgage ── */}
+  {modal&&modal.type==="deleteMortgage"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
+      <h2>🗑 Remove Mortgage?</h2>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>Remove <strong>{modal.lender}</strong> from the register? This affects DSCR calculations.</p>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-red" onClick={()=>{setMortgages(p=>p.filter(m=>m.id!==modal.mgId));setModal(null);}}>Remove</button></div>
+    </div></div>
+  )}
 
   {modal&&modal.type==="deleteCharge"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
