@@ -554,7 +554,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
                 {u.desc&&<div style={{fontSize:11,color:"#5c4a3a",marginTop:4}}>{u.desc}</div>}
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
-                <div className="rprice">${u.rent||0}<small>/mo</small></div>
+                {wholeIsAvail&&<div className="rprice">${u.rent||0}<small>/mo</small></div>}
                 {wholeIsAvail&&<button onClick={e=>{e.stopPropagation();onLeaseNow({id:u.id,name:u.name,rent:u.rent||0,st:"vacant",le:null,leaseTiers:[]});}}
                   style={{padding:"6px 12px",borderRadius:6,border:"1px solid #d4a853",background:"rgba(212,168,83,.1)",color:"#9a7422",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
                   Lease Now
@@ -569,10 +569,10 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
             return(
             <div key={r.id} className="rc"><div className="rm-m"><div className="rn">{r.name}<span className={"rbt "+(r.pb?"rbt-p":"rbt-s")}>{r.pb?"Private Bath":"Shared Bath"}</span></div><div className="rd">{r.sqft?<span>{r.sqft} sqft</span>:null}<span>{r.bed} bed</span></div><div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div></div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
-                <div className="rprice">
+                {isAvail&&<div className="rprice">
                   {tiers.length>0&&<div style={{fontSize:10,color:"#999",fontWeight:400,marginBottom:1}}>Starting at</div>}
                   ${minPrice}<small>/mo</small>
-                </div>
+                </div>}
                 {isAvail&&<button onClick={e=>{e.stopPropagation();onLeaseNow(r);}}
                   style={{padding:"6px 12px",borderRadius:6,border:"1px solid #d4a853",background:"rgba(212,168,83,.1)",
                     color:"#9a7422",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
@@ -603,7 +603,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
-              <div className="rprice">${u?.rent||0}<small>/mo</small></div>
+              {isAvail&&<div className="rprice">${u?.rent||0}<small>/mo</small></div>}
               {isAvail&&<button onClick={e=>{e.stopPropagation();onLeaseNow({id:u?.id||"whole",name:p.name,rent:u?.rent||0,st:"vacant",le:null,leaseTiers:[]});}}
                 style={{padding:"6px 12px",borderRadius:6,border:"1px solid #d4a853",background:"rgba(212,168,83,.1)",color:"#9a7422",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
                 Lease Now
@@ -628,10 +628,10 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
               {(r.feat||[]).length>0&&<div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div>}
             </div>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
-              <div className="rprice">
+              {isAvail&&<div className="rprice">
                 {tiers.length>0&&<div style={{fontSize:10,color:"#999",fontWeight:400,marginBottom:1}}>Starting at</div>}
                 ${minPrice}<small>/mo</small>
-              </div>
+              </div>}
               {isAvail&&<button onClick={e=>{e.stopPropagation();onLeaseNow(r);}}
                 style={{padding:"6px 12px",borderRadius:6,border:"1px solid #d4a853",background:"rgba(212,168,83,.1)",
                   color:"#9a7422",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
@@ -1443,15 +1443,31 @@ export default function Page(){
   const mapCats=[...new Set(POIS.map(p=>p.cat))];
   const mapFiltered=mapCat==="all"?POIS:POIS.filter(p=>p.cat===mapCat);
 
-  // Compare
-  const allRooms=P.flatMap(p=>(p.rooms||[]).map(r=>({...r,propName:p.name,propType:p.type,utils:p.utils,cleaning:p.clean})));
+  // Compare — only show individually leaseable things (respects rentalMode per unit)
+  const allRooms=P.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",rentalMode:"byRoom",rent:0,rooms:p.rooms||[]}]).flatMap(u=>{
+    if((u.rentalMode||"byRoom")==="wholeHouse"){
+      // Represent the whole unit as a single row in the comparison table
+      const rooms=u.rooms||[];
+      const anyOcc=rooms.some(r=>r.st==="occupied"||(r.tenant&&!r.st));
+      const latestLe=rooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le||null;
+      return[{id:u.id,name:u.name||(p.name+" — Whole Unit"),rent:u.rent||0,
+        st:anyOcc?"occupied":"vacant",le:latestLe,pb:true,bed:"—",sqft:u.sqft||0,tv:"—",
+        feat:[],furnished:true,utils:u.utils||p.utils||"allIncluded",cleaning:u.clean||p.clean||"Biweekly",
+        propName:p.name,propType:p.type,isWholeUnit:true,baths:u.baths,beds:rooms.length,
+      }];
+    }
+    return(u.rooms||[]).map(r=>({...r,propName:p.name,propType:p.type,utils:r.utils||u.utils||p.utils||"allIncluded",cleaning:u.clean||p.clean||"Biweekly",isWholeUnit:false}));
+  }));
   const togFlt=k=>setFlt(f=>({...f,[k]:!f[k]}));const hasAnyFlt=Object.values(flt).some(v=>v);const fltCount=Object.values(flt).filter(v=>v).length;
   const resetFlt=()=>{setFlt(Object.fromEntries(Object.keys(flt).map(k=>[k,false])));setSelProp(null);};
-  const filtRooms=useMemo(()=>{if(!hasAnyFlt)return allRooms;return allRooms.filter(r=>{
+  const filtRooms=useMemo(()=>{if(!hasAnyFlt&&!selProp)return allRooms;return allRooms.filter(r=>{
+    const st=r.st||"vacant";
     const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
-    if(flt.available&&r.st!=="vacant")return false;if(flt.openingSoon&&!(r.st==="occupied"&&dl&&dl<=90))return false;
-    if(flt.privateBath&&!r.pb)return false;if(flt.sharedBath&&r.pb)return false;
-    if(flt.queen&&r.bed!=="Queen")return false;if(flt.full&&r.bed!=="Full")return false;if(flt.twin&&r.bed!=="Twin XL")return false;
+    if(flt.available&&st!=="vacant")return false;if(flt.openingSoon&&!(st==="occupied"&&dl&&dl<=90))return false;
+    if(!r.isWholeUnit){
+      if(flt.privateBath&&!r.pb)return false;if(flt.sharedBath&&r.pb)return false;
+      if(flt.queen&&r.bed!=="Queen")return false;if(flt.full&&r.bed!=="Full")return false;if(flt.twin&&r.bed!=="Twin XL")return false;
+    }
     if(flt.allUtils&&r.utils!=="allIncluded")return false;if(flt.first100&&r.utils!=="first100")return false;
     if(flt.weekly&&r.cleaning!=="Weekly")return false;if(flt.biweekly&&r.cleaning!=="Biweekly")return false;
     if(selProp&&r.propName!==selProp)return false;
@@ -1558,18 +1574,18 @@ export default function Page(){
         <div className="flt-row"><span className="flt-lb">Cleaning</span><F id="weekly" lb="Weekly"/><F id="biweekly" lb="Biweekly"/></div>
         <div className="flt-row"><span className="flt-lb">Property</span>{P.map(p=><button key={p.id} className={`flt-btn ${selProp===p.name?"on":""}`} style={{marginRight:4}} onClick={()=>setSelProp(sp=>sp===p.name?null:p.name)}>{p.name}</button>)}{(hasAnyFlt||selProp)&&<button className="flt-clr" onClick={()=>{resetFlt();setSelProp(null);}}>✕ Clear</button>}</div>
       </>}</div>
-      {hasAnyFlt&&<div style={{textAlign:"center",fontSize:12,color:"var(--ac)",fontWeight:700,marginBottom:14}}>Showing {filtRooms.length} of {allRooms.length} rooms</div>}
+      {hasAnyFlt&&<div style={{textAlign:"center",fontSize:12,color:"var(--ac)",fontWeight:700,marginBottom:14}}>Showing {filtRooms.length} of {allRooms.length} {allRooms.some(r=>r.isWholeUnit)?"listings":"rooms"}</div>}
       {filtRooms.length===0?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:12}}>{!P.length?"Loading rooms...":"No rooms match your filters."}{(hasAnyFlt||selProp)&&<><br/><button className="flt-clr" style={{marginTop:8}} onClick={()=>{resetFlt();setSelProp(null);}}>Clear filters</button></>}</div>:(
-        <div className="cw"><table className="cmp"><thead><tr><th style={{textAlign:"left"}}>Feature</th>{filtRooms.map(r=><th key={r.id}>{r.name}<div style={{fontSize:7,fontWeight:400,opacity:.6,marginTop:1,textTransform:"none",letterSpacing:0}}>{r.propName}{r.unitLabel?" · Unit "+r.unitLabel:""}</div></th>)}</tr></thead><tbody>
+        <div className="cw"><table className="cmp"><thead><tr><th style={{textAlign:"left"}}>Feature</th>{filtRooms.map(r=><th key={r.id}>{r.name}<div style={{fontSize:7,fontWeight:400,opacity:.6,marginTop:1,textTransform:"none",letterSpacing:0}}>{r.propName}{r.isWholeUnit?" · Whole Unit":r.unitLabel?" · Unit "+r.unitLabel:""}</div></th>)}</tr></thead><tbody>
           <tr className="cmp-cat"><td>Pricing</td>{filtRooms.map(r=><td key={r.id}/>)}</tr>
-          <tr><td>Rent</td>{filtRooms.map(r=><td key={r.id}><span className="cprice">${r.rent}<small>/mo</small></span></td>)}</tr>
-          <tr><td>Status</td>{filtRooms.map(r=>{const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;return(<td key={r.id}>{r.st==="vacant"?<span className="cavail" style={{background:CLR.avBg,color:CLR.avTx}}>Available</span>:dl&&dl<=90?<span className="cavail" style={{background:CLR.soonBg,color:CLR.soonTx}}>Opens {fmtD(r.le)}</span>:<span className="cavail" style={{background:CLR.occBg,color:CLR.occTx}}>Leased</span>}</td>);})}</tr>
-          <tr><td>Sq Ft</td>{filtRooms.map(r=><td key={r.id}><span className="cv">{r.sqft}</span></td>)}</tr>
+          <tr><td>Rent</td>{filtRooms.map(r=><td key={r.id}>{(r.st||"vacant")==="vacant"?<span className="cprice">${r.rent}<small>/mo</small></span>:<span style={{fontSize:11,color:"#bbb"}}>Leased</span>}</td>)}</tr>
+          <tr><td>Status</td>{filtRooms.map(r=>{const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;return(<td key={r.id}>{(r.st||"vacant")==="vacant"?<span className="cavail" style={{background:CLR.avBg,color:CLR.avTx}}>Available</span>:dl&&dl<=90?<span className="cavail" style={{background:CLR.soonBg,color:CLR.soonTx}}>Opens {fmtD(r.le)}</span>:<span className="cavail" style={{background:CLR.occBg,color:CLR.occTx}}>Leased</span>}</td>);})}</tr>
+          <tr><td>Sq Ft</td>{filtRooms.map(r=><td key={r.id}><span className="cv">{r.sqft||"—"}</span></td>)}</tr>
           <tr className="cmp-cat"><td>Room</td>{filtRooms.map(r=><td key={r.id}/>)}</tr>
-          <tr><td>Bed</td>{filtRooms.map(r=><td key={r.id}><span className="cv">{r.bed}</span></td>)}</tr>
-          <tr><td>TV</td>{filtRooms.map(r=><td key={r.id}><span className="cv">{r.tv}</span></td>)}</tr>
+          <tr><td>Bed{filtRooms.some(r=>r.isWholeUnit)?"rooms":""}</td>{filtRooms.map(r=><td key={r.id}><span className="cv">{r.isWholeUnit?r.beds+" bed":r.bed}</span></td>)}</tr>
+          <tr><td>TV</td>{filtRooms.map(r=><td key={r.id}><span className="cv">{r.isWholeUnit?"All rooms":r.tv}</span></td>)}</tr>
           <tr><td>Furnished</td>{filtRooms.map(r=><td key={r.id}><Ck/></td>)}</tr>
-          <tr><td>Private Bath</td>{filtRooms.map(r=><td key={r.id}>{r.pb?<Ck/>:<Xx/>}</td>)}</tr>
+          <tr><td>Bath</td>{filtRooms.map(r=><td key={r.id}><span className="cv">{r.isWholeUnit?(r.baths||"—")+" bath":r.pb?"Private":"Shared"}</span></td>)}</tr>
           <tr className="cmp-cat"><td>Included</td>{filtRooms.map(r=><td key={r.id}/>)}</tr>
           <tr><td>All Utilities</td>{filtRooms.map(r=><td key={r.id}>{r.utils==="allIncluded"?<Ck/>:<Xx/>}</td>)}</tr>
           <tr><td>First $100 Utils</td>{filtRooms.map(r=><td key={r.id}>{r.utils==="first100"?<Ck/>:<Xx/>}</td>)}</tr>
