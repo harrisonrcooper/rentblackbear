@@ -15,8 +15,8 @@ const PROPS=[];
 // Unit-aware room helpers for public page — handles both old flat rooms[] and new units[] format
 const allRoomsP=(prop)=>{
   if(!prop)return[];
-  if(prop.units&&prop.units.length>0)return prop.units.flatMap(u=>u.rooms||[]);
-  return prop.rooms||[]; // fallback for old flat format
+  if(prop.units&&prop.units.length>0)return prop.units.flatMap(u=>u.ownerOccupied?[]:(u.rooms||[]).filter(r=>!r.ownerOccupied));
+  return prop.rooms||[];
 };
 const safeMin=(arr)=>arr.length>0?Math.min(...arr):0;
 const validCoord=(lat,lng)=>typeof lat==="number"&&typeof lng==="number"&&isFinite(lat)&&isFinite(lng)&&lat!==0&&lng!==0&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180;
@@ -1443,7 +1443,7 @@ export default function Page(){
         turnoverDays:p.turnoverDays||0,
         imgs:(p.photos&&p.photos.length>0)?p.photos:[],
         units:p.units||[],
-        rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le,leaseTiers:r.leaseTiers||[]})),
+        rooms:rooms.filter(r=>!r.ownerOccupied).map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le,leaseTiers:r.leaseTiers||[]})),
         rentalMode:firstUnit?.rentalMode||"byRoom",
         wholeRent:(p.units||[]).reduce((s,u)=>(u.rentalMode||"byRoom")==="wholeHouse"?s+(u.rent||0):s,0),
         // true only if ALL units are wholeHouse
@@ -1473,8 +1473,8 @@ export default function Page(){
 
   // Compare — only show individually leaseable things (respects rentalMode per unit)
   const allRooms=P.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",rentalMode:"byRoom",rent:0,rooms:p.rooms||[]}]).flatMap(u=>{
+    if(u.ownerOccupied)return[];
     if((u.rentalMode||"byRoom")==="wholeHouse"){
-      // Represent the whole unit as a single row in the comparison table
       const rooms=u.rooms||[];
       const anyOcc=rooms.some(r=>r.st==="occupied"||(r.tenant&&!r.st));
       const latestLe=rooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le||null;
@@ -1484,7 +1484,7 @@ export default function Page(){
         propName:p.name,propType:p.type,isWholeUnit:true,baths:u.baths,beds:rooms.length,
       }];
     }
-    return(u.rooms||[]).map(r=>({...r,propName:p.name,propType:p.type,utils:r.utils||u.utils||p.utils||"allIncluded",cleaning:u.clean||p.clean||"Biweekly",isWholeUnit:false}));
+    return(u.rooms||[]).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:p.name,propType:p.type,utils:r.utils||u.utils||p.utils||"allIncluded",cleaning:u.clean||p.clean||"Biweekly",isWholeUnit:false}));
   }));
   const togFlt=k=>setFlt(f=>({...f,[k]:!f[k]}));const hasAnyFlt=Object.values(flt).some(v=>v);const fltCount=Object.values(flt).filter(v=>v).length;
   const resetFlt=()=>{setFlt(Object.fromEntries(Object.keys(flt).map(k=>[k,false])));setSelProp(null);};

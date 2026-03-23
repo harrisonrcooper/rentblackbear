@@ -163,6 +163,7 @@ const leaseableItems=(prop,propName)=>{
       const rooms=u.rooms||[];
       const anyOcc=rooms.some(r=>r.st==="occupied"||(r.tenant&&!r.st));
       const latestLe=rooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le||null;
+      if(u.ownerOccupied)return[]; // skip owner-occupied whole units
       return[{
         id:u.id,name:(prop.units||[]).length>1?u.name:"Whole Unit",
         rent:u.rent||0,st:anyOcc?"occupied":"vacant",le:latestLe,
@@ -170,7 +171,7 @@ const leaseableItems=(prop,propName)=>{
         isWholeUnit:true,baths:u.baths,sqft:u.sqft,beds:rooms.length,
       }];
     }
-    return(u.rooms||[]).map(r=>({...r,st:r.st||(r.tenant?"occupied":"vacant"),propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,isWholeUnit:false}));
+    return(u.rooms||[]).filter(r=>!r.ownerOccupied).map(r=>({...r,st:r.st||(r.tenant?"occupied":"vacant"),propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,isWholeUnit:false}));
   });
 };
 // Update a room by ID inside its unit, preserving hierarchy
@@ -1594,9 +1595,15 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
               <div className="fld"><label>TV Size</label><select value={r.tv||'55"'} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"tv",e.target.value)}><option value='75"'>75"</option><option value='65"'>65"</option><option value='55"'>55"</option><option value='50"'>50"</option><option value='43"'>43"</option><option value='42"'>42"</option><option value='32"'>32"</option><option value="None">None</option></select></div>
             </div>
             <div className="fr3">
-              <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{locked?`Occupied — ${r.tenant.name}`:"Vacant"}</div></div>
+              <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:r.ownerOccupied?"rgba(59,130,246,.06)":locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:r.ownerOccupied?"#1d4ed8":locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{r.ownerOccupied?"🏠 Owner Occupied":locked?`Occupied — ${r.tenant.name}`:"Vacant"}</div></div>
               <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
               <div className="fld"><label>Furnished</label><select value={String(r.furnished!==false)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"furnished",e.target.value==="true")}><option value="true">✓ Furnished</option><option value="false">Unfurnished</option></select></div>
+            </div>
+            {!locked&&<div style={{marginBottom:8}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:r.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",borderRadius:7,border:`1px solid ${r.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"}`,background:r.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
+                <input type="checkbox" checked={!!r.ownerOccupied} onChange={e=>updRoom(i,"ownerOccupied",e.target.checked)} style={{accentColor:"#3b82f6",width:14,height:14}}/>
+                🏠 Owner Occupied — exclude from rent, financials, and public listings
+              </label>
             </div>
             <div className="fr" style={{alignItems:"flex-end",gap:8}}>
               <div className="fld" style={{flex:1}}>
@@ -1661,6 +1668,10 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
                 {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
               </div>)}
             </div>}
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:curUnit.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",marginTop:8,borderRadius:7,border:`1px solid ${curUnit.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"}`,background:curUnit.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
+              <input type="checkbox" checked={!!curUnit.ownerOccupied} onChange={e=>updUnit("ownerOccupied",e.target.checked)} style={{accentColor:"#3b82f6",width:14,height:14}}/>
+              🏠 Owner Occupied — exclude from rent, financials, and public listings
+            </label>
           </>);
         })()}
       </div>}
@@ -2069,13 +2080,17 @@ export default function Page(){
   // ─── Metrics ──────────────────────────────────────────────────
   const m=useMemo(()=>{
     let total=0,occ=0,full=0,proj=0,coll=0,due=0;const vacs=[];const expiring=[];const unpaid=[];const paid=[];
-    props.forEach(pr=>allRooms(pr).forEach(r=>{
-      total++;full+=r.rent;
-      if(r.st==="occupied"){occ++;proj+=r.rent;due+=r.rent;
-        const pd=(payments[r.id]&&payments[r.id][MO])||0;coll+=pd;
-        if(pd)paid.push({...r,propName:pr.name,paidAmt:pd});else unpaid.push({...r,propName:pr.name});
-        if(r.le){const dl=Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24));if(dl<=90)expiring.push({...r,propName:pr.name,daysLeft:dl});}
-      }else vacs.push({...r,propName:pr.name});
+    props.forEach(pr=>(pr.units||[]).forEach(u=>{
+      const uOwner=u.ownerOccupied;
+      allRooms({units:[u]}).forEach(r=>{
+        if(r.ownerOccupied||uOwner)return; // skip owner-occupied
+        total++;full+=r.rent;
+        if(r.st==="occupied"){occ++;proj+=r.rent;due+=r.rent;
+          const pd=(payments[r.id]&&payments[r.id][MO])||0;coll+=pd;
+          if(pd)paid.push({...r,propName:pr.name,paidAmt:pd});else unpaid.push({...r,propName:pr.name});
+          if(r.le){const dl=Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24));if(dl<=90)expiring.push({...r,propName:pr.name,daysLeft:dl});}
+        }else vacs.push({...r,propName:pr.name});
+      });
     }));
     const openMaint=maint.filter(x=>x.status!=="resolved").length;
     const activeApps=apps.length;
@@ -2163,6 +2178,8 @@ export default function Page(){
       const moLabel=targetDate.toLocaleString("default",{month:"long",year:"numeric"});
       const existing=new Set(charges.filter(c=>c.category==="Rent"&&c.dueDate&&c.dueDate.startsWith(mk)).map(c=>c.roomId));
       props.forEach(pr=>allRooms(pr).forEach(r=>{
+        const u=(pr.units||[]).find(u=>(u.rooms||[]).some(x=>x.id===r.id));
+        if(r.ownerOccupied||u?.ownerOccupied)return; // skip owner-occupied
         if(r.st==="occupied"&&r.tenant&&!existing.has(r.id)){
           const moveIn=r.tenant.moveIn?new Date(r.tenant.moveIn+"T00:00:00"):null;
           if(!moveIn||moveIn<=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0)){
@@ -2317,25 +2334,24 @@ export default function Page(){
 
   // All tenants flat list
   const allTenants=props.flatMap(p=>(p.units||[]).flatMap(u=>{
+    if(u.ownerOccupied)return[];
     const isWhole=(u.rentalMode||"byRoom")==="wholeHouse";
     if(isWhole){
-      // Whole unit — show one entry using the first occupied room's tenant data
-      const occupiedRoom=(u.rooms||[]).find(r=>r.tenant);
+      const occupiedRoom=(u.rooms||[]).find(r=>r.tenant&&!r.ownerOccupied);
       if(!occupiedRoom)return[];
       return[{...occupiedRoom,name:u.name||(p.name+" Unit"),propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:true}];
     }
-    // By-room — one entry per occupied room
-    return(u.rooms||[]).filter(r=>r.tenant).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false}));
+    return(u.rooms||[]).filter(r=>r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false}));
   }));
-  // Same logic for financial operations — one row per lease, not per room
   const occLeases=props.flatMap(pr=>(pr.units||[]).flatMap(u=>{
+    if(u.ownerOccupied)return[];
     const isWhole=(u.rentalMode||"byRoom")==="wholeHouse";
     if(isWhole){
-      const rep=(u.rooms||[]).find(r=>r.st==="occupied"&&r.tenant);
+      const rep=(u.rooms||[]).find(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied);
       if(!rep)return[];
       return[{...rep,name:u.name||(pr.name+" Unit"),propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:true}];
     }
-    return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
+    return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
   }));
 
   return(<><style>{S}</style><div className="app">
