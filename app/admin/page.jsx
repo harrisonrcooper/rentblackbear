@@ -790,7 +790,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
     onDrop={e=>{e.preventDefault();setDropOver(false);if(e.dataTransfer.files.length)readFiles(e.dataTransfer.files);}}>
     <div style={{outline:dropOver?"2px dashed #d4a853":"2px solid transparent",borderRadius:8,transition:"outline .15s",padding:2}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-      <label style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.3}}>{label} ({ph.length} photo{ph.length!==1?"s":""})</label>
+      <label style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.3}}>{label} ({ph.length} photo{ph.length!==1?"s":""})</label>
       {ph.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
         <span style={{fontSize:9,color:"#bbb"}}>🔍</span>
         <input type="range" min={60} max={200} step={10} value={thumbSize} onChange={e=>setThumbSize(Number(e.target.value))}
@@ -990,7 +990,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
     <div style={{marginBottom:12}}>
       {/* Header row */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <label style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.3}}>
+        <label style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.3}}>
           3D Tour Scenes ({scenes.length} scene{scenes.length!==1?"s":""})
         </label>
         {scenes.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -1205,10 +1205,10 @@ function LeasePricingModal({room,onSave,onClose}){
           Base rent: <strong>${baseRent}/mo</strong> — Longer leases get a discount, shorter leases carry a premium. Prices auto-calculate but you can override each one.
         </div>
         <div style={{display:"grid",gridTemplateColumns:"60px 1fr 90px 70px 28px",gap:8,alignItems:"center",marginBottom:6,padding:"0 2px"}}>
-          <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Show</div>
-          <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Term</div>
-          <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Price/mo</div>
-          <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Total</div>
+          <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>Show</div>
+          <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>Term</div>
+          <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>Price/mo</div>
+          <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>Total</div>
           <div/>
         </div>
         {tiers.sort((a,b)=>a.months-b.months).map(t=>(
@@ -1451,7 +1451,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
     {/* Property-level info */}
     <div className="fr"><div className="fld"><label>Property Name</label><input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House"/></div><div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div></div>
     <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:10}}>
-      <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Map Pin Location</div>
+      <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Map Pin Location</div>
       <div className="fr3">
         <div className="fld" style={{marginBottom:0}}>
           <label>Latitude</label>
@@ -2643,7 +2643,7 @@ export default function Page(){
                   const totalDue=upcoming.reduce((s,c)=>s+c.amount,0);
                   return(<>
                     <div style={{background:totalDue>0?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:8,padding:12,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div><div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Amount Due</div><div style={{fontSize:22,fontWeight:800,color:totalDue>0?"#c45c4a":"#4a7c59"}}>{totalDue>0?`$${totalDue.toLocaleString()}`:"All clear ✓"}</div></div>
+                      <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>Amount Due</div><div style={{fontSize:22,fontWeight:800,color:totalDue>0?"#c45c4a":"#4a7c59"}}>{totalDue>0?`$${totalDue.toLocaleString()}`:"All clear ✓"}</div></div>
                       {upcoming.length>0&&<button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"stripePayPortal",charges:upcoming,tRoom})}>Pay Now →</button>}
                     </div>
                     {upcoming.length>0&&upcoming.map(c=><div key={c.id} className="tp-row"><span style={{fontSize:11}}>{c.category} — {c.desc}<div style={{fontSize:9,color:"#999"}}>Due {fmtD(c.dueDate)}</div></span><span style={{fontWeight:800,color:chargeStatus(c)==="pastdue"?"#c45c4a":"#5c4a3a"}}>${c.amount.toLocaleString()}</span></div>)}
@@ -2919,7 +2919,7 @@ export default function Page(){
             {payFilters.tenant&&<button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"clearLedger",tenant:payFilters.tenant,confirm:""})}>🗑 Clear Ledger — {payFilters.tenant}</button>}
           </div>
           {/* Column headers */}
-          <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"8px 14px",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+          <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"8px 14px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,borderBottom:"2px solid rgba(0,0,0,.06)"}}>
             <div>Due Date</div><div>Category</div><div>Tenant / Room</div><div>Status</div><div>Deposit</div><div style={{textAlign:"right"}}>Amount</div>
           </div>
           {filteredCharges.sort((a,b)=>new Date(b.dueDate)-new Date(a.dueDate)).map(c=>{const st=chargeStatus(c);const lastPay=c.payments.length?c.payments[c.payments.length-1]:null;const isExp=expCharge===c.id;const rem=c.amount-c.amountPaid;const confId=`BB-${c.id.slice(0,8).toUpperCase()}`;return(
@@ -2939,7 +2939,7 @@ export default function Page(){
               {isExp&&<div style={{padding:"16px 20px",background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.04)",animation:"fadeIn .15s"}}>
                 {/* Description + reminder history */}
                 <div style={{marginBottom:12,fontSize:12}}>
-                  <span style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Description: </span>
+                  <span style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>Description: </span>
                   <span style={{fontWeight:500,color:"#3c3228"}}>{c.desc}</span>
                 </div>
                 {/* Reminder log */}
@@ -2968,7 +2968,7 @@ export default function Page(){
                   <div key={pi} style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.1)",borderRadius:10,padding:"14px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:16}}>
                     {/* Left: payment identity */}
                     <div style={{minWidth:140}}>
-                      <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Payment #{pConfId.slice(-6)}</div>
+                      <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Payment #{pConfId.slice(-6)}</div>
                       <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{c.tenantName}</div>
                       <div style={{fontSize:10,color:"#999",marginTop:2}}>Paid on {fmtD(p.date)}</div>
                       {p.method&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>via {p.method}</div>}
@@ -2976,7 +2976,7 @@ export default function Page(){
                     </div>
                     {/* Middle: status timeline */}
                     <div style={{flex:1}}>
-                      <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Status:</div>
+                      <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Status:</div>
                       {[
                         {label:"PAYMENT MADE",done:true,date:fmtD(p.date)},
                         {label:"TRANSFER INITIATED",done:isTransit||isDeposited,date:isTransit||isDeposited?fmtD(p.date):null},
@@ -3825,17 +3825,17 @@ export default function Page(){
                       {/* Expanded detail panel */}
                       {isExp&&<div style={{padding:"12px 14px 14px",background:"rgba(0,0,0,.012)",borderTop:"1px solid rgba(0,0,0,.04)"}}>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Placeholder Text</div><input value={f.placeholder||""} onChange={e=>updateField(gi,"placeholder",e.target.value)} placeholder="e.g. Enter your name..." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Help Text (shows below field)</div><input value={f.helpText||""} onChange={e=>updateField(gi,"helpText",e.target.value)} placeholder="e.g. We'll never share this." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
+                          <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Placeholder Text</div><input value={f.placeholder||""} onChange={e=>updateField(gi,"placeholder",e.target.value)} placeholder="e.g. Enter your name..." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
+                          <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Help Text (shows below field)</div><input value={f.helpText||""} onChange={e=>updateField(gi,"helpText",e.target.value)} placeholder="e.g. We'll never share this." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
                         </div>
-                        {f.type==="dropdown"&&<div style={{marginBottom:8}}><div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Dropdown Options (one per line)</div><textarea value={(f.options||[]).join(", ")} onChange={e=>updateField(gi,"options",e.target.value.split("\n"))} rows={3} placeholder={"Option 1\nOption 2\nOption 3"} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>}
+                        {f.type==="dropdown"&&<div style={{marginBottom:8}}><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Dropdown Options (one per line)</div><textarea value={(f.options||[]).join(", ")} onChange={e=>updateField(gi,"options",e.target.value.split("\n"))} rows={3} placeholder={"Option 1\nOption 2\nOption 3"} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>}
                         {f.type==="yes-no"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
                           <div><div style={{fontSize:9,fontWeight:700,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Follow-up if "Yes"</div><input value={f.followUpYes||""} onChange={e=>updateField(gi,"followUpYes",e.target.value)} placeholder="e.g. Please explain..." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(74,124,89,.2)",fontSize:11,fontFamily:"inherit"}}/></div>
                           <div><div style={{fontSize:9,fontWeight:700,color:"#c45c4a",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Follow-up if "No"</div><input value={f.followUpNo||""} onChange={e=>updateField(gi,"followUpNo",e.target.value)} placeholder="e.g. Please explain..." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(196,92,74,.2)",fontSize:11,fontFamily:"inherit"}}/></div>
                         </div>}
                         {(f.type==="number"||f.type==="counter")&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Min Value</div><input type="number" value={f.min||""} onChange={e=>updateField(gi,"min",e.target.value?Number(e.target.value):null)} placeholder="0" style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Max Value</div><input type="number" value={f.max||""} onChange={e=>updateField(gi,"max",e.target.value?Number(e.target.value):null)} placeholder="99" style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
+                          <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Min Value</div><input type="number" value={f.min||""} onChange={e=>updateField(gi,"min",e.target.value?Number(e.target.value):null)} placeholder="0" style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
+                          <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Max Value</div><input type="number" value={f.max||""} onChange={e=>updateField(gi,"max",e.target.value?Number(e.target.value):null)} placeholder="99" style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
                         </div>}
                       </div>}
                     </div>);
@@ -4515,7 +4515,7 @@ export default function Page(){
         <div className="sec-hd">
           <div>
             <h2 style={{margin:0}}>Accounting</h2>
-            <div style={{fontSize:11,color:"#999",marginTop:2}}>
+            <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>
               {acctFrom} — {acctTo}{acctPropId!=="all"?" · "+(props.find(p=>p.id===acctPropId)||{}).name:""}
             </div>
           </div>
@@ -4525,7 +4525,7 @@ export default function Page(){
         {/* ── Global filter bar ── */}
         <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"12px 14px",marginBottom:14,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
           <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
-          <span style={{fontSize:11,color:"#999",flexShrink:0}}>to</span>
+          <span style={{fontSize:11,color:"#7a7067",flexShrink:0}}>to</span>
           <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
           <div style={{width:1,height:20,background:"rgba(0,0,0,.08)",flexShrink:0}}/>
           <select value={acctPropId} onChange={e=>setF("propId",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
@@ -4561,9 +4561,9 @@ export default function Page(){
             {label:"DSCR",value:dscr!=null?dscr.toFixed(2)+"x":"—",color:dscr==null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a",sub:dscr==null?"No mortgages":dscr>=1.25?"Strong coverage":dscr>=1.0?"Marginal":"At risk"},
           ].map(({label,value,color,sub})=>(
             <div key={label} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid rgba(0,0,0,.06)"}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{label}</div>
+              <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{label}</div>
               <div style={{fontSize:22,fontWeight:800,color,lineHeight:1}}>{typeof value==="number"?fmtS(value):value}</div>
-              <div style={{fontSize:10,color:"#999",marginTop:4}}>{sub}</div>
+              <div style={{fontSize:10,color:"#7a7067",marginTop:4}}>{sub}</div>
             </div>
           ))}
         </div>
@@ -4585,7 +4585,7 @@ export default function Page(){
           return(<>
             {/* Toggle */}
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-              <span style={{fontSize:11,color:"#999",fontWeight:500}}>View by:</span>
+              <span style={{fontSize:11,color:"#6b5e52",fontWeight:500}}>View by:</span>
               <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
                 {[["property","Property"],["unit","Unit / Room"]].map(([k,l])=>(
                   <button key={k} onClick={()=>setAcctOverviewMode(k)}
@@ -4602,7 +4602,7 @@ export default function Page(){
                 <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>By Property — {acctFrom.slice(0,7)} to {acctTo.slice(0,7)}</div>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                    {["Property","Gross Income","Expenses","NOI","NOI Margin","Annual Debt Svc","DSCR"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>)}
+                    {["Property","Gross Income","Expenses","NOI","NOI Margin","Annual Debt Svc","DSCR"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>)}
                   </tr></thead>
                   <tbody>
                     {filtProps.map((pr,i)=>{
@@ -4630,7 +4630,7 @@ export default function Page(){
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalIncome)}</td>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalExp)}</td>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:totalNOI>=0?"#4a7c59":"#c45c4a",fontSize:13}}>{fmtS(totalNOI)}</td>
-                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700,color:"#999"}}>{totalIncome>0?Math.round(totalNOI/totalIncome*100)+"%":"—"}</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700,color:"#6b5e52"}}>{totalIncome>0?Math.round(totalNOI/totalIncome*100)+"%":"—"}</td>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700}}>{annualDebt>0?fmtS(annualDebt):"—"}</td>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:dscr===null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a"}}>{dscr!==null?dscr.toFixed(2)+"x":"—"}</td>
                   </tr></tfoot>
@@ -4648,13 +4648,13 @@ export default function Page(){
                     <div key={title} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                       <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>{title}</div>
                       <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:6}}>
-                        {items.length===0&&<div style={{fontSize:11,color:"#999",padding:"8px 0"}}>None recorded</div>}
+                        {items.length===0&&<div style={{fontSize:11,color:"#7a7067",padding:"8px 0"}}>None recorded</div>}
                         {items.map(([cat,amt])=>{
                           const pct=totalExp>0?Math.round(amt/totalExp*100):0;
                           return(<div key={cat}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
                               <span style={{fontSize:10,fontWeight:600,color:"#5c4a3a"}}>{cat}</span>
-                              <span style={{fontSize:11,fontWeight:800,color:"#c45c4a"}}>{fmtS(amt)} <span style={{fontSize:9,color:"#999",fontWeight:400}}>{pct}%</span></span>
+                              <span style={{fontSize:11,fontWeight:800,color:"#c45c4a"}}>{fmtS(amt)} <span style={{fontSize:9,color:"#7a7067",fontWeight:400}}>{pct}%</span></span>
                             </div>
                             <div style={{height:3,borderRadius:2,background:"#e5e3df"}}>
                               <div style={{height:"100%",borderRadius:2,background:"#c45c4a",width:pct+"%"}}/>
@@ -4679,7 +4679,7 @@ export default function Page(){
                 <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:8}}>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                     <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                      {["Unit / Room","Income","Expenses","NOI"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Unit / Room"?"left":"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}
+                      {["Unit / Room","Income","Expenses","NOI"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Unit / Room"?"left":"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}
                     </tr></thead>
                     <tbody>
                       {units.map((u,i)=>{
@@ -4714,22 +4714,22 @@ export default function Page(){
           const sorted=filtIncome.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{fontSize:11,color:"#999"}}>{sorted.length} payment{sorted.length!==1?"s":""} · {fmtS(totalIncome)} collected</div>
+              <div style={{fontSize:11,color:"#6b5e52"}}>{sorted.length} payment{sorted.length!==1?"s":""} · {fmtS(totalIncome)} collected</div>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                   {["Date","Property","Room","Tenant","Category","Method","Amount"].map(h=>(
-                    <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                    <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>
-                  {sorted.length===0&&<tr><td colSpan={7} style={{padding:32,textAlign:"center",color:"#999",fontSize:11}}>No income in this period. Payments are recorded in the Payments tab.</td></tr>}
+                  {sorted.length===0&&<tr><td colSpan={7} style={{padding:32,textAlign:"center",color:"#7a7067",fontSize:11}}>No income in this period. Payments are recorded in the Payments tab.</td></tr>}
                   {sorted.map((p,i)=>(
                     <tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{p.date}</td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{p.date}</td>
                       <td style={{padding:"8px 14px",fontSize:11}}>{p.propName}</td>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#999"}}>{p.roomName||"—"}</td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{p.roomName||"—"}</td>
                       <td style={{padding:"8px 14px",fontWeight:600}}>{p.tenantName}</td>
                       <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{p.category}</span></td>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{p.method||"—"}</td>
@@ -4762,7 +4762,7 @@ export default function Page(){
           const attachedCount=sorted.filter(e=>e.receiptUrl).length;
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
-              <div style={{fontSize:11,color:"#999"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total{attachedCount>0?" · "+attachedCount+" receipt"+((attachedCount!==1)?"s":"")+" attached":""}</div>
+              <div style={{fontSize:11,color:"#6b5e52"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total{attachedCount>0?" · "+attachedCount+" receipt"+((attachedCount!==1)?"s":"")+" attached":""}</div>
               <div style={{display:"flex",gap:6}}>
                 {sorted.length>0&&<button className="btn btn-out btn-sm" onClick={()=>setModal({type:"exportExpenses",expenses:sorted,attachedCount})}>↓ Export</button>}
                 <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}})}>+ Add Expense</button>
@@ -4771,15 +4771,15 @@ export default function Page(){
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Date","Property","Unit / Room","Category","Subcategory","Vendor","Description","Method","Receipt","Amount",""].map(h=>(
-                    <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                  {["Date","Property","Unit / Room","Category","Subcategory","Vendor","Description","Method","Amount","Receipt",""].map(h=>(
+                    <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>
-                  {sorted.length===0&&<tr><td colSpan={11} style={{padding:32,textAlign:"center",color:"#999",fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
+                  {sorted.length===0&&<tr><td colSpan={11} style={{padding:32,textAlign:"center",color:"#7a7067",fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
                   {sorted.map((e,i)=>(
                     <tr key={e.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:e._isShared?"rgba(59,130,246,.02)":i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{e.date}</td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{e.date}</td>
                       <td style={{padding:"8px 14px",fontSize:10}}>
                         {e.propId==="shared"||e._isShared
                           ?<span style={{display:"inline-flex",alignItems:"center",gap:4}}>{e._isShared?(props.find(p=>p.id===acctPropId)||{}).name||"Shared":<span style={{color:"#5c4a3a"}}>All Properties</span>} <span style={{fontSize:8,padding:"1px 6px",borderRadius:100,background:"rgba(59,130,246,.1)",color:"#3b82f6",fontWeight:700,whiteSpace:"nowrap"}}>SHARED{e._isShared?" · "+fmtS(e._fullAmount)+" total":""}</span></span>
@@ -4789,29 +4789,26 @@ export default function Page(){
                       <td style={{padding:"8px 14px"}}>
                         <span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span>
                       </td>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#ccc"}}>—</span>}</td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#aaa"}}>—</span>}</td>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>
                       <td style={{padding:"8px 14px",fontWeight:600,maxWidth:180}}>{e.description}</td>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#999"}}>{e.paymentMethod||"—"}</td>
-                      <td style={{padding:"8px 14px"}}>
-                        {e.receiptUrl
-                          ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#4a7c59",fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}>📎 Attached</a>
-                          :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
-                      </td>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.paymentMethod||"—"}</td>
                       <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>
                       <td style={{padding:"8px 14px"}}>
-                        <div style={{display:"flex",gap:4}}>
-                          <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addExpense",editId:e.id,form:{...e},errs:{}})}>Edit</button>
-                          <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteExpense",expId:e.id,description:e.description})}>Delete</button>
-                        </div>
+                        {e.receiptUrl
+                          ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:e._receiptPending?"#d4a853":"#4a7c59",fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}>{e._receiptPending?"📎 Local only":"📎 Attached"}</a>
+                          :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
+                      </td>
+                      <td style={{padding:"8px 14px"}}>
+                        <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addExpense",editId:e.id,form:{...e},errs:{}})}>Edit</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 {sorted.length>0&&<tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
-                  <td colSpan={9} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Expenses</td>
+                  <td colSpan={8} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Expenses</td>
                   <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",fontSize:14}}>{fmtS(totalExp)}</td>
-                  <td/>
+                  <td colSpan={2}/>
                 </tr></tfoot>}
               </table>
             </div>
@@ -4825,18 +4822,18 @@ export default function Page(){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div>
                 <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Mortgage Register</div>
-                <div style={{fontSize:10,color:"#999",marginTop:1}}>One record per loan. Feeds DSCR and Schedule E Line 12.</div>
+                <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>One record per loan. Feeds DSCR and Schedule E Line 12.</div>
               </div>
               <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addMortgage",form:{propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),lender:"",originalBalance:"",currentBalance:"",interestRate:"",monthlyPI:"",startDate:"",maturityDate:"",accountLast4:"",notes:""},errs:{}})}>+ Add Mortgage</button>
             </div>
 
             {filtMg.length===0
-              ?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No mortgages on record. Add one to enable DSCR and Schedule E interest calculations.</div>
+              ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No mortgages on record. Add one to enable DSCR and Schedule E interest calculations.</div>
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Property","Lender","Account","Orig. Balance","Current Balance","Rate","Monthly P&I","Maturity",""].map(h=>(
-                      <th key={h} style={{padding:"9px 14px",textAlign:["Orig. Balance","Current Balance","Rate","Monthly P&I"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                      <th key={h} style={{padding:"9px 14px",textAlign:["Orig. Balance","Current Balance","Rate","Monthly P&I"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
@@ -4847,12 +4844,12 @@ export default function Page(){
                       <tr key={mg.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                         <td style={{padding:"9px 14px",fontWeight:700}}>{pr?.name||"—"}</td>
                         <td style={{padding:"9px 14px"}}>{mg.lender||"—"}</td>
-                        <td style={{padding:"9px 14px",fontSize:10,color:"#999",fontFamily:"monospace"}}>{mg.accountLast4?"****"+mg.accountLast4:"—"}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace"}}>{mg.accountLast4?"****"+mg.accountLast4:"—"}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",color:"#5c4a3a"}}>{fmtS(mg.originalBalance||0)}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",fontWeight:700,color:"#c45c4a"}}>{fmtS(mg.currentBalance||0)}</td>
                         <td style={{padding:"9px 14px",textAlign:"right"}}>{(mg.interestRate||0)+"%"}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",fontWeight:700}}>{fmtS(mg.monthlyPI||0)}</td>
-                        <td style={{padding:"9px 14px",fontSize:10,color:"#999"}}>{mg.maturityDate||"—"}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a"}}>{mg.maturityDate||"—"}</td>
                         <td style={{padding:"9px 14px"}}>
                           <div style={{display:"flex",gap:4}}>
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addMortgage",editId:mg.id,form:{...mg},errs:{}})}>Edit</button>
@@ -4898,25 +4895,25 @@ export default function Page(){
               <div style={{marginTop:10,fontSize:10,color:"#9a7422",padding:"6px 10px",background:"rgba(212,168,83,.06)",borderRadius:6}}>When in doubt, ask your CPA. The IRS scrutinizes this distinction closely. If it improves, extends, or adapts — it's CapEx.</div>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{fontSize:11,color:"#999"}}>{filtImprove.length} improvement{filtImprove.length!==1?"s":""} · {fmtS(totalImprove)} total cost basis additions</div>
+              <div style={{fontSize:11,color:"#6b5e52"}}>{filtImprove.length} improvement{filtImprove.length!==1?"s":""} · {fmtS(totalImprove)} total cost basis additions</div>
               <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addImprovement",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),improvementType:"",description:"",contractor:"",amount:"",notes:""},errs:{}})}>+ Add Improvement</button>
             </div>
             {filtImprove.length===0
-              ?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No capital improvements recorded. New roof, HVAC, addition, appliances — log them here for your CPA.</div>
+              ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No capital improvements recorded. New roof, HVAC, addition, appliances — log them here for your CPA.</div>
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Date","Property","Type","Subcategory","Description","Contractor","Receipt","Amount",""].map(h=>(
-                      <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                      <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
                     {filtImprove.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0).map((im,i)=>(
                       <tr key={im.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                        <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{im.date}</td>
+                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{im.date}</td>
                         <td style={{padding:"8px 14px",fontSize:10}}>{(props.find(p=>p.id===im.propId)||{}).name||"—"}</td>
                         <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{im.improvementType||"—"}</span></td>
-                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.subcategory||<span style={{color:"#ccc"}}>—</span>}</td>
+                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.subcategory||<span style={{color:"#aaa"}}>—</span>}</td>
                         <td style={{padding:"8px 14px",fontWeight:600}}>{im.description}</td>
                         <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.contractor||"—"}</td>
                         <td style={{padding:"8px 14px"}}>
@@ -4958,17 +4955,17 @@ export default function Page(){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div>
                 <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Vendor / Payee List</div>
-                <div style={{fontSize:10,color:"#999",marginTop:1}}>Saved vendors auto-populate when adding expenses.</div>
+                <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>Saved vendors auto-populate when adding expenses.</div>
               </div>
               <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addVendor",form:{name:"",phone:"",email:"",notes:""},errs:{}})}>+ Add Vendor</button>
             </div>
             {vendors.length===0
-              ?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No vendors saved yet. You can save vendors while adding expenses, or add them here.</div>
+              ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No vendors saved yet. You can save vendors while adding expenses, or add them here.</div>
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Vendor / Payee","Phone","Email","Notes",""].map(h=>(
-                      <th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>
+                      <th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
@@ -4977,7 +4974,7 @@ export default function Page(){
                         <td style={{padding:"9px 14px",fontWeight:700}}>{v.name}</td>
                         <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a"}}>{v.phone||"—"}</td>
                         <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a"}}>{v.email||"—"}</td>
-                        <td style={{padding:"9px 14px",fontSize:10,color:"#999",fontStyle:v.notes?"normal":"italic"}}>{v.notes||"—"}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:"#6b5e52",fontStyle:v.notes?"normal":"italic"}}>{v.notes||"—"}</td>
                         <td style={{padding:"9px 14px"}}>
                           <div style={{display:"flex",gap:4}}>
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addVendor",editId:v.id,form:{...v},errs:{}})}>Edit</button>
@@ -5084,7 +5081,7 @@ export default function Page(){
             return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Property","Unit","Type","Tenant","Rent/Mo","Move-In","Lease End","Status"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{h}</th>)}
+                  {["Property","Unit","Type","Tenant","Rent/Mo","Move-In","Lease End","Status"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,whiteSpace:"nowrap"}}>{h}</th>)}
                 </tr></thead>
                 <tbody>
                   {rows.map((r,i)=><tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
@@ -5110,7 +5107,7 @@ export default function Page(){
             return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Property","Gross Income","Total Expenses","NOI","Margin"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}
+                  {["Property","Gross Income","Total Expenses","NOI","Margin"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}
                 </tr></thead>
                 <tbody>
                   {rProps.map((pr,i)=>{
@@ -5204,7 +5201,7 @@ export default function Page(){
                   <div style={{fontWeight:700,fontSize:12,color:min>60?"#c45c4a":min>30?"#d4a853":"#5c4a3a",marginBottom:6}}>{label} ({rows.length} charges · {fmtS(rows.reduce((s,c)=>s+c.amount-c.amountPaid,0))} outstanding)</div>
                   <div style={{background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                     <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                      <thead><tr style={{background:"#f8f7f4"}}>{["Tenant","Property","Description","Due Date","Balance"].map(h=><th key={h} style={{padding:"7px 12px",textAlign:h==="Balance"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
+                      <thead><tr style={{background:"#f8f7f4"}}>{["Tenant","Property","Description","Due Date","Balance"].map(h=><th key={h} style={{padding:"7px 12px",textAlign:h==="Balance"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
                       <tbody>{rows.map((c,i)=><tr key={c.id} style={{borderTop:"1px solid rgba(0,0,0,.03)"}}><td style={{padding:"7px 12px",fontWeight:600}}>{c.tenantName}</td><td style={{padding:"7px 12px",fontSize:10,color:"#999"}}>{c.propName}</td><td style={{padding:"7px 12px"}}>{c.desc}</td><td style={{padding:"7px 12px",fontSize:10,fontFamily:"monospace",color:"#c45c4a"}}>{c.dueDate}</td><td style={{padding:"7px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(c.amount-c.amountPaid)}</td></tr>)}</tbody>
                     </table>
                   </div>
@@ -5223,7 +5220,7 @@ export default function Page(){
             const totalDed=rows.reduce((s,r)=>s+(r.deductions||[]).reduce((d,x)=>d+x.amount,0),0);
             return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Tenant","Property","Room","SD Held","Deductions","Net Liability","Status"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["SD Held","Deductions","Net Liability"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Tenant","Property","Room","SD Held","Deductions","Net Liability","Status"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["SD Held","Deductions","Net Liability"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
                 <tbody>
                   {rows.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#999"}}>No security deposit records found.</td></tr>}
                   {rows.map((r,i)=>{const ded=((r.deductions||[]).reduce((s,d)=>s+d.amount,0));const net=r.amountHeld-ded;return(
@@ -5250,7 +5247,7 @@ export default function Page(){
           {activeReport==="occupancy"&&(()=>{
             return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Property","Total Units","Occupied","Vacant","Occ Rate","Potential Rent","Actual Rent","Vacancy Loss"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Potential Rent","Actual Rent","Vacancy Loss"].includes(h)?"right":"center",textAlign:h==="Property"?"left":"center",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}</tr></thead>
+                <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Property","Total Units","Occupied","Vacant","Occ Rate","Potential Rent","Actual Rent","Vacancy Loss"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Potential Rent","Actual Rent","Vacancy Loss"].includes(h)?"right":"center",textAlign:h==="Property"?"left":"center",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}</tr></thead>
                 <tbody>
                   {rProps.map((pr,i)=>{
                     const rooms=allRooms(pr).filter(r=>!r.ownerOccupied);
@@ -5281,9 +5278,9 @@ export default function Page(){
             return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  <th style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Month</th>
-                  {rProps.map(p=><th key={p.id} style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>{p.name}</th>)}
-                  <th style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Total</th>
+                  <th style={{padding:"9px 12px",textAlign:"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>Month</th>
+                  {rProps.map(p=><th key={p.id} style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>{p.name}</th>)}
+                  <th style={{padding:"9px 12px",textAlign:"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>Total</th>
                 </tr></thead>
                 <tbody>
                   {months.map((mo,i)=>{
@@ -5352,7 +5349,7 @@ export default function Page(){
               </div>
               <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                  <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Date","Tenant","Description","Category","Debit","Credit","Balance"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Debit","Credit","Balance"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
+                  <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Date","Tenant","Description","Category","Debit","Credit","Balance"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Debit","Credit","Balance"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
                   <tbody>
                     {withBal.map((e,i)=><tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
                       <td style={{padding:"7px 12px",fontSize:10,fontFamily:"monospace",color:"#999",whiteSpace:"nowrap"}}>{e.date}</td>
@@ -6189,7 +6186,7 @@ export default function Page(){
             </div>}
 
             {/* Month-by-month table */}
-            <div style={{fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Month-by-Month</div>
+            <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Month-by-Month</div>
             <div style={{border:"1px solid rgba(0,0,0,.05)",borderRadius:8,overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead>
@@ -6697,8 +6694,17 @@ export default function Page(){
         const path="receipts/"+newId+"-"+Date.now()+"."+ext;
         try{
           const r=await fetch(SUPA_URL+"/storage/v1/object/receipts/"+path,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":f.receiptFile.type,"x-upsert":"true"},body:f.receiptFile});
-          if(r.ok)rec.receiptUrl=SUPA_URL+"/storage/v1/object/public/receipts/"+path;
-        }catch(e){console.error("Receipt upload failed:",e);}
+          if(r.ok){rec.receiptUrl=SUPA_URL+"/storage/v1/object/public/receipts/"+path;}
+          else{
+            console.error("Receipt upload failed:",r.status,await r.text());
+            rec.receiptUrl=URL.createObjectURL(f.receiptFile);
+            rec._receiptPending=true;
+          }
+        }catch(e){
+          console.error("Receipt upload error:",e);
+          rec.receiptUrl=URL.createObjectURL(f.receiptFile);
+          rec._receiptPending=true;
+        }
       }
       if(isEdit){setExpenses(p=>p.map(x=>x.id===modal.editId?{...x,...rec}:x));}
       else{setExpenses(p=>[{id:newId,createdAt:TODAY.toISOString(),...rec},...p]);}
@@ -6724,7 +6730,7 @@ export default function Page(){
       {/* Amount */}
       <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount paid *</label>
         <div style={{position:"relative"}}>
-          <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+          <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"#7a7067",fontWeight:700}}>$</span>
           <input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>upd("amount",e.target.value)} placeholder="0.00" style={{paddingLeft:28,borderColor:errs.amount?"#c45c4a":undefined}}/>
         </div>
         {errs.amount&&<div className="err-msg">{errs.amount}</div>}
@@ -6816,7 +6822,7 @@ export default function Page(){
                 }}>Delete</button>
               </>}
           </div>)}
-          {catSubcats.length===0&&<div style={{fontSize:10,color:"#999",padding:"6px 0"}}>No subcategories yet for {f.category}.</div>}
+          {catSubcats.length===0&&<div style={{fontSize:10,color:"#7a7067",padding:"6px 0"}}>No subcategories yet for {f.category}.</div>}
           <div style={{display:"flex",gap:4,marginTop:6}}>
             <input value={modal._newSubcat||""} onChange={e=>setModal(p=>({...p,_newSubcat:e.target.value}))} placeholder="New subcategory..." style={{flex:1,fontSize:11,padding:"4px 8px"}}
               onKeyDown={e=>{if(e.key==="Enter"&&(modal._newSubcat||"").trim()){const cat=f.category;setSubcats(p=>({...p,[cat]:[...(p[cat]||[]),{id:uid(),label:modal._newSubcat.trim()}]}));setModal(p=>({...p,_newSubcat:""}));}}}/>
@@ -6859,7 +6865,7 @@ export default function Page(){
                 }}>Save</button>
                 <button type="button" className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal(p=>({...p,_vendorRenameId:null,_vendorEdit:null}))}>Cancel</button>
               </>
-              :<><span style={{flex:1,fontSize:11,color:"#5c4a3a"}}>{v.name}{v.phone?<span style={{color:"#999",marginLeft:6,fontSize:9}}>{v.phone}</span>:""}</span>
+              :<><span style={{flex:1,fontSize:11,color:"#5c4a3a"}}>{v.name}{v.phone?<span style={{color:"#7a7067",marginLeft:6,fontSize:9}}>{v.phone}</span>:""}</span>
                 <button type="button" style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>setModal(p=>({...p,_vendorRenameId:v.id,_vendorEdit:{name:v.name,phone:v.phone||"",email:v.email||""}}))}>Edit</button>
                 <button type="button" style={{fontSize:9,color:"#c45c4a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>{
                   setVendors(p=>p.filter(x=>x.id!==v.id));
@@ -6867,7 +6873,7 @@ export default function Page(){
                 }}>Delete</button>
               </>}
           </div>)}
-          {vendors.length===0&&<div style={{fontSize:10,color:"#999",padding:"6px 0"}}>No vendors saved yet.</div>}
+          {vendors.length===0&&<div style={{fontSize:10,color:"#7a7067",padding:"6px 0"}}>No vendors saved yet.</div>}
           <div style={{display:"flex",gap:4,marginTop:6}}>
             <input value={modal._newVendor||""} onChange={e=>setModal(p=>({...p,_newVendor:e.target.value}))} placeholder="New vendor name..." style={{flex:1,fontSize:11,padding:"4px 8px"}}
               onKeyDown={e=>{if(e.key==="Enter"&&(modal._newVendor||"").trim()){setVendors(p=>[{id:uid(),name:modal._newVendor.trim(),phone:"",email:"",notes:""},...p]);setModal(p=>({...p,_newVendor:""}));}}}/>
@@ -6910,8 +6916,8 @@ export default function Page(){
             onDragLeave={e=>{e.currentTarget.style.borderColor="rgba(0,0,0,.1)";}}
             onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="rgba(0,0,0,.1)";const file=e.dataTransfer.files[0];if(file)upd("receiptFile",file);}}>
             <label style={{cursor:"pointer",display:"block"}}>
-              <div style={{fontSize:12,color:"#999",marginBottom:4}}>📎 Click or drag to attach receipt</div>
-              <div style={{fontSize:10,color:"#ccc"}}>Photo, screenshot, or PDF</div>
+              <div style={{fontSize:12,color:"#7a7067",marginBottom:4}}>📎 Click or drag to attach receipt</div>
+              <div style={{fontSize:10,color:"#aaa"}}>Photo, screenshot, or PDF</div>
               <input type="file" accept="image/*,.pdf" capture="environment" style={{display:"none"}} onChange={e=>{const file=e.target.files[0];if(file)upd("receiptFile",file);}}/>
             </label>
           </div>}
@@ -6943,20 +6949,24 @@ export default function Page(){
         {modal._scanErr&&<div className="err-msg" style={{marginTop:4}}>{modal._scanErr}</div>}
       </div>
 
+      {/* Delete section — only when editing */}
+      {isEdit&&!modal._confirmDelete&&<div style={{borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:14,marginTop:14,marginBottom:14}}>
+        <button type="button" style={{fontSize:11,color:"#c45c4a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>setModal(p=>({...p,_confirmDelete:true}))}>Delete this expense</button>
+      </div>}
+      {isEdit&&modal._confirmDelete&&<div style={{borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:14,marginTop:14,marginBottom:14,background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.15)",borderRadius:8,padding:14}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#c45c4a",marginBottom:6}}>Permanently delete this expense?</div>
+        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:12}}>This cannot be undone. The expense will be removed from all reports, overview, and Schedule E calculations.</div>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn btn-out btn-sm" onClick={()=>setModal(p=>({...p,_confirmDelete:false}))}>Keep it</button>
+          <button className="btn btn-sm" style={{background:"#c45c4a",color:"#fff",border:"none",padding:"6px 16px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setExpenses(p=>p.filter(x=>x.id!==modal.editId));setModal(null);}}>Yes, delete permanently</button>
+        </div>
+      </div>}
+
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Expense"}</button></div>
     </div></div>);
   })()}
 
   {/* ── Delete Expense ── */}
-  {modal&&modal.type==="deleteExpense"&&(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
-      <h2>Delete Expense?</h2>
-      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}><strong>{modal.description}</strong> will be permanently deleted.</p>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-red" onClick={()=>{setExpenses(p=>p.filter(e=>e.id!==modal.expId));setModal(null);}}>Delete</button></div>
-    </div></div>
-  )}
-
   {/* ── Export Expenses ── */}
   {modal&&modal.type==="exportExpenses"&&(()=>{
     const exps=modal.expenses||[];
@@ -7007,12 +7017,12 @@ export default function Page(){
           <input type="checkbox" checked={includeReceipts} onChange={e=>setModal(p=>({...p,_includeReceipts:e.target.checked}))} style={{width:16,height:16,accentColor:"#4a7c59"}}/>
           <div>
             <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Include receipt attachments</div>
-            <div style={{fontSize:10,color:"#999",marginTop:2}}>{attached} receipt{attached!==1?"s":""} will be downloaded alongside the CSV. Receipt URLs will be added as a column.</div>
+            <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>{attached} receipt{attached!==1?"s":""} will be downloaded alongside the CSV. Receipt URLs will be added as a column.</div>
           </div>
         </label>
       </div>}
 
-      {attached===0&&<div style={{fontSize:11,color:"#999",marginBottom:16,padding:"8px 12px",background:"#f8f7f4",borderRadius:6}}>No receipts attached to these expenses.</div>}
+      {attached===0&&<div style={{fontSize:11,color:"#7a7067",marginBottom:16,padding:"8px 12px",background:"#f8f7f4",borderRadius:6}}>No receipts attached to these expenses.</div>}
 
       <div className="mft">
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
