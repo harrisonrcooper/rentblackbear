@@ -6674,10 +6674,6 @@ export default function Page(){
     // Property cascade
     const selPr=f.propId&&f.propId!=="shared"?props.find(p=>p.id===f.propId):null;
     const units=selPr?.units||[];
-    const selUnit=units.find(u=>u.id===f.unitId);
-    const rooms=selUnit?.rooms||[];
-    const hasUnits=selPr&&units.length>0;
-    const hasBedrooms=rooms.length>0;
     const save=()=>{
       const e={};
       if(!f.date)e.date="Date is required";
@@ -6728,21 +6724,32 @@ export default function Page(){
         {errs.propId&&<div className="err-msg">{errs.propId}</div>}
       </div>
 
-      {/* Unit (conditional) */}
-      {hasUnits&&<div className="fld"><label>Unit</label>
-        <select value={f.unitId||""} onChange={e=>{const u=units.find(x=>x.id===e.target.value);upd("unitId",e.target.value);upd("unitName",u?.name||"");upd("roomId","");upd("roomName","");}}>
-          <option value="">— Whole property —</option>
-          {units.map(u=><option key={u.id} value={u.id}>{u.name||("Unit "+(units.indexOf(u)+1))}</option>)}
-        </select>
-      </div>}
-
-      {/* Bedroom (conditional — only if unit selected and has rooms) */}
-      {hasBedrooms&&f.unitId&&<div className="fld"><label>Bedroom</label>
-        <select value={f.roomId||""} onChange={e=>{const r=rooms.find(x=>x.id===e.target.value);upd("roomId",e.target.value);upd("roomName",r?.name||"");}}>
-          <option value="">— Whole unit —</option>
-          {rooms.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
-        </select>
-      </div>}
+      {/* Unit / Bedroom — smart cascade */}
+      {(()=>{
+        if(!selPr||units.length===0)return null;
+        const isSingleUnit=units.length===1;
+        const autoUnit=isSingleUnit?units[0]:null;
+        const activeUnitId=isSingleUnit?autoUnit.id:f.unitId;
+        const activeUnit=isSingleUnit?autoUnit:units.find(u=>u.id===f.unitId);
+        const activeRooms=activeUnit?.rooms||[];
+        const showBedrooms=activeRooms.length>0;
+        return(<>
+          {/* Multi-unit: show unit picker */}
+          {!isSingleUnit&&<div className="fld"><label>Unit</label>
+            <select value={f.unitId||""} onChange={e=>{const u=units.find(x=>x.id===e.target.value);upd("unitId",e.target.value);upd("unitName",u?.name||"");upd("roomId","");upd("roomName","");}}>
+              <option value="">— Whole property —</option>
+              {units.map(u=><option key={u.id} value={u.id}>{u.name||("Unit "+(units.indexOf(u)+1))}</option>)}
+            </select>
+          </div>}
+          {/* Bedroom: show if single-unit (always) or multi-unit with unit selected */}
+          {showBedrooms&&(isSingleUnit||f.unitId)&&<div className="fld"><label>Bedroom</label>
+            <select value={f.roomId||""} onChange={e=>{const r=activeRooms.find(x=>x.id===e.target.value);upd("roomId",e.target.value);upd("roomName",r?.name||"");if(isSingleUnit){upd("unitId",autoUnit.id);upd("unitName",autoUnit.name||"");}}}>
+              <option value="">— Whole {isSingleUnit?"property":"unit"} —</option>
+              {activeRooms.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+          </div>}
+        </>);
+      })()}
 
       {/* Category */}
       <div className="fld">
