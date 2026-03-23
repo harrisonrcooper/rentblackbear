@@ -6733,45 +6733,57 @@ export default function Page(){
           var pr=props.find(function(p){return p.name===a.property;});
           if(!pr)return null;
           const calcAge=(dob)=>{if(!dob)return null;const b=new Date(dob+"T00:00:00");if(isNaN(b))return null;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=10&&age<120?age:null;};
-          return leaseableItems(pr).map(function(item){
-            if(item.isWholeUnit){
-              const occ=item.st==="occupied";
+          // Find which unit the applicant is interested in — use termRoomId, then room name, then fall back to all units
+          const allItems=leaseableItems(pr);
+          const assignedItem=a.termRoomId?allItems.find(i=>i.id===a.termRoomId||i.unitId===a.termRoomId)
+            :a.room?allItems.find(i=>i.name===a.room||i.unitId===(pr.units||[]).find(u=>(u.rooms||[]).some(r=>r.name===a.room))?.id)
+            :null;
+          const targetUnitId=assignedItem?.unitId||null;
+          // If we know the unit, only show housemates from that unit; otherwise show all
+          const items=targetUnitId?allItems.filter(i=>i.unitId===targetUnitId):allItems;
+          const unitLabel=targetUnitId?(pr.units||[]).find(u=>u.id===targetUnitId)?.name:null;
+          return(<>
+            {unitLabel&&(pr.units||[]).length>1&&<div style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>{unitLabel}</div>}
+            {items.map(function(item){
+              if(item.isWholeUnit){
+                const occ=item.st==="occupied";
+                return(
+                  <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600}}>{item.name} <span style={{fontSize:9,color:"#d4a853",fontWeight:500}}>Whole Unit</span></div>
+                      {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>Occupied</div>}
+                      {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(item.rent)}/mo</div>
+                      <div style={{fontSize:8,color:"#bbb",marginTop:1}}>whole unit</div>
+                    </div>
+                  </div>
+                );
+              }
+              const occ=item.st==="occupied"&&item.tenant;
+              const age=occ?calcAge(item.tenant.dob):null;
+              const genderShort=occ&&item.tenant.gender?item.tenant.gender==="Male"?"M":item.tenant.gender==="Female"?"F":item.tenant.gender==="Non-binary"?"NB":null:null;
               return(
                 <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:600}}>{item.name} <span style={{fontSize:9,color:"#d4a853",fontWeight:500}}>Whole Unit</span></div>
-                    {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>Occupied</div>}
+                    <div style={{fontSize:12,fontWeight:600}}>{item.name}</div>
+                    {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>
+                      {item.tenant.name||"Occupied"}
+                      {(genderShort||age||item.tenant.occupationType)&&<span style={{color:"#999",marginLeft:6}}>
+                        {[genderShort,age?"Age "+age:null,item.tenant.occupationType].filter(Boolean).join(" · ")}
+                      </span>}
+                    </div>}
                     {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
                   </div>
                   <div style={{textAlign:"right"}}>
                     <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(item.rent)}/mo</div>
-                    <div style={{fontSize:8,color:"#bbb",marginTop:1}}>whole unit</div>
+                    <div style={{fontSize:8,color:"#bbb",marginTop:1}}>12-mo lease</div>
                   </div>
                 </div>
               );
-            }
-            const occ=item.st==="occupied"&&item.tenant;
-            const age=occ?calcAge(item.tenant.dob):null;
-            const genderShort=occ&&item.tenant.gender?item.tenant.gender==="Male"?"M":item.tenant.gender==="Female"?"F":item.tenant.gender==="Non-binary"?"NB":null:null;
-            return(
-              <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                <div>
-                  <div style={{fontSize:12,fontWeight:600}}>{item.name}</div>
-                  {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>
-                    {item.tenant.name||"Occupied"}
-                    {(genderShort||age||item.tenant.occupationType)&&<span style={{color:"#999",marginLeft:6}}>
-                      {[genderShort,age?"Age "+age:null,item.tenant.occupationType].filter(Boolean).join(" · ")}
-                    </span>}
-                  </div>}
-                  {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
-                </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(item.rent)}/mo</div>
-                  <div style={{fontSize:8,color:"#bbb",marginTop:1}}>12-mo lease</div>
-                </div>
-              </div>
-            );
-          });
+            })}
+          </>);
         })()}
       </div>}
 
