@@ -5327,7 +5327,6 @@ export default function Page(){
 
           </>);
         })()}
-        </>);
       })()}
 
       {/* ═══ NOTIFICATIONS ═══ */}
