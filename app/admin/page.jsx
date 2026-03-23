@@ -153,6 +153,27 @@ const allRooms=(prop)=>{if(!prop)return[];if(prop.units&&prop.units.length>0)ret
 const allRoomsWithUnit=(prop)=>(prop.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,unitId:u.id,unitName:u.name,unitLabel:u.label,unitUtils:u.utils,unitClean:u.clean})));
 const findRoom=(props,roomId)=>{for(const p of props){for(const u of(p.units||[])){const r=(u.rooms||[]).find(x=>x.id===roomId);if(r)return{room:r,unit:u,prop:p};}}return null;};
 const findUnit=(props,unitId)=>{for(const p of props){const u=(p.units||[]).find(x=>x.id===unitId);if(u)return{unit:u,prop:p};}return null;};
+
+// Returns flat list of things that can be leased from a prop, respecting rentalMode per unit.
+// Each item: { id, name, rent, st, le, propName, propId, unitId, unitName, unitLabel, allWhole }
+const leaseableItems=(prop,propName)=>{
+  const pn=propName||prop.name||"";
+  return(prop.units||[]).flatMap(u=>{
+    if((u.rentalMode||"byRoom")==="wholeHouse"){
+      // Whole unit leased as one — synthesize a single "room-like" item from the unit
+      const rooms=u.rooms||[];
+      const anyOcc=rooms.some(r=>r.st==="occupied");
+      const latestLe=rooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le||null;
+      return[{
+        id:u.id,name:(prop.units||[]).length>1?u.name:"Whole Unit",
+        rent:u.rent||0,st:anyOcc?"occupied":"vacant",le:latestLe,
+        propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,
+        allWhole:true,baths:u.baths,sqft:u.sqft,beds:rooms.length,
+      }];
+    }
+    return(u.rooms||[]).map(r=>({...r,propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,allWhole:false}));
+  });
+};
 // Update a room by ID inside its unit, preserving hierarchy
 const updateRoomInProps=(props,roomId,updater)=>props.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===roomId?updater(r):r)}))}));
 // Update a specific prop's room by ID
@@ -3902,10 +3923,25 @@ export default function Page(){
                   {props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
               </div>
-              <div className="fld"><label>Room</label>
-                <select value={leaseForm.room||""} onChange={e=>{const prop=props.find(p=>p.name===leaseForm.property);const unit=prop?(prop.units||[]).find(u=>(u.rooms||[]).some(r=>r.name===e.target.value)):null;const room=unit?(unit.rooms||[]).find(r=>r.name===e.target.value):null;const uKey=unit?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,room:e.target.value,roomId:room?.id||"",unitId:unit?.id||"",unitName:unit?.name||"",rent:room?.rent||p.rent,sd:room?.rent||p.sd,parking:room?.parking||"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
+              <div className="fld"><label>Room / Unit</label>
+                <select value={leaseForm.room||""} onChange={e=>{
+                  const lp=props.find(p=>p.name===leaseForm.property);
+                  if(!lp)return;
+                  const items=leaseableItems(lp);
+                  const item=items.find(i=>i.name===e.target.value||i.id===e.target.value);
+                  if(!item)return;
+                  const unit=(lp.units||[]).find(u=>u.id===item.unitId);
+                  const uKey=unit?.utils||"allIncluded";
+                  const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";
+                  setLeaseForm(p=>({...p,room:item.name,roomId:item.isWholeUnit?"":item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parking:item.parking||"",utilitiesMode:uKey,utilitiesClause:uClause}));
+                }} style={{width:"100%"}}>
                   <option value="">Select...</option>
-                  {(()=>{const lp=props.find(p=>p.name===leaseForm.property);if(!lp)return null;return(lp.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,unitLabel:u.label,unitName:u.name}))).map(r=><option key={r.id} value={r.name}>{r.unitLabel?"Unit "+r.unitLabel+" — ":""}{r.name} — {fmtS(r.rent)}/mo</option>);})()}
+                  {(()=>{const lp=props.find(p=>p.name===leaseForm.property);if(!lp)return null;
+                    return leaseableItems(lp).map(item=>(
+                      <option key={item.id} value={item.isWholeUnit?item.id:item.name}>
+                        {item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":""}{item.name}{item.isWholeUnit?" (Whole Unit)":""} — {fmtS(item.rent)}/mo
+                      </option>
+                    ));})()}
                 </select>
               </div>
             </div>
@@ -4467,15 +4503,18 @@ export default function Page(){
         <div className="sec-hd"><div><h2>Manage Properties</h2><p>Click any property for details, or edit to manage rooms</p></div>
           <button className="btn btn-gold" onClick={()=>{setIsNewProp(true);setEditProp({});}}>+ Add Property</button></div>
         {props.map((p,idx)=>{
-          const isWholeUnit=(p.units||[]).length>0&&(p.units||[]).every(u=>u.rentalMode==="wholeHouse");
-          const wholeUnitRent=(p.units||[]).reduce((s,u)=>s+(u.rentalMode==="wholeHouse"?u.rent||0:0),0);
-          const rooms=isWholeUnit?[]:allRooms(p);
-          const pr=rooms.map(r=>r.rent);
-          const vac=rooms.filter(r=>r.st==="vacant").length;
-          const occRooms=rooms.filter(r=>r.st==="occupied");
+          const items=leaseableItems(p);
+          const allWhole=(p.units||[]).every(u=>(u.rentalMode||"byRoom")==="wholeHouse");
+          const anyWhole=(p.units||[]).some(u=>(u.rentalMode||"byRoom")==="wholeHouse");
+          const wholeUnitRent=(p.units||[]).reduce((s,u)=>(u.rentalMode||"byRoom")==="wholeHouse"?s+(u.rent||0):s,0);
+          const byRoomRooms=allRooms(p).filter(r=>{const u=(p.units||[]).find(u2=>(u2.rooms||[]).some(x=>x.id===r.id));return(u?.rentalMode||"byRoom")==="byRoom";});
+          const pr=byRoomRooms.map(r=>r.rent);
+          const vac=items.filter(i=>i.st==="vacant").length;
+          const occItems=items.filter(i=>i.st==="occupied");
+          const occRooms=byRoomRooms.filter(r=>r.st==="occupied");
           const isExp=expanded["prop-"+p.id];
-          const totalRent=isWholeUnit?wholeUnitRent:rooms.reduce((s,r)=>s+r.rent,0);
-          const projRent=isWholeUnit?wholeUnitRent:occRooms.reduce((s,r)=>s+r.rent,0);
+          const totalRent=items.reduce((s,i)=>s+i.rent,0);
+          const projRent=occItems.reduce((s,i)=>s+i.rent,0);
           const unpaidRooms=occRooms.filter(r=>!(payments[r.id]&&payments[r.id][MO]));
           const expiringRooms=occRooms.filter(r=>{if(!r.le)return false;const d=Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24));return d<=90;});
           return(
@@ -4499,14 +4538,13 @@ export default function Page(){
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
                 <h3><span style={{color:"#ccc",marginRight:4,cursor:"grab",fontSize:14}}>⠿</span>{isExp?"▾":"▸"} {p.name}</h3>
-                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {(PROP_TYPES[p.type]||PROP_TYPES.SFH).label} · {isWholeUnit?"Whole Unit":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
+                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {(PROP_TYPES[p.type]||PROP_TYPES.SFH).label} · {allWhole?"Whole Unit":anyWhole?"Mixed":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
-                {isWholeUnit&&wholeUnitRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(wholeUnitRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
-                {!isWholeUnit&&pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
-                {!isWholeUnit&&vac>0&&<span className="badge b-red">{vac} Vacant</span>}
-                {!isWholeUnit&&vac===0&&allRooms(p).length>0&&<span className="badge b-green">Full</span>}
-                {isWholeUnit&&<span className="badge b-green">Whole Unit</span>}
+                {allWhole&&wholeUnitRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(wholeUnitRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
+                {!allWhole&&pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
+                {vac>0&&<span className="badge b-red">{vac} Vacant</span>}
+                {vac===0&&items.length>0&&<span className="badge b-green">{allWhole?"Whole Unit":"Full"}</span>}
                 {unpaidRooms.length>0&&<span className="badge b-red" title={`${unpaidRooms.map(r=>r.tenant.name).join(", ")} unpaid`}>💳 {unpaidRooms.length} Unpaid</span>}
                 {expiringRooms.length>0&&<span className="badge b-gold" title={expiringRooms.map(r=>`${r.tenant.name} (${Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24))}d)`).join(", ")}>⚠ {expiringRooms.length} Expiring</span>}
                 <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setIsNewProp(false);setEditProp(p);}}>✏️ Edit</button>
@@ -4515,14 +4553,14 @@ export default function Page(){
             {isExp&&<div className="card-bd" style={{animation:"fadeIn .15s"}}>
               {/* Property summary */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
-                {!isWholeUnit&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Rooms</div><div style={{fontSize:18,fontWeight:800}}>{allRooms(p).length}</div></div>}
-                {!isWholeUnit&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Occupied</div><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{occRooms.length}</div></div>}
-                {isWholeUnit&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center",gridColumn:"span 2"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Monthly Rent</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(wholeUnitRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>}
+                {!allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Rooms</div><div style={{fontSize:18,fontWeight:800}}>{allRooms(p).length}</div></div>}
+                {!allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Occupied</div><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{occRooms.length}</div></div>}
+                {allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center",gridColumn:"span 2"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Monthly Rent</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(wholeUnitRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>}
                 <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Projected</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(projRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
                 <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>At Full</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(totalRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
               </div>
               {/* Whole unit info */}
-              {isWholeUnit&&<div style={{padding:"12px 14px",background:"#faf9f7",borderRadius:8,marginBottom:10}}>
+              {allWhole&&<div style={{padding:"12px 14px",background:"#faf9f7",borderRadius:8,marginBottom:10}}>
                 {(p.units||[]).map(u=><div key={u.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:700}}>{(p.units||[]).length>1?u.name:"Whole Unit"} · {u.utils==="allIncluded"?"All Utilities":u.utils==="first100"?"First $100 Utilities":"Tenant Pays"} · {u.clean||"Biweekly"} Clean</div>
@@ -4531,37 +4569,64 @@ export default function Page(){
                   <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([])}}>+ Find Tenant</button>
                 </div>)}
               </div>}
-              {/* Room list — only for byRoom */}
-              {!isWholeUnit&&<div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Rooms by Unit</div>}
-              {!isWholeUnit&&(p.units||[]).map(u=><div key={u.id} style={{marginBottom:10}}>
-                {(p.units||[]).length>1&&<div style={{fontSize:10,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,padding:"3px 8px",background:"rgba(212,168,83,.06)",borderRadius:4,display:"inline-block"}}>{u.name}</div>}
-                {(u.rooms||[]).length===0&&<div style={{fontSize:11,color:"#bbb",padding:"6px 0"}}>No rooms — edit property to add</div>}
-              {(u.rooms||[]).map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
-                const tenantData={...r,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label};
-                return(<div key={r.id} className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default",background:occ&&dl&&dl<=30?"rgba(196,92,74,.02)":occ&&dl&&dl<=90?"rgba(212,168,83,.02)":"#fff"}}>
-                  <div className="row-dot" style={{background:occ?"#4a7c59":"#c45c4a",flexShrink:0}}/>
-                  <div className="row-i">
-                    <div style={{fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
-                      {r.name}
-                      <span className={`badge ${r.pb?"b-green":"b-gray"}`} style={{fontSize:7}}>{r.pb?"Private":"Shared"}</span>
-                      {r.sqft&&<span style={{fontSize:9,color:"#999"}}>{r.sqft} sqft</span>}
+              {/* Unit list — per-unit mode aware */}
+              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>{anyWhole&&!allWhole?"Units & Rooms":"Rooms by Unit"}</div>
+              {(p.units||[]).map(u=>{
+                const uIsWhole=(u.rentalMode||"byRoom")==="wholeHouse";
+                const uRooms=u.rooms||[];
+                const uOcc=uRooms.some(r=>r.st==="occupied");
+                const uLatestLe=uRooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le;
+                return(<div key={u.id} style={{marginBottom:10}}>
+                  {(p.units||[]).length>1&&<div style={{fontSize:10,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,padding:"3px 8px",background:"rgba(212,168,83,.06)",borderRadius:4,display:"inline-flex",alignItems:"center",gap:6}}>
+                    {u.name}
+                    <span style={{fontSize:8,fontWeight:500,color:"#999",textTransform:"none",letterSpacing:0}}>{uIsWhole?"Whole Unit":"By Room"}</span>
+                  </div>}
+                  {uIsWhole?(
+                    <div className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default"}}>
+                      <div className="row-dot" style={{background:uOcc?"#4a7c59":"#c45c4a",flexShrink:0}}/>
+                      <div className="row-i">
+                        <div style={{fontSize:12,fontWeight:600}}>{u.name} — Whole Unit</div>
+                        {uOcc
+                          ?<div style={{fontSize:10,color:"#999",marginTop:1}}>Occupied · ends {fmtD(uLatestLe)}</div>
+                          :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(u.rent)}/mo</div>}
+                      </div>
+                      <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
+                        <div style={{fontSize:14,fontWeight:800}}>{fmtS(u.rent)}</div>
+                      </div>
+                      <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}>{uOcc?"View Tenant":"+ Find Tenant"}</button>
                     </div>
-                    {occ
-                      ?<div style={{fontSize:10,color:"#999",marginTop:1}}>{r.tenant.name} · ends {fmtD(r.le)}{dl&&dl<=90?<span style={{color:dl<=30?"#c45c4a":"#d4a853",fontWeight:700,marginLeft:4}}>⚠ {dl}d</span>:null}</div>
-                      :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(r.rent)}/mo lost</div>}
-                  </div>
-                  <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
-                    <div style={{fontSize:14,fontWeight:800}}>{fmtS(r.rent)}</div>
-                    {occ&&<div style={{fontSize:9,color:pd?"#4a7c59":"#c45c4a",fontWeight:600}}>{pd?"✓ Paid":"✕ Unpaid"}</div>}
-                  </div>
-                  {occ
-                    ?<div style={{display:"flex",gap:4,flexShrink:0}}>
-                      <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData})}>👤 Profile</button>
-                      <button className="btn btn-gold btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData,startSection:"lease"})}>📄 Lease</button>
-                    </div>
-                    :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}>+ Find Tenant</button>}
-                </div>);})}
-              </div>)}
+                  ):(
+                    <>
+                    {uRooms.length===0&&<div style={{fontSize:11,color:"#bbb",padding:"6px 0"}}>No rooms — edit property to add</div>}
+                    {uRooms.map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+                      const tenantData={...r,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label};
+                      return(<div key={r.id} className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default",background:occ&&dl&&dl<=30?"rgba(196,92,74,.02)":occ&&dl&&dl<=90?"rgba(212,168,83,.02)":"#fff"}}>
+                        <div className="row-dot" style={{background:occ?"#4a7c59":"#c45c4a",flexShrink:0}}/>
+                        <div className="row-i">
+                          <div style={{fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+                            {r.name}
+                            <span className={"badge "+(r.pb?"b-green":"b-gray")} style={{fontSize:7}}>{r.pb?"Private":"Shared"}</span>
+                            {r.sqft&&<span style={{fontSize:9,color:"#999"}}>{r.sqft} sqft</span>}
+                          </div>
+                          {occ
+                            ?<div style={{fontSize:10,color:"#999",marginTop:1}}>{r.tenant.name} · ends {fmtD(r.le)}{dl&&dl<=90?<span style={{color:dl<=30?"#c45c4a":"#d4a853",fontWeight:700,marginLeft:4}}>⚠ {dl}d</span>:null}</div>
+                            :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(r.rent)}/mo lost</div>}
+                        </div>
+                        <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
+                          <div style={{fontSize:14,fontWeight:800}}>{fmtS(r.rent)}</div>
+                          {occ&&<div style={{fontSize:9,color:pd?"#4a7c59":"#c45c4a",fontWeight:600}}>{pd?"✓ Paid":"✕ Unpaid"}</div>}
+                        </div>
+                        {occ
+                          ?<div style={{display:"flex",gap:4,flexShrink:0}}>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData})}>👤 Profile</button>
+                            <button className="btn btn-gold btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData,startSection:"lease"})}>📄 Lease</button>
+                          </div>
+                          :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}> + Find Tenant</button>}
+                      </div>);})}
+                    </>
+                  )}
+                </div>);
+              })}
             </div>}
           </div>);})}
         {props.length===0&&<div style={{textAlign:"center",padding:40,color:"#999"}}><div style={{fontSize:40,marginBottom:8}}>🏠</div><h3 style={{fontSize:15}}>No Properties</h3><p style={{fontSize:12,marginTop:4}}>Add your first property above.</p></div>}
@@ -6102,11 +6167,11 @@ export default function Page(){
     const inviteStep=modal.inviteStep||"configure";
     const inviteMoveIn=modal.inviteMoveIn||a.moveIn||"";
     const inviteMoveInMs=inviteMoveIn?new Date(inviteMoveIn+"T00:00:00").getTime():null;
-    const allAvailForInvite=props.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",name:"",label:"",rooms:allRooms(p)}]).flatMap(u=>(u.rooms||[]).filter(r=>{
-      if(r.st==="vacant")return true;
-      if(r.st==="occupied"&&r.le&&inviteMoveInMs)return new Date(r.le+"T00:00:00").getTime()<=inviteMoveInMs;
+    const allAvailForInvite=props.flatMap(p=>leaseableItems(p).filter(item=>{
+      if(item.st==="vacant")return true;
+      if(item.st==="occupied"&&item.le&&inviteMoveInMs)return new Date(item.le+"T00:00:00").getTime()<=inviteMoveInMs;
       return false;
-    }).map(r=>({...r,propName:p.name,propId:p.id,unitLabel:u.label,unitName:u.name,willVacate:r.st==="occupied"&&!!r.le}))));
+    }).map(item=>({...item,willVacate:item.st==="occupied"&&!!item.le})));
     const selPropId=modal.selPropId||(()=>{const mp=props.find(p=>p.name===a.property);return mp?mp.id:"";})();
     const selProp=props.find(p=>p.id===selPropId);
     const selRoomId=modal.selRoomId||"";
@@ -6240,16 +6305,16 @@ export default function Page(){
             </div>
           </div>
           <div className="fld" style={{marginBottom:selRoom?8:0}}>
-            <label>Assign Room</label>
+            <label>Assign Room / Unit</label>
             <select value={selRoomId} onChange={e=>{const r=allAvailForInvite.find(x=>x.id===e.target.value);setModal(prev=>({...prev,selRoomId:e.target.value,selPropId:r?r.propId:prev.selPropId,inviteRent:r?r.rent:undefined,inviteSD:r?r.rent:undefined,inviteRoomErr:false}));}} style={{width:"100%",borderColor:modal.inviteRoomErr?"#c45c4a":undefined}}>
-              <option value="">-- Select a room --</option>
+              <option value="">-- Select a room or unit --</option>
               <option value="__none__">No room decided yet</option>
               {allAvailForInvite.filter(r=>!selPropId||r.propId===selPropId).map(r=>(
-                <option key={r.id} value={r.id}>{(r.unitLabel?"Unit "+r.unitLabel+" - ":"")+r.name+" at "+r.propName+" - $"+r.rent+"/mo"+(r._willVacate?" (lease ends "+fmtD(r.le)+")":"")}</option>
+                <option key={r.id} value={r.id}>{(r.unitLabel&&!r.isWholeUnit?"Unit "+r.unitLabel+" - ":"")+r.name+(r.isWholeUnit?" (Whole Unit)":"")+" at "+r.propName+" - $"+r.rent+"/mo"+(r.willVacate?" (lease ends "+fmtD(r.le)+")":"")}</option>
               ))}
             </select>
           </div>
-          {modal.inviteRoomErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease"}}>Please make a room selection. Choose a specific room or "No room decided yet" if undecided.</div>}
+          {modal.inviteRoomErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease"}}>Please make a selection or choose "No room decided yet".</div>}
           {selRoom&&<div className="fr" style={{gap:8,marginBottom:0}}>
             <div className="fld" style={{marginBottom:0}}>
               <label>Monthly Rent</label>
@@ -6578,28 +6643,26 @@ export default function Page(){
       {(()=>{
         const moveInDate=a.termMoveIn||a.moveIn||"";
         const moveInMs=moveInDate?new Date(moveInDate+"T00:00:00").getTime():null;
-        // A room is assignable if: vacant now, OR occupied but lease ends on/before move-in date
-        const availableRooms=props.flatMap(p=>(p.units&&p.units.length>0?p.units:[{id:"_",name:"",label:"",rooms:allRooms(p)}]).flatMap(u=>(u.rooms||[]).filter(r=>{
-          if(r.st==="vacant")return true;
-          if(r.st==="occupied"&&r.le&&moveInMs){
-            const leEnd=new Date(r.le+"T00:00:00").getTime();
-            return leEnd<=moveInMs;
-          }
+        const availableItems=props.flatMap(p=>leaseableItems(p).filter(item=>{
+          if(item.st==="vacant")return true;
+          if(item.st==="occupied"&&item.le&&moveInMs)return new Date(item.le+"T00:00:00").getTime()<=moveInMs;
           return false;
-        }).map(r=>({...r,propName:p.name,propId:p.id,unitLabel:u.label,unitName:u.name,_willVacate:r.st==="occupied"&&r.le}))));
+        }).map(item=>({...item,_willVacate:item.st==="occupied"&&!!item.le})));
         const termProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
-        const termRoom=a.termRoomId?(termProp?allRooms(termProp).find(r=>r.id===a.termRoomId):null):(termProp?allRooms(termProp).find(r=>r.name===a.room):null);
-        const termRent=a.termRent!==undefined?a.termRent:(termRoom?termRoom.rent:0);
+        const allItems=termProp?leaseableItems(termProp):[];
+        const termItem=a.termRoomId?allItems.find(i=>i.id===a.termRoomId):allItems.find(i=>i.name===a.room);
+        const termRent=a.termRent!==undefined?a.termRent:(termItem?termItem.rent:0);
         const saveTerm=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
-        const selectedAvail=availableRooms.find(r=>r.id===(a.termRoomId||termRoom?.id));
-        const roomLabel=(r,rent)=>{
-          let label=(r.unitLabel?"Unit "+r.unitLabel+" — ":"")+r.name+" at "+(r.propName||""+" — ")+fmtS(rent)+"/mo";
-          if(r._willVacate)label+=" · lease ends "+fmtD(r.le);
+        const selectedAvail=availableItems.find(i=>i.id===(a.termRoomId||termItem?.id));
+        const itemLabel=(item,rent)=>{
+          let label=(item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":"")+item.name+" at "+(item.propName||"")+" — "+fmtS(rent)+"/mo";
+          if(item._willVacate)label+=" · lease ends "+fmtD(item.le);
+          if(item.isWholeUnit)label+=" (Whole Unit)";
           return label;
         };
         return(
         <div className="tp-card" style={{border:"2px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
-          <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>🏠 Room Assignment</h3>
+          <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>🏠 Room / Unit Assignment</h3>
           <div className="fr" style={{marginBottom:8,gap:8}}>
             <div className="fld" style={{marginBottom:0}}>
               <label>Property</label>
@@ -6614,22 +6677,20 @@ export default function Page(){
             </div>
           </div>
           <div className="fld" style={{marginBottom:8}}>
-            <label>Assign Room <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Vacant now + rooms whose lease ends by move-in date</span></label>
-            <select value={a.termRoomId||termRoom?.id||""} onChange={e=>{const r=availableRooms.find(x=>x.id===e.target.value);if(r){saveTerm("termRoomId",r.id);saveTerm("termPropId",r.propId);saveTerm("termRent",r.rent);saveTerm("termSD",r.rent);}}} style={{width:"100%"}}>
-              <option value="">No room selected at this time</option>
-              {availableRooms.map(r=>{
-                const isSelected=r.id===(a.termRoomId||termRoom?.id);
-                const rent=isSelected?termRent:r.rent;
-                return<option key={r.id} value={r.id}>{roomLabel(r,rent)}</option>;
+            <label>Assign Room / Unit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Vacant now + units whose lease ends by move-in date</span></label>
+            <select value={a.termRoomId||termItem?.id||""} onChange={e=>{const item=availableItems.find(x=>x.id===e.target.value);if(item){saveTerm("termRoomId",item.id);saveTerm("termPropId",item.propId);saveTerm("termRent",item.rent);saveTerm("termSD",item.rent);}}} style={{width:"100%"}}>
+              <option value="">No assignment at this time</option>
+              {availableItems.map(item=>{
+                const isSelected=item.id===(a.termRoomId||termItem?.id);
+                const rent=isSelected?termRent:item.rent;
+                return<option key={item.id} value={item.id}>{itemLabel(item,rent)}</option>;
               })}
-              {/* If currently assigned room isn't in the available list, still show it */}
-              {termRoom&&!availableRooms.find(r=>r.id===termRoom.id)&&<option value={termRoom.id}>⚠ {termRoom.unitLabel?"Unit "+termRoom.unitLabel+" — ":""}{termRoom.name} at {termProp?.name} — occupied, lease not expired by move-in</option>}
+              {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<option value={termItem.id}>⚠ {termItem.name} at {termProp?.name} — occupied, lease not expired by move-in</option>}
             </select>
-            {termRoom&&!availableRooms.find(r=>r.id===termRoom.id)&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ This room is currently occupied and its lease doesn't end by the selected move-in date. Adjust the move-in date or select a different room.</div>}
-            {!termRoom&&!a.termRoomId&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" is not available — it may be occupied with an active lease. Select an available room.</div>}
+            {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ This unit is currently occupied and its lease does not end by the selected move-in date.</div>}
+            {!termItem&&!a.termRoomId&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" is not available — select an available room or unit.</div>}
           </div>
-          {/* Editable rent rate — shown once a room is selected */}
-          {(a.termRoomId||termRoom?.id)&&<>
+          {(a.termRoomId||termItem?.id)&&<>
             <div className="fr" style={{gap:8,marginBottom:0}}>
               <div className="fld" style={{marginBottom:0}}>
                 <label>Monthly Rent <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit if rate differs from listing</span></label>
@@ -6647,7 +6708,7 @@ export default function Page(){
               </div>
             </div>
             {selectedAvail?._willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
-              ⏳ Current lease ends {fmtD(selectedAvail.le)} — room will be vacant by move-in date.
+              ⏳ Current lease ends {fmtD(selectedAvail.le)} — unit will be vacant by move-in date.
             </div>}
           </>}
         </div>);
@@ -6669,24 +6730,40 @@ export default function Page(){
           var pr=props.find(function(p){return p.name===a.property;});
           if(!pr)return null;
           const calcAge=(dob)=>{if(!dob)return null;const b=new Date(dob+"T00:00:00");if(isNaN(b))return null;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=10&&age<120?age:null;};
-          return allRooms(pr).map(function(r){
-            const occ=r.st==="occupied"&&r.tenant;
-            const age=occ?calcAge(r.tenant.dob):null;
-            const genderShort=occ&&r.tenant.gender?r.tenant.gender==="Male"?"M":r.tenant.gender==="Female"?"F":r.tenant.gender==="Non-binary"?"NB":null:null;
+          return leaseableItems(pr).map(function(item){
+            if(item.isWholeUnit){
+              const occ=item.st==="occupied";
+              return(
+                <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:600}}>{item.name} <span style={{fontSize:9,color:"#d4a853",fontWeight:500}}>Whole Unit</span></div>
+                    {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>Occupied</div>}
+                    {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(item.rent)}/mo</div>
+                    <div style={{fontSize:8,color:"#bbb",marginTop:1}}>whole unit</div>
+                  </div>
+                </div>
+              );
+            }
+            const occ=item.st==="occupied"&&item.tenant;
+            const age=occ?calcAge(item.tenant.dob):null;
+            const genderShort=occ&&item.tenant.gender?item.tenant.gender==="Male"?"M":item.tenant.gender==="Female"?"F":item.tenant.gender==="Non-binary"?"NB":null:null;
             return(
-              <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+              <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                 <div>
-                  <div style={{fontSize:12,fontWeight:600}}>{r.name}</div>
+                  <div style={{fontSize:12,fontWeight:600}}>{item.name}</div>
                   {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>
-                    {r.tenant.name||"Occupied"}
-                    {(genderShort||age||r.tenant.occupationType)&&<span style={{color:"#999",marginLeft:6}}>
-                      {[genderShort,age?"Age "+age:null,r.tenant.occupationType].filter(Boolean).join(" · ")}
+                    {item.tenant.name||"Occupied"}
+                    {(genderShort||age||item.tenant.occupationType)&&<span style={{color:"#999",marginLeft:6}}>
+                      {[genderShort,age?"Age "+age:null,item.tenant.occupationType].filter(Boolean).join(" · ")}
                     </span>}
                   </div>}
                   {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
                 </div>
                 <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(r.rent)}/mo</div>
+                  <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(item.rent)}/mo</div>
                   <div style={{fontSize:8,color:"#bbb",marginTop:1}}>12-mo lease</div>
                 </div>
               </div>
