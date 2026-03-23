@@ -840,8 +840,7 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
     setEditingId(null);setDraftT(null);
   };
   const deleteTemplate=(id)=>{
-    if(!window.confirm("Delete this template? Any units using it will keep their current value."))return;
-    onUpdateSettings({...(settings||DEF_SETTINGS),utilTemplates:templates.filter(t=>t.id!==id)});
+    showConfirm({title:"Delete Template?",body:"Any units currently using this template will keep their current value.",confirmLabel:"Delete",danger:true,onConfirm:()=>onUpdateSettings({...(settings||DEF_SETTINGS),utilTemplates:templates.filter(t=>t.id!==id)})});
   };
   const startNew=()=>{
     const t={id:uid(),name:"New Template",key:"custom_"+uid().slice(0,4),desc:"",clause:""};
@@ -1127,7 +1126,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
         <div style={{display:"flex",gap:6}}>
           <button className="btn btn-green btn-sm" disabled={!manualFile.trim()} onClick={()=>{
             const f=manualFile.trim();if(!f)return;
-            if(scenes.some(s=>s.file===f)){alert("Already added.");return;}
+            if(scenes.some(s=>s.file===f)){showAlert({title:"Already Added",body:"This file has already been added to the scene list."});return;}
             addScene(f,manualLabel,manualFloor);
             setManualFile("");setManualLabel("");setManualFloor(1);
           }}>Add Scene</button>
@@ -1399,8 +1398,8 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
             {(p.units||[]).length>(PROP_TYPES[p.type]||PROP_TYPES.SFH).units.length&&
               <button className="btn btn-red btn-sm" style={{fontSize:9}} onClick={()=>{
                 const hasOcc=allRooms({units:[curUnit]}).some(r=>r.st==="occupied");
-                if(hasOcc){alert("Cannot remove — "+curUnit.name+" has occupied rooms. Remove tenants first.");}
-                else if(window.confirm("Remove "+curUnit.name+"? This cannot be undone.")){removeUnit(activeUnit);}
+                if(hasOcc){showAlert({title:"Cannot Remove Unit",body:curUnit.name+" has occupied rooms. Remove all tenants from this unit before deleting it."});}
+                else{showConfirm({title:"Remove "+curUnit.name+"?",body:"This cannot be undone. All room data in this unit will be permanently deleted.",confirmLabel:"Remove Unit",danger:true,onConfirm:()=>removeUnit(activeUnit)});}
               }}>Remove Unit</button>}
           </div>
         </div>
@@ -1544,8 +1543,8 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
     <div className="mft" style={{justifyContent:"space-between"}}>
       <button className="btn btn-red btn-sm" style={{fontSize:11}} onClick={()=>{
         const occ=allRooms(p).filter(r=>r.st==="occupied").length;
-        if(occ>0){alert("Cannot delete — "+p.name+" has "+occ+" occupied room"+(occ!==1?"s":"")+" . Remove all tenants first.");}
-        else if(window.confirm("Permanently delete "+p.name+"? This cannot be undone.")){onDelete(p.id);}
+        if(occ>0){showAlert({title:"Cannot Delete Property",body:p.name+" has "+occ+" occupied room"+(occ!==1?"s":"")+" . Remove all tenants before deleting."});}
+        else{showConfirm({title:"Delete "+p.name+"?",body:"This is permanent and cannot be undone. All rooms, photos, and settings for this property will be removed.",confirmLabel:"Delete Property",danger:true,onConfirm:()=>onDelete(p.id)});}
       }}>🗑 Delete Property</button>
       <div style={{display:"flex",gap:6}}>
       <button className="btn btn-out" onClick={onClose}>Cancel</button>
@@ -1827,6 +1826,10 @@ export default function Page(){
   const[ideas,setIdeas]=useState(DEF_IDEAS);
   const[loaded,setLoaded]=useState(false);
   const[modal,setModal]=useState(null);
+  const[confirmDialog,setConfirmDialog]=useState(null);
+  // Helper: show a centered confirm/alert modal instead of browser native dialogs
+  const showConfirm=({title,body,onConfirm,confirmLabel="Confirm",danger=false})=>setConfirmDialog({title,body,onConfirm,confirmLabel,danger});
+  const showAlert=({title,body})=>setConfirmDialog({title,body,onConfirm:null,confirmLabel:null,danger:false});
   const[sideOpen,setSideOpen]=useState(false);
   const[drill,setDrill]=useState(null);
   const[showCharts,setShowCharts]=useState(true);
@@ -3130,7 +3133,7 @@ export default function Page(){
                         onClick={e=>{e.stopPropagation();
                           const now=TODAY.toISOString().split("T")[0];
                           setApps(p=>p.map(x=>x.id===a.id?{...x,lastContact:now,history:[...(x.history||[]),{from:"invited",to:"invited",date:now,note:"Reinvited — resent application link"}]}:x));
-                          if(a.inviteLink){navigator.clipboard.writeText(a.inviteLink);alert("Link copied! Re-send to "+a.name);}
+                          if(a.inviteLink){navigator.clipboard.writeText(a.inviteLink);showAlert({title:"Link Copied",body:"Invite link copied to clipboard. Re-send to "+a.name+"."});}
                         }}>🔄 Reinvite</button>
                     </div>}
 
@@ -3318,8 +3321,8 @@ export default function Page(){
             ))}
             {screenQs.length>0&&<button className="btn btn-out" style={{width:"100%",marginTop:8}} onClick={()=>setScreenQs(p=>[...p,{id:uid(),q:"New question...",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"}])}>+ Add Question</button>}
             {screenQs.length>0&&<div style={{display:"flex",gap:8,marginTop:12}}>
-              <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-screen-qs",screenQs);setNotifs(p=>[{id:uid(),type:"app",msg:`Pre-screen questions published (${screenQs.filter(q=>q.active).length} active)`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);alert("Pre-screen questions saved and published! The public site will use these questions.");}}>🚀 Save & Publish to Site</button>
-              <button className="btn btn-out" onClick={()=>{if(window.confirm&&typeof window.confirm==="function"){setScreenQs([
+              <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-screen-qs",screenQs);setNotifs(p=>[{id:uid(),type:"app",msg:`Pre-screen questions published (${screenQs.filter(q=>q.active).length} active)`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);showAlert({title:"Published!",body:"Pre-screen questions saved and published. The public site will use these questions immediately."});}}> 🚀 Save &amp; Publish to Site</button>
+              <button className="btn btn-out" onClick={()=>{showConfirm({title:"Reset to Defaults?",body:"This will replace your current questions with the 7 default Black Bear screening questions. Your current questions will be lost.",confirmLabel:"Reset",danger:true,onConfirm:()=>setScreenQs([
                 {id:uid(),q:"Are you a non-smoker? We have a strict no-smoking policy (including vapes).",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
                 {id:uid(),q:"Do you agree to our zero-tolerance drug policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
                 {id:uid(),q:"Are you comfortable with our no-pets policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
@@ -3327,7 +3330,7 @@ export default function Page(){
                 {id:uid(),q:"Is your credit score 650 or above?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
                 {id:uid(),q:"Is your gross monthly income at least 3x your expected rent?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
                 {id:uid(),q:"Can you provide professional references and verifiable landlord history?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              ]);}}}> Reset to Defaults</button>
+              ])});}}>Reset to Defaults</button>
             </div>}
             <div style={{fontSize:9,color:"#999",marginTop:8,textAlign:"center"}}>Saves to Supabase · Click "Save & Publish" to push changes live</div>
           </div>}
@@ -3835,7 +3838,7 @@ export default function Page(){
                     <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"signLease",leaseId:l.id,lease:l})}>✍ Sign & Send</button>
                   </>}
                   {l.status==="pending_tenant"&&<>
-                    <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");alert("Link copied!");}}>📋 Copy Link</button>
+                    <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied to clipboard."});}}>📋 Copy Link</button>
                   </>}
                   {l.status==="executed"&&<>
                     <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"viewLease",lease:l})}>👁 View</button>
@@ -3894,7 +3897,7 @@ export default function Page(){
               </div>}
             </div>
           ))}
-          <button className="btn btn-gold" style={{marginTop:8}} onClick={()=>{save("hq-lease-template",template||{name:"Alabama Room Rental Agreement",landlordName:"Carolina Cooper",company:"Black Bear Properties",sections:DEF_LEASE_SECTIONS});alert("Template saved!");}}>💾 Save Template</button>
+          <button className="btn btn-gold" style={{marginTop:8}} onClick={()=>{save("hq-lease-template",template||{name:"Alabama Room Rental Agreement",landlordName:"Carolina Cooper",company:"Black Bear Properties",sections:DEF_LEASE_SECTIONS});showAlert({title:"Template Saved",body:"Lease template saved successfully."});}}>💾 Save Template</button>
         </>}
 
         {/* Lease Form Modal */}
@@ -4094,7 +4097,7 @@ export default function Page(){
             {modal.link}
           </div>
           <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-            <button className="btn btn-out" onClick={()=>{navigator.clipboard.writeText(modal.link||"");alert("Copied!");}}>📋 Copy Link</button>
+            <button className="btn btn-out" onClick={()=>{navigator.clipboard.writeText(modal.link||"");showAlert({title:"Copied",body:"Link copied to clipboard."});}}>📋 Copy Link</button>
             <button className="btn btn-gold" onClick={()=>setModal(null)}>Done</button>
           </div>
         </div></div>}
@@ -6038,16 +6041,16 @@ export default function Page(){
                 if(d.clientSecret){
                   // Redirect to Stripe hosted payment page
                   window.open(`https://checkout.stripe.com/pay/${d.clientSecret}#ach`,"_blank");
-                }else{alert("Payment setup failed. Please contact your property manager.");}
-              }catch(e){alert("Payment unavailable — please pay via Zelle or contact us.");}
+                }else{showAlert({title:"Payment Setup Failed",body:"Please contact your property manager to complete payment setup."});}
+              }catch(e){showAlert({title:"Payment Unavailable",body:"Online payment is not available right now. Please pay via Zelle or contact us directly."});}
             }}>🏦 ACH Bank Transfer</button>
             <button className="btn btn-gold btn-sm" style={{flex:1}} onClick={async()=>{
               try{
                 const r=await fetch("/api/stripe/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chargeId:c.id,amount:rem,tenantName:tenant?.name||c.tenantName,tenantEmail:tenant?.email||"",method:"card"})});
                 const d=await r.json();
                 if(d.clientSecret){window.open(`https://checkout.stripe.com/pay/${d.clientSecret}`,"_blank");}
-                else{alert("Payment setup failed. Please contact your property manager.");}
-              }catch(e){alert("Payment unavailable — please pay via Zelle or contact us.");}
+                else{showAlert({title:"Payment Setup Failed",body:"Please contact your property manager to complete payment setup."});}
+              }catch(e){showAlert({title:"Payment Unavailable",body:"Online payment is not available right now. Please pay via Zelle or contact us directly."});}
             }}>💳 Credit / Debit Card</button>
           </div>
         </div>);
@@ -6910,7 +6913,7 @@ export default function Page(){
               Pending move-in: {fmtD(moveInDate)}
             </div>}
             {fullyPaid
-              ?<button className="btn btn-green" style={{flex:1,width:"100%"}} onClick={()=>{if(targetRoom)convertToTenant(targetRoom.id,targetProp.id);else alert("Room not found — check room assignment.");}}>🔑 All Paid — Convert to Tenant</button>
+              ?<button className="btn btn-green" style={{flex:1,width:"100%"}} onClick={()=>{if(targetRoom)convertToTenant(targetRoom.id,targetProp.id);else showAlert({title:"Room Not Found",body:"Could not find the assigned room. Please check the room assignment and try again."});}}>🔑 All Paid — Convert to Tenant</button>
               :<div style={{padding:"8px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,fontSize:11,color:"#9a7422",textAlign:"center"}}>
                 {appCharges2.length===0?"No move-in charges found — go to Payments to add them.":`Waiting for payment — ${fmtS(totalDue2-totalPaid2)} remaining`}
               </div>
@@ -6937,6 +6940,17 @@ export default function Page(){
     </div></div>);})()}
 
   {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp} onViewTenant={(r,propName)=>{setEditProp(null);setModal({type:"tenant",data:{...r,propName,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils||r.utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean||r.clean}});}} settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}} onDelete={id=>{setProps(prev=>prev.filter(x=>x.id!==id));setEditProp(null);}}/>}
+
+  {/* Centered Confirm / Alert Dialog — replaces all window.confirm and alert calls */}
+  {confirmDialog&&<div className="mbg" onClick={()=>{if(!confirmDialog.onConfirm)setConfirmDialog(null);}} style={{zIndex:9999}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}}>
+    <div style={{fontSize:confirmDialog.danger?32:28,marginBottom:12}}>{confirmDialog.danger?"⚠️":"ℹ️"}</div>
+    <h2 style={{marginBottom:8,color:confirmDialog.danger?"#c45c4a":"#1a1714"}}>{confirmDialog.title}</h2>
+    <p style={{fontSize:13,color:"#5c4a3a",lineHeight:1.6,marginBottom:20}}>{confirmDialog.body}</p>
+    <div className="mft">
+      <button className="btn btn-out" onClick={()=>setConfirmDialog(null)}>{confirmDialog.onConfirm?"Cancel":"OK"}</button>
+      {confirmDialog.onConfirm&&<button className={"btn "+(confirmDialog.danger?"btn-red":"btn-gold")} onClick={()=>{confirmDialog.onConfirm();setConfirmDialog(null);}}>{confirmDialog.confirmLabel||"Confirm"}</button>}
+    </div>
+  </div></div>}
 
   {/* Confetti */}
   {showConfetti&&<div className="confetti-wrap">{Array.from({length:60}).map((_,i)=>{const colors=["#d4a853","#4a7c59","#f5f0e8","#c45c4a","#3b82f6"];return(
