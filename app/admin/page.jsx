@@ -1954,7 +1954,7 @@ export default function Page(){
   const[tab,setTab]=useState("dashboard");
   const[props,setProps]=useState(DEF_PROPS);
   const[payments,setPayments]=useState(DEF_PAYMENTS);
-  const[charges,setCharges]=useState(DEF_CHARGES);
+  const[charges,setCharges]=useState([]);
   const[credits,setCredits]=useState(DEF_CREDITS);
   const[sdLedger,setSdLedger]=useState(DEF_SD_LEDGER);
   const[paySubTab,setPaySubTab]=useState("overview");
@@ -1976,12 +1976,12 @@ export default function Page(){
   const[leadToast,setLeadToast]=useState(null);
   const[toastDismissing,setToastDismissing]=useState(false);
   const lastAppCountRef=useRef(0);
-  const[maint,setMaint]=useState(DEF_MAINT);
-  const[apps,setApps]=useState(DEF_APPS);
-  const[docs,setDocs]=useState(DEF_DOCS);
-  const[txns,setTxns]=useState(DEF_TXNS);
-  const[notifs,setNotifs]=useState(DEF_NOTIFS);
-  const[archive,setArchive]=useState(DEF_ARCHIVE);
+  const[maint,setMaint]=useState([]);
+  const[apps,setApps]=useState([]);
+  const[docs,setDocs]=useState([]);
+  const[txns,setTxns]=useState([]);
+  const[notifs,setNotifs]=useState([]);
+  const[archive,setArchive]=useState([]);
   const[rocks,setRocks]=useState(DEF_ROCKS);
   const[issues,setIssues]=useState(DEF_ISSUES);
   const[scorecard,setScorecard]=useState(DEF_SC_HISTORY);
@@ -2018,7 +2018,7 @@ export default function Page(){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",DEF_MAINT),load("hq-apps",DEF_APPS),load("hq-docs",DEF_DOCS),load("hq-txns",DEF_TXNS),load("hq-notifs",DEF_NOTIFS),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",DEF_IDEAS),load("hq-archive",DEF_ARCHIVE),load("hq-charges",DEF_CHARGES),load("hq-credits",DEF_CREDITS),load("hq-sdledger",DEF_SD_LEDGER),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null)]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
