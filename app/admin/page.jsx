@@ -4527,9 +4527,12 @@ export default function Page(){
         </div>
 
         {/* ── Sub-tabs ── */}
-        <div className="tabs" style={{marginBottom:14}}>
+        <div style={{display:"flex",gap:4,marginBottom:16,borderBottom:"2px solid rgba(0,0,0,.06)",paddingBottom:0}}>
           {[["overview","Overview"],["income","Income"],["expenses","Expenses"],["mortgages","Mortgages"]].map(([k,l])=>(
-            <button key={k} className={"tab "+(acctSubTab===k?"on":"")} onClick={()=>{setAcctSubTab(k);setF("category","all");setF("tenant","all");setF("vendor","all");}}>{l}</button>
+            <button key={k} onClick={()=>{setAcctSubTab(k);setF("category","all");setF("tenant","all");setF("vendor","all");}}
+              style={{padding:"8px 18px",fontSize:12,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#999",background:"transparent",border:"none",borderBottom:acctSubTab===k?"2px solid #3c3228":"2px solid transparent",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s"}}>
+              {l}
+            </button>
           ))}
         </div>
 
