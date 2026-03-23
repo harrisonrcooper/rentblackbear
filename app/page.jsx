@@ -1149,8 +1149,20 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     markersRef.current.forEach(m=>m.remove());markersRef.current=[];
     curProps.filter(p=>validCoord(p.lat,p.lng)).forEach(p=>{
       const icon=L.divIcon({className:"",html:`<div style="width:34px;height:34px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer">🐻</div>`,iconSize:[34,34],iconAnchor:[17,34],popupAnchor:[0,-34]});
-      const vacRooms=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));
-      const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;min-width:180px;padding:4px 2px"><strong style="font-size:14px;color:#1a1714">${p.name}</strong><div style="color:#666;font-size:12px;margin:2px 0">${p.address}</div><div style="color:#d4a853;font-weight:700;font-size:13px;margin-top:4px">${vacRooms} room${vacRooms!==1?"s":""} available · From $${minR}/mo</div></div>`);
+      // Rental-mode-aware vacancy and price
+      const vacItems=(p.units&&p.units.length>0?p.units:[{rentalMode:"byRoom",rooms:allRoomsP(p)}]).flatMap(u=>{
+        if((u.rentalMode||"byRoom")==="wholeHouse"){
+          const rooms=u.rooms||[];
+          const isVac=rooms.every(r=>(r.st||(r.tenant?"occupied":"vacant"))!=="occupied");
+          return isVac?[{rent:u.rent||0}]:[];
+        }
+        return(u.rooms||[]).filter(r=>(r.st||(r.tenant?"occupied":"vacant"))==="vacant").map(r=>({rent:r.rent}));
+      });
+      const vacCount=vacItems.length;
+      const minR=vacCount>0?Math.min(...vacItems.map(i=>i.rent)):null;
+      const label=(p.units||[]).some(u=>(u.rentalMode||"byRoom")==="wholeHouse")?"unit":"room";
+      const availText=vacCount>0?`${vacCount} ${label}${vacCount!==1?"s":""} available · From $${minR}/mo`:`Fully leased`;
+      const m=L.marker([p.lat,p.lng],{icon}).addTo(map).bindPopup(`<div style="font-family:sans-serif;min-width:180px;padding:4px 2px"><strong style="font-size:14px;color:#1a1714">${p.name}</strong><div style="color:#666;font-size:12px;margin:2px 0">${p.address||p.addr||""}</div><div style="color:${vacCount>0?"#d4a853":"#999"};font-weight:700;font-size:13px;margin-top:4px">${availText}</div></div>`);
       markersRef.current.push(m);
     });
     const pins=curCat==="all"?POIS:POIS.filter(p=>p.cat===curCat);
@@ -1202,8 +1214,23 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     <div className="tabs" style={{marginTop:0,marginBottom:16}}><button className={`tab ${mapCat==="all"?"on":""}`} onClick={()=>setMapCat("all")}>All</button>{mapCats.map(c=><button key={c} className={`tab ${mapCat===c?"on":""}`} onClick={()=>setMapCat(c)}>{c}</button>)}</div>
     {/* Property pins */}
     <div className="poi-g">
-      {PROPS.map(p=>{const vac=allRoomsP(p).filter(r=>r.st==="vacant").length;const minR=safeMin(allRoomsP(p).map(r=>r.rent));const hasPin=validCoord(p.lat,p.lng);return(
-        <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:highlight===p.name?"rgba(212,168,83,.18)":"rgba(212,168,83,.10)",border:"1px solid rgba(212,168,83,.3)",cursor:hasPin?"pointer":"default",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",opacity:hasPin?1:0.75}} onClick={hasPin?()=>scrollToPin(p):undefined} onMouseEnter={hasPin?()=>scrollToPin(p):undefined}><div className="poi-ic">🐻</div><div className="poi-inf"><div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div><div className="poi-ct">{p.address} · {vac} vacant · From ${minR}/mo</div></div><div className="poi-dr" style={{color:"var(--ac)"}}>📍</div></div>);})}
+      {PROPS.map(p=>{
+        const vacItems=(p.units&&p.units.length>0?p.units:[{rentalMode:"byRoom",rooms:allRoomsP(p)}]).flatMap(u=>{
+          if((u.rentalMode||"byRoom")==="wholeHouse"){const rooms=u.rooms||[];const isVac=rooms.every(r=>(r.st||(r.tenant?"occupied":"vacant"))!=="occupied");return isVac?[{rent:u.rent||0}]:[];}
+          return(u.rooms||[]).filter(r=>(r.st||(r.tenant?"occupied":"vacant"))==="vacant").map(r=>({rent:r.rent}));
+        });
+        const vac=vacItems.length;const minR=vac>0?Math.min(...vacItems.map(i=>i.rent)):null;
+        const hasPin=validCoord(p.lat,p.lng);
+        const label=(p.units||[]).some(u=>(u.rentalMode||"byRoom")==="wholeHouse")?"unit":"room";
+        return(
+        <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:highlight===p.name?"rgba(212,168,83,.18)":"rgba(212,168,83,.10)",border:"1px solid rgba(212,168,83,.3)",cursor:hasPin?"pointer":"default",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",opacity:hasPin?1:0.75}} onClick={hasPin?()=>scrollToPin(p):undefined} onMouseEnter={hasPin?()=>scrollToPin(p):undefined}>
+          <div className="poi-ic">🐻</div>
+          <div className="poi-inf">
+            <div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div>
+            <div className="poi-ct">{p.address||p.addr||""} · {vac>0?`${vac} ${label}${vac!==1?"s":""} vacant · From $${minR}/mo`:"Fully leased"}</div>
+          </div>
+          <div className="poi-dr" style={{color:"var(--ac)"}}>📍</div>
+        </div>);})}
       {/* POI list */}
       {mapFiltered.map((p,i)=><a key={i} className="poi" href={p.url} target="_blank" rel="noopener noreferrer" style={{cursor:"pointer",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",background:highlight===p.name?"rgba(255,255,255,.08)":"rgba(255,255,255,.05)"}} onMouseEnter={()=>scrollToPin(p)}><div className="poi-ic">{p.icon}</div><div className="poi-inf"><div className="poi-nm">{p.name}</div><div className="poi-ct">{p.desc}</div><div className="poi-lk">Visit website ↗</div></div><div className="poi-dr">🚗 {p.drive}</div></a>)}
     </div>
@@ -1478,7 +1505,7 @@ export default function Page(){
 
   // Savings
   const tradTot=Object.values(calcV).reduce((a,b)=>a+b,0);const sav=tradTot-bbRoom;const savYr=sav*12;const savPct=tradTot>0?Math.round(sav/tradTot*100):0;
-  const Sl=({lb,id,val,mn,mx,step,note})=>(<div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:12,fontWeight:600}}>{lb}</span><div style={{display:"flex",alignItems:"center",gap:3}}><span style={{fontSize:10,color:"#999"}}>$</span><input type="number" value={val} onChange={e=>id==="bb"?setBbRoom(Number(e.target.value)||0):setCalcV(p=>({...p,[id]:Number(e.target.value)||0}))} style={{width:64,padding:"4px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontFamily:"inherit",fontSize:13,fontWeight:700,textAlign:"right",outline:"none"}}/></div></div><input type="range" min={mn} max={mx} step={step||10} value={val} onChange={e=>id==="bb"?setBbRoom(Number(e.target.value)):setCalcV(p=>({...p,[id]:Number(e.target.value)}))} style={{background:`linear-gradient(to right, #d4a853 ${((val-mn)/(mx-mn))*100}%, #e5e3df ${((val-mn)/(mx-mn))*100}%)`}}/>{note&&<div style={{fontSize:9,color:"#999",marginTop:3}}>{note}</div>}</div>);
+  const Sl=({lb,id,val,mn,mx,note})=>(<div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><span style={{fontSize:12,fontWeight:600}}>{lb}</span><div style={{display:"flex",alignItems:"center",gap:3}}><span style={{fontSize:10,color:"#999"}}>$</span><input type="number" value={val} onChange={e=>id==="bb"?setBbRoom(Number(e.target.value)||0):setCalcV(p=>({...p,[id]:Number(e.target.value)||0}))} style={{width:64,padding:"4px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontFamily:"inherit",fontSize:13,fontWeight:700,textAlign:"right",outline:"none"}}/></div></div><input type="range" min={mn} max={mx} step={1} value={val} onChange={e=>id==="bb"?setBbRoom(Number(e.target.value)):setCalcV(p=>({...p,[id]:Number(e.target.value)}))} style={{background:`linear-gradient(to right, #d4a853 ${((val-mn)/(mx-mn))*100}%, #e5e3df ${((val-mn)/(mx-mn))*100}%)`}}/>{note&&<div style={{fontSize:9,color:"#999",marginTop:3}}>{note}</div>}</div>);
 
   // FAQ
   const faqs=[
@@ -1657,7 +1684,7 @@ export default function Page(){
         </div>
         <div>
           <div className="calc-card" style={{border:"2px solid #d4a853"}}><div className="calc-hd"><div className="calc-ic" style={{background:"rgba(212,168,83,.1)"}}>🐻</div><div><div style={{fontWeight:800}}>Black Bear Room</div><div style={{fontSize:10,color:"#999"}}>Everything included</div></div></div>
-            <Sl lb="Your Room" id="bb" val={bbRoom} mn={globalMin} mx={globalMax} step={50} note={`Rooms $${globalMin}–$${globalMax}/mo`}/>
+            <Sl lb="Your Room" id="bb" val={bbRoom} mn={globalMin} mx={globalMax} note={`Rooms $${globalMin}–$${globalMax}/mo`}/>
             {["WiFi (Google Fiber)","Utilities (varies)","Furnished bedroom","TV in room","Parking","Common area cleaning","Pro management"].map((x,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 0",borderBottom:i<6?"1px solid rgba(0,0,0,.03)":"none",fontSize:12,color:"var(--gn)",fontWeight:500}}><span style={{fontWeight:800}}>✓</span>{x}<span style={{marginLeft:"auto",color:"#999",fontSize:10}}>$0</span></div>)}
             <div className="calc-total" style={{borderColor:"rgba(212,168,83,.2)"}}><span style={{fontWeight:800}}>Total</span><span style={{fontSize:22,fontWeight:800,color:"var(--gn)"}}>${bbRoom.toLocaleString()}</span></div>
           </div>
