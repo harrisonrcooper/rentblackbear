@@ -1604,7 +1604,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
                 <input type="checkbox" checked={!!r.ownerOccupied} onChange={e=>updRoom(i,"ownerOccupied",e.target.checked)} style={{accentColor:"#3b82f6",width:14,height:14}}/>
                 Owner Occupied - exclude from rent, financials, and public listings
               </label>
-            </div>
+            </div>}
             <div className="fr" style={{alignItems:"flex-end",gap:8}}>
               <div className="fld" style={{flex:1}}>
                 <label>Utilities <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— overrides unit default for this room</span></label>
