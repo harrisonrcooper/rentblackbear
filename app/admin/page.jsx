@@ -155,23 +155,22 @@ const findRoom=(props,roomId)=>{for(const p of props){for(const u of(p.units||[]
 const findUnit=(props,unitId)=>{for(const p of props){const u=(p.units||[]).find(x=>x.id===unitId);if(u)return{unit:u,prop:p};}return null;};
 
 // Returns flat list of things that can be leased from a prop, respecting rentalMode per unit.
-// Each item: { id, name, rent, st, le, propName, propId, unitId, unitName, unitLabel, allWhole }
+// Each item: { id, name, rent, st, le, propName, propId, unitId, unitName, unitLabel, isWholeUnit }
 const leaseableItems=(prop,propName)=>{
   const pn=propName||prop.name||"";
   return(prop.units||[]).flatMap(u=>{
     if((u.rentalMode||"byRoom")==="wholeHouse"){
-      // Whole unit leased as one — synthesize a single "room-like" item from the unit
       const rooms=u.rooms||[];
-      const anyOcc=rooms.some(r=>r.st==="occupied");
+      const anyOcc=rooms.some(r=>r.st==="occupied"||(r.tenant&&!r.st));
       const latestLe=rooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le||null;
       return[{
         id:u.id,name:(prop.units||[]).length>1?u.name:"Whole Unit",
         rent:u.rent||0,st:anyOcc?"occupied":"vacant",le:latestLe,
         propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,
-        allWhole:true,baths:u.baths,sqft:u.sqft,beds:rooms.length,
+        isWholeUnit:true,baths:u.baths,sqft:u.sqft,beds:rooms.length,
       }];
     }
-    return(u.rooms||[]).map(r=>({...r,st:r.st||(r.tenant?"occupied":"vacant"),propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,allWhole:false}));
+    return(u.rooms||[]).map(r=>({...r,st:r.st||(r.tenant?"occupied":"vacant"),propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,isWholeUnit:false}));
   });
 };
 // Update a room by ID inside its unit, preserving hierarchy
