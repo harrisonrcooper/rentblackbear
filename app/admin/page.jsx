@@ -4950,6 +4950,8 @@ export default function Page(){
               </div>}
           </>);
         })()}
+        </>);
+      })()}
       {tab==="reports"&&(()=>{
         const rFrom=reportPeriod.from||(TODAY.getFullYear()+"-01-01");
         const rTo=reportPeriod.to||TODAY.toISOString().split("T")[0];
