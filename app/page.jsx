@@ -524,10 +524,36 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
       <p className="mdesc">{p.desc}</p>
       <div className="istrip"><div className="ii">📶 WiFi</div><div className="ii">🛋️ Furnished</div><div className="ii">🅿️ Parking</div><div className="ii">🧹 {p.clean} Cleaning</div>{p.utils==="allIncluded"?<div className="ii">💡 All Utilities</div>:<div className="ii pt">💡 First $100 Covered · Overage Split</div>}</div>
       <h3 className="rh">Rooms & Pricing</h3>
-      {(p.units&&p.units.length>1)?p.units.map(u=>(
+      {(p.units&&p.units.length>1)?p.units.map(u=>{
+        const uMode=u.rentalMode||"byRoom";
+        const uRooms=u.rooms||[];
+        const isWhole=uMode==="wholeHouse";
+        const wholeIsAvail=isWhole&&uRooms.every(r=>r.st!=="occupied");
+        return(
         <div key={u.id} style={{marginBottom:16}}>
           <div style={{fontSize:10,fontWeight:800,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.8,marginBottom:8,padding:"4px 10px",background:"rgba(212,168,83,.08)",borderRadius:6,display:"inline-block"}}>{u.name}</div>
-          <div className="rgrid">{(u.rooms||[]).map(r=>{
+          {isWhole?(
+            <div className="rc">
+              <div className="rm-m">
+                <div className="rn">{u.name}<span className="rbt rbt-s">Whole Unit</span></div>
+                <div className="rd">
+                  {u.sqft?<span>{u.sqft} sqft</span>:null}
+                  {u.baths&&<span>{u.baths} bath{u.baths!==1?"s":""}</span>}
+                  <span>{uRooms.length} bedroom{uRooms.length!==1?"s":""}</span>
+                </div>
+                {u.desc&&<div style={{fontSize:11,color:"#5c4a3a",marginTop:4}}>{u.desc}</div>}
+              </div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
+                <div className="rprice">${u.rent||0}<small>/mo</small></div>
+                {wholeIsAvail&&<button onClick={e=>{e.stopPropagation();onLeaseNow({id:u.id,name:u.name,rent:u.rent||0,st:"vacant",le:null,leaseTiers:[]});}}
+                  style={{padding:"6px 12px",borderRadius:6,border:"1px solid #d4a853",background:"rgba(212,168,83,.1)",color:"#9a7422",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+                  Lease Now
+                </button>}
+                {!wholeIsAvail&&<div style={{fontSize:9,color:"#999",fontWeight:600,padding:"4px 8px",borderRadius:4,background:"rgba(0,0,0,.04)"}}>Occupied</div>}
+              </div>
+            </div>
+          ):(
+          <div className="rgrid">{uRooms.map(r=>{
             const tiers=getActiveTiers(r);const minPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):r.rent;
             const isAvail=r.st!=="occupied";
             return(
@@ -547,8 +573,36 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
             </div>
             );})}
           </div>
+          )}
         </div>
-      )):(
+        );
+      }):(
+        p.rentalMode==="wholeHouse"?(()=>{
+          const firstUnit=p.units&&p.units.length>0?p.units[0]:null;
+          const u=firstUnit;
+          const uRooms=u?.rooms||p.rooms||[];
+          const isAvail=uRooms.every(r=>r.st!=="occupied");
+          return(
+          <div className="rc">
+            <div className="rm-m">
+              <div className="rn">{p.name}<span className="rbt rbt-s">Whole Property</span></div>
+              <div className="rd">
+                {p.sqft?<span>{p.sqft} sqft</span>:null}
+                {p.baths&&<span>{p.baths} bath{p.baths!==1?"s":""}</span>}
+                <span>{uRooms.length} bedroom{uRooms.length!==1?"s":""}</span>
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
+              <div className="rprice">${u?.rent||0}<small>/mo</small></div>
+              {isAvail&&<button onClick={e=>{e.stopPropagation();onLeaseNow({id:u?.id||"whole",name:p.name,rent:u?.rent||0,st:"vacant",le:null,leaseTiers:[]});}}
+                style={{padding:"6px 12px",borderRadius:6,border:"1px solid #d4a853",background:"rgba(212,168,83,.1)",color:"#9a7422",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+                Lease Now
+              </button>}
+              {!isAvail&&<div style={{fontSize:9,color:"#999",fontWeight:600,padding:"4px 8px",borderRadius:4,background:"rgba(0,0,0,.04)"}}>Occupied</div>}
+            </div>
+          </div>
+          );
+        })():(
         <div className="rgrid">{p.rooms.map(r=>{
           const tiers=getActiveTiers(r);const minPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):r.rent;
           const isAvail=r.st!=="occupied";
@@ -578,6 +632,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
           </div>
           );})}
         </div>
+        )
       )}
       <h4 className="mst">3D Tour</h4>
       {p.tourFolder&&(p.tourScenes&&p.tourScenes.length>0) ? <VirtualTour360 tourFolder={p.tourFolder} tourScenes={p.tourScenes} propertyName={p.name}/> : <div className="phbox"><div style={{fontSize:40}}>🏠</div><h4>Coming Soon</h4><p>Insta360 walkthrough will be embedded here</p></div>}
@@ -1351,6 +1406,7 @@ export default function Page(){
         imgs:(p.photos&&p.photos.length>0)?p.photos:[],
         units:p.units||[],
         rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le,leaseTiers:r.leaseTiers||[]})),
+        rentalMode:firstUnit?.rentalMode||"byRoom",
       };
     });
   },[liveProps]);
