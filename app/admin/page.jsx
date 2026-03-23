@@ -1668,8 +1668,8 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                 ?<button className="btn btn-gold btn-sm" style={{fontSize:10}} onClick={()=>{
                     onSave(p);
                     setTimeout(()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name);}},150);
-                  }}>📄 Manage Lease / Terminate</button>
-                :{!curUnit.ownerOccupied&&<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>}}
+                  }}>Manage Lease / Terminate</button>
+                :(curUnit.ownerOccupied?null:<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>)}
             </div>
             {rooms.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
               {rooms.map(r=><div key={r.id} style={{padding:"4px 9px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:9,background:"#faf9f7",color:r.ownerOccupied?"#1d4ed8":r.st==="occupied"?"#4a7c59":"#999"}}>
