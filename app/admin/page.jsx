@@ -184,10 +184,25 @@ const DEF_PAYMENTS={};// {roomId: {month: amount}} - quick lookup (computed from
 const CHARGE_CATS=["Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
 const PAY_METHODS=["Zelle","Venmo","Cash","Check","CashApp","Bank Transfer","Stripe/ACH","Credit Card","Other"];
 const ACH_METHODS=["Bank Transfer","Stripe/ACH"]; // locked — no edit on paid charges
-const EXP_CATS_SIMPLE=["Mortgage Interest","Repairs & Maintenance","Insurance","Property Tax","Utilities","Cleaning & Supplies","Advertising & Leasing","Management Fees","Professional Services","Other"];
-const EXP_CATS_FULL=["Auto & Travel (L6)","Cleaning & Maintenance (L7)","Commissions (L8)","Insurance (L9)","Legal & Professional (L10)","Management Fees (L11)","Mortgage Interest - Bank (L12)","Other Interest (L13)","Repairs (L14)","Supplies (L15)","Taxes - Property (L16)","Utilities (L17)","Depreciation (L18)","Other (L19)"];
-const SIMPLE_TO_FULL={"Mortgage Interest":"Mortgage Interest - Bank (L12)","Repairs & Maintenance":"Repairs (L14)","Insurance":"Insurance (L9)","Property Tax":"Taxes - Property (L16)","Utilities":"Utilities (L17)","Cleaning & Supplies":"Cleaning & Maintenance (L7)","Advertising & Leasing":"Commissions (L8)","Management Fees":"Management Fees (L11)","Professional Services":"Legal & Professional (L10)","Other":"Other (L19)"};
-const SCHED_E_LINES={"Auto & Travel (L6)":6,"Cleaning & Maintenance (L7)":7,"Commissions (L8)":8,"Insurance (L9)":9,"Legal & Professional (L10)":10,"Management Fees (L11)":11,"Mortgage Interest - Bank (L12)":12,"Other Interest (L13)":13,"Repairs (L14)":14,"Supplies (L15)":15,"Taxes - Property (L16)":16,"Utilities (L17)":17,"Depreciation (L18)":18,"Other (L19)":19};
+const SCHED_E_CATS=[
+  {id:"advertising",label:"Advertising",line:5,hint:"Listing fees, signage, online ads"},
+  {id:"auto_travel",label:"Auto & Travel",line:6,hint:"Mileage to properties, travel for repairs"},
+  {id:"cleaning_maintenance",label:"Cleaning & Maintenance",line:7,hint:"Routine cleaning, landscaping, pest control"},
+  {id:"commissions",label:"Commissions",line:8,hint:"Leasing agent fees, referral commissions"},
+  {id:"insurance",label:"Insurance",line:9,hint:"Hazard, liability, umbrella policies"},
+  {id:"legal_professional",label:"Legal & Professional Fees",line:10,hint:"CPA fees, attorney fees, bookkeeping"},
+  {id:"management_fees",label:"Management Fees",line:11,hint:"PM software, property management services"},
+  {id:"mortgage_interest",label:"Mortgage Interest",line:12,hint:"Interest from your 1098 — banks only"},
+  {id:"other_interest",label:"Other Interest",line:13,hint:"Interest on non-bank loans, hard money"},
+  {id:"repairs",label:"Repairs",line:14,hint:"Fixes that restore — NOT improvements that add value"},
+  {id:"supplies",label:"Supplies",line:15,hint:"Cleaning supplies, small tools, hardware"},
+  {id:"property_tax",label:"Taxes — Property",line:16,hint:"Annual property tax payments"},
+  {id:"utilities",label:"Utilities",line:17,hint:"Electric, gas, water, trash, internet you pay"},
+  {id:"depreciation",label:"Depreciation",line:18,hint:"Calculated by your CPA — enter CPA-provided amount"},
+  {id:"other",label:"Other",line:19,hint:"Anything that truly doesn't fit above"},
+];
+const SCHED_E_CAT_LABELS=SCHED_E_CATS.map(c=>c.label);
+const IMPROVEMENT_TYPES=["Addition","Appliance","Flooring","HVAC","Landscaping","Plumbing","Electrical","Roof","Windows","Other"];
 // Charges: source of truth for all money owed/paid
 const DEF_CHARGES=[
   // ─── Marcus Johnson (r1, Holmes House, $850/mo) — reliable payer ───
@@ -1986,9 +2001,10 @@ export default function Page(){
   const[reportPeriod,setReportPeriod]=useState({from:"",to:""});
   const[reportProp,setReportProp]=useState("all");
   const[activeReport,setActiveReport]=useState(null);
-  const[coaMode,setCoaMode]=useState("simple"); // "simple" | "full"
   const[expenses,setExpenses]=useState([]);
   const[mortgages,setMortgages]=useState([]);
+  const[vendors,setVendors]=useState([]);
+  const[improvements,setImprovements]=useState([]);
   const[payPeriod,setPayPeriod]=useState("mtd");
   const[payFilters,setPayFilters]=useState({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""});
   const[depFilters,setDepFilters]=useState({property:"",tenant:"",lease:"",dateFrom:"",dateTo:""});
@@ -2049,7 +2065,7 @@ export default function Page(){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[])]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[])]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
@@ -2092,10 +2108,10 @@ export default function Page(){
         if(!found)console.warn("⚠ Could not geocode:",prop.name,prop.addr);
       }
     }
-    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setLoaded(true);
+    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,loaded]);
+  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,vendors,improvements,loaded]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   const m=useMemo(()=>{
@@ -4456,7 +4472,7 @@ export default function Page(){
         const incomeCatOptions=[...new Set(allCollected.map(p=>p.category))].sort();
         const expCatOptions=[...new Set(expenses.map(e=>e.category))].sort();
         const vendorOptions=[...new Set(expenses.filter(e=>e.vendor).map(e=>e.vendor))].sort();
-        const expCats=coaMode==="full"?EXP_CATS_FULL:EXP_CATS_SIMPLE;
+        const expCats=SCHED_E_CAT_LABELS;
 
         const setF=(k,v)=>setAcctFilters(prev=>({...prev,[k]:v}));
         const resetFilters=()=>setAcctFilters({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0],propId:"all",tenant:"all",category:"all",vendor:"all"});
@@ -4470,14 +4486,7 @@ export default function Page(){
               {acctFrom} — {acctTo}{acctPropId!=="all"?" · "+(props.find(p=>p.id===acctPropId)||{}).name:""}
             </div>
           </div>
-          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            <span style={{fontSize:10,color:"#999"}}>COA Mode:</span>
-            <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
-              <button onClick={()=>setCoaMode("simple")} style={{padding:"4px 10px",fontSize:10,fontWeight:600,background:coaMode==="simple"?"#3c3228":"transparent",color:coaMode==="simple"?"#fff":"#999",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Simple</button>
-              <button onClick={()=>setCoaMode("full")} style={{padding:"4px 10px",fontSize:10,fontWeight:600,background:coaMode==="full"?"#3c3228":"transparent",color:coaMode==="full"?"#fff":"#999",border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:"1px solid rgba(0,0,0,.1)"}}>Full COA</button>
-            </div>
-            {coaMode==="full"&&<span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"2px 7px",borderRadius:4,fontWeight:600}}>Schedule E mapped</span>}
-          </div>
+          <span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"3px 8px",borderRadius:4,fontWeight:600}}>Schedule E</span>
         </div>
 
         {/* ── Global filter bar ── */}
@@ -4528,9 +4537,9 @@ export default function Page(){
 
         {/* ── Sub-tabs ── */}
         <div style={{display:"flex",gap:4,marginBottom:16,borderBottom:"2px solid rgba(0,0,0,.06)",paddingBottom:0}}>
-          {[["overview","Overview"],["income","Income"],["expenses","Expenses"],["mortgages","Mortgages"]].map(([k,l])=>(
+          {[["overview","Overview"],["income","Income"],["expenses","Expenses"],["improvements","Capital Improvements"],["mortgages","Mortgages"],["vendors","Vendors"]].map(([k,l])=>(
             <button key={k} onClick={()=>{setAcctSubTab(k);setF("category","all");setF("tenant","all");setF("vendor","all");}}
-              style={{padding:"8px 18px",fontSize:12,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#999",background:"transparent",border:"none",borderBottom:acctSubTab===k?"2px solid #3c3228":"2px solid transparent",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s"}}>
+              style={{padding:"8px 16px",fontSize:12,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#999",background:"transparent",border:"none",borderBottom:acctSubTab===k?"2px solid #3c3228":"2px solid transparent",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap"}}>
               {l}
             </button>
           ))}
@@ -4660,7 +4669,7 @@ export default function Page(){
           const sorted=filtExpenses.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
-              <div style={{fontSize:11,color:"#999"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total{coaMode==="full"?" · Full COA (Schedule E)":" · Simple mode"}</div>
+              <div style={{fontSize:11,color:"#999"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total" · Schedule E categories"</div>
               <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),category:expCats[0],description:"",vendor:"",amount:"",paymentMethod:"",notes:""},errs:{}})}>+ Add Expense</button>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
@@ -4767,10 +4776,107 @@ export default function Page(){
             </div>}
           </>);
         })()}
-        </>);
-      })()}
+        {/* ── IMPROVEMENTS ── */}
+        {acctSubTab==="improvements"&&(()=>{
+          const filtImprove=improvements.filter(im=>acctPropId==="all"||im.propId===acctPropId);
+          const totalImprove=filtImprove.reduce((s,im)=>s+im.amount,0);
+          return(<>
+            <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:11,color:"#3b82f6",lineHeight:1.6}}>
+              <strong>Capital Improvements are NOT deducted on Schedule E.</strong> They are added to your property cost basis and depreciated over 27.5 years. Track them here and give the list to your CPA each year.
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={{fontSize:11,color:"#999"}}>{filtImprove.length} improvement{filtImprove.length!==1?"s":""} · {fmtS(totalImprove)} total cost basis additions</div>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addImprovement",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),improvementType:"",description:"",contractor:"",amount:"",notes:""},errs:{}})}>+ Add Improvement</button>
+            </div>
+            {filtImprove.length===0
+              ?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No capital improvements recorded. New roof, HVAC, addition, appliances — log them here for your CPA.</div>
+              :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                  <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                    {["Date","Property","Type","Description","Contractor","Receipt","Amount",""].map(h=>(
+                      <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {filtImprove.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0).map((im,i)=>(
+                      <tr key={im.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                        <td style={{padding:"8px 14px",fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{im.date}</td>
+                        <td style={{padding:"8px 14px",fontSize:10}}>{(props.find(p=>p.id===im.propId)||{}).name||"—"}</td>
+                        <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{im.improvementType||"—"}</span></td>
+                        <td style={{padding:"8px 14px",fontWeight:600}}>{im.description}</td>
+                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.contractor||"—"}</td>
+                        <td style={{padding:"8px 14px"}}>
+                          {im.receiptUrl
+                            ?<a href={im.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#3b82f6",fontWeight:600,textDecoration:"none"}}>View</a>
+                            :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600}}>Upload
+                              <input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={async ev=>{
+                                const file=ev.target.files[0];if(!file)return;
+                                const ext=file.name.split(".").pop()||"jpg";
+                                const path="receipts/"+im.id+"-"+Date.now()+"."+ext;
+                                const r=await fetch(SUPA_URL+"/storage/v1/object/receipts/"+path,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},body:file});
+                                if(r.ok)setImprovements(prev=>prev.map(x=>x.id===im.id?{...x,receiptUrl:SUPA_URL+"/storage/v1/object/public/receipts/"+path}:x));
+                              }}/>
+                            </label>}
+                        </td>
+                        <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#3b82f6",whiteSpace:"nowrap"}}>{fmtS(im.amount)}</td>
+                        <td style={{padding:"8px 14px"}}>
+                          <div style={{display:"flex",gap:4}}>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addImprovement",editId:im.id,form:{...im},errs:{}})}>Edit</button>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteImprovement",imId:im.id,description:im.description})}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
+                    <td colSpan={6} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Cost Basis Additions</td>
+                    <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#3b82f6",fontSize:14}}>{fmtS(totalImprove)}</td>
+                    <td/>
+                  </tr></tfoot>
+                </table>
+              </div>}
+          </>);
+        })()}
 
-      {/* ═══ REPORTS ═══ */}
+        {/* ── VENDORS ── */}
+        {acctSubTab==="vendors"&&(()=>{
+          return(<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Vendor / Payee List</div>
+                <div style={{fontSize:10,color:"#999",marginTop:1}}>Saved vendors auto-populate when adding expenses.</div>
+              </div>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addVendor",form:{name:"",phone:"",email:"",notes:""},errs:{}})}>+ Add Vendor</button>
+            </div>
+            {vendors.length===0
+              ?<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No vendors saved yet. You can save vendors while adding expenses, or add them here.</div>
+              :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                  <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
+                    {["Vendor / Payee","Phone","Email","Notes",""].map(h=>(
+                      <th key={h} style={{padding:"9px 14px",textAlign:"left",fontSize:9,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>
+                    ))}
+                  </tr></thead>
+                  <tbody>
+                    {vendors.slice().sort((a,b)=>a.name?.localeCompare(b.name||"")||0).map((v,i)=>(
+                      <tr key={v.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                        <td style={{padding:"9px 14px",fontWeight:700}}>{v.name}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a"}}>{v.phone||"—"}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:"#5c4a3a"}}>{v.email||"—"}</td>
+                        <td style={{padding:"9px 14px",fontSize:10,color:"#999",fontStyle:v.notes?"normal":"italic"}}>{v.notes||"—"}</td>
+                        <td style={{padding:"9px 14px"}}>
+                          <div style={{display:"flex",gap:4}}>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addVendor",editId:v.id,form:{...v},errs:{}})}>Edit</button>
+                            <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#c45c4a"}} onClick={()=>setModal({type:"deleteVendor",vendorId:v.id,name:v.name})}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>}
+          </>);
+        })()}
       {tab==="reports"&&(()=>{
         const rFrom=reportPeriod.from||(TODAY.getFullYear()+"-01-01");
         const rTo=reportPeriod.to||TODAY.toISOString().split("T")[0];
@@ -4921,19 +5027,19 @@ export default function Page(){
               {rProps.map(pr=>{
                 const prIncome=rPayments.filter(p=>p.propName===pr.name).reduce((s,p)=>s+p.amount,0);
                 const prExp=rExpenses.filter(e=>e.propId===pr.id);
-                const expByLine={};prExp.forEach(e=>{const fullCat=SIMPLE_TO_FULL[e.category]||e.category;expByLine[fullCat]=(expByLine[fullCat]||0)+e.amount;});
+                const expByLine={};prExp.forEach(e=>{expByLine[e.category]=(expByLine[e.category]||0)+e.amount;});
                 const totalExp=prExp.reduce((s,e)=>s+e.amount,0);
                 const mg=rMortgages.filter(m=>m.propId===pr.id);
                 const mgInterest=mg.reduce((s,m)=>s+(m.currentBalance||0)*(m.interestRate||0)/100,0);
-                if(expByLine["Mortgage Interest - Bank (L12)"])expByLine["Mortgage Interest - Bank (L12)"]+=mgInterest;
-                else if(mg.length>0)expByLine["Mortgage Interest - Bank (L12)"]=mgInterest;
+                if(expByLine["Mortgage Interest"])expByLine["Mortgage Interest"]+=mgInterest;
+                else if(mg.length>0)expByLine["Mortgage Interest"]=mgInterest;
                 return(
                 <div key={pr.id} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",marginBottom:12,overflow:"hidden"}}>
                   <div style={{padding:"12px 16px",borderBottom:"2px solid rgba(0,0,0,.06)",fontWeight:800,fontSize:13,background:"#f8f7f4"}}>{pr.name} — Schedule E Summary ({rFrom.slice(0,4)})</div>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                     <tbody>
                       <tr style={{background:"rgba(74,124,89,.04)"}}><td style={{padding:"8px 16px",fontWeight:700,color:"#4a7c59"}}>Line 3 — Gross Rents Received</td><td style={{padding:"8px 16px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(prIncome)}</td></tr>
-                      {EXP_CATS_FULL.map(cat=>{const amt=expByLine[cat]||0;return amt>0?(
+                      {SCHED_E_CATS.map(({label:cat,line})=>{const amt=expByLine[cat]||0;return amt>0?(
                         <tr key={cat} style={{borderTop:"1px solid rgba(0,0,0,.03)"}}><td style={{padding:"8px 16px",color:"#5c4a3a"}}>{cat}</td><td style={{padding:"8px 16px",textAlign:"right",fontWeight:700,color:"#c45c4a"}}>{fmtS(amt)}</td></tr>
                       ):null;})}
                       <tr style={{borderTop:"2px solid rgba(0,0,0,.08)",background:"rgba(59,130,246,.04)"}}><td style={{padding:"10px 16px",fontWeight:800,color:"#3b82f6"}}>Line 22 — Total Expenses</td><td style={{padding:"10px 16px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalExp)}</td></tr>
@@ -6448,7 +6554,13 @@ export default function Page(){
     const isEdit=!!modal.editId;
     const f=modal.form||{};const errs=modal.errs||{};
     const upd=(k,v)=>setModal(p=>({...p,form:{...p.form,[k]:v},errs:{...(p.errs||{}),[k]:null}}));
-    const expCats=coaMode==="full"?EXP_CATS_FULL:EXP_CATS_SIMPLE;
+    const selCat=SCHED_E_CATS.find(c=>c.label===f.category);
+    // Vendor combobox logic
+    const vendorInput=f.vendor||"";
+    const vendorMatches=vendorInput.trim()?vendors.filter(v=>v.name.toLowerCase().includes(vendorInput.toLowerCase())):vendors;
+    const exactMatch=vendors.some(v=>v.name.toLowerCase()===vendorInput.toLowerCase().trim());
+    const showVendorSave=vendorInput.trim()&&!exactMatch;
+    const showVendorDropdown=vendorInput.trim()&&vendorMatches.length>0&&!exactMatch;
     const save=()=>{
       const e={};
       if(!f.date)e.date="Required";
@@ -6463,8 +6575,91 @@ export default function Page(){
       setModal(null);
     };
     return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
+      <h2 style={{marginBottom:4}}>{isEdit?"Edit Expense":"Add Expense"}</h2>
+      <div className="fr3">
+        <div className="fld"><label style={{color:errs.date?"#c45c4a":undefined}}>Date *</label><input type="date" value={f.date||""} onChange={e=>upd("date",e.target.value)} style={{borderColor:errs.date?"#c45c4a":undefined}}/>{errs.date&&<div className="err-msg">{errs.date}</div>}</div>
+        <div className="fld"><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
+          <select value={f.propId||""} onChange={e=>upd("propId",e.target.value)} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
+            <option value="">— Select —</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>{errs.propId&&<div className="err-msg">{errs.propId}</div>}</div>
+        <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($) *</label><input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/>{errs.amount&&<div className="err-msg">{errs.amount}</div>}</div>
+      </div>
+      {/* Category with Schedule E hint */}
+      <div className="fld">
+        <label style={{color:errs.category?"#c45c4a":undefined}}>Category * <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— Schedule E</span></label>
+        <select value={f.category||""} onChange={e=>upd("category",e.target.value)} style={{borderColor:errs.category?"#c45c4a":undefined}}>
+          <option value="">— Select a Schedule E category —</option>
+          {SCHED_E_CATS.map(c=><option key={c.id} value={c.label}>Line {c.line} — {c.label}</option>)}
+        </select>
+        {selCat&&<div style={{fontSize:10,color:"#9a7422",marginTop:4,padding:"4px 8px",background:"rgba(212,168,83,.06)",borderRadius:4}}>{selCat.hint}</div>}
+        {errs.category&&<div className="err-msg">{errs.category}</div>}
+      </div>
+      <div className="fld"><label style={{color:errs.description?"#c45c4a":undefined}}>Description *</label><input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Replaced water heater Unit B, quarterly pest control..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>{errs.description&&<div className="err-msg">{errs.description}</div>}</div>
+      {/* Vendor combobox */}
+      <div className="fld" style={{position:"relative"}}>
+        <label>Vendor / Payee</label>
+        <input value={vendorInput} onChange={e=>upd("vendor",e.target.value)} placeholder="Type vendor name or select from saved list..." autoComplete="off"/>
+        {showVendorDropdown&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:"0 0 8px 8px",boxShadow:"0 4px 12px rgba(0,0,0,.1)",zIndex:100,maxHeight:160,overflowY:"auto"}}>
+          {vendorMatches.map(v=><div key={v.id} style={{padding:"8px 12px",cursor:"pointer",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.04)"}}
+            onMouseDown={e=>{e.preventDefault();upd("vendor",v.name);}}
+            onMouseEnter={e=>e.currentTarget.style.background="rgba(212,168,83,.06)"}
+            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            <div style={{fontWeight:600}}>{v.name}</div>
+            {v.phone&&<div style={{fontSize:9,color:"#999"}}>{v.phone}</div>}
+          </div>)}
+        </div>}
+        {showVendorSave&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
+          <button type="button" className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}}
+            onClick={()=>{setVendors(p=>[{id:uid(),name:vendorInput.trim(),phone:"",email:"",notes:""},...p]);upd("vendor",vendorInput.trim());}}>
+            Save "{vendorInput.trim()}" as vendor
+          </button>
+          <span style={{fontSize:9,color:"#999"}}>or keep typing</span>
+        </div>}
+      </div>
+      <div className="fr3">
+        <div className="fld"><label>Payment Method</label>
+          <select value={f.paymentMethod||""} onChange={e=>upd("paymentMethod",e.target.value)}>
+            <option value="">— Select —</option>{PAY_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
+          </select></div>
+        <div className="fld" style={{gridColumn:"span 2"}}><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Optional notes"/></div>
+      </div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Expense"}</button></div>
+    </div></div>);
+  })()}
+
+  {/* ── Delete Expense ── */}
+  {modal&&modal.type==="deleteExpense"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
+      <h2>Delete Expense?</h2>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}><strong>{modal.description}</strong> will be permanently deleted.</p>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-red" onClick={()=>{setExpenses(p=>p.filter(e=>e.id!==modal.expId));setModal(null);}}>Delete</button></div>
+    </div></div>
+  )}
+
+  {/* ── Add / Edit Improvement ── */}
+  {modal&&modal.type==="addImprovement"&&(()=>{
+    const isEdit=!!modal.editId;
+    const f=modal.form||{};const errs=modal.errs||{};
+    const upd=(k,v)=>setModal(p=>({...p,form:{...p.form,[k]:v},errs:{...(p.errs||{}),[k]:null}}));
+    const save=()=>{
+      const e={};
+      if(!f.date)e.date="Required";
+      if(!f.propId)e.propId="Required";
+      if(!f.improvementType)e.improvementType="Required";
+      if(!f.description?.trim())e.description="Required";
+      if(!f.amount||Number(f.amount)<=0)e.amount="Must be > 0";
+      if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
+      const rec={...f,amount:Number(f.amount),propName:(props.find(p=>p.id===f.propId)||{}).name||""};
+      if(isEdit){setImprovements(p=>p.map(x=>x.id===modal.editId?{...x,...rec}:x));}
+      else{setImprovements(p=>[{id:uid(),createdAt:TODAY.toISOString(),...rec},...p]);}
+      setModal(null);
+    };
+    return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}}>
-      <h2>{isEdit?"✏️ Edit Expense":"+ Add Expense"}</h2>
+      <h2 style={{marginBottom:4}}>{isEdit?"Edit Improvement":"Add Capital Improvement"}</h2>
+      <div style={{fontSize:11,color:"#3b82f6",marginBottom:14,padding:"8px 10px",background:"rgba(59,130,246,.06)",borderRadius:6}}>This goes to your cost basis — NOT deducted this year. Give to your CPA for depreciation schedule.</div>
       <div className="fr3">
         <div className="fld"><label style={{color:errs.date?"#c45c4a":undefined}}>Date *</label><input type="date" value={f.date||""} onChange={e=>upd("date",e.target.value)} style={{borderColor:errs.date?"#c45c4a":undefined}}/>{errs.date&&<div className="err-msg">{errs.date}</div>}</div>
         <div className="fld"><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
@@ -6474,31 +6669,59 @@ export default function Page(){
         <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($) *</label><input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/>{errs.amount&&<div className="err-msg">{errs.amount}</div>}</div>
       </div>
       <div className="fr3">
-        <div className="fld" style={{gridColumn:"span 2"}}><label style={{color:errs.category?"#c45c4a":undefined}}>Category * <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— {coaMode==="full"?"Full COA":"Simple"} mode</span></label>
-          <select value={f.category||""} onChange={e=>upd("category",e.target.value)} style={{borderColor:errs.category?"#c45c4a":undefined}}>
-            <option value="">— Select —</option>{expCats.map(c=><option key={c} value={c}>{c}</option>)}
-          </select>{errs.category&&<div className="err-msg">{errs.category}</div>}</div>
-        <div className="fld"><label>Payment Method</label>
-          <select value={f.paymentMethod||""} onChange={e=>upd("paymentMethod",e.target.value)}>
-            <option value="">— Select —</option>{PAY_METHODS.map(m=><option key={m} value={m}>{m}</option>)}
-          </select></div>
+        <div className="fld"><label style={{color:errs.improvementType?"#c45c4a":undefined}}>Type *</label>
+          <select value={f.improvementType||""} onChange={e=>upd("improvementType",e.target.value)} style={{borderColor:errs.improvementType?"#c45c4a":undefined}}>
+            <option value="">— Select type —</option>{IMPROVEMENT_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+          </select>{errs.improvementType&&<div className="err-msg">{errs.improvementType}</div>}</div>
+        <div className="fld" style={{gridColumn:"span 2"}}><label>Contractor / Vendor</label><input value={f.contractor||""} onChange={e=>upd("contractor",e.target.value)} placeholder="e.g. Huntsville HVAC, ABC Roofing..."/></div>
       </div>
-      <div className="fld"><label style={{color:errs.description?"#c45c4a":undefined}}>Description *</label><input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Replaced HVAC filter, quarterly pest control..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>{errs.description&&<div className="err-msg">{errs.description}</div>}</div>
-      <div className="fr3">
-        <div className="fld" style={{gridColumn:"span 2"}}><label>Vendor / Payee</label><input value={f.vendor||""} onChange={e=>upd("vendor",e.target.value)} placeholder="e.g. Home Depot, State Farm, Huntsville Pest..."/></div>
-        <div className="fld"><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Optional notes"/></div>
-      </div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Expense"}</button></div>
+      <div className="fld"><label style={{color:errs.description?"#c45c4a":undefined}}>Description *</label><input value={f.description||""} onChange={e=>upd("description",e.target.value)} placeholder="e.g. Full HVAC replacement — unit A, new 30yr architectural shingle roof..." style={{borderColor:errs.description?"#c45c4a":undefined}}/>{errs.description&&<div className="err-msg">{errs.description}</div>}</div>
+      <div className="fld"><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="Warranty info, permit numbers, etc."/></div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Improvement"}</button></div>
     </div></div>);
   })()}
 
-  {/* ── Delete Expense ── */}
-  {modal&&modal.type==="deleteExpense"&&(
+  {/* ── Delete Improvement ── */}
+  {modal&&modal.type==="deleteImprovement"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
-      <h2>🗑 Delete Expense?</h2>
-      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}><strong>{modal.description}</strong> — this will be permanently deleted.</p>
+      <h2>Delete Improvement?</h2>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}><strong>{modal.description}</strong> will be permanently deleted from your improvement log.</p>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-red" onClick={()=>{setExpenses(p=>p.filter(e=>e.id!==modal.expId));setModal(null);}}>Delete</button></div>
+        <button className="btn btn-red" onClick={()=>{setImprovements(p=>p.filter(im=>im.id!==modal.imId));setModal(null);}}>Delete</button></div>
+    </div></div>
+  )}
+
+  {/* ── Add / Edit Vendor ── */}
+  {modal&&modal.type==="addVendor"&&(()=>{
+    const isEdit=!!modal.editId;
+    const f=modal.form||{};const errs=modal.errs||{};
+    const upd=(k,v)=>setModal(p=>({...p,form:{...p.form,[k]:v},errs:{...(p.errs||{}),[k]:null}}));
+    const save=()=>{
+      if(!(f.name||"").trim()){setModal(p=>({...p,errs:{name:"Required"}}));shakeModal();return;}
+      if(isEdit){setVendors(p=>p.map(x=>x.id===modal.editId?{...x,...f}:x));}
+      else{setVendors(p=>[{id:uid(),...f},...p]);}
+      setModal(null);
+    };
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
+      <h2>{isEdit?"Edit Vendor":"Add Vendor"}</h2>
+      <div className="fld"><label style={{color:errs.name?"#c45c4a":undefined}}>Vendor / Payee Name *</label><input value={f.name||""} onChange={e=>upd("name",e.target.value)} placeholder="e.g. Home Depot, State Farm, Huntsville Pest Control" autoFocus style={{borderColor:errs.name?"#c45c4a":undefined}}/>{errs.name&&<div className="err-msg">{errs.name}</div>}</div>
+      <div className="fr3">
+        <div className="fld"><label>Phone</label><input value={f.phone||""} onChange={e=>upd("phone",e.target.value)} placeholder="(256) 555-0100"/></div>
+        <div className="fld" style={{gridColumn:"span 2"}}><label>Email</label><input value={f.email||""} onChange={e=>upd("email",e.target.value)} placeholder="vendor@example.com"/></div>
+      </div>
+      <div className="fld"><label>Notes</label><input value={f.notes||""} onChange={e=>upd("notes",e.target.value)} placeholder="e.g. 24hr emergency line, licensed and insured, preferred HVAC vendor"/></div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>{isEdit?"Save Changes":"Add Vendor"}</button></div>
+    </div></div>);
+  })()}
+
+  {/* ── Delete Vendor ── */}
+  {modal&&modal.type==="deleteVendor"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
+      <h2>Remove Vendor?</h2>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>Remove <strong>{modal.name}</strong> from your vendor list? Existing expenses using this vendor are not affected.</p>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-red" onClick={()=>{setVendors(p=>p.filter(v=>v.id!==modal.vendorId));setModal(null);}}>Remove</button></div>
     </div></div>
   )}
 
