@@ -504,7 +504,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 
 // ─── Components ─────────────────────────────────────────────────────
 function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
-  if(!p)return null;const minP=safeMin(allRoomsP(p).map(r=>r.rent));
+  if(!p)return null;
+  const isWhole=p.rentalMode==="wholeHouse";
+  const minP=isWhole?p.wholeRent:safeMin(allRoomsP(p).map(r=>r.rent));
   const goApply=()=>{onClose();setTimeout(()=>document.getElementById("apply")?.scrollIntoView({behavior:"smooth"}),100);};
   return(<div className="mo" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}>
     <button className="mx" onClick={onClose}>✕</button>
@@ -520,7 +522,12 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
     </div>
     <div className="mbody">
       <div className="mtp"><div><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.type}</span></div><h2 style={{marginTop:8}}>{p.name}</h2><p className="maddr">{p.address}</p></div>
-        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}><div className="mib"><div className="l">Rooms</div><div className="v">{allRoomsP(p).length}</div></div><div className="mib"><div className="l">Baths</div><div className="v">{p.baths}</div></div><div className="mib"><div className="l">From</div><div className="v">${minP}<small>/mo</small></div></div></div></div>
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          {!isWhole&&<div className="mib"><div className="l">Rooms</div><div className="v">{allRoomsP(p).length}</div></div>}
+          {isWhole&&<div className="mib"><div className="l">Beds</div><div className="v">{allRoomsP(p).length}</div></div>}
+          <div className="mib"><div className="l">Baths</div><div className="v">{p.baths}</div></div>
+          <div className="mib"><div className="l">{isWhole?"Rent":"From"}</div><div className="v">${minP}<small>/mo</small></div></div>
+        </div></div>
       <p className="mdesc">{p.desc}</p>
       <div className="istrip"><div className="ii">📶 WiFi</div><div className="ii">🛋️ Furnished</div><div className="ii">🅿️ Parking</div><div className="ii">🧹 {p.clean} Cleaning</div>{p.utils==="allIncluded"?<div className="ii">💡 All Utilities</div>:<div className="ii pt">💡 First $100 Covered · Overage Split</div>}</div>
       <h3 className="rh">Rooms & Pricing</h3>
@@ -1407,6 +1414,7 @@ export default function Page(){
         units:p.units||[],
         rooms:rooms.map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le,leaseTiers:r.leaseTiers||[]})),
         rentalMode:firstUnit?.rentalMode||"byRoom",
+        wholeRent:firstUnit?.rent||0,
       };
     });
   },[liveProps]);
@@ -1520,8 +1528,18 @@ export default function Page(){
 
     {/* PROPERTIES */}
     <section className="sec" id="properties"><div className="sec-inner"><div className="sh"><div className="sl">Our Portfolio</div><h2 className="st">Find Your Room</h2><p className="ss">Browse by house, compare pricing, and pick the bedroom that fits you.</p></div>
-      <div className="pgrid">{P.map(p=>{const pr=allRoomsP(p).map(r=>r.rent);return(
-        <div key={p.id} className="pcard" onClick={()=>setSel(p)}>{p.imgs&&p.imgs.length>0?<img src={p.imgs[0]} alt={p.name} className="pimg"/>:<div className="pimg" style={{background:"#2c2520",display:"flex",alignItems:"center",justifyContent:"center",color:"#d4a853",fontSize:32}}>🐻</div>}<div className="pinfo"><div className="ptags"><span className={`tag ${p.status==="Available"?"t-av":"t-cs"}`}>{p.status}</span><span className={`tag ${p.typeTag==="SFH"?"t-sfh":"t-th"}`}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr"><span className="ppr">${safeMin(pr)||"—"}–${safeMax(pr)||"—"}<small>/mo per room</small></span><span className="pbc">{allRoomsP(p).length} rooms</span></div></div></div>);})}</div>
+      <div className="pgrid">{P.map(p=>{
+        const isWhole=p.rentalMode==="wholeHouse";
+        const pr=allRoomsP(p).map(r=>r.rent);
+        const displayPrice=isWhole?p.wholeRent:null;
+        return(
+        <div key={p.id} className="pcard" onClick={()=>setSel(p)}>{p.imgs&&p.imgs.length>0?<img src={p.imgs[0]} alt={p.name} className="pimg"/>:<div className="pimg" style={{background:"#2c2520",display:"flex",alignItems:"center",justifyContent:"center",color:"#d4a853",fontSize:32}}>🐻</div>}<div className="pinfo"><div className="ptags"><span className={"tag "+(p.status==="Available"?"t-av":"t-cs")}>{p.status}</span><span className={"tag "+(p.typeTag==="SFH"?"t-sfh":"t-th")}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr">
+          {isWhole
+            ?<span className="ppr">${displayPrice||"—"}<small>/mo</small></span>
+            :<span className="ppr">${safeMin(pr)||"—"}–${safeMax(pr)||"—"}<small>/mo per room</small></span>}
+          <span className="pbc">{isWhole?"Whole property":allRoomsP(p).length+" rooms"}</span>
+        </div></div></div>
+        );})}</div>
     </div></section>
 
     {/* COMPARE */}
@@ -1561,18 +1579,33 @@ export default function Page(){
     {/* AVAILABILITY */}
     <section className="sec" id="availability"><div className="sec-inner"><div className="sh"><div className="sl">Availability</div><h2 className="st">Room Availability</h2><p className="ss">Rooms available now are ready for immediate move-in. Click upcoming openings to see the calendar.</p></div>
       <div className="tabs"><button className={`tab ${calProp==="all"?"on":""}`} onClick={()=>{setCalProp("all");setCalRoom(null);}}>All</button>{P.map(p=><button key={p.id} className={`tab ${calProp===p.id?"on":""}`} onClick={()=>{setCalProp(p.id);setCalRoom(null);}}>{p.name}</button>)}</div>
-      <div className="cal-grid">{calProps.map(prop=>(
-        <div key={prop.id} className="cal-card"><div className="cal-hd"><h3>{prop.name}</h3><span>{prop.type} · {allRoomsP(prop).length} rooms</span></div><div className="cal-bd">
-          {allRoomsP(prop).map(r=>{const isV=r.st==="vacant";const le=r.le?new Date(r.le+"T00:00:00"):null;const dl=le?Math.ceil((le-TODAY)/(1e3*60*60*24)):null;const isSoon=!isV&&dl&&dl<=90;const isExp=calRoom===r.id;
+      <div className="cal-grid">{calProps.map(prop=>{
+        const propIsWhole=prop.rentalMode==="wholeHouse";
+        return(
+        <div key={prop.id} className="cal-card"><div className="cal-hd"><h3>{prop.name}</h3><span>{prop.type}{propIsWhole?" · Whole property":" · "+allRoomsP(prop).length+" rooms"}</span></div><div className="cal-bd">
+          {propIsWhole?(()=>{
+            // For whole-house: check if all rooms are vacant
+            const rooms=allRoomsP(prop);
+            const allVacant=rooms.every(r=>r.st==="vacant");
+            const anyOcc=rooms.some(r=>r.st==="occupied");
+            const latestLe=rooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le;
+            const firstUnit=prop.units&&prop.units.length>0?prop.units[0]:null;
+            const wholeRent=prop.wholeRent||firstUnit?.rent||0;
+            if(allVacant)return(<div className="cal-avail"><div className="cal-rm-l"><div className="cal-rm-n">{prop.name} — ${wholeRent}/mo</div><div className="cal-rm-d">{rooms.length} bed · {prop.baths} bath · {prop.sqft} sqft · Ready now</div></div><button className="cal-avail-btn" onClick={()=>nav("apply")}>Apply Now →</button></div>);
+            return(<div className="cal-rm cal-occ"><div className="cal-rm-l"><div className="cal-rm-n">{prop.name} — ${wholeRent}/mo</div><div className="cal-rm-d">{rooms.length} bed · {prop.baths} bath</div></div><span className="cal-rm-st" style={{background:CLR.occBg,color:CLR.occTx}}>Thru {fmtD(latestLe)}</span></div>);
+          })():(
+          allRoomsP(prop).map(r=>{const isV=r.st==="vacant";const le=r.le?new Date(r.le+"T00:00:00"):null;const dl=le?Math.ceil((le-TODAY)/(1e3*60*60*24)):null;const isSoon=!isV&&dl&&dl<=90;const isExp=calRoom===r.id;
             if(isV)return(<div key={r.id} className="cal-avail"><div className="cal-rm-l"><div className="cal-rm-n">{r.name} — ${r.rent}/mo</div><div className="cal-rm-d">{r.bed} · {r.pb?"Private bath":"Shared bath"} · {r.sqft} sqft · Ready now</div></div><button className="cal-avail-btn" onClick={()=>nav("apply")}>Apply Now →</button></div>);
             if(isSoon)return(<div key={r.id}><div className="cal-rm cal-soon" onClick={()=>setCalRoom(isExp?null:r.id)} style={{borderColor:isExp?"rgba(154,116,34,.3)":undefined,background:isExp?"rgba(254,243,218,.1)":undefined}}><div className="cal-rm-l"><div className="cal-rm-n">{r.name} — ${r.rent}/mo</div><div className="cal-rm-d">{r.bed} · {r.pb?"Private":"Shared"} bath · Opens <strong>{fmtD(r.le)}</strong></div></div><span className="cal-rm-st" style={{background:CLR.soonBg,color:CLR.soonTx}}>Opening {fmtD(r.le)} {isExp?"▾":"▸"}</span></div>
               {isExp&&<div style={{padding:"8px 0 12px",animation:"fadeIn .2s"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><button className="tab" style={{padding:"3px 8px",fontSize:9}} onClick={()=>setMOff(o=>o-1)}>←</button><div style={{fontSize:12,fontWeight:800}}>{mLbl}</div><button className="tab" style={{padding:"3px 8px",fontSize:9}} onClick={()=>setMOff(o=>o+1)}>→</button></div>
                 <div className="cal-days-hd">{["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=><div key={d} className="cal-day-lb">{d}</div>)}</div>
-                <div className="cal-days">{Array.from({length:fD}).map((_,i)=><div key={`e${i}`} className="cal-dy" style={{background:"transparent"}}/>)}{Array.from({length:dIM}).map((_,i)=>{const day=i+1;const dt=new Date(vY,vM,day);const occ=le?dt<=le:true;const isT=dt.toDateString()===TODAY.toDateString();return(<div key={day} className="cal-dy" style={{background:occ?CLR.occBg:CLR.avBg,color:occ?CLR.occTx:CLR.avTx,boxShadow:isT?`inset 0 0 0 2px #d4a853`:undefined,fontWeight:isT?800:600}}>{day}</div>);})}</div>
+                <div className="cal-days">{Array.from({length:fD}).map((_,i)=><div key={"e"+i} className="cal-dy" style={{background:"transparent"}}/>)}{Array.from({length:dIM}).map((_,i)=>{const day=i+1;const dt=new Date(vY,vM,day);const occ=le?dt<=le:true;const isT=dt.toDateString()===TODAY.toDateString();return(<div key={day} className="cal-dy" style={{background:occ?CLR.occBg:CLR.avBg,color:occ?CLR.occTx:CLR.avTx,boxShadow:isT?"inset 0 0 0 2px #d4a853":undefined,fontWeight:isT?800:600}}>{day}</div>);})}</div>
                 <div style={{textAlign:"center",marginTop:10}}><button className="cal-avail-btn" style={{background:"#9a7422"}} onClick={()=>nav("apply")}>Get Notified →</button></div>
               </div>}</div>);
             return(<div key={r.id} className="cal-rm cal-occ"><div className="cal-rm-l"><div className="cal-rm-n">{r.name} — ${r.rent}/mo</div><div className="cal-rm-d">{r.bed} · {r.pb?"Private":"Shared"} bath</div></div><span className="cal-rm-st" style={{background:CLR.occBg,color:CLR.occTx}}>Thru {fmtD(r.le)}</span></div>);
-          })}</div></div>))}</div>
+          }))}
+        </div></div>);
+      })}</div>
       <div className="cal-legend"><div className="cal-leg-i"><div className="cal-leg-d" style={{background:CLR.avBg,border:`1px solid ${CLR.avTx}33`}}/><span style={{color:CLR.avTx}}>Available — Apply Now</span></div><div className="cal-leg-i"><div className="cal-leg-d" style={{background:CLR.soonBg,border:`1px solid ${CLR.soonTx}33`}}/><span style={{color:CLR.soonTx}}>Opening Soon</span></div><div className="cal-leg-i"><div className="cal-leg-d" style={{background:CLR.occBg,border:`1px solid ${CLR.occTx}33`}}/><span style={{color:CLR.occTx}}>Leased</span></div></div>
     </div></section>
 
