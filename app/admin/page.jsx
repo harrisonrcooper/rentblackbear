@@ -1640,13 +1640,30 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
           </div>);})}
       </div>}
 
-      {curUnit&&mode==="wholeHouse"&&(curUnit.rooms||[]).length>0&&<div style={{marginTop:8}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:6}}>Room Breakdown</div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {(curUnit.rooms||[]).map(r=><div key={r.id} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:10,background:"#faf9f7",color:r.st==="occupied"?"#4a7c59":"#999"}}>
-            {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
-          </div>)}
-        </div>
+      {curUnit&&mode==="wholeHouse"&&<div style={{marginTop:8}}>
+        {(()=>{
+          const rooms=curUnit.rooms||[];
+          const anyOcc=rooms.some(r=>r.st==="occupied"&&r.tenant);
+          const occupant=rooms.find(r=>r.st==="occupied"&&r.tenant)?.tenant;
+          const latestLe=rooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le;
+          return(<>
+            <div style={{padding:"10px 14px",borderRadius:8,border:"1px solid rgba(0,0,0,.06)",background:anyOcc?"rgba(74,124,89,.04)":"rgba(196,92,74,.04)",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:anyOcc?"#4a7c59":"#c45c4a"}}>{anyOcc?"Occupied":"Vacant"}</div>
+                {anyOcc&&occupant&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>{occupant.name}{latestLe?<span style={{color:"#999",marginLeft:6}}>· lease ends {fmtD(latestLe)}</span>:null}</div>}
+                {!anyOcc&&<div style={{fontSize:10,color:"#999",marginTop:2}}>No active tenant — ready to lease</div>}
+              </div>
+              {anyOcc
+                ?<button className="btn btn-dk btn-sm" style={{fontSize:10}} onClick={()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name);}}}>View Tenant</button>
+                :<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>}
+            </div>
+            {rooms.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
+              {rooms.map(r=><div key={r.id} style={{padding:"4px 9px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:9,background:"#faf9f7",color:r.st==="occupied"?"#4a7c59":"#999"}}>
+                {r.name} — {r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
+              </div>)}
+            </div>}
+          </>);
+        })()}
       </div>}
     </div>{/* end unit tabs */}
 
@@ -1658,10 +1675,18 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,settings,on
     }}/>}
     {addTenantRoom!==null&&(()=>{
       const u=(p.units||[])[addTenantRoom.unitIdx];
-      const r=(u?.rooms||[])[addTenantRoom.roomIdx];
+      const isWhole=addTenantRoom.isWholeUnit;
+      const r=isWhole?{id:u?.id,name:u?.name||"Whole Unit",rent:u?.rent||0}:(u?.rooms||[])[addTenantRoom.roomIdx];
       if(!r)return null;
       return(<AddExistingTenantModal room={r} propName={p.name} onClose={()=>setAddTenantRoom(null)} onSave={data=>{
-        const units=(p.units||[]).map((u2,ui)=>ui===addTenantRoom.unitIdx?{...u2,rooms:(u2.rooms||[]).map((rm,ri)=>ri===addTenantRoom.roomIdx?{...rm,...data}:rm)}:u2);
+        const units=(p.units||[]).map((u2,ui)=>{
+          if(ui!==addTenantRoom.unitIdx)return u2;
+          if(isWhole){
+            // Stamp tenant onto every room in the unit
+            return{...u2,rooms:(u2.rooms||[]).map(rm=>({...rm,st:"occupied",le:data.le,rent:data.rent,tenant:data.tenant}))};
+          }
+          return{...u2,rooms:(u2.rooms||[]).map((rm,ri)=>ri===addTenantRoom.roomIdx?{...rm,...data}:rm)};
+        });
         updP({...p,units});
         setAddTenantRoom(null);
       }}/> );
