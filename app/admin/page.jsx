@@ -49,6 +49,7 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 const fmt=n=>"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtS=n=>"$"+Number(n).toLocaleString();
 const fmtD=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;}
+const fmtDp=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")}/${dt.getFullYear()}`;}
 const numberToWords=(n)=>{const ones=["","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE","TEN","ELEVEN","TWELVE","THIRTEEN","FOURTEEN","FIFTEEN","SIXTEEN","SEVENTEEN","EIGHTEEN","NINETEEN"];const tens=["","","TWENTY","THIRTY","FORTY","FIFTY","SIXTY","SEVENTY","EIGHTY","NINETY"];if(!n||n===0)return"ZERO";if(n<20)return ones[n];if(n<100)return tens[Math.floor(n/10)]+(n%10?" "+ones[n%10]:"");if(n<1000)return ones[Math.floor(n/100)]+" HUNDRED"+(n%100?" "+numberToWords(n%100):"");return numberToWords(Math.floor(n/1000))+" THOUSAND"+(n%1000?" "+numberToWords(n%1000):"");};
 const DEF_LEASE_SECTIONS=[
           {id:"s1",title:"Terms",requiresInitials:true,active:true,content:"<p>RESIDENT agrees to pay in advance <strong>{{RENT_WORDS}} (${{MONTHLY_RENT}})</strong> per month on the 1st day of each month. This agreement shall commence on <strong>{{LEASE_START}}</strong> and continue until <strong>{{LEASE_END}}</strong>.</p><p>Should RESIDENT move into Residence after the 1st of the month, rent will be prorated per day as follows: ${{MONTHLY_RENT}} ÷ 30 days = ${{DAILY_RATE}}/day. Prorated amount for partial first month: <strong>${{PRORATED_RENT}}</strong>.</p>"},
@@ -1813,6 +1814,29 @@ const S=`
 .field-err input,.field-err select,.field-err textarea{border-color:#c45c4a!important;background:rgba(196,92,74,.03)!important;animation:fieldShake .35s ease}
 .field-err-label{color:#c45c4a!important}
 .err-msg{font-size:10px;color:#c45c4a;margin-top:3px;font-weight:600}
+.acct-row:hover{background:rgba(212,168,83,.06)!important}
+.sort-hdr{cursor:pointer;user-select:none;transition:color .15s}.sort-hdr:hover{color:#3c3228!important}
+.ms-drop{position:relative;display:inline-block}
+.ms-btn{padding:4px 8px;border-radius:5px;border:1px solid rgba(0,0,0,.08);fontSize:11px;font-family:inherit;cursor:pointer;background:#fff;display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:11px;color:#3c3228}
+.ms-btn.has-sel{border-color:#d4a853;background:rgba(212,168,83,.06)}
+.ms-panel{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:50;min-width:200px;max-height:280px;overflow-y:auto;padding:6px 0}
+.ms-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:11px;color:#3c3228;transition:background .1s}
+.ms-item:hover{background:rgba(212,168,83,.04)}
+.ms-item input[type=checkbox]{width:14px;height:14px;accent-color:#3c3228;margin:0;flex-shrink:0}
+.dot-menu{position:relative;display:inline-block}
+.dot-btn{background:none;border:none;cursor:pointer;padding:4px;font-size:16px;color:#999;line-height:1;font-family:inherit}
+.dot-btn:hover{color:#3c3228}
+.dot-panel{position:absolute;right:0;top:100%;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:50;min-width:120px;padding:4px 0;overflow:hidden}
+.dot-opt{display:flex;align-items:center;gap:6px;padding:8px 14px;cursor:pointer;font-size:11px;color:#3c3228;border:none;background:none;width:100%;font-family:inherit;text-align:left}
+.dot-opt:hover{background:rgba(0,0,0,.03)}
+.dot-opt.danger{color:#c45c4a}
+.dot-opt.danger:hover{background:rgba(196,92,74,.04)}
+.qf-btn{font-size:10px;padding:4px 10px;border-radius:5px;border:1px solid rgba(0,0,0,.08);background:#fff;cursor:pointer;font-family:inherit;transition:all .15s;color:#5c4a3a}
+.qf-btn:hover{border-color:rgba(0,0,0,.15)}
+.qf-btn.active{background:#3c3228;color:#fff;border-color:#3c3228}
+.gear-btn{background:none;border:none;cursor:pointer;font-size:14px;color:#999;padding:2px}
+.gear-btn:hover{color:#3c3228}
+.gear-panel{position:absolute;right:0;top:100%;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:50;min-width:180px;padding:8px 0}
 @keyframes toastIn{from{opacity:0;transform:translateY(-30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}}
 .confetti-wrap{position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden}
@@ -2014,7 +2038,11 @@ export default function Page(){
   const[sdLedger,setSdLedger]=useState(DEF_SD_LEDGER);
   const[paySubTab,setPaySubTab]=useState("overview");
   const[acctSubTab,setAcctSubTab]=useState("overview");
-  const[acctFilters,setAcctFilters]=useState({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0],propId:"all",tenant:"all",category:"all",vendor:"all"});
+  const[acctSort,setAcctSort]=useState({col:"date",dir:"desc"});
+  const[acctDrop,setAcctDrop]=useState(null);
+  const[acctHideCols,setAcctHideCols]=useState({});
+  const[acctDotMenu,setAcctDotMenu]=useState(null);
+  const[acctFilters,setAcctFilters]=useState({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0],propIds:[],tenants:[],categories:[],vendors:[]});
   const[reportPeriod,setReportPeriod]=useState({from:"",to:""});
   const[reportProp,setReportProp]=useState("all");
   const[activeReport,setActiveReport]=useState(null);
@@ -4456,10 +4484,14 @@ export default function Page(){
         // ── Accounting-specific filter state (separate from Reports tab) ──
         const acctFrom=acctFilters.from||(TODAY.getFullYear()+"-01-01");
         const acctTo=acctFilters.to||TODAY.toISOString().split("T")[0];
-        const acctPropId=acctFilters.propId||"all";
-        const acctTenant=acctFilters.tenant||"all";
-        const acctCat=acctFilters.category||"all";
-        const acctVendor=acctFilters.vendor||"all";
+        const acctPropIds=acctFilters.propIds||[];
+        const acctTenants=acctFilters.tenants||[];
+        const acctCats=acctFilters.categories||[];
+        const acctVendors=acctFilters.vendors||[];
+        const hasPropFilter=acctPropIds.length>0;
+        const hasTenantFilter=acctTenants.length>0;
+        const hasCatFilter=acctCats.length>0;
+        const hasVendorFilter=acctVendors.length>0;
 
         // ── Collected payments (income) — fix propId to use prop lookup ──
         const allCollected=charges.flatMap(c=>{
@@ -4470,9 +4502,9 @@ export default function Page(){
         // ── Apply filters ──
         const filtIncome=allCollected.filter(p=>{
           if(p.date<acctFrom||p.date>acctTo)return false;
-          if(acctPropId!=="all"&&(props.find(x=>x.id===acctPropId)||{}).name!==p.propName)return false;
-          if(acctTenant!=="all"&&p.tenantName!==acctTenant)return false;
-          if(acctCat!=="all"&&p.category!==acctCat)return false;
+          if(hasPropFilter&&!acctPropIds.includes(p.propId))return false;
+          if(hasTenantFilter&&!acctTenants.includes(p.tenantName))return false;
+          if(hasCatFilter&&!acctCats.includes(p.category))return false;
           return true;
         });
         const propCount=props.length||1;
@@ -4480,13 +4512,13 @@ export default function Page(){
           const result=[];
           for(const e of expenses){
             if(e.date<acctFrom||e.date>acctTo)continue;
-            if(acctCat!=="all"&&e.category!==acctCat)continue;
-            if(acctVendor!=="all"&&e.vendor!==acctVendor)continue;
+            if(hasCatFilter&&!acctCats.includes(e.category))continue;
+            if(hasVendorFilter&&!acctVendors.includes(e.vendor))continue;
             if(e.propId==="shared"){
-              if(acctPropId==="all"){result.push(e);}
+              if(!hasPropFilter){result.push(e);}
               else{result.push({...e,_isShared:true,_fullAmount:e.amount,amount:Math.round(e.amount/propCount*100)/100});}
             } else {
-              if(acctPropId!=="all"&&e.propId!==acctPropId)continue;
+              if(hasPropFilter&&!acctPropIds.includes(e.propId))continue;
               result.push(e);
             }
           }
@@ -4496,7 +4528,7 @@ export default function Page(){
         const totalIncome=filtIncome.reduce((s,p)=>s+p.amount,0);
         const totalExp=filtExpenses.reduce((s,e)=>s+e.amount,0);
         const totalNOI=totalIncome-totalExp;
-        const filtMortgages=acctPropId==="all"?mortgages:mortgages.filter(mg=>mg.propId===acctPropId);
+        const filtMortgages=!hasPropFilter?mortgages:mortgages.filter(mg=>acctPropIds.includes(mg.propId));
         const annualDebt=filtMortgages.reduce((s,mg)=>s+(mg.monthlyPI||0)*12,0);
         const dscr=annualDebt>0?(totalNOI/annualDebt):null;
 
@@ -4508,7 +4540,41 @@ export default function Page(){
         const expCats=SCHED_E_CAT_LABELS;
 
         const setF=(k,v)=>setAcctFilters(prev=>({...prev,[k]:v}));
-        const resetFilters=()=>setAcctFilters({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0],propId:"all",tenant:"all",category:"all",vendor:"all"});
+        const resetFilters=()=>{setAcctFilters({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0],propIds:[],tenants:[],categories:[],vendors:[]});setAcctDrop(null);};
+        const toggleArr=(arr,val)=>arr.includes(val)?arr.filter(x=>x!==val):[...arr,val];
+
+        // Quick filter detection
+        const thisMonthFrom=TODAY.getFullYear()+"-"+String(TODAY.getMonth()+1).padStart(2,"0")+"-01";
+        const ytdFrom=TODAY.getFullYear()+"-01-01";
+        const todayStr=TODAY.toISOString().split("T")[0];
+        const lastYrFrom=(TODAY.getFullYear()-1)+"-01-01";
+        const lastYrTo=(TODAY.getFullYear()-1)+"-12-31";
+        const qfActive=acctFrom===thisMonthFrom&&acctTo===todayStr?"month":acctFrom===ytdFrom&&acctTo===todayStr?"ytd":acctFrom===lastYrFrom&&acctTo===lastYrTo?"lastyear":"";
+
+        // Multi-select dropdown renderer
+        const MsDrop=({id,label,options,selected,onToggle})=>{
+          const isOpen=acctDrop===id;
+          const count=selected.length;
+          return(<div className="ms-drop">
+            <button className={"ms-btn"+(count?" has-sel":"")} onClick={e=>{e.stopPropagation();setAcctDrop(isOpen?null:id);}}>
+              {count?`${label} (${count})`:label} <span style={{fontSize:8,marginLeft:2}}>{isOpen?"▲":"▼"}</span>
+            </button>
+            {isOpen&&<div className="ms-panel" onClick={e=>e.stopPropagation()}>
+              {options.length===0&&<div style={{padding:"8px 12px",fontSize:10,color:"#7a7067"}}>None available</div>}
+              {options.map(opt=>{
+                const val=typeof opt==="object"?opt.value:opt;
+                const lbl=typeof opt==="object"?opt.label:opt;
+                return(<label key={val} className="ms-item">
+                  <input type="checkbox" checked={selected.includes(val)} onChange={()=>onToggle(val)}/>
+                  <span>{lbl}</span>
+                </label>);
+              })}
+              {count>0&&<div style={{borderTop:"1px solid rgba(0,0,0,.06)",padding:"6px 12px",marginTop:4}}>
+                <button style={{fontSize:10,color:"#c45c4a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600}} onClick={()=>onToggle("__clear__")}>Clear all</button>
+              </div>}
+            </div>}
+          </div>);
+        };
 
         return(<>
         {/* ── Header ── */}
@@ -4516,40 +4582,32 @@ export default function Page(){
           <div>
             <h2 style={{margin:0}}>Accounting</h2>
             <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>
-              {acctFrom} — {acctTo}{acctPropId!=="all"?" · "+(props.find(p=>p.id===acctPropId)||{}).name:""}
+              {fmtDp(acctFrom)} — {fmtDp(acctTo)}{hasPropFilter?" · "+acctPropIds.length+" propert"+(acctPropIds.length===1?"y":"ies"):""}
             </div>
           </div>
           <span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"3px 8px",borderRadius:4,fontWeight:600}}>Schedule E</span>
         </div>
 
         {/* ── Global filter bar ── */}
-        <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"12px 14px",marginBottom:14,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-          <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
+        <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"12px 14px",marginBottom:14,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}} onClick={()=>setAcctDrop(null)}>
+          <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
           <span style={{fontSize:11,color:"#7a7067",flexShrink:0}}>to</span>
-          <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
+          <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
           <div style={{width:1,height:20,background:"rgba(0,0,0,.08)",flexShrink:0}}/>
-          <select value={acctPropId} onChange={e=>setF("propId",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-            <option value="all">All Properties</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <MsDrop id="prop" label="Property" options={props.map(p=>({value:p.id,label:p.name}))} selected={acctPropIds} onToggle={v=>v==="__clear__"?setF("propIds",[]):setF("propIds",toggleArr(acctPropIds,v))}/>
           {acctSubTab==="income"&&<>
-            <select value={acctTenant} onChange={e=>setF("tenant",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-              <option value="all">All Tenants</option>{tenantOptions.map(t=><option key={t} value={t}>{t}</option>)}
-            </select>
-            <select value={acctCat} onChange={e=>setF("category",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-              <option value="all">All Categories</option>{incomeCatOptions.map(c=><option key={c} value={c}>{c}</option>)}
-            </select>
+            <MsDrop id="tenant" label="Tenant" options={tenantOptions} selected={acctTenants} onToggle={v=>v==="__clear__"?setF("tenants",[]):setF("tenants",toggleArr(acctTenants,v))}/>
+            <MsDrop id="cat" label="Category" options={incomeCatOptions} selected={acctCats} onToggle={v=>v==="__clear__"?setF("categories",[]):setF("categories",toggleArr(acctCats,v))}/>
           </>}
           {acctSubTab==="expenses"&&<>
-            <select value={acctCat} onChange={e=>setF("category",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-              <option value="all">All Categories</option>{expCatOptions.map(c=><option key={c} value={c}>{c}</option>)}
-            </select>
-            <select value={acctVendor} onChange={e=>setF("vendor",e.target.value)} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-              <option value="all">All Vendors</option>{vendorOptions.map(v=><option key={v} value={v}>{v}</option>)}
-            </select>
+            <MsDrop id="cat" label="Category" options={expCatOptions} selected={acctCats} onToggle={v=>v==="__clear__"?setF("categories",[]):setF("categories",toggleArr(acctCats,v))}/>
+            <MsDrop id="vendor" label="Vendor" options={vendorOptions} selected={acctVendors} onToggle={v=>v==="__clear__"?setF("vendors",[]):setF("vendors",toggleArr(acctVendors,v))}/>
           </>}
-          <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={()=>{setReportPeriod({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0]});setF("from",TODAY.getFullYear()+"-01-01");setF("to",TODAY.toISOString().split("T")[0]);}}>YTD</button>
-          <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={()=>{const y=TODAY.getFullYear()-1;setF("from",y+"-01-01");setF("to",y+"-12-31");}}>Last Year</button>
-          <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={resetFilters}>Reset</button>
+          <div style={{width:1,height:20,background:"rgba(0,0,0,.08)",flexShrink:0}}/>
+          <button className={"qf-btn"+(qfActive==="month"?" active":"")} onClick={e=>{e.stopPropagation();setF("from",thisMonthFrom);setF("to",todayStr);}}>This Month</button>
+          <button className={"qf-btn"+(qfActive==="ytd"?" active":"")} onClick={e=>{e.stopPropagation();setF("from",ytdFrom);setF("to",todayStr);}}>YTD</button>
+          <button className={"qf-btn"+(qfActive==="lastyear"?" active":"")} onClick={e=>{e.stopPropagation();const y=TODAY.getFullYear()-1;setF("from",y+"-01-01");setF("to",y+"-12-31");}}>Last Year</button>
+          <button className="qf-btn" onClick={e=>{e.stopPropagation();resetFilters();}}>Reset</button>
         </div>
 
         {/* ── KPI strip ── */}
@@ -4558,7 +4616,7 @@ export default function Page(){
             {label:"Gross Income",value:totalIncome,color:"#4a7c59",sub:filtIncome.length+" payments"},
             {label:"Total Expenses",value:totalExp,color:"#c45c4a",sub:filtExpenses.length+" line items"},
             {label:"Net Operating Income",value:totalNOI,color:totalNOI>=0?"#4a7c59":"#c45c4a",sub:totalIncome>0?Math.round(totalNOI/totalIncome*100)+"% margin":"—"},
-            {label:"DSCR",value:dscr!=null?dscr.toFixed(2)+"x":"—",color:dscr==null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a",sub:dscr==null?"No mortgages":dscr>=1.25?"Strong coverage":dscr>=1.0?"Marginal":"At risk"},
+            {label:"DSCR",value:dscr!=null?dscr.toFixed(2)+"x":"—",color:dscr==null?"#7a7067":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a",sub:dscr==null?"No mortgages":dscr>=1.25?"Strong coverage":dscr>=1.0?"Marginal":"At risk"},
           ].map(({label,value,color,sub})=>(
             <div key={label} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid rgba(0,0,0,.06)"}}>
               <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>{label}</div>
@@ -4572,8 +4630,10 @@ export default function Page(){
         <div style={{display:"flex",gap:0,marginBottom:16,position:"relative",paddingBottom:0}}>
           <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:"rgba(0,0,0,.08)",zIndex:0}}/>
           {[["overview","Overview"],["income","Income"],["expenses","Expenses"],["improvements","Capital Improvements"],["mortgages","Mortgages"],["vendors","Vendors"]].map(([k,l])=>(
-            <button key={k} onClick={()=>{setAcctSubTab(k);setF("category","all");setF("tenant","all");setF("vendor","all");}}
-              style={{padding:"10px 22px",fontSize:13,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#999",background:acctSubTab===k?"#fff":"transparent",border:acctSubTab===k?"1px solid rgba(0,0,0,.08)":"1px solid transparent",borderBottom:acctSubTab===k?"2px solid #fff":"2px solid transparent",borderRadius:acctSubTab===k?"10px 10px 0 0":"10px 10px 0 0",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap",position:"relative",zIndex:acctSubTab===k?3:1}}>
+            <button key={k} onClick={()=>{setAcctSubTab(k);setF("categories",[]);setF("tenants",[]);setF("vendors",[]);setAcctDrop(null);}}
+              onMouseEnter={e=>{if(acctSubTab!==k){e.currentTarget.style.background="rgba(255,255,255,.6)";e.currentTarget.style.color="#3c3228";}}}
+              onMouseLeave={e=>{if(acctSubTab!==k){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#6b5e52";}}}
+              style={{padding:"10px 22px",fontSize:13,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#6b5e52",background:acctSubTab===k?"#fff":"transparent",border:acctSubTab===k?"1px solid rgba(0,0,0,.08)":"1px solid transparent",borderBottom:acctSubTab===k?"2px solid #fff":"2px solid transparent",borderRadius:"10px 10px 0 0",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap",position:"relative",zIndex:acctSubTab===k?3:1}}>
               {l}
             </button>
           ))}
@@ -4581,7 +4641,7 @@ export default function Page(){
 
         {/* ── OVERVIEW ── */}
         {acctSubTab==="overview"&&(()=>{
-          const filtProps=acctPropId==="all"?props:props.filter(p=>p.id===acctPropId);
+          const filtProps=!hasPropFilter?props:props.filter(p=>acctPropIds.includes(p.id));
           return(<>
             {/* Toggle */}
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
@@ -4589,7 +4649,7 @@ export default function Page(){
               <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
                 {[["property","Property"],["unit","Unit / Room"]].map(([k,l])=>(
                   <button key={k} onClick={()=>setAcctOverviewMode(k)}
-                    style={{padding:"5px 14px",fontSize:11,fontWeight:acctOverviewMode===k?700:500,background:acctOverviewMode===k?"#3c3228":"transparent",color:acctOverviewMode===k?"#fff":"#999",border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:k==="unit"?"1px solid rgba(0,0,0,.1)":"none"}}>
+                    style={{padding:"5px 14px",fontSize:11,fontWeight:acctOverviewMode===k?700:500,background:acctOverviewMode===k?"#3c3228":"transparent",color:acctOverviewMode===k?"#fff":"#6b5e52",border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:k==="unit"?"1px solid rgba(0,0,0,.1)":"none"}}>
                     {l}
                   </button>
                 ))}
@@ -4711,7 +4771,22 @@ export default function Page(){
 
         {/* ── INCOME ── */}
         {acctSubTab==="income"&&(()=>{
-          const sorted=filtIncome.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
+          const incSortCol=acctSort.col||"date";const incSortDir=acctSort.dir||"desc";
+          const sorted=filtIncome.slice().sort((a,b)=>{
+            let va,vb;
+            if(incSortCol==="date"){va=a.date||"";vb=b.date||"";}
+            else if(incSortCol==="property"){va=a.propName||"";vb=b.propName||"";}
+            else if(incSortCol==="room"){va=a.roomName||"";vb=b.roomName||"";}
+            else if(incSortCol==="tenant"){va=a.tenantName||"";vb=b.tenantName||"";}
+            else if(incSortCol==="category"){va=a.category||"";vb=b.category||"";}
+            else if(incSortCol==="method"){va=a.method||"";vb=b.method||"";}
+            else if(incSortCol==="amount"){va=a.amount||0;vb=b.amount||0;return incSortDir==="asc"?va-vb:vb-va;}
+            else{va=a.date||"";vb=b.date||"";}
+            const cmp=String(va).localeCompare(String(vb));
+            return incSortDir==="asc"?cmp:-cmp;
+          });
+          const toggleSort=(col)=>setAcctSort(p=>p.col===col?{col,dir:p.dir==="asc"?"desc":"asc"}:{col,dir:"asc"});
+          const sortIcon=(col)=>acctSort.col===col?(acctSort.dir==="asc"?" ▲":" ▼"):"";
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{fontSize:11,color:"#6b5e52"}}>{sorted.length} payment{sorted.length!==1?"s":""} · {fmtS(totalIncome)} collected</div>
@@ -4719,15 +4794,15 @@ export default function Page(){
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Date","Property","Room","Tenant","Category","Method","Amount"].map(h=>(
-                    <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                  {[["date","Date"],["property","Property"],["room","Room"],["tenant","Tenant"],["category","Category"],["method","Method"],["amount","Amount"]].map(([k,h])=>(
+                    <th key={h} className="sort-hdr" onClick={()=>toggleSort(k)} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}{sortIcon(k)}</th>
                   ))}
                 </tr></thead>
                 <tbody>
                   {sorted.length===0&&<tr><td colSpan={7} style={{padding:32,textAlign:"center",color:"#7a7067",fontSize:11}}>No income in this period. Payments are recorded in the Payments tab.</td></tr>}
                   {sorted.map((p,i)=>(
-                    <tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{p.date}</td>
+                    <tr key={i} className="acct-row" style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
+                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{fmtDp(p.date)}</td>
                       <td style={{padding:"8px 14px",fontSize:11}}>{p.propName}</td>
                       <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{p.roomName||"—"}</td>
                       <td style={{padding:"8px 14px",fontWeight:600}}>{p.tenantName}</td>
@@ -4758,52 +4833,94 @@ export default function Page(){
               setExpenses(prev=>prev.map(e=>e.id===expId?{...e,receiptUrl:SUPA_URL+"/storage/v1/object/public/receipts/"+path}:e));
             }catch(e){alert("Upload error: "+e.message);}
           };
-          const sorted=filtExpenses.slice().sort((a,b)=>b.date?.localeCompare(a.date||"")||0);
+          const expSortCol=acctSort.col||"date";const expSortDir=acctSort.dir||"desc";
+          const sorted=filtExpenses.slice().sort((a,b)=>{
+            let va,vb;
+            if(expSortCol==="date"){va=a.date||"";vb=b.date||"";}
+            else if(expSortCol==="property"){va=(a.propId==="shared"?"Shared":a.propName||"");vb=(b.propId==="shared"?"Shared":b.propName||"");}
+            else if(expSortCol==="category"){va=a.category||"";vb=b.category||"";}
+            else if(expSortCol==="subcategory"){va=a.subcategory||"";vb=b.subcategory||"";}
+            else if(expSortCol==="vendor"){va=a.vendor||"";vb=b.vendor||"";}
+            else if(expSortCol==="description"){va=a.description||"";vb=b.description||"";}
+            else if(expSortCol==="amount"){va=a.amount||0;vb=b.amount||0;return expSortDir==="asc"?va-vb:vb-va;}
+            else{va=a.date||"";vb=b.date||"";}
+            const cmp=String(va).localeCompare(String(vb));
+            return expSortDir==="asc"?cmp:-cmp;
+          });
           const attachedCount=sorted.filter(e=>e.receiptUrl).length;
+          const toggleSort=(col)=>setAcctSort(p=>p.col===col?{col,dir:p.dir==="asc"?"desc":"asc"}:{col,dir:"asc"});
+          const sortIcon=(col)=>acctSort.col===col?(acctSort.dir==="asc"?" ▲":" ▼"):"";
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
               <div style={{fontSize:11,color:"#6b5e52"}}>{sorted.length} expense{sorted.length!==1?"s":""} · {fmtS(totalExp)} total{attachedCount>0?" · "+attachedCount+" receipt"+((attachedCount!==1)?"s":"")+" attached":""}</div>
               <div style={{display:"flex",gap:6}}>
                 {sorted.length>0&&<button className="btn btn-out btn-sm" onClick={()=>setModal({type:"exportExpenses",expenses:sorted,attachedCount})}>↓ Export</button>}
-                <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}})}>+ Add Expense</button>
+                <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropIds.length===1?acctPropIds[0]:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}})}>+ Add Expense</button>
               </div>
             </div>
-            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"visible"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-                  {["Date","Property","Unit / Room","Category","Subcategory","Vendor","Description","Method","Amount","Receipt",""].map(h=>(
-                    <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
+                  {[["date","Date"],["property","Property"],["","Unit / Room"],["category","Category"],["subcategory","Subcategory"],["vendor","Vendor"],["description","Description"],["","Method"],["amount","Amount"],["","Receipt"],["","Action"]].filter(([k,h])=>{
+                    if(h==="Action")return true;
+                    const hideKey=h.toLowerCase().replace(/\s*\/\s*/g,"_").replace(/\s+/g,"_");
+                    return!acctHideCols[hideKey];
+                  }).map(([k,h])=>(
+                    <th key={h} className={k?"sort-hdr":""} onClick={k?()=>toggleSort(k):undefined} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap",position:h==="Action"?"relative":"static"}}>
+                      {h==="Action"?<span style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
+                        <span>Action</span>
+                        <div style={{position:"relative"}}>
+                          <button className="gear-btn" onClick={e=>{e.stopPropagation();setAcctDrop(acctDrop==="colvis"?null:"colvis");}}>⚙</button>
+                          {acctDrop==="colvis"&&<div className="gear-panel" onClick={e=>e.stopPropagation()}>
+                            <div style={{padding:"6px 12px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>Show / hide columns</div>
+                            {["Unit / Room","Category","Subcategory","Vendor","Description","Method","Receipt"].map(col=>{
+                              const hideKey=col.toLowerCase().replace(/\s*\/\s*/g,"_").replace(/\s+/g,"_");
+                              return(<label key={col} className="ms-item">
+                                <input type="checkbox" checked={!acctHideCols[hideKey]} onChange={()=>setAcctHideCols(p=>({...p,[hideKey]:!p[hideKey]}))}/>
+                                <span>{col}</span>
+                              </label>);
+                            })}
+                          </div>}
+                        </div>
+                      </span>:h}{k?sortIcon(k):""}
+                    </th>
                   ))}
                 </tr></thead>
                 <tbody>
                   {sorted.length===0&&<tr><td colSpan={11} style={{padding:32,textAlign:"center",color:"#7a7067",fontSize:11}}>No expenses match your filters. Click "+ Add Expense" to record one.</td></tr>}
-                  {sorted.map((e,i)=>(
-                    <tr key={e.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:e._isShared?"rgba(59,130,246,.02)":i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{e.date}</td>
-                      <td style={{padding:"8px 14px",fontSize:10}}>
-                        {e.propId==="shared"||e._isShared
-                          ?<span style={{display:"inline-flex",alignItems:"center",gap:4}}>{e._isShared?(props.find(p=>p.id===acctPropId)||{}).name||"Shared":<span style={{color:"#5c4a3a"}}>All Properties</span>} <span style={{fontSize:8,padding:"1px 6px",borderRadius:100,background:"rgba(59,130,246,.1)",color:"#3b82f6",fontWeight:700,whiteSpace:"nowrap"}}>SHARED{e._isShared?" · "+fmtS(e._fullAmount)+" total":""}</span></span>
-                          :(props.find(p=>p.id===e.propId)||{}).name||"—"}
-                      </td>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.unitName?(e.roomName?e.unitName+" / "+e.roomName:e.unitName):e.roomName||"—"}</td>
-                      <td style={{padding:"8px 14px"}}>
-                        <span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span>
-                      </td>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#aaa"}}>—</span>}</td>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>
-                      <td style={{padding:"8px 14px",fontWeight:600,maxWidth:180}}>{e.description}</td>
-                      <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.paymentMethod||"—"}</td>
-                      <td style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>
-                      <td style={{padding:"8px 14px"}}>
-                        {e.receiptUrl
-                          ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:e._receiptPending?"#d4a853":"#4a7c59",fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}>{e._receiptPending?"📎 Local only":"📎 Attached"}</a>
-                          :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
-                      </td>
-                      <td style={{padding:"8px 14px"}}>
+                  {sorted.map((e,i)=>{
+                    const visibleCells=[];
+                    if(!acctHideCols.date)visibleCells.push(<td key="date" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{fmtDp(e.date)}</td>);
+                    if(!acctHideCols.property)visibleCells.push(<td key="prop" style={{padding:"8px 14px",fontSize:10}}>
+                      {e.propId==="shared"||e._isShared
+                        ?<span style={{display:"inline-flex",alignItems:"center",gap:4}}>{e._isShared?(acctPropIds.length===1?(props.find(p=>p.id===acctPropIds[0])||{}).name:"Filtered"):"All Properties"} <span style={{fontSize:8,padding:"1px 6px",borderRadius:100,background:"rgba(59,130,246,.1)",color:"#3b82f6",fontWeight:700,whiteSpace:"nowrap"}}>SHARED{e._isShared?" · "+fmtS(e._fullAmount)+" total":""}</span></span>
+                        :(props.find(p=>p.id===e.propId)||{}).name||"—"}
+                    </td>);
+                    if(!acctHideCols.unit_room)visibleCells.push(<td key="unit" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.unitName?(e.roomName?e.unitName+" / "+e.roomName:e.unitName):e.roomName||"—"}</td>);
+                    if(!acctHideCols.category)visibleCells.push(<td key="cat" style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span></td>);
+                    if(!acctHideCols.subcategory)visibleCells.push(<td key="subcat" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#aaa"}}>—</span>}</td>);
+                    if(!acctHideCols.vendor)visibleCells.push(<td key="vendor" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>);
+                    if(!acctHideCols.description)visibleCells.push(<td key="desc" style={{padding:"8px 14px",fontWeight:600,maxWidth:180}}>{e.description}</td>);
+                    if(!acctHideCols.method)visibleCells.push(<td key="method" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.paymentMethod||"—"}</td>);
+                    if(!acctHideCols.amount)visibleCells.push(<td key="amt" style={{padding:"8px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",whiteSpace:"nowrap"}}>{fmtS(e.amount)}</td>);
+                    if(!acctHideCols.receipt)visibleCells.push(<td key="rcpt" style={{padding:"8px 14px"}}>
+                      {e.receiptUrl
+                        ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:e._receiptPending?"#d4a853":"#4a7c59",fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}>{e._receiptPending?"📎 Local":"📎 Attached"}</a>
+                        :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
+                    </td>);
+                    visibleCells.push(<td key="action" style={{padding:"8px 14px",whiteSpace:"nowrap"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
                         <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"addExpense",editId:e.id,form:{...e},errs:{}})}>Edit</button>
-                      </td>
-                    </tr>
-                  ))}
+                        <div className="dot-menu">
+                          <button className="dot-btn" onClick={ev=>{ev.stopPropagation();setAcctDotMenu(acctDotMenu===e.id?null:e.id);}}>⋮</button>
+                          {acctDotMenu===e.id&&<div className="dot-panel" onClick={ev=>ev.stopPropagation()}>
+                            <button className="dot-opt danger" onClick={()=>{setAcctDotMenu(null);setModal({type:"confirmDeleteExpense",expId:e.id,description:e.description||e.category});}}>🗑 Delete</button>
+                          </div>}
+                        </div>
+                      </div>
+                    </td>);
+                    return(<tr key={e.id} className="acct-row" onClick={()=>setAcctDotMenu(null)} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:e._isShared?"rgba(59,130,246,.02)":i%2===0?"#fff":"rgba(0,0,0,.01)"}}>{visibleCells}</tr>);
+                  })}
                 </tbody>
                 {sorted.length>0&&<tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
                   <td colSpan={8} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Expenses</td>
@@ -4817,14 +4934,14 @@ export default function Page(){
 
         {/* ── MORTGAGES ── */}
         {acctSubTab==="mortgages"&&(()=>{
-          const filtMg=acctPropId==="all"?mortgages:mortgages.filter(mg=>mg.propId===acctPropId);
+          const filtMg=!hasPropFilter?mortgages:mortgages.filter(mg=>acctPropIds.includes(mg.propId));
           return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div>
                 <div style={{fontSize:12,fontWeight:700,color:"#3c3228"}}>Mortgage Register</div>
                 <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>One record per loan. Feeds DSCR and Schedule E Line 12.</div>
               </div>
-              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addMortgage",form:{propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),lender:"",originalBalance:"",currentBalance:"",interestRate:"",monthlyPI:"",startDate:"",maturityDate:"",accountLast4:"",notes:""},errs:{}})}>+ Add Mortgage</button>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addMortgage",form:{propId:acctPropIds.length===1?acctPropIds[0]:(props[0]?.id||""),lender:"",originalBalance:"",currentBalance:"",interestRate:"",monthlyPI:"",startDate:"",maturityDate:"",accountLast4:"",notes:""},errs:{}})}>+ Add Mortgage</button>
             </div>
 
             {filtMg.length===0
@@ -4877,7 +4994,7 @@ export default function Page(){
         })()}
         {/* ── IMPROVEMENTS ── */}
         {acctSubTab==="improvements"&&(()=>{
-          const filtImprove=improvements.filter(im=>acctPropId==="all"||im.propId===acctPropId);
+          const filtImprove=improvements.filter(im=>!hasPropFilter||acctPropIds.includes(im.propId));
           const totalImprove=filtImprove.reduce((s,im)=>s+im.amount,0);
           return(<>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"14px 16px",marginBottom:12}}>
@@ -4896,7 +5013,7 @@ export default function Page(){
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{fontSize:11,color:"#6b5e52"}}>{filtImprove.length} improvement{filtImprove.length!==1?"s":""} · {fmtS(totalImprove)} total cost basis additions</div>
-              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addImprovement",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropId!=="all"?acctPropId:(props[0]?.id||""),improvementType:"",description:"",contractor:"",amount:"",notes:""},errs:{}})}>+ Add Improvement</button>
+              <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"addImprovement",form:{date:TODAY.toISOString().split("T")[0],propId:acctPropIds.length===1?acctPropIds[0]:(props[0]?.id||""),improvementType:"",description:"",contractor:"",amount:"",notes:""},errs:{}})}>+ Add Improvement</button>
             </div>
             {filtImprove.length===0
               ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No capital improvements recorded. New roof, HVAC, addition, appliances — log them here for your CPA.</div>
@@ -6967,6 +7084,17 @@ export default function Page(){
   })()}
 
   {/* ── Delete Expense ── */}
+  {/* ── Confirm Delete Expense (from 3-dot menu) ── */}
+  {modal&&modal.type==="confirmDeleteExpense"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
+      <h2>Delete Expense?</h2>
+      <p style={{fontSize:12,color:"#5c4a3a",marginBottom:6}}><strong>{modal.description}</strong> will be permanently deleted.</p>
+      <p style={{fontSize:11,color:"#7a7067",marginBottom:16}}>This cannot be undone. The expense will be removed from all reports, overview, and Schedule E calculations.</p>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-sm" style={{background:"#c45c4a",color:"#fff",border:"none",padding:"8px 20px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setExpenses(p=>p.filter(x=>x.id!==modal.expId));setModal(null);}}>Yes, delete permanently</button></div>
+    </div></div>
+  )}
+
   {/* ── Export Expenses ── */}
   {modal&&modal.type==="exportExpenses"&&(()=>{
     const exps=modal.expenses||[];
