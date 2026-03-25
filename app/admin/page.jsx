@@ -2115,6 +2115,9 @@ export default function Page(){
   const[ideaFilter,setIdeaFilter]=useState("all");
   const[scDrill,setScDrill]=useState(null);
   const[dismissedFollowUps,setDismissedFollowUps]=useState([]);
+  const[portalInviteState,setPortalInviteState]=useState("idle");
+  const[portalLinkToken,setPortalLinkToken]=useState(null);
+  const[portalLinkLoading,setPortalLinkLoading]=useState(false);
   const[widgetList,setWidgetList]=useState(null);
   const[dashEditMode,setDashEditMode]=useState(false);
   const[dashDragWidget,setDashDragWidget]=useState(null);
@@ -3454,7 +3457,17 @@ export default function Page(){
         const SL={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","lease-sent":"Lease Sent","onboarding":"Onboarding","approved":"Onboarding","move-in":"Onboarding","denied":"Denied"};
         const SC2={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","lease-sent":"b-gold","onboarding":"b-green","approved":"b-green","move-in":"b-green","denied":"b-red"};
         const SI2={};
-        const moveApp=(id,ns)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));};
+        const moveApp=(id,ns)=>{
+          setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));
+          if(ns==="approved"){
+            const app=apps.find(a=>a.id===id);
+            if(app?.email){
+              fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:app.property,roomName:app.room,rent:app.negotiatedRent||app.rent,moveIn:app.termMoveIn||app.moveIn})
+              }).then(r=>r.json()).then(d=>{if(d.ok)console.log("Portal invite auto-sent to",app.email);}).catch(console.error);
+            }
+          }
+        };
         const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
         const scoreApp=(a)=>{
           let s=50;
@@ -3627,10 +3640,25 @@ export default function Page(){
           </select>
           {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
           <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
+          {/* Apply Link — outlined/secondary */}
           <div style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"2px 2px 2px 10px"}}>
             <span style={{fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{(settings.siteUrl||"https://rentblackbear.com")}/apply</span>
             <button className="btn btn-out btn-sm" style={{flexShrink:0}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
-            <button className="btn btn-gold btn-sm" style={{flexShrink:0}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
+            <button className="btn btn-out btn-sm" style={{flexShrink:0}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
+          </div>
+          {/* Portal Invite Link — dark/gold, visually distinct */}
+          <div style={{display:"flex",alignItems:"center",gap:4,background:"#1a1714",border:"1px solid rgba(212,168,83,.3)",borderRadius:6,padding:"2px 2px 2px 10px"}}>
+            <span style={{fontSize:10,color:"rgba(212,168,83,.7)",fontFamily:"monospace",whiteSpace:"nowrap"}}>{portalLinkToken?`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${portalLinkToken.slice(0,12)}...`:"Portal Invite Link"}</span>
+            <button className="btn btn-sm" style={{flexShrink:0,background:"rgba(212,168,83,.15)",color:"#d4a853",border:"1px solid rgba(212,168,83,.3)"}} onClick={async()=>{
+              setPortalLinkLoading(true);
+              try{
+                const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tenantName:"Guest",tenantEmail:"",propertyName:"",roomName:"",rent:""})});
+                const d=await res.json();
+                if(d.token){setPortalLinkToken(d.token);navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${d.token}`);}
+              }catch(e){console.error(e);}
+              setPortalLinkLoading(false);
+            }}>{portalLinkLoading?"...":(portalLinkToken?"Copied":"Generate")}</button>
+            {portalLinkToken&&<button className="btn btn-sm" style={{flexShrink:0,background:"#d4a853",color:"#1a1714",border:"none",fontWeight:700}} onClick={()=>setModal({type:"emailPortalLink",to:"",name:"",token:portalLinkToken})}>Email</button>}
           </div>
         </div>
 
@@ -3783,6 +3811,9 @@ export default function Page(){
                         {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#888",fontWeight:700}}>{d}d</span>}
                         {canInvite&&<button style={{fontSize:7,padding:"1px 5px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                           onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite</button>}
+                        <button style={{fontSize:7,padding:"1px 5px",background:"#1a1714",color:"#d4a853",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
+                          title="Send portal invite — bypasses application requirement"
+                          onClick={e=>{e.stopPropagation();setModal({type:"sendPortalInviteApp",data:a});}}>Portal</button>
                       </div>
                     </div>}
                   </div>);
@@ -6550,7 +6581,7 @@ export default function Page(){
   {modal&&modal.type==="tenant"&&(()=>{const r=modal.data;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;const months=dl?Math.max(0,Math.ceil(dl/30)):null;
     const prop=props.find(p=>allRooms(p).some(x=>x.id===r.id));
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:580}} ref={el=>{if(el&&modal.startSection==="lease"){setTimeout(()=>{const t=el.querySelector("#lease-actions-section");if(t)t.scrollIntoView({behavior:"smooth",block:"start"});},150);}}}>
+    <div className="mbg" onClick={()=>{setModal(null);setPortalInviteState("idle");}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:580}} ref={el=>{if(el&&modal.startSection==="lease"){setTimeout(()=>{const t=el.querySelector("#lease-actions-section");if(t)t.scrollIntoView({behavior:"smooth",block:"start"});},150);}}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <h2 style={{margin:0}}>{r.tenant.name}</h2>
         <button className="btn btn-gold btn-sm" onClick={()=>{setModal(null);setTab("tenants");}}>Open Full Profile →</button>
@@ -6559,43 +6590,38 @@ export default function Page(){
 
       {/* ── Portal Invite ── */}
       {(()=>{
-        const [inviteState,setInviteState]=useState("idle"); // idle | sending | sent | error
         const sendInvite=async()=>{
-          setInviteState("sending");
+          setPortalInviteState("sending");
           try{
             const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
-              body:JSON.stringify({
-                tenantName:r.tenant.name,tenantEmail:r.tenant.email,
-                propertyName:r.propName,roomName:r.name,
-                rent:r.rent,moveIn:r.tenant.moveIn,
-              })
+              body:JSON.stringify({tenantName:r.tenant.name,tenantEmail:r.tenant.email,propertyName:r.propName,roomName:r.name,rent:r.rent,moveIn:r.tenant.moveIn})
             });
             const d=await res.json();
-            if(d.ok){setInviteState("sent");}
-            else{setInviteState("error");console.error(d.error);}
-          }catch(e){setInviteState("error");console.error(e);}
+            if(d.ok){setPortalInviteState("sent");}
+            else{setPortalInviteState("error");console.error(d.error);}
+          }catch(e){setPortalInviteState("error");console.error(e);}
         };
         return(
-        <div className="tp-card" style={{background:inviteState==="sent"?"rgba(74,124,89,.04)":"#fff",borderColor:inviteState==="sent"?"rgba(74,124,89,.2)":"rgba(0,0,0,.03)"}}>
+        <div className="tp-card" style={{background:portalInviteState==="sent"?"rgba(74,124,89,.04)":"#fff",borderColor:portalInviteState==="sent"?"rgba(74,124,89,.2)":"rgba(0,0,0,.03)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
               <h3 style={{margin:0,marginBottom:3}}>Tenant Portal</h3>
               <div style={{fontSize:11,color:"#999"}}>
-                {inviteState==="sent"?"Invite sent — tenant will receive an email with a login link."
-                  :inviteState==="error"?"Failed to send — check console and try again."
+                {portalInviteState==="sent"?"Invite sent — tenant will receive an email with a login link."
+                  :portalInviteState==="error"?"Failed to send — check console and try again."
                   :"Send the tenant a link to access their portal."}
               </div>
             </div>
-            {inviteState==="sent"
+            {portalInviteState==="sent"
               ?<span style={{fontSize:11,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.1)",padding:"5px 12px",borderRadius:6}}>Sent</span>
-              :<button className="btn btn-gold btn-sm" onClick={sendInvite} disabled={inviteState==="sending"}>
-                {inviteState==="sending"?"Sending...":"Send Portal Invite"}
+              :<button className="btn btn-gold btn-sm" onClick={sendInvite} disabled={portalInviteState==="sending"}>
+                {portalInviteState==="sending"?"Sending...":"Send Portal Invite"}
               </button>
             }
           </div>
-          {inviteState==="sent"&&<div style={{marginTop:10,fontSize:11,color:"#4a7c59"}}>
-            Invite sent to <strong>{r.tenant.email}</strong>. Link expires in 48 hours. You can resend anytime.
-            <button style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#999",marginLeft:8,fontFamily:"inherit"}} onClick={()=>setInviteState("idle")}>Resend</button>
+          {portalInviteState==="sent"&&<div style={{marginTop:10,fontSize:11,color:"#4a7c59"}}>
+            Invite sent to <strong>{r.tenant.email}</strong>. Link expires in 48 hours.
+            <button style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#999",marginLeft:8,fontFamily:"inherit"}} onClick={()=>setPortalInviteState("idle")}>Resend</button>
           </div>}
         </div>);
       })()}
@@ -8152,7 +8178,84 @@ export default function Page(){
     </div></div>);
   })()}
 
-  {/* ── Email Apply Link Modal ── */}
+  {/* ── Email Portal Link Modal ── */}
+  {modal&&modal.type==="emailPortalLink"&&(()=>{
+    const errs=modal.errs||{};
+    const link=`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${modal.token}`;
+    const send=()=>{
+      const e={};
+      if(!(modal.to||"").trim())e.to="Email address is required";
+      if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
+      const firstName=(modal.name||"").split(" ")[0]||"there";
+      const subject=encodeURIComponent(`Your tenant portal is ready — ${settings.companyName||"Black Bear Rentals"}`);
+      const body=encodeURIComponent(`Hi ${firstName},
+
+Your tenant portal is ready. Sign in to view your lease, pay your deposit, and access everything in one place.
+
+${link}
+
+This link expires in 48 hours. Sign in with Google or create an account using this email address.
+
+${settings.companyName||"Black Bear Rentals"}
+${settings.phone||""}`);
+      window.open(`mailto:${modal.to}?subject=${subject}&body=${body}`,"_blank");
+      setModal(null);
+    };
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+      <h2 style={{marginBottom:6}}>Email Portal Invite</h2>
+      <p style={{fontSize:11,color:"#999",marginBottom:16}}>Opens your email client pre-filled with the tenant portal link.</p>
+      <div style={{padding:"8px 12px",background:"#1a1714",borderRadius:6,marginBottom:16,fontSize:11,fontFamily:"monospace",color:"#d4a853",wordBreak:"break-all"}}>{link}</div>
+      <div style={{fontSize:10,color:"#999",marginBottom:16}}>This link expires in 48 hours. The tenant signs in with Google or email/password.</div>
+      <div className={`fld ${errs.to?"field-err":""}`}>
+        <label className={errs.to?"field-err-label":""}>Recipient Email *</label>
+        <input type="email" value={modal.to||""} onChange={e=>setModal(p=>({...p,to:e.target.value,errs:{}}))} placeholder="tenant@email.com" autoFocus/>
+        {errs.to&&<div className="err-msg">{errs.to}</div>}
+      </div>
+      <div className="fld">
+        <label>Name (optional)</label>
+        <input value={modal.name||""} onChange={e=>setModal(p=>({...p,name:e.target.value}))} placeholder="Jane Smith"/>
+      </div>
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn" style={{background:"#1a1714",color:"#d4a853",fontWeight:800}} onClick={send}>Open in Email Client</button>
+      </div>
+    </div></div>);
+  })()}
+
+  {/* ── Send Portal Invite from App Card ── */}
+  {modal&&modal.type==="sendPortalInviteApp"&&(()=>{
+    const a=modal.data;
+    const [piState,setPiState]=useState("idle");
+    const send=async()=>{
+      setPiState("sending");
+      try{
+        const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({tenantName:a.name,tenantEmail:a.email,propertyName:a.property,roomName:a.room,rent:a.negotiatedRent||a.rent,moveIn:a.termMoveIn||a.moveIn})
+        });
+        const d=await res.json();
+        if(d.ok)setPiState("sent"); else setPiState("error");
+      }catch(e){setPiState("error");}
+    };
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
+      <h2 style={{marginBottom:6}}>Send Portal Invite</h2>
+      <p style={{fontSize:11,color:"#999",marginBottom:16}}>Send <strong>{a.name}</strong> a link to create their tenant portal account. They can sign in with Google or email — no application required.</p>
+      <div style={{padding:"12px 14px",background:"rgba(0,0,0,.03)",borderRadius:8,marginBottom:16,fontSize:12}}>
+        <div className="tp-row"><span className="tp-label" style={{fontSize:10}}>Name</span><strong>{a.name}</strong></div>
+        <div className="tp-row"><span className="tp-label" style={{fontSize:10}}>Email</span><strong>{a.email}</strong></div>
+        {a.property&&<div className="tp-row"><span className="tp-label" style={{fontSize:10}}>Property</span><strong>{a.property}{a.room?" — "+a.room:""}</strong></div>}
+      </div>
+      {piState==="sent"&&<div style={{padding:"10px 14px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:12,color:"#4a7c59",marginBottom:16}}>Portal invite sent to <strong>{a.email}</strong>. Link expires in 48 hours.</div>}
+      {piState==="error"&&<div style={{padding:"10px 14px",background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,fontSize:12,color:"#c45c4a",marginBottom:16}}>Failed to send. Check console and try again.</div>}
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setModal(null)}>{piState==="sent"?"Close":"Cancel"}</button>
+        {piState!=="sent"&&<button className="btn" style={{background:"#1a1714",color:"#d4a853",fontWeight:800}} onClick={send} disabled={piState==="sending"}>{piState==="sending"?"Sending...":"Send Portal Invite"}</button>}
+      </div>
+    </div></div>);
+  })()}
+
+  {/* ── Email Apply Link Modal ── */}}
   {modal&&modal.type==="emailApplyLink"&&(()=>{
     const errs=modal.errs||{};
     const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply`;
