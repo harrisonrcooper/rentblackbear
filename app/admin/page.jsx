@@ -8255,7 +8255,7 @@ ${settings.phone||""}`);
     </div></div>);
   })()}
 
-  {/* ── Email Apply Link Modal ── */}}
+  {/* ── Email Apply Link Modal ── */}
   {modal&&modal.type==="emailApplyLink"&&(()=>{
     const errs=modal.errs||{};
     const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply`;
