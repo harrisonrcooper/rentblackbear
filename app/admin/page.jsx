@@ -331,7 +331,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
@@ -1962,7 +1962,7 @@ const S=`
 .pipe-hd h4{font-size:12px;font-weight:800}.pipe-cnt{font-size:10px;color:#5c4a3a;background:rgba(0,0,0,.06);padding:1px 7px;border-radius:100px}
 .pipe-bd{padding:10px;min-height:100px}
 .pipe-card{padding:10px 10px 10px 30px;border-radius:8px;border:1px solid rgba(0,0,0,.07);margin-bottom:8px;cursor:pointer;transition:all .12s;position:relative}
-.pipe-card:hover{border-color:rgba(212,168,83,.3);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pipe-card:hover{border-color:#4a7c59!important;box-shadow:0 4px 16px rgba(0,0,0,.12);background:#f7faf8;transform:translateY(-1px)}
 .pipe-nm{font-size:12px;font-weight:700;color:#1a1714;margin-bottom:2px}.pipe-sub{font-size:10px;color:#5c4a3a;font-weight:500}.pipe-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 
 /* Tenant portal preview */
@@ -2201,7 +2201,7 @@ export default function Page(){
       const collR=occR.reduce((s,r)=>s+((payments[r.id]&&payments[r.id][MO])||0),0);
       return{...pr,occCount:occR.length,vacCount:vacR.length,projected:prjR,fullOcc:fullR,collected:collR,occRooms:occR,vacRooms:vacR};
     });
-    return{total,occ,full,proj,coll,due,vacs,expiring,unpaid,paid,openMaint,activeApps,unreadNotifs,propBreakdown,
+    const needsAttention=apps.filter(a=>["applied","reviewing"].includes(a.status)).length;return{total,occ,full,proj,coll,due,vacs,expiring,unpaid,paid,openMaint,activeApps,unreadNotifs,needsAttention,propBreakdown,
       occRate:total?Math.round(occ/total*100):0,collRate:due?Math.round(coll/due*100):0,lost:full-proj};
   },[props,payments,maint,apps,notifs]);
 
@@ -2415,7 +2415,7 @@ export default function Page(){
     {id:"tenants",i:<IconUsers/>,l:"Tenants"},
     {id:"portal",i:<IconHome/>,l:"Tenant Portal"},
     {id:"payments",i:<IconDollar/>,l:"Payments",badge:settings.showPayBadge!==false&&pastDueCount>0?pastDueCount:null},
-    {id:"applications",i:<IconClipboard/>,l:"Applications",badge:m.activeApps||null},
+    {id:"applications",i:<IconClipboard/>,l:"Applications",badge:(settings.showAppBadge!==false&&m.needsAttention>0)?m.needsAttention:null},
     {id:"maintenance",i:<IconWrench/>,l:"Maintenance",badge:m.openMaint||null},
     {id:"leases",i:<IconFile/>,l:"Leases & Docs",badge:pendingLeases||null},
     {id:"documents",i:<IconFolder/>,l:"Documents"},
@@ -3450,7 +3450,7 @@ export default function Page(){
         const STAGES=["pre-screened","called","invited","applied","reviewing","lease-sent","onboarding"];
         const SL={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","lease-sent":"Lease Sent","onboarding":"Onboarding","approved":"Onboarding","move-in":"Onboarding","denied":"Denied"};
         const SC2={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","lease-sent":"b-gold","onboarding":"b-green","approved":"b-green","move-in":"b-green","denied":"b-red"};
-        const SI2={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","lease-sent":"📨","onboarding":"🏠"};
+        const SI2={};
         const moveApp=(id,ns)=>{setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));};
         const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
         const scoreApp=(a)=>{
@@ -3599,11 +3599,20 @@ export default function Page(){
         })()}
 
         {/* KPIs + controls */}
-        <div className="kgrid" style={{gridTemplateColumns:"repeat(4,1fr)",marginBottom:10}}>
-          <div className="kpi"><div className="kl">Pipeline</div><div className="kv">{activeApps.length}</div></div>
-          <div className="kpi"><div className="kl">Avg Score</div><div className="kv" style={{color:"#4a7c59"}}>{activeApps.length?Math.round(activeApps.reduce((s,a)=>s+getScore(a),0)/activeApps.length):0}</div></div>
-          <div className="kpi"><div className="kl">Stale</div><div className="kv" style={{color:staleApps.length?"#c45c4a":"#4a7c59"}}>{staleApps.length}</div></div>
-          <div className="kpi"><div className="kl">Denied</div><div className="kv">{deniedApps.length}</div></div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+          <div className="kgrid" style={{gridTemplateColumns:"repeat(4,1fr)",flex:1,marginBottom:0}}>
+            <div className="kpi"><div className="kl">Pipeline</div><div className="kv">{activeApps.length}</div></div>
+            <div className="kpi"><div className="kl">Needs Action</div><div className="kv" style={{color:m.needsAttention?"#c45c4a":"#4a7c59"}}>{m.needsAttention}</div><div className="ks">Applied + Reviewing</div></div>
+            <div className="kpi"><div className="kl">Stale</div><div className="kv" style={{color:staleApps.length?"#c45c4a":"#4a7c59"}}>{staleApps.length}</div></div>
+            <div className="kpi"><div className="kl">Denied</div><div className="kv">{deniedApps.length}</div></div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff",flexShrink:0}}>
+            <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Action badge</span>
+            <div onClick={()=>{const u={...settings,showAppBadge:settings.showAppBadge===false};setSettings(u);save("hq-settings",u);}}
+              style={{width:32,height:18,borderRadius:9,background:settings.showAppBadge!==false?"#4a7c59":"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+              <div style={{position:"absolute",top:2,left:settings.showAppBadge!==false?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+            </div>
+          </div>
         </div>
         <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
           <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search applicants..." style={{flex:1,minWidth:160,padding:"8px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
@@ -3613,7 +3622,7 @@ export default function Page(){
               const d=new Date(m+"-02");return<option key={m} value={m}>{d.toLocaleString("default",{month:"long",year:"numeric"})}</option>;
             })}
           </select>
-          {[{v:"pipeline",l:"📋 Pipeline"},{v:"list",l:"📝 List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
+          {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
         </div>
 
         {/* Bulk invite bar */}
@@ -3630,7 +3639,7 @@ export default function Page(){
                     if(invitable.length===1){setModal({type:"inviteApp",data:invitable[0]});}
                     else{setModal({type:"bulkInvite",ids:bulkSel});}
                   }}>
-                  ✉️ Invite ({invitable.length})
+                  Invite ({invitable.length})
                 </button>}
                 {reinvitable.length>0&&<button className="btn btn-out btn-sm" style={{color:"#3b82f6",borderColor:"rgba(59,130,246,.25)"}}
                   onClick={()=>setModal({type:"confirmAction",title:`Reinvite ${reinvitable.length} Applicant${reinvitable.length>1?"s":""}`,
@@ -3641,7 +3650,7 @@ export default function Page(){
                       setApps(p=>p.map(a=>reinvitable.find(r=>r.id===a.id)?{...a,lastContact:now,history:[...(a.history||[]),{from:"invited",to:"invited",date:now,note:"Reinvited — resent application link"}]}:a));
                       setBulkSel([]);setModal(null);
                     }})}>
-                  🔄 Reinvite ({reinvitable.length})
+                  Reinvite ({reinvitable.length})
                 </button>}
               </>);
             })()}
@@ -3659,7 +3668,7 @@ export default function Page(){
                 onConfirm:()=>{setApps(p=>p.filter(a=>!bulkSel.includes(a.id)));setBulkSel([]);setModal(null);}})}>
               Delete ({bulkSel.length})
             </button>
-            <button className="btn btn-out btn-sm" onClick={()=>setBulkSel([])}>✕ Clear</button>
+            <button className="btn btn-out btn-sm" onClick={()=>setBulkSel([])}>Clear</button>
           </>}
         </div>}
 
@@ -3674,7 +3683,7 @@ export default function Page(){
               :activeApps.filter(function(a){return a.status===stage;});
             return(
             <div key={stage} className="pipe-col">
-              <div className="pipe-hd"><h4 style={{fontSize:10}}>{SI2[stage]} {SL[stage]}</h4><span className="pipe-cnt">{sa.length}</span></div>
+              <div className="pipe-hd"><h4 style={{fontSize:10}}>{SL[stage]}</h4><span className="pipe-cnt">{sa.length}</span></div>
               <div className="pipe-bd">
                 {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){
                   var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=["pre-screened","called"].includes(a.status);
@@ -3693,7 +3702,7 @@ export default function Page(){
 
                     {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600,cursor:"pointer"}}
                       onClick={e=>{e.stopPropagation();if(flags[0].type==="past"){setDrill("archive");setTab("tenants");}else if(flags[0].type==="dup"){setModal({type:"app",data:flags[0].data});}setModal(null);}}>
-                      {flags[0].type==="current"?"⚠ Current Tenant":flags[0].type==="past"?"↩ Returning":flags[0].type==="dup"?"⚠ Duplicate":""} →
+                      {flags[0].type==="current"?"Current Tenant":flags[0].type==="past"?"Returning":flags[0].type==="dup"?"Duplicate":""} →
                     </div>}
 
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -3713,13 +3722,13 @@ export default function Page(){
 
                     {/* Invited — "Awaiting Reply" badge + reinvite button */}
                     {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:5}}>
-                      <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 6px",borderRadius:99}}>⏳ Awaiting Reply</span>
+                      <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 6px",borderRadius:99}}>Awaiting Reply</span>
                       <button style={{fontSize:8,padding:"2px 7px",background:"none",border:"1px solid rgba(59,130,246,.25)",borderRadius:4,color:"#3b82f6",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                         onClick={e=>{e.stopPropagation();
                           const now=TODAY.toISOString().split("T")[0];
                           setApps(p=>p.map(x=>x.id===a.id?{...x,lastContact:now,history:[...(x.history||[]),{from:"invited",to:"invited",date:now,note:"Reinvited — resent application link"}]}:x));
                           if(a.inviteLink){navigator.clipboard.writeText(a.inviteLink);showAlert({title:"Link Copied",body:"Invite link copied to clipboard. Re-send to "+a.name+"."});}
-                        }}>🔄 Reinvite</button>
+                        }}>Reinvite</button>
                     </div>}
 
                     {/* Onboarding progress bar */}
@@ -3741,7 +3750,7 @@ export default function Page(){
                           </div>
                         ))}
                       </div>
-                      {prog.ready&&<div style={{marginTop:4,fontSize:8,fontWeight:800,color:"#2d6a3f",textAlign:"center",padding:"3px 0",background:"rgba(74,124,89,.1)",borderRadius:3}}>✅ Ready to Move In</div>}
+                      {prog.ready&&<div style={{marginTop:4,fontSize:8,fontWeight:800,color:"#2d6a3f",textAlign:"center",padding:"3px 0",background:"rgba(74,124,89,.1)",borderRadius:3}}>Ready to Move In</div>}
                     </>}
 
                     {/* Standard card footer */}
@@ -3783,19 +3792,19 @@ export default function Page(){
         <div style={{marginTop:16,display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           {/* Card 1: Add Lead Manually */}
           <div style={{border:"1px solid rgba(0,0,0,.06)",borderRadius:12,padding:16,background:"#fff"}}>
-            <div style={{fontSize:13,fontWeight:800,marginBottom:4}}>📞 Add Lead Manually</div>
+            <div style={{fontSize:13,fontWeight:800,marginBottom:4}}>Add Lead Manually</div>
             <div style={{fontSize:11,color:"#999",marginBottom:12}}>Someone called you directly — no pre-screen. Enter their info and add them to the pipeline, then invite them to apply.</div>
             <button className="btn btn-gold" style={{width:"100%"}} onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
           </div>
           {/* Card 2: Generic Application Link */}
           <div style={{border:"1px solid rgba(0,0,0,.06)",borderRadius:12,padding:16,background:"#fff"}}>
-            <div style={{fontSize:13,fontWeight:800,marginBottom:4}}>🔗 Generic Application Link</div>
+            <div style={{fontSize:13,fontWeight:800,marginBottom:4}}>Generic Application Link</div>
             <div style={{fontSize:11,color:"#999",marginBottom:10}}>Share this link anywhere — they'll enter their own info, pass the pre-screen questions, then go straight into the full application.</div>
             <div style={{display:"flex",gap:6,marginBottom:8}}>
               <div style={{flex:1,padding:"8px 10px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:10,color:"#999",fontFamily:"monospace",background:"#faf9f7",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                 {(settings.siteUrl||"https://rentblackbear.com")}/apply
               </div>
-              <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>📋 Copy</button>
+              <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
             </div>
             {expanded.genericNote
               ?<div style={{marginBottom:8}}>
