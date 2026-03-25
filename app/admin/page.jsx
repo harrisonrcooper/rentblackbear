@@ -2427,6 +2427,7 @@ export default function Page(){
     {id:"ideas",i:<IconBrain/>,l:"Brain Dump"},
     {id:"notifications",i:<IconBell/>,l:"Alerts",badge:m.unreadNotifs||null},
     {id:"settings_dummy",i:<IconSettings/>,l:"Settings"},
+    {id:"configuration",i:<IconClipboard/>,l:"Configuration"},
   ];
 
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);};
@@ -2484,7 +2485,9 @@ export default function Page(){
       <div className="s-lbl">Portfolio</div>
       {tabs.slice(13,14).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
       <div className="s-lbl">System</div>
-      {tabs.slice(14).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      {tabs.filter(t=>["site-settings","theme","ideas","notifications","settings_dummy"].includes(t.id)).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
+      <div className="s-lbl">Configuration</div>
+      {tabs.filter(t=>t.id==="configuration").map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}</button>)}
       <div className="s-ft">
         <a href="#">🌐 View Public Site</a>
       </div>
@@ -3624,7 +3627,11 @@ export default function Page(){
           </select>
           {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
           <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
-          <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy Apply Link</button>
+          <div style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"2px 2px 2px 10px"}}>
+            <span style={{fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{(settings.siteUrl||"https://rentblackbear.com")}/apply</span>
+            <button className="btn btn-out btn-sm" style={{flexShrink:0}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
+            <button className="btn btn-gold btn-sm" style={{flexShrink:0}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
+          </div>
         </div>
 
         {/* Bulk invite bar */}
@@ -8101,7 +8108,51 @@ export default function Page(){
     </div></div>);
   })()}
 
-  {/* ── Add Lead Done — offer to invite immediately ── */}
+  {/* ── Email Apply Link Modal ── */}
+  {modal&&modal.type==="emailApplyLink"&&(()=>{
+    const errs=modal.errs||{};
+    const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply`;
+    const send=async()=>{
+      const e={};
+      if(!(modal.to||"").trim())e.to="Email address is required";
+      if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
+      const firstName=(modal.name||"").split(" ")[0]||"there";
+      const subject=encodeURIComponent("Apply for a Room at Black Bear Rentals");
+      const body=encodeURIComponent(`Hi ${firstName},
+
+We have a room available at Black Bear Rentals in Huntsville, AL. Apply here:
+
+${link}
+
+Takes about 10-15 minutes. Let me know if you have any questions!
+
+${settings.companyName||"Black Bear Rentals"}
+${settings.phone||""}`);
+      window.open(`mailto:${modal.to}?subject=${subject}&body=${body}`,"_blank");
+      setModal(null);
+    };
+    return(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+      <h2 style={{marginBottom:6}}>Email Apply Link</h2>
+      <p style={{fontSize:11,color:"#999",marginBottom:16}}>Opens your email client pre-filled with the application link. The recipient can apply directly from there.</p>
+      <div style={{padding:"8px 12px",background:"rgba(0,0,0,.03)",borderRadius:6,marginBottom:16,fontSize:11,fontFamily:"monospace",color:"#5c4a3a",wordBreak:"break-all"}}>{link}</div>
+      <div className={`fld ${errs.to?"field-err":""}`}>
+        <label className={errs.to?"field-err-label":""}>Recipient Email *</label>
+        <input type="email" value={modal.to||""} onChange={e=>setModal(p=>({...p,to:e.target.value,errs:{}}))} placeholder="jane@email.com" autoFocus/>
+        {errs.to&&<div className="err-msg">{errs.to}</div>}
+      </div>
+      <div className="fld">
+        <label>Name (optional — personalizes the email)</label>
+        <input value={modal.name||""} onChange={e=>setModal(p=>({...p,name:e.target.value}))} placeholder="Jane Smith"/>
+      </div>
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-gold" onClick={send}>Open in Email Client</button>
+      </div>
+    </div></div>);
+  })()}
+
+  {/* ── Add Lead Done — offer to invite immediately ── */}}
   {modal&&modal.type==="addLeadDone"&&(()=>{const lead=modal.lead;return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center",padding:28}}>
       <div style={{fontSize:36,marginBottom:8}}>✅</div>
