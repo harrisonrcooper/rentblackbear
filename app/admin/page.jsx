@@ -8152,7 +8152,7 @@ ${settings.phone||""}`);
     </div></div>);
   })()}
 
-  {/* ── Add Lead Done — offer to invite immediately ── */}}
+  {/* ── Add Lead Done — offer to invite immediately ── */}
   {modal&&modal.type==="addLeadDone"&&(()=>{const lead=modal.lead;return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center",padding:28}}>
       <div style={{fontSize:36,marginBottom:8}}>✅</div>
