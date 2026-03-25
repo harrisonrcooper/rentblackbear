@@ -331,7 +331,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,adminZoom:1,
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
@@ -1803,7 +1803,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
 
 // ─── Styles ─────────────────────────────────────────────────────────
 const S=`
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#f4f3f0;color:#1a1714;font-size:var(--fs,13px)}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#f4f3f0;color:#1a1714}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
@@ -2438,7 +2438,7 @@ export default function Page(){
     return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
   }));
 
-  const fsSizes={"small":"11px","medium":"13px","large":"15px","xl":"17px"};const fsVal=fsSizes[settings.adminFontSize||"medium"]||"13px";return(<><style>{S}</style><div className="app" style={{"--fs":fsVal}}>
+  return(<><style>{S}</style><div className="app" style={{zoom:settings.adminZoom||1}}>
     {/* Mobile header */}
     <div className="mob-header"><div style={{display:"flex",alignItems:"center",gap:8}}><div className="s-logo" style={{fontSize:16}}>🐻 BB <span>HQ</span></div><span style={{fontSize:11,color:"#c4a882"}}>· {(tabs.find(t=>t.id===tab)||{}).l}</span></div><button className="mob-toggle" onClick={()=>setSideOpen(!sideOpen)}>{sideOpen?"✕":"☰"}</button></div>
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
@@ -5848,23 +5848,6 @@ export default function Page(){
       {/* ═══ SITE SETTINGS ═══ */}
       {tab==="site-settings"&&<>
         <div className="sec-hd"><div><h2>Site Settings</h2><p>Edit company info and hero copy</p></div></div>
-        <div className="card" style={{marginBottom:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Display</h3>
-          <p style={{fontSize:11,color:"#999",marginBottom:14}}>Adjust the admin font size. Changes apply instantly and are saved to your settings.</p>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {[["small","Small"],["medium","Medium"],["large","Large"],["xl","X-Large"]].map(([k,lb])=>(
-              <button key={k} onClick={()=>{const u={...settings,adminFontSize:k};setSettings(u);save("hq-settings",u);}}
-                style={{padding:"8px 20px",borderRadius:8,border:"1px solid",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s",
-                  borderColor:(settings.adminFontSize||"medium")===k?"#d4a853":"rgba(0,0,0,.08)",
-                  background:(settings.adminFontSize||"medium")===k?"rgba(212,168,83,.1)":"#fff",
-                  color:(settings.adminFontSize||"medium")===k?"#9a7422":"#5c4a3a",
-                  fontSize:k==="small"?"11px":k==="medium"?"13px":k==="large"?"15px":"17px"}}>
-                {lb}
-              </button>
-            ))}
-          </div>
-          <div style={{marginTop:10,fontSize:10,color:"#999"}}>Current: <strong style={{color:"#1a1714"}}>{({"small":"Small (11px)","medium":"Medium (13px)","large":"Large (15px)","xl":"X-Large (17px)"})[settings.adminFontSize||"medium"]}</strong> -- changes save instantly</div>
-        </div></div>
         <div className="card"><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Company Info</h3>
           <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
@@ -6011,6 +5994,24 @@ export default function Page(){
             <button className="btn btn-out" onClick={()=>setTheme(randPalette())}>🎲 Random</button>
           </div></div>
           {expanded.themePushSuccess&&<div style={{marginBottom:10,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,animation:"fadeIn .3s"}}>✓ Theme is live on rentblackbear.com — public site reads from Supabase on load</div>}
+
+        {/* Display / Zoom */}
+        <div style={{background:"#fff",borderRadius:12,padding:18,border:"1px solid rgba(0,0,0,.03)",marginBottom:16}}>
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Admin Display Size</h3>
+          <p style={{fontSize:11,color:"#999",marginBottom:14}}>Scales the entire admin interface. Takes effect instantly.</p>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {[[0.9,"90% — Compact"],[1,"100% — Default"],[1.15,"115% — Large"],[1.3,"130% — Largest"]].map(([z,lb])=>(
+              <button key={z} onClick={()=>{const u={...settings,adminZoom:z};setSettings(u);save("hq-settings",u);}}
+                style={{padding:"9px 18px",borderRadius:8,border:"1px solid",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s",
+                  borderColor:(settings.adminZoom||1)===z?"#d4a853":"rgba(0,0,0,.08)",
+                  background:(settings.adminZoom||1)===z?"rgba(212,168,83,.12)":"#fff",
+                  color:(settings.adminZoom||1)===z?"#9a7422":"#5c4a3a",
+                  fontSize:13}}>
+                {lb}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Presets + Saved Themes */}
         <div style={{marginBottom:16}}>
