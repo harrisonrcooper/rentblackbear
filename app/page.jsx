@@ -1632,13 +1632,13 @@ export default function Page(){
     <section className="sec" id="availability"><div className="sec-inner"><div className="sh"><div className="sl">Availability</div><h2 className="st">Room Availability</h2><p className="ss">Rooms available now are ready for immediate move-in. Click upcoming openings to see the calendar.</p></div>
       <div className="tabs"><button className={`tab ${calProp==="all"?"on":""}`} onClick={()=>{setCalProp("all");setCalRoom(null);}}>All</button>{P.map(p=><button key={p.id} className={`tab ${calProp===p.id?"on":""}`} onClick={()=>{setCalProp(p.id);setCalRoom(null);}}>{p.name}</button>)}</div>
       <div className="cal-grid">{calProps.map(prop=>{
-        const units=prop.units&&prop.units.length>0?prop.units:[{id:"_",rentalMode:"byRoom",rooms:allRoomsP(prop)}];
+        const units=prop.units&&prop.units.length>0?prop.units.filter(u=>!u.ownerOccupied):[{id:"_",rentalMode:"byRoom",rooms:allRoomsP(prop)}];
         const unitCount=units.length;
         return(
         <div key={prop.id} className="cal-card"><div className="cal-hd"><h3>{prop.name}</h3><span>{prop.type} · {unitCount>1?unitCount+" units":prop.allWholeHouse?"Whole property":allRoomsP(prop).length+" rooms"}</span></div><div className="cal-bd">
           {units.map(u=>{
             const uIsWhole=(u.rentalMode||"byRoom")==="wholeHouse";
-            const uRooms=u.rooms||[];
+            const uRooms=(u.rooms||[]).filter(r=>!r.ownerOccupied);
             return(<div key={u.id}>
               {unitCount>1&&<div style={{fontSize:9,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:.5,padding:"6px 0 4px"}}>{u.name||"Unit"} · {uIsWhole?"Whole Unit":"By Room"}</div>}
               {uIsWhole?(()=>{
