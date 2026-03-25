@@ -331,7 +331,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
@@ -358,6 +358,20 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
 };
 const DEF_THEME={bg:"#1a1714",card:"#2c2520",accent:"#d4a853",text:"#f5f0e8",muted:"#c4a882",surface:"#fefdfb",surfaceAlt:"#f5f0e8",green:"#4a7c59",dark:"#1a1714",warm:"#5c4a3a"};
 const THEME_LABELS={bg:"Background",card:"Card",accent:"Accent",text:"Light Text",muted:"Muted",surface:"Surface",surfaceAlt:"Alt Surface",green:"Green",dark:"Dark",warm:"Warm"};
+const ADMIN_PRESETS=[
+  {id:"forest",name:"Forest Green",accent:"#4a7c59",accentRgb:"74,124,89",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
+  {id:"slate",name:"Slate Blue",accent:"#3b6ea5",accentRgb:"59,110,165",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
+  {id:"terracotta",name:"Terracotta",accent:"#b85c38",accentRgb:"184,92,56",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
+  {id:"teal",name:"Deep Teal",accent:"#2a7d7b",accentRgb:"42,125,123",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
+  {id:"charcoal",name:"Charcoal",accent:"#2c3e50",accentRgb:"44,62,80",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
+];
+const ADMIN_FONTS=[
+  {name:"Plus Jakarta Sans",stack:"'Plus Jakarta Sans',system-ui,sans-serif"},
+  {name:"Inter",stack:"'Inter',system-ui,sans-serif"},
+  {name:"DM Sans",stack:"'DM Sans',system-ui,sans-serif"},
+  {name:"IBM Plex Sans",stack:"'IBM Plex Sans',monospace"},
+  {name:"Georgia",stack:"Georgia,serif"},
+];
 const PRESETS={"Warm Lodge":DEF_THEME,"Midnight":{bg:"#0f1729",card:"#1a2540",accent:"#3b82f6",text:"#e8ecf4",muted:"#8899b8",surface:"#fafbfe",surfaceAlt:"#eef2f9",green:"#22c55e",dark:"#0f1729",warm:"#64748b"},"Forest":{bg:"#1a2e1a",card:"#243524",accent:"#7cb342",text:"#e8f0e4",muted:"#a3b89a",surface:"#fafcf8",surfaceAlt:"#eef3ea",green:"#7cb342",dark:"#1a2e1a",warm:"#5a6b52"}};
 function contrast(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return(r*.299+g*.587+b*.114)>150?"#1a1714":"#f5f0e8";}
 
@@ -472,7 +486,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
         ctx.beginPath();ctx.moveTo(dx+dw*g/3,dy);ctx.lineTo(dx+dw*g/3,dy+dh);ctx.stroke();
         ctx.beginPath();ctx.moveTo(dx,dy+dh*g/3);ctx.lineTo(dx+dw,dy+dh*g/3);ctx.stroke();
       }
-      ctx.strokeStyle="rgba(74,124,89,.8)";ctx.lineWidth=1;ctx.setLineDash([4,3]);
+      ctx.strokeStyle="rgba(212,168,83,.8)";ctx.lineWidth=1;ctx.setLineDash([4,3]);
       ctx.beginPath();ctx.moveTo(dx+dw/2,dy);ctx.lineTo(dx+dw/2,dy+dh);ctx.stroke();
       ctx.beginPath();ctx.moveTo(dx,dy+dh/2);ctx.lineTo(dx+dw,dy+dh/2);ctx.stroke();
       ctx.setLineDash([]);
@@ -608,7 +622,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
     <div style={{marginBottom:10}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
         <label style={{fontSize:10,fontWeight:700,color:"#5c4a3a"}}>{label}</label>
-        <span style={{fontSize:10,color:color||"#4a7c59",fontWeight:700}}>{val}{unit}</span>
+        <span style={{fontSize:10,color:color||"#9a7422",fontWeight:700}}>{val}{unit}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={val}
         onChange={e=>set(Number(e.target.value))}
@@ -629,7 +643,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
   return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:1000,maxHeight:"95vh",overflowY:"auto",padding:20}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div><h2 style={{marginBottom:2}}>✏️ Photo Editor</h2>
-        <div style={{fontSize:10,color:"#999"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move{aspectLock&&<span style={{marginLeft:8,background:"rgba(74,124,89,.12)",color:"#4a7c59",fontWeight:700,padding:"1px 7px",borderRadius:4,fontSize:9}}>🔒 {aspectLock} locked — card preview ratio</span>}</div>
+        <div style={{fontSize:10,color:"#999"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move{aspectLock&&<span style={{marginLeft:8,background:"rgba(212,168,83,.12)",color:"#9a7422",fontWeight:700,padding:"1px 7px",borderRadius:4,fontSize:9}}>🔒 {aspectLock} locked — card preview ratio</span>}</div>
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={()=>setShowGrid(g=>!g)} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:showGrid?"#d4a853":"#fff",color:showGrid?"#1a1714":"#5c4a3a",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>⊞ Grid {showGrid?"ON":"OFF"}</button>
@@ -656,7 +670,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
 
         {/* Transform */}
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>Transform</div>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>Transform</div>
           <div style={{display:"flex",gap:4,marginBottom:5}}>
             {iconBtn("↺ 90°",()=>doRotate(-90),"Rotate 90° CCW")}
             {iconBtn("↻ 90°",()=>doRotate(90),"Rotate 90° CW")}
@@ -675,7 +689,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
                   onBlur={e=>{const v=parseFloat(e.target.value);if(!isNaN(v)){const cl=Math.max(-180,Math.min(180,v));setRotation(cl);setRotInput(String(cl));}}}
                   onKeyDown={e=>{if(e.key==="Enter"){const v=parseFloat(rotInput);if(!isNaN(v)){const cl=Math.max(-180,Math.min(180,v));setRotation(cl);setRotInput(String(cl));}}}}
                   style={{width:52,padding:"2px 5px",borderRadius:5,border:"1px solid rgba(0,0,0,.1)",fontSize:10,fontFamily:"inherit",textAlign:"right"}}/>
-                <span style={{fontSize:10,color:"#4a7c59",fontWeight:700}}>°</span>
+                <span style={{fontSize:10,color:"#9a7422",fontWeight:700}}>°</span>
               </div>
             </div>
             <input type="range" min={-180} max={180} step={0.1} value={rotation}
@@ -687,7 +701,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
 
         {/* Adjustments */}
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>Adjustments</div>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:7}}>Adjustments</div>
           <SL label="Brightness" val={brightness} set={setBrightness} min={20} max={200} step={1} unit="%"/>
           <SL label="Contrast" val={contrast} set={setContrast} min={20} max={200} step={1} unit="%" color="#7c6a3a"/>
           <SL label="Saturation" val={saturation} set={setSaturation} min={0} max={200} step={1} unit="%" color="#7c3a5a"/>
@@ -695,7 +709,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
 
         {/* Crop info */}
         <div style={{background:"#faf9f7",borderRadius:8,padding:10,border:"1px solid rgba(0,0,0,.06)"}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Crop Area</div>
+          <div style={{fontSize:9,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Crop Area</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontSize:10,color:"#5c4a3a"}}>
             <div>X: <strong>{cropX.toFixed(1)}%</strong></div>
             <div>Y: <strong>{cropY.toFixed(1)}%</strong></div>
@@ -799,7 +813,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
         <span style={{fontSize:9,color:"#bbb"}}>drag to reorder</span>
       </div>}
     </div>
-    {readingCount>0&&<div style={{marginBottom:6,padding:"5px 10px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:6,fontSize:10,color:"#4a7c59",display:"flex",alignItems:"center",gap:6}}>
+    {readingCount>0&&<div style={{marginBottom:6,padding:"5px 10px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:6,fontSize:10,color:"#9a7422",display:"flex",alignItems:"center",gap:6}}>
       <div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #d4a853",borderTopColor:"transparent",animation:"spin .6s linear infinite"}}/>
       Loading {readingCount} photo{readingCount!==1?"s":""}…
     </div>}
@@ -826,8 +840,8 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
             opacity:dragIdx===i?.5:1,
             transition:"border-color .1s,opacity .1s",
           }}>
-          {i===0&&<div style={{position:"absolute",top:3,left:3,background:"#4a7c59",color:"#1a1714",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:3,pointerEvents:"none"}}>COVER</div>}
-          <div style={{position:"absolute",bottom:3,left:3,background:"rgba(74,124,89,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}} onClick={e=>{e.stopPropagation();e.preventDefault();setEditingPhoto({index:i,src});}}>✏ Edit</div>
+          {i===0&&<div style={{position:"absolute",top:3,left:3,background:"#d4a853",color:"#1a1714",fontSize:7,fontWeight:800,padding:"1px 5px",borderRadius:3,zIndex:3,pointerEvents:"none"}}>COVER</div>}
+          <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}} onClick={e=>{e.stopPropagation();e.preventDefault();setEditingPhoto({index:i,src});}}>✏ Edit</div>
           {i===0&&<div style={{position:"absolute",top:3,right:22,background:"rgba(0,0,0,.65)",color:"#fff",fontSize:7,fontWeight:800,padding:"2px 5px",borderRadius:3,zIndex:3,cursor:"crosshair",userSelect:"none"}} title="Click to set focal point — controls how photo is cropped in cards" onClick={e=>{e.stopPropagation();setPickingFocal(true);}} >🎯</div>}
           {i===0&&pickingFocal&&<div style={{position:"absolute",inset:0,zIndex:4,cursor:"crosshair",background:"rgba(0,0,0,.35)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{e.stopPropagation();const rect=e.currentTarget.getBoundingClientRect();const x=Math.round((e.clientX-rect.left)/rect.width*100);const y=Math.round((e.clientY-rect.top)/rect.height*100);onFocalPoint&&onFocalPoint(x,y);setPickingFocal(false);}}>
             <div style={{color:"#fff",fontSize:10,fontWeight:700,textAlign:"center",pointerEvents:"none",textShadow:"0 1px 3px rgba(0,0,0,.8)"}}>Click to set focal point<br/><span style={{fontSize:8,fontWeight:400,opacity:.8}}>Press ESC to cancel</span></div>
@@ -848,7 +862,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
       onDragLeave={()=>setDropOver(false)}
       onDrop={handleDrop}
       onClick={openPicker}
-      style={{border:`2px dashed ${dropOver?"#d4a853":"rgba(0,0,0,.08)"}`,borderRadius:8,padding:18,textAlign:"center",cursor:"pointer",background:dropOver?"rgba(74,124,89,.04)":"transparent",marginBottom:6,transition:"all .15s"}}>
+      style={{border:`2px dashed ${dropOver?"#d4a853":"rgba(0,0,0,.08)"}`,borderRadius:8,padding:18,textAlign:"center",cursor:"pointer",background:dropOver?"rgba(212,168,83,.04)":"transparent",marginBottom:6,transition:"all .15s"}}>
       <div style={{fontSize:22,marginBottom:4}}>📷</div>
       <div style={{fontSize:11,color:"#999",fontWeight:600}}>Drop photos here or click to browse</div>
       <div style={{fontSize:9,color:"#bbb",marginTop:2}}>Select multiple files at once — no limit</div>
@@ -1003,8 +1017,8 @@ function TourSceneManager({tourFolder,scenes,onChange}){
       </div>
 
       {/* Inline scene edit panel */}
-      {editing&&<div style={{marginBottom:8,padding:10,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>Edit Scene</div>
+      {editing&&<div style={{marginBottom:8,padding:10,background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8}}>Edit Scene</div>
         <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
           <img src={thumbURL(editing.file,300)} alt={editing.label}
             style={{width:72,height:50,objectFit:"cover",borderRadius:5,flexShrink:0,border:"1px solid rgba(0,0,0,.1)"}}
@@ -1056,7 +1070,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
               F{s.floor||1}
             </div>
             {/* Edit button */}
-            <div style={{position:"absolute",bottom:3,left:3,background:"rgba(74,124,89,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}}
+            <div style={{position:"absolute",bottom:3,left:3,background:"rgba(212,168,83,.95)",color:"#1a1714",fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,zIndex:3,cursor:"pointer"}}
               onClick={e=>{e.stopPropagation();setEditingScene(editingScene===s.id?null:s.id);}}>
               ✏ Edit
             </div>
@@ -1136,12 +1150,12 @@ function TourSceneManager({tourFolder,scenes,onChange}){
                 style={{cursor:already?"default":"pointer",borderRadius:6,
                   border:"2px solid "+(already?"rgba(0,0,0,.06)":sel?"#d4a853":"rgba(0,0,0,.1)"),overflow:"hidden",
                   position:"relative",transition:"all .15s",opacity:already?.6:1,
-                  background:sel?"rgba(74,124,89,.06)":"transparent"}}
+                  background:sel?"rgba(212,168,83,.06)":"transparent"}}
                 title={already?"Already added":sel?"Click to deselect":"Click to select"}>
                 <img src={thumbURL(file)} alt={file} style={{width:"100%",aspectRatio:"16/9",objectFit:"cover",display:"block"}}/>
                 <div style={{fontSize:7,padding:"2px 4px",background:"rgba(0,0,0,.65)",color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file}</div>
                 {already&&<div style={{position:"absolute",inset:0,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",fontWeight:700}}>Added</div>}
-                {sel&&!already&&<div style={{position:"absolute",top:3,right:3,width:16,height:16,background:"#4a7c59",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#1a1714",fontWeight:900}}>✓</div>}
+                {sel&&!already&&<div style={{position:"absolute",top:3,right:3,width:16,height:16,background:"#d4a853",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#1a1714",fontWeight:900}}>✓</div>}
               </div>
             );
           })}
@@ -1202,7 +1216,7 @@ function LeasePricingModal({room,onSave,onClose}){
     <div className="mbg" style={{zIndex:200}} onClick={onClose}>
       <div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}}>
         <h2>Edit Lease Pricing — {room.name}</h2>
-        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:14,padding:"8px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,border:"1px solid rgba(74,124,89,.15)"}}>
+        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:14,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)"}}>
           Base rent: <strong>${baseRent}/mo</strong> — Longer leases get a discount, shorter leases carry a premium. Prices auto-calculate but you can override each one.
         </div>
         <div style={{display:"grid",gridTemplateColumns:"60px 1fr 90px 70px 28px",gap:8,alignItems:"center",marginBottom:6,padding:"0 2px"}}>
@@ -1220,7 +1234,7 @@ function LeasePricingModal({room,onSave,onClose}){
             </label>
             <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>
               {t.months} month{t.months!==1?"s":""}
-              {t.months===12&&<span style={{fontSize:9,color:"#4a7c59",marginLeft:5,fontWeight:700}}>Standard</span>}
+              {t.months===12&&<span style={{fontSize:9,color:"#d4a853",marginLeft:5,fontWeight:700}}>Standard</span>}
               {t.months<9&&<span style={{fontSize:9,color:"#c45c4a",marginLeft:5}}>Premium</span>}
               {t.months>12&&<span style={{fontSize:9,color:"#4a7c59",marginLeft:5}}>Discount</span>}
             </div>
@@ -1229,7 +1243,7 @@ function LeasePricingModal({room,onSave,onClose}){
               <input type="number" value={t.price} min={0} step={5}
                 onChange={e=>updTier(t.id,"price",Number(e.target.value)||0)}
                 onFocus={()=>updTier(t.id,"override",true)}
-                style={{width:"100%",padding:"4px 6px",borderRadius:5,border:"1px solid "+(t.override?"rgba(74,124,89,.5)":"rgba(0,0,0,.08)"),fontSize:11,fontFamily:"inherit"}}/>
+                style={{width:"100%",padding:"4px 6px",borderRadius:5,border:"1px solid "+(t.override?"rgba(212,168,83,.5)":"rgba(0,0,0,.08)"),fontSize:11,fontFamily:"inherit"}}/>
             </div>
             <div style={{fontSize:10,color:"#999",textAlign:"right"}}>${(t.price*t.months).toLocaleString()}</div>
             <button onClick={()=>removeTier(t.id)} style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:14,lineHeight:1,padding:0}}>x</button>
@@ -1536,7 +1550,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
               }}>{u.name||`Unit ${i+1}`}
               <span style={{fontSize:9,fontWeight:400,opacity:.6,marginLeft:4}}>{u.rentalMode==="wholeHouse"?"whole":"by room"}</span>
               </button>
-              {i>0&&<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.3)",padding:"3px 7px"}}
+              {i>0&&<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#9a7422",borderColor:"rgba(212,168,83,.3)",padding:"3px 7px"}}
                 title={"Copy Unit A settings to "+u.name}
                 onClick={()=>setMirrorTarget(i)}>
                 ⧉
@@ -1547,7 +1561,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
         </div>}
       </div>
 
-      {curUnit&&<div style={{background:"rgba(74,124,89,.03)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:14,marginBottom:12}}>
+      {curUnit&&<div style={{background:"rgba(212,168,83,.03)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:14,marginBottom:12}}>
         {/* Rental Mode — first because it gates everything else */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:12,borderBottom:"1px solid rgba(0,0,0,.06)"}}>
           <div>
@@ -1620,7 +1634,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
               <div className="fld">
                 <label>Rent $/mo</label>
                 <input type="number" value={r.rent} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"rent",e.target.value)}/>
-                {!locked&&<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.3)",marginTop:4,width:"100%"}}
+                {!locked&&<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#9a7422",borderColor:"rgba(212,168,83,.3)",marginTop:4,width:"100%"}}
                   onClick={()=>setLeasePricingRoom({room:r,idx:i})}>
                   💰 Lease Pricing {(r.leaseTiers&&r.leaseTiers.length>0)?"("+r.leaseTiers.filter(t=>t.enabled).length+" tiers)":"(set up)"}
                 </button>}
@@ -1663,7 +1677,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
               <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>
                 {["Walk-in closet","En-suite bath","Closet organizer","Street view","Backyard view","USB outlets","Blackout curtains","Ceiling fan","Private entrance","Corner room","Lots of natural light","Extra storage"].map(feat=>{
                   const checked=(r.feat||[]).includes(feat);
-                  return(<label key={feat} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer",padding:"3px 8px",borderRadius:5,border:`1px solid ${checked?"rgba(74,124,89,.4)":"rgba(0,0,0,.08)"}`,background:checked?"rgba(74,124,89,.06)":"#faf9f7",userSelect:"none"}}>
+                  return(<label key={feat} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer",padding:"3px 8px",borderRadius:5,border:`1px solid ${checked?"rgba(212,168,83,.4)":"rgba(0,0,0,.08)"}`,background:checked?"rgba(212,168,83,.06)":"#faf9f7",userSelect:"none"}}>
                     <input type="checkbox" checked={checked} style={{accentColor:"#d4a853",width:11,height:11}} onChange={()=>{const cur=r.feat||[];const next=checked?cur.filter(f=>f!==feat):[...cur,feat];updRoom(i,"feat",next);}}/>
                     {feat}
                   </label>);
@@ -1722,7 +1736,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
       </div>}
     </div>{/* end unit tabs */}
 
-    {warning&&<div style={{background:"rgba(74,124,89,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
+    {warning&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span><strong>Room occupied by {warning}.</strong> Terminate lease or move tenant first.</span><button className="btn btn-out btn-sm" onClick={()=>setWarning(null)}>Got it</button></div>}
     {showUtilModal&&<UtilTemplatesModal settings={settings} onUpdateSettings={onUpdateSettings} onClose={()=>setShowUtilModal(false)}/>}
     {leasePricingRoom&&<LeasePricingModal room={leasePricingRoom.room} onClose={()=>setLeasePricingRoom(null)} onSave={tiers=>{
       const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map((r,ri)=>ri===leasePricingRoom.idx?{...r,leaseTiers:tiers}:r)}:u);
@@ -1814,14 +1828,14 @@ const S=`
 .field-err input,.field-err select,.field-err textarea{border-color:#c45c4a!important;background:rgba(196,92,74,.03)!important;animation:fieldShake .35s ease}
 .field-err-label{color:#c45c4a!important}
 .err-msg{font-size:10px;color:#c45c4a;margin-top:3px;font-weight:600}
-.acct-row:hover{background:rgba(74,124,89,.06)!important}
+.acct-row:hover{background:rgba(212,168,83,.06)!important}
 .sort-hdr{cursor:pointer;user-select:none;transition:color .15s}.sort-hdr:hover{color:#3c3228!important}
 .ms-drop{position:relative;display:inline-block}
 .ms-btn{padding:4px 8px;border-radius:5px;border:1px solid rgba(0,0,0,.08);fontSize:11px;font-family:inherit;cursor:pointer;background:#fff;display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:11px;color:#3c3228}
-.ms-btn.has-sel{border-color:#d4a853;background:rgba(74,124,89,.06)}
+.ms-btn.has-sel{border-color:#d4a853;background:rgba(212,168,83,.06)}
 .ms-panel{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,.1);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:50;min-width:200px;max-height:280px;overflow-y:auto;padding:6px 0}
 .ms-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:11px;color:#3c3228;transition:background .1s}
-.ms-item:hover{background:rgba(74,124,89,.04)}
+.ms-item:hover{background:rgba(212,168,83,.04)}
 .ms-item input[type=checkbox]{width:14px;height:14px;accent-color:#3c3228;margin:0;flex-shrink:0}
 .dot-menu{position:relative;display:inline-block}
 .dot-btn{background:none;border:none;cursor:pointer;padding:4px;font-size:16px;color:#999;line-height:1;font-family:inherit}
@@ -1852,7 +1866,7 @@ const S=`
 .s-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.72);padding:14px 16px 4px}
 .sn{display:flex;align-items:center;gap:9px;padding:8px 12px;margin:1px 8px;border-radius:7px;font-size:13px;font-weight:500;color:rgba(255,255,255,.72);cursor:pointer;border:none;background:none;width:calc(100% - 16px);text-align:left;font-family:inherit;transition:all .12s;position:relative}
 .sn:hover{background:rgba(255,255,255,.07);color:#fff}
-.sn.on{background:rgba(74,124,89,.18);color:#f0c96a;font-weight:700}
+.sn.on{background:rgba(212,168,83,.18);color:#f0c96a;font-weight:700}
 .sn.on .sn-i{opacity:1}
 .sn-i{width:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.8;color:rgba(255,255,255,.9)}
 .sn:hover .sn-i{opacity:1;color:#fff}
@@ -1878,7 +1892,7 @@ const S=`
 /* Buttons */
 .btn{padding:7px 14px;border-radius:7px;border:none;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .1s}
 .btn:hover{transform:translateY(-1px)}
-.btn-gold{background:#4a7c59;color:#fff}.btn-gold:hover{background:#c99a3e}.btn-dk{background:#1a1714;color:#f5f0e8}.btn-dk:hover{background:#2c2520}
+.btn-gold{background:#d4a853;color:#1a1714}.btn-gold:hover{background:#c99a3e}.btn-dk{background:#1a1714;color:#f5f0e8}.btn-dk:hover{background:#2c2520}
 .pay-tab{flex:1;padding:14px 16px;fontSize:14px;font-weight:500;background:#fff;color:#5c4a3a;border:none;cursor:pointer;font-family:inherit;transition:all .2s;border-right:1px solid rgba(0,0,0,.04)}
 .pay-tab:hover{background:#f0eeeb;color:#1a1714}.pay-tab.active{background:#1a1714;color:#f5f0e8;font-weight:800}.pay-tab.active:hover{background:#2c2520}
 .btn-out{background:#fff;border:1px solid rgba(0,0,0,.08);color:#1a1714}.btn-out:hover{border-color:#d4a853}
@@ -1888,8 +1902,8 @@ const S=`
 /* KPIs */
 .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
 .kpi{background:#fff;border-radius:12px;padding:16px;border:1px solid rgba(0,0,0,.03);cursor:pointer;transition:all .15s}
-.kpi:hover{border-color:rgba(74,124,89,.2);box-shadow:0 2px 12px rgba(0,0,0,.03)}
-.kpi.active{border-color:rgba(74,124,89,.3);box-shadow:0 2px 16px rgba(74,124,89,.08)}
+.kpi:hover{border-color:rgba(212,168,83,.2);box-shadow:0 2px 12px rgba(0,0,0,.03)}
+.kpi.active{border-color:rgba(212,168,83,.3);box-shadow:0 2px 16px rgba(212,168,83,.08)}
 .kl{font-size:9px;font-weight:700;color:#5c4a3a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
 .kv{font-size:24px;font-weight:800;line-height:1}.ks{font-size:10px;margin-top:3px}
 .kg{color:#4a7c59}.kw{color:#d4a853}.kb{color:#c45c4a}
@@ -1901,13 +1915,13 @@ const S=`
 .card-hd h3{font-size:14px;font-weight:800}
 .card-bd{padding:16px 18px;border-top:1px solid rgba(0,0,0,.03)}
 .row{display:flex;align-items:center;padding:10px 16px;background:#fff;border-radius:8px;border:1px solid rgba(0,0,0,.03);margin-bottom:6px;gap:10px;transition:all .12s}
-.row:hover{border-color:rgba(74,124,89,.15)}
+.row:hover{border-color:rgba(212,168,83,.15)}
 .row-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .row-i{flex:1;min-width:0}.row-t{font-size:12px;font-weight:700}.row-s{font-size:10px;color:#5c4a3a;margin-top:1px}
 .row-v{font-size:14px;font-weight:800;text-align:right;min-width:60px}
 .badge{font-size:8px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:.3px}
 .b-green{background:rgba(74,124,89,.08);color:#4a7c59}
-.b-gold{background:rgba(74,124,89,.1);color:#4a7c59}
+.b-gold{background:rgba(212,168,83,.1);color:#9a7422}
 .b-red{background:rgba(196,92,74,.08);color:#c45c4a}
 .b-blue{background:rgba(59,130,246,.08);color:#3b82f6}
 .b-gray{background:rgba(0,0,0,.04);color:#999}
@@ -1920,7 +1934,7 @@ const S=`
 .tbl{width:100%;border-collapse:separate;border-spacing:0}
 .tbl th{text-align:left;padding:10px 14px;font-size:9px;font-weight:700;color:#5c4a3a;text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid rgba(0,0,0,.04)}
 .tbl td{padding:10px 14px;font-size:12px;border-bottom:1px solid rgba(0,0,0,.03)}
-.tbl tr:hover td{background:rgba(74,124,89,.02)}
+.tbl tr:hover td{background:rgba(212,168,83,.02)}
 
 /* Forms */
 .fld{margin-bottom:10px}
@@ -1948,7 +1962,7 @@ const S=`
 .pipe-hd h4{font-size:12px;font-weight:800}.pipe-cnt{font-size:10px;color:#5c4a3a;background:rgba(0,0,0,.06);padding:1px 7px;border-radius:100px}
 .pipe-bd{padding:10px;min-height:100px}
 .pipe-card{padding:10px 10px 10px 30px;border-radius:8px;border:1px solid rgba(0,0,0,.07);margin-bottom:8px;cursor:pointer;transition:all .12s;position:relative}
-.pipe-card:hover{border-color:rgba(74,124,89,.3);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pipe-card:hover{border-color:rgba(212,168,83,.3);box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .pipe-nm{font-size:12px;font-weight:700;color:#1a1714;margin-bottom:2px}.pipe-sub{font-size:10px;color:#5c4a3a;font-weight:500}.pipe-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 
 /* Tenant portal preview */
@@ -2438,7 +2452,9 @@ export default function Page(){
     return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
   }));
 
-  return(<><style>{S}</style><div className="app">
+  const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-green{background:${acc}!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
+  const _acc=settings.adminAccent||"#4a7c59";const _rgb=settings.adminAccentRgb||"74,124,89";const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";const _zoom=settings.adminZoom||1;
+  return(<><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app" style={{zoom:_zoom,fontFamily:_font}}>
     {/* Mobile header */}
     <div className="mob-header"><div style={{display:"flex",alignItems:"center",gap:8}}><div className="s-logo" style={{fontSize:16}}>🐻 BB <span>HQ</span></div><span style={{fontSize:11,color:"#c4a882"}}>· {(tabs.find(t=>t.id===tab)||{}).l}</span></div><button className="mob-toggle" onClick={()=>setSideOpen(!sideOpen)}>{sideOpen?"✕":"☰"}</button></div>
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
@@ -2471,7 +2487,7 @@ export default function Page(){
 
     {/* Main */}
     <div className="mn">
-      <div className="tbar"><div><h1><span style={{color:"#4a7c59",display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>
+      <div className="tbar"><div><h1><span style={{color:"#d4a853",display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>
       <div className="cnt">
 
       {/* ═══ DASHBOARD ═══ */}
@@ -2501,7 +2517,7 @@ export default function Page(){
 
         {/* Expiring leases */}
         {m.expiring.length>0&&<div className="sec-hd"><div><h2>⚠️ Leases Expiring</h2></div></div>}
-        {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setDrill(r.id);}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · Ends {fmtD(r.le)}</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(74,124,89,.1)",color:r.daysLeft<=30?"#c45c4a":"#4a7c59"}}>{r.daysLeft}d</span></div>)}
+        {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setDrill(r.id);}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · Ends {fmtD(r.le)}</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}
 
         {/* Recent activity */}
         <div className="sec-hd" style={{marginTop:16}}><div><h2>Recent Activity</h2></div></div>
@@ -2575,7 +2591,7 @@ export default function Page(){
           {icon:"🔥",rule:"No open flames, candles, or grills inside"},
         ];
         return(<>
-          <div style={{background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:"10px 16px",marginBottom:16,fontSize:12,color:"#4a7c59",display:"flex",alignItems:"center",gap:8}}>
+          <div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:"10px 16px",marginBottom:16,fontSize:12,color:"#9a7422",display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:16}}>👁️</span>
             <span><strong>Admin Preview Mode</strong> — This is what your tenants will see when the portal is live. Select a tenant to preview their view.</span>
           </div>
@@ -2603,7 +2619,7 @@ export default function Page(){
                 <div style={{fontSize:10,color:"#c4a882",marginTop:2}}>Welcome back, {tRoom.tenant.name.split(" ")[0]}!</div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#4a7c59"}}>{tRoom.propName}</div>
+                <div style={{fontSize:11,fontWeight:700,color:"#d4a853"}}>{tRoom.propName}</div>
                 <div style={{fontSize:9,color:"#c4a882"}}>{tRoom.name}</div>
               </div>
             </div>
@@ -2645,8 +2661,8 @@ export default function Page(){
                 const moveInPassed=new Date(tRoom.tenant.moveIn+"T00:00:00")<=TODAY;
                 const lockActive=rentChargesPaid&&moveInPassed;
                 return(
-                <div className="tp-card" style={{marginTop:10,border:`2px solid ${lockActive?"rgba(74,124,89,.3)":"rgba(74,124,89,.2)"}`,background:lockActive?"rgba(74,124,89,.04)":"rgba(74,124,89,.02)"}}>
-                  <h3 style={{color:lockActive?"#4a7c59":"#4a7c59"}}>{lockActive?"🔓 Door Access Active":"🔒 Door Access Pending"}</h3>
+                <div className="tp-card" style={{marginTop:10,border:`2px solid ${lockActive?"rgba(74,124,89,.3)":"rgba(212,168,83,.2)"}`,background:lockActive?"rgba(74,124,89,.04)":"rgba(212,168,83,.02)"}}>
+                  <h3 style={{color:lockActive?"#4a7c59":"#9a7422"}}>{lockActive?"🔓 Door Access Active":"🔒 Door Access Pending"}</h3>
                   {lockActive
                     ?<>
                       <div style={{textAlign:"center",padding:"14px 0"}}>
@@ -2659,7 +2675,7 @@ export default function Page(){
                     :<>
                       <div style={{fontSize:12,color:"#5c4a3a",marginBottom:8}}>Your passcode is ready but will not activate until:</div>
                       {!rentChargesPaid&&<div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#c45c4a",marginBottom:4}}>⬜ Rent portion received</div>}
-                      {!moveInPassed&&<div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#4a7c59",marginBottom:4}}>⬜ Move-in date reached ({fmtD(tRoom.tenant.moveIn)} at 12:00am)</div>}
+                      {!moveInPassed&&<div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#d4a853",marginBottom:4}}>⬜ Move-in date reached ({fmtD(tRoom.tenant.moveIn)} at 12:00am)</div>}
                       <div style={{fontSize:10,color:"#999",marginTop:8}}>Once both conditions are met, your code will appear here automatically.</div>
                     </>}
                 </div>);
@@ -2698,7 +2714,7 @@ export default function Page(){
             {portalTab==="payments"&&<div style={{padding:18}}>
               <div className="tp-card">
                 <h3>💳 Payment History</h3>
-                <div style={{background:"rgba(74,124,89,.08)",borderRadius:8,padding:12,marginBottom:12,fontSize:12,color:"#4a7c59"}}>
+                <div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginBottom:12,fontSize:12,color:"#9a7422"}}>
                   💡 Rent is due on the <strong>1st of each month</strong>. A $50 late fee applies after the 3rd. You'll receive an invoice on the 20th of the prior month.
                 </div>
                 {tCharges.length===0&&<div style={{textAlign:"center",padding:16,color:"#999",fontSize:12}}>No charge history yet.</div>}
@@ -2745,7 +2761,7 @@ export default function Page(){
                           <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={printReceipt}>📄 Receipt PDF</button>}
                       </div>
                     </div>
-                    {st==="partial"&&<div style={{fontSize:10,color:"#4a7c59",marginTop:4}}>
+                    {st==="partial"&&<div style={{fontSize:10,color:"#d4a853",marginTop:4}}>
                       {fmtS(c.amountPaid)} paid · {fmtS(c.amount-c.amountPaid)} remaining
                     </div>}
                   </div>);
@@ -2957,7 +2973,7 @@ export default function Page(){
                 <div><span className="badge b-gray" style={{fontSize:8}}>{c.category}</span></div>
                 <div><div style={{fontSize:11,fontWeight:600}}>{c.tenantName}</div><div style={{fontSize:9,color:"#999"}}>{c.propName} · {c.roomName}</div></div>
                 <div><span className={`badge ${stBadge[st]}`} style={{fontSize:8}}>{st}</span></div>
-                <div>{lastPay&&lastPay.depositDate?<div><div style={{fontSize:10}}>{fmtD(lastPay.depositDate)}</div><div style={{fontSize:8,color:"#999"}}>Redstone FCU</div></div>:lastPay&&lastPay.depositStatus==="transit"?<span style={{fontSize:9,color:"#4a7c59"}}>In transit</span>:<span style={{fontSize:9,color:"#999"}}>—</span>}</div>
+                <div>{lastPay&&lastPay.depositDate?<div><div style={{fontSize:10}}>{fmtD(lastPay.depositDate)}</div><div style={{fontSize:8,color:"#999"}}>Redstone FCU</div></div>:lastPay&&lastPay.depositStatus==="transit"?<span style={{fontSize:9,color:"#d4a853"}}>In transit</span>:<span style={{fontSize:9,color:"#999"}}>—</span>}</div>
                 <div style={{textAlign:"right",fontWeight:800,fontSize:13,color:st==="paid"?"#4a7c59":st==="pastdue"?"#c45c4a":"inherit",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>
                   <span>{fmtS(c.amount)}</span>
                   <span style={{fontSize:10,color:"#999",fontWeight:400}}>{isExp?"∧":"∨"}</span>
@@ -3045,7 +3061,7 @@ export default function Page(){
                     {/* Edit — not voided/waived/ACH-paid */}
                     {st!=="voided"&&st!=="waived"&&!paidViaAch&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"editCharge",charge:{...c},isPaid:paidViaManual,editReason:"",editNote:""});}}>{paidViaManual?"✏️ Edit (reason req.)":"✏️ Edit"}</button>}
                     {/* Void — anything not already voided or waived */}
-                    {st!=="voided"&&st!=="waived"&&<button className="btn btn-out btn-sm" style={{color:"#4a7c59"}} onClick={e=>{e.stopPropagation();setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""});}}>⊘ Void</button>}
+                    {st!=="voided"&&st!=="waived"&&<button className="btn btn-out btn-sm" style={{color:"#9a7422"}} onClick={e=>{e.stopPropagation();setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""});}}>⊘ Void</button>}
                     {/* Delete — only unpaid charges (no payment ever recorded) */}
                     {(st==="unpaid"||st==="pastdue")&&c.payments.length===0&&<button className="btn btn-out btn-sm" style={{color:"#c45c4a"}} onClick={e=>{e.stopPropagation();setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc});}}>🗑 Delete</button>}
                     {/* Waive late fees — pastdue only */}
@@ -3103,7 +3119,7 @@ export default function Page(){
           {transit.length>0&&<>
             <div className="sec-hd"><div><h2>In Transit ({transit.length})</h2><p>Payments waiting to clear</p></div></div>
             {transit.map(p=><div key={p.id} className="row">
-              <div className="row-dot" style={{background:"#4a7c59"}}/>
+              <div className="row-dot" style={{background:"#d4a853"}}/>
               <div className="row-i"><div className="row-t">{p.tenantName}</div><div className="row-s">{p.propName} · {p.roomName} · {p.method} · Paid {fmtD(p.date)}</div></div>
               <div className="row-v kw">{fmtS(p.amount)}</div>
               <button className="btn btn-green btn-sm" onClick={()=>{setCharges(prev=>prev.map(c=>({...c,payments:c.payments.map(pp=>pp.id===p.id?{...pp,depositStatus:"deposited",depositDate:TODAY.toISOString().split("T")[0]}:pp)})));}}>Mark Deposited</button>
@@ -3308,13 +3324,13 @@ export default function Page(){
         {/* Follow-up alerts */}
         {(()=>{const visible=staleApps.filter(a=>!dismissedFollowUps.includes(a.id));if(staleApps.length===0)return null;
           const allDismissed=visible.length===0;
-          return(<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:14}}>
+          return(<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:visible.length&&expanded.followUp!==false?6:0}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#4a7c59"}}>🔔 Follow Up ({visible.length})</div>
+              <div style={{fontSize:12,fontWeight:700,color:"#9a7422"}}>🔔 Follow Up ({visible.length})</div>
               <div style={{display:"flex",gap:5,alignItems:"center"}}>
                 {!allDismissed&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setExpanded(p=>({...p,followUp:p.followUp===false?true:false}))}>{expanded.followUp===false?"Show ▾":"Minimize ▴"}</button>}
                 {!allDismissed&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setDismissedFollowUps(p=>[...p,...visible.map(a=>a.id)])}>Dismiss All</button>}
-                {allDismissed&&<span style={{fontSize:10,color:"#c4a882"}}>All cleared · <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#4a7c59",fontFamily:"inherit",padding:0}} onClick={()=>setDismissedFollowUps([])}>Restore</button></span>}
+                {allDismissed&&<span style={{fontSize:10,color:"#c4a882"}}>All cleared · <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#d4a853",fontFamily:"inherit",padding:0}} onClick={()=>setDismissedFollowUps([])}>Restore</button></span>}
               </div>
             </div>
             {expanded.followUp!==false&&!allDismissed&&visible.map(a=>(
@@ -3348,7 +3364,7 @@ export default function Page(){
         </div>
 
         {/* Bulk invite bar */}
-        {(appView==="pipeline"||appView==="list")&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:bulkSel.length?"rgba(74,124,89,.08)":"rgba(0,0,0,.02)",borderRadius:8,marginBottom:10,border:bulkSel.length?"1px solid rgba(74,124,89,.2)":"1px solid transparent",transition:"all .2s",flexWrap:"wrap"}}>
+        {(appView==="pipeline"||appView==="list")&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:bulkSel.length?"rgba(212,168,83,.08)":"rgba(0,0,0,.02)",borderRadius:8,marginBottom:10,border:bulkSel.length?"1px solid rgba(212,168,83,.2)":"1px solid transparent",transition:"all .2s",flexWrap:"wrap"}}>
           <input type="checkbox" checked={bulkSel.length>0&&bulkSel.length===activeApps.length} onChange={e=>{setBulkSel(e.target.checked?activeApps.map(a=>a.id):[]);}} style={{width:14,height:14,cursor:"pointer"}}/>
           <span style={{fontSize:11,color:"#999",flex:1,minWidth:80}}>{bulkSel.length>0?`${bulkSel.length} selected`:"Select applicants"}</span>
           {bulkSel.length>0&&<>
@@ -3376,7 +3392,7 @@ export default function Page(){
                 </button>}
               </>);
             })()}
-            <button className="btn btn-out btn-sm" style={{color:"#4a7c59",borderColor:"rgba(74,124,89,.3)"}}
+            <button className="btn btn-out btn-sm" style={{color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
               onClick={()=>setModal({type:"confirmAction",title:"Archive "+bulkSel.length+" Applicant"+(bulkSel.length>1?"s":""),
                 body:"Move "+bulkSel.length+" applicant"+(bulkSel.length>1?"s":"")+" to Denied? They'll be hidden from the pipeline but stay in your records.",
                 confirmLabel:"Archive "+bulkSel.length,confirmStyle:"btn-out",
@@ -3415,14 +3431,14 @@ export default function Page(){
                   <div key={a.id} className="pipe-card" style={{
                     border:isOnboarding?`2px solid ${prog.color}`:"1px solid rgba(0,0,0,.07)",
                     borderLeft:isOnboarding?`2px solid ${prog.color}`:sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",
-                    cursor:"pointer",background:isChecked?"rgba(74,124,89,.06)":"#fff",
+                    cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",
                     padding:isOnboarding?"10px":"10px 10px 10px 30px",
                   }} onClick={function(){setModal({type:"app",data:a});}}>
 
                     {/* Checkbox — only on non-onboarding, positioned cleanly */}
                     {!isOnboarding&&<div style={{position:"absolute",left:8,top:12}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>}
 
-                    {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(74,124,89,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#4a7c59":"#3b82f6",fontWeight:600,cursor:"pointer"}}
+                    {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600,cursor:"pointer"}}
                       onClick={e=>{e.stopPropagation();if(flags[0].type==="past"){setDrill("archive");setTab("tenants");}else if(flags[0].type==="dup"){setModal({type:"app",data:flags[0].data});}setModal(null);}}>
                       {flags[0].type==="current"?"⚠ Current Tenant":flags[0].type==="past"?"↩ Returning":flags[0].type==="dup"?"⚠ Duplicate":""} →
                     </div>}
@@ -3430,7 +3446,7 @@ export default function Page(){
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div className="pipe-nm">{a.name}</div>
                       {!isOnboarding&&<div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
-                        <span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(74,124,89,.08)":"rgba(196,92,74,.08)",padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
+                        <span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
                           onMouseEnter={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="block";}}
                           onMouseLeave={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="none";}}
                         >{sc}</span>
@@ -3480,7 +3496,7 @@ export default function Page(){
                       <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
                       <div style={{display:"flex",alignItems:"center",gap:4}}>
                         {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#888",fontWeight:700}}>{d}d</span>}
-                        {canInvite&&<button style={{fontSize:7,padding:"1px 5px",background:"#4a7c59",color:"#1a1714",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
+                        {canInvite&&<button style={{fontSize:7,padding:"1px 5px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                           onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite</button>}
                       </div>
                     </div>}
@@ -3553,10 +3569,10 @@ export default function Page(){
         {/* ── Waitlist ── */}
         {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status));
           if(totalVacant===0&&waitlistApps.length>0)return(
-            <div style={{marginTop:8,border:"2px solid rgba(74,124,89,.2)",borderRadius:12,padding:14,background:"rgba(74,124,89,.03)"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#4a7c59",marginBottom:8}}>📋 Waitlist — No Vacant Rooms</div>
+            <div style={{marginTop:8,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:14,background:"rgba(212,168,83,.03)"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#9a7422",marginBottom:8}}>📋 Waitlist — No Vacant Rooms</div>
               <div style={{fontSize:10,color:"#999",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
-              {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#4a7c59"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
+              {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
             </div>);
           return null;})()}
 
@@ -3577,11 +3593,11 @@ export default function Page(){
         {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);
           if(totalVacant>0)return null;
           const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status)).sort((a,b)=>getScore(b)-getScore(a));
-          return waitlistApps.length>0?<div style={{marginTop:16,border:"2px solid rgba(74,124,89,.2)",borderRadius:12,padding:16,background:"rgba(74,124,89,.03)"}}>
+          return waitlistApps.length>0?<div style={{marginTop:16,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:16,background:"rgba(212,168,83,.03)"}}>
             <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>📋 Waitlist — No Vacancies</div>
             <div style={{fontSize:10,color:"#999",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
             {waitlistApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
-              <div style={{width:20,fontSize:11,fontWeight:700,color:"#4a7c59"}}>#{i+1}</div>
+              <div style={{width:20,fontSize:11,fontWeight:700,color:"#d4a853"}}>#{i+1}</div>
               <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>Score: {getScore(a)}</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div>
             </div>)}
           </div>:null;
@@ -3671,7 +3687,7 @@ export default function Page(){
               <div style={{maxWidth:480,margin:"0 auto"}}>
                 <div style={{background:"rgba(255,255,255,.06)",borderRadius:14,padding:24,border:"1px solid rgba(255,255,255,.08)"}}>
                   {prevResult===null&&<>
-                    <div style={{textAlign:"center",marginBottom:16}}><div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#4a7c59",marginBottom:8}}>Quick Pre-Screen</div><div style={{fontSize:10,color:"rgba(196,168,130,.6)"}}>{activeQs.length} questions · Takes 30 seconds</div></div>
+                    <div style={{textAlign:"center",marginBottom:16}}><div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#d4a853",marginBottom:8}}>Quick Pre-Screen</div><div style={{fontSize:10,color:"rgba(196,168,130,.6)"}}>{activeQs.length} questions · Takes 30 seconds</div></div>
                     <div style={{display:"flex",gap:4,justifyContent:"center",marginBottom:16}}>{activeQs.map((_,i)=><div key={i} style={{width:i===prevStep?24:8,height:8,borderRadius:4,background:i<prevStep?"#4a7c59":i===prevStep?"#d4a853":"rgba(255,255,255,.1)",transition:"all .2s"}}/>)}</div>
                     <div style={{fontSize:10,color:"rgba(196,168,130,.5)",marginBottom:6}}>Question {prevStep+1} of {activeQs.length}</div>
                     <div style={{fontSize:15,color:"#f5f0e8",fontWeight:600,lineHeight:1.5,marginBottom:20}}>{activeQs[prevStep].q}</div>
@@ -3679,11 +3695,11 @@ export default function Page(){
                       {activeQs[prevStep].type==="yes-no"?<>
                         <button onClick={()=>answerPreview("Yes")} style={{flex:1,padding:"12px 20px",borderRadius:8,border:"none",background:"#4a7c59",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Yes</button>
                         <button onClick={()=>answerPreview("No")} style={{flex:1,padding:"12px 20px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#f5f0e8",fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>No</button>
-                      </>:<div style={{width:"100%"}}><input placeholder="Type your answer..." style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"rgba(255,255,255,.05)",color:"#f5f0e8",fontSize:13,fontFamily:"inherit"}}/><button onClick={()=>answerPreview("Yes")} style={{marginTop:8,width:"100%",padding:"10px",borderRadius:8,border:"none",background:"#4a7c59",color:"#1a1714",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Next →</button></div>}
+                      </>:<div style={{width:"100%"}}><input placeholder="Type your answer..." style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"rgba(255,255,255,.05)",color:"#f5f0e8",fontSize:13,fontFamily:"inherit"}}/><button onClick={()=>answerPreview("Yes")} style={{marginTop:8,width:"100%",padding:"10px",borderRadius:8,border:"none",background:"#d4a853",color:"#1a1714",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Next →</button></div>}
                     </div>
                   </>}
-                  {prevResult==="pass"&&<div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:"50%",background:"rgba(74,124,89,.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#4a7c59"}}>✓</div><div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>You Pre-Qualify!</div><div style={{fontSize:12,color:"rgba(196,168,130,.6)",marginBottom:16}}>This is where they fill out the contact form.</div><button onClick={resetPreview} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#4a7c59",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button></div>}
-                  {prevResult==="fail"&&<div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:"50%",background:"rgba(196,92,74,.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#c45c4a"}}>✕</div><div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>Didn't Qualify</div><div style={{fontSize:12,color:"rgba(196,168,130,.6)",marginBottom:16}}>This is what they see when they fail a question.</div><button onClick={resetPreview} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#4a7c59",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button></div>}
+                  {prevResult==="pass"&&<div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:"50%",background:"rgba(74,124,89,.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#4a7c59"}}>✓</div><div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>You Pre-Qualify!</div><div style={{fontSize:12,color:"rgba(196,168,130,.6)",marginBottom:16}}>This is where they fill out the contact form.</div><button onClick={resetPreview} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#d4a853",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button></div>}
+                  {prevResult==="fail"&&<div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:"50%",background:"rgba(196,92,74,.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#c45c4a"}}>✕</div><div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>Didn't Qualify</div><div style={{fontSize:12,color:"rgba(196,168,130,.6)",marginBottom:16}}>This is what they see when they fail a question.</div><button onClick={resetPreview} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#d4a853",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button></div>}
                 </div>
                 <div style={{textAlign:"center",marginTop:10,fontSize:9,color:"rgba(196,168,130,.3)"}}>Preview only — this is how it appears on rentblackbear.com</div>
               </div>
@@ -3808,23 +3824,23 @@ export default function Page(){
                 return(
                 <div key={sec} style={{marginBottom:10,border:"1px solid rgba(0,0,0,.06)",borderRadius:10,overflow:"hidden"}}>
                   {/* Section header */}
-                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",background:"rgba(74,124,89,.04)",borderBottom:"1px solid rgba(74,124,89,.12)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",background:"rgba(212,168,83,.04)",borderBottom:"1px solid rgba(212,168,83,.12)"}}>
                     <span style={{fontSize:12,color:"#c4a882",flexShrink:0}}>☰</span>
                     <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0,border:"1px solid transparent",borderRadius:5,padding:"2px 4px",transition:"border .15s",cursor:"text"}}
-                      onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(74,124,89,.3)"}
+                      onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(212,168,83,.3)"}
                       onMouseLeave={e=>e.currentTarget.style.borderColor="transparent"}>
                       <input
                         value={secEditVal}
                         onChange={e=>setExpanded(p=>({...p,[secEditKey]:e.target.value}))}
                         onBlur={e=>renameSection(sec,e.target.value)}
                         onKeyDown={e=>{if(e.key==="Enter")e.target.blur();}}
-                        style={{flex:1,fontSize:11,fontWeight:800,color:"#4a7c59",background:"transparent",border:"none",outline:"none",padding:0,fontFamily:"inherit",textTransform:"uppercase",letterSpacing:.8,cursor:"text",minWidth:0}}
+                        style={{flex:1,fontSize:11,fontWeight:800,color:"#9a7422",background:"transparent",border:"none",outline:"none",padding:0,fontFamily:"inherit",textTransform:"uppercase",letterSpacing:.8,cursor:"text",minWidth:0}}
                       />
                       <span style={{fontSize:9,color:"#c4a882",flexShrink:0,opacity:.6}}>✏️</span>
                     </div>
                     <span style={{fontSize:9,color:"#999",whiteSpace:"nowrap"}}>{sFields.length} field{sFields.length!==1?"s":""}</span>
                     <button className="btn btn-gold btn-sm" style={{fontSize:9,padding:"2px 9px"}} onClick={()=>addFieldToSection(sec)}>+ Field</button>
-                    <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 9px",color:"#4a7c59",borderColor:"rgba(74,124,89,.35)"}} title="Duplicate this entire section" onClick={()=>duplicateSection(sec)}>⧉ Duplicate</button>
+                    <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 9px",color:"#d4a853",borderColor:"rgba(212,168,83,.35)"}} title="Duplicate this entire section" onClick={()=>duplicateSection(sec)}>⧉ Duplicate</button>
                     {sections.length>1&&<button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:12,padding:"0 2px"}} onClick={()=>deleteSection(sec)}>🗑</button>}
                   </div>
                   {/* Fields in this section */}
@@ -3944,10 +3960,10 @@ export default function Page(){
                   </div>
                   <div style={{fontSize:9,color:"rgba(196,168,130,.35)",marginBottom:14,textAlign:"right"}}>Section {curSecIdx+1} of {activeSections.length}</div>
                   <div style={{background:"rgba(255,255,255,.06)",borderRadius:14,padding:20,border:"1px solid rgba(255,255,255,.07)"}}>
-                    <div style={{fontSize:11,fontWeight:800,color:"#4a7c59",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{secName}</div>
-                    <div style={{height:1,background:"rgba(74,124,89,.15)",marginBottom:16}}/>
+                    <div style={{fontSize:11,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{secName}</div>
+                    <div style={{height:1,background:"rgba(212,168,83,.15)",marginBottom:16}}/>
                     {secFields.map(renderField)}
-                    <button onClick={goNext} style={{width:"100%",padding:"14px",background:"#4a7c59",color:"#1a1714",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:6}}>
+                    <button onClick={goNext} style={{width:"100%",padding:"14px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:6}}>
                       {isLast?"Submit Application →":"Continue →"}
                     </button>
                     {curSecIdx>0&&<button onClick={()=>setExpanded(p=>({...p,appPrevSec:(p.appPrevSec||0)-1}))} style={{width:"100%",padding:"11px",background:"transparent",border:"none",fontSize:12,color:"rgba(196,168,130,.4)",cursor:"pointer",fontFamily:"inherit",marginTop:4}}>← Back</button>}
@@ -3957,7 +3973,7 @@ export default function Page(){
                   <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(74,124,89,.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#4a7c59"}}>✓</div>
                   <div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>Application Submitted!</div>
                   <div style={{fontSize:12,color:"rgba(196,168,130,.55)",marginBottom:20}}>This is the final screen tenants see after completing all sections.</div>
-                  <button onClick={reset} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#4a7c59",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button>
+                  <button onClick={reset} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#d4a853",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button>
                 </div>}
                 <div style={{textAlign:"center",marginTop:10,fontSize:9,color:"rgba(196,168,130,.25)"}}>Preview only — rentblackbear.com/apply</div>
               </div>
@@ -3998,7 +4014,7 @@ export default function Page(){
 
         const template=leaseTemplate||{name:"Alabama Room Rental Agreement",landlordName:"Carolina Cooper",company:"Black Bear Properties",landlordEmail:"info@rentblackbear.com",sections:DEF_LEASE_SECTIONS};
 
-        const statusColors={draft:{bg:"rgba(0,0,0,.06)",tx:"#666",label:"Draft"},pending_landlord:{bg:"rgba(74,124,89,.1)",tx:"#4a7c59",label:"Awaiting Your Signature"},pending_tenant:{bg:"rgba(59,130,246,.1)",tx:"#1d4ed8",label:"Sent to Tenant"},executed:{bg:"rgba(74,124,89,.1)",tx:"#2d6a3f",label:"Executed"},};
+        const statusColors={draft:{bg:"rgba(0,0,0,.06)",tx:"#666",label:"Draft"},pending_landlord:{bg:"rgba(212,168,83,.1)",tx:"#9a7422",label:"Awaiting Your Signature"},pending_tenant:{bg:"rgba(59,130,246,.1)",tx:"#1d4ed8",label:"Sent to Tenant"},executed:{bg:"rgba(74,124,89,.1)",tx:"#2d6a3f",label:"Executed"},};
 
         const openCreateLease=(app)=>{
           // Auto-fill from application if provided
@@ -4113,10 +4129,10 @@ export default function Page(){
         {leaseSubTab==="active"&&<>
           {/* Quick-create from approved apps */}
           {apps.filter(a=>["approved","onboarding"].includes(a.status)&&!leases.find(l=>l.applicationId===a.id)).length>0&&(
-            <div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:12,marginBottom:14}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#4a7c59",marginBottom:8}}>⚡ Ready to lease — approved applicants without a lease</div>
+            <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:12,marginBottom:14}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#9a7422",marginBottom:8}}>⚡ Ready to lease — approved applicants without a lease</div>
               {apps.filter(a=>["approved","onboarding"].includes(a.status)&&!leases.find(l=>l.applicationId===a.id)).map(a=>(
-                <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(74,124,89,.1)"}}>
+                <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(212,168,83,.1)"}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:600}}>{a.name}</div>
                     <div style={{fontSize:10,color:"#999"}}>{a.property} · {a.room} · {a.termMoveIn||a.moveIn||"move-in TBD"}</div>
@@ -4221,8 +4237,8 @@ export default function Page(){
           <h2>{leaseForm.id?"Edit Lease":"Create New Lease"}</h2>
           <div style={{fontSize:11,color:"#999",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
 
-          <div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>PARTIES</div>
+          <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8}}>PARTIES</div>
             <div className="fr">
               <div className="fld"><label>Tenant Name</label><input value={leaseForm.tenantName||""} onChange={e=>setLeaseForm(p=>({...p,tenantName:e.target.value}))}/></div>
               <div className="fld"><label>Tenant Email</label><input type="email" value={leaseForm.tenantEmail||""} onChange={e=>setLeaseForm(p=>({...p,tenantEmail:e.target.value}))}/></div>
@@ -4304,11 +4320,11 @@ export default function Page(){
             const firstMonthAmt=isFirstDay?rent:proratedAmt;
             const total=sd+firstMonthAmt;
             return(
-            <div style={{background:"#f9f8f5",border:"2px solid rgba(74,124,89,.25)",borderRadius:12,padding:16,marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#4a7c59",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>📄 Move-In Package Preview</div>
+            <div style={{background:"#f9f8f5",border:"2px solid rgba(212,168,83,.25)",borderRadius:12,padding:16,marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>📄 Move-In Package Preview</div>
 
               {/* Proration explainer */}
-              {!isFirstDay&&<div style={{background:"rgba(74,124,89,.08)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#5c4a3a",lineHeight:1.6}}>
+              {!isFirstDay&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#5c4a3a",lineHeight:1.6}}>
                 <strong>Proration:</strong> {daysLeft} days remaining in {miD.toLocaleString("default",{month:"long"})} · {fmtS(rent)} ÷ 30 = {fmtS(dailyRate)}/day · Prorated total: {fmtS(proratedAmt)}
               </div>}
               {isFirstDay&&<div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#2d6a3f"}}>
@@ -4333,7 +4349,7 @@ export default function Page(){
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px",background:"#1a1714",borderRadius:8}}>
                   <div style={{fontSize:13,fontWeight:800,color:"#f5f0e8"}}>Total Due at Move-In</div>
-                  <div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{fmtS(total)}</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#d4a853"}}>{fmtS(total)}</div>
                 </div>
               </div>
             </div>);
@@ -4379,7 +4395,7 @@ export default function Page(){
               }
             </div>
 
-            {modal.landlordSig&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,cursor:"pointer",marginBottom:12,padding:"8px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,border:"1px solid rgba(74,124,89,.15)"}}>
+            {modal.landlordSig&&<label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,cursor:"pointer",marginBottom:12,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)"}}>
               <input type="checkbox" checked={!!modal.saveSignature} onChange={e=>setModal(p=>({...p,saveSignature:e.target.checked}))} style={{width:14,height:14}}/>
               Save this signature for future leases
             </label>}
@@ -4585,7 +4601,7 @@ export default function Page(){
               {fmtDp(acctFrom)} — {fmtDp(acctTo)}{hasPropFilter?" · "+acctPropIds.length+" propert"+(acctPropIds.length===1?"y":"ies"):""}
             </div>
           </div>
-          <span style={{fontSize:9,color:"#4a7c59",background:"rgba(74,124,89,.1)",padding:"3px 8px",borderRadius:4,fontWeight:600}}>Schedule E</span>
+          <span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"3px 8px",borderRadius:4,fontWeight:600}}>Schedule E</span>
         </div>
 
         {/* ── Global filter bar ── */}
@@ -4755,8 +4771,8 @@ export default function Page(){
                           <td style={{padding:"8px 14px",textAlign:"right",fontWeight:700,color:uNOI>=0?"#4a7c59":"#c45c4a"}}>{(uInc>0||uExp>0)?fmtS(uNOI):"—"}</td>
                         </tr>);
                       })}
-                      {propWideAmt>0&&<tr style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:"rgba(74,124,89,.02)"}}>
-                        <td style={{padding:"8px 14px",color:"#4a7c59",fontStyle:"italic",fontSize:10}}>Property-wide (no unit assigned)</td>
+                      {propWideAmt>0&&<tr style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:"rgba(212,168,83,.02)"}}>
+                        <td style={{padding:"8px 14px",color:"#9a7422",fontStyle:"italic",fontSize:10}}>Property-wide (no unit assigned)</td>
                         <td style={{padding:"8px 14px",textAlign:"right"}}>—</td>
                         <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>{fmtS(propWideAmt)}</td>
                         <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>({fmtS(propWideAmt)})</td>
@@ -4897,7 +4913,7 @@ export default function Page(){
                         :(props.find(p=>p.id===e.propId)||{}).name||"—"}
                     </td>);
                     if(!acctHideCols.unit_room)visibleCells.push(<td key="unit" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.unitName?(e.roomName?e.unitName+" / "+e.roomName:e.unitName):e.roomName||"—"}</td>);
-                    if(!acctHideCols.category)visibleCells.push(<td key="cat" style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(74,124,89,.1)",color:"#4a7c59",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span></td>);
+                    if(!acctHideCols.category)visibleCells.push(<td key="cat" style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span></td>);
                     if(!acctHideCols.subcategory)visibleCells.push(<td key="subcat" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#aaa"}}>—</span>}</td>);
                     if(!acctHideCols.vendor)visibleCells.push(<td key="vendor" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>);
                     if(!acctHideCols.description)visibleCells.push(<td key="desc" style={{padding:"8px 14px",fontWeight:600,maxWidth:180}}>{e.description}</td>);
@@ -4906,7 +4922,7 @@ export default function Page(){
                     if(!acctHideCols.receipt)visibleCells.push(<td key="rcpt" style={{padding:"8px 14px"}}>
                       {e.receiptUrl
                         ?<a href={e.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:e._receiptPending?"#d4a853":"#4a7c59",fontWeight:700,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:3}}>{e._receiptPending?"📎 Local":"📎 Attached"}</a>
-                        :<label style={{fontSize:10,color:"#4a7c59",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
+                        :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:3}}>+ Upload<input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={ev=>uploadReceipt(ev.target.files[0],e.id)}/></label>}
                     </td>);
                     visibleCells.push(<td key="action" style={{padding:"8px 14px",whiteSpace:"nowrap"}}>
                       <div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
@@ -4987,7 +5003,7 @@ export default function Page(){
               </div>}
 
             {/* Est. annual interest note for Schedule E */}
-            {filtMg.length>0&&<div style={{marginTop:10,padding:"10px 14px",background:"rgba(74,124,89,.06)",borderRadius:8,border:"1px solid rgba(74,124,89,.15)",fontSize:11,color:"#4a7c59"}}>
+            {filtMg.length>0&&<div style={{marginTop:10,padding:"10px 14px",background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)",fontSize:11,color:"#9a7422"}}>
               <strong>Est. Annual Interest (Schedule E Line 12):</strong> {fmtS(filtMg.reduce((s,mg)=>s+(mg.currentBalance||0)*(mg.interestRate||0)/100,0))} — based on current balances and rates. Use your actual 1098 form for exact figures.
             </div>}
           </>);
@@ -5009,7 +5025,7 @@ export default function Page(){
                   <div style={{color:"#5c4a3a",lineHeight:1.6}}>Added to your <strong>cost basis</strong>, depreciated over 27.5 years — NOT deducted this year. Adds value or extends the property's useful life. Examples: new roof, full HVAC replacement, addition, new flooring throughout, new appliances that upgrade the unit.</div>
                 </div>
               </div>
-              <div style={{marginTop:10,fontSize:10,color:"#4a7c59",padding:"6px 10px",background:"rgba(74,124,89,.06)",borderRadius:6}}>When in doubt, ask your CPA. The IRS scrutinizes this distinction closely. If it improves, extends, or adapts — it's CapEx.</div>
+              <div style={{marginTop:10,fontSize:10,color:"#9a7422",padding:"6px 10px",background:"rgba(212,168,83,.06)",borderRadius:6}}>When in doubt, ask your CPA. The IRS scrutinizes this distinction closely. If it improves, extends, or adapts — it's CapEx.</div>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{fontSize:11,color:"#6b5e52"}}>{filtImprove.length} improvement{filtImprove.length!==1?"s":""} · {fmtS(totalImprove)} total cost basis additions</div>
@@ -5036,7 +5052,7 @@ export default function Page(){
                         <td style={{padding:"8px 14px"}}>
                           {im.receiptUrl
                             ?<a href={im.receiptUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:10,color:"#3b82f6",fontWeight:600,textDecoration:"none"}}>View</a>
-                            :<label style={{fontSize:10,color:"#4a7c59",cursor:"pointer",fontWeight:600}}>Upload
+                            :<label style={{fontSize:10,color:"#d4a853",cursor:"pointer",fontWeight:600}}>Upload
                               <input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={async ev=>{
                                 const file=ev.target.files[0];if(!file)return;
                                 const ext=file.name.split(".").pop()||"jpg";
@@ -5163,12 +5179,12 @@ export default function Page(){
           {reports.map(r=>(
             <div key={r.id} style={{background:"#fff",borderRadius:10,padding:"16px",border:"1px solid rgba(0,0,0,.06)",cursor:"pointer",transition:"all .15s"}}
               onClick={()=>setActiveReport(r.id)}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(74,124,89,.4)";e.currentTarget.style.background="rgba(74,124,89,.02)";}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(212,168,83,.4)";e.currentTarget.style.background="rgba(212,168,83,.02)";}}
               onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(0,0,0,.06)";e.currentTarget.style.background="#fff";}}>
               <div style={{fontSize:24,marginBottom:8}}>{r.icon}</div>
               <div style={{fontWeight:800,fontSize:13,marginBottom:4}}>{r.title}</div>
               <div style={{fontSize:11,color:"#999",lineHeight:1.5}}>{r.desc}</div>
-              <div style={{marginTop:10,fontSize:10,color:"#4a7c59",fontWeight:700}}>Open →</div>
+              <div style={{marginTop:10,fontSize:10,color:"#d4a853",fontWeight:700}}>Open →</div>
             </div>
           ))}
         </div>}
@@ -5290,14 +5306,14 @@ export default function Page(){
             return(<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                 <tbody>
-                  {[["Gross Rent Collected",totalIncome,"#4a7c59",false],["Total Operating Expenses",-totalExp,"#c45c4a",false],["Net Operating Income (NOI)",totalNOI,totalNOI>=0?"#4a7c59":"#c45c4a",true],["Annual Debt Service (P&I)",-debtService,"#4a7c59",false],["Free Cash Flow",fcf,fcf>=0?"#4a7c59":"#c45c4a",true]].map(([label,val,color,bold])=>(
+                  {[["Gross Rent Collected",totalIncome,"#4a7c59",false],["Total Operating Expenses",-totalExp,"#c45c4a",false],["Net Operating Income (NOI)",totalNOI,totalNOI>=0?"#4a7c59":"#c45c4a",true],["Annual Debt Service (P&I)",-debtService,"#9a7422",false],["Free Cash Flow",fcf,fcf>=0?"#4a7c59":"#c45c4a",true]].map(([label,val,color,bold])=>(
                     <tr key={label} style={{borderBottom:"1px solid rgba(0,0,0,.04)",background:bold?"rgba(0,0,0,.02)":"#fff"}}>
                       <td style={{padding:"12px 16px",fontWeight:bold?800:500,color:bold?"#1a1714":"#5c4a3a"}}>{label}</td>
                       <td style={{padding:"12px 16px",textAlign:"right",fontWeight:bold?800:600,color,fontSize:bold?15:13}}>{val<0?"("+fmtS(Math.abs(val))+")":fmtS(val)}</td>
                     </tr>
                   ))}
-                  <tr style={{background:"rgba(74,124,89,.06)",borderTop:"2px solid rgba(74,124,89,.2)"}}>
-                    <td style={{padding:"12px 16px",fontWeight:800,color:"#4a7c59"}}>DSCR</td>
+                  <tr style={{background:"rgba(212,168,83,.06)",borderTop:"2px solid rgba(212,168,83,.2)"}}>
+                    <td style={{padding:"12px 16px",fontWeight:800,color:"#9a7422"}}>DSCR</td>
                     <td style={{padding:"12px 16px",textAlign:"right",fontWeight:800,color:rDSCR==null?"#999":rDSCR>=1.25?"#4a7c59":"#c45c4a",fontSize:16}}>{rDSCR!=null?rDSCR.toFixed(2)+"x":"N/A — no mortgages"}</td>
                   </tr>
                 </tbody>
@@ -5345,15 +5361,15 @@ export default function Page(){
                       <td style={{padding:"8px 12px",fontWeight:600}}>{r.tenantName}</td><td style={{padding:"8px 12px",fontSize:10}}>{r.propName}</td><td style={{padding:"8px 12px",fontSize:10,color:"#999"}}>{r.roomName}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",fontWeight:700}}>{fmtS(r.amountHeld||0)}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",color:"#c45c4a"}}>{ded>0?fmtS(ded):"—"}</td>
-                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(net)}</td>
-                      <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 7px",borderRadius:100,fontWeight:700,background:r.returned?"rgba(74,124,89,.08)":"rgba(74,124,89,.1)",color:r.returned?"#4a7c59":"#4a7c59"}}>{r.returned?"Returned":"Held"}</span></td>
+                      <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#9a7422"}}>{fmtS(net)}</td>
+                      <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 7px",borderRadius:100,fontWeight:700,background:r.returned?"rgba(74,124,89,.08)":"rgba(212,168,83,.1)",color:r.returned?"#4a7c59":"#9a7422"}}>{r.returned?"Returned":"Held"}</span></td>
                     </tr>);})}
                 </tbody>
                 <tfoot><tr style={{background:"#f8f7f4",borderTop:"2px solid rgba(0,0,0,.08)"}}>
                   <td colSpan={3} style={{padding:"10px 12px",fontWeight:800}}>Total SD Liability</td>
                   <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800}}>{fmtS(totalHeld)}</td>
                   <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalDed)}</td>
-                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#4a7c59",fontSize:14}}>{fmtS(totalHeld-totalDed)}</td>
+                  <td style={{padding:"10px 12px",textAlign:"right",fontWeight:800,color:"#9a7422",fontSize:14}}>{fmtS(totalHeld-totalDed)}</td>
                   <td/>
                 </tr></tfoot>
               </table>
@@ -5435,7 +5451,7 @@ export default function Page(){
                 <div key={pr.id} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"16px",marginBottom:10}}>
                   <div style={{fontWeight:800,fontSize:14,marginBottom:12}}>{pr.name}</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
-                    {[["NOI",fmtS(prNOI),prNOI>=0?"#4a7c59":"#c45c4a"],["Debt Service",fmtS(prDebt),"#4a7c59"],["DSCR",prDSCR!=null?prDSCR.toFixed(2)+"x":"—",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"],["Status",prDSCR==null?"No debt":prDSCR>=1.25?"✅ Strong":prDSCR>=1.0?"⚠️ Marginal":"❌ At Risk",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"]].map(([lbl,v,clr])=>(
+                    {[["NOI",fmtS(prNOI),prNOI>=0?"#4a7c59":"#c45c4a"],["Debt Service",fmtS(prDebt),"#9a7422"],["DSCR",prDSCR!=null?prDSCR.toFixed(2)+"x":"—",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"],["Status",prDSCR==null?"No debt":prDSCR>=1.25?"✅ Strong":prDSCR>=1.0?"⚠️ Marginal":"❌ At Risk",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"]].map(([lbl,v,clr])=>(
                       <div key={lbl} style={{textAlign:"center",padding:"10px",background:"rgba(0,0,0,.02)",borderRadius:8}}>
                         <div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",marginBottom:4}}>{lbl}</div>
                         <div style={{fontSize:16,fontWeight:800,color:clr}}>{v}</div>
@@ -5576,8 +5592,8 @@ export default function Page(){
             {/* Side-by-side cards: This Month vs Last Month vs 2 Months Ago */}
             <div style={{display:"grid",gridTemplateColumns:`repeat(${twoMonthsAgo?3:prevMonth?2:1},1fr)`,gap:12,marginBottom:16}}>
               {/* Current Month */}
-              <div style={{background:"rgba(74,124,89,.04)",borderRadius:10,padding:14,border:"2px solid rgba(74,124,89,.15)"}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>{liveMonth.label} (Current)</div>
+              <div style={{background:"rgba(212,168,83,.04)",borderRadius:10,padding:14,border:"2px solid rgba(212,168,83,.15)"}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#d4a853",marginBottom:8}}>{liveMonth.label} (Current)</div>
                 <div style={{fontSize:11,display:"flex",flexDirection:"column",gap:6}}>
                   <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>Occupancy</span><strong style={{color:liveMonth.occ>=90?"#4a7c59":"#c45c4a"}}>{liveMonth.occ}%</strong></div>
                   <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>Collection</span><strong style={{color:liveMonth.collRate>=90?"#4a7c59":"#c45c4a"}}>{liveMonth.collRate}%</strong></div>
@@ -5639,10 +5655,10 @@ export default function Page(){
               <td style={{fontWeight:700}}>{s.label} <span style={{fontSize:9,color:"#c4a882"}}>{scDrill===s.id?"▾":"▸"}</span></td>
               <td style={{color:"#999"}}>{s.unit==="$"?fmtS(s.goal):s.goal}{s.unit==="%"?"%":""}</td>
               {scRows.map((w,i)=>{const v=w[s.key]||0;const isGood=s.goodFn(v,s.goal);const isCurrent=w.weekNum===CUR_WEEK;return(
-                <td key={i} style={{textAlign:"center"}}><span style={{display:"inline-block",padding:"3px 10px",borderRadius:100,fontWeight:700,fontSize:12,background:isGood?"rgba(74,124,89,.08)":"rgba(196,92,74,.08)",color:isGood?"#4a7c59":"#c45c4a",border:isCurrent?"2px solid rgba(74,124,89,.3)":"none"}}>{s.unit==="$"?fmtS(v):v}{s.unit==="%"?"%":""}</span></td>);})}
+                <td key={i} style={{textAlign:"center"}}><span style={{display:"inline-block",padding:"3px 10px",borderRadius:100,fontWeight:700,fontSize:12,background:isGood?"rgba(74,124,89,.08)":"rgba(196,92,74,.08)",color:isGood?"#4a7c59":"#c45c4a",border:isCurrent?"2px solid rgba(212,168,83,.3)":"none"}}>{s.unit==="$"?fmtS(v):v}{s.unit==="%"?"%":""}</span></td>);})}
             </tr>))}
         </tbody></table></div></div>
-        {scRows.length<=1&&<div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a"}}>📊 Historical data will build up automatically each week. The current column (●) is calculated live from your actual property and payment data.</div>}
+        {scRows.length<=1&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,marginTop:8,fontSize:12,color:"#5c4a3a"}}>📊 Historical data will build up automatically each week. The current column (●) is calculated live from your actual property and payment data.</div>}
 
         {/* Scorecard row drill-down */}
         {scDrill&&<div className="card" style={{animation:"fadeIn .2s",marginBottom:14}}><div className="card-bd">
@@ -5671,12 +5687,12 @@ export default function Page(){
 
           {scDrill==="leads"&&<div>
             <p style={{fontSize:12,color:"#5c4a3a",marginBottom:10}}>New leads = prospective tenants who contacted you or started the pre-screen. Goal: 5+/week.</p>
-            <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:12,color:"#4a7c59"}}><strong>Note:</strong> Leads aren't automatically tracked yet. This will auto-populate once the pre-screen form and AI chat are connected to the admin system. For now, this shows 0.</div>
+            <div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:12,color:"#9a7422"}}><strong>Note:</strong> Leads aren't automatically tracked yet. This will auto-populate once the pre-screen form and AI chat are connected to the admin system. For now, this shows 0.</div>
             <div style={{fontSize:12,color:"#5c4a3a",marginTop:10,fontWeight:600}}>Tip: If leads are low, post on Facebook Marketplace, Craigslist, or local college housing boards.</div>
           </div>}
         </div></div>}
         {m.expiring.length>0&&<><div className="sec-hd" style={{marginTop:16}}><div><h2>⚠️ Leases Expiring</h2></div></div>
-          {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}});}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · {r.daysLeft} days</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(74,124,89,.1)",color:r.daysLeft<=30?"#c45c4a":"#4a7c59"}}>{r.daysLeft}d</span></div>)}</>}
+          {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}});}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · {r.daysLeft} days</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}</>}
       </>}
 
       {/* ═══ ROCKS ═══ */}
@@ -5752,7 +5768,7 @@ export default function Page(){
                 <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {(PROP_TYPES[p.type]||PROP_TYPES.SFH).label} · {allWhole?"Whole Unit":anyWhole?"Mixed":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
-                {allWhole&&wholeUnitRent>0&&<span style={{fontWeight:800,color:"#4a7c59",marginRight:4}}>{fmtS(wholeUnitRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
+                {allWhole&&wholeUnitRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(wholeUnitRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
                 {!allWhole&&pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
                 {vac>0&&<span className="badge b-red">{vac} Vacant</span>}
                 {vac===0&&items.length>0&&<span className="badge b-green">{allWhole?"Whole Unit":"Full"}</span>}
@@ -5788,7 +5804,7 @@ export default function Page(){
                 const uOcc=uRooms.some(r=>r.st==="occupied");
                 const uLatestLe=uRooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le;
                 return(<div key={u.id} style={{marginBottom:10}}>
-                  {(p.units||[]).length>1&&<div style={{fontSize:10,fontWeight:800,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,padding:"3px 8px",background:"rgba(74,124,89,.06)",borderRadius:4,display:"inline-flex",alignItems:"center",gap:6}}>
+                  {(p.units||[]).length>1&&<div style={{fontSize:10,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,padding:"3px 8px",background:"rgba(212,168,83,.06)",borderRadius:4,display:"inline-flex",alignItems:"center",gap:6}}>
                     {u.name}
                     <span style={{fontSize:8,fontWeight:500,color:"#999",textTransform:"none",letterSpacing:0}}>{uIsWhole?"Whole Unit":"By Room"}</span>
                   </div>}
@@ -5811,7 +5827,7 @@ export default function Page(){
                     {uRooms.length===0&&<div style={{fontSize:11,color:"#bbb",padding:"6px 0"}}>No rooms — edit property to add</div>}
                     {uRooms.map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
                       const tenantData={...r,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label};
-                      return(<div key={r.id} className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default",background:occ&&dl&&dl<=30?"rgba(196,92,74,.02)":occ&&dl&&dl<=90?"rgba(74,124,89,.02)":"#fff"}}>
+                      return(<div key={r.id} className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default",background:occ&&dl&&dl<=30?"rgba(196,92,74,.02)":occ&&dl&&dl<=90?"rgba(212,168,83,.02)":"#fff"}}>
                         <div className="row-dot" style={{background:occ?"#4a7c59":"#c45c4a",flexShrink:0}}/>
                         <div className="row-i">
                           <div style={{fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
@@ -5910,7 +5926,7 @@ export default function Page(){
               </button>
             </div>
           ))}
-          <div style={{marginTop:12,padding:"8px 12px",background:"rgba(74,124,89,.06)",borderRadius:6,fontSize:11,color:"#4a7c59"}}>
+          <div style={{marginTop:12,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:6,fontSize:11,color:"#9a7422"}}>
             💡 Notification emails are sent to <strong>{settings.email||"info@rentblackbear.com"}</strong>. Update your email in Company Info above.
           </div>
         </div></div>
@@ -5969,89 +5985,212 @@ export default function Page(){
           <div style={{fontSize:9,color:"#999",marginTop:4,lineHeight:1.6}}>
             Available variables: <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{firstName}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{fullName}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{amount}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{dueDate}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{category}"}</code>
           </div>
-          <div style={{marginTop:8,background:"rgba(74,124,89,.06)",borderRadius:6,padding:10,fontSize:11,color:"#4a7c59"}}>
+          <div style={{marginTop:8,background:"rgba(212,168,83,.06)",borderRadius:6,padding:10,fontSize:11,color:"#9a7422"}}>
             <strong>Preview:</strong> {(settings.reminderTemplate||DEF_SETTINGS.reminderTemplate).replace(/{firstName}/g,"Marcus").replace(/{fullName}/g,"Marcus Johnson").replace(/{amount}/g,"$850.00").replace(/{dueDate}/g,"Mar 1, 2026").replace(/{category}/g,"Rent")}
           </div>
         </div></div>
       </>}
       {tab==="theme"&&(()=>{
+        const tSubTab=expanded.themeSubTab||"admin";
+        const setTSubTab=v=>setExpanded(p=>({...p,themeSubTab:v}));
+        // ── admin preset helpers ────────────────────────────────────────
+        const applyAdminPreset=(p)=>{
+          const u={...settings,adminPresetId:p.id,adminAccent:p.accent,adminAccentRgb:p.accentRgb,adminFont:p.font};
+          setSettings(u);save("hq-settings",u);
+        };
+        const applyAdminFont=(f)=>{
+          const u={...settings,adminFont:f.stack};
+          setSettings(u);save("hq-settings",u);
+        };
+        const applyAdminZoom=(z)=>{
+          const u={...settings,adminZoom:z};
+          setSettings(u);save("hq-settings",u);
+        };
+        const applyAdminAccent=(hex)=>{
+          const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+          const rgb=r+","+g+","+b;
+          const u={...settings,adminAccent:hex,adminAccentRgb:rgb,adminPresetId:"custom"};
+          setSettings(u);save("hq-settings",u);
+        };
+        // ── public site helpers ─────────────────────────────────────────
         const saveCurrentTheme=()=>setModal({type:"saveTheme",themeName:""});
         const applyTheme=(t)=>setTheme({...t});
         const deleteTheme=(id)=>setSavedThemes(p=>p.filter(x=>x.id!==id));
         const pushToSite=()=>{
           save("hq-pub-theme",theme);
-          setNotifs(p=>[{id:uid(),type:"app",msg:"Theme published to live site — rentblackbear.com now uses the current colors",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+          setNotifs(p=>[{id:uid(),type:"app",msg:"Theme published to live site",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
           setExpanded(pr=>({...pr,themePushSuccess:true}));
           setTimeout(()=>setExpanded(pr=>({...pr,themePushSuccess:false})),3500);
         };
         const exportTheme=()=>{const css=Object.entries(theme).map(([k,v])=>`  --${k}: ${v};`).join(", ");const json=JSON.stringify(theme,null,2);const blob=new Blob([`:root {\n${css}\n}\n\n/* JSON */\n${json}`],{type:"text/plain"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="blackbear-theme.css";a.click();URL.revokeObjectURL(url);};
+        const _acc=settings.adminAccent||"#4a7c59";
+        const _zoom=settings.adminZoom||1;
+        const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";
+        const _presetId=settings.adminPresetId||"forest";
         return(<>
-        <div className="sec-hd"><div><h2>Theme Editor</h2><p>Edit, save, and push color schemes to your live site</p></div>
-          <div style={{display:"flex",gap:6}}>
-            <button className="btn btn-green" onClick={pushToSite}>🚀 Push to Site</button>
-            <button className="btn btn-gold" onClick={saveCurrentTheme}>💾 Save Theme</button>
-            <button className="btn btn-out" onClick={exportTheme}>📥 Export CSS</button>
-            <button className="btn btn-out" onClick={()=>setTheme(randPalette())}>🎲 Random</button>
-          </div></div>
-          {expanded.themePushSuccess&&<div style={{marginBottom:10,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,animation:"fadeIn .3s"}}>✓ Theme is live on rentblackbear.com — public site reads from Supabase on load</div>}
+        <div className="sec-hd"><div><h2>Theme Editor</h2><p>Customize how your admin looks and control your public site colors</p></div></div>
 
-        {/* Presets + Saved Themes */}
-        <div style={{marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Presets</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
-            {Object.entries(PRESETS).map(([n,c])=><button key={n} className="btn btn-out btn-sm" onClick={()=>applyTheme(c)}><span style={{width:10,height:10,borderRadius:"50%",background:c.accent,display:"inline-block"}}/> {n}</button>)}
-          </div>
-          {savedThemes.length>0&&<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Your Saved Themes</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {savedThemes.map(st=>(
-                <div key={st.id} style={{display:"flex",alignItems:"center",gap:0,border:"1px solid rgba(0,0,0,.06)",borderRadius:6,overflow:"hidden"}}>
-                  <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none"}} onClick={()=>applyTheme(st.colors)}>
-                    <div style={{display:"flex",gap:2}}>{[st.colors.bg,st.colors.accent,st.colors.green,st.colors.text].map((c,i)=><span key={i} style={{width:8,height:8,borderRadius:"50%",background:c,display:"inline-block"}}/>)}</div>
-                    <span style={{marginLeft:4}}>{st.name}</span>
-                  </button>
-                  <button style={{background:"none",border:"none",borderLeft:"1px solid rgba(0,0,0,.06)",padding:"4px 8px",cursor:"pointer",color:"#c45c4a",fontSize:10}} onClick={()=>deleteTheme(st.id)}>✕</button>
-                </div>
+        {/* Sub-tabs */}
+        <div style={{display:"flex",gap:0,marginBottom:20,border:"1px solid rgba(0,0,0,.07)",borderRadius:9,overflow:"hidden",width:"fit-content"}}>
+          {[["admin","Admin Interface"],["site","Public Site"]].map(([k,lb])=>(
+            <button key={k} onClick={()=>setTSubTab(k)} style={{padding:"8px 22px",fontSize:12,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",
+              background:tSubTab===k?_acc:"#fff",
+              color:tSubTab===k?"#fff":"#5c4a3a",
+              borderRight:k==="admin"?"1px solid rgba(0,0,0,.07)":"none"}}>
+              {lb}
+            </button>
+          ))}
+        </div>
+
+        {/* ══ ADMIN INTERFACE SUB-TAB ══ */}
+        {tSubTab==="admin"&&<>
+
+          {/* Style presets */}
+          <div className="card" style={{marginBottom:12}}><div className="card-bd">
+            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Style Preset</h3>
+            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Pick a preset to instantly change the admin accent color and font. Changes apply immediately.</p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
+              {ADMIN_PRESETS.map(p=>{
+                const isActive=_presetId===p.id;
+                return(
+                <div key={p.id} onClick={()=>applyAdminPreset(p)} style={{cursor:"pointer",borderRadius:10,border:"2px solid "+(isActive?p.accent:"rgba(0,0,0,.07)"),overflow:"hidden",transition:"all .15s",boxShadow:isActive?"0 0 0 3px "+p.accent+"22":"none"}}>
+                  {/* Mini preview */}
+                  <div style={{display:"flex",height:72}}>
+                    <div style={{width:28,background:"#1a1714",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:8,gap:5}}>
+                      <div style={{width:14,height:14,borderRadius:3,background:p.accent}}/>
+                      <div style={{width:14,height:3,borderRadius:2,background:"rgba(255,255,255,.2)"}}/>
+                      <div style={{width:14,height:3,borderRadius:2,background:"rgba(255,255,255,.2)"}}/>
+                      <div style={{width:14,height:3,borderRadius:2,background:"rgba(255,255,255,.2)"}}/>
+                    </div>
+                    <div style={{flex:1,background:"#f4f3f0",padding:6,display:"flex",flexDirection:"column",gap:4}}>
+                      <div style={{background:"#fff",borderRadius:4,padding:"3px 5px",fontSize:8,fontWeight:700,color:"#1a1714",fontFamily:p.font}}>Dashboard</div>
+                      <div style={{display:"flex",gap:3}}>
+                        <div style={{background:p.accent,borderRadius:3,padding:"2px 6px",fontSize:7,color:"#fff",fontWeight:700,fontFamily:p.font}}>Button</div>
+                        <div style={{background:p.accent+"22",borderRadius:3,padding:"2px 6px",fontSize:7,color:p.accent,fontWeight:700,fontFamily:p.font}}>Badge</div>
+                      </div>
+                      <div style={{height:3,borderRadius:2,background:p.accent+"33",marginTop:2}}/>
+                    </div>
+                  </div>
+                  <div style={{padding:"7px 10px",background:isActive?p.accent+"10":"#faf9f7",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{fontSize:11,fontWeight:700,color:isActive?p.accent:"#1a1714"}}>{p.name}</span>
+                    {isActive&&<span style={{fontSize:9,fontWeight:700,color:p.accent}}>Active</span>}
+                  </div>
+                </div>);
+              })}
+            </div>
+          </div></div>
+
+          {/* Accent color override */}
+          <div className="card" style={{marginBottom:12}}><div className="card-bd">
+            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Accent Color Override</h3>
+            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Fine-tune the accent color independently of the preset.</p>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:36,height:36,borderRadius:8,background:_acc,border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}>
+                <input type="color" value={_acc} onChange={e=>applyAdminAccent(e.target.value)} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:_acc}}>{_acc.toUpperCase()}</div>
+                <div style={{fontSize:10,color:"#999",marginTop:2}}>Click swatch to pick a custom color</div>
+              </div>
+              <div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap"}}>
+                {["#4a7c59","#3b6ea5","#b85c38","#2a7d7b","#2c3e50","#7c3aed","#b45309"].map(c=>(
+                  <div key={c} onClick={()=>applyAdminAccent(c)} style={{width:22,height:22,borderRadius:"50%",background:c,cursor:"pointer",border:"2px solid "+(_acc===c?"#1a1714":"transparent"),transition:"border .15s"}}/>
+                ))}
+              </div>
+            </div>
+          </div></div>
+
+          {/* Font */}
+          <div className="card" style={{marginBottom:12}}><div className="card-bd">
+            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Font</h3>
+            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Changes the typeface across the entire admin interface.</p>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {ADMIN_FONTS.map(f=>{
+                const isActive=_font===f.stack;
+                return(
+                <button key={f.name} onClick={()=>applyAdminFont(f)} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid "+(isActive?_acc:"rgba(0,0,0,.08)"),background:isActive?_acc+"12":"#fff",cursor:"pointer",fontFamily:f.stack,fontSize:13,fontWeight:isActive?700:400,color:isActive?_acc:"#1a1714",transition:"all .15s"}}>
+                  {f.name}
+                </button>);
+              })}
+            </div>
+          </div></div>
+
+          {/* Zoom */}
+          <div className="card"><div className="card-bd">
+            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Display Size</h3>
+            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Scales the entire admin interface proportionally.</p>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {[[0.9,"90% — Compact"],[1,"100% — Default"],[1.15,"115% — Large"],[1.3,"130% — Largest"]].map(([z,lb])=>(
+                <button key={z} onClick={()=>applyAdminZoom(z)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid "+(_zoom===z?_acc:"rgba(0,0,0,.08)"),background:_zoom===z?_acc+"12":"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:_zoom===z?700:400,fontSize:13,color:_zoom===z?_acc:"#1a1714",transition:"all .15s"}}>
+                  {lb}
+                </button>
               ))}
             </div>
-          </>}
-        </div>
+          </div></div>
+        </>}
 
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24,alignItems:"start"}}>
-          <div style={{background:"#fff",borderRadius:12,padding:18,border:"1px solid rgba(0,0,0,.03)"}}>
-            <h3 style={{fontSize:13,fontWeight:800,marginBottom:14}}>Colors</h3>
-            {Object.entries(THEME_LABELS).map(([k,label])=>(
-            <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-              <div style={{width:28,height:28,borderRadius:6,background:theme[k],border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}><input type="color" value={theme[k]} onChange={e=>setTheme({...theme,[k]:e.target.value})} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/></div>
-              <span style={{fontSize:11,fontWeight:600,flex:1}}>{label}</span>
-              <input value={theme[k]} onChange={e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value))setTheme({...theme,[k]:e.target.value});}} style={{width:80,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"monospace"}}/>
-            </div>))}
+        {/* ══ PUBLIC SITE SUB-TAB ══ */}
+        {tSubTab==="site"&&<>
+          <div style={{display:"flex",justifyContent:"flex-end",gap:6,marginBottom:14}}>
+            <button className="btn btn-green" onClick={pushToSite}>Push to Site</button>
+            <button className="btn btn-gold" onClick={saveCurrentTheme}>Save Theme</button>
+            <button className="btn btn-out" onClick={exportTheme}>Export CSS</button>
+            <button className="btn btn-out" onClick={()=>setTheme(randPalette())}>Random Palette</button>
           </div>
-          <div style={{position:"sticky",top:80}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#999",marginBottom:8}}>Live Preview</div>
-            <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(0,0,0,.06)",boxShadow:"0 4px 16px rgba(0,0,0,.06)"}}>
-              <div style={{background:theme.bg,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{color:theme.text,fontWeight:700,fontSize:11}}>🐻 BB <span style={{color:theme.accent}}>Rentals</span></span><div style={{background:theme.accent,color:contrast(theme.accent),padding:"3px 8px",borderRadius:4,fontSize:8,fontWeight:700}}>Apply</div></div>
-              <div style={{background:`linear-gradient(135deg,${theme.bg},${theme.card})`,padding:"18px 12px",textAlign:"center"}}><div style={{fontFamily:"Georgia,serif",fontSize:16,color:theme.text}}>Your Room Is Ready.</div><div style={{fontFamily:"Georgia,serif",fontSize:16,color:theme.accent,fontStyle:"italic"}}>Everything's Included.</div><div style={{fontSize:9,color:theme.muted,marginTop:6}}>Furnished rooms from $600/mo</div></div>
-              <div style={{background:theme.surface,padding:10}}>
-                <div style={{background:"#fff",borderRadius:5,padding:6,border:"1px solid rgba(0,0,0,.04)",marginBottom:4}}>
-                  <div style={{display:"flex",gap:3,marginBottom:3}}><span style={{background:`${theme.green}18`,color:theme.green,padding:"1px 5px",borderRadius:100,fontSize:6,fontWeight:700}}>Available</span></div>
-                  <div style={{fontFamily:"Georgia,serif",fontSize:10,color:theme.dark}}>The Holmes House</div>
-                  <div style={{fontSize:7,color:theme.warm}}>$600–$850/mo</div>
-                </div>
+          {expanded.themePushSuccess&&<div style={{marginBottom:10,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,animation:"fadeIn .3s"}}>Theme is live on rentblackbear.com</div>}
+
+          {/* Presets + Saved */}
+          <div className="card" style={{marginBottom:12}}><div className="card-bd">
+            <h3 style={{fontSize:13,fontWeight:800,marginBottom:10}}>Color Presets</h3>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+              {Object.entries(PRESETS).map(([n,c])=><button key={n} className="btn btn-out btn-sm" onClick={()=>applyTheme(c)}><span style={{width:10,height:10,borderRadius:"50%",background:c.accent,display:"inline-block",marginRight:4}}/>{n}</button>)}
+            </div>
+            {savedThemes.length>0&&<>
+              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Your Saved Themes</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {savedThemes.map(st=>(
+                  <div key={st.id} style={{display:"flex",alignItems:"center",border:"1px solid rgba(0,0,0,.06)",borderRadius:6,overflow:"hidden"}}>
+                    <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none"}} onClick={()=>applyTheme(st.colors)}>
+                      <div style={{display:"flex",gap:2,marginRight:4}}>{[st.colors.bg,st.colors.accent,st.colors.green,st.colors.text].map((c,i)=><span key={i} style={{width:8,height:8,borderRadius:"50%",background:c,display:"inline-block"}}/>)}</div>
+                      {st.name}
+                    </button>
+                    <button style={{background:"none",border:"none",borderLeft:"1px solid rgba(0,0,0,.06)",padding:"4px 8px",cursor:"pointer",color:"#c45c4a",fontSize:10}} onClick={()=>deleteTheme(st.id)}>x</button>
+                  </div>
+                ))}
               </div>
-              <div style={{background:theme.card,padding:"10px 12px",textAlign:"center"}}><div style={{background:theme.accent,color:contrast(theme.accent),padding:"5px 14px",borderRadius:5,fontSize:9,fontWeight:700,display:"inline-block"}}>Apply Now</div></div>
-            </div>
-            <div style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
-              <div style={{background:theme.accent,color:contrast(theme.accent),padding:"5px 12px",borderRadius:5,fontSize:10,fontWeight:700}}>Button</div>
-              <div style={{background:theme.green,color:"#fff",padding:"5px 12px",borderRadius:5,fontSize:10,fontWeight:700}}>Available</div>
-              <div style={{background:theme.bg,color:theme.text,padding:"5px 12px",borderRadius:5,fontSize:10,fontWeight:700}}>Dark</div>
-              <div style={{background:theme.surface,color:theme.dark,padding:"5px 12px",borderRadius:5,fontSize:10,fontWeight:700,border:"1px solid rgba(0,0,0,.06)"}}>Light</div>
-            </div>
-            <div style={{marginTop:16,background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#5c4a3a"}}>
-              <strong>💡 Tip:</strong> Click "Push to Site" to update your live public site with the current colors. Save themes you like so you can switch between them later.
+            </>}
+          </div></div>
+
+          {/* Colors + Preview */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+            <div className="card"><div className="card-bd">
+              <h3 style={{fontSize:13,fontWeight:800,marginBottom:14}}>Color Tokens</h3>
+              {Object.entries(THEME_LABELS).map(([k,label])=>(
+              <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <div style={{width:28,height:28,borderRadius:6,background:theme[k],border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}><input type="color" value={theme[k]} onChange={e=>setTheme({...theme,[k]:e.target.value})} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/></div>
+                <span style={{fontSize:11,fontWeight:600,flex:1}}>{label}</span>
+                <input value={theme[k]} onChange={e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value))setTheme({...theme,[k]:e.target.value});}} style={{width:80,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"monospace"}}/>
+              </div>))}
+            </div></div>
+            <div style={{position:"sticky",top:80}}>
+              <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#999",marginBottom:8}}>Live Preview</div>
+              <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(0,0,0,.06)"}}>
+                <div style={{background:theme.bg,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{color:theme.text,fontWeight:700,fontSize:11}}>BB <span style={{color:theme.accent}}>Rentals</span></span><div style={{background:theme.accent,color:contrast(theme.accent),padding:"3px 8px",borderRadius:4,fontSize:8,fontWeight:700}}>Apply</div></div>
+                <div style={{background:theme.surface,padding:10}}>
+                  <div style={{background:"#fff",borderRadius:5,padding:6,border:"1px solid rgba(0,0,0,.04)",marginBottom:4}}>
+                    <div style={{display:"flex",gap:3,marginBottom:3}}><span style={{background:theme.green+"18",color:theme.green,padding:"1px 5px",borderRadius:100,fontSize:6,fontWeight:700}}>Available</span></div>
+                    <div style={{fontFamily:"Georgia,serif",fontSize:10,color:theme.dark}}>The Holmes House</div>
+                    <div style={{fontSize:7,color:theme.warm}}>$600-$850/mo</div>
+                  </div>
+                </div>
+                <div style={{background:theme.card,padding:"10px 12px",textAlign:"center"}}><div style={{background:theme.accent,color:contrast(theme.accent),padding:"5px 14px",borderRadius:5,fontSize:9,fontWeight:700,display:"inline-block"}}>Apply Now</div></div>
+              </div>
+              <div style={{marginTop:14,background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#4a7c59"}}>
+                Click Push to Site to update rentblackbear.com. The public site reads from Supabase on every load.
+              </div>
             </div>
           </div>
-        </div>
+        </>}
       </>);})()}
 
       {/* ═══ IDEA BOARD ═══ */}
@@ -6061,9 +6200,9 @@ export default function Page(){
         const statuses=["Idea","Planned","Building","Done"];
         const priColors={high:"#c45c4a",medium:"#d4a853",low:"#4a7c59"};
         const priLabels={high:"High",medium:"Med",low:"Low"};
-        const priBg={high:"rgba(196,92,74,.08)",medium:"rgba(74,124,89,.08)",low:"rgba(74,124,89,.08)"};
-        const stBg={Idea:"rgba(0,0,0,.04)",Planned:"rgba(59,130,246,.08)",Building:"rgba(74,124,89,.1)",Done:"rgba(74,124,89,.08)"};
-        const stTxt={Idea:"#999",Planned:"#3b82f6",Building:"#4a7c59",Done:"#4a7c59"};
+        const priBg={high:"rgba(196,92,74,.08)",medium:"rgba(212,168,83,.08)",low:"rgba(74,124,89,.08)"};
+        const stBg={Idea:"rgba(0,0,0,.04)",Planned:"rgba(59,130,246,.08)",Building:"rgba(212,168,83,.1)",Done:"rgba(74,124,89,.08)"};
+        const stTxt={Idea:"#999",Planned:"#3b82f6",Building:"#9a7422",Done:"#4a7c59"};
         const showArchived=expanded.showArchived||false;
         const active=ideas.filter(i=>!i.archived);
         const archived=ideas.filter(i=>i.archived);
@@ -6154,8 +6293,8 @@ export default function Page(){
                 <div style={{padding:"11px 14px",background:"#1a1714",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div style={{fontSize:12,fontWeight:800,color:"#f5f0e8",letterSpacing:.3}}>{cat}</div>
                   <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    <span style={{fontSize:10,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.15)",padding:"1px 8px",borderRadius:100}}>{catIdeas.length}</span>
-                    <button style={{background:"rgba(255,255,255,.1)",border:"none",color:"#4a7c59",cursor:"pointer",fontSize:16,lineHeight:1,width:22,height:22,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}} onClick={()=>setModal({type:"newIdea",cat,title:"",priority:"medium",status:"Idea",notes:"",link:""})}>+</button>
+                    <span style={{fontSize:10,fontWeight:700,color:"#d4a853",background:"rgba(212,168,83,.15)",padding:"1px 8px",borderRadius:100}}>{catIdeas.length}</span>
+                    <button style={{background:"rgba(255,255,255,.1)",border:"none",color:"#d4a853",cursor:"pointer",fontSize:16,lineHeight:1,width:22,height:22,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit"}} onClick={()=>setModal({type:"newIdea",cat,title:"",priority:"medium",status:"Idea",notes:"",link:""})}>+</button>
                   </div>
                 </div>
                 {/* Cards area */}
@@ -6256,8 +6395,8 @@ export default function Page(){
         const avgDaysLate=lateMonths.length?Math.round(lateMonths.reduce((s,m)=>s+(m.daysLate||0),0)/lateMonths.length):0;
         const pastDueNow=moData.filter(m=>m.isPastDue).length;
         const badge=pct>=90?"🟢 Great Payer":pct>=70?"🟡 Occasional Late":"🔴 Chronic Late";
-        const badgeColor=pct>=90?"#4a7c59":pct>=70?"#4a7c59":"#c45c4a";
-        const badgeBg=pct>=90?"rgba(74,124,89,.08)":pct>=70?"rgba(74,124,89,.08)":"rgba(196,92,74,.08)";
+        const badgeColor=pct>=90?"#4a7c59":pct>=70?"#9a7422":"#c45c4a";
+        const badgeBg=pct>=90?"rgba(74,124,89,.08)":pct>=70?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)";
         const isExp=expanded.payPattern===r.id;
         return(
         <div className="tp-card">
@@ -6278,9 +6417,9 @@ export default function Page(){
                 <div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{pct}%</div>
                 <div style={{fontSize:9,color:"#999"}}>{onTime} of {rentCharges.length} months</div>
               </div>
-              <div style={{background:lateMonths.length?"rgba(74,124,89,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
+              <div style={{background:lateMonths.length?"rgba(212,168,83,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
                 <div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Avg Days Late</div>
-                <div style={{fontSize:18,fontWeight:800,color:lateMonths.length?"#4a7c59":"#4a7c59"}}>{lateMonths.length?avgDaysLate:0}</div>
+                <div style={{fontSize:18,fontWeight:800,color:lateMonths.length?"#9a7422":"#4a7c59"}}>{lateMonths.length?avgDaysLate:0}</div>
                 <div style={{fontSize:9,color:"#999"}}>{lateMonths.length} late month{lateMonths.length!==1?"s":""}</div>
               </div>
               <div style={{background:pastDueNow?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
@@ -6316,16 +6455,16 @@ export default function Page(){
                 </thead>
                 <tbody>
                   {moData.map(({c,st,daysLate,isLate,isPastDue,label,lateFeeAmt,initFee,dailyFee},i)=>{
-                    const statusColor=st==="paid"&&!isLate?"#4a7c59":isLate?"#4a7c59":isPastDue?"#c45c4a":"#3b82f6";
+                    const statusColor=st==="paid"&&!isLate?"#4a7c59":isLate?"#9a7422":isPastDue?"#c45c4a":"#3b82f6";
                     const daysOverdue=isPastDue?Math.ceil((TODAY-new Date(c.dueDate+"T00:00:00"))/(864e5)):0;
                     const statusLabel=st==="paid"&&!isLate?"✓ On-time":isLate?`⚠ ${daysLate}d late`:isPastDue?`${daysOverdue}d overdue`:st==="waived"?"— Waived":"○ Unpaid";
                     return(
-                    <tr key={c.id} style={{borderTop:i>0?"1px solid rgba(0,0,0,.03)":"none",background:isPastDue?"rgba(196,92,74,.02)":isLate?"rgba(74,124,89,.02)":"transparent"}}>
+                    <tr key={c.id} style={{borderTop:i>0?"1px solid rgba(0,0,0,.03)":"none",background:isPastDue?"rgba(196,92,74,.02)":isLate?"rgba(212,168,83,.02)":"transparent"}}>
                       <td style={{padding:"7px 10px",fontWeight:600}}>{label}</td>
                       <td style={{padding:"7px 10px",textAlign:"center"}}><span style={{fontSize:10,fontWeight:700,color:statusColor}}>{statusLabel}</span></td>
                       <td style={{padding:"7px 10px",textAlign:"center"}}>
                         {isLate&&daysLate!==null
-                          ?<span style={{fontWeight:700,color:daysLate>=14?"#c45c4a":daysLate>=7?"#4a7c59":"#d4a853"}}>{daysLate}d</span>
+                          ?<span style={{fontWeight:700,color:daysLate>=14?"#c45c4a":daysLate>=7?"#9a7422":"#d4a853"}}>{daysLate}d</span>
                           :isPastDue
                           ?<span style={{fontWeight:700,color:"#c45c4a"}}>{daysOverdue}d</span>
                           :<span style={{color:"#ccc"}}>—</span>}
@@ -6363,7 +6502,7 @@ export default function Page(){
             </div>
             <div style={{display:"flex",gap:12,marginTop:8,fontSize:9,color:"#999"}}>
               <span style={{color:"#4a7c59"}}>✓ On-time (within 3 days)</span>
-              <span style={{color:"#4a7c59"}}>⚠ Paid late</span>
+              <span style={{color:"#9a7422"}}>⚠ Paid late</span>
               <span style={{color:"#c45c4a"}}>🔴 Still overdue</span>
             </div>
           </div>}
@@ -6380,12 +6519,12 @@ export default function Page(){
         const catStyle={
           "Rent":          {icon:"🏠",bg:"rgba(59,130,246,.06)",border:"rgba(59,130,246,.15)",color:"#3b82f6",label:"Rent"},
           "Late Fee":      {icon:"⚠️",bg:"rgba(196,92,74,.06)",border:"rgba(196,92,74,.2)",color:"#c45c4a",label:"Late Fee"},
-          "Utility Overage":{icon:"⚡",bg:"rgba(74,124,89,.06)",border:"rgba(74,124,89,.2)",color:"#4a7c59",label:"Utility"},
+          "Utility Overage":{icon:"⚡",bg:"rgba(212,168,83,.06)",border:"rgba(212,168,83,.2)",color:"#9a7422",label:"Utility"},
           "Security Deposit":{icon:"🔒",bg:"rgba(139,92,246,.06)",border:"rgba(139,92,246,.15)",color:"#7c3aed",label:"Security Deposit"},
           "Damage Charge": {icon:"🔨",bg:"rgba(196,92,74,.04)",border:"rgba(196,92,74,.1)",color:"#c45c4a",label:"Damage"},
           "Cleaning Fee":  {icon:"🧹",bg:"rgba(74,124,89,.04)",border:"rgba(74,124,89,.1)",color:"#4a7c59",label:"Cleaning"},
           "Move-In Fee":   {icon:"📦",bg:"rgba(59,130,246,.04)",border:"rgba(59,130,246,.1)",color:"#3b82f6",label:"Move-In"},
-          "Move-Out Fee":  {icon:"📦",bg:"rgba(74,124,89,.04)",border:"rgba(74,124,89,.1)",color:"#4a7c59",label:"Move-Out"},
+          "Move-Out Fee":  {icon:"📦",bg:"rgba(212,168,83,.04)",border:"rgba(212,168,83,.1)",color:"#9a7422",label:"Move-Out"},
           "Lock Change":   {icon:"🔑",bg:"rgba(0,0,0,.03)",border:"rgba(0,0,0,.08)",color:"#5c4a3a",label:"Lock"},
           "Key Replacement":{icon:"🗝️",bg:"rgba(0,0,0,.03)",border:"rgba(0,0,0,.08)",color:"#5c4a3a",label:"Key"},
           "Pet Violation": {icon:"🐾",bg:"rgba(196,92,74,.04)",border:"rgba(196,92,74,.1)",color:"#c45c4a",label:"Violation"},
@@ -6485,7 +6624,7 @@ export default function Page(){
               <div><div style={{fontSize:13,fontWeight:700}}>{vr.name}</div><div style={{fontSize:10,color:"#999"}}>{vr.propName} · {vr.pb?"Private":"Shared"} bath · {vr.sqft||"—"} sqft</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:800}}>{fmtS(vr.rent)}/mo</div>
                 {rentDiff!==0&&<div style={{fontSize:10,fontWeight:700,color:rentDiff>0?"#c45c4a":"#4a7c59"}}>{rentDiff>0?`+${fmtS(rentDiff)} upgrade`:`${fmtS(rentDiff)} downgrade`}</div>}
-                {utilChange&&<div style={{fontSize:9,color:"#4a7c59",fontWeight:600}}>⚠ Utility model changes</div>}
+                {utilChange&&<div style={{fontSize:9,color:"#d4a853",fontWeight:600}}>⚠ Utility model changes</div>}
               </div>
             </div>
             {sdDiff!==0&&<div style={{fontSize:10,color:sdDiff>0?"#c45c4a":"#4a7c59",marginTop:4}}>SD adjustment: {sdDiff>0?`Tenant owes ${fmtS(sdDiff)} additional deposit`:`${fmtS(Math.abs(sdDiff))} credit applied from overage`}</div>}
@@ -6512,7 +6651,7 @@ export default function Page(){
             </div>
             {modal.moveDate==="custom"&&<input type="date" value={modal.moveCustomDate} onChange={e=>setModal(prev=>({...prev,moveCustomDate:e.target.value}))}/>}
           </div>
-          {utilChange&&<div style={{background:"rgba(74,124,89,.08)",borderRadius:6,padding:10,marginBottom:8,fontSize:11,color:"#4a7c59"}}><strong>⚠ Utility model change:</strong> Moving from {r.propUtils==="allIncluded"?"All Included (landlord pays)":"Tenant Pays (split)"} to {target.propUtils==="allIncluded"?"All Included (landlord pays)":"Tenant Pays (split)"}. The addendum should reflect this.</div>}
+          {utilChange&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:6,padding:10,marginBottom:8,fontSize:11,color:"#9a7422"}}><strong>⚠ Utility model change:</strong> Moving from {r.propUtils==="allIncluded"?"All Included (landlord pays)":"Tenant Pays (split)"} to {target.propUtils==="allIncluded"?"All Included (landlord pays)":"Tenant Pays (split)"}. The addendum should reflect this.</div>}
           {sdDiff!==0&&<div style={{background:sdDiff>0?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:10,marginBottom:8,fontSize:11,color:sdDiff>0?"#c45c4a":"#4a7c59"}}><strong>SD Adjustment:</strong> {sdDiff>0?`Tenant owes ${fmtS(sdDiff)} additional deposit (upgrade). An invoice will be generated.`:`${fmtS(Math.abs(sdDiff))} overage from current SD will be credited (downgrade).`}</div>}
           <div className={`fld ${modal.moveErrs&&modal.moveErrs.notes?"field-err":""}`}>
             <label className={modal.moveErrs&&modal.moveErrs.notes?"field-err-label":""}>Reason for Move (required)</label>
@@ -6572,7 +6711,7 @@ export default function Page(){
             <div style={{fontWeight:700,color:"#4a7c59",marginBottom:4}}>📄 Invoices that will be auto-generated:</div>
             {sdDiff>0&&<div style={{padding:"2px 0"}}>• SD Adjustment — {fmtS(sdDiff)}</div>}
             <div style={{padding:"2px 0"}}>• Next month rent at {fmtS(newRent)} (due 1st)</div>
-            {r.propUtils==="allIncluded"&&target.propUtils==="first100"&&<div style={{padding:"2px 0",color:"#4a7c59"}}>• Utility placeholder — $0 (update with actual amount)</div>}
+            {r.propUtils==="allIncluded"&&target.propUtils==="first100"&&<div style={{padding:"2px 0",color:"#9a7422"}}>• Utility placeholder — $0 (update with actual amount)</div>}
           </div>
           <div style={{display:"flex",gap:6,marginTop:12}}>
             <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,moveStep:2}))}>← Back</button>
@@ -6668,7 +6807,7 @@ export default function Page(){
         </div>
       </div>}
 
-      {dl&&dl<=90&&!modal.termStep&&<div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:12,color:"#5c4a3a"}}><strong>Action needed:</strong> Lease expires in {dl} days. This room generates {fmtS(r.rent)}/mo ({fmtS(r.rent*12)}/yr). Reach out to {r.tenant.name.split(" ")[0]} about renewing, or start looking for a replacement.</div>}
+      {dl&&dl<=90&&!modal.termStep&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:12,color:"#5c4a3a"}}><strong>Action needed:</strong> Lease expires in {dl} days. This room generates {fmtS(r.rent)}/mo ({fmtS(r.rent*12)}/yr). Reach out to {r.tenant.name.split(" ")[0]} about renewing, or start looking for a replacement.</div>}
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
     </div></div>);})()}
 
@@ -6737,13 +6876,13 @@ export default function Page(){
           <div style={{display:"flex",gap:4}}>
             {isEdited&&!editingDefault&&<button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,reminderMsg:defaultMsg}))}>↺ Reset</button>}
             {!editingDefault&&<button className="btn btn-gold btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,editingDefault:true,reminderMsg:template}))}>✏️ Edit Default</button>}
-            {editingDefault&&<span style={{fontSize:9,color:"#4a7c59",fontWeight:700}}>Editing saved default</span>}
+            {editingDefault&&<span style={{fontSize:9,color:"#d4a853",fontWeight:700}}>Editing saved default</span>}
           </div>
         </label>
 
         {editingDefault
           ?<>
-            <textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"2px solid rgba(74,124,89,.4)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6,background:"rgba(74,124,89,.02)"}}/>
+            <textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"2px solid rgba(212,168,83,.4)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6,background:"rgba(212,168,83,.02)"}}/>
             <div style={{display:"flex",gap:6,marginTop:8}}>
               <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,editingDefault:false,reminderMsg:defaultMsg}))}>Cancel</button>
               <button className="btn btn-gold" style={{flex:2}} onClick={()=>{
@@ -6752,7 +6891,7 @@ export default function Page(){
               }}>💾 Save as Default</button>
             </div>
           </>
-          :<textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${isEdited?"rgba(74,124,89,.3)":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
+          :<textarea value={reminderMsg} onChange={e=>setModal(prev=>({...prev,reminderMsg:e.target.value}))} rows={5} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:`1px solid ${isEdited?"rgba(212,168,83,.3)":"rgba(0,0,0,.08)"}`,fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
         }
       </div>
 
@@ -6898,7 +7037,7 @@ export default function Page(){
           <option value="">— Select a category —</option>
           {SCHED_E_CATS.map(c=><option key={c.id} value={c.label}>{c.label}</option>)}
         </select>
-        {selCat&&<div style={{fontSize:10,color:"#4a7c59",marginTop:4,padding:"4px 8px",background:"rgba(74,124,89,.06)",borderRadius:4}}>{selCat.hint}</div>}
+        {selCat&&<div style={{fontSize:10,color:"#9a7422",marginTop:4,padding:"4px 8px",background:"rgba(212,168,83,.06)",borderRadius:4}}>{selCat.hint}</div>}
         {errs.category&&<div className="err-msg">{errs.category}</div>}
       </div>
 
@@ -6906,7 +7045,7 @@ export default function Page(){
       {f.category&&<div className="fld" style={{position:"relative"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <label>Subcategory</label>
-          <button type="button" style={{fontSize:9,color:"#4a7c59",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"2px 4px"}} onClick={()=>setModal(p=>({...p,_subcatMgr:!p._subcatMgr,_vendorMgr:false}))}>
+          <button type="button" style={{fontSize:9,color:"#9a7422",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"2px 4px"}} onClick={()=>setModal(p=>({...p,_subcatMgr:!p._subcatMgr,_vendorMgr:false}))}>
             {showSubcatMgr?"Done":"Manage"}
           </button>
         </div>
@@ -6916,8 +7055,8 @@ export default function Page(){
             {catSubcats.map(s=><option key={s.id} value={s.label}>{s.label}</option>)}
           </select>
         </>}
-        {showSubcatMgr&&<div style={{border:"1px solid rgba(74,124,89,.2)",borderRadius:8,padding:10,background:"rgba(74,124,89,.03)",marginTop:4}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Manage subcategories for {f.category}</div>
+        {showSubcatMgr&&<div style={{border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:10,background:"rgba(212,168,83,.03)",marginTop:4}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Manage subcategories for {f.category}</div>
           {catSubcats.map(s=><div key={s.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
             {modal._subcatRenameId===s.id
               ?<><input value={subcatEditName} onChange={e=>setModal(p=>({...p,_subcatEdit:e.target.value}))} style={{flex:1,fontSize:11,padding:"4px 8px"}} autoFocus/>
@@ -6957,7 +7096,7 @@ export default function Page(){
       <div className="fld" style={{position:"relative"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <label>Vendor / Payee</label>
-          <button type="button" style={{fontSize:9,color:"#4a7c59",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"2px 4px"}} onClick={()=>setModal(p=>({...p,_vendorMgr:!p._vendorMgr,_subcatMgr:false}))}>
+          <button type="button" style={{fontSize:9,color:"#9a7422",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"2px 4px"}} onClick={()=>setModal(p=>({...p,_vendorMgr:!p._vendorMgr,_subcatMgr:false}))}>
             {showVendorMgr?"Done":"Manage"}
           </button>
         </div>
@@ -6967,8 +7106,8 @@ export default function Page(){
             {vendors.slice().sort((a,b)=>a.name?.localeCompare(b.name||"")||0).map(v=><option key={v.id} value={v.name}>{v.name}</option>)}
           </select>
         </>}
-        {showVendorMgr&&<div style={{border:"1px solid rgba(74,124,89,.2)",borderRadius:8,padding:10,background:"rgba(74,124,89,.03)",marginTop:4}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Manage vendors</div>
+        {showVendorMgr&&<div style={{border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:10,background:"rgba(212,168,83,.03)",marginTop:4}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Manage vendors</div>
           {vendors.slice().sort((a,b)=>a.name?.localeCompare(b.name||"")||0).map(v=><div key={v.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
             {modal._vendorRenameId===v.id
               ?<><input value={(vendorEditForm||{}).name||""} onChange={e=>setModal(p=>({...p,_vendorEdit:{...(p._vendorEdit||{}),name:e.target.value}}))} style={{flex:1,fontSize:11,padding:"4px 8px"}} placeholder="Vendor name" autoFocus/>
@@ -7038,7 +7177,7 @@ export default function Page(){
               <input type="file" accept="image/*,.pdf" capture="environment" style={{display:"none"}} onChange={e=>{const file=e.target.files[0];if(file)upd("receiptFile",file);}}/>
             </label>
           </div>}
-        {f.receiptFile&&!modal._scanning&&!modal._scanned&&<button type="button" className="btn btn-out btn-sm" style={{marginTop:6,fontSize:10,color:"#4a7c59",borderColor:"rgba(74,124,89,.3)"}} onClick={async()=>{
+        {f.receiptFile&&!modal._scanning&&!modal._scanned&&<button type="button" className="btn btn-out btn-sm" style={{marginTop:6,fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}} onClick={async()=>{
           setModal(p=>({...p,_scanning:true,_scanErr:null}));
           try{
             const reader=new FileReader();
@@ -7061,7 +7200,7 @@ export default function Page(){
             }
           }catch(err){setModal(p=>({...p,_scanning:false,_scanErr:"Scan failed: "+err.message}));}
         }}>🔍 Scan receipt with AI — auto-fill fields</button>}
-        {modal._scanning&&<div style={{marginTop:6,fontSize:11,color:"#4a7c59",display:"flex",alignItems:"center",gap:6}}><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⏳</span> Reading receipt...</div>}
+        {modal._scanning&&<div style={{marginTop:6,fontSize:11,color:"#9a7422",display:"flex",alignItems:"center",gap:6}}><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⏳</span> Reading receipt...</div>}
         {modal._scanned&&<div style={{marginTop:6,fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Fields auto-filled from receipt. Review and adjust if needed.</div>}
         {modal._scanErr&&<div className="err-msg" style={{marginTop:4}}>{modal._scanErr}</div>}
       </div>
@@ -7212,7 +7351,7 @@ export default function Page(){
           {subcatInput.trim()&&subcatMatches.length>0&&!exactSubcat&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:"0 0 8px 8px",boxShadow:"0 4px 12px rgba(0,0,0,.1)",zIndex:100,maxHeight:140,overflowY:"auto"}}>
             {subcatMatches.map(s=><div key={s.id} style={{padding:"7px 12px",cursor:"pointer",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.04)"}}
               onMouseDown={e=>{e.preventDefault();upd("subcategory",s.label);}}
-              onMouseEnter={e=>e.currentTarget.style.background="rgba(74,124,89,.06)"}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(212,168,83,.06)"}
               onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
               {s.label}
             </div>)}
@@ -7380,7 +7519,7 @@ export default function Page(){
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460,animation:shake?"shake .4s ease":undefined}}>
       <h2 style={{marginBottom:4}}>✏️ Edit Charge</h2>
       <div style={{fontSize:11,color:"#999",marginBottom:14}}>{c.tenantName} · {c.propName}</div>
-      {isPaid&&<div style={{background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#4a7c59",fontWeight:600}}>⚠ This charge has been paid. A reason and audit note are required.</div>}
+      {isPaid&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9a7422",fontWeight:600}}>⚠ This charge has been paid. A reason and audit note are required.</div>}
       <div className="fr3">
         <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($){errs.amount&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.amount}</span>}</label><input type="number" value={c.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/></div>
         <div className="fld"><label style={{color:errs.dueDate?"#c45c4a":undefined}}>Due Date</label><input type="date" value={c.dueDate||""} onChange={e=>upd("dueDate",e.target.value)}/></div>
@@ -7435,8 +7574,8 @@ export default function Page(){
         <div style={{background:"rgba(0,0,0,.03)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#999"}}>{alreadyVoided.length}</div><div style={{fontSize:9,color:"#999",marginTop:2}}>Voided/Waived</div></div>
       </div>
 
-      <div style={{border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:14,marginBottom:12,background:"rgba(74,124,89,.02)"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#4a7c59",marginBottom:6}}>OPTION A — Void All Outstanding</div>
+      <div style={{border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,marginBottom:12,background:"rgba(212,168,83,.02)"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:6}}>OPTION A — Void All Outstanding</div>
         <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10,lineHeight:1.5}}>Voids {outstanding.length} outstanding charge{outstanding.length!==1?"s":""}, leaving paid charges intact. Requires a reason. Leaves full audit trail.</div>
         <div className="fld" style={{marginBottom:8}}>
           <label>Reason for voiding outstanding charges *</label>
@@ -7546,7 +7685,7 @@ export default function Page(){
             <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:600}}>{c.category}: {c.desc}</span><span className={`badge ${st==="pastdue"?"b-red":"b-blue"}`}>{st}</span></div>
             <div style={{fontSize:10,color:"#999"}}>Due {fmtD(c.dueDate)} - {fmtS(c.amount-c.amountPaid)} remaining</div>
           </div>);})}</div>}
-        {modal.selRoom&&roomCharges.length===0&&<div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:12,color:"#4a7c59",marginBottom:10}}>No unpaid charges. <button className="btn btn-gold btn-sm" style={{marginLeft:6}} onClick={()=>setModal({type:"createCharge",roomId:modal.selRoom,category:"Rent",desc:"",amount:(selRoom&&selRoom.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:""})}>Create Charge</button></div>}
+        {modal.selRoom&&roomCharges.length===0&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:12,color:"#9a7422",marginBottom:10}}>No unpaid charges. <button className="btn btn-gold btn-sm" style={{marginLeft:6}} onClick={()=>setModal({type:"createCharge",roomId:modal.selRoom,category:"Rent",desc:"",amount:(selRoom&&selRoom.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:""})}>Create Charge</button></div>}
         <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
           <button className="btn btn-dk" onClick={()=>{
             if(!modal.selRoom){shakeModal();return;}
@@ -7869,7 +8008,7 @@ export default function Page(){
         ))}
       </div>
 
-      <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#5c4a3a",lineHeight:1.6}}>
+      <div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:11,color:"#5c4a3a",lineHeight:1.6}}>
         This addendum modifies the original lease. All other terms remain in full effect. Effective on the date listed above upon signature by both parties.
       </div>
 
@@ -7898,7 +8037,7 @@ export default function Page(){
             <div>
               <div style={{fontSize:13,fontWeight:700}}>{c.category}</div>
               <div style={{fontSize:11,color:"#999"}}>{c.desc} · Due {fmtD(c.dueDate)}</div>
-              {c.amountPaid>0&&<div style={{fontSize:10,color:"#4a7c59"}}>{fmtS(c.amountPaid)} already paid</div>}
+              {c.amountPaid>0&&<div style={{fontSize:10,color:"#d4a853"}}>{fmtS(c.amountPaid)} already paid</div>}
             </div>
             <div style={{fontWeight:800,fontSize:16,color:chargeStatus(c)==="pastdue"?"#c45c4a":"#1a1714"}}>{fmtS(rem)}</div>
           </div>
@@ -7925,7 +8064,7 @@ export default function Page(){
           </div>
         </div>);
       })}
-      <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,marginTop:8,fontSize:10,color:"#4a7c59"}}>
+      <div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:10,marginTop:8,fontSize:10,color:"#9a7422"}}>
         ACH transfers are free. Card payments may include a processing fee. Both deposit directly to your landlord. Questions? Text or email us at blackbearhousing@gmail.com.
       </div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button></div>
@@ -7983,7 +8122,7 @@ export default function Page(){
             {/* Pkg selector — compact row */}
             <div style={{display:"flex",gap:5,marginBottom:6,flexWrap:"wrap"}}>
               {[["credit-bg","Credit + Full BG","$49"],["credit-only","Credit Only","$29"],["none","Waived","$0"]].map(([v,l,p])=>(
-                <button key={v} onClick={()=>setPersonPkg(a.id,v)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:`1.5px solid ${getPkg(a.id)===v?"#d4a853":"rgba(0,0,0,.08)"}`,background:getPkg(a.id)===v?"rgba(74,124,89,.08)":"#fff",color:getPkg(a.id)===v?"#4a7c59":"#999",cursor:"pointer",fontFamily:"inherit",fontWeight:getPkg(a.id)===v?700:400}}>
+                <button key={v} onClick={()=>setPersonPkg(a.id,v)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:`1.5px solid ${getPkg(a.id)===v?"#d4a853":"rgba(0,0,0,.08)"}`,background:getPkg(a.id)===v?"rgba(212,168,83,.08)":"#fff",color:getPkg(a.id)===v?"#9a7422":"#999",cursor:"pointer",fontFamily:"inherit",fontWeight:getPkg(a.id)===v?700:400}}>
                   {l} <span style={{color:"#ccc"}}>{p}</span>
                 </button>
               ))}
@@ -7996,7 +8135,7 @@ export default function Page(){
                 </button>
               ))}
             </div>
-            {getPkg(a.id)==="none"&&<input value={perPerson[a.id]?.waiverReason||""} onChange={e=>setPersonWaiver(a.id,e.target.value)} placeholder="Waiver reason (required) — e.g. NASA intern" style={{width:"100%",marginTop:6,padding:"5px 8px",fontSize:10,borderRadius:5,border:"1px solid rgba(74,124,89,.3)",fontFamily:"inherit"}}/>}
+            {getPkg(a.id)==="none"&&<input value={perPerson[a.id]?.waiverReason||""} onChange={e=>setPersonWaiver(a.id,e.target.value)} placeholder="Waiver reason (required) — e.g. NASA intern" style={{width:"100%",marginTop:6,padding:"5px 8px",fontSize:10,borderRadius:5,border:"1px solid rgba(212,168,83,.3)",fontFamily:"inherit"}}/>}
             {getPkg(a.id)!=="none"&&<div style={{marginTop:6,padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:6,fontSize:10}}>
               <div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>RentPrep</span><span>${pkgFees[getPkg(a.id)]}</span></div>
               {getIncome(a.id)!=="none"&&<div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>Income verification</span><span>+${incomeAdds[getIncome(a.id)]}</span></div>}
@@ -8008,13 +8147,13 @@ export default function Page(){
                     style={{width:38,padding:"1px 3px",borderRadius:3,border:"1px solid rgba(0,0,0,.1)",fontSize:9,fontFamily:"inherit",textAlign:"right"}}/>
                 </div>
               </div>
-              <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,color:"#4a7c59",borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:3,marginTop:2}}><span>Tenant pays</span><span>${getFee(a.id)}</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,color:"#9a7422",borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:3,marginTop:2}}><span>Tenant pays</span><span>${getFee(a.id)}</span></div>
             </div>}
           </div>
         ))}
 
-        <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,marginBottom:12,display:"flex",justifyContent:"space-between",fontSize:12}}>
-          <span style={{color:"#4a7c59",fontWeight:700}}>Total fees across all applicants</span>
+        <div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:10,marginBottom:12,display:"flex",justifyContent:"space-between",fontSize:12}}>
+          <span style={{color:"#9a7422",fontWeight:700}}>Total fees across all applicants</span>
           <strong>${totalAll}</strong>
         </div>
         <div className="fld"><label>Note (sent to all)</label><textarea value={modal.bulkNote||""} onChange={e=>setModal(prev=>({...prev,bulkNote:e.target.value}))} placeholder="Optional personal note..." rows={2}/></div>
@@ -8110,8 +8249,8 @@ export default function Page(){
           <button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,inviteStep:"configure",sendErrors:[],emailSent:false}))}>Back</button>
           <h2 style={{margin:0,flex:1}}>Review and Send Invite</h2>
         </div>
-        <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:16,marginBottom:12}}>
-          <div style={{fontSize:10,fontWeight:800,color:"#4a7c59",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Invite Summary</div>
+        <div style={{background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:16,marginBottom:12}}>
+          <div style={{fontSize:10,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Invite Summary</div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
             <tbody>
               <tr><td style={{padding:"5px 0",color:"#999",width:"38%",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Applicant</td><td style={{padding:"5px 0",fontWeight:700,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.name}</td></tr>
@@ -8204,7 +8343,7 @@ export default function Page(){
               </div>
             </div>
           </div>}
-          {selRoom&&selRoom.willVacate&&<div style={{marginTop:8,fontSize:10,color:"#4a7c59",background:"rgba(74,124,89,.06)",borderRadius:6,padding:"6px 10px"}}>Lease ends {fmtD(selRoom.le)} - room will be vacant by move-in date.</div>}
+          {selRoom&&selRoom.willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>Lease ends {fmtD(selRoom.le)} - room will be vacant by move-in date.</div>}
         </>}
         {roomMode==="property"&&(()=>{
           const showProp=!selPropId||!byRoomOnly||overrideConfirmed;
@@ -8257,7 +8396,7 @@ export default function Page(){
       <div className="tp-card" style={{marginBottom:10}}>
         <h3>Screening Package</h3>
         {[["credit-bg","Credit + Full BG Check","FCRA-certified - RentPrep","$49"],["credit-only","Credit Report Only","Automated SmartMove","$29"],["none","No Screening (Waived)","e.g. intern with employer BG check","$0"]].map(([v,l,sub,price])=>(
-          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v,...(v==="none"?{incomeAdd:"none"}:{})}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.06)"),background:pkg===v?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",marginBottom:5}}>
+          <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v,...(v==="none"?{incomeAdd:"none"}:{})}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.06)"),background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:5}}>
             <div style={{width:13,height:13,borderRadius:"50%",border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.15)"),background:pkg===v?"#d4a853":"transparent",flexShrink:0}}/>
             <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{l}</div><div style={{fontSize:10,color:"#999"}}>{sub}</div></div>
             <div style={{fontSize:13,fontWeight:800,color:pkg===v?"#d4a853":"#999"}}>{price}</div>
@@ -8272,12 +8411,12 @@ export default function Page(){
           ))}
         </div>}
         {pkg==="none"&&<div style={{fontSize:10,color:"#999",fontStyle:"italic",padding:"6px 0"}}>Income verification not available when screening is waived.</div>}
-        <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(74,124,89,.06)",borderRadius:8,border:"1px solid "+(totalFee===0?"rgba(74,124,89,.15)":"rgba(74,124,89,.15)")}}>
+        <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid "+(totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)")}}>
           <span style={{fontSize:11,color:"#999"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}{pkg!=="none"?" + $"+adminFee+" admin":""}</span>
           <span style={{fontSize:16,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":"$"+totalFee}</span>
         </div>
         {pkg==="none"&&<div style={{marginTop:8}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:4}}>Waiver reason (required)</div>
+          <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:4}}>Waiver reason (required)</div>
           <textarea value={modal.waiverReason||""} onChange={e=>setModal(prev=>({...prev,waiverReason:e.target.value}))} placeholder="e.g. NASA intern - employer BG check accepted." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
         </div>}
       </div>
@@ -8331,10 +8470,10 @@ export default function Page(){
           {/* Sections */}
           {(modal.previewSections||[]).filter(s=>s.active!==false).map((sec,idx)=>(
             <div key={sec.id} style={{marginBottom:28,paddingBottom:28,borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-              <div style={{fontSize:9,fontWeight:800,color:"#4a7c59",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Section {idx+1}</div>
+              <div style={{fontSize:9,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1.5,marginBottom:4}}>Section {idx+1}</div>
               <div style={{fontFamily:"serif",fontSize:17,color:"#1a1714",marginBottom:10}}>{sec.title}</div>
-              <div style={{fontSize:13,color:"#3d3529",lineHeight:1.8}} dangerouslySetInnerHTML={{__html:(sec.content||"").replace(/\{\{([^}]+)\}\}/g,(_,key)=>{const v=(modal.previewVars||{})[key.trim()];return v!==undefined?`<span style="color:#1a1714;font-weight:700;background:rgba(74,124,89,.1);padding:0 3px;border-radius:3px">${v}</span>`:`<span style="color:#c45c4a">{{${key}}}</span>`;})}}/>
-              {sec.requiresInitials&&<div style={{marginTop:14,padding:"8px 12px",background:"rgba(74,124,89,.05)",border:"1px dashed rgba(74,124,89,.3)",borderRadius:8,fontSize:10,color:"#4a7c59",fontWeight:600}}>⚠ Tenant initials required for this section</div>}
+              <div style={{fontSize:13,color:"#3d3529",lineHeight:1.8}} dangerouslySetInnerHTML={{__html:(sec.content||"").replace(/\{\{([^}]+)\}\}/g,(_,key)=>{const v=(modal.previewVars||{})[key.trim()];return v!==undefined?`<span style="color:#1a1714;font-weight:700;background:rgba(212,168,83,.1);padding:0 3px;border-radius:3px">${v}</span>`:`<span style="color:#c45c4a">{{${key}}}</span>`;})}}/>
+              {sec.requiresInitials&&<div style={{marginTop:14,padding:"8px 12px",background:"rgba(212,168,83,.05)",border:"1px dashed rgba(212,168,83,.3)",borderRadius:8,fontSize:10,color:"#9a7422",fontWeight:600}}>⚠ Tenant initials required for this section</div>}
             </div>
           ))}
 
@@ -8461,8 +8600,8 @@ export default function Page(){
         </div>
       </div>
 
-      <div style={{background:"rgba(74,124,89,.03)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:12,marginBottom:12}}>
-        <div style={{fontSize:10,fontWeight:800,color:"#4a7c59",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Property &amp; Room</div>
+      <div style={{background:"rgba(212,168,83,.03)",border:"1px solid rgba(212,168,83,.12)",borderRadius:10,padding:12,marginBottom:12}}>
+        <div style={{fontSize:10,fontWeight:800,color:"#9a7422",marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Property &amp; Room</div>
         <div className="fr" style={{marginBottom:8,gap:8}}>
           <div className="fld" style={{marginBottom:0}}>
             <label style={{color:errs.prop?"#c45c4a":undefined}}>Property *{errs.prop&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.prop}</span>}</label>
@@ -8600,20 +8739,20 @@ export default function Page(){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
         <h2>{a.name}</h2>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <span style={{fontSize:11,fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a",background:score>=70?"rgba(74,124,89,.08)":score>=50?"rgba(74,124,89,.08)":"rgba(196,92,74,.08)",padding:"3px 8px",borderRadius:5}}>Score: {score}</span>
+          <span style={{fontSize:11,fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a",background:score>=70?"rgba(74,124,89,.08)":score>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"3px 8px",borderRadius:5}}>Score: {score}</span>
           {days>0&&<span style={{fontSize:10,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999"}}>{days}d</span>}
         </div>
       </div>
       <div style={{display:"flex",gap:2,marginBottom:12}}>{STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}><div style={{height:4,borderRadius:2,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:2}}/><div style={{fontSize:7,color:i<=si?"#d4a853":"#999"}}>{SI3[s]}</div></div>)}</div>
       {mf.length>0&&<div style={{marginBottom:10}}>{mf.map((f,i)=><div key={i} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,
-        background:f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(74,124,89,.06)":"rgba(74,124,89,.06)",
-        color:f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#4a7c59":"#2d6a3f"
+        background:f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",
+        color:f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f"
       }}>{f.label}</div>)}</div>}
       {/* ── Editable Applicant Info ── */}
       <div className="tp-card">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <h3 style={{margin:0}}>👤 Applicant Info</h3>
-          <span style={{fontSize:9,color:"#4a7c59",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Editable — syncs to lease</span>
+          <span style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Editable — syncs to lease</span>
         </div>
         <div className="fr" style={{marginBottom:6}}>
           <div className="fld" style={{marginBottom:0}}>
@@ -8690,8 +8829,8 @@ export default function Page(){
           return label;
         };
         return(
-        <div className="tp-card" style={{border:"2px solid rgba(74,124,89,.2)",background:"rgba(74,124,89,.02)"}}>
-          <h3 style={{margin:"0 0 12px",color:"#4a7c59"}}>🏠 Room / Unit Assignment</h3>
+        <div className="tp-card" style={{border:"2px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
+          <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>🏠 Room / Unit Assignment</h3>
           <div className="fr" style={{marginBottom:8,gap:8}}>
             <div className="fld" style={{marginBottom:0}}>
               <label>Property</label>
@@ -8736,7 +8875,7 @@ export default function Page(){
                 </div>
               </div>
             </div>
-            {selectedAvail?._willVacate&&<div style={{marginTop:8,fontSize:10,color:"#4a7c59",background:"rgba(74,124,89,.06)",borderRadius:6,padding:"7px 10px"}}>
+            {selectedAvail?._willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
               ⏳ Current lease ends {fmtD(selectedAvail.le)} — unit will be vacant by move-in date.
             </div>}
           </>}
@@ -8751,7 +8890,7 @@ export default function Page(){
             </div>
             {isW&&<div style={{fontSize:9,color:"#999",fontStyle:"italic",marginTop:1}}>{a.waiverReason?"Reason: "+a.waiverReason:"⚠ No waiver reason on file"}</div>}
           </div>);})}
-        {a.approvedWithPending&&<div style={{marginTop:6,padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,fontSize:10,color:"#4a7c59"}}>Approved with pending: {a.approvedWithPending}</div>}
+        {a.approvedWithPending&&<div style={{marginTop:6,padding:"5px 8px",background:"rgba(212,168,83,.06)",borderRadius:5,fontSize:10,color:"#9a7422"}}>Approved with pending: {a.approvedWithPending}</div>}
       </div>}
       {/* Roommate Compatibility */}
       {a.property&&<div className="tp-card"><h3>🏠 Housemates at {a.property}</h3>
@@ -8769,14 +8908,14 @@ export default function Page(){
           const items=targetUnitId?allItems.filter(i=>i.unitId===targetUnitId):allItems;
           const unitLabel=targetUnitId?(pr.units||[]).find(u=>u.id===targetUnitId)?.name:null;
           return(<>
-            {unitLabel&&(pr.units||[]).length>1&&<div style={{fontSize:9,color:"#4a7c59",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>{unitLabel}</div>}
+            {unitLabel&&(pr.units||[]).length>1&&<div style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>{unitLabel}</div>}
             {items.map(function(item){
               if(item.isWholeUnit){
                 const occ=item.st==="occupied";
                 return(
                   <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                     <div>
-                      <div style={{fontSize:12,fontWeight:600}}>{item.name} <span style={{fontSize:9,color:"#4a7c59",fontWeight:500}}>Whole Unit</span></div>
+                      <div style={{fontSize:12,fontWeight:600}}>{item.name} <span style={{fontSize:9,color:"#d4a853",fontWeight:500}}>Whole Unit</span></div>
                       {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>Occupied</div>}
                       {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
                     </div>
@@ -8834,10 +8973,10 @@ export default function Page(){
       {((a.documents&&a.documents.length>0)||a.docsFlag)&&<div className="tp-card">
         <h3>📎 Application Documents</h3>
         {a.docsFlag&&<>
-          {!a.docsFlag.idUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.idUploadLater?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:a.docsFlag.idUploadLater?"#4a7c59":"#c45c4a",marginBottom:4}}>
+          {!a.docsFlag.idUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.idUploadLater?"rgba(212,168,83,.06)":"rgba(196,92,74,.06)",color:a.docsFlag.idUploadLater?"#9a7422":"#c45c4a",marginBottom:4}}>
             {a.docsFlag.idUploadLater?"⏳ Photo ID — will upload later":"⚠ Photo ID — not submitted"}
           </div>}
-          {!a.docsFlag.incomeUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.incomeUploadLater?"rgba(74,124,89,.06)":"rgba(74,124,89,.06)",color:a.docsFlag.incomeUploadLater?"#4a7c59":"#4a7c59",marginBottom:4}}>
+          {!a.docsFlag.incomeUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.incomeUploadLater?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",color:a.docsFlag.incomeUploadLater?"#9a7422":"#4a7c59",marginBottom:4}}>
             {a.docsFlag.incomeUploadLater?"⏳ Proof of Income — will upload later":"ℹ Proof of Income — not submitted"}
           </div>}
         </>}
@@ -8858,8 +8997,8 @@ export default function Page(){
       {(a.status==="approved"||a.status==="onboarding")&&(()=>{
         const lk=a.lockActivation;
         if(lk)return(
-        <div className="tp-card" style={{marginTop:10,border:"1px solid rgba(74,124,89,.2)",background:"rgba(74,124,89,.02)"}}>
-          <h3 style={{color:"#4a7c59"}}>🔑 Door Passcode</h3>
+        <div className="tp-card" style={{marginTop:10,border:"1px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
+          <h3 style={{color:"#9a7422"}}>🔑 Door Passcode</h3>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
               <div style={{fontSize:28,fontWeight:900,letterSpacing:8,fontFamily:"monospace",color:"#1a1714"}}>{lk.passcode||a.passcode}</div>
@@ -8893,7 +9032,7 @@ export default function Page(){
               <div>
                 <div style={{fontSize:12,fontWeight:600}}>{c.category==="Security Deposit"?"🔒":"🏠"} {c.desc}</div>
                 <div style={{fontSize:10,color:"#999"}}>Due {fmtD(c.dueDate)}</div>
-                {paid>0&&paid<c.amount&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600}}>{fmtS(paid)} paid · {fmtS(rem)} remaining</div>}
+                {paid>0&&paid<c.amount&&<div style={{fontSize:10,color:"#d4a853",fontWeight:600}}>{fmtS(paid)} paid · {fmtS(rem)} remaining</div>}
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
                 <span style={{fontWeight:800,fontSize:13}}>{fmtS(c.amount)}</span>
@@ -8912,23 +9051,23 @@ export default function Page(){
       <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
         {a.status==="pre-screened"&&<><button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"called",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(null);}}>📞 Mark as Called</button><button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button></>}
         {a.status==="called"&&<button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button>}
-        {a.status==="invited"&&<div style={{flex:1,textAlign:"center",padding:"10px",background:"rgba(74,124,89,.06)",borderRadius:8,fontSize:12,color:"#4a7c59"}}>⏳ Waiting for {a.name} to submit their application...</div>}
+        {a.status==="invited"&&<div style={{flex:1,textAlign:"center",padding:"10px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:12,color:"#9a7422"}}>⏳ Waiting for {a.name} to submit their application...</div>}
         {a.status==="applied"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"reviewing",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"reviewing"}}));}}>🔍 Start Review</button>}
         {a.status==="reviewing"&&<>
-          {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(74,124,89,.07)",border:"1px solid rgba(74,124,89,.25)",borderRadius:8,fontSize:11,color:"#4a7c59",marginBottom:6}}>
+          {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
             <div style={{fontWeight:700,marginBottom:4}}>⚠ Still pending — review before approving:</div>
             {incompleteReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0"}}>
-              <span style={{width:6,height:6,borderRadius:"50%",background:"#4a7c59",flexShrink:0,display:"inline-block"}}/>
+              <span style={{width:6,height:6,borderRadius:"50%",background:"#d4a853",flexShrink:0,display:"inline-block"}}/>
               {r.label}
             </div>)}
-            <div style={{marginTop:6,fontSize:10,color:"#4a7c59",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
+            <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
           </div>}
           <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
             ⚙️ Configure Charges & Send Lease{incompleteReqs.length>0?" Anyway":""}
           </button>
         </>}
         {a.status==="lease-sent"&&<div style={{width:"100%"}}>
-          <div style={{padding:"10px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,marginBottom:8,fontSize:11,color:"#4a7c59",fontWeight:600,textAlign:"center"}}>
+          <div style={{padding:"10px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,marginBottom:8,fontSize:11,color:"#9a7422",fontWeight:600,textAlign:"center"}}>
             📨 Lease sent — awaiting tenant signature
           </div>
           {a.chargeConfig&&<div style={{padding:"10px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,fontSize:11,color:"#2d6a3f",marginBottom:8}}>
@@ -8952,7 +9091,7 @@ export default function Page(){
             </div>}
             {fullyPaid
               ?<button className="btn btn-green" style={{flex:1,width:"100%"}} onClick={()=>{if(targetRoom)convertToTenant(targetRoom.id,targetProp.id);else showAlert({title:"Room Not Found",body:"Could not find the assigned room. Please check the room assignment and try again."});}}>🔑 All Paid — Convert to Tenant</button>
-              :<div style={{padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",textAlign:"center"}}>
+              :<div style={{padding:"8px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,fontSize:11,color:"#9a7422",textAlign:"center"}}>
                 {appCharges2.length===0?"No move-in charges found — go to Payments to add them.":`Waiting for payment — ${fmtS(totalDue2-totalPaid2)} remaining`}
               </div>
             }
@@ -9006,14 +9145,14 @@ export default function Page(){
 
   {/* New Application Toast */}
   {leadToast&&<div className={`lead-toast ${toastDismissing?"out":""}`}>
-    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:"#4a7c59",letterSpacing:1.5}}>🎉 NEW APPLICATION!</div></div>
+    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:"#d4a853",letterSpacing:1.5}}>🎉 NEW APPLICATION!</div></div>
     <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:22,fontWeight:800,color:"#f5f0e8"}}>{leadToast.name}</div></div>
     <div style={{display:"flex",justifyContent:"center",gap:16,fontSize:12,color:"#c4a882",marginBottom:14,flexWrap:"wrap"}}>
       {leadToast.phone&&<span>📞 {leadToast.phone}</span>}
       {leadToast.property&&<span>🏠 {leadToast.property}</span>}
       {leadToast.room&&<span>🚪 {leadToast.room}</span>}
     </div>
-    <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#4a7c59",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>Review Application →</button>
+    <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>Review Application →</button>
     <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#666",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
   </div>}
 
