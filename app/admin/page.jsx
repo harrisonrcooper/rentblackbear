@@ -2902,30 +2902,36 @@ export default function Page(){
         const stBadge={paid:"b-green",unpaid:"b-blue",pastdue:"b-red",partial:"b-gold",waived:"b-gray",voided:"b-gray"};
 
         return(<>
-        {/* Header row */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
-          <div style={{display:"flex",gap:0,borderRadius:8,overflow:"hidden",border:"1px solid rgba(0,0,0,.08)"}}>
-            {[["overview","Overview"],["charges","Charges"],["deposits","Deposits"]].map(([k,l])=>(
-              <button key={k} className={`pay-tab${paySubTab===k?" active":""}`} onClick={()=>{setPaySubTab(k);setExpCharge(null);}}>{l}</button>
+        {/* Header row — actions */}
+        <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
+          <div style={{display:"flex",gap:3}}>
+            {[["mtd","MTD"],["ytd","YTD"],["next","Next Mo"],["all","All"]].map(([k,l])=>(
+              <button key={k} className={`btn ${payPeriod===k?"btn-dk":"btn-out"} btn-sm`} style={{fontSize:10}} onClick={()=>setPayPeriod(k)}>{l}</button>
             ))}
           </div>
-          <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-            <div style={{display:"flex",gap:3,marginRight:4}}>
-              {[["mtd","MTD"],["ytd","YTD"],["next","Next Mo"],["all","All"]].map(([k,l])=>(
-                <button key={k} className={`btn ${payPeriod===k?"btn-dk":"btn-out"} btn-sm`} style={{fontSize:10}} onClick={()=>setPayPeriod(k)}>{l}</button>
-              ))}
-            </div>
-            <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
-            <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
-            <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"returnSD",roomId:"",deductions:[],returnAmount:0})}>Return SD</button>
-            <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff",marginLeft:4}}>
-              <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Past-due badge</span>
-              <div onClick={()=>{const u={...settings,showPayBadge:settings.showPayBadge===false};setSettings(u);save("hq-settings",u);}}
-                style={{width:32,height:18,borderRadius:9,background:settings.showPayBadge!==false?"#4a7c59":"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
-                <div style={{position:"absolute",top:2,left:settings.showPayBadge!==false?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
-              </div>
+          <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
+          <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
+          <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"returnSD",roomId:"",deductions:[],returnAmount:0})}>Return SD</button>
+          <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff"}}>
+            <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Past-due badge</span>
+            <div onClick={()=>{const u={...settings,showPayBadge:settings.showPayBadge===false};setSettings(u);save("hq-settings",u);}}
+              style={{width:32,height:18,borderRadius:9,background:settings.showPayBadge!==false?"#4a7c59":"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+              <div style={{position:"absolute",top:2,left:settings.showPayBadge!==false?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
             </div>
           </div>
+        </div>
+
+        {/* Sub-tabs — matches accounting tab style */}
+        <div style={{display:"flex",gap:0,marginBottom:16,position:"relative"}}>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:"rgba(0,0,0,.08)",zIndex:0}}/>
+          {[["overview","Overview"],["charges","Charges"],["deposits","Deposits"]].map(([k,l])=>(
+            <button key={k} onClick={()=>{setPaySubTab(k);setExpCharge(null);}}
+              onMouseEnter={e=>{if(paySubTab!==k){e.currentTarget.style.background="rgba(255,255,255,.6)";e.currentTarget.style.color="#3c3228";}}}
+              onMouseLeave={e=>{if(paySubTab!==k){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#6b5e52";}}}
+              style={{padding:"10px 22px",fontSize:13,fontWeight:paySubTab===k?700:500,color:paySubTab===k?"#3c3228":"#6b5e52",background:paySubTab===k?"#fff":"transparent",border:paySubTab===k?"1px solid rgba(0,0,0,.08)":"1px solid transparent",borderBottom:paySubTab===k?"2px solid #fff":"2px solid transparent",borderRadius:"10px 10px 0 0",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap",position:"relative",zIndex:paySubTab===k?3:1}}>
+              {l}
+            </button>
+          ))}
         </div>
 
         {/* ── Overview ── */}
