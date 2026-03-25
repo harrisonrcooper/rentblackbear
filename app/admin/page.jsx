@@ -3623,6 +3623,8 @@ export default function Page(){
             })}
           </select>
           {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
+          <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
+          <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy Apply Link</button>
         </div>
 
         {/* Bulk invite bar */}
@@ -3683,7 +3685,21 @@ export default function Page(){
               :activeApps.filter(function(a){return a.status===stage;});
             return(
             <div key={stage} className="pipe-col">
-              <div className="pipe-hd"><h4 style={{fontSize:10}}>{SL[stage]}</h4><span className="pipe-cnt">{sa.length}</span></div>
+              <div className="pipe-hd">
+              <h4 style={{fontSize:10,display:"flex",alignItems:"center",gap:5}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:.55,flexShrink:0}}>
+                  {stage==="pre-screened"&&<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>}
+                  {stage==="called"&&<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.16 12a19.79 19.79 0 0 1-3-8.57A2 2 0 0 1 3.13 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/></>}
+                  {stage==="invited"&&<><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>}
+                  {stage==="applied"&&<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></>}
+                  {stage==="reviewing"&&<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>}
+                  {stage==="lease-sent"&&<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></>}
+                  {stage==="onboarding"&&<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>}
+                </svg>
+                {SL[stage]}
+              </h4>
+              <span className="pipe-cnt">{sa.length}</span>
+            </div>
               <div className="pipe-bd">
                 {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){
                   var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=["pre-screened","called"].includes(a.status);
@@ -3771,13 +3787,17 @@ export default function Page(){
         </div>}
 
         {/* List */}
-        {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th></tr></thead><tbody>
+        {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody>
           {activeApps.sort((a,b)=>getScore(b)-getScore(a)).map(a=>{const sc=getScore(a);const d=daysSince(a.lastContact||a.submitted);return(
             <tr key={a.id} style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}><td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
               <td><span style={{fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a"}}>{sc}</span></td>
               <td><span className={`badge ${SC2[a.status]}`}>{SL[a.status]}</span></td>
               <td style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:600}}>{d}d</td>
-              <td style={{fontSize:10}}>{a.source||"—"}</td></tr>);})}
+              <td style={{fontSize:10}}>{a.source||"—"}</td>
+              <td onClick={e=>e.stopPropagation()}>
+                {["pre-screened","called"].includes(a.status)&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite</button>}
+                {a.status==="invited"&&<span style={{fontSize:9,color:"#3b82f6",fontWeight:600}}>Awaiting reply</span>}
+              </td></tr>);})}
         </tbody></table></div></div>}
 
         {/* Denied — collapsible */}
@@ -3788,45 +3808,6 @@ export default function Page(){
           {expanded.showDenied&&deniedApps.map(a=><div key={a.id} className="row" style={{opacity:.7}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · {fmtD(a.deniedDate)}{a.deniedReason?" · "+a.deniedReason:""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button><button className="btn btn-out btn-sm" onClick={()=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:x.prevStage||"pre-screened",deniedReason:null,deniedDate:null}:x))}>Restore</button></div>)}
         </div>}
 
-        {/* ── Quick Add / Generic Link ── */}
-        <div style={{marginTop:16,display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          {/* Card 1: Add Lead Manually */}
-          <div style={{border:"1px solid rgba(0,0,0,.06)",borderRadius:12,padding:16,background:"#fff"}}>
-            <div style={{fontSize:13,fontWeight:800,marginBottom:4}}>Add Lead Manually</div>
-            <div style={{fontSize:11,color:"#999",marginBottom:12}}>Someone called you directly — no pre-screen. Enter their info and add them to the pipeline, then invite them to apply.</div>
-            <button className="btn btn-gold" style={{width:"100%"}} onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
-          </div>
-          {/* Card 2: Generic Application Link */}
-          <div style={{border:"1px solid rgba(0,0,0,.06)",borderRadius:12,padding:16,background:"#fff"}}>
-            <div style={{fontSize:13,fontWeight:800,marginBottom:4}}>Generic Application Link</div>
-            <div style={{fontSize:11,color:"#999",marginBottom:10}}>Share this link anywhere — they'll enter their own info, pass the pre-screen questions, then go straight into the full application.</div>
-            <div style={{display:"flex",gap:6,marginBottom:8}}>
-              <div style={{flex:1,padding:"8px 10px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:10,color:"#999",fontFamily:"monospace",background:"#faf9f7",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {(settings.siteUrl||"https://rentblackbear.com")}/apply
-              </div>
-              <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
-            </div>
-            {expanded.genericNote
-              ?<div style={{marginBottom:8}}>
-                <textarea value={expanded.genericNoteText||""} onChange={e=>setExpanded(p=>({...p,genericNoteText:e.target.value}))} placeholder="Add an optional note to your message..." rows={2} style={{width:"100%",padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"none"}}/>
-              </div>
-              :<button className="btn btn-out btn-sm" style={{width:"100%",marginBottom:8,fontSize:10}} onClick={()=>setExpanded(p=>({...p,genericNote:true,genericNoteText:""}))}>+ Add optional note to message</button>}
-            <div style={{display:"flex",gap:6}}>
-              {(()=>{
-                const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply`;
-                const note=expanded.genericNoteText?(` ${expanded.genericNoteText}`):"";
-                const smsBody=encodeURIComponent(`Hey! Black Bear Rentals has a room available in Huntsville. Apply here:${note}\n${link}`);
-                const emailSubject=encodeURIComponent("Apply for a Room at Black Bear Rentals");
-                const emailBody=encodeURIComponent(`Hi,\n\nWe'd love to have you apply for a room at Black Bear Rentals in Huntsville, AL.\n${note?`\n${expanded.genericNoteText}\n`:""}\nApply here: ${link}\n\nTakes about 10–15 minutes. Let me know if you have any questions!\n\nHarrison\nBlack Bear Rentals`);
-                return(<>
-                  <a href={`sms:?&body=${smsBody}`} className="btn btn-dk btn-sm" style={{flex:1,textDecoration:"none",justifyContent:"center"}}>💬 Text</a>
-                  <a href={`mailto:?subject=${emailSubject}&body=${emailBody}`} className="btn btn-out btn-sm" style={{flex:1,textDecoration:"none",justifyContent:"center"}}>✉️ Email</a>
-                </>);
-              })()}
-            </div>
-            <div style={{fontSize:10,color:"#4a7c59",marginTop:8}}>✓ Applicant fills out name, DOB, contact info + pre-screen before the full app</div>
-          </div>
-        </div>
 
         {/* ── Waitlist ── */}
         {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status));
@@ -3837,19 +3818,6 @@ export default function Page(){
               {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
             </div>);
           return null;})()}
-
-        {/* ── Lead Source Analytics ── */}
-        <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,sourceAnalytics:!p.sourceAnalytics}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.sourceAnalytics?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📊 Lead Source Analytics</div><div style={{fontSize:9,color:"#999"}}>Which channels are converting</div></div></div>
-          </div>
-          {expanded.sourceAnalytics&&<div style={{padding:0}}>
-            <table className="tbl"><thead><tr><th>Source</th><th>Leads</th><th>In Pipeline</th><th>Approved</th><th>Denied</th><th>Conv %</th></tr></thead><tbody>
-            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const sa=apps.filter(a=>(a.source||"Unknown")===src);const inPipe=sa.filter(a=>a.status!=="denied"&&a.status!=="approved"&&a.status!=="move-in").length;const approved=sa.filter(a=>a.status==="approved"||a.status==="move-in"||a.status==="onboarding").length;const denied=sa.filter(a=>a.status==="denied").length;const rate=sa.length?Math.round(approved/sa.length*100):0;return(
-              <tr key={src}><td style={{fontWeight:600}}>{src}</td><td>{sa.length}</td><td>{inPipe}</td><td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td><td style={{color:denied?"#c45c4a":"#999"}}>{denied}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>);})}
-            </tbody></table>
-          </div>}
-        </div>
 
         {/* ── Waitlist ── */}
         {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);
@@ -3864,6 +3832,25 @@ export default function Page(){
             </div>)}
           </div>:null;
         })()}
+
+      </>);})()}
+
+      {/* ═══ CONFIGURATION ═══ */}
+      {tab==="configuration"&&<>
+        <div className="sec-hd"><div><h2>Configuration</h2><p>Pre-screen questions, application form, and lead analytics</p></div></div>
+
+        {/* Lead Source Analytics */}
+        <div style={{marginBottom:12,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,sourceAnalytics:!p.sourceAnalytics}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.sourceAnalytics?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Lead Source Analytics</div><div style={{fontSize:9,color:"#999"}}>Which channels are converting</div></div></div>
+          </div>
+          {expanded.sourceAnalytics&&<div style={{padding:0}}>
+            <table className="tbl"><thead><tr><th>Source</th><th>Leads</th><th>In Pipeline</th><th>Approved</th><th>Denied</th><th>Conv %</th></tr></thead><tbody>
+            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const sa=apps.filter(a=>(a.source||"Unknown")===src);const inPipe=sa.filter(a=>a.status!=="denied"&&a.status!=="approved"&&a.status!=="move-in").length;const approved=sa.filter(a=>["approved","move-in","onboarding"].includes(a.status)).length;const denied=sa.filter(a=>a.status==="denied").length;const rate=sa.length?Math.round(approved/sa.length*100):0;return(
+              <tr key={src}><td style={{fontWeight:600}}>{src}</td><td>{sa.length}</td><td>{inPipe}</td><td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td><td style={{color:denied?"#c45c4a":"#999"}}>{denied}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>);})}
+            </tbody></table>
+          </div>}
+        </div>
 
         {/* ── Screening Questions Editor ── */}
         <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
@@ -4242,7 +4229,8 @@ export default function Page(){
             </div>);
           })()}
         </div>}
-      </>);})()}
+      </>}
+
       {tab==="maintenance"&&<>
         <div className="sec-hd"><div><h2>Maintenance Requests</h2><p>{m.openMaint} open</p></div>
           <button className="btn btn-gold" onClick={()=>setMaint(p=>[{id:uid(),roomId:"",propId:"",tenant:"",title:"New Request",desc:"",status:"open",priority:"medium",created:TODAY.toISOString().split("T")[0],photos:0},...p])}>+ New Request</button></div>
