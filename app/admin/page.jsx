@@ -6555,9 +6555,53 @@ export default function Page(){
         <h2 style={{margin:0}}>{r.tenant.name}</h2>
         <button className="btn btn-gold btn-sm" onClick={()=>{setModal(null);setTab("tenants");}}>Open Full Profile →</button>
       </div>
-      <div className="tp-card"><h3>📞 Contact</h3><div className="tp-row"><span className="tp-label">Phone</span><strong>{r.tenant.phone}</strong></div><div className="tp-row"><span className="tp-label">Email</span><strong>{r.tenant.email}</strong></div></div>
-      <div className="tp-card"><h3>🏠 Room</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{r.propName}</strong></div><div className="tp-row"><span className="tp-label">Room</span><strong>{r.name}</strong></div><div className="tp-row"><span className="tp-label">Bath</span><strong>{r.pb?"Private":"Shared"}</strong></div><div className="tp-row"><span className="tp-label">Rent</span><strong style={{fontSize:16}}>{fmtS(r.rent)}/mo</strong></div><div className="tp-row"><span className="tp-label">Utilities</span><strong>{r.propUtils==="allIncluded"?"All Included":"Tenant pays (split equally)"}</strong></div><div className="tp-row"><span className="tp-label">Cleaning</span><strong>{r.propClean}</strong></div></div>
-      <div className="tp-card"><h3>📋 Lease</h3><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(r.tenant.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">Lease End</span><strong style={{color:dl&&dl<=30?"#c45c4a":dl&&dl<=90?"#d4a853":"inherit"}}>{fmtD(r.le)}</strong></div>{dl&&<><div className="tp-row"><span className="tp-label">Days Left</span><strong style={{color:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59"}}>{dl} days ({months} mo)</strong></div><div style={{height:6,borderRadius:3,background:"#e5e3df",marginTop:8}}><div style={{height:"100%",borderRadius:3,width:`${Math.min(100,Math.max(0,(1-dl/365)*100))}%`,background:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59"}}/></div></>}
+      <div className="tp-card"><h3>Contact</h3><div className="tp-row"><span className="tp-label">Phone</span><strong>{r.tenant.phone}</strong></div><div className="tp-row"><span className="tp-label">Email</span><strong>{r.tenant.email}</strong></div></div>
+
+      {/* ── Portal Invite ── */}
+      {(()=>{
+        const [inviteState,setInviteState]=useState("idle"); // idle | sending | sent | error
+        const sendInvite=async()=>{
+          setInviteState("sending");
+          try{
+            const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({
+                tenantName:r.tenant.name,tenantEmail:r.tenant.email,
+                propertyName:r.propName,roomName:r.name,
+                rent:r.rent,moveIn:r.tenant.moveIn,
+              })
+            });
+            const d=await res.json();
+            if(d.ok){setInviteState("sent");}
+            else{setInviteState("error");console.error(d.error);}
+          }catch(e){setInviteState("error");console.error(e);}
+        };
+        return(
+        <div className="tp-card" style={{background:inviteState==="sent"?"rgba(74,124,89,.04)":"#fff",borderColor:inviteState==="sent"?"rgba(74,124,89,.2)":"rgba(0,0,0,.03)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <h3 style={{margin:0,marginBottom:3}}>Tenant Portal</h3>
+              <div style={{fontSize:11,color:"#999"}}>
+                {inviteState==="sent"?"Invite sent — tenant will receive an email with a login link."
+                  :inviteState==="error"?"Failed to send — check console and try again."
+                  :"Send the tenant a link to access their portal."}
+              </div>
+            </div>
+            {inviteState==="sent"
+              ?<span style={{fontSize:11,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.1)",padding:"5px 12px",borderRadius:6}}>Sent</span>
+              :<button className="btn btn-gold btn-sm" onClick={sendInvite} disabled={inviteState==="sending"}>
+                {inviteState==="sending"?"Sending...":"Send Portal Invite"}
+              </button>
+            }
+          </div>
+          {inviteState==="sent"&&<div style={{marginTop:10,fontSize:11,color:"#4a7c59"}}>
+            Invite sent to <strong>{r.tenant.email}</strong>. Link expires in 48 hours. You can resend anytime.
+            <button style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#999",marginLeft:8,fontFamily:"inherit"}} onClick={()=>setInviteState("idle")}>Resend</button>
+          </div>}
+        </div>);
+      })()}
+
+      <div className="tp-card"><h3>Room</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{r.propName}</strong></div><div className="tp-row"><span className="tp-label">Room</span><strong>{r.name}</strong></div><div className="tp-row"><span className="tp-label">Bath</span><strong>{r.pb?"Private":"Shared"}</strong></div><div className="tp-row"><span className="tp-label">Rent</span><strong style={{fontSize:16}}>{fmtS(r.rent)}/mo</strong></div><div className="tp-row"><span className="tp-label">Utilities</span><strong>{r.propUtils==="allIncluded"?"All Included":"Tenant pays (split equally)"}</strong></div><div className="tp-row"><span className="tp-label">Cleaning</span><strong>{r.propClean}</strong></div></div>
+      <div className="tp-card"><h3>Lease</h3><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(r.tenant.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">Lease End</span><strong style={{color:dl&&dl<=30?"#c45c4a":dl&&dl<=90?"#d4a853":"inherit"}}>{fmtD(r.le)}</strong></div>{dl&&<><div className="tp-row"><span className="tp-label">Days Left</span><strong style={{color:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59"}}>{dl} days ({months} mo)</strong></div><div style={{height:6,borderRadius:3,background:"#e5e3df",marginTop:8}}><div style={{height:"100%",borderRadius:3,width:`${Math.min(100,Math.max(0,(1-dl/365)*100))}%`,background:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59"}}/></div></>}
         <div className="tp-row"><span className="tp-label">Annual Value</span><strong>{fmtS(r.rent*12)}/yr</strong></div>
       </div>
       <div className="tp-card"><h3>Payment — {MO}</h3><div className="tp-row"><span className="tp-label">Status</span><strong style={{color:pd?"#4a7c59":"#c45c4a"}}>{pd?`Paid ${fmtS(pd)}`:`Unpaid — ${fmtS(r.rent)} due`}</strong></div>{!pd&&<button className="btn btn-green" style={{width:"100%",marginTop:8}} onClick={()=>openPayForm(r.id)}>Record Payment →</button>}</div>
@@ -6602,7 +6646,7 @@ export default function Page(){
         return(
         <div className="tp-card">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,payPattern:isExp?null:r.id}))}>
-            <h3 style={{margin:0}}>💳 Payment Pattern</h3>
+            <h3 style={{margin:0}}>Payment Pattern</h3>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:11,fontWeight:700,color:badgeColor,background:badgeBg,padding:"3px 10px",borderRadius:100}}>{badge}</span>
               <span style={{fontSize:10,color:"#999"}}>{isExp?"▾":"▸"} Details</span>
