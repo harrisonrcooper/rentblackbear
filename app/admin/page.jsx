@@ -2492,38 +2492,125 @@ export default function Page(){
       <div className="cnt">
 
       {/* ═══ DASHBOARD ═══ */}
-      {tab==="dashboard"&&<>
-        <div className="kgrid">
-          <div className={`kpi ${drill==="occ"?"active":""}`} onClick={()=>setDrill(drill==="occ"?null:"occ")}><div className="kl">🏠 Occupancy</div><div className="kv" style={{color:m.occRate>=90?"#4a7c59":"#c45c4a"}}>{m.occRate}%</div><div className="ks">{m.occ}/{m.total} rooms</div></div>
-          <div className={`kpi ${drill==="coll"?"active":""}`} onClick={()=>setDrill(drill==="coll"?null:"coll")}><div className="kl">Collected</div><div className="kv">{fmtS(m.coll)}</div><div className={`ks ${m.collRate>=100?"kg":"kb"}`}>{m.collRate}% of {fmtS(m.due)}</div></div>
-          <div className="kpi" onClick={()=>goTab("maintenance")}><div className="kl">🔧 Open Requests</div><div className="kv" style={{color:m.openMaint?"#d4a853":"#4a7c59"}}>{m.openMaint}</div><div className="ks">maintenance items</div></div>
-          <div className="kpi" onClick={()=>goTab("applications")}><div className="kl">📋 Applications</div><div className="kv">{m.activeApps}</div><div className="ks">in pipeline</div></div>
-          <div className="kpi"><div className="kl">📈 Projected</div><div className="kv">{fmtS(m.proj)}</div><div className="ks">of {fmtS(m.full)} at 100%</div></div>
-          <div className="kpi"><div className="kl">💸 Vacancy Loss</div><div className="kv kb">{fmtS(m.lost)}</div><div className="ks">{m.vacs.length} empty room{m.vacs.length!==1?"s":""}</div></div>
+      {tab==="dashboard"&&(()=>{
+        const daysUntilNextRent=(()=>{const next=new Date(TODAY.getFullYear(),TODAY.getMonth()+1,1);return Math.ceil((next-TODAY)/(1e3*60*60*24));})();
+        const mtdCharges=getChargesForPeriod("mtd");
+        const mtdPastDue=mtdCharges.filter(c=>chargeStatus(c)==="pastdue");
+        const mtdCollected=mtdCharges.reduce((s,c)=>s+c.amountPaid,0);
+        const mtdExpected=mtdCharges.filter(c=>c.category==="Rent").reduce((s,c)=>s+c.amount,0);
+        const clearActivity=()=>{setNotifs([]);save("hq-notifs",[]);};
+        return(<>
+        {/* ── Morning Briefing Header ── */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+          <div>
+            <h2 style={{fontSize:22,fontWeight:800,color:"#1a1714",marginBottom:2}}>{MO}</h2>
+            <div style={{fontSize:12,color:"#999"}}>{daysUntilNextRent} days until next rent cycle</div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
+            <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
+            <button className="btn btn-out btn-sm" onClick={()=>goTab("applications")}>+ Application</button>
+            <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addMaint"})}>+ Maintenance</button>
+          </div>
         </div>
 
-        {/* Drill panels */}
+        {/* ── Top KPI Row ── */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+          <div className="card" style={{margin:0,cursor:"pointer"}} onClick={()=>setDrill(drill==="coll"?null:"coll")}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Collected</div>
+            <div style={{fontSize:22,fontWeight:800,color:"#4a7c59",marginBottom:2}}>{fmtS(mtdCollected)}</div>
+            <div style={{fontSize:10,color:"#999"}}>{mtdExpected>0?Math.round(mtdCollected/mtdExpected*100):0}% of {fmtS(mtdExpected)}</div>
+          </div></div>
+          <div className="card" style={{margin:0,cursor:"pointer",borderColor:mtdPastDue.length?"rgba(196,92,74,.3)":"rgba(0,0,0,.06)"}} onClick={()=>{goTab("payments");setPaySubTab("charges");setPayFilters({...payFilters,status:"pastdue"});}}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Past Due</div>
+            <div style={{fontSize:22,fontWeight:800,color:mtdPastDue.length?"#c45c4a":"#4a7c59",marginBottom:2}}>{mtdPastDue.length?fmtS(mtdPastDue.reduce((s,c)=>s+(c.amount-c.amountPaid),0)):"None"}</div>
+            <div style={{fontSize:10,color:"#999"}}>{mtdPastDue.length} charge{mtdPastDue.length!==1?"s":""} overdue</div>
+          </div></div>
+          <div className="card" style={{margin:0,cursor:"pointer"}} onClick={()=>setDrill(drill==="occ"?null:"occ")}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Occupancy</div>
+            <div style={{fontSize:22,fontWeight:800,color:m.occRate>=90?"#4a7c59":"#c45c4a",marginBottom:2}}>{m.occRate}%</div>
+            <div style={{fontSize:10,color:"#999"}}>{m.occ}/{m.total} rooms · {fmtS(m.lost)}/mo lost</div>
+          </div></div>
+          <div className="card" style={{margin:0,cursor:"pointer"}} onClick={()=>goTab("maintenance")}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Maintenance</div>
+            <div style={{fontSize:22,fontWeight:800,color:m.openMaint?"#d4a853":"#4a7c59",marginBottom:2}}>{m.openMaint}</div>
+            <div style={{fontSize:10,color:"#999"}}>open request{m.openMaint!==1?"s":""}</div>
+          </div></div>
+        </div>
+
+        {/* ── Drill panels ── */}
         {drill==="occ"&&<div className="card" style={{marginBottom:16,animation:"fadeIn .2s"}}><div className="card-bd">
-          <div className="sec-hd"><div><h2>Occupancy: {m.occ}/{m.total} rooms</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
-          {m.vacs.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.name}</div><div className="row-s">{r.propName} · {r.pb?"Private":"Shared"} bath</div></div><div className="row-v kb">{fmtS(r.rent)}<div style={{fontSize:9,color:"#999"}}>lost/mo</div></div></div>)}
-          {m.vacs.length===0&&<div style={{textAlign:"center",padding:20,color:"#4a7c59",fontWeight:700}}>🎉 Fully occupied!</div>}
+          <div className="sec-hd"><div><h2>Occupancy — {m.occ}/{m.total} rooms</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>Close</button></div>
+          {m.vacs.length===0&&<div style={{padding:20,textAlign:"center",color:"#4a7c59",fontWeight:700,fontSize:13}}>Fully occupied</div>}
+          {m.vacs.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.name}</div><div className="row-s">{r.propName} · {r.pb?"Private":"Shared"} bath</div></div><div className="row-v kb">{fmtS(r.rent)}<div style={{fontSize:9,color:"#999"}}>lost/mo</div></div><button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("applications")}>Find Tenant</button></div>)}
         </div></div>}
         {drill==="coll"&&<div className="card" style={{marginBottom:16,animation:"fadeIn .2s"}}><div className="card-bd">
-          <div className="sec-hd"><div><h2>Collection: {fmtS(m.coll)} / {fmtS(m.due)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
-          {m.unpaid.length>0&&<><div style={{fontSize:10,fontWeight:700,color:"#c45c4a",marginBottom:8}}>UNPAID ({m.unpaid.length})</div>
-            {m.unpaid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Mark Paid</button></div>)}</>}
-          {m.paid.length>0&&<><div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginTop:12,marginBottom:8}}>PAID ({m.paid.length})</div>
-            {m.paid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
+          <div className="sec-hd"><div><h2>Collection — {fmtS(m.coll)} / {fmtS(m.due)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>Close</button></div>
+          {m.unpaid.length>0&&<><div style={{fontSize:10,fontWeight:700,color:"#c45c4a",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Unpaid ({m.unpaid.length})</div>
+            {m.unpaid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.tenant&&r.tenant.name}</div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Record Payment</button></div>)}</>}
+          {m.paid.length>0&&<><div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginTop:12,marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Paid ({m.paid.length})</div>
+            {m.paid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{r.tenant&&r.tenant.name}</div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
         </div></div>}
 
-        {/* Expiring leases */}
-        {m.expiring.length>0&&<div className="sec-hd"><div><h2>⚠️ Leases Expiring</h2></div></div>}
-        {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setDrill(r.id);}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · Ends {fmtD(r.le)}</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}
+        {/* ── Two column layout: left = action items, right = activity ── */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,alignItems:"start"}}>
 
-        {/* Recent activity */}
-        <div className="sec-hd" style={{marginTop:16}}><div><h2>Recent Activity</h2></div></div>
-        {notifs.slice(0,5).map(n=><div key={n.id} className="row" style={{opacity:n.read?0.7:1}} onClick={()=>setNotifs(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}><span style={{fontSize:14}}>{n.type==="lease"?"📋":n.type==="payment"?"💰":n.type==="maint"?"🔧":"📝"}</span><div className="row-i"><div className="row-t" style={{fontWeight:n.read?500:700}}>{n.msg}</div><div className="row-s">{n.date}</div></div>{!n.read&&<div className="notif-dot"/>}{n.urgent&&<span className="badge b-red">Urgent</span>}</div>)}
-      </>}
+          {/* LEFT COLUMN */}
+          <div>
+            {/* Past Due Tenants */}
+            {mtdPastDue.length>0&&<div className="card" style={{marginBottom:12}}><div className="card-bd">
+              <div style={{fontSize:10,fontWeight:700,color:"#c45c4a",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Past Due — Action Required</div>
+              {mtdPastDue.map(c=><div key={c.id} className="row" style={{cursor:"pointer"}} onClick={()=>{goTab("payments");setPaySubTab("charges");}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{c.tenantName}</div><div className="row-s">{c.propName} · {c.roomName} · Due {fmtD(c.dueDate)}</div></div><div className="row-v kb">{fmtS(c.amount-c.amountPaid)}</div></div>)}
+            </div></div>}
+
+            {/* Lease Expirations */}
+            {m.expiring.length>0&&<div className="card" style={{marginBottom:12}}><div className="card-bd">
+              <div style={{fontSize:10,fontWeight:700,color:"#1a1714",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Lease Expirations</div>
+              {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>goTab("tenants")}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{r.tenant&&r.tenant.name}</div><div className="row-s">{r.propName} · {r.name} · Ends {fmtD(r.le)}</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422",flexShrink:0}}>{r.daysLeft}d</span></div>)}
+            </div></div>}
+
+            {/* Vacant Rooms */}
+            {m.vacs.length>0&&<div className="card" style={{marginBottom:12}}><div className="card-bd">
+              <div style={{fontSize:10,fontWeight:700,color:"#1a1714",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Vacant Rooms — {fmtS(m.lost)}/mo lost</div>
+              {m.vacs.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.name}</div><div className="row-s">{r.propName} · {r.pb?"Private":"Shared"} bath · {fmtS(r.rent)}/mo</div></div><button className="btn btn-out btn-sm" style={{fontSize:9,flexShrink:0}} onClick={()=>goTab("applications")}>Find Tenant</button></div>)}
+            </div></div>}
+
+            {/* Open Maintenance */}
+            {m.openMaint>0&&<div className="card" style={{marginBottom:12}}><div className="card-bd">
+              <div style={{fontSize:10,fontWeight:700,color:"#1a1714",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Open Maintenance ({m.openMaint})</div>
+              {maint.filter(x=>x.status!=="resolved").slice(0,5).map(x=><div key={x.id} className="row" style={{cursor:"pointer"}} onClick={()=>goTab("maintenance")}><div className="row-dot" style={{background:x.priority==="high"?"#c45c4a":x.priority==="medium"?"#d4a853":"#999"}}/><div className="row-i"><div className="row-t">{x.title}</div><div className="row-s">{x.propName||""}{x.roomName?" · "+x.roomName:""} · {x.created}</div></div></div>)}
+              {m.openMaint>5&&<div style={{fontSize:10,color:"#999",paddingTop:8,textAlign:"center",cursor:"pointer"}} onClick={()=>goTab("maintenance")}>+{m.openMaint-5} more — view all</div>}
+            </div></div>}
+
+            {/* All clear */}
+            {mtdPastDue.length===0&&m.expiring.length===0&&m.vacs.length===0&&m.openMaint===0&&<div className="card" style={{marginBottom:12}}><div className="card-bd" style={{textAlign:"center",padding:24}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#4a7c59",marginBottom:4}}>All clear</div>
+              <div style={{fontSize:11,color:"#999"}}>No past due charges, expiring leases, vacancies, or open maintenance.</div>
+            </div></div>}
+          </div>
+
+          {/* RIGHT COLUMN — Recent Activity */}
+          <div className="card"><div className="card-bd">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#1a1714",textTransform:"uppercase",letterSpacing:.8}}>Recent Activity</div>
+              {notifs.length>0&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={clearActivity}>Clear All</button>}
+            </div>
+            {notifs.length===0&&<div style={{textAlign:"center",padding:24,color:"#999",fontSize:12}}>No recent activity</div>}
+            {notifs.slice(0,12).map(n=>(
+              <div key={n.id} className="row" style={{opacity:n.read?.7:1,cursor:"pointer",padding:"8px 0"}} onClick={()=>setNotifs(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}>
+                <div className="row-dot" style={{background:n.type==="payment"?"#4a7c59":n.type==="lease"?"#3b82f6":n.type==="maint"?"#d4a853":"#999",flexShrink:0}}/>
+                <div className="row-i">
+                  <div className="row-t" style={{fontWeight:n.read?500:700,fontSize:11}}>{n.msg}</div>
+                  <div className="row-s">{n.date}</div>
+                </div>
+                {!n.read&&<div className="notif-dot"/>}
+                {n.urgent&&<span className="badge b-red" style={{flexShrink:0}}>Urgent</span>}
+              </div>
+            ))}
+            {notifs.length>12&&<div style={{fontSize:10,color:"#999",textAlign:"center",paddingTop:8}}>{notifs.length-12} more items</div>}
+          </div></div>
+        </div>
+      </>);})()} 
 
       {/* ═══ TENANTS ═══ */}
       {tab==="tenants"&&<>
