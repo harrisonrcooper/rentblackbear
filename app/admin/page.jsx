@@ -1803,7 +1803,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
 
 // ─── Styles ─────────────────────────────────────────────────────────
 const S=`
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#f4f3f0;color:#1a1714}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#f4f3f0;color:#1a1714;font-size:var(--fs,13px)}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
@@ -2438,7 +2438,7 @@ export default function Page(){
     return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
   }));
 
-  return(<><style>{S}</style><div className="app">
+  const fsSizes={"small":"11px","medium":"13px","large":"15px","xl":"17px"};const fsVal=fsSizes[settings.adminFontSize||"medium"]||"13px";return(<><style>{S}</style><div className="app" style={{"--fs":fsVal}}>
     {/* Mobile header */}
     <div className="mob-header"><div style={{display:"flex",alignItems:"center",gap:8}}><div className="s-logo" style={{fontSize:16}}>🐻 BB <span>HQ</span></div><span style={{fontSize:11,color:"#c4a882"}}>· {(tabs.find(t=>t.id===tab)||{}).l}</span></div><button className="mob-toggle" onClick={()=>setSideOpen(!sideOpen)}>{sideOpen?"✕":"☰"}</button></div>
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
@@ -5794,23 +5794,17 @@ export default function Page(){
                   </div>}
                   {uIsWhole?(
                     <div className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default"}}>
-                      <div className="row-dot" style={{background:uOcc?"#4a7c59":u.ownerOccupied?"#3b82f6":"#c45c4a",flexShrink:0}}/>
+                      <div className="row-dot" style={{background:uOcc?"#4a7c59":"#c45c4a",flexShrink:0}}/>
                       <div className="row-i">
                         <div style={{fontSize:12,fontWeight:600}}>{u.name} — Whole Unit</div>
                         {uOcc
                           ?<div style={{fontSize:10,color:"#999",marginTop:1}}>Occupied · ends {fmtD(uLatestLe)}</div>
-                          :u.ownerOccupied
-                            ?<div style={{fontSize:10,color:"#1d4ed8",fontWeight:600,marginTop:1}}>Owner Occupied</div>
-                            :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(u.rent)}/mo</div>}
+                          :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(u.rent)}/mo</div>}
                       </div>
                       <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
-                        {!u.ownerOccupied&&<div style={{fontSize:14,fontWeight:800}}>{fmtS(u.rent)}</div>}
+                        <div style={{fontSize:14,fontWeight:800}}>{fmtS(u.rent)}</div>
                       </div>
-                      {uOcc
-                        ?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}}>View Tenant</button>
-                        :u.ownerOccupied
-                          ?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#1d4ed8",borderColor:"rgba(59,130,246,.25)",background:"rgba(59,130,246,.04)"}} onClick={()=>{setIsNewProp(false);setEditProp(p);}}>Owner — Edit in Settings</button>
-                          :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([])}}>+ Find Tenant</button>}
+                      <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{if(uOcc){const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}else if(!u.ownerOccupied){setTab("applications");setBulkSel([])}}}>{uOcc?"👤 View Tenant":u.ownerOccupied?"🏠 Owner":"+ Find Tenant"}</button>
                     </div>
                   ):(
                     <>
@@ -5839,7 +5833,7 @@ export default function Page(){
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData})}>👤 Profile</button>
                             <button className="btn btn-gold btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData,startSection:"lease"})}>📄 Lease</button>
                           </div>
-                          :r.ownerOccupied?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#1d4ed8",borderColor:"rgba(59,130,246,.25)",background:"rgba(59,130,246,.04)"}} onClick={()=>{setIsNewProp(false);setEditProp(p);}}>Owner — Edit in Settings</button>
+                          :r.ownerOccupied?<span style={{fontSize:9,color:"#1d4ed8",fontWeight:600,padding:"4px 8px",background:"rgba(59,130,246,.06)",borderRadius:4}}>Owner</span>
                           :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}> + Find Tenant</button>}
                       </div>);})}
                     </>
@@ -5854,6 +5848,23 @@ export default function Page(){
       {/* ═══ SITE SETTINGS ═══ */}
       {tab==="site-settings"&&<>
         <div className="sec-hd"><div><h2>Site Settings</h2><p>Edit company info and hero copy</p></div></div>
+        <div className="card" style={{marginBottom:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Display</h3>
+          <p style={{fontSize:11,color:"#999",marginBottom:14}}>Adjust the admin font size. Changes apply instantly and are saved to your settings.</p>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {[["small","Small"],["medium","Medium"],["large","Large"],["xl","X-Large"]].map(([k,lb])=>(
+              <button key={k} onClick={()=>{const u={...settings,adminFontSize:k};setSettings(u);save("hq-settings",u);}}
+                style={{padding:"8px 20px",borderRadius:8,border:"1px solid",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s",
+                  borderColor:(settings.adminFontSize||"medium")===k?"#d4a853":"rgba(0,0,0,.08)",
+                  background:(settings.adminFontSize||"medium")===k?"rgba(212,168,83,.1)":"#fff",
+                  color:(settings.adminFontSize||"medium")===k?"#9a7422":"#5c4a3a",
+                  fontSize:k==="small"?"11px":k==="medium"?"13px":k==="large"?"15px":"17px"}}>
+                {lb}
+              </button>
+            ))}
+          </div>
+          <div style={{marginTop:10,fontSize:10,color:"#999"}}>Current: <strong style={{color:"#1a1714"}}>{({"small":"Small (11px)","medium":"Medium (13px)","large":"Large (15px)","xl":"X-Large (17px)"})[settings.adminFontSize||"medium"]}</strong> -- changes save instantly</div>
+        </div></div>
         <div className="card"><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Company Info</h3>
           <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
