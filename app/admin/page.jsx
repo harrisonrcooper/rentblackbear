@@ -331,7 +331,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
@@ -358,20 +358,6 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
 };
 const DEF_THEME={bg:"#1a1714",card:"#2c2520",accent:"#d4a853",text:"#f5f0e8",muted:"#c4a882",surface:"#fefdfb",surfaceAlt:"#f5f0e8",green:"#4a7c59",dark:"#1a1714",warm:"#5c4a3a"};
 const THEME_LABELS={bg:"Background",card:"Card",accent:"Accent",text:"Light Text",muted:"Muted",surface:"Surface",surfaceAlt:"Alt Surface",green:"Green",dark:"Dark",warm:"Warm"};
-const ADMIN_PRESETS=[
-  {id:"forest",name:"Forest Green",accent:"#4a7c59",accentRgb:"74,124,89",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
-  {id:"slate",name:"Slate Blue",accent:"#3b6ea5",accentRgb:"59,110,165",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
-  {id:"terracotta",name:"Terracotta",accent:"#b85c38",accentRgb:"184,92,56",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
-  {id:"teal",name:"Deep Teal",accent:"#2a7d7b",accentRgb:"42,125,123",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
-  {id:"charcoal",name:"Charcoal",accent:"#2c3e50",accentRgb:"44,62,80",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
-];
-const ADMIN_FONTS=[
-  {name:"Plus Jakarta Sans",stack:"'Plus Jakarta Sans',system-ui,sans-serif"},
-  {name:"Inter",stack:"'Inter',system-ui,sans-serif"},
-  {name:"DM Sans",stack:"'DM Sans',system-ui,sans-serif"},
-  {name:"IBM Plex Sans",stack:"'IBM Plex Sans',monospace"},
-  {name:"Georgia",stack:"Georgia,serif"},
-];
 const PRESETS={"Warm Lodge":DEF_THEME,"Midnight":{bg:"#0f1729",card:"#1a2540",accent:"#3b82f6",text:"#e8ecf4",muted:"#8899b8",surface:"#fafbfe",surfaceAlt:"#eef2f9",green:"#22c55e",dark:"#0f1729",warm:"#64748b"},"Forest":{bg:"#1a2e1a",card:"#243524",accent:"#7cb342",text:"#e8f0e4",muted:"#a3b89a",surface:"#fafcf8",surfaceAlt:"#eef3ea",green:"#7cb342",dark:"#1a2e1a",warm:"#5a6b52"}};
 function contrast(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return(r*.299+g*.587+b*.114)>150?"#1a1714":"#f5f0e8";}
 
@@ -2126,7 +2112,7 @@ export default function Page(){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS_BY_CAT)]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),load("hq-lease-template",null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS_BY_CAT),load("hq-dismissed-followups",[])]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
@@ -2169,7 +2155,7 @@ export default function Page(){
         if(!found)console.warn("⚠ Could not geocode:",prop.name,prop.addr);
       }
     }
-    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setLoaded(true);
+    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,vendors,improvements,subcats,loaded]);
@@ -2452,9 +2438,7 @@ export default function Page(){
     return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
   }));
 
-  const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-green{background:${acc}!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
-  const _acc=settings.adminAccent||"#4a7c59";const _rgb=settings.adminAccentRgb||"74,124,89";const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";const _zoom=settings.adminZoom||1;
-  return(<><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app" style={{zoom:_zoom,fontFamily:_font}}>
+  return(<><style>{S}</style><div className="app">
     {/* Mobile header */}
     <div className="mob-header"><div style={{display:"flex",alignItems:"center",gap:8}}><div className="s-logo" style={{fontSize:16}}>🐻 BB <span>HQ</span></div><span style={{fontSize:11,color:"#c4a882"}}>· {(tabs.find(t=>t.id===tab)||{}).l}</span></div><button className="mob-toggle" onClick={()=>setSideOpen(!sideOpen)}>{sideOpen?"✕":"☰"}</button></div>
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
@@ -3323,22 +3307,23 @@ export default function Page(){
         return(<>
         {/* Follow-up alerts */}
         {(()=>{const visible=staleApps.filter(a=>!dismissedFollowUps.includes(a.id));if(staleApps.length===0)return null;
-          const allDismissed=visible.length===0;
-          return(<div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:visible.length&&expanded.followUp!==false?6:0}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#9a7422"}}>🔔 Follow Up ({visible.length})</div>
+          if(visible.length===0)return null;
+          const dismissOne=(id)=>{const next=[...dismissedFollowUps,id];setDismissedFollowUps(next);save("hq-dismissed-followups",next);};
+          const dismissAll=()=>{const next=[...dismissedFollowUps,...visible.map(a=>a.id)];setDismissedFollowUps(next);save("hq-dismissed-followups",next);};
+          return(<div style={{background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:12,marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:expanded.followUp!==false?6:0}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>Follow Up ({visible.length})</div>
               <div style={{display:"flex",gap:5,alignItems:"center"}}>
-                {!allDismissed&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setExpanded(p=>({...p,followUp:p.followUp===false?true:false}))}>{expanded.followUp===false?"Show ▾":"Minimize ▴"}</button>}
-                {!allDismissed&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setDismissedFollowUps(p=>[...p,...visible.map(a=>a.id)])}>Dismiss All</button>}
-                {allDismissed&&<span style={{fontSize:10,color:"#c4a882"}}>All cleared · <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#d4a853",fontFamily:"inherit",padding:0}} onClick={()=>setDismissedFollowUps([])}>Restore</button></span>}
+                <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setExpanded(p=>({...p,followUp:p.followUp===false?true:false}))}>{expanded.followUp===false?"Show":"Minimize"}</button>
+                <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={dismissAll}>Dismiss All</button>
               </div>
             </div>
-            {expanded.followUp!==false&&!allDismissed&&visible.map(a=>(
-              <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.03)"}}>
-                <span><strong>{a.name}</strong> — {SL[a.status]} · <span style={{color:daysSince(a.lastContact||a.submitted)>=5?"#c45c4a":"#d4a853",fontWeight:700}}>{daysSince(a.lastContact||a.submitted)}d</span></span>
+            {expanded.followUp!==false&&visible.map(a=>(
+              <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.05)"}}>
+                <span><strong>{a.name}</strong> — {SL[a.status]} · <span style={{color:daysSince(a.lastContact||a.submitted)>=5?"#c45c4a":"#5c4a3a",fontWeight:700}}>{daysSince(a.lastContact||a.submitted)}d</span></span>
                 <div style={{display:"flex",gap:4}}>
                   <button className="btn btn-out btn-sm" style={{fontSize:8}} onClick={()=>setModal({type:"app",data:a})}>Open</button>
-                  <button className="btn btn-out btn-sm" style={{fontSize:8,color:"#bbb",padding:"4px 7px"}} title="Dismiss" onClick={()=>setDismissedFollowUps(p=>[...p,a.id])}>✕</button>
+                  <button className="btn btn-out btn-sm" style={{fontSize:8,color:"#c45c4a",padding:"4px 7px",borderColor:"rgba(196,92,74,.2)"}} title="Permanently dismiss" onClick={()=>dismissOne(a.id)}>x</button>
                 </div>
               </div>
             ))}
@@ -5991,206 +5976,83 @@ export default function Page(){
         </div></div>
       </>}
       {tab==="theme"&&(()=>{
-        const tSubTab=expanded.themeSubTab||"admin";
-        const setTSubTab=v=>setExpanded(p=>({...p,themeSubTab:v}));
-        // ── admin preset helpers ────────────────────────────────────────
-        const applyAdminPreset=(p)=>{
-          const u={...settings,adminPresetId:p.id,adminAccent:p.accent,adminAccentRgb:p.accentRgb,adminFont:p.font};
-          setSettings(u);save("hq-settings",u);
-        };
-        const applyAdminFont=(f)=>{
-          const u={...settings,adminFont:f.stack};
-          setSettings(u);save("hq-settings",u);
-        };
-        const applyAdminZoom=(z)=>{
-          const u={...settings,adminZoom:z};
-          setSettings(u);save("hq-settings",u);
-        };
-        const applyAdminAccent=(hex)=>{
-          const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
-          const rgb=r+","+g+","+b;
-          const u={...settings,adminAccent:hex,adminAccentRgb:rgb,adminPresetId:"custom"};
-          setSettings(u);save("hq-settings",u);
-        };
-        // ── public site helpers ─────────────────────────────────────────
         const saveCurrentTheme=()=>setModal({type:"saveTheme",themeName:""});
         const applyTheme=(t)=>setTheme({...t});
         const deleteTheme=(id)=>setSavedThemes(p=>p.filter(x=>x.id!==id));
         const pushToSite=()=>{
           save("hq-pub-theme",theme);
-          setNotifs(p=>[{id:uid(),type:"app",msg:"Theme published to live site",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+          setNotifs(p=>[{id:uid(),type:"app",msg:"Theme published to live site — rentblackbear.com now uses the current colors",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
           setExpanded(pr=>({...pr,themePushSuccess:true}));
           setTimeout(()=>setExpanded(pr=>({...pr,themePushSuccess:false})),3500);
         };
         const exportTheme=()=>{const css=Object.entries(theme).map(([k,v])=>`  --${k}: ${v};`).join(", ");const json=JSON.stringify(theme,null,2);const blob=new Blob([`:root {\n${css}\n}\n\n/* JSON */\n${json}`],{type:"text/plain"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="blackbear-theme.css";a.click();URL.revokeObjectURL(url);};
-        const _acc=settings.adminAccent||"#4a7c59";
-        const _zoom=settings.adminZoom||1;
-        const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";
-        const _presetId=settings.adminPresetId||"forest";
         return(<>
-        <div className="sec-hd"><div><h2>Theme Editor</h2><p>Customize how your admin looks and control your public site colors</p></div></div>
-
-        {/* Sub-tabs */}
-        <div style={{display:"flex",gap:0,marginBottom:20,border:"1px solid rgba(0,0,0,.07)",borderRadius:9,overflow:"hidden",width:"fit-content"}}>
-          {[["admin","Admin Interface"],["site","Public Site"]].map(([k,lb])=>(
-            <button key={k} onClick={()=>setTSubTab(k)} style={{padding:"8px 22px",fontSize:12,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",
-              background:tSubTab===k?_acc:"#fff",
-              color:tSubTab===k?"#fff":"#5c4a3a",
-              borderRight:k==="admin"?"1px solid rgba(0,0,0,.07)":"none"}}>
-              {lb}
-            </button>
-          ))}
-        </div>
-
-        {/* ══ ADMIN INTERFACE SUB-TAB ══ */}
-        {tSubTab==="admin"&&<>
-
-          {/* Style presets */}
-          <div className="card" style={{marginBottom:12}}><div className="card-bd">
-            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Style Preset</h3>
-            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Pick a preset to instantly change the admin accent color and font. Changes apply immediately.</p>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
-              {ADMIN_PRESETS.map(p=>{
-                const isActive=_presetId===p.id;
-                return(
-                <div key={p.id} onClick={()=>applyAdminPreset(p)} style={{cursor:"pointer",borderRadius:10,border:"2px solid "+(isActive?p.accent:"rgba(0,0,0,.07)"),overflow:"hidden",transition:"all .15s",boxShadow:isActive?"0 0 0 3px "+p.accent+"22":"none"}}>
-                  {/* Mini preview */}
-                  <div style={{display:"flex",height:72}}>
-                    <div style={{width:28,background:"#1a1714",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:8,gap:5}}>
-                      <div style={{width:14,height:14,borderRadius:3,background:p.accent}}/>
-                      <div style={{width:14,height:3,borderRadius:2,background:"rgba(255,255,255,.2)"}}/>
-                      <div style={{width:14,height:3,borderRadius:2,background:"rgba(255,255,255,.2)"}}/>
-                      <div style={{width:14,height:3,borderRadius:2,background:"rgba(255,255,255,.2)"}}/>
-                    </div>
-                    <div style={{flex:1,background:"#f4f3f0",padding:6,display:"flex",flexDirection:"column",gap:4}}>
-                      <div style={{background:"#fff",borderRadius:4,padding:"3px 5px",fontSize:8,fontWeight:700,color:"#1a1714",fontFamily:p.font}}>Dashboard</div>
-                      <div style={{display:"flex",gap:3}}>
-                        <div style={{background:p.accent,borderRadius:3,padding:"2px 6px",fontSize:7,color:"#fff",fontWeight:700,fontFamily:p.font}}>Button</div>
-                        <div style={{background:p.accent+"22",borderRadius:3,padding:"2px 6px",fontSize:7,color:p.accent,fontWeight:700,fontFamily:p.font}}>Badge</div>
-                      </div>
-                      <div style={{height:3,borderRadius:2,background:p.accent+"33",marginTop:2}}/>
-                    </div>
-                  </div>
-                  <div style={{padding:"7px 10px",background:isActive?p.accent+"10":"#faf9f7",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:11,fontWeight:700,color:isActive?p.accent:"#1a1714"}}>{p.name}</span>
-                    {isActive&&<span style={{fontSize:9,fontWeight:700,color:p.accent}}>Active</span>}
-                  </div>
-                </div>);
-              })}
-            </div>
+        <div className="sec-hd"><div><h2>Theme Editor</h2><p>Edit, save, and push color schemes to your live site</p></div>
+          <div style={{display:"flex",gap:6}}>
+            <button className="btn btn-green" onClick={pushToSite}>🚀 Push to Site</button>
+            <button className="btn btn-gold" onClick={saveCurrentTheme}>💾 Save Theme</button>
+            <button className="btn btn-out" onClick={exportTheme}>📥 Export CSS</button>
+            <button className="btn btn-out" onClick={()=>setTheme(randPalette())}>🎲 Random</button>
           </div></div>
+          {expanded.themePushSuccess&&<div style={{marginBottom:10,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,animation:"fadeIn .3s"}}>✓ Theme is live on rentblackbear.com — public site reads from Supabase on load</div>}
 
-          {/* Accent color override */}
-          <div className="card" style={{marginBottom:12}}><div className="card-bd">
-            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Accent Color Override</h3>
-            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Fine-tune the accent color independently of the preset.</p>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:36,height:36,borderRadius:8,background:_acc,border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}>
-                <input type="color" value={_acc} onChange={e=>applyAdminAccent(e.target.value)} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/>
-              </div>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:_acc}}>{_acc.toUpperCase()}</div>
-                <div style={{fontSize:10,color:"#999",marginTop:2}}>Click swatch to pick a custom color</div>
-              </div>
-              <div style={{marginLeft:"auto",display:"flex",gap:6,flexWrap:"wrap"}}>
-                {["#4a7c59","#3b6ea5","#b85c38","#2a7d7b","#2c3e50","#7c3aed","#b45309"].map(c=>(
-                  <div key={c} onClick={()=>applyAdminAccent(c)} style={{width:22,height:22,borderRadius:"50%",background:c,cursor:"pointer",border:"2px solid "+(_acc===c?"#1a1714":"transparent"),transition:"border .15s"}}/>
-                ))}
-              </div>
-            </div>
-          </div></div>
-
-          {/* Font */}
-          <div className="card" style={{marginBottom:12}}><div className="card-bd">
-            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Font</h3>
-            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Changes the typeface across the entire admin interface.</p>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              {ADMIN_FONTS.map(f=>{
-                const isActive=_font===f.stack;
-                return(
-                <button key={f.name} onClick={()=>applyAdminFont(f)} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid "+(isActive?_acc:"rgba(0,0,0,.08)"),background:isActive?_acc+"12":"#fff",cursor:"pointer",fontFamily:f.stack,fontSize:13,fontWeight:isActive?700:400,color:isActive?_acc:"#1a1714",transition:"all .15s"}}>
-                  {f.name}
-                </button>);
-              })}
-            </div>
-          </div></div>
-
-          {/* Zoom */}
-          <div className="card"><div className="card-bd">
-            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Display Size</h3>
-            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Scales the entire admin interface proportionally.</p>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              {[[0.9,"90% — Compact"],[1,"100% — Default"],[1.15,"115% — Large"],[1.3,"130% — Largest"]].map(([z,lb])=>(
-                <button key={z} onClick={()=>applyAdminZoom(z)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid "+(_zoom===z?_acc:"rgba(0,0,0,.08)"),background:_zoom===z?_acc+"12":"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:_zoom===z?700:400,fontSize:13,color:_zoom===z?_acc:"#1a1714",transition:"all .15s"}}>
-                  {lb}
-                </button>
+        {/* Presets + Saved Themes */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Presets</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+            {Object.entries(PRESETS).map(([n,c])=><button key={n} className="btn btn-out btn-sm" onClick={()=>applyTheme(c)}><span style={{width:10,height:10,borderRadius:"50%",background:c.accent,display:"inline-block"}}/> {n}</button>)}
+          </div>
+          {savedThemes.length>0&&<>
+            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Your Saved Themes</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {savedThemes.map(st=>(
+                <div key={st.id} style={{display:"flex",alignItems:"center",gap:0,border:"1px solid rgba(0,0,0,.06)",borderRadius:6,overflow:"hidden"}}>
+                  <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none"}} onClick={()=>applyTheme(st.colors)}>
+                    <div style={{display:"flex",gap:2}}>{[st.colors.bg,st.colors.accent,st.colors.green,st.colors.text].map((c,i)=><span key={i} style={{width:8,height:8,borderRadius:"50%",background:c,display:"inline-block"}}/>)}</div>
+                    <span style={{marginLeft:4}}>{st.name}</span>
+                  </button>
+                  <button style={{background:"none",border:"none",borderLeft:"1px solid rgba(0,0,0,.06)",padding:"4px 8px",cursor:"pointer",color:"#c45c4a",fontSize:10}} onClick={()=>deleteTheme(st.id)}>✕</button>
+                </div>
               ))}
             </div>
-          </div></div>
-        </>}
+          </>}
+        </div>
 
-        {/* ══ PUBLIC SITE SUB-TAB ══ */}
-        {tSubTab==="site"&&<>
-          <div style={{display:"flex",justifyContent:"flex-end",gap:6,marginBottom:14}}>
-            <button className="btn btn-green" onClick={pushToSite}>Push to Site</button>
-            <button className="btn btn-gold" onClick={saveCurrentTheme}>Save Theme</button>
-            <button className="btn btn-out" onClick={exportTheme}>Export CSS</button>
-            <button className="btn btn-out" onClick={()=>setTheme(randPalette())}>Random Palette</button>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24,alignItems:"start"}}>
+          <div style={{background:"#fff",borderRadius:12,padding:18,border:"1px solid rgba(0,0,0,.03)"}}>
+            <h3 style={{fontSize:13,fontWeight:800,marginBottom:14}}>Colors</h3>
+            {Object.entries(THEME_LABELS).map(([k,label])=>(
+            <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <div style={{width:28,height:28,borderRadius:6,background:theme[k],border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}><input type="color" value={theme[k]} onChange={e=>setTheme({...theme,[k]:e.target.value})} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/></div>
+              <span style={{fontSize:11,fontWeight:600,flex:1}}>{label}</span>
+              <input value={theme[k]} onChange={e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value))setTheme({...theme,[k]:e.target.value});}} style={{width:80,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"monospace"}}/>
+            </div>))}
           </div>
-          {expanded.themePushSuccess&&<div style={{marginBottom:10,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,animation:"fadeIn .3s"}}>Theme is live on rentblackbear.com</div>}
-
-          {/* Presets + Saved */}
-          <div className="card" style={{marginBottom:12}}><div className="card-bd">
-            <h3 style={{fontSize:13,fontWeight:800,marginBottom:10}}>Color Presets</h3>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-              {Object.entries(PRESETS).map(([n,c])=><button key={n} className="btn btn-out btn-sm" onClick={()=>applyTheme(c)}><span style={{width:10,height:10,borderRadius:"50%",background:c.accent,display:"inline-block",marginRight:4}}/>{n}</button>)}
-            </div>
-            {savedThemes.length>0&&<>
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Your Saved Themes</div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {savedThemes.map(st=>(
-                  <div key={st.id} style={{display:"flex",alignItems:"center",border:"1px solid rgba(0,0,0,.06)",borderRadius:6,overflow:"hidden"}}>
-                    <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none"}} onClick={()=>applyTheme(st.colors)}>
-                      <div style={{display:"flex",gap:2,marginRight:4}}>{[st.colors.bg,st.colors.accent,st.colors.green,st.colors.text].map((c,i)=><span key={i} style={{width:8,height:8,borderRadius:"50%",background:c,display:"inline-block"}}/>)}</div>
-                      {st.name}
-                    </button>
-                    <button style={{background:"none",border:"none",borderLeft:"1px solid rgba(0,0,0,.06)",padding:"4px 8px",cursor:"pointer",color:"#c45c4a",fontSize:10}} onClick={()=>deleteTheme(st.id)}>x</button>
-                  </div>
-                ))}
-              </div>
-            </>}
-          </div></div>
-
-          {/* Colors + Preview */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
-            <div className="card"><div className="card-bd">
-              <h3 style={{fontSize:13,fontWeight:800,marginBottom:14}}>Color Tokens</h3>
-              {Object.entries(THEME_LABELS).map(([k,label])=>(
-              <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                <div style={{width:28,height:28,borderRadius:6,background:theme[k],border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}><input type="color" value={theme[k]} onChange={e=>setTheme({...theme,[k]:e.target.value})} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/></div>
-                <span style={{fontSize:11,fontWeight:600,flex:1}}>{label}</span>
-                <input value={theme[k]} onChange={e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value))setTheme({...theme,[k]:e.target.value});}} style={{width:80,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"monospace"}}/>
-              </div>))}
-            </div></div>
-            <div style={{position:"sticky",top:80}}>
-              <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#999",marginBottom:8}}>Live Preview</div>
-              <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(0,0,0,.06)"}}>
-                <div style={{background:theme.bg,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{color:theme.text,fontWeight:700,fontSize:11}}>BB <span style={{color:theme.accent}}>Rentals</span></span><div style={{background:theme.accent,color:contrast(theme.accent),padding:"3px 8px",borderRadius:4,fontSize:8,fontWeight:700}}>Apply</div></div>
-                <div style={{background:theme.surface,padding:10}}>
-                  <div style={{background:"#fff",borderRadius:5,padding:6,border:"1px solid rgba(0,0,0,.04)",marginBottom:4}}>
-                    <div style={{display:"flex",gap:3,marginBottom:3}}><span style={{background:theme.green+"18",color:theme.green,padding:"1px 5px",borderRadius:100,fontSize:6,fontWeight:700}}>Available</span></div>
-                    <div style={{fontFamily:"Georgia,serif",fontSize:10,color:theme.dark}}>The Holmes House</div>
-                    <div style={{fontSize:7,color:theme.warm}}>$600-$850/mo</div>
-                  </div>
+          <div style={{position:"sticky",top:80}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#999",marginBottom:8}}>Live Preview</div>
+            <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(0,0,0,.06)",boxShadow:"0 4px 16px rgba(0,0,0,.06)"}}>
+              <div style={{background:theme.bg,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{color:theme.text,fontWeight:700,fontSize:11}}>🐻 BB <span style={{color:theme.accent}}>Rentals</span></span><div style={{background:theme.accent,color:contrast(theme.accent),padding:"3px 8px",borderRadius:4,fontSize:8,fontWeight:700}}>Apply</div></div>
+              <div style={{background:`linear-gradient(135deg,${theme.bg},${theme.card})`,padding:"18px 12px",textAlign:"center"}}><div style={{fontFamily:"Georgia,serif",fontSize:16,color:theme.text}}>Your Room Is Ready.</div><div style={{fontFamily:"Georgia,serif",fontSize:16,color:theme.accent,fontStyle:"italic"}}>Everything's Included.</div><div style={{fontSize:9,color:theme.muted,marginTop:6}}>Furnished rooms from $600/mo</div></div>
+              <div style={{background:theme.surface,padding:10}}>
+                <div style={{background:"#fff",borderRadius:5,padding:6,border:"1px solid rgba(0,0,0,.04)",marginBottom:4}}>
+                  <div style={{display:"flex",gap:3,marginBottom:3}}><span style={{background:`${theme.green}18`,color:theme.green,padding:"1px 5px",borderRadius:100,fontSize:6,fontWeight:700}}>Available</span></div>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:10,color:theme.dark}}>The Holmes House</div>
+                  <div style={{fontSize:7,color:theme.warm}}>$600–$850/mo</div>
                 </div>
-                <div style={{background:theme.card,padding:"10px 12px",textAlign:"center"}}><div style={{background:theme.accent,color:contrast(theme.accent),padding:"5px 14px",borderRadius:5,fontSize:9,fontWeight:700,display:"inline-block"}}>Apply Now</div></div>
               </div>
-              <div style={{marginTop:14,background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#4a7c59"}}>
-                Click Push to Site to update rentblackbear.com. The public site reads from Supabase on every load.
-              </div>
+              <div style={{background:theme.card,padding:"10px 12px",textAlign:"center"}}><div style={{background:theme.accent,color:contrast(theme.accent),padding:"5px 14px",borderRadius:5,fontSize:9,fontWeight:700,display:"inline-block"}}>Apply Now</div></div>
+            </div>
+            <div style={{display:"flex",gap:6,marginTop:10,flexWrap:"wrap"}}>
+              <div style={{background:theme.accent,color:contrast(theme.accent),padding:"5px 12px",borderRadius:5,fontSize:10,fontWeight:700}}>Button</div>
+              <div style={{background:theme.green,color:"#fff",padding:"5px 12px",borderRadius:5,fontSize:10,fontWeight:700}}>Available</div>
+              <div style={{background:theme.bg,color:theme.text,padding:"5px 12px",borderRadius:5,fontSize:10,fontWeight:700}}>Dark</div>
+              <div style={{background:theme.surface,color:theme.dark,padding:"5px 12px",borderRadius:5,fontSize:10,fontWeight:700,border:"1px solid rgba(0,0,0,.06)"}}>Light</div>
+            </div>
+            <div style={{marginTop:16,background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:11,color:"#5c4a3a"}}>
+              <strong>💡 Tip:</strong> Click "Push to Site" to update your live public site with the current colors. Save themes you like so you can switch between them later.
             </div>
           </div>
-        </>}
+        </div>
       </>);})()}
 
       {/* ═══ IDEA BOARD ═══ */}
