@@ -5809,7 +5809,7 @@ export default function Page(){
                       {uOcc
                         ?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}}>View Tenant</button>
                         :u.ownerOccupied
-                          ?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#1d4ed8",borderColor:"rgba(59,130,246,.25)",background:"rgba(59,130,246,.04)"}} onClick={()=>goTab("site-settings")}>Owner — Edit in Settings</button>
+                          ?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#1d4ed8",borderColor:"rgba(59,130,246,.25)",background:"rgba(59,130,246,.04)"}} onClick={()=>{setIsNewProp(false);setEditProp(p);}}>Owner — Edit in Settings</button>
                           :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([])}}>+ Find Tenant</button>}
                     </div>
                   ):(
@@ -5839,7 +5839,7 @@ export default function Page(){
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData})}>👤 Profile</button>
                             <button className="btn btn-gold btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData,startSection:"lease"})}>📄 Lease</button>
                           </div>
-                          :r.ownerOccupied?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#1d4ed8",borderColor:"rgba(59,130,246,.25)",background:"rgba(59,130,246,.04)"}} onClick={()=>goTab("site-settings")}>Owner — Edit in Settings</button>
+                          :r.ownerOccupied?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#1d4ed8",borderColor:"rgba(59,130,246,.25)",background:"rgba(59,130,246,.04)"}} onClick={()=>{setIsNewProp(false);setEditProp(p);}}>Owner — Edit in Settings</button>
                           :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}> + Find Tenant</button>}
                       </div>);})}
                     </>
