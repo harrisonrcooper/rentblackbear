@@ -331,7 +331,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
@@ -2400,7 +2400,8 @@ export default function Page(){
     setEditProp(null);
   };
 
-  const pastDueCount=charges.filter(c=>chargeStatus(c)==="pastdue").length;
+  const GRACE=3;
+  const pastDueCount=charges.filter(c=>{if(c.waived||c.voided||c.amountPaid>=c.amount)return false;const due=new Date(c.dueDate+"T00:00:00");const days=Math.ceil((TODAY-due)/86400000);return days>GRACE;}).length;
   const pendingLeases=leases.filter(l=>l.status==="pending_tenant"||l.status==="pending_landlord").length;
   const tabs=[
     {id:"dashboard",i:<IconDashboard/>,l:"Dashboard"},
@@ -2409,7 +2410,7 @@ export default function Page(){
     {id:"issues",i:<IconAlert/>,l:"Issues"},
     {id:"tenants",i:<IconUsers/>,l:"Tenants"},
     {id:"portal",i:<IconHome/>,l:"Tenant Portal"},
-    {id:"payments",i:<IconDollar/>,l:"Payments",badge:pastDueCount||m.unpaid.length||null},
+    {id:"payments",i:<IconDollar/>,l:"Payments",badge:settings.showPayBadge!==false&&pastDueCount>0?pastDueCount:null},
     {id:"applications",i:<IconClipboard/>,l:"Applications",badge:m.activeApps||null},
     {id:"maintenance",i:<IconWrench/>,l:"Maintenance",badge:m.openMaint||null},
     {id:"leases",i:<IconFile/>,l:"Leases & Docs",badge:pendingLeases||null},
@@ -2494,7 +2495,7 @@ export default function Page(){
       {tab==="dashboard"&&<>
         <div className="kgrid">
           <div className={`kpi ${drill==="occ"?"active":""}`} onClick={()=>setDrill(drill==="occ"?null:"occ")}><div className="kl">🏠 Occupancy</div><div className="kv" style={{color:m.occRate>=90?"#4a7c59":"#c45c4a"}}>{m.occRate}%</div><div className="ks">{m.occ}/{m.total} rooms</div></div>
-          <div className={`kpi ${drill==="coll"?"active":""}`} onClick={()=>setDrill(drill==="coll"?null:"coll")}><div className="kl">💰 Collected</div><div className="kv">{fmtS(m.coll)}</div><div className={`ks ${m.collRate>=100?"kg":"kb"}`}>{m.collRate}% of {fmtS(m.due)}</div></div>
+          <div className={`kpi ${drill==="coll"?"active":""}`} onClick={()=>setDrill(drill==="coll"?null:"coll")}><div className="kl">Collected</div><div className="kv">{fmtS(m.coll)}</div><div className={`ks ${m.collRate>=100?"kg":"kb"}`}>{m.collRate}% of {fmtS(m.due)}</div></div>
           <div className="kpi" onClick={()=>goTab("maintenance")}><div className="kl">🔧 Open Requests</div><div className="kv" style={{color:m.openMaint?"#d4a853":"#4a7c59"}}>{m.openMaint}</div><div className="ks">maintenance items</div></div>
           <div className="kpi" onClick={()=>goTab("applications")}><div className="kl">📋 Applications</div><div className="kv">{m.activeApps}</div><div className="ks">in pipeline</div></div>
           <div className="kpi"><div className="kl">📈 Projected</div><div className="kv">{fmtS(m.proj)}</div><div className="ks">of {fmtS(m.full)} at 100%</div></div>
@@ -2901,40 +2902,45 @@ export default function Page(){
         const stBadge={paid:"b-green",unpaid:"b-blue",pastdue:"b-red",partial:"b-gold",waived:"b-gray",voided:"b-gray"};
 
         return(<>
-        {/* Main sub-tabs — big and prominent */}
-        <div style={{display:"flex",gap:0,marginBottom:14,borderRadius:10,overflow:"hidden",border:"1px solid rgba(0,0,0,.06)"}}>
-          {[["overview","📊 Overview"],["charges","🧾 Charges"],["deposits","🏦 Deposits"]].map(([k,l])=>(
-            <button key={k} className={`pay-tab${paySubTab===k?" active":""}`} style={{fontSize:14}} onClick={()=>{setPaySubTab(k);setExpCharge(null);}}>{l}</button>
-          ))}
-        </div>
-
-        {/* Period toggle + Actions row */}
+        {/* Header row */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
-          <div style={{display:"flex",gap:3}}>
-            {[["mtd","MTD"],["ytd","YTD"],["next","Next Mo"],["all","All"]].map(([k,l])=>(
-              <button key={k} className={`btn ${payPeriod===k?"btn-dk":"btn-out"} btn-sm`} style={{fontSize:10}} onClick={()=>setPayPeriod(k)}>{l}</button>
+          <div style={{display:"flex",gap:0,borderRadius:8,overflow:"hidden",border:"1px solid rgba(0,0,0,.08)"}}>
+            {[["overview","Overview"],["charges","Charges"],["deposits","Deposits"]].map(([k,l])=>(
+              <button key={k} className={`pay-tab${paySubTab===k?" active":""}`} onClick={()=>{setPaySubTab(k);setExpCharge(null);}}>{l}</button>
             ))}
           </div>
-          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+            <div style={{display:"flex",gap:3,marginRight:4}}>
+              {[["mtd","MTD"],["ytd","YTD"],["next","Next Mo"],["all","All"]].map(([k,l])=>(
+                <button key={k} className={`btn ${payPeriod===k?"btn-dk":"btn-out"} btn-sm`} style={{fontSize:10}} onClick={()=>setPayPeriod(k)}>{l}</button>
+              ))}
+            </div>
             <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
-            <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>💳 Credit</button>
-            <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"returnSD",roomId:"",deductions:[],returnAmount:0})}>🔒 Return SD</button>
+            <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
+            <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"returnSD",roomId:"",deductions:[],returnAmount:0})}>Return SD</button>
+            <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff",marginLeft:4}}>
+              <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Past-due badge</span>
+              <div onClick={()=>{const u={...settings,showPayBadge:settings.showPayBadge===false};setSettings(u);save("hq-settings",u);}}
+                style={{width:32,height:18,borderRadius:9,background:settings.showPayBadge!==false?"#4a7c59":"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+                <div style={{position:"absolute",top:2,left:settings.showPayBadge!==false?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* ── Overview ── */}
         {paySubTab==="overview"&&<>
           <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
-            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"pastdue"});}}><div className="kl">🔴 Past Due</div><div className="kv kb">{fmtS(pastDue.reduce((s,c)=>s+(c.amount-c.amountPaid),0))}</div><div className="ks">{pastDue.length} charge{pastDue.length!==1?"s":""}</div></div>
-            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"unpaid"});}}><div className="kl">📋 Unpaid</div><div className="kv" style={{color:"#3b82f6"}}>{fmtS(unpaidCh.reduce((s,c)=>s+c.amount,0))}</div><div className="ks">{unpaidCh.length} charge{unpaidCh.length!==1?"s":""}</div></div>
-            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:""});}}><div className="kl">🧾 All Charges</div><div className="kv">{fmtS(totalCharged)}</div><div className="ks">{pCharges.length} charge{pCharges.length!==1?"s":""}</div></div>
+            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"pastdue"});}}><div className="kl">Past Due</div><div className="kv kb">{fmtS(pastDue.reduce((s,c)=>s+(c.amount-c.amountPaid),0))}</div><div className="ks">{pastDue.length} charge{pastDue.length!==1?"s":""} · {GRACE}d grace applied</div></div>
+            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"unpaid"});}}><div className="kl">Unpaid</div><div className="kv" style={{color:"#3b82f6"}}>{fmtS(unpaidCh.reduce((s,c)=>s+c.amount,0))}</div><div className="ks">{unpaidCh.length} charge{unpaidCh.length!==1?"s":""}</div></div>
+            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:""});}}><div className="kl">All Charges</div><div className="kv">{fmtS(totalCharged)}</div><div className="ks">{pCharges.length} charge{pCharges.length!==1?"s":""}</div></div>
           </div>
           <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
-            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"paid"});}}><div className="kl">✅ Paid</div><div className="kv kg">{fmtS(totalPaid)}</div><div className="ks">{paidCh.length} charge{paidCh.length!==1?"s":""}</div></div>
-            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>setPaySubTab("deposits")}><div className="kl">🏦 In Transit</div><div className="kv kw">{fmtS(inTransit)}</div></div>
-            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>setPaySubTab("deposits")}><div className="kl">💵 Deposited</div><div className="kv kg">{fmtS(deposited)}</div></div>
+            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"paid"});}}><div className="kl">Collected</div><div className="kv kg">{fmtS(totalPaid)}</div><div className="ks">{paidCh.length} charge{paidCh.length!==1?"s":""}</div></div>
+            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>setPaySubTab("deposits")}><div className="kl">In Transit</div><div className="kv kw">{fmtS(inTransit)}</div></div>
+            <div className="kpi" style={{cursor:"pointer"}} onClick={()=>setPaySubTab("deposits")}><div className="kl">Deposited</div><div className="kv kg">{fmtS(deposited)}</div></div>
           </div>
-          <div style={{fontSize:10,color:"#999",textAlign:"center",marginTop:4,marginBottom:14}}>Showing: {periodLabel} · Click any card to drill down</div>
+          <div style={{fontSize:10,color:"#999",textAlign:"center",marginTop:4,marginBottom:14}}>Showing {periodLabel} · Click any card to drill down</div>
 
           {/* Quick property breakdown */}
           {m.propBreakdown.map(pr=>{const prCh=pCharges.filter(c=>c.propName===pr.name);const prPaid=prCh.reduce((s,c)=>s+c.amountPaid,0);const prDue=prCh.reduce((s,c)=>s+c.amount,0);return(
@@ -2960,7 +2966,7 @@ export default function Page(){
           </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <div style={{fontSize:10,color:"#999"}}>{filteredCharges.length} charge{filteredCharges.length!==1?"s":""} · {periodLabel}</div>
-            {payFilters.tenant&&<button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"clearLedger",tenant:payFilters.tenant,confirm:""})}>🗑 Clear Ledger — {payFilters.tenant}</button>}
+            {payFilters.tenant&&<button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"clearLedger",tenant:payFilters.tenant,confirm:""})}>Clear Ledger — {payFilters.tenant}</button>}
           </div>
           {/* Column headers */}
           <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"8px 14px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,borderBottom:"2px solid rgba(0,0,0,.06)"}}>
@@ -3043,7 +3049,7 @@ export default function Page(){
                     {/* Right: amount + download */}
                     <div style={{textAlign:"right",flexShrink:0}}>
                       <div style={{fontSize:16,fontWeight:800,color:"#1a1714",marginBottom:6}}>{fmtS(p.amount)}</div>
-                      <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={e=>{e.stopPropagation();printP();}}>⬇ PDF</button>
+                      <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={e=>{e.stopPropagation();printP();}}>PDF</button>
                     </div>
                   </div>);
                 })}
@@ -3055,23 +3061,23 @@ export default function Page(){
                   return(
                   <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
                     {/* Record payment — unpaid/partial/pastdue only */}
-                    {(st==="unpaid"||st==="partial"||st==="pastdue")&&<button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>💰 Record Payment</button>}
+                    {(st==="unpaid"||st==="partial"||st==="pastdue")&&<button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>Record Payment</button>}
                     {/* Reminder — unpaid/partial/pastdue only */}
-                    {(st==="unpaid"||st==="partial"||st==="pastdue")&&<button className="btn btn-dk btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null});}}>📣 Reminder</button>}
+                    {(st==="unpaid"||st==="partial"||st==="pastdue")&&<button className="btn btn-dk btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null});}}>Reminder</button>}
                     {/* Edit — not voided/waived/ACH-paid */}
-                    {st!=="voided"&&st!=="waived"&&!paidViaAch&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"editCharge",charge:{...c},isPaid:paidViaManual,editReason:"",editNote:""});}}>{paidViaManual?"✏️ Edit (reason req.)":"✏️ Edit"}</button>}
+                    {st!=="voided"&&st!=="waived"&&!paidViaAch&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"editCharge",charge:{...c},isPaid:paidViaManual,editReason:"",editNote:""});}}>{paidViaManual?"Edit (reason req.)":"Edit"}</button>}
                     {/* Void — anything not already voided or waived */}
-                    {st!=="voided"&&st!=="waived"&&<button className="btn btn-out btn-sm" style={{color:"#9a7422"}} onClick={e=>{e.stopPropagation();setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""});}}>⊘ Void</button>}
+                    {st!=="voided"&&st!=="waived"&&<button className="btn btn-out btn-sm" style={{color:"#9a7422"}} onClick={e=>{e.stopPropagation();setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""});}}>Void</button>}
                     {/* Delete — only unpaid charges (no payment ever recorded) */}
-                    {(st==="unpaid"||st==="pastdue")&&c.payments.length===0&&<button className="btn btn-out btn-sm" style={{color:"#c45c4a"}} onClick={e=>{e.stopPropagation();setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc});}}>🗑 Delete</button>}
+                    {(st==="unpaid"||st==="pastdue")&&c.payments.length===0&&<button className="btn btn-out btn-sm" style={{color:"#c45c4a"}} onClick={e=>{e.stopPropagation();setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc});}}>Delete</button>}
                     {/* Waive late fees — pastdue only */}
-                    {st==="pastdue"&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"waiveCharge",chargeId:c.id,reason:""});}}> ⏹ Waive</button>}
+                    {st==="pastdue"&&<button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"waiveCharge",chargeId:c.id,reason:""});}}>Waive</button>}
                   </div>);
                 })()}
 
                 {st==="waived"&&<div style={{background:"rgba(0,0,0,.03)",borderRadius:6,padding:8,fontSize:11,color:"#999",marginTop:8}}>Waived{c.waivedReason?`: ${c.waivedReason}`:""}</div>}
                 {st==="voided"&&<div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.12)",borderRadius:6,padding:"10px 12px",fontSize:11,marginTop:8}}>
-                  <div style={{fontWeight:700,color:"#c45c4a",marginBottom:4}}>⊘ Voided {c.voidedDate?`on ${fmtD(c.voidedDate)}`:""}</div>
+                  <div style={{fontWeight:700,color:"#c45c4a",marginBottom:4}}>Voided {c.voidedDate?`on ${fmtD(c.voidedDate)}`:""}</div>
                   <div style={{color:"#5c4a3a"}}>{c.voidedReason||"No reason recorded"}</div>
                 </div>}
               </div>}
@@ -3110,9 +3116,9 @@ export default function Page(){
           return(<>
           {/* KPIs */}
           <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
-            <div className="kpi"><div className="kl">🔄 In Transit</div><div className="kv kw">{fmtS(totalTransit)}</div><div className="ks">{transit.length} pending</div></div>
-            <div className="kpi"><div className="kl">🏦 Deposited</div><div className="kv kg">{fmtS(totalDeposited)}</div><div className="ks">{filtered.length} deposits</div></div>
-            <div className="kpi"><div className="kl">🔒 SD Held</div><div className="kv">{fmtS(totalSD)}</div><div className="ks">{sdTenants.length} tenants · Redstone FCU</div></div>
+            <div className="kpi"><div className="kl">In Transit</div><div className="kv kw">{fmtS(totalTransit)}</div><div className="ks">{transit.length} pending</div></div>
+            <div className="kpi"><div className="kl">Deposited</div><div className="kv kg">{fmtS(totalDeposited)}</div><div className="ks">{filtered.length} deposits</div></div>
+            <div className="kpi"><div className="kl">SD Held</div><div className="kv">{fmtS(totalSD)}</div><div className="ks">{sdTenants.length} tenants · Redstone FCU</div></div>
           </div>
 
           {/* In Transit */}
@@ -3159,11 +3165,11 @@ export default function Page(){
                   ))}
                 </tbody></table>
               </div>
-            );}):<div style={{textAlign:"center",padding:40,color:"#999"}}><div style={{fontSize:28,marginBottom:8}}>🏦</div>No deposits yet. When you record payments via ACH/Stripe and mark them deposited, they'll appear here grouped by month.</div>}
+            );}):<div style={{textAlign:"center",padding:40,color:"#999"}}>No deposits yet. When you record payments via ACH/Stripe and mark them deposited, they'll appear here grouped by month.</div>}
           </div>
 
           {/* Security Deposits */}
-          <div className="sec-hd" style={{marginTop:20}}><div><h2>🔒 Security Deposits — Redstone FCU</h2></div></div>
+          <div className="sec-hd" style={{marginTop:20}}><div><h2>Security Deposits — Redstone FCU</h2></div></div>
           <div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Tenant</th><th>Property</th><th>Room</th><th>Lease End</th><th style={{textAlign:"right"}}>SD Held</th></tr></thead><tbody>
             {sdTenants.length>0?sdTenants.map(r=>{const sd=sdLedger.find(x=>x.roomId===r.id);const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;return(
               <tr key={r.id}>
@@ -4336,7 +4342,7 @@ export default function Page(){
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)"}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700}}>🔒 Security Deposit</div>
+                    <div style={{fontSize:12,fontWeight:700}}>Security Deposit</div>
                     <div style={{fontSize:10,color:"#999"}}>Due today — secures the room</div>
                   </div>
                   <div style={{fontSize:15,fontWeight:800,color:"#1a1714"}}>{fmtS(sd)}</div>
@@ -4931,7 +4937,7 @@ export default function Page(){
                         <div className="dot-menu">
                           <button className="dot-btn" onClick={ev=>{ev.stopPropagation();setAcctDotMenu(acctDotMenu===e.id?null:e.id);}}>⋮</button>
                           {acctDotMenu===e.id&&<div className="dot-panel" onClick={ev=>ev.stopPropagation()}>
-                            <button className="dot-opt danger" onClick={()=>{setAcctDotMenu(null);setModal({type:"confirmDeleteExpense",expId:e.id,description:e.description||e.category});}}>🗑 Delete</button>
+                            <button className="dot-opt danger" onClick={()=>{setAcctDotMenu(null);setModal({type:"confirmDeleteExpense",expId:e.id,description:e.description||e.category});}}>Delete</button>
                           </div>}
                         </div>
                       </div>
@@ -5523,7 +5529,7 @@ export default function Page(){
       {tab==="scorecard"&&<>
         <div className="kgrid">
           <div className={`kpi ${drill==="sc-occ"?"active":""}`} onClick={()=>setDrill(drill==="sc-occ"?null:"sc-occ")}><div className="kl">🏠 Occupancy</div><div className="kv" style={{color:m.occRate>=90?"#4a7c59":"#c45c4a"}}>{m.occRate}%</div><div className="ks">{m.occ}/{m.total} rooms</div></div>
-          <div className={`kpi ${drill==="sc-coll"?"active":""}`} onClick={()=>setDrill(drill==="sc-coll"?null:"sc-coll")}><div className="kl">💰 Collection</div><div className="kv" style={{color:m.collRate>=90?"#4a7c59":"#c45c4a"}}>{m.collRate}%</div><div className="ks">{fmtS(m.coll)} / {fmtS(m.due)}</div></div>
+          <div className={`kpi ${drill==="sc-coll"?"active":""}`} onClick={()=>setDrill(drill==="sc-coll"?null:"sc-coll")}><div className="kl">Collection</div><div className="kv" style={{color:m.collRate>=90?"#4a7c59":"#c45c4a"}}>{m.collRate}%</div><div className="ks">{fmtS(m.coll)} / {fmtS(m.due)}</div></div>
           <div className={`kpi ${drill==="sc-vac"?"active":""}`} onClick={()=>setDrill(drill==="sc-vac"?null:"sc-vac")}><div className="kl">💸 Vacancy</div><div className="kv" style={{color:m.lost>0?"#c45c4a":"#4a7c59"}}>{fmtS(m.lost)}</div><div className="ks">/month lost</div></div>
           <div className={`kpi ${drill==="sc-proj"?"active":""}`} onClick={()=>setDrill(drill==="sc-proj"?null:"sc-proj")}><div className="kl">📈 Projected</div><div className="kv">{fmtS(m.proj)}</div><div className="ks">of {fmtS(m.full)}</div></div>
         </div>
@@ -6304,7 +6310,7 @@ export default function Page(){
       <div className="tp-card"><h3>📋 Lease</h3><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(r.tenant.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">Lease End</span><strong style={{color:dl&&dl<=30?"#c45c4a":dl&&dl<=90?"#d4a853":"inherit"}}>{fmtD(r.le)}</strong></div>{dl&&<><div className="tp-row"><span className="tp-label">Days Left</span><strong style={{color:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59"}}>{dl} days ({months} mo)</strong></div><div style={{height:6,borderRadius:3,background:"#e5e3df",marginTop:8}}><div style={{height:"100%",borderRadius:3,width:`${Math.min(100,Math.max(0,(1-dl/365)*100))}%`,background:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59"}}/></div></>}
         <div className="tp-row"><span className="tp-label">Annual Value</span><strong>{fmtS(r.rent*12)}/yr</strong></div>
       </div>
-      <div className="tp-card"><h3>💰 Payment — {MO}</h3><div className="tp-row"><span className="tp-label">Status</span><strong style={{color:pd?"#4a7c59":"#c45c4a"}}>{pd?`Paid ${fmtS(pd)}`:`Unpaid — ${fmtS(r.rent)} due`}</strong></div>{!pd&&<button className="btn btn-green" style={{width:"100%",marginTop:8}} onClick={()=>openPayForm(r.id)}>Record Payment →</button>}</div>
+      <div className="tp-card"><h3>Payment — {MO}</h3><div className="tp-row"><span className="tp-label">Status</span><strong style={{color:pd?"#4a7c59":"#c45c4a"}}>{pd?`Paid ${fmtS(pd)}`:`Unpaid — ${fmtS(r.rent)} due`}</strong></div>{!pd&&<button className="btn btn-green" style={{width:"100%",marginTop:8}} onClick={()=>openPayForm(r.id)}>Record Payment →</button>}</div>
 
 
       {/* Payment Pattern Badge */}
@@ -6538,7 +6544,7 @@ export default function Page(){
                 </div>)}
                 {st==="paid"&&<div style={{fontSize:10,color:"#4a7c59",marginTop:4}}>Confirmed · {confId}</div>}
                 {st!=="paid"&&st!=="waived"&&<div style={{display:"flex",gap:4,marginTop:8}}>
-                  <button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>💰 Record Payment</button>
+                  <button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>Record Payment</button>
                   <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setTab("payments");setPaySubTab("charges");setPayFilters({...payFilters,tenant:c.tenantName});setModal(null);}}>View in Charges →</button>
                 </div>}
               </div>}
@@ -6809,7 +6815,7 @@ export default function Page(){
     const editingDefault=modal.editingDefault||false;
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
-      <h2>📣 Send Reminder</h2>
+      <h2>Send Reminder</h2>
       <div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.1)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700,marginBottom:2}}>{c.tenantName}</div>
         <div style={{color:"#999"}}>{c.category} — {fmtS(modal.rem)} overdue since {fmtD(c.dueDate)}</div>
@@ -7430,7 +7436,7 @@ export default function Page(){
 
   {modal&&modal.type==="waiveCharge"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
-      <h2>⏹ Stop Late Fees</h2>
+      <h2>Stop Late Fees</h2>
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:12}}>This will stop late fees and mark the charge as waived. This cannot be undone.</p>
       <div className={`fld ${modal.reasonErr?"field-err":""}`}>
         <label className={modal.reasonErr?"field-err-label":""}>Reason (required)</label>
@@ -7482,7 +7488,7 @@ export default function Page(){
   {/* Void Charge */}
   {modal&&modal.type==="voidCharge"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,animation:modal.shake?"shake .4s ease":undefined}}>
-      <h2>⊘ Void Charge</h2>
+      <h2>Void Charge</h2>
       <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700}}>{modal.tenantName}</div>
         <div style={{color:"#999",marginTop:2}}>{modal.category} — {modal.desc} · {fmtS(modal.amount)}</div>
