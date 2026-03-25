@@ -5794,17 +5794,23 @@ export default function Page(){
                   </div>}
                   {uIsWhole?(
                     <div className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default"}}>
-                      <div className="row-dot" style={{background:uOcc?"#4a7c59":"#c45c4a",flexShrink:0}}/>
+                      <div className="row-dot" style={{background:uOcc?"#4a7c59":u.ownerOccupied?"#3b82f6":"#c45c4a",flexShrink:0}}/>
                       <div className="row-i">
                         <div style={{fontSize:12,fontWeight:600}}>{u.name} — Whole Unit</div>
                         {uOcc
                           ?<div style={{fontSize:10,color:"#999",marginTop:1}}>Occupied · ends {fmtD(uLatestLe)}</div>
-                          :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(u.rent)}/mo</div>}
+                          :u.ownerOccupied
+                            ?<div style={{fontSize:10,color:"#1d4ed8",fontWeight:600,marginTop:1}}>Owner Occupied</div>
+                            :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(u.rent)}/mo</div>}
                       </div>
                       <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
-                        <div style={{fontSize:14,fontWeight:800}}>{fmtS(u.rent)}</div>
+                        {!u.ownerOccupied&&<div style={{fontSize:14,fontWeight:800}}>{fmtS(u.rent)}</div>}
                       </div>
-                      <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{if(uOcc){const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}else if(!u.ownerOccupied){setTab("applications");setBulkSel([])}}}>{uOcc?"👤 View Tenant":u.ownerOccupied?"🏠 Owner":"+ Find Tenant"}</button>
+                      {uOcc
+                        ?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}}>View Tenant</button>
+                        :u.ownerOccupied
+                          ?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#1d4ed8",borderColor:"rgba(59,130,246,.25)",background:"rgba(59,130,246,.04)"}} onClick={()=>goTab("site-settings")}>Owner — Edit in Settings</button>
+                          :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([])}}>+ Find Tenant</button>}
                     </div>
                   ):(
                     <>
@@ -5833,7 +5839,7 @@ export default function Page(){
                             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData})}>👤 Profile</button>
                             <button className="btn btn-gold btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"tenant",data:tenantData,startSection:"lease"})}>📄 Lease</button>
                           </div>
-                          :r.ownerOccupied?<span style={{fontSize:9,color:"#1d4ed8",fontWeight:600,padding:"4px 8px",background:"rgba(59,130,246,.06)",borderRadius:4}}>Owner</span>
+                          :r.ownerOccupied?<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#1d4ed8",borderColor:"rgba(59,130,246,.25)",background:"rgba(59,130,246,.04)"}} onClick={()=>goTab("site-settings")}>Owner — Edit in Settings</button>
                           :<button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([]);}}> + Find Tenant</button>}
                       </div>);})}
                     </>
