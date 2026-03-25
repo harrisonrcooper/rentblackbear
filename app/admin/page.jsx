@@ -2115,6 +2115,10 @@ export default function Page(){
   const[ideaFilter,setIdeaFilter]=useState("all");
   const[scDrill,setScDrill]=useState(null);
   const[dismissedFollowUps,setDismissedFollowUps]=useState([]);
+  const[widgetList,setWidgetList]=useState(null);
+  const[dashEditMode,setDashEditMode]=useState(false);
+  const[dashDragWidget,setDashDragWidget]=useState(null);
+  const[dashDragOver,setDashDragOver]=useState(null);
   const[ledgerTenant,setLedgerTenant]=useState("all");
   const[portalTenant,setPortalTenant]=useState(null);
   const[portalTab,setPortalTab]=useState("home");
@@ -2169,7 +2173,7 @@ export default function Page(){
         if(!found)console.warn("⚠ Could not geocode:",prop.name,prop.addr);
       }
     }
-    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setLoaded(true);
+    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setWidgetList(null);setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,vendors,improvements,subcats,loaded]);
@@ -2512,18 +2516,18 @@ export default function Page(){
         const nextRentTotal=nextRentCharges.filter(c=>c.category==="Rent").reduce((s,c)=>s+c.amount,0);
         const appsByStage={"pre-screened":0,"called":0,"invited":0,"applied":0,"reviewing":0};
         apps.filter(a=>!["approved","move-in","onboarding","lease-sent","denied"].includes(a.status)).forEach(a=>{if(appsByStage[a.status]!==undefined)appsByStage[a.status]++;});
-        const savedWidgets=settings.dashWidgets||["pastDue","leaseExp","vacancy","maintenance","mtdCollection","recentActivity","appPipeline","upcomingRent"];
-        const [widgetList,setWidgetList]=useState(savedWidgets);
-        const [editMode,setEditMode]=useState(false);
-        const [dragWidget,setDragWidget]=useState(null);
-        const [dragOver,setDragOver]=useState(null);
+        const defWidgets=settings.dashWidgets||["pastDue","leaseExp","vacancy","maintenance","mtdCollection","recentActivity","appPipeline","upcomingRent"];
+        const activeWidgets=widgetList||defWidgets;
+        const editMode=dashEditMode;
+        const dragWidget=dashDragWidget;
+        const dragOver=dashDragOver;
         const saveWidgets=(list)=>{setWidgetList(list);const u={...settings,dashWidgets:list};setSettings(u);save("hq-settings",u);};
-        const removeWidget=(id)=>saveWidgets(widgetList.filter(w=>w!==id));
-        const addWidget=(id)=>{if(!widgetList.includes(id))saveWidgets([...widgetList,id]);};
-        const onDragStart=(id)=>setDragWidget(id);
-        const onDragOver=(e,id)=>{e.preventDefault();setDragOver(id);};
-        const onDrop=(e,targetId)=>{e.preventDefault();if(!dragWidget||dragWidget===targetId)return;const list=[...widgetList];const from=list.indexOf(dragWidget);const to=list.indexOf(targetId);list.splice(from,1);list.splice(to,0,dragWidget);saveWidgets(list);setDragWidget(null);setDragOver(null);};
-        const onDragEnd=()=>{setDragWidget(null);setDragOver(null);};
+        const removeWidget=(id)=>saveWidgets(activeWidgets.filter(w=>w!==id));
+        const addWidget=(id)=>{if(!activeWidgets.includes(id))saveWidgets([...activeWidgets,id]);};
+        const onDragStart=(id)=>setDashDragWidget(id);
+        const onDragOver=(e,id)=>{e.preventDefault();setDashDragOver(id);};
+        const onDrop=(e,targetId)=>{e.preventDefault();if(!dragWidget||dragWidget===targetId)return;const list=[...activeWidgets];const from=list.indexOf(dragWidget);const to=list.indexOf(targetId);list.splice(from,1);list.splice(to,0,dragWidget);saveWidgets(list);setDashDragWidget(null);setDashDragOver(null);};
+        const onDragEnd=()=>{setDashDragWidget(null);setDashDragOver(null);};
         const ALL_WIDGETS=[
           {id:"pastDue",label:"Past Due"},{id:"leaseExp",label:"Lease Expirations"},{id:"vacancy",label:"Vacant Rooms"},
           {id:"maintenance",label:"Open Maintenance"},{id:"mtdCollection",label:"MTD Collection"},{id:"recentActivity",label:"Recent Activity"},
@@ -2533,7 +2537,7 @@ export default function Page(){
           {id:"propBreakdown",label:"Revenue by Property"},{id:"roe",label:"Return on Equity"},{id:"profitability",label:"Profitability by Property"},
           {id:"dscr",label:"DSCR"},{id:"rocks",label:"Traction Rocks"},
         ];
-        const availableToAdd=ALL_WIDGETS.filter(w=>!widgetList.includes(w.id));
+        const availableToAdd=ALL_WIDGETS.filter(w=>!activeWidgets.includes(w.id));
         const NeedsData=({label,goTo,field})=>(<div style={{padding:"10px 0"}}>
           <div style={{fontSize:11,color:"#999",marginBottom:6}}>Enter {field} to calculate {label}</div>
           <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={()=>goTab(goTo||"properties")}>Enter data</button>
@@ -2700,7 +2704,7 @@ export default function Page(){
             <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
             <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
             <button className="btn btn-out btn-sm" onClick={()=>goTab("applications")}>+ Application</button>
-            <button className="btn btn-out btn-sm" style={{borderColor:editMode?"#c45c4a":"rgba(0,0,0,.08)",color:editMode?"#c45c4a":"#5c4a3a",background:editMode?"rgba(196,92,74,.06)":"#fff"}} onClick={()=>setEditMode(e=>!e)}>{editMode?"Done Editing":"Edit Widgets"}</button>
+            <button className="btn btn-out btn-sm" style={{borderColor:editMode?"#c45c4a":"rgba(0,0,0,.08)",color:editMode?"#c45c4a":"#5c4a3a",background:editMode?"rgba(196,92,74,.06)":"#fff"}} onClick={()=>setDashEditMode(e=>!e)}>{dashEditMode?"Done Editing":"Edit Widgets"}</button>
           </div>
         </div>
 
@@ -2740,7 +2744,7 @@ export default function Page(){
             {m.paid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{r.tenant&&r.tenant.name}</div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
         </div></div>}
 
-        {editMode&&availableToAdd.length>0&&<div className="card" style={{marginBottom:16,border:"1px solid rgba(74,124,89,.2)",background:"rgba(74,124,89,.02)"}}><div className="card-bd">
+        {dashEditMode&&availableToAdd.length>0&&<div className="card" style={{marginBottom:16,border:"1px solid rgba(74,124,89,.2)",background:"rgba(74,124,89,.02)"}}><div className="card-bd">
           <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Add Widgets</div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             {availableToAdd.map(w=><button key={w.id} onClick={()=>addWidget(w.id)} style={{padding:"6px 14px",borderRadius:7,border:"1px solid rgba(74,124,89,.3)",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600,color:"#4a7c59",fontFamily:"inherit"}}>+ {w.label}</button>)}
@@ -2749,7 +2753,7 @@ export default function Page(){
 
         <style>{`@keyframes widgetWiggle{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-0.8deg)}75%{transform:rotate(0.8deg)}}`}</style>
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
-          {widgetList.map(id=>(
+          {activeWidgets.map(id=>(
             <div key={id} draggable={editMode} onDragStart={()=>onDragStart(id)} onDragOver={e=>onDragOver(e,id)} onDrop={e=>onDrop(e,id)} onDragEnd={onDragEnd}
               style={{animation:editMode?"widgetWiggle .5s ease-in-out infinite":"none",animationDelay:Math.random()*.2+"s",cursor:editMode?"grab":"default",opacity:dragWidget===id?.4:1,outline:dragOver===id&&dragWidget!==id?"2px dashed #4a7c59":"none",outlineOffset:2,borderRadius:10,transition:"opacity .15s"}}>
               <div className="card" style={{margin:0,position:"relative",height:"100%"}}>
