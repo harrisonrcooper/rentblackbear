@@ -2497,7 +2497,19 @@ export default function Page(){
     {label:"System",ids:["site-settings","theme","ideas","notifications","settings_dummy"]},
     {label:"Configuration",ids:["configuration"]},
   ];
-  const sidebarConfig=settings.sidebarConfig||DEF_SIDEBAR;
+  const rawSidebarConfig=settings.sidebarConfig||DEF_SIDEBAR;
+  const sidebarConfig=(()=>{
+    const allIds=rawSidebarConfig.flatMap(s=>s.ids);
+    if(allIds.includes("add-expense"))return rawSidebarConfig;
+    // Migrate: inject add-expense between accounting and reports
+    return rawSidebarConfig.map(s=>{
+      if(!s.ids.includes("accounting"))return s;
+      const ids=[...s.ids];
+      const ai=ids.indexOf("accounting");
+      if(!ids.includes("add-expense"))ids.splice(ai+1,0,"add-expense");
+      return{...s,ids};
+    });
+  })();
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
 
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);};
@@ -2838,7 +2850,7 @@ export default function Page(){
             <div style={{fontSize:12,color:"#6b5e52"}}>{daysUntilNextRent} day{daysUntilNextRent!==1?"s":""} until next rent cycle</div>
           </div>
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-            <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
+            <button className="btn btn-out btn-sm" onClick={openCreateCharge}>+ Charge</button>
             <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
             <button className="btn btn-out btn-sm" onClick={()=>goTab("applications")}>+ Application</button>
             <button className="btn btn-out btn-sm" style={{borderColor:editMode?"#c45c4a":"rgba(0,0,0,.08)",color:editMode?"#c45c4a":"#5c4a3a",background:editMode?"rgba(196,92,74,.06)":"#fff"}} onClick={()=>setDashEditMode(e=>!e)}>{dashEditMode?"Done Editing":"Edit Widgets"}</button>
@@ -3390,7 +3402,7 @@ export default function Page(){
           </div>
           <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
           <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
-          <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"returnSD",roomId:"",deductions:[],returnAmount:0})}>Return SD</button>
+          <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"returnSD",roomId:"",deductions:[],returnAmount:0})}>Return Security Deposit</button>
           <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff"}}>
             <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Past-due badge</span>
             <div onClick={()=>{const u={...settings,showPayBadge:settings.showPayBadge===false};setSettings(u);save("hq-settings",u);}}
@@ -3624,17 +3636,31 @@ export default function Page(){
           const COL="120px 110px 1fr 160px 90px";
 
           return(<>
-          {/* KPI cards — clickable */}
-          <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)",marginBottom:16}}>
-            <div className="kpi" style={{cursor:"pointer",borderBottom:depFilters.view==="transit"?"3px solid #d4a853":"none"}} onClick={()=>setDepFilters(f=>({...f,view:f.view==="transit"?"":"transit"}))}>
-              <div className="kl">In Transit</div><div className="kv kw">{fmtS(totalTransit)}</div><div className="ks">{transit.length} pending</div>
+          {/* KPI cards — clickable filters */}
+          <div style={{marginBottom:16}}>
+            <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)",marginBottom:6}}>
+              {[
+                {key:"transit",label:"In Transit",val:fmtS(totalTransit),sub:transit.length+" pending",color:"#d4a853"},
+                {key:"deposited",label:"Deposited",val:fmtS(totalDeposited),sub:filtered.length+" deposits",color:"#4a7c59"},
+                {key:"sd",label:"Security Deposit Held",val:fmtS(totalSD),sub:sdTenants.length+" tenants · Redstone FCU",color:"#4a7c59"},
+              ].map(({key,label,val,sub,color})=>{
+                const active=depFilters.view===key;
+                return(
+                <div key={key} className="kpi" onClick={()=>setDepFilters(f=>({...f,view:active?"":key}))}
+                  style={{cursor:"pointer",outline:active?`2px solid ${color}`:"2px solid transparent",outlineOffset:2,transition:"outline .15s",userSelect:"none"}}>
+                  <div className="kl">{label}</div>
+                  <div className="kv" style={{color}}>{val}</div>
+                  <div className="ks">{sub}</div>
+                  {active&&<div style={{fontSize:9,fontWeight:700,color,marginTop:4,textTransform:"uppercase",letterSpacing:.5}}>Filtered — click to clear</div>}
+                </div>);
+              })}
             </div>
-            <div className="kpi" style={{cursor:"pointer",borderBottom:depFilters.view==="deposited"?"3px solid #4a7c59":"none"}} onClick={()=>setDepFilters(f=>({...f,view:f.view==="deposited"?"":"deposited"}))}>
-              <div className="kl">Deposited</div><div className="kv kg">{fmtS(totalDeposited)}</div><div className="ks">{filtered.length} deposits</div>
-            </div>
-            <div className="kpi" style={{cursor:"pointer",borderBottom:depFilters.view==="sd"?"3px solid #7c3aed":"none"}} onClick={()=>setDepFilters(f=>({...f,view:f.view==="sd"?"":"sd"}))}>
-              <div className="kl">Security Deposit Held</div><div className="kv" style={{color:"#7c3aed"}}>{fmtS(totalSD)}</div><div className="ks">{sdTenants.length} tenants · Redstone FCU</div>
-            </div>
+            {depFilters.view&&<div style={{display:"flex",justifyContent:"flex-end"}}>
+              <button onClick={()=>setDepFilters(f=>({...f,view:""}))}
+                style={{fontSize:10,fontWeight:600,padding:"3px 10px",borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.04)",color:"#5c4a3a",cursor:"pointer",fontFamily:"inherit"}}>
+                Show All ✕
+              </button>
+            </div>}
           </div>
 
           {/* Filter bar */}
@@ -3762,12 +3788,12 @@ export default function Page(){
                   <div style={{fontSize:11,color:"#5c4a3a"}}>{r.propName}</div>
                   <div style={{fontSize:11,color:"#5c4a3a"}}>{r.name}</div>
                   <div style={{fontSize:11,color:dl&&dl<=30?"#c45c4a":dl&&dl<=90?"#d4a853":"#5c4a3a"}}>{r.le?`${fmtD(r.le)}${dl&&dl<=90?` (${dl}d)`:""}` :"—"}</div>
-                  <div style={{fontSize:13,fontWeight:800,color:"#7c3aed",textAlign:"right"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</div>
+                  <div style={{fontSize:13,fontWeight:800,color:"#4a7c59",textAlign:"right"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</div>
                 </div>
               );})}
               {sdTenants.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"10px 16px",borderTop:"2px solid rgba(0,0,0,.07)",background:"rgba(0,0,0,.02)"}}>
                 <div style={{fontSize:12,fontWeight:800,gridColumn:"1/5"}}>Total Held</div>
-                <div style={{fontSize:14,fontWeight:800,color:"#7c3aed",textAlign:"right"}}>{fmtS(totalSD)}</div>
+                <div style={{fontSize:14,fontWeight:800,color:"#4a7c59",textAlign:"right"}}>{fmtS(totalSD)}</div>
               </div>}
             </div>
 
