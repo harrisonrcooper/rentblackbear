@@ -3433,11 +3433,8 @@ export default function Page(){
               <div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{allRooms(pr).length} rooms · {pr.occCount} occupied</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:800}}>{fmtS(prPaid)}<small style={{color:"#6b5e52"}}> / {fmtS(prDue)}</small></div>
                 <div style={{fontSize:9,color:prPaid>=prDue?"#4a7c59":"#c45c4a",fontWeight:600}}>{prDue?Math.round(prPaid/prDue*100):0}%</div></div>
-                  </div>
-                );})}
-              </div>
-            ));
-          })()}
+            </div>
+          );})}
         </>}
 
         {/* ── Charges ── */}
@@ -3588,7 +3585,10 @@ export default function Page(){
                   <div style={{color:"#5c4a3a"}}>{c.voidedReason||"No reason recorded"}</div>
                 </div>}
               </div>}
-            </div>);})}
+                  </div>);})}
+              </div>
+            ));
+          })()}
           {filteredCharges.length===0&&<div style={{textAlign:"center",padding:24,color:"#6b5e52"}}>No charges match your filters</div>}
         </>}
 
