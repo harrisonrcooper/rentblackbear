@@ -3617,10 +3617,10 @@ export default function Page(){
                 onClick={()=>setAppKpiFilter(appKpiFilter===key?null:key)}
                 onMouseEnter={e=>{if(!active){e.currentTarget.style.background="rgba(0,0,0,.04)";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 3px 10px rgba(0,0,0,.08)";}}}
                 onMouseLeave={e=>{if(!active){e.currentTarget.style.background="#fff";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}}
-                style={{background:active?"#1a1714":"#fff",borderRadius:10,padding:"12px 14px",border:active?"2px solid #1a1714":"1px solid rgba(0,0,0,.07)",cursor:"pointer",transition:"all .15s",boxShadow:active?"0 3px 12px rgba(0,0,0,.15)":"none"}}>
-                <div style={{fontSize:10,fontWeight:700,color:active?"rgba(255,255,255,.6)":"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>{label}</div>
-                <div style={{fontSize:24,fontWeight:800,color:active?"#d4a853":(color||"#1a1714"),lineHeight:1,marginBottom:3}}>{value}</div>
-                <div style={{fontSize:9,color:active?"rgba(255,255,255,.4)":"#7a7067"}}>{active?"Click to clear":sub}</div>
+                style={{background:active?"rgba(74,124,89,.08)":"#fff",borderRadius:10,padding:"12px 14px",border:active?"2px solid #4a7c59":"1px solid rgba(0,0,0,.07)",cursor:"pointer",transition:"all .15s",boxShadow:active?"0 3px 12px rgba(74,124,89,.15)":"none"}}>
+                <div style={{fontSize:10,fontWeight:700,color:active?"#4a7c59":"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>{label}</div>
+                <div style={{fontSize:24,fontWeight:800,color:active?"#4a7c59":(color||"#1a1714"),lineHeight:1,marginBottom:3}}>{value}</div>
+                <div style={{fontSize:9,color:active?"#4a7c59":"#7a7067"}}>{active?"Click to clear":sub}</div>
               </div>);
             })}
           </div>
