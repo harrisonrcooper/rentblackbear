@@ -92,7 +92,6 @@ function SigCanvas({onSave,height=120}){
       <button className="btn btn-out btn-sm" onClick={clear}>Clear</button>
       <button className="btn btn-gold btn-sm" onClick={save}>Apply Signature</button>
     </div>
-  </div>{/* end outside zoom wrapper */}
   </div>);
 }
 
@@ -2493,11 +2492,10 @@ export default function Page(){
     {label:"Tenants",ids:["tenants","portal","payments"]},
     {label:"Leasing",ids:["applications"]},
     {label:"Operations",ids:["maintenance","leases","documents"]},
-    {label:"Financials",ids:["accounting","reports"]},
+    {label:"Financials",ids:["accounting","add-expense","reports"]},
     {label:"Portfolio",ids:["properties"]},
     {label:"System",ids:["site-settings","theme","ideas","notifications","settings_dummy"]},
     {label:"Configuration",ids:["configuration"]},
-    {label:"Financials (Actions)",ids:["add-expense"]},
   ];
   const sidebarConfig=settings.sidebarConfig||DEF_SIDEBAR;
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
@@ -3435,8 +3433,11 @@ export default function Page(){
               <div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{allRooms(pr).length} rooms · {pr.occCount} occupied</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:800}}>{fmtS(prPaid)}<small style={{color:"#6b5e52"}}> / {fmtS(prDue)}</small></div>
                 <div style={{fontSize:9,color:prPaid>=prDue?"#4a7c59":"#c45c4a",fontWeight:600}}>{prDue?Math.round(prPaid/prDue*100):0}%</div></div>
-            </div>
-          );})}
+                  </div>
+                );})}
+              </div>
+            ));
+          })()}
         </>}
 
         {/* ── Charges ── */}
@@ -3455,23 +3456,42 @@ export default function Page(){
             <div style={{fontSize:10,color:"#6b5e52"}}>{filteredCharges.length} charge{filteredCharges.length!==1?"s":""} · {periodLabel}</div>
             {payFilters.tenant&&<button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"clearLedger",tenant:payFilters.tenant,confirm:""})}>Clear Ledger — {payFilters.tenant}</button>}
           </div>
-          {/* Column headers */}
-          <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"8px 14px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,borderBottom:"2px solid rgba(0,0,0,.06)"}}>
-            <div>Due Date</div><div>Category</div><div>Tenant / Room</div><div>Status</div><div>Deposit</div><div style={{textAlign:"right"}}>Amount</div>
-          </div>
-          {filteredCharges.sort((a,b)=>new Date(b.dueDate)-new Date(a.dueDate)).map(c=>{const st=chargeStatus(c);const lastPay=c.payments.length?c.payments[c.payments.length-1]:null;const isExp=expCharge===c.id;const rem=c.amount-c.amountPaid;const confId=`BB-${c.id.slice(0,8).toUpperCase()}`;return(
-            <div key={c.id}>
-              <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.03)",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"transparent",transition:"background .1s"}} onClick={()=>setExpCharge(isExp?null:c.id)}>
-                <div style={{fontSize:11,fontWeight:600}}>{fmtD(c.dueDate)}</div>
-                <div><span className="badge b-gray" style={{fontSize:8}}>{c.category}</span></div>
-                <div><div style={{fontSize:11,fontWeight:600}}>{c.tenantName}</div><div style={{fontSize:9,color:"#6b5e52"}}>{c.propName} · {c.roomName}</div></div>
-                <div><span className={`badge ${stBadge[st]}`} style={{fontSize:8}}>{st}</span></div>
-                <div>{lastPay&&lastPay.depositDate?<div><div style={{fontSize:10}}>{fmtD(lastPay.depositDate)}</div><div style={{fontSize:8,color:"#6b5e52"}}>Redstone FCU</div></div>:lastPay&&lastPay.depositStatus==="transit"?<span style={{fontSize:9,color:"#d4a853"}}>In transit</span>:<span style={{fontSize:9,color:"#6b5e52"}}>—</span>}</div>
-                <div style={{textAlign:"right",fontWeight:800,fontSize:13,color:st==="paid"?"#4a7c59":st==="pastdue"?"#c45c4a":"inherit",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>
-                  <span>{fmtS(c.amount)}</span>
-                  <span style={{fontSize:10,color:"#6b5e52",fontWeight:400}}>{isExp?"∧":"∨"}</span>
+
+          {(()=>{
+            const sorted=filteredCharges.sort((a,b)=>new Date(b.dueDate)-new Date(a.dueDate));
+            // Group by month
+            const groups=[];const seenMonths=new Set();
+            sorted.forEach(c=>{const mk=(c.dueDate||"").slice(0,7);if(!seenMonths.has(mk)){seenMonths.add(mk);const mo=mk?new Date(mk+"-02"):null;groups.push({mk,label:mo?mo.toLocaleString("default",{month:"long",year:"numeric"}):"",charges:[]});}groups.find(g=>g.mk===mk).charges.push(c);});
+            return groups.map(({mk,label,charges:grpCharges})=>(
+              <div key={mk} style={{marginBottom:8}}>
+                {/* Month header */}
+                <div style={{padding:"10px 14px 8px",fontSize:12,fontWeight:800,color:"#1a1714",borderBottom:"2px solid rgba(0,0,0,.08)"}}>{label}</div>
+                {/* Column headers */}
+                <div style={{display:"grid",gridTemplateColumns:"90px 110px 1fr 80px 110px 80px",gap:0,padding:"6px 14px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,background:"rgba(0,0,0,.02)"}}>
+                  <div>Due Date</div><div>Category</div><div>Tenant / Room</div><div>Status</div><div>Deposit</div><div style={{textAlign:"right"}}>Amount</div>
                 </div>
-              </div>
+                {grpCharges.map(c=>{const st=chargeStatus(c);const lastPay=c.payments.length?c.payments[c.payments.length-1]:null;const isExp=expCharge===c.id;const rem=c.amount-c.amountPaid;const confId=`BB-${c.id.slice(0,8).toUpperCase()}`;
+                  // Find tenant room for click-through
+                  const tRoom=allTenants.find(t=>t.id===c.roomId);
+                  return(
+                  <div key={c.id}>
+                    <div style={{display:"grid",gridTemplateColumns:"90px 110px 1fr 80px 110px 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.04)",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"transparent",transition:"background .1s"}} onClick={()=>setExpCharge(isExp?null:c.id)}>
+                      <div style={{fontSize:11,fontWeight:600,color:"#3c3228"}}>{fmtD(c.dueDate)}</div>
+                      <div style={{display:"flex",alignItems:"center"}}><span style={{fontSize:11,fontWeight:700,color:"#3c3228"}}>{c.category}</span></div>
+                      <div style={{display:"flex",flexDirection:"column",gap:1}}>
+                        <button style={{background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}
+                          onClick={e=>{e.stopPropagation();if(tRoom)setModal({type:"tenant",data:tRoom});}}>
+                          <div style={{fontSize:11,fontWeight:700,color:tRoom?"#3b82f6":"#3c3228",textDecoration:tRoom?"underline":"none"}}>{c.tenantName}</div>
+                        </button>
+                        <div style={{fontSize:9,color:"#6b5e52"}}>{c.propName} · {c.roomName}</div>
+                      </div>
+                      <div style={{display:"flex",alignItems:"center"}}><span className={`badge ${stBadge[st]}`} style={{fontSize:8}}>{st}</span></div>
+                      <div style={{display:"flex",alignItems:"center"}}>{lastPay&&lastPay.depositDate?<div><div style={{fontSize:10,fontWeight:600}}>{fmtD(lastPay.depositDate)}</div><div style={{fontSize:8,color:"#6b5e52"}}>{lastPay.method||"—"}</div><div style={{fontSize:8,color:"#4a7c59"}}>Due: $0.00</div></div>:lastPay&&lastPay.depositStatus==="transit"?<span style={{fontSize:9,color:"#d4a853",fontWeight:600}}>In transit</span>:<span style={{fontSize:9,color:"#aaa"}}>—</span>}</div>
+                      <div style={{textAlign:"right",fontWeight:800,fontSize:13,color:st==="paid"?"#4a7c59":st==="pastdue"?"#c45c4a":"#1a1714",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>
+                        <span>{fmtS(c.amount)}</span>
+                        <span style={{fontSize:10,color:"#6b5e52",fontWeight:400}}>{isExp?"∧":"∨"}</span>
+                      </div>
+                    </div>
               {/* Expanded detail */}
               {isExp&&<div style={{padding:"16px 20px",background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.04)",animation:"fadeIn .15s"}}>
                 {/* Description + reminder history */}
@@ -10201,5 +10221,6 @@ export default function Page(){
     <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#5c4a3a",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
   </div>}
 
+  </div>{/* end outside zoom wrapper */}
   </div>);
 }
