@@ -879,6 +879,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
       <button className="btn btn-out btn-sm" onClick={addUrl} disabled={!urlInput.trim()}>Add URL</button>
     </div>
   </div>
+  </div>{/* end modals zoom wrapper */}
   </>);
 }
 
@@ -6901,509 +6902,272 @@ export default function Page(){
   </div>
 
   {/* ═══ MODALS ═══ */}
-  {modal&&modal.type==="tenant"&&(()=>{const r=modal.data;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;const months=dl?Math.max(0,Math.ceil(dl/30)):null;
+  {modal&&modal.type==="tenant"&&(()=>{
+    const r=modal.data;
+    const pd=(payments[r.id]&&payments[r.id][MO])||0;
+    const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+    const months=dl?Math.max(0,Math.ceil(dl/30)):null;
     const prop=props.find(p=>allRooms(p).some(x=>x.id===r.id));
+    const tenantCharges=charges.filter(c=>c.roomId===r.id).sort((a,b)=>new Date(b.dueDate)-new Date(a.dueDate));
+    const totalPaid=tenantCharges.reduce((s,c)=>s+c.amountPaid,0);
+    const pastDueC=tenantCharges.filter(c=>chargeStatus(c)==="pastdue").length;
+    const rentCharges=charges.filter(c=>c.roomId===r.id&&c.category==="Rent").sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
+    const lateFeeCharges=charges.filter(c=>c.roomId===r.id&&c.category==="Late Fee");
+    const totalLateFees=lateFeeCharges.reduce((s,c)=>s+c.amount,0);
+    const moData=rentCharges.map(c=>{
+      const st=chargeStatus(c);const paid=c.payments&&c.payments[0];
+      const dueDate=new Date(c.dueDate+"T00:00:00");const paidDate=paid?new Date(paid.date+"T00:00:00"):null;
+      const daysLate=paidDate?Math.max(0,Math.ceil((paidDate-dueDate)/(864e5))):null;
+      const isLate=paidDate&&daysLate>3;const isPastDue=st==="pastdue";
+      const mo=(c.dueDate||"").slice(0,7);
+      const label=mo?new Date(mo+"-02").toLocaleString("default",{month:"short",year:"2-digit"}):"—";
+      const matchedLateFee=lateFeeCharges.find(lf=>(lf.dueDate||"").slice(0,7)===mo);
+      const lateFeeAmt=matchedLateFee?matchedLateFee.amount:0;
+      return{c,st,daysLate,isLate,isPastDue,label,mo,lateFeeAmt};
+    });
+    const onTime=moData.filter(m=>!m.isLate&&!m.isPastDue&&(m.st==="paid"||m.st==="waived")).length;
+    const pct=rentCharges.length?Math.round(onTime/rentCharges.length*100):100;
+    const badgeLabel=pct>=90?"Great Payer":pct>=70?"Occasional Late":"Chronic Late";
+    const badgeColor=pct>=90?"#4a7c59":pct>=70?"#9a7422":"#c45c4a";
+    const badgeBg=pct>=90?"rgba(74,124,89,.1)":pct>=70?"rgba(212,168,83,.1)":"rgba(196,92,74,.1)";
+    const sendInvite=async()=>{
+      setPortalInviteState("sending");
+      try{
+        const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tenantName:r.tenant.name,tenantEmail:r.tenant.email,propertyName:r.propName,roomName:r.name,rent:r.rent,moveIn:r.tenant.moveIn})});
+        const d=await res.json();
+        if(d.ok)setPortalInviteState("sent"); else setPortalInviteState("error");
+      }catch(e){setPortalInviteState("error");}
+    };
+    // SVG icon helper
+    const TIcon=({d,d2,size=16,stroke="#6b5e52"})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d={d}/>{d2&&<path d={d2}/>}</svg>;
+    const catIcons={
+      "Rent":{d:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",d2:"M9 22V12h6v10",color:"#3b82f6"},
+      "Late Fee":{d:"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z",d2:"M12 9v4M12 17h.01",color:"#c45c4a"},
+      "Security Deposit":{d:"M19 11H5M19 11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2M19 11V9a7 7 0 1 0-14 0v2",color:"#7c3aed"},
+      "Utility Overage":{d:"M13 2L3 14h9l-1 8 10-12h-9l1-8z",color:"#9a7422"},
+      "Damage Charge":{d:"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",color:"#c45c4a"},
+    };
     return(
-    <div className="mbg" onClick={()=>{setModal(null);setPortalInviteState("idle");}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:580}} ref={el=>{if(el&&modal.startSection==="lease"){setTimeout(()=>{const t=el.querySelector("#lease-actions-section");if(t)t.scrollIntoView({behavior:"smooth",block:"start"});},150);}}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <h2 style={{margin:0}}>{r.tenant.name}</h2>
-        <button className="btn btn-gold btn-sm" onClick={()=>{setModal(null);setTab("tenants");}}>Open Full Profile →</button>
+    <div style={{position:"fixed",inset:0,background:"#f5f4f1",zIndex:200,overflowY:"auto",fontFamily:"inherit"}}>
+      {/* Top bar */}
+      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 24px",display:"flex",alignItems:"center",gap:16,height:56,position:"sticky",top:0,zIndex:10}}>
+        <button onClick={()=>{setModal(null);setPortalInviteState("idle");}}
+          onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.06)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}
+          style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,color:"#5c4a3a",padding:"6px 10px",borderRadius:6,transition:"background .15s"}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to Tenants
+        </button>
+        <div style={{width:1,height:20,background:"rgba(0,0,0,.1)"}}/>
+        {/* Avatar */}
+        <div style={{width:36,height:36,borderRadius:"50%",background:`rgba(${settings.adminAccentRgb||"74,124,89"},.15)`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,color:settings.adminAccent||"#4a7c59",flexShrink:0}}>
+          {(r.tenant.name||"?").split(" ").map(n=>n[0]).slice(0,2).join("")}
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:16,fontWeight:800,color:"#1a1714"}}>{r.tenant.name}</div>
+          <div style={{fontSize:11,color:"#6b5e52"}}>{r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {!pd&&<button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Record Payment</button>}
+          {!modal.termStep&&<button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{}}))}>Terminate Lease</button>}
+        </div>
       </div>
-      <div className="tp-card"><h3>Contact</h3><div className="tp-row"><span className="tp-label">Phone</span><strong>{r.tenant.phone}</strong></div><div className="tp-row"><span className="tp-label">Email</span><strong>{r.tenant.email}</strong></div></div>
 
-      {/* ── Portal Invite ── */}
-      {(()=>{
-        const sendInvite=async()=>{
-          setPortalInviteState("sending");
-          try{
-            const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
-              body:JSON.stringify({tenantName:r.tenant.name,tenantEmail:r.tenant.email,propertyName:r.propName,roomName:r.name,rent:r.rent,moveIn:r.tenant.moveIn})
-            });
-            const d=await res.json();
-            if(d.ok){setPortalInviteState("sent");}
-            else{setPortalInviteState("error");console.error(d.error);}
-          }catch(e){setPortalInviteState("error");console.error(e);}
-        };
-        return(
-        <div className="tp-card" style={{background:portalInviteState==="sent"?"rgba(74,124,89,.04)":"#fff",borderColor:portalInviteState==="sent"?"rgba(74,124,89,.2)":"rgba(0,0,0,.03)"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div>
-              <h3 style={{margin:0,marginBottom:3}}>Tenant Portal</h3>
-              <div style={{fontSize:11,color:"#6b5e52"}}>
-                {portalInviteState==="sent"?"Invite sent — tenant will receive an email with a login link."
-                  :portalInviteState==="error"?"Failed to send — check console and try again."
-                  :"Send the tenant a link to access their portal."}
+      {/* Body */}
+      <div style={{maxWidth:900,margin:"0 auto",padding:"24px 24px 48px"}}>
+
+        {/* Lease expiry alert */}
+        {dl&&dl<=90&&!modal.termStep&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.25)",borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:13,color:"#5c4a3a",display:"flex",alignItems:"center",gap:10}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span><strong>Lease expires in {dl} days</strong> ({fmtD(r.le)}). This room generates {fmtS(r.rent*12)}/yr — reach out about renewal.</span>
+        </div>}
+
+        {/* 2-col layout */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 340px",gap:20,alignItems:"start"}}>
+
+          {/* LEFT — main content */}
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* Payment — current month */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <TIcon d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" size={18}/>
+                  <span style={{fontSize:15,fontWeight:800}}>Payment — {MO}</span>
+                </div>
+                <span style={{fontSize:13,fontWeight:700,color:pd?"#4a7c59":"#c45c4a"}}>{pd?`Paid ${fmtS(pd)}`:`Unpaid — ${fmtS(r.rent)} due`}</span>
               </div>
-            </div>
-            {portalInviteState==="sent"
-              ?<span style={{fontSize:11,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.1)",padding:"5px 12px",borderRadius:6}}>Sent</span>
-              :<button className="btn btn-gold btn-sm" onClick={sendInvite} disabled={portalInviteState==="sending"}>
-                {portalInviteState==="sending"?"Sending...":"Send Portal Invite"}
-              </button>
-            }
-          </div>
-          {portalInviteState==="sent"&&<div style={{marginTop:10,fontSize:11,color:"#4a7c59"}}>
-            Invite sent to <strong>{r.tenant.email}</strong>. Link expires in 48 hours.
-            <button style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#6b5e52",marginLeft:8,fontFamily:"inherit"}} onClick={()=>setPortalInviteState("idle")}>Resend</button>
-          </div>}
-        </div>);
-      })()}
-
-      <div className="tp-card"><h3>Room</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{r.propName}</strong></div><div className="tp-row"><span className="tp-label">Room</span><strong>{r.name}</strong></div><div className="tp-row"><span className="tp-label">Bath</span><strong>{r.pb?"Private":"Shared"}</strong></div><div className="tp-row"><span className="tp-label">Rent</span><strong style={{fontSize:16}}>{fmtS(r.rent)}/mo</strong></div><div className="tp-row"><span className="tp-label">Utilities</span><strong>{r.propUtils==="allIncluded"?"All Included":"Tenant pays (split equally)"}</strong></div><div className="tp-row"><span className="tp-label">Cleaning</span><strong>{r.propClean}</strong></div></div>
-      <div className="tp-card"><h3>Lease</h3><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(r.tenant.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">Lease End</span><strong style={{color:dl&&dl<=30?"#c45c4a":dl&&dl<=90?"#d4a853":"inherit"}}>{fmtD(r.le)}</strong></div>{dl&&<><div className="tp-row"><span className="tp-label">Days Left</span><strong style={{color:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59"}}>{dl} days ({months} mo)</strong></div><div style={{height:6,borderRadius:3,background:"#e5e3df",marginTop:8}}><div style={{height:"100%",borderRadius:3,width:`${Math.min(100,Math.max(0,(1-dl/365)*100))}%`,background:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59"}}/></div></>}
-        <div className="tp-row"><span className="tp-label">Annual Value</span><strong>{fmtS(r.rent*12)}/yr</strong></div>
-      </div>
-      <div className="tp-card"><h3>Payment — {MO}</h3><div className="tp-row"><span className="tp-label">Status</span><strong style={{color:pd?"#4a7c59":"#c45c4a"}}>{pd?`Paid ${fmtS(pd)}`:`Unpaid — ${fmtS(r.rent)} due`}</strong></div>{!pd&&<button className="btn btn-green" style={{width:"100%",marginTop:8}} onClick={()=>openPayForm(r.id)}>Record Payment →</button>}</div>
-
-
-      {/* Payment Pattern Badge */}
-      {(()=>{
-        const rentCharges=charges.filter(c=>c.roomId===r.id&&c.category==="Rent").sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-        if(rentCharges.length===0)return null;
-        // Late fee charges for this tenant
-        const lateFeeCharges=charges.filter(c=>c.roomId===r.id&&c.category==="Late Fee");
-        const totalLateFees=lateFeeCharges.reduce((s,c)=>s+c.amount,0);
-        const totalInitialFees=lateFeeCharges.length*50;
-        const totalDailyFees=Math.max(0,totalLateFees-totalInitialFees);
-        // Per-month data
-        const moData=rentCharges.map(c=>{
-          const st=chargeStatus(c);
-          const paid=c.payments&&c.payments[0];
-          const dueDate=new Date(c.dueDate+"T00:00:00");
-          const paidDate=paid?new Date(paid.date+"T00:00:00"):null;
-          const daysLate=paidDate?Math.max(0,Math.ceil((paidDate-dueDate)/(864e5))):null;
-          const isLate=paidDate&&daysLate>3;
-          const isPastDue=st==="pastdue";
-          const mo=(c.dueDate||"").slice(0,7);
-          const label=mo?new Date(mo+"-02").toLocaleString("default",{month:"short",year:"2-digit"}):"—";
-          // Find matching late fee charge for this month
-          const matchedLateFee=lateFeeCharges.find(lf=>(lf.dueDate||"").slice(0,7)===mo);
-          const lateFeeAmt=matchedLateFee?matchedLateFee.amount:0;
-          const initFee=lateFeeAmt>0?50:0;
-          const dailyFee=Math.max(0,lateFeeAmt-50);
-          return{c,st,daysLate,isLate,isPastDue,label,mo,lateFeeAmt,initFee,dailyFee};
-        });
-        const onTime=moData.filter(m=>!m.isLate&&!m.isPastDue&&(m.st==="paid"||m.st==="waived")).length;
-        const lateMonths=moData.filter(m=>m.isLate);
-        const pct=rentCharges.length?Math.round(onTime/rentCharges.length*100):0;
-        const avgDaysLate=lateMonths.length?Math.round(lateMonths.reduce((s,m)=>s+(m.daysLate||0),0)/lateMonths.length):0;
-        const pastDueNow=moData.filter(m=>m.isPastDue).length;
-        const badge=pct>=90?"🟢 Great Payer":pct>=70?"🟡 Occasional Late":"🔴 Chronic Late";
-        const badgeColor=pct>=90?"#4a7c59":pct>=70?"#9a7422":"#c45c4a";
-        const badgeBg=pct>=90?"rgba(74,124,89,.08)":pct>=70?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)";
-        const isExp=expanded.payPattern===r.id;
-        return(
-        <div className="tp-card">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,payPattern:isExp?null:r.id}))}>
-            <h3 style={{margin:0}}>Payment Pattern</h3>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:11,fontWeight:700,color:badgeColor,background:badgeBg,padding:"3px 10px",borderRadius:100}}>{badge}</span>
-              <span style={{fontSize:10,color:"#6b5e52"}}>{isExp?"▾":"▸"} Details</span>
-            </div>
-          </div>
-
-          {isExp&&<div style={{marginTop:12,borderTop:"1px solid rgba(0,0,0,.04)",paddingTop:12}}>
-
-            {/* Summary stats */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
-              <div style={{background:"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
-                <div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>On-Time</div>
-                <div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{pct}%</div>
-                <div style={{fontSize:9,color:"#6b5e52"}}>{onTime} of {rentCharges.length} months</div>
-              </div>
-              <div style={{background:lateMonths.length?"rgba(212,168,83,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
-                <div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Avg Days Late</div>
-                <div style={{fontSize:18,fontWeight:800,color:lateMonths.length?"#9a7422":"#4a7c59"}}>{lateMonths.length?avgDaysLate:0}</div>
-                <div style={{fontSize:9,color:"#6b5e52"}}>{lateMonths.length} late month{lateMonths.length!==1?"s":""}</div>
-              </div>
-              <div style={{background:pastDueNow?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
-                <div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Past Due Now</div>
-                <div style={{fontSize:18,fontWeight:800,color:pastDueNow?"#c45c4a":"#4a7c59"}}>{pastDueNow}</div>
-                <div style={{fontSize:9,color:"#6b5e52"}}>charge{pastDueNow!==1?"s":""}</div>
-              </div>
+              {!pd&&<button className="btn btn-green" style={{width:"100%"}} onClick={()=>openPayForm(r.id)}>Record Payment →</button>}
+              {pd&&<div style={{padding:"10px 14px",background:"rgba(74,124,89,.06)",borderRadius:8,fontSize:12,color:"#2d6a3f",fontWeight:600,textAlign:"center"}}>✓ Paid for {MO}</div>}
             </div>
 
-            {/* Late fee summary */}
-            {totalLateFees>0&&<div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.1)",borderRadius:8,padding:10,marginBottom:14}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#c45c4a",marginBottom:6}}>💸 Total Late Fees Charged</div>
-              <div style={{display:"flex",gap:12,fontSize:12}}>
-                <div style={{flex:1}}>
-                  <div style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#6b5e52"}}>Initial fee ({lateFeeCharges.length}× $50)</span><strong>{fmtS(totalInitialFees)}</strong></div>
-                  <div style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#6b5e52"}}>Daily charges ($5/day)</span><strong>{fmtS(totalDailyFees)}</strong></div>
-                  <div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",fontWeight:800}}><span>Total late fees</span><span style={{color:"#c45c4a"}}>{fmtS(totalLateFees)}</span></div>
+            {/* Payment Pattern */}
+            {rentCharges.length>0&&<div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <TIcon d="M23 6l-9.5 9.5-5-5L1 18" size={18}/>
+                  <span style={{fontSize:15,fontWeight:800}}>Payment Pattern</span>
+                </div>
+                <span style={{fontSize:11,fontWeight:700,color:badgeColor,background:badgeBg,padding:"3px 10px",borderRadius:100}}>{badgeLabel}</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:14}}>
+                <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+                  <div style={{fontSize:20,fontWeight:800,color:"#4a7c59"}}>{pct}%</div>
+                  <div style={{fontSize:10,color:"#6b5e52"}}>On-time</div>
+                </div>
+                <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+                  <div style={{fontSize:20,fontWeight:800,color:totalLateFees?"#c45c4a":"#4a7c59"}}>{fmtS(totalLateFees)}</div>
+                  <div style={{fontSize:10,color:"#6b5e52"}}>Late Fees</div>
+                </div>
+                <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+                  <div style={{fontSize:20,fontWeight:800,color:pastDueC?"#c45c4a":"#4a7c59"}}>{pastDueC}</div>
+                  <div style={{fontSize:10,color:"#6b5e52"}}>Overdue Now</div>
                 </div>
               </div>
             </div>}
 
-            {/* Month-by-month table */}
-            <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Month-by-Month</div>
-            <div style={{border:"1px solid rgba(0,0,0,.05)",borderRadius:8,overflow:"hidden"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-                <thead>
-                  <tr style={{background:"rgba(0,0,0,.02)"}}>
-                    <th style={{padding:"6px 10px",textAlign:"left",fontSize:8,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5}}>Month</th>
-                    <th style={{padding:"6px 10px",textAlign:"center",fontSize:8,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5}}>Status</th>
-                    <th style={{padding:"6px 10px",textAlign:"center",fontSize:8,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5}}>Days Late</th>
-                    <th style={{padding:"6px 10px",textAlign:"right",fontSize:8,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5}}>Late Fee</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {moData.map(({c,st,daysLate,isLate,isPastDue,label,lateFeeAmt,initFee,dailyFee},i)=>{
-                    const statusColor=st==="paid"&&!isLate?"#4a7c59":isLate?"#9a7422":isPastDue?"#c45c4a":"#3b82f6";
-                    const daysOverdue=isPastDue?Math.ceil((TODAY-new Date(c.dueDate+"T00:00:00"))/(864e5)):0;
-                    const statusLabel=st==="paid"&&!isLate?"✓ On-time":isLate?`⚠ ${daysLate}d late`:isPastDue?`${daysOverdue}d overdue`:st==="waived"?"— Waived":"○ Unpaid";
-                    return(
-                    <tr key={c.id} style={{borderTop:i>0?"1px solid rgba(0,0,0,.03)":"none",background:isPastDue?"rgba(196,92,74,.02)":isLate?"rgba(212,168,83,.02)":"transparent"}}>
-                      <td style={{padding:"7px 10px",fontWeight:600}}>{label}</td>
-                      <td style={{padding:"7px 10px",textAlign:"center"}}><span style={{fontSize:10,fontWeight:700,color:statusColor}}>{statusLabel}</span></td>
-                      <td style={{padding:"7px 10px",textAlign:"center"}}>
-                        {isLate&&daysLate!==null
-                          ?<span style={{fontWeight:700,color:daysLate>=14?"#c45c4a":daysLate>=7?"#9a7422":"#d4a853"}}>{daysLate}d</span>
-                          :isPastDue
-                          ?<span style={{fontWeight:700,color:"#c45c4a"}}>{daysOverdue}d</span>
-                          :<span style={{color:"#8a7d74"}}>—</span>}
-                      </td>
-                      <td style={{padding:"7px 10px",textAlign:"right"}}>
-                        {lateFeeAmt>0
-                          ?<div>
-                            <div style={{fontWeight:700,color:"#c45c4a"}}>{fmtS(lateFeeAmt)}</div>
-                            <div style={{fontSize:9,color:"#6b5e52"}}>${initFee} base{dailyFee>0?` + $${dailyFee} (${Math.round(dailyFee/5)}d × $5)`:""}</div>
-                          </div>
-                          :isPastDue
-                          ?(()=>{
-                            const graceDays=3;
-                            const daysOverdue2=Math.ceil((TODAY-new Date(c.dueDate+"T00:00:00"))/(864e5));
-                            const daysChargeable2=Math.max(0,daysOverdue2-graceDays);
-                            if(daysChargeable2<=0)return<span style={{fontSize:10,color:"#6b5e52"}}>In grace period</span>;
-                            const accruing=50+daysChargeable2*5;
-                            return(<div>
-                              <div style={{fontWeight:700,color:"#c45c4a",animation:"pulse 1.5s ease-in-out infinite"}}>{fmtS(accruing)}</div>
-                              <div style={{fontSize:9,color:"#c45c4a",opacity:.7}}>$50 + {daysChargeable2*5} ({daysChargeable2}d × $5)</div>
-                            </div>);
-                          })()
-                          :<span style={{color:"#8a7d74",fontSize:10}}>—</span>}
-                      </td>
-                    </tr>);
-                  })}
-                </tbody>
-                {totalLateFees>0&&<tfoot>
-                  <tr style={{borderTop:"2px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.01)"}}>
-                    <td colSpan={3} style={{padding:"7px 10px",fontWeight:700,fontSize:11}}>Total Late Fees</td>
-                    <td style={{padding:"7px 10px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(totalLateFees)}</td>
-                  </tr>
-                </tfoot>}
-              </table>
-            </div>
-            <div style={{display:"flex",gap:12,marginTop:8,fontSize:9,color:"#6b5e52"}}>
-              <span style={{color:"#4a7c59"}}>✓ On-time (within 3 days)</span>
-              <span style={{color:"#9a7422"}}>⚠ Paid late</span>
-              <span style={{color:"#c45c4a"}}>🔴 Still overdue</span>
-            </div>
-          </div>}
-        </div>);
-      })()}
-
-      {/* Payment Ledger */}
-      {(()=>{
-        const tenantCharges=charges.filter(c=>c.roomId===r.id).sort((a,b)=>new Date(b.dueDate)-new Date(a.dueDate));
-        const pastDueC=tenantCharges.filter(c=>chargeStatus(c)==="pastdue").length;
-        const totalPaid=tenantCharges.reduce((s,c)=>s+c.amountPaid,0);
-
-        // Category visual config
-        const catStyle={
-          "Rent":          {icon:"🏠",bg:"rgba(59,130,246,.06)",border:"rgba(59,130,246,.15)",color:"#3b82f6",label:"Rent"},
-          "Late Fee":      {icon:"⚠️",bg:"rgba(196,92,74,.06)",border:"rgba(196,92,74,.2)",color:"#c45c4a",label:"Late Fee"},
-          "Utility Overage":{icon:"⚡",bg:"rgba(212,168,83,.06)",border:"rgba(212,168,83,.2)",color:"#9a7422",label:"Utility"},
-          "Security Deposit":{icon:"🔒",bg:"rgba(139,92,246,.06)",border:"rgba(139,92,246,.15)",color:"#7c3aed",label:"Security Deposit"},
-          "Damage Charge": {icon:"🔨",bg:"rgba(196,92,74,.04)",border:"rgba(196,92,74,.1)",color:"#c45c4a",label:"Damage"},
-          "Cleaning Fee":  {icon:"🧹",bg:"rgba(74,124,89,.04)",border:"rgba(74,124,89,.1)",color:"#4a7c59",label:"Cleaning"},
-          "Move-In Fee":   {icon:"📦",bg:"rgba(59,130,246,.04)",border:"rgba(59,130,246,.1)",color:"#3b82f6",label:"Move-In"},
-          "Move-Out Fee":  {icon:"📦",bg:"rgba(212,168,83,.04)",border:"rgba(212,168,83,.1)",color:"#9a7422",label:"Move-Out"},
-          "Lock Change":   {icon:"🔑",bg:"rgba(0,0,0,.03)",border:"rgba(0,0,0,.08)",color:"#5c4a3a",label:"Lock"},
-          "Key Replacement":{icon:"🗝️",bg:"rgba(0,0,0,.03)",border:"rgba(0,0,0,.08)",color:"#5c4a3a",label:"Key"},
-          "Pet Violation": {icon:"🐾",bg:"rgba(196,92,74,.04)",border:"rgba(196,92,74,.1)",color:"#c45c4a",label:"Violation"},
-          "Smoking Violation":{icon:"🚭",bg:"rgba(196,92,74,.04)",border:"rgba(196,92,74,.1)",color:"#c45c4a",label:"Violation"},
-          "Guest Violation":{icon:"🚷",bg:"rgba(196,92,74,.04)",border:"rgba(196,92,74,.1)",color:"#c45c4a",label:"Violation"},
-        };
-        const cs=(cat)=>catStyle[cat]||{icon:"💳",bg:"rgba(0,0,0,.02)",border:"rgba(0,0,0,.06)",color:"#6b5e52",label:cat};
-
-        // Compute rolling accrued late fee for a past-due charge
-        const accruedLateFee=(c)=>{
-          if(c.noLateFee)return null;// SD, move-in charges exempt
-          if(chargeStatus(c)!=="pastdue"||c.category!=="Rent")return null;
-          const dueDate=new Date(c.dueDate+"T00:00:00");
-          const graceDays=3;
-          const daysOverdue=Math.ceil((TODAY-dueDate)/(864e5));
-          if(daysOverdue<=graceDays)return null;
-          const daysChargeable=daysOverdue-graceDays;
-          return{initial:50,daily:daysChargeable*5,total:50+daysChargeable*5,daysChargeable};
-        };
-
-        return(
-        <div className="tp-card"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><h3 style={{margin:0}}>📒 Payment Ledger</h3><button className="btn btn-out btn-sm" onClick={()=>{setTab("accounting");setLedgerTenant(r.id);setModal(null);}}>View Full Ledger →</button></div>
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
-            <div style={{flex:1,background:"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Total Paid</div><div style={{fontSize:16,fontWeight:800,color:"#4a7c59"}}>{fmtS(totalPaid)}</div></div>
-            <div style={{flex:1,background:"rgba(0,0,0,.02)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Charges</div><div style={{fontSize:16,fontWeight:800}}>{tenantCharges.length}</div></div>
-            <div style={{flex:1,background:pastDueC?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Overdue</div><div style={{fontSize:16,fontWeight:800,color:pastDueC?"#c45c4a":"#4a7c59"}}>{pastDueC}</div></div>
-          </div>
-
-          {tenantCharges.length>0?tenantCharges.map(c=>{
-            const st=chargeStatus(c);
-            const isExp=expCharge===c.id;
-            const rem=c.amount-c.amountPaid;
-            const confId=`BB-${c.id.slice(0,8).toUpperCase()}`;
-            const style=cs(c.category);
-            const accrued=accruedLateFee(c);
-            return(
-            <div key={c.id} style={{marginBottom:6}}>
-              {/* Main charge row */}
-              <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 10px",borderRadius:8,border:`1px solid ${st==="pastdue"?"rgba(196,92,74,.25)":style.border}`,background:st==="pastdue"?"rgba(196,92,74,.03)":isExp?style.bg:style.bg,cursor:"pointer",transition:"all .1s"}} onClick={()=>setExpCharge(isExp?null:c.id)}>
-                <div style={{fontSize:16,flexShrink:0}}>{style.icon}</div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
-                    <span style={{fontWeight:700,fontSize:11,color:style.color}}>{style.label}</span>
-                    <span style={{fontSize:11,color:"#5c4a3a",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.desc}</span>
+            {/* Payment Ledger */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <TIcon d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" d2="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 0 3-3h7z" size={18}/>
+                  <span style={{fontSize:15,fontWeight:800}}>Payment Ledger</span>
+                </div>
+                <div style={{display:"flex",gap:16,fontSize:12}}>
+                  <span style={{color:"#6b5e52"}}>Total Paid: <strong style={{color:"#4a7c59"}}>{fmtS(totalPaid)}</strong></span>
+                  <span style={{color:"#6b5e52"}}>Charges: <strong>{tenantCharges.length}</strong></span>
+                  {pastDueC>0&&<span style={{color:"#c45c4a",fontWeight:700}}>Overdue: {pastDueC}</span>}
+                </div>
+              </div>
+              {tenantCharges.length===0&&<div style={{textAlign:"center",padding:20,color:"#6b5e52",fontSize:13}}>No charges yet.</div>}
+              {tenantCharges.slice(0,8).map(c=>{
+                const st=chargeStatus(c);const rem=c.amount-c.amountPaid;
+                const ci=catIcons[c.category]||{d:"M9 11l3 3L22 4",color:"#6b5e52"};
+                const stColors={paid:"#4a7c59",unpaid:"#3b82f6",pastdue:"#c45c4a",partial:"#d4a853",waived:"#8a7d74"};
+                return(
+                <div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                  <div style={{width:32,height:32,borderRadius:8,background:`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.08)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <TIcon d={ci.d} d2={ci.d2} size={14} stroke={ci.color}/>
                   </div>
-                  <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>Due {fmtD(c.dueDate)}{c.payments.length>0?` · ${c.payments.length} payment${c.payments.length>1?"s":""}`:""}</div>
-                </div>
-                <div style={{textAlign:"right",flexShrink:0}}>
-                  <div style={{fontWeight:800,fontSize:13}}>{fmtS(c.amount)}</div>
-                  <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="partial"?"b-gold":st==="waived"?"b-gray":"b-blue"}`} style={{fontSize:7}}>{st}</span>
-                </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:12,fontWeight:600}}>{c.desc||c.category}</div>
+                    <div style={{fontSize:10,color:"#6b5e52"}}>Due {fmtD(c.dueDate)}{c.amountPaid>0&&c.amountPaid<c.amount?` · ${fmtS(c.amountPaid)} paid`:""}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:13,fontWeight:800}}>{fmtS(c.amount)}</div>
+                    <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="partial"?"b-gold":"b-blue"}`} style={{fontSize:8}}>{st}</span>
+                  </div>
+                  {st!=="paid"&&st!=="waived"&&<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Pay</button>}
+                </div>);
+              })}
+              {tenantCharges.length>8&&<button className="btn btn-out btn-sm" style={{width:"100%",marginTop:10}} onClick={()=>{setModal(null);goTab("payments");setPayFilters({...payFilters,tenant:r.tenant.name});}}>View all {tenantCharges.length} charges →</button>}
+            </div>
+
+            {/* Terminate lease flow */}
+            {modal.termStep===1&&<div style={{background:"#fff",borderRadius:12,border:"2px solid rgba(196,92,74,.25)",padding:"20px 24px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <TIcon d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" d2="M12 9v4M12 17h.01" stroke="#c45c4a" size={18}/>
+                <span style={{fontSize:15,fontWeight:800,color:"#c45c4a"}}>Terminate Lease</span>
               </div>
-
-              {/* Rolling late fee accrual banner */}
-              {accrued&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderTop:"none",borderRadius:"0 0 8px 8px",fontSize:11}}>
-                <div style={{color:"#c45c4a"}}>
-                  <span style={{fontWeight:700}}>⚠️ Late fee accruing:</span> {accrued.initial} base + {accrued.daily} ({accrued.daysChargeable}d × $5)
-                </div>
-                <div style={{fontWeight:800,color:"#c45c4a",fontSize:13}}>{fmtS(accrued.total)}</div>
-              </div>}
-
-              {/* Expanded payment detail */}
-              {isExp&&<div style={{padding:"10px 12px",background:"#f8f7f4",border:`1px solid ${style.border}`,borderTop:"none",borderRadius:"0 0 8px 8px",animation:"fadeIn .15s",fontSize:11}}>
-                {c.payments.length>0&&c.payments.map(p=><div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}>
-                  <span>{fmtD(p.date)} · {p.method}{p.notes?` · ${p.notes}`:""}</span><strong style={{color:"#4a7c59"}}>{fmtS(p.amount)}</strong>
-                </div>)}
-                {st==="paid"&&<div style={{fontSize:10,color:"#4a7c59",marginTop:4}}>Confirmed · {confId}</div>}
-                {st!=="paid"&&st!=="waived"&&<div style={{display:"flex",gap:4,marginTop:8}}>
-                  <button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});}}>Record Payment</button>
-                  <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setTab("payments");setPaySubTab("charges");setPayFilters({...payFilters,tenant:c.tenantName});setModal(null);}}>View in Charges →</button>
-                </div>}
-              </div>}
-            </div>);}
-          ):<div style={{textAlign:"center",padding:16,color:"#6b5e52",fontSize:11}}>No charges yet. Rent charges auto-generate on the 20th for next month.</div>}
-        </div>);})()}
-
-      {/* Lease Actions */}
-      <div className="tp-card" id="lease-actions-section"><h3>⚡ Lease Actions</h3>
-        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10}}>Lease renewals happen when the tenant signs a new lease. Use the actions below to manage room assignments or end the lease.</div>
-        {(()=>{const allVacant=props.flatMap(pr=>(pr.units||[]).flatMap(u=>(u.rooms||[]).filter(x=>x.st==="vacant").map(x=>({...x,propName:pr.name,propId:pr.id,unitId:u.id,propUtils:u.utils||pr.utils}))));return allVacant.length>0?(
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",marginBottom:6}}>MOVE TO DIFFERENT ROOM (ADDENDUM)</div>
-            <button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,moveStep:1,moveTarget:null,moveDate:"immediately",moveCustomDate:TODAY.toISOString().split("T")[0],moveNewRent:null,moveNotes:"",moveAllVacant:allVacant}))}>Begin Room Move Process →</button>
+              <div className="fld"><label>Termination Date *</label><input type="date" value={modal.termDate||""} onChange={e=>setModal(p=>({...p,termDate:e.target.value,termErrs:{}}))} style={{width:"100%"}}/>{(modal.termErrs?.date)&&<div className="err-msg">{modal.termErrs.date}</div>}</div>
+              <div className="fld"><label>Reason *</label><textarea value={modal.termNotes||""} onChange={e=>setModal(p=>({...p,termNotes:e.target.value,termErrs:{}}))} placeholder="e.g. Lease completed, tenant moved out" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}}/>{(modal.termErrs?.notes)&&<div className="err-msg">{modal.termErrs.notes}</div>}</div>
+              <div style={{display:"flex",gap:6}}>
+                <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(p=>({...p,termStep:null}))}>Cancel</button>
+                <button className="btn btn-red" style={{flex:1}} onClick={()=>{const e={};if(!modal.termDate)e.date="Required";if(!(modal.termNotes||"").trim())e.notes="Required";if(Object.keys(e).length){setModal(p=>({...p,termErrs:e}));shakeModal();return;}setModal(p=>({...p,termStep:2}));}}>Continue →</button>
+              </div>
+            </div>}
+            {modal.termStep===2&&<div style={{background:"#fff",borderRadius:12,border:"2px solid rgba(196,92,74,.25)",padding:"20px 24px"}}>
+              <div style={{fontSize:14,fontWeight:800,color:"#c45c4a",marginBottom:14}}>Confirm Termination</div>
+              <div className="fld"><label>Security Deposit *</label><select value={modal.termSdStatus||""} onChange={e=>setModal(p=>({...p,termSdStatus:e.target.value}))} style={{width:"100%"}}><option value="">Select...</option><option value="returned">Returned in full</option><option value="partial">Partial return</option><option value="withheld">Withheld for damages</option></select>{(modal.termErrs?.sd)&&<div className="err-msg">{modal.termErrs.sd}</div>}</div>
+              <div className="fld"><label>Type tenant name to confirm: <strong>{r.tenant.name}</strong></label><input value={modal.termConfirm||""} onChange={e=>setModal(p=>({...p,termConfirm:e.target.value}))} placeholder={r.tenant.name} style={{width:"100%"}}/>{(modal.termErrs?.confirm)&&<div className="err-msg">{modal.termErrs.confirm}</div>}</div>
+              <div style={{display:"flex",gap:6}}>
+                <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(p=>({...p,termStep:1,termErrs:{}}))}>← Back</button>
+                <button className="btn btn-red" style={{flex:1}} onClick={()=>{
+                  const e={};if(!modal.termSdStatus)e.sd="Select SD status";if((modal.termConfirm||"").trim()!==r.tenant.name)e.confirm=`Must match: "${r.tenant.name}"`;
+                  if(Object.keys(e).length){setModal(p=>({...p,termErrs:e}));shakeModal();return;}
+                  setArchive(prev=>[{id:uid(),name:r.tenant.name,email:r.tenant.email,phone:r.tenant.phone,roomName:r.name,propName:r.propName,rent:r.rent,moveIn:r.tenant.moveIn,leaseEnd:r.le,terminatedDate:modal.termDate,reason:modal.termNotes,sdStatus:modal.termSdStatus,sdNote:modal.termSdNote||"",payments:payments[r.id]||{},archivedOn:TODAY.toISOString().split("T")[0]},...prev]);
+                  const termUnit=r.unitId?props.flatMap(p=>p.units||[]).find(u=>u.id===r.unitId):null;
+                  const termIsWhole=!!(termUnit&&(termUnit.rentalMode||"byRoom")==="wholeHouse");
+                  if(termIsWhole&&r.unitId){setProps(prev=>prev.map(p=>({...p,units:(p.units||[]).map(u=>u.id===r.unitId?{...u,rooms:(u.rooms||[]).map(rm=>({...rm,st:"vacant",le:null,tenant:null}))}:u)})));}
+                  else{setProps(prev=>updateRoomInProps(prev,r.id,rm=>({...rm,st:"vacant",le:null,tenant:null})));}
+                  setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease terminated: ${r.tenant.name} — ${r.name} at ${r.propName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+                  setModal(null);
+                }}>Confirm Termination</button>
+              </div>
+            </div>}
           </div>
-        ):null;})()}
-        <div style={{fontSize:10,fontWeight:700,color:"#c45c4a",marginBottom:6,marginTop:8}}>TERMINATE LEASE</div>
-        <button className="btn btn-red btn-sm" onClick={()=>setModal(prev=>({...prev,termStep:1,termDate:r.le||TODAY.toISOString().split("T")[0],termNotes:""}))}>Begin Termination Process</button>
-      </div>
 
-      {/* Room Move - Step 1: Select Room */}
-      {modal.moveStep===1&&<div style={{background:"rgba(59,130,246,.04)",border:"2px solid rgba(59,130,246,.15)",borderRadius:10,padding:16,marginTop:10,animation:"fadeIn .2s"}}>
-        <h3 style={{fontSize:14,fontWeight:800,color:"#3b82f6",marginBottom:10}}>Move Room — Step 1: Select New Room</h3>
-        <p style={{fontSize:12,color:"#5c4a3a",marginBottom:12}}>Select the vacant room to move {r.tenant.name} into. This creates a lease addendum — the existing lease stays, only room/rent/utility details change.</p>
-        {(modal.moveAllVacant||[]).map(vr=>{const isSelected=modal.moveTarget===vr.id;const rentDiff=vr.rent-r.rent;const sdDiff=vr.rent-r.rent;const utilChange=vr.propUtils!==r.propUtils;return(
-          <div key={vr.id} style={{padding:10,border:`2px solid ${isSelected?"#3b82f6":"rgba(0,0,0,.06)"}`,borderRadius:8,marginBottom:6,cursor:"pointer",background:isSelected?"rgba(59,130,246,.04)":"#fff",transition:"all .15s"}} onClick={()=>setModal(prev=>({...prev,moveTarget:vr.id,moveNewRent:vr.rent}))}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div><div style={{fontSize:13,fontWeight:700}}>{vr.name}</div><div style={{fontSize:10,color:"#6b5e52"}}>{vr.propName} · {vr.pb?"Private":"Shared"} bath · {vr.sqft||"—"} sqft</div></div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:800}}>{fmtS(vr.rent)}/mo</div>
-                {rentDiff!==0&&<div style={{fontSize:10,fontWeight:700,color:rentDiff>0?"#c45c4a":"#4a7c59"}}>{rentDiff>0?`+${fmtS(rentDiff)} upgrade`:`${fmtS(rentDiff)} downgrade`}</div>}
-                {utilChange&&<div style={{fontSize:9,color:"#d4a853",fontWeight:600}}>⚠ Utility model changes</div>}
+          {/* RIGHT — sidebar */}
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* Contact */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <TIcon d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" d2="M12 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" size={16}/>
+                <span style={{fontSize:14,fontWeight:700}}>Contact</span>
+              </div>
+              <div style={{display:"flex",gap:10,marginBottom:8,alignItems:"center"}}>
+                <TIcon d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.16 12a19.79 19.79 0 0 1-3-8.57A2 2 0 0 1 3.13 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z" size={14}/>
+                <span style={{fontSize:12}}>{r.tenant.phone||"—"}</span>
+              </div>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <TIcon d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" d2="M22 6l-10 7L2 6" size={14}/>
+                <span style={{fontSize:12,color:"#3b82f6"}}>{r.tenant.email||"—"}</span>
               </div>
             </div>
-            {sdDiff!==0&&<div style={{fontSize:10,color:sdDiff>0?"#c45c4a":"#4a7c59",marginTop:4}}>SD adjustment: {sdDiff>0?`Tenant owes ${fmtS(sdDiff)} additional deposit`:`${fmtS(Math.abs(sdDiff))} credit applied from overage`}</div>}
-          </div>);})}
-        <div style={{display:"flex",gap:6,marginTop:10}}>
-          <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,moveStep:undefined}))}>Cancel</button>
-          <button className="btn btn-dk" style={{flex:1}} onClick={()=>{
-            if(!modal.moveTarget){shakeModal();return;}
-            setModal(prev=>({...prev,moveStep:2}));
-          }}>Continue →</button>
-        </div>
-      </div>}
 
-      {/* Room Move - Step 2: Details */}
-      {modal.moveStep===2&&(()=>{const target=(modal.moveAllVacant||[]).find(x=>x.id===modal.moveTarget);if(!target)return null;const sdDiff=target.rent-r.rent;const utilChange=target.propUtils!==(r.propUtils||r.utils);return(
-        <div style={{background:"rgba(59,130,246,.04)",border:"2px solid rgba(59,130,246,.15)",borderRadius:10,padding:16,marginTop:10,animation:"fadeIn .2s"}}>
-          <h3 style={{fontSize:14,fontWeight:800,color:"#3b82f6",marginBottom:10}}>Move Room — Step 2: Details</h3>
-          <div className="fld"><label>New Rent (defaults to room price, editable for negotiation)</label><input type="number" value={modal.moveNewRent||target.rent} onChange={e=>setModal(prev=>({...prev,moveNewRent:Number(e.target.value)}))}/></div>
-          <div className="fld"><label>Effective Date</label>
-            <div style={{display:"flex",gap:4,marginBottom:6}}>
-              {[["immediately","Immediately"],["endOfMonth","End of This Month"],["custom","Custom Date"]].map(([v,l])=>(
-                <button key={v} className={`btn ${modal.moveDate===v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setModal(prev=>({...prev,moveDate:v}))}>{l}</button>
+            {/* Room & Lease */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <TIcon d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" d2="M9 22V12h6v10" size={16}/>
+                <span style={{fontSize:14,fontWeight:700}}>Room & Lease</span>
+              </div>
+              {[
+                ["Property",r.propName+(prop?.addr?" · "+prop.addr:"")],
+                ["Room",r.name],
+                ["Bath",r.pb?"Private":"Shared"],
+                ["Rent",fmtS(r.rent)+"/mo"],
+                ["Utilities",r.propUtils==="allIncluded"?"All Included":"Tenant pays (split)"],
+                ["Move-in",fmtD(r.tenant.moveIn)],
+                ["Lease End",fmtD(r.le)||(dl&&dl<=30?"—":null)],
+                ["Annual Value",fmtS(r.rent*12)+"/yr"],
+              ].filter(([,v])=>v).map(([l,v])=>(
+                <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:12}}>
+                  <span style={{color:"#6b5e52",fontWeight:500}}>{l}</span>
+                  <span style={{fontWeight:600,textAlign:"right",maxWidth:"60%"}}>{v}</span>
+                </div>
               ))}
+              {dl&&<>
+                <div style={{height:5,borderRadius:3,background:"rgba(0,0,0,.06)",marginTop:10}}>
+                  <div style={{height:"100%",borderRadius:3,width:`${Math.min(100,Math.max(0,(1-dl/365)*100))}%`,background:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#4a7c59",transition:"width .3s"}}/>
+                </div>
+                <div style={{fontSize:10,color:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#6b5e52",marginTop:4}}>{dl} days remaining ({months} mo)</div>
+              </>}
             </div>
-            {modal.moveDate==="custom"&&<input type="date" value={modal.moveCustomDate} onChange={e=>setModal(prev=>({...prev,moveCustomDate:e.target.value}))}/>}
-          </div>
-          {utilChange&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:6,padding:10,marginBottom:8,fontSize:11,color:"#9a7422"}}><strong>⚠ Utility model change:</strong> Moving from {r.propUtils==="allIncluded"?"All Included (landlord pays)":"Tenant Pays (split)"} to {target.propUtils==="allIncluded"?"All Included (landlord pays)":"Tenant Pays (split)"}. The addendum should reflect this.</div>}
-          {sdDiff!==0&&<div style={{background:sdDiff>0?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:10,marginBottom:8,fontSize:11,color:sdDiff>0?"#c45c4a":"#4a7c59"}}><strong>SD Adjustment:</strong> {sdDiff>0?`Tenant owes ${fmtS(sdDiff)} additional deposit (upgrade). An invoice will be generated.`:`${fmtS(Math.abs(sdDiff))} overage from current SD will be credited (downgrade).`}</div>}
-          <div className={`fld ${modal.moveErrs&&modal.moveErrs.notes?"field-err":""}`}>
-            <label className={modal.moveErrs&&modal.moveErrs.notes?"field-err-label":""}>Reason for Move (required)</label>
-            <textarea value={modal.moveNotes||""} onChange={e=>setModal(prev=>({...prev,moveNotes:e.target.value,moveErrs:{...(prev.moveErrs||{}),notes:null}}))} placeholder="e.g. Tenant requested upgrade to private bath, roommate conflict, etc." rows={2}/>
-            {modal.moveErrs&&modal.moveErrs.notes&&<div className="err-msg">{modal.moveErrs.notes}</div>}
-          </div>
-          <div style={{display:"flex",gap:6,marginTop:10}}>
-            <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,moveStep:1}))}>← Back</button>
-            <button className="btn btn-dk" style={{flex:1}} onClick={()=>{
-              if(!(modal.moveNotes||"").trim()){setModal(prev=>({...prev,moveErrs:{notes:"Reason is required"}}));shakeModal();return;}
-              setModal(prev=>({...prev,moveStep:3,moveErrs:{}}));
-            }}>Review →</button>
-          </div>
-        </div>);})()}
 
-      {/* Room Move - Step 3: Review & Confirm */}
-      {modal.moveStep===3&&(()=>{const target=(modal.moveAllVacant||[]).find(x=>x.id===modal.moveTarget);if(!target)return null;const newRent=modal.moveNewRent||target.rent;const sdDiff=newRent-r.rent;
-        const effDate=modal.moveDate==="immediately"?TODAY.toISOString().split("T")[0]:modal.moveDate==="endOfMonth"?`${TODAY.getFullYear()}-${(TODAY.getMonth()+1).toString().padStart(2,"0")}-${new Date(TODAY.getFullYear(),TODAY.getMonth()+1,0).getDate()}`:modal.moveCustomDate;
-        const executeMove=()=>{
-          setProps(p=>p.map(pr=>({...pr,units:(pr.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>{
-            if(rm.id===r.id)return{...rm,st:"vacant",le:null,tenant:null};
-            if(rm.id===target.id)return{...rm,st:"occupied",le:r.le,tenant:r.tenant,rent:newRent};
-            return rm;
-          })}))})));
-          // Generate SD adjustment invoice if upgrade
-          if(sdDiff>0){createCharge({roomId:target.id,tenantName:r.tenant.name,propName:target.propName,roomName:target.name,category:"Security Deposit",desc:`SD Adjustment — Upgrade from ${r.name} to ${target.name}`,amount:sdDiff,dueDate:effDate});}
-          // Generate next month's rent invoice at new rate
-          const nextMo=new Date(TODAY.getFullYear(),TODAY.getMonth()+1,1);
-          const nextMoDue=`${nextMo.getFullYear()}-${(nextMo.getMonth()+1).toString().padStart(2,"0")}-01`;
-          const nextMoLabel=nextMo.toLocaleString("default",{month:"long",year:"numeric"});
-          createCharge({roomId:target.id,tenantName:r.tenant.name,propName:target.propName,roomName:target.name,category:"Rent",desc:`${nextMoLabel} Rent — ${target.name} (post-move)`,amount:newRent,dueDate:nextMoDue});
-          // Generate utility placeholder only if moving from all-included to tenant-pays
-          if(r.propUtils==="allIncluded"&&target.propUtils==="first100"){
-            createCharge({roomId:target.id,tenantName:r.tenant.name,propName:target.propName,roomName:target.name,category:"Utility Overage",desc:`${nextMoLabel} Utilities — ${target.name} (enter actual amount)`,amount:0,dueDate:nextMoDue});
-          }
-          // Generate addendum document
-          const addendumContent={tenant:r.tenant.name,email:r.tenant.email,phone:r.tenant.phone,originalRoom:r.name,originalProp:r.propName,newRoom:target.name,newProp:target.propName,originalRent:r.rent,newRent,effDate,reason:modal.moveNotes,sdOrig:r.rent,sdAdj:sdDiff,sdNew:newRent,utilChange,utilFrom:r.propUtils||r.utils,utilTo:target.propUtils,createdDate:TODAY.toISOString().split("T")[0]};
-          const addendumDoc={id:uid(),name:`Lease Addendum — ${r.tenant.name} (${r.name} → ${target.name})`,type:"addendum",property:target.propName,tenant:r.tenant.name,tenantRoomId:target.id,uploaded:TODAY.toISOString().split("T")[0],size:"4 KB",content:addendumContent};
-          setDocs(prev=>[addendumDoc,...prev]);
-          setNotifs(p=>[{id:uid(),type:"lease",msg:`Room move: ${r.tenant.name} moved from ${r.name} to ${target.name} at ${target.propName}. Addendum generated. Next month rent invoice at ${fmtS(newRent)}.`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
-          setModal(null);
-        };
-        return(
-        <div style={{background:"rgba(59,130,246,.06)",border:"2px solid rgba(59,130,246,.25)",borderRadius:10,padding:16,marginTop:10,animation:"fadeIn .2s"}}>
-          <h3 style={{fontSize:14,fontWeight:800,color:"#3b82f6",marginBottom:10}}>Confirm Room Move — Lease Addendum</h3>
-          <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.8}}>
-            <strong>Tenant:</strong> {r.tenant.name}<br/>
-            <strong>From:</strong> {r.name} at {r.propName} ({fmtS(r.rent)}/mo)<br/>
-            <strong>To:</strong> {target.name} at {target.propName} ({fmtS(newRent)}/mo)<br/>
-            <strong>Effective:</strong> {fmtD(effDate)}<br/>
-            <strong>Rent Change:</strong> {newRent===r.rent?"No change":newRent>r.rent?`+${fmtS(newRent-r.rent)}/mo increase`:`${fmtS(newRent-r.rent)}/mo decrease`}<br/>
-            {sdDiff>0&&<><strong>SD Invoice:</strong> {fmtS(sdDiff)} additional deposit due<br/></>}
-            {sdDiff<0&&<><strong>SD Credit:</strong> {fmtS(Math.abs(sdDiff))} applied from overage<br/></>}
-            <strong>Reason:</strong> {modal.moveNotes}
-          </div>
-          <div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8,padding:10,marginTop:10,fontSize:11}}>
-            <div style={{fontWeight:700,color:"#4a7c59",marginBottom:4}}>📄 Invoices that will be auto-generated:</div>
-            {sdDiff>0&&<div style={{padding:"2px 0"}}>• SD Adjustment — {fmtS(sdDiff)}</div>}
-            <div style={{padding:"2px 0"}}>• Next month rent at {fmtS(newRent)} (due 1st)</div>
-            {r.propUtils==="allIncluded"&&target.propUtils==="first100"&&<div style={{padding:"2px 0",color:"#9a7422"}}>• Utility placeholder — $0 (update with actual amount)</div>}
-          </div>
-          <div style={{display:"flex",gap:6,marginTop:12}}>
-            <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,moveStep:2}))}>← Back</button>
-            <button className="btn btn-green" style={{flex:1}} onClick={executeMove}>Confirm Move</button>
-          </div>
-        </div>);})()}
+            {/* Portal Invite */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <TIcon d="M19 11H5M19 11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2M19 11V9a7 7 0 1 0-14 0v2" size={16}/>
+                <span style={{fontSize:14,fontWeight:700}}>Tenant Portal</span>
+              </div>
+              <div style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>
+                {portalInviteState==="sent"?"Invite sent — tenant will receive an email."
+                  :portalInviteState==="error"?"Failed to send. Try again."
+                  :"Send the tenant a link to access their portal."}
+              </div>
+              {portalInviteState==="sent"
+                ?<div style={{padding:"8px 12px",background:"rgba(74,124,89,.08)",borderRadius:7,fontSize:11,color:"#4a7c59",fontWeight:600}}>
+                    Sent to {r.tenant.email} · <button style={{background:"none",border:"none",cursor:"pointer",color:"#6b5e52",fontSize:11,fontFamily:"inherit",padding:0}} onClick={()=>setPortalInviteState("idle")}>Resend</button>
+                  </div>
+                :<button className="btn btn-green" style={{width:"100%"}} onClick={sendInvite} disabled={portalInviteState==="sending"}>{portalInviteState==="sending"?"Sending...":"Send Portal Invite"}</button>}
+            </div>
 
-      {/* Termination flow - Step 1: Confirm */}
-      {modal.termStep===1&&<div style={{background:"rgba(196,92,74,.04)",border:"2px solid rgba(196,92,74,.15)",borderRadius:10,padding:16,marginTop:10,animation:"fadeIn .2s"}}>
-        <h3 style={{fontSize:14,fontWeight:800,color:"#c45c4a",marginBottom:10}}>⚠ Terminate Lease — {r.tenant.name}</h3>
-        <p style={{fontSize:12,color:"#5c4a3a",marginBottom:12}}>This will end {r.tenant.name}'s lease, unlink them from {r.name}, and mark the room as vacant. This action cannot be undone.</p>
-        <div className={`fld ${modal.termErrs&&modal.termErrs.date?"field-err":""}`}>
-          <label className={modal.termErrs&&modal.termErrs.date?"field-err-label":""}>Termination Date</label>
-          <input type="date" value={modal.termDate} onChange={e=>setModal(prev=>({...prev,termDate:e.target.value,termErrs:{...(prev.termErrs||{}),date:null}}))}/>
-          {modal.termErrs&&modal.termErrs.date&&<div className="err-msg">{modal.termErrs.date}</div>}
-        </div>
-        <div className={`fld ${modal.termErrs&&modal.termErrs.notes?"field-err":""}`}>
-          <label className={modal.termErrs&&modal.termErrs.notes?"field-err-label":""}>Reason / Notes (required)</label>
-          <textarea value={modal.termNotes||""} onChange={e=>setModal(prev=>({...prev,termNotes:e.target.value,termErrs:{...(prev.termErrs||{}),notes:null}}))} placeholder="e.g. Tenant gave 30-day notice, relocating for work..." rows={3}/>
-          {modal.termErrs&&modal.termErrs.notes&&<div className="err-msg">{modal.termErrs.notes}</div>}
-        </div>
-        <div style={{display:"flex",gap:6,marginTop:10}}>
-          <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,termStep:undefined}))}>Cancel</button>
-          <button className="btn btn-red" style={{flex:1}} onClick={()=>{
-            const e={};
-            if(!(modal.termDate||"").trim())e.date="Termination date is required";
-            if(!(modal.termNotes||"").trim())e.notes="Reason is required";
-            if(Object.keys(e).length){setModal(prev=>({...prev,termErrs:e}));shakeModal();return;}
-            setModal(prev=>({...prev,termStep:2,termErrs:{}}));
-          }}>Continue →</button>
-        </div>
-      </div>}
-
-      {/* Termination flow - Step 2: Final confirm */}
-      {modal.termStep===2&&<div style={{background:"rgba(196,92,74,.06)",border:"2px solid rgba(196,92,74,.25)",borderRadius:10,padding:16,marginTop:10,animation:"fadeIn .2s"}}>
-        <h3 style={{fontSize:14,fontWeight:800,color:"#c45c4a",marginBottom:10}}>Confirm Termination</h3>
-        <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.8,background:"rgba(0,0,0,.03)",borderRadius:8,padding:12,marginBottom:14}}>
-          <strong>Tenant:</strong> {r.tenant.name}<br/>
-          <strong>Room:</strong> {r.name} at {r.propName}<br/>
-          <strong>Rent:</strong> {fmtS(r.rent)}/mo ({fmtS(r.rent*12)}/yr lost)<br/>
-          <strong>Termination Date:</strong> {fmtD(modal.termDate)}<br/>
-          <strong>Reason:</strong> {modal.termNotes}
-        </div>
-
-        {/* SD Acknowledgment */}
-        <div className={`fld ${modal.termErrs&&modal.termErrs.sd?"field-err":""}`}>
-          <label className={modal.termErrs&&modal.termErrs.sd?"field-err-label":""}>Security Deposit Status (required)</label>
-          <div style={{display:"flex",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-            {[["kept","🔒 Kept (tenant forfeits)"],["returned","✅ Returned to tenant"],["partial","⚖️ Partial return"],["other","📝 Other"]].map(([v,l])=>(
-              <button key={v} className={`btn btn-sm ${modal.termSdStatus===v?"btn-dk":"btn-out"}`}
-                style={{border:modal.termErrs&&modal.termErrs.sd&&!modal.termSdStatus?"1px solid #c45c4a":""}}
-                onClick={()=>setModal(prev=>({...prev,termSdStatus:v,termErrs:{...(prev.termErrs||{}),sd:null}}))}>
-                {l}
-              </button>
-            ))}
-          </div>
-          {(modal.termSdStatus==="partial"||modal.termSdStatus==="other")&&
-            <input value={modal.termSdNote||""} onChange={e=>setModal(prev=>({...prev,termSdNote:e.target.value}))}
-              placeholder={modal.termSdStatus==="partial"?"e.g. $200 returned, $450 kept for damages...":"Explain SD disposition..."}
-              style={{marginTop:6,width:"100%",padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit"}}/>}
-          {modal.termErrs&&modal.termErrs.sd&&<div className="err-msg">{modal.termErrs.sd}</div>}
-        </div>
-
-        {/* Type tenant name to confirm */}
-        <div className={`fld ${modal.termErrs&&modal.termErrs.confirm?"field-err":""}`}>
-          <label className={modal.termErrs&&modal.termErrs.confirm?"field-err-label":""}>
-            Type <strong>{r.tenant.name}</strong> to confirm
-          </label>
-          <input value={modal.termConfirm||""} onChange={e=>setModal(prev=>({...prev,termConfirm:e.target.value,termErrs:{...(prev.termErrs||{}),confirm:null}}))}
-            placeholder={r.tenant.name}/>
-          {modal.termErrs&&modal.termErrs.confirm&&<div className="err-msg">{modal.termErrs.confirm}</div>}
-        </div>
-
-        <div style={{display:"flex",gap:6,marginTop:12}}>
-          <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{}}))}>← Back</button>
-          <button className="btn btn-red" style={{flex:1}} onClick={()=>{
-            const e={};
-            if(!modal.termSdStatus)e.sd="Select security deposit status";
-            if((modal.termConfirm||"").trim()!==r.tenant.name)e.confirm=`Must match exactly: "${r.tenant.name}"`;
-            if(Object.keys(e).length){setModal(prev=>({...prev,termErrs:e}));shakeModal();return;}
-            setArchive(prev=>[{id:uid(),name:r.tenant.name,email:r.tenant.email,phone:r.tenant.phone,roomName:r.name,propName:r.propName,rent:r.rent,moveIn:r.tenant.moveIn,leaseEnd:r.le,terminatedDate:modal.termDate,reason:modal.termNotes,sdStatus:modal.termSdStatus,sdNote:modal.termSdNote||"",payments:payments[r.id]||{},archivedOn:TODAY.toISOString().split("T")[0]},...prev]);
-            // Detect whole-house unit — clear all rooms in unit; for by-room clear just this room
-            const termUnit=r.unitId?props.flatMap(p=>p.units||[]).find(u=>u.id===r.unitId):null;
-            const termIsWhole=!!(termUnit&&(termUnit.rentalMode||"byRoom")==="wholeHouse");
-            if(termIsWhole&&r.unitId){
-              setProps(prev=>prev.map(p=>({...p,units:(p.units||[]).map(u=>u.id===r.unitId?{...u,rooms:(u.rooms||[]).map(rm=>({...rm,st:"vacant",le:null,tenant:null}))}:u)})));
-            } else {
-              setProps(prev=>updateRoomInProps(prev,r.id,rm=>({...rm,st:"vacant",le:null,tenant:null})));
-            }
-            setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease terminated: ${r.tenant.name} — ${r.name} at ${r.propName}. SD: ${modal.termSdStatus}. Reason: ${modal.termNotes}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
-            setModal(null);
-          }}>Confirm Termination</button>
-        </div>
-      </div>}
-
-      {dl&&dl<=90&&!modal.termStep&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:12,color:"#5c4a3a"}}><strong>Action needed:</strong> Lease expires in {dl} days. This room generates {fmtS(r.rent)}/mo ({fmtS(r.rent*12)}/yr). Reach out to {r.tenant.name.split(" ")[0]} about renewing, or start looking for a replacement.</div>}
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
-    </div></div>);})()}
+          </div>{/* end right sidebar */}
+        </div>{/* end 2-col grid */}
+      </div>{/* end body */}
+    </div>);/* end full-screen page */
+  })()}
 
   {/* Record Payment Modal */}
   {/* Confirm Action Modal — generic destructive confirmation */}
