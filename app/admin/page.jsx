@@ -6982,7 +6982,7 @@ export default function Page(){
     return(
     <div style={{position:"fixed",inset:0,background:"#f5f4f1",zIndex:200,overflowY:"auto",fontFamily:"inherit"}}>
       {/* Top bar */}
-      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 24px",display:"flex",alignItems:"center",gap:16,height:56,position:"sticky",top:0,zIndex:10}}>
+      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",display:"flex",alignItems:"center",gap:16,height:56,position:"sticky",top:0,zIndex:10}}>
         <button onClick={()=>{setModal(null);setPortalInviteState("idle");}}
           onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.06)";}}
           onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}
@@ -7006,7 +7006,7 @@ export default function Page(){
       </div>
 
       {/* Body */}
-      <div style={{maxWidth:900,margin:"0 auto",padding:"24px 24px 48px"}}>
+      <div style={{maxWidth:1200,margin:"0 auto",padding:"24px 32px 48px"}}>
 
         {/* Lease expiry alert */}
         {dl&&dl<=90&&!modal.termStep&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.25)",borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:13,color:"#5c4a3a",display:"flex",alignItems:"center",gap:10}}>
@@ -7015,7 +7015,7 @@ export default function Page(){
         </div>}
 
         {/* 2-col layout */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 340px",gap:20,alignItems:"start"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 360px",gap:24,alignItems:"start"}}>
 
           {/* LEFT — main content */}
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
@@ -7078,16 +7078,16 @@ export default function Page(){
                 const stColors={paid:"#4a7c59",unpaid:"#3b82f6",pastdue:"#c45c4a",partial:"#d4a853",waived:"#8a7d74"};
                 return(
                 <div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                  <div style={{width:32,height:32,borderRadius:8,background:`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.08)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <TIcon d={ci.d} d2={ci.d2} size={14} stroke={ci.color}/>
+                  <div style={{width:32,height:32,borderRadius:8,background:st==="pastdue"?"rgba(196,92,74,.08)":st==="unpaid"?"rgba(212,168,83,.08)":`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.08)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <TIcon d={ci.d} d2={ci.d2} size={14} stroke={st==="pastdue"?"#c45c4a":st==="unpaid"?"#d4a853":ci.color}/>
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600}}>{c.desc||c.category}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714"}}>{c.desc||c.category}</div>
                     <div style={{fontSize:10,color:"#6b5e52"}}>Due {fmtD(c.dueDate)}{c.amountPaid>0&&c.amountPaid<c.amount?` · ${fmtS(c.amountPaid)} paid`:""}</div>
                   </div>
                   <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:13,fontWeight:800}}>{fmtS(c.amount)}</div>
-                    <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="partial"?"b-gold":"b-blue"}`} style={{fontSize:8}}>{st}</span>
+                    <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714"}}>{fmtS(c.amount)}</div>
+                    <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="unpaid"?"b-gold":st==="partial"?"b-gold":"b-gray"}`} style={{fontSize:8}}>{st==="pastdue"?"Late":st}</span>
                   </div>
                   {st!=="paid"&&st!=="waived"&&<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Pay</button>}
                 </div>);
