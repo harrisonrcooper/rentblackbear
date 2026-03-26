@@ -1,4 +1,5 @@
 "use client";
+import { syncTenantToSupabase } from "@/lib/syncTenant";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
@@ -2119,6 +2120,7 @@ export default function Page(){
   const[portalLinkToken,setPortalLinkToken]=useState(null);
   const[portalLinkLoading,setPortalLinkLoading]=useState(false);
   const[piState,setPiState]=useState("idle");
+  const[obStatuses,setObStatuses]=useState({}); // {email: {leaseSigned,sdPaid,firstMonthPaid}}
   const[widgetList,setWidgetList]=useState(null);
   const[dashEditMode,setDashEditMode]=useState(false);
   const[dashDragWidget,setDashDragWidget]=useState(null);
@@ -2183,6 +2185,43 @@ export default function Page(){
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,vendors,improvements,subcats,loaded]);
 
   // ─── Metrics ──────────────────────────────────────────────────
+  // ── Load onboarding statuses for approved/onboarding applicants ──────
+  useEffect(()=>{
+    if(!loaded)return;
+    const approvedApps=apps.filter(a=>["approved","onboarding","lease-sent","move-in"].includes(a.status)&&a.email);
+    if(!approvedApps.length)return;
+    const SUPA_URL=process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const SUPA_KEY=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const headers={"apikey":SUPA_KEY,"Authorization":`Bearer ${SUPA_KEY}`};
+    const loadStatuses=async()=>{
+      try{
+        const pms=await fetch(`${SUPA_URL}/rest/v1/pm_accounts?select=id&limit=1`,{headers}).then(r=>r.json());
+        const pmId=pms?.[0]?.id;if(!pmId)return;
+        const emails=approvedApps.map(a=>encodeURIComponent(a.email)).join(",");
+        const tenants=await fetch(`${SUPA_URL}/rest/v1/tenants?email=in.(${emails})&pm_id=eq.${pmId}&select=id,email,lease_signed_at`,{headers}).then(r=>r.json());
+        if(!tenants?.length)return;
+        const tenantIds=tenants.map(t=>t.id).join(",");
+        const chgs=await fetch(`${SUPA_URL}/rest/v1/charges?tenant_id=in.(${tenantIds})&select=tenant_id,category,amount,amount_paid`,{headers}).then(r=>r.json());
+        const map={};
+        tenants.forEach(t=>{
+          const tc=(chgs||[]).filter(c=>c.tenant_id===t.id);
+          const sd=tc.find(c=>c.category==="Security Deposit");
+          const rent=tc.find(c=>c.category==="Rent");
+          map[t.email]={
+            leaseSigned:!!t.lease_signed_at,
+            sdPaid:!!(sd&&sd.amount_paid>=sd.amount),
+            firstMonthPaid:!!(rent&&rent.amount_paid>=rent.amount),
+          };
+        });
+        setObStatuses(map);
+      }catch(e){console.error("onboarding status load:",e);}
+    };
+    loadStatuses();
+    // Poll every 30 seconds for real-time-ish updates
+    const interval=setInterval(loadStatuses,30000);
+    return()=>clearInterval(interval);
+  },[loaded,apps]);
+
   const m=useMemo(()=>{
     let total=0,occ=0,full=0,proj=0,coll=0,due=0;const vacs=[];const expiring=[];const unpaid=[];const paid=[];
     props.forEach(pr=>(pr.units||[]).forEach(u=>{
@@ -2439,6 +2478,8 @@ export default function Page(){
   const shakeModal=()=>{const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .5s ease";}};
 
   if(!loaded)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"inherit"}}>Loading...</div>);
+
+  // ── Supabase realtime: watch charges + tenants for onboarding pill updates ──
 
   // All tenants flat list
   const allTenants=props.flatMap(p=>(p.units||[]).flatMap(u=>{
@@ -3631,9 +3672,10 @@ export default function Page(){
             </div>
           </div>
         </div>
-        <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-          <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search applicants..." style={{flex:1,minWidth:160,padding:"8px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-          <select value={expanded.appMonthFilter||"all"} onChange={e=>setExpanded(p=>({...p,appMonthFilter:e.target.value}))} style={{padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+        {/* ── Search + Controls row ── */}
+        <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+          <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search..." style={{width:140,padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+          <select value={expanded.appMonthFilter||"all"} onChange={e=>setExpanded(p=>({...p,appMonthFilter:e.target.value}))} style={{padding:"6px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
             <option value="all">All Time</option>
             {[...new Set(apps.map(a=>(a.submitted||"").slice(0,7)).filter(Boolean).sort().reverse())].map(m=>{
               const d=new Date(m+"-02");return<option key={m} value={m}>{d.toLocaleString("default",{month:"long",year:"numeric"})}</option>;
@@ -3641,31 +3683,50 @@ export default function Page(){
           </select>
           {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
           <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
+        </div>
+
+        {/* ── Link bar ── */}
+        <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"stretch"}}>
+
           {/* Apply Link */}
-          <div style={{display:"flex",alignItems:"center",gap:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:7,overflow:"hidden"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRight:"1px solid rgba(0,0,0,.08)"}}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              <span style={{fontSize:10,color:"#999",fontFamily:"monospace"}}>/apply</span>
+          <div style={{display:"flex",alignItems:"center",background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden",flex:1,minWidth:260}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:"1px solid rgba(0,0,0,.08)",flex:1,minWidth:0}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" style={{flexShrink:0}}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <span style={{fontSize:11,color:"#999",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(settings.siteUrl||"https://rentblackbear.com")}/apply</span>
             </div>
-            <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none",borderRight:"1px solid rgba(0,0,0,.08)"}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
-            <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none"}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email</button>
+            <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",whiteSpace:"nowrap",padding:"8px 14px"}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
+            <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none",whiteSpace:"nowrap",padding:"8px 14px"}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
           </div>
-          {/* Portal Invite Link — green tint to distinguish */}
-          <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.2)",borderRadius:7,overflow:"hidden"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRight:"1px solid rgba(74,124,89,.15)"}}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span style={{fontSize:10,color:"#4a7c59",fontFamily:"monospace"}}>{portalLinkToken?"/portal?token="+portalLinkToken.slice(0,8)+"...":"/portal invite"}</span>
+
+          {/* Portal Invite */}
+          <div style={{display:"flex",alignItems:"center",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,overflow:"hidden",flex:1,minWidth:280}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:"1px solid rgba(74,124,89,.12)",flex:1,minWidth:0}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" style={{flexShrink:0}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span style={{fontSize:11,color:"#4a7c59",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {portalLinkToken?`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${portalLinkToken.slice(0,10)}...`:"Portal invite link — click Generate"}
+              </span>
             </div>
-            <button className="btn btn-sm" style={{borderRadius:0,border:"none",borderRight:"1px solid rgba(74,124,89,.15)",background:"transparent",color:"#4a7c59",fontWeight:600}} onClick={async()=>{
-              setPortalLinkLoading(true);
-              try{
-                const res=await fetch("/api/portal-invite-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
-                const d=await res.json();
-                if(d.token){setPortalLinkToken(d.token);navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${d.token}`);}
-              }catch(e){console.error(e);}
-              setPortalLinkLoading(false);
-            }}>{portalLinkLoading?"...":(portalLinkToken?"Copied":"Generate")}</button>
-            {portalLinkToken&&<button className="btn btn-sm" style={{borderRadius:0,border:"none",background:"transparent",color:"#4a7c59",fontWeight:600}} onClick={()=>setModal({type:"emailPortalLink",to:"",name:"",token:portalLinkToken})}>Email</button>}
+            <button style={{padding:"8px 14px",border:"none",borderRight:"1px solid rgba(74,124,89,.12)",background:portalLinkLoading?"rgba(74,124,89,.06)":"transparent",color:"#4a7c59",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+              onClick={async()=>{
+                if(portalLinkLoading)return;
+                setPortalLinkLoading(true);
+                setPortalLinkToken(null);
+                try{
+                  const res=await fetch("/api/portal-invite-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+                  const d=await res.json();
+                  if(d.token){
+                    setPortalLinkToken(d.token);
+                    setNotifs(p=>[{id:uid(),type:"app",msg:"Portal invite token generated — ready to copy or email",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+                  }
+                }catch(e){console.error(e);}
+                setPortalLinkLoading(false);
+              }}>{portalLinkLoading?"Generating...":"Generate"}</button>
+            {portalLinkToken&&<>
+              <button style={{padding:"8px 14px",border:"none",borderRight:"1px solid rgba(74,124,89,.12)",background:"transparent",color:"#4a7c59",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+                onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${portalLinkToken}`);setModal({type:"genericLinkCopied"});}}>Copy</button>
+              <button style={{padding:"8px 14px",border:"none",background:"transparent",color:"#4a7c59",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+                onClick={()=>setModal({type:"emailPortalLink",to:"",name:"",token:portalLinkToken})}>Email</button>
+            </>}
           </div>
         </div>
 
@@ -3810,6 +3871,37 @@ export default function Page(){
                       </div>
                       {prog.ready&&<div style={{marginTop:4,fontSize:8,fontWeight:800,color:"#2d6a3f",textAlign:"center",padding:"3px 0",background:"rgba(74,124,89,.1)",borderRadius:3}}>Ready to Move In</div>}
                     </>}
+
+                    {/* Onboarding status pills — shown for approved/onboarding cards, reads from Supabase */}
+                    {(isOnboarding||["approved","onboarding","lease-sent"].includes(a.status))&&(()=>{
+                      const ob=obStatuses[a.email]||{};
+                      const pills=[
+                        {key:"leaseSigned",label:"Lease",done:ob.leaseSigned},
+                        {key:"sdPaid",label:"SD",done:ob.sdPaid},
+                        {key:"firstMonthPaid",label:"Rent",done:ob.firstMonthPaid},
+                        {key:"moveIn",label:"Move In",done:ob.leaseSigned&&ob.sdPaid&&ob.firstMonthPaid},
+                      ];
+                      const allDone=pills.every(p=>p.done);
+                      return(
+                      <div style={{marginTop:8}}>
+                        <div style={{display:"flex",gap:3,marginBottom:4}}>
+                          {pills.map(p=>(
+                            <div key={p.key} style={{flex:1,textAlign:"center",fontSize:7,fontWeight:700,padding:"3px 2px",borderRadius:4,
+                              background:p.done?"rgba(74,124,89,.15)":"rgba(0,0,0,.05)",
+                              color:p.done?"#2d6a3f":"#aaa",
+                              border:p.done?"1px solid rgba(74,124,89,.2)":"1px solid transparent",
+                              transition:"all .2s",
+                            }}>
+                              {p.done?"✓ ":""}{p.label}
+                            </div>
+                          ))}
+                        </div>
+                        {!allDone&&<div style={{height:3,borderRadius:2,background:"rgba(0,0,0,.06)"}}>
+                          <div style={{height:"100%",borderRadius:2,background:"#4a7c59",width:(pills.filter(p=>p.done).length/4*100)+"%",transition:"width .3s"}}/>
+                        </div>}
+                        {allDone&&<div style={{fontSize:7,color:"#2d6a3f",fontWeight:800,textAlign:"center",padding:"2px 0",background:"rgba(74,124,89,.08)",borderRadius:3}}>Ready to Move In</div>}
+                      </div>);
+                    })()}
 
                     {/* Standard card footer */}
                     {!isOnboarding&&a.status!=="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#777",marginTop:5}}>
@@ -8959,6 +9051,15 @@ ${settings.phone||""}`);
       const mk=mf.moveIn.slice(0,7);
       createCharge({roomId:currentItem.isWholeUnit?currentItem.unitId:currentItem.id,tenantName:tenantData.name,propName:currentProp.name,roomName:currentItem.name,category:"Rent",desc:mk+" Rent",amount:Number(mf.rent),dueDate:mk+"-01",sent:false,sentDate:TODAY.toISOString().split("T")[0]});
       setNotifs(p=>[{id:uid(),type:"lease",msg:`Existing tenant added: ${tenantData.name} → ${currentItem.name} at ${currentProp.name}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+      // Sync to Supabase relational tables
+      syncTenantToSupabase({
+        name:tenantData.name,email:tenantData.email,phone:tenantData.phone,
+        moveIn:mf.moveIn,leaseEnd:mf.leaseEnd,
+        rent:Number(mf.rent),sd:Number(mf.sd)||0,
+        propName:currentProp.name,roomName:currentItem.name,
+        doorCode:tenantData.doorCode,
+        appDataRoomId:currentItem.id,charges,
+      }).catch(console.error);
       setModal(null);
     };
     const efld=(key,label,type="text",placeholder="")=>(
@@ -9132,6 +9233,17 @@ ${settings.phone||""}`);
       }
       setApps(p=>p.filter(x=>x.id!==a.id));
       setNotifs(p=>[{id:uid(),type:"lease",msg:`${a.name} converted to tenant — ${appDocs.length} doc(s) transferred`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+      // Sync to Supabase relational tables
+      const targetProp2=props.find(p=>allRooms(p).some(x=>x.id===roomId));
+      const targetRoom2=targetProp2?allRooms(targetProp2).find(r=>r.id===roomId):null;
+      syncTenantToSupabase({
+        name:a.name,email:a.email,phone:a.phone,
+        moveIn:mi,leaseEnd:le.toISOString().split("T")[0],
+        rent:a.negotiatedRent||a.rent,sd:a.chargeConfig?.sd,
+        propName:targetProp2?.name,roomName:targetRoom2?.name,
+        doorCode:targetRoom2?.doorCode||"",
+        appDataRoomId:roomId,charges,
+      }).catch(console.error);
       setModal(null);
     };
     return(
