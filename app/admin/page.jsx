@@ -1462,7 +1462,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
   const mode=curUnit?.rentalMode||"byRoom";
   const tryClose=()=>{if(unsaved&&!justSaved)setShowCloseConfirm(true);else onClose();};
   return(<div className="mbg" onClick={tryClose} style={{alignItems:"flex-start",overflowY:"auto",paddingTop:24,paddingBottom:24}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760,width:"100%",flexShrink:0}}>
-    <h2>{isNew?"Add Property":`Edit: ${p.name}`}</h2>
+    <h2>{isNew?"Add Property":`Edit: ${getPropDisplayName(p)}`}</h2>
 
     {/* Property-level info */}
     <div className="fr" style={{alignItems:"flex-end"}}>
@@ -2534,7 +2534,9 @@ export default function Page(){
 
   const getPropDisplayName=(prop)=>{if(!prop)return"";return prop.usePropertyName===false&&prop.addr?prop.addr:prop.name;};
   const getPropAddr=(propName)=>{const p=props.find(x=>x.name===propName);return p?.addr||"";};
-  const roomSubLine=(propName,roomName)=>{const a=getPropAddr(propName);return a?`${propName} · ${a} · ${roomName}`:`${propName} · ${roomName}`;};
+  const getPropByName=(propName)=>props.find(p=>p.name===propName);
+  const propDisplay=(propName)=>{const p=getPropByName(propName);return p?getPropDisplayName(p):propName;};
+  const roomSubLine=(propName,roomName)=>{const dispName=propDisplay(propName);const a=getPropAddr(propName);return a?`${dispName} · ${a} · ${roomName}`:`${dispName} · ${roomName}`;};
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);};
   const confirmAction=(title,onConfirm,body="This cannot be undone.")=>{setModal({type:"confirmAction",title,body,confirmLabel:"Confirm",confirmStyle:"btn-red",onConfirm:()=>{onConfirm();setModal(null);}});};
   const shakeModal=()=>{const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .5s ease";}};
@@ -2811,12 +2813,12 @@ export default function Page(){
           </>);
           case "cleaning":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Cleaning Schedule</div>
-            {props.map(p=>{const freq=(p.units&&p.units[0]&&p.units[0].clean)||p.clean||"Biweekly";return(<div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{fontSize:11,fontWeight:600}}>{p.name}</span><span style={{fontSize:10,color:"#6b5e52"}}>{freq}</span></div>);})}
+            {props.map(p=>{const freq=(p.units&&p.units[0]&&p.units[0].clean)||p.clean||"Biweekly";return(<div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{fontSize:11,fontWeight:600}}>{getPropDisplayName(p)||p.name}</span><span style={{fontSize:10,color:"#6b5e52"}}>{freq}</span></div>);})}
           </>);
           case "propBreakdown":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Revenue by Property</div>
             {m.propBreakdown.map(pr=><div key={pr.id} style={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:11,fontWeight:600}}>{pr.name}</span><span style={{fontSize:11,fontWeight:700,color:"#4a7c59"}}>{fmtS(pr.collected)}</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:11,fontWeight:600}}>{getPropDisplayName(pr)}</span><span style={{fontSize:11,fontWeight:700,color:"#4a7c59"}}>{fmtS(pr.collected)}</span></div>
               <div style={{height:4,borderRadius:2,background:"rgba(0,0,0,.06)"}}><div style={{height:"100%",borderRadius:2,background:"#4a7c59",width:(pr.fullOcc>0?Math.min(Math.round(pr.collected/pr.fullOcc*100),100):0)+"%"}}/></div>
               <div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>{pr.occCount} occupied · {fmtS(pr.fullOcc)}/mo at full</div>
             </div>)}
@@ -2837,7 +2839,7 @@ export default function Page(){
                 const prExp=expenses.filter(e=>e.propId===pr.id&&new Date(e.date+"T00:00:00").getFullYear()===TODAY.getFullYear()).reduce((s,e)=>s+e.amount,0);
                 const prNOI=prInc-prExp;const margin=prInc>0?Math.round(prNOI/prInc*100):0;
                 return(<div key={pr.id} style={{marginBottom:8,paddingBottom:8,borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}><span style={{fontSize:11,fontWeight:600}}>{pr.name}</span><span style={{fontSize:11,fontWeight:700,color:prNOI>=0?"#4a7c59":"#c45c4a"}}>{fmtS(prNOI)} NOI</span></div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}><span style={{fontSize:11,fontWeight:600}}>{getPropDisplayName(pr)}</span><span style={{fontSize:11,fontWeight:700,color:prNOI>=0?"#4a7c59":"#c45c4a"}}>{fmtS(prNOI)} NOI</span></div>
                   <div style={{fontSize:9,color:"#6b5e52"}}>Income {fmtS(prInc)} · Expenses {fmtS(prExp)} · {margin}% margin</div>
                 </div>);
               })
@@ -3031,7 +3033,7 @@ export default function Page(){
               {/* Tenant col */}
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:2}}>{r.tenant.name}</div>
-                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:5}}>{r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
+                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:5}}>{prop?getPropDisplayName(prop):r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
                 <button onClick={e=>{e.stopPropagation();setModal({type:"tenant",data:r});}}
                   onMouseEnter={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.2)`;e.currentTarget.style.transform="scale(1.02)";}}
                   onMouseLeave={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.08)`;e.currentTarget.style.transform="";}}
@@ -3465,7 +3467,7 @@ export default function Page(){
           {/* Quick property breakdown */}
           {m.propBreakdown.map(pr=>{const prCh=pCharges.filter(c=>c.propName===pr.name);const prPaid=prCh.reduce((s,c)=>s+c.amountPaid,0);const prDue=prCh.reduce((s,c)=>s+c.amount,0);return(
             <div key={pr.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,property:pr.name});}}>
-              <div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{allRooms(pr).length} rooms · {pr.occCount} occupied</div></div>
+              <div className="row-i"><div className="row-t">{getPropDisplayName(pr)}</div><div className="row-s">{allRooms(pr).length} rooms · {pr.occCount} occupied</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:800}}>{fmtS(prPaid)}<small style={{color:"#6b5e52"}}> / {fmtS(prDue)}</small></div>
                 <div style={{fontSize:9,color:prPaid>=prDue?"#4a7c59":"#c45c4a",fontWeight:600}}>{prDue?Math.round(prPaid/prDue*100):0}%</div></div>
             </div>
@@ -3476,7 +3478,7 @@ export default function Page(){
         {paySubTab==="charges"&&<>
           {/* Filters */}
           <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
-            <select value={payFilters.property} onChange={e=>setPayFilters({...payFilters,property:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>
+            <select value={payFilters.property} onChange={e=>setPayFilters({...payFilters,property:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}</select>
             <select value={payFilters.tenant} onChange={e=>setPayFilters({...payFilters,tenant:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Tenants</option>{[...new Set(charges.map(c=>c.tenantName))].map(n=><option key={n} value={n}>{n}</option>)}</select>
             <select value={payFilters.category} onChange={e=>setPayFilters({...payFilters,category:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Categories</option>{CHARGE_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
             <select value={payFilters.status} onChange={e=>setPayFilters({...payFilters,status:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Status</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="pastdue">Past Due</option><option value="partial">Partial</option><option value="waived">Waived</option></select>
@@ -3689,7 +3691,7 @@ export default function Page(){
           {/* Filter bar */}
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14,alignItems:"center"}}>
             <select value={depFilters.property||""} onChange={e=>setDepFilters(f=>({...f,property:e.target.value}))} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",background:"#fff"}}>
-              <option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+              <option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
             </select>
             <select value={depFilters.tenant||""} onChange={e=>setDepFilters(f=>({...f,tenant:e.target.value}))} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",background:"#fff"}}>
               <option value="">All Tenants</option>{[...new Set(deposited.map(p=>p.tenantName))].sort().map(n=><option key={n} value={n}>{n}</option>)}
@@ -3808,7 +3810,7 @@ export default function Page(){
               {sdTenants.map(r=>{const sd=sdLedger.find(x=>x.roomId===r.id);const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;return(
                 <div key={r.id} style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"11px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center"}}>
                   <div style={{fontSize:12,fontWeight:700}}>{r.tenant.name}</div>
-                  <div style={{fontSize:11,color:"#5c4a3a"}}>{r.propName}</div>
+                  <div style={{fontSize:11,color:"#5c4a3a"}}>{propDisplay(r.propName)}</div>
                   <div style={{fontSize:11,color:"#5c4a3a"}}>{r.name}</div>
                   <div style={{fontSize:11,color:dl&&dl<=30?"#c45c4a":dl&&dl<=90?"#d4a853":"#5c4a3a"}}>{r.le?`${fmtD(r.le)}${dl&&dl<=90?` (${dl}d)`:""}` :"—"}</div>
                   <div style={{fontSize:13,fontWeight:800,color:"#4a7c59",textAlign:"right"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</div>
@@ -4973,7 +4975,7 @@ export default function Page(){
                     <div style={{fontSize:14,fontWeight:700}}>{l.tenantName||"—"}</div>
                     <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:sc.bg,color:sc.tx,textTransform:"uppercase",letterSpacing:.5}}>{sc.label}</span>
                   </div>
-                  <div style={{fontSize:11,color:"#6b5e52"}}>{l.property} · {l.room} · {fmtS(l.rent||0)}/mo · Move-in {fmtD(l.moveIn)}</div>
+                  <div style={{fontSize:11,color:"#6b5e52"}}>{(()=>{const lp=props.find(x=>x.name===l.property);return lp?getPropDisplayName(lp):l.property;})() } · {l.room} · {fmtS(l.rent||0)}/mo · Move-in {fmtD(l.moveIn)}</div>
                   {l.signingLink&&<div style={{fontSize:10,color:"#3b82f6",marginTop:4,wordBreak:"break-all",display:"flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>{l.signingLink}</div>}
                 </div>
                 <div style={{display:"flex",gap:6,flexShrink:0,marginLeft:12,flexWrap:"wrap",justifyContent:"flex-end"}}>
@@ -5062,7 +5064,7 @@ export default function Page(){
               <div className="fld"><label>Property</label>
                 <select value={leaseForm.property||""} onChange={e=>{const p2=props.find(p=>p.name===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,property:e.target.value,propertyAddress:p2?.addr||"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
                   <option value="">Select...</option>
-                  {props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                  {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
                 </select>
               </div>
               <div className="fld"><label>Room / Unit</label>
@@ -5498,7 +5500,7 @@ export default function Page(){
                       const debt=mg.reduce((s,m)=>s+(m.monthlyPI||0)*12,0);
                       const prDSCR=debt>0?(noi/debt):null;
                       return(<tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                        <td style={{padding:"9px 14px",fontWeight:700,fontSize:12}}>{pr.name}</td>
+                        <td style={{padding:"9px 14px",fontWeight:700,fontSize:12}}>{getPropDisplayName(pr)}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",color:"#4a7c59",fontWeight:700}}>{fmtS(inc)}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",color:"#c45c4a",fontWeight:700}}>{fmtS(exp)}</td>
                         <td style={{padding:"9px 14px",textAlign:"right",fontWeight:800,color:noi>=0?"#4a7c59":"#c45c4a"}}>{fmtS(noi)}</td>
@@ -5558,7 +5560,7 @@ export default function Page(){
               const propWideExp=prExpenses.filter(e=>!e.unitId);
               const propWideAmt=propWideExp.reduce((s,e)=>s+e.amount,0);
               return(<div key={pr.id} style={{marginBottom:16}}>
-                <div style={{fontSize:12,fontWeight:800,color:"#3c3228",marginBottom:8,paddingBottom:6,borderBottom:"2px solid rgba(0,0,0,.06)"}}>{pr.name}</div>
+                <div style={{fontSize:12,fontWeight:800,color:"#3c3228",marginBottom:8,paddingBottom:6,borderBottom:"2px solid rgba(0,0,0,.06)"}}>{getPropDisplayName(pr)}</div>
                 <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:8}}>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                     <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
@@ -6060,7 +6062,7 @@ export default function Page(){
                     const exp=directExp+sharedAlloc;
                     const noi=inc-exp;const margin=inc>0?Math.round(noi/inc*100):0;
                     return(<tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 12px",fontWeight:700}}>{pr.name}</td>
+                      <td style={{padding:"8px 12px",fontWeight:700}}>{getPropDisplayName(pr)}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",color:"#4a7c59",fontWeight:700}}>{fmtS(inc)}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",color:"#c45c4a",fontWeight:700}}>{fmtS(exp)}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:noi>=0?"#4a7c59":"#c45c4a"}}>{fmtS(noi)}</td>
@@ -6168,7 +6170,7 @@ export default function Page(){
                   {rows.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#6b5e52"}}>No security deposit records found.</td></tr>}
                   {rows.map((r,i)=>{const ded=((r.deductions||[]).reduce((s,d)=>s+d.amount,0));const net=r.amountHeld-ded;return(
                     <tr key={r.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 12px",fontWeight:600}}>{r.tenantName}</td><td style={{padding:"8px 12px",fontSize:10}}>{r.propName}</td><td style={{padding:"8px 12px",fontSize:10,color:"#6b5e52"}}>{r.roomName}</td>
+                      <td style={{padding:"8px 12px",fontWeight:600}}>{r.tenantName}</td><td style={{padding:"8px 12px",fontSize:10}}>{propDisplay(r.propName)}</td><td style={{padding:"8px 12px",fontSize:10,color:"#6b5e52"}}>{r.roomName}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",fontWeight:700}}>{fmtS(r.amountHeld||0)}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",color:"#c45c4a"}}>{ded>0?fmtS(ded):"—"}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#9a7422"}}>{fmtS(net)}</td>
@@ -6200,7 +6202,7 @@ export default function Page(){
                     const actRent=occ.reduce((s,r)=>s+r.rent,0);
                     const occRate=rooms.length?Math.round(occ.length/rooms.length*100):0;
                     return(<tr key={pr.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 12px",fontWeight:700}}>{pr.name}</td>
+                      <td style={{padding:"8px 12px",fontWeight:700}}>{getPropDisplayName(pr)}</td>
                       <td style={{padding:"8px 12px",textAlign:"center"}}>{rooms.length}</td>
                       <td style={{padding:"8px 12px",textAlign:"center",color:"#4a7c59",fontWeight:700}}>{occ.length}</td>
                       <td style={{padding:"8px 12px",textAlign:"center",color:vac.length>0?"#c45c4a":"#999",fontWeight:vac.length>0?700:400}}>{vac.length}</td>
@@ -6259,7 +6261,7 @@ export default function Page(){
                 if(prMg.length===0)return null;
                 return(
                 <div key={pr.id} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"16px",marginBottom:10}}>
-                  <div style={{fontWeight:800,fontSize:14,marginBottom:12}}>{pr.name}</div>
+                  <div style={{fontWeight:800,fontSize:14,marginBottom:12}}>{getPropDisplayName(pr)}</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
                     {[["NOI",fmtS(prNOI),prNOI>=0?"#4a7c59":"#c45c4a"],["Debt Service",fmtS(prDebt),"#9a7422"],["DSCR",prDSCR!=null?prDSCR.toFixed(2)+"x":"—",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"],["Status",prDSCR==null?"No debt":prDSCR>=1.25?"✅ Strong":prDSCR>=1.0?"⚠️ Marginal":"❌ At Risk",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"]].map(([lbl,v,clr])=>(
                       <div key={lbl} style={{textAlign:"center",padding:"10px",background:"rgba(0,0,0,.02)",borderRadius:8}}>
@@ -6444,7 +6446,7 @@ export default function Page(){
         {/* Drill: Projected */}
         {drill==="sc-proj"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Projected: {fmtS(m.proj)} / {fmtS(m.full)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
-          {m.propBreakdown.map(pr=><div key={pr.id} className="row"><div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{pr.occCount} occupied · {pr.vacCount} vacant</div></div><div style={{display:"flex",gap:12,alignItems:"baseline"}}><span style={{fontSize:11,color:"#6b5e52"}}>Full: {fmtS(pr.fullOcc)}</span><span style={{fontSize:16,fontWeight:800,color:pr.projected===pr.fullOcc?"#4a7c59":"inherit"}}>{fmtS(pr.projected)}</span>{pr.vacCount>0&&<span style={{fontSize:11,fontWeight:700,color:"#c45c4a"}}>-{fmtS(pr.fullOcc-pr.projected)}</span>}</div></div>)}
+          {m.propBreakdown.map(pr=><div key={pr.id} className="row"><div className="row-i"><div className="row-t">{getPropDisplayName(pr)}</div><div className="row-s">{pr.occCount} occupied · {pr.vacCount} vacant</div></div><div style={{display:"flex",gap:12,alignItems:"baseline"}}><span style={{fontSize:11,color:"#6b5e52"}}>Full: {fmtS(pr.fullOcc)}</span><span style={{fontSize:16,fontWeight:800,color:pr.projected===pr.fullOcc?"#4a7c59":"inherit"}}>{fmtS(pr.projected)}</span>{pr.vacCount>0&&<span style={{fontSize:11,fontWeight:700,color:"#c45c4a"}}>-{fmtS(pr.fullOcc-pr.projected)}</span>}</div></div>)}
         </div></div>}
 
         {/* Charts */}
@@ -6946,7 +6948,7 @@ export default function Page(){
                     </div>
                   </div>
                   <div style={{padding:"7px 10px",background:isActive?p.accent+"10":"#faf9f7",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:11,fontWeight:700,color:isActive?p.accent:"#1a1714"}}>{p.name}</span>
+                    <span style={{fontSize:11,fontWeight:700,color:isActive?p.accent:"#1a1714"}}>{getPropDisplayName(p)||p.name}</span>
                     {isActive&&<span style={{fontSize:9,fontWeight:700,color:p.accent}}>Active</span>}
                   </div>
                 </div>);})}
@@ -7229,7 +7231,7 @@ export default function Page(){
         <div style={{width:1,height:20,background:"rgba(0,0,0,.1)"}}/>
         <div style={{flex:1}}>
           <div style={{fontSize:16,fontWeight:800,color:"#1a1714"}}>{l.tenantName} — Lease</div>
-          <div style={{fontSize:11,color:"#6b5e52"}}>{l.property}{prop?.addr?" · "+prop.addr:""}{l.room?" · "+l.room:""}</div>
+          <div style={{fontSize:11,color:"#6b5e52"}}>{prop?getPropDisplayName(prop):l.property}{prop?.addr?" · "+prop.addr:""}{l.room?" · "+l.room:""}</div>
         </div>
         <span style={{fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:100,background:sc.bg,color:sc.tx}}>{sc.label}</span>
         <div style={{display:"flex",gap:8}}>
@@ -7445,7 +7447,7 @@ export default function Page(){
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:16,fontWeight:800,color:"#1a1714"}}>{r.tenant.name}</div>
-            <div style={{fontSize:11,color:"#6b5e52"}}>{r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
+            <div style={{fontSize:11,color:"#6b5e52"}}>{prop?getPropDisplayName(prop):r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
           </div>
           <div style={{display:"flex",gap:8}}>
             {!pd&&<button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Record Payment</button>}
@@ -7584,7 +7586,7 @@ export default function Page(){
             {/* Room & Lease */}
             <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}><TI d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" d2="M9 22V12h6v10"/><span style={{fontSize:14,fontWeight:700}}>Room & Lease</span></div>
-              {[["Property",r.propName+(prop?.addr?" · "+prop.addr:"")],["Room",r.name],["Bath",r.pb?"Private":"Shared"],["Rent",fmtS(r.rent)+"/mo"],["Utilities",tUtils==="allIncluded"?"All Included":"Tenant pays (split)"],["Move-in",fmtD(r.tenant.moveIn)],["Lease End",r.le?fmtD(r.le):isM2M?"Month-to-Month":"—"],["Annual Value",fmtS((r.rent||0)*12)+"/yr"]].filter(([,v])=>v).map(([k,v])=>(
+              {[["Property",(prop?getPropDisplayName(prop):r.propName)+(prop?.addr?" · "+prop.addr:"")],["Room",r.name],["Bath",r.pb?"Private":"Shared"],["Rent",fmtS(r.rent)+"/mo"],["Utilities",tUtils==="allIncluded"?"All Included":"Tenant pays (split)"],["Move-in",fmtD(r.tenant.moveIn)],["Lease End",r.le?fmtD(r.le):isM2M?"Month-to-Month":"—"],["Annual Value",fmtS((r.rent||0)*12)+"/yr"]].filter(([,v])=>v).map(([k,v])=>(
                 <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:12}}><span style={{color:"#6b5e52"}}>{k}</span><span style={{fontWeight:600,textAlign:"right",maxWidth:"60%"}}>{v}</span></div>
               ))}
               {r.le&&dl!==null&&<div style={{marginTop:10}}>
@@ -8932,7 +8934,7 @@ export default function Page(){
       <div className="fld"><label>Interested In (optional)</label>
         <select value={modal.property||""} onChange={e=>setModal(prev=>({...prev,property:e.target.value}))}>
           <option value="">No preference / unknown</option>
-          {props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+          {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
         </select>
       </div>
       <div className="fld"><label>How They Found You</label>
@@ -10087,7 +10089,7 @@ export default function Page(){
               <label>Property</label>
               <select value={a.property||""} onChange={e=>{saveApp(a.id,"property",e.target.value);saveApp(a.id,"room","");saveApp(a.id,"termRoomId",null);saveApp(a.id,"termPropId",null);}} style={{width:"100%"}}>
                 <option value="">No preference</option>
-                {props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
               </select>
             </div>
             <div className="fld" style={{marginBottom:0}}>
@@ -10347,7 +10349,7 @@ export default function Page(){
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:540}}>
       <h2>{a.name} <span className="badge b-gray" style={{verticalAlign:"middle"}}>Past Tenant</span></h2>
       <div className="tp-card"><h3>📞 Contact</h3><div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone}</strong></div><div className="tp-row"><span className="tp-label">Email</span><strong>{a.email}</strong></div></div>
-      <div className="tp-card"><h3>🏠 Room History</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{a.propName}</strong></div><div className="tp-row"><span className="tp-label">Room</span><strong>{a.roomName}</strong></div><div className="tp-row"><span className="tp-label">Rent</span><strong>{fmtS(a.rent)}/mo</strong></div></div>
+      <div className="tp-card"><h3>🏠 Room History</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{propDisplay(a.propName)}</strong></div><div className="tp-row"><span className="tp-label">Room</span><strong>{a.roomName}</strong></div><div className="tp-row"><span className="tp-label">Rent</span><strong>{fmtS(a.rent)}/mo</strong></div></div>
       <div className="tp-card"><h3>📋 Lease History</h3><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">Lease End</span><strong>{fmtD(a.leaseEnd)}</strong></div><div className="tp-row"><span className="tp-label">Terminated</span><strong>{fmtD(a.terminatedDate)}</strong></div>{tenureMonths&&<div className="tp-row"><span className="tp-label">Tenure</span><strong>{tenureMonths} months ({tenureDays} days)</strong></div>}<div className="tp-row"><span className="tp-label">Total Revenue</span><strong style={{color:"#4a7c59"}}>{fmtS(a.rent*(tenureMonths||0))}</strong></div></div>
       <div className="tp-card" style={{background:"rgba(196,92,74,.03)",borderColor:"rgba(196,92,74,.1)"}}><h3 style={{color:"#c45c4a"}}>⚠ Termination</h3><div className="tp-row"><span className="tp-label">Date</span><strong>{fmtD(a.terminatedDate)}</strong></div><div className="tp-row"><span className="tp-label">Reason</span><strong>{a.reason}</strong></div></div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
