@@ -5976,7 +5976,7 @@ export default function Page(){
         {/* Filters */}
         <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:16,padding:"12px 14px",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>
           <select value={reportProp} onChange={e=>setReportProp(e.target.value)} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-            <option value="all">All Properties</option>{props.map(p=>{const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr?`${getPropDisplayName(p)} — ${p.addr}`:getPropDisplayName(p);return<option key={p.id} value={p.id}>{label}</option>;})}
+            <option value="all">All Properties</option>{props.map(p=>{const dispName=getPropDisplayName(p);const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr&&!dispName.includes(p.addr)?`${dispName} — ${p.addr}`:dispName;return<option key={p.id} value={p.id}>{label}</option>;})}
           </select>
           <input type="date" value={reportPeriod.from} onChange={e=>setReportPeriod(p=>({...p,from:e.target.value}))} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
           <span style={{fontSize:11,color:"#6b5e52"}}>to</span>
@@ -8042,7 +8042,7 @@ export default function Page(){
         <select value={f.propId||""} onChange={e=>{upd("propId",e.target.value);upd("unitId","");upd("unitName","");upd("roomId","");upd("roomName","");}} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
           <option value="">— Select —</option>
           <option value="shared">Shared across all properties</option>
-          {props.map(p=>{const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr?`${getPropDisplayName(p)} — ${p.addr}`:getPropDisplayName(p);return<option key={p.id} value={p.id}>{label}</option>;})}
+          {props.map(p=>{const dispName=getPropDisplayName(p);const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr&&!dispName.includes(p.addr)?`${dispName} — ${p.addr}`:dispName;return<option key={p.id} value={p.id}>{label}</option>;})}
         </select>
         {f.propId==="shared"&&<div style={{fontSize:10,color:"#3b82f6",marginTop:4,padding:"4px 8px",background:"rgba(59,130,246,.04)",borderRadius:4}}>Cost will be split equally across {props.length} propert{props.length===1?"y":"ies"} in reports and overview.</div>}
         {errs.propId&&<div className="err-msg">{errs.propId}</div>}
@@ -8371,7 +8371,7 @@ export default function Page(){
         <div className="fld"><label style={{color:errs.date?"#c45c4a":undefined}}>Date *</label><input type="date" value={f.date||""} onChange={e=>upd("date",e.target.value)} style={{borderColor:errs.date?"#c45c4a":undefined}}/>{errs.date&&<div className="err-msg">{errs.date}</div>}</div>
         <div className="fld"><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
           <select value={f.propId||""} onChange={e=>upd("propId",e.target.value)} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
-            <option value="">— Select —</option>{props.map(p=>{const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr?`${getPropDisplayName(p)} — ${p.addr}`:getPropDisplayName(p);return<option key={p.id} value={p.id}>{label}</option>;})}
+            <option value="">— Select —</option>{props.map(p=>{const dispName=getPropDisplayName(p);const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr&&!dispName.includes(p.addr)?`${dispName} — ${p.addr}`:dispName;return<option key={p.id} value={p.id}>{label}</option>;})}
           </select>{errs.propId&&<div className="err-msg">{errs.propId}</div>}</div>
         <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($) *</label><input type="number" min="0" step="0.01" value={f.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/>{errs.amount&&<div className="err-msg">{errs.amount}</div>}</div>
       </div>
@@ -8481,7 +8481,7 @@ export default function Page(){
       <div className="fr3">
         <div className="fld" style={{gridColumn:"span 2"}}><label style={{color:errs.propId?"#c45c4a":undefined}}>Property *</label>
           <select value={f.propId||""} onChange={e=>upd("propId",e.target.value)} style={{borderColor:errs.propId?"#c45c4a":undefined}}>
-            <option value="">— Select —</option>{props.map(p=>{const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr?`${getPropDisplayName(p)} — ${p.addr}`:getPropDisplayName(p);return<option key={p.id} value={p.id}>{label}</option>;})}
+            <option value="">— Select —</option>{props.map(p=>{const dispName=getPropDisplayName(p);const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr&&!dispName.includes(p.addr)?`${dispName} — ${p.addr}`:dispName;return<option key={p.id} value={p.id}>{label}</option>;})}
           </select>{errs.propId&&<div className="err-msg">{errs.propId}</div>}</div>
         <div className="fld"><label style={{color:errs.lender?"#c45c4a":undefined}}>Lender *</label><input value={f.lender||""} onChange={e=>upd("lender",e.target.value)} placeholder="e.g. Redstone FCU" style={{borderColor:errs.lender?"#c45c4a":undefined}}/>{errs.lender&&<div className="err-msg">{errs.lender}</div>}</div>
       </div>
@@ -9533,7 +9533,7 @@ export default function Page(){
               <label>Property</label>
               <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))} style={{width:"100%"}}>
                 <option value="">Any</option>
-                {props.map(p=>{const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr?`${getPropDisplayName(p)} — ${p.addr}`:getPropDisplayName(p);return<option key={p.id} value={p.id}>{label}</option>;})}
+                {props.map(p=>{const dispName=getPropDisplayName(p);const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr&&!dispName.includes(p.addr)?`${dispName} — ${p.addr}`:dispName;return<option key={p.id} value={p.id}>{label}</option>;})}
               </select>
             </div>
           </div>
@@ -9573,8 +9573,8 @@ export default function Page(){
               <label>Property</label>
               <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,inviteRent:undefined,inviteSD:undefined,whPropOverride:false}))} style={{width:"100%"}}>
                 <option value="">Select property...</option>
-                {props.filter(p=>isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{getPropDisplayName(p)}{p.addr?" — "+p.addr:""}</option>)}
-                {props.filter(p=>!isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{getPropDisplayName(p)+(p.addr?" — "+p.addr:"")+" (by-bedroom)"}</option>)}
+                {props.filter(p=>isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{(()=>{const d=getPropDisplayName(p);return d+(p.addr&&!d.includes(p.addr)?" — "+p.addr:"");})()}</option>)}
+                {props.filter(p=>!isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{(()=>{const d=getPropDisplayName(p);return d+(p.addr&&!d.includes(p.addr)?" — "+p.addr:"")+" (by-bedroom)";})()}</option>)}
               </select>
             </div>
             {selPropId&&byRoomOnly&&!overrideConfirmed&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"12px 14px",marginBottom:8}}>
@@ -9610,7 +9610,7 @@ export default function Page(){
           <label>Property Preference</label>
           <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value}))} style={{width:"100%"}}>
             <option value="">No preference</option>
-            {props.map(p=>{const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr?`${getPropDisplayName(p)} — ${p.addr}`:getPropDisplayName(p);return<option key={p.id} value={p.id}>{label}</option>;})}
+            {props.map(p=>{const dispName=getPropDisplayName(p);const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr&&!dispName.includes(p.addr)?`${dispName} — ${p.addr}`:dispName;return<option key={p.id} value={p.id}>{label}</option>;})}
           </select>
         </div>}
       </div>
