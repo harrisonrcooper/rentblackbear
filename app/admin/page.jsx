@@ -644,7 +644,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
   return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:1000,maxHeight:"95vh",overflowY:"auto",padding:20}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div><h2 style={{marginBottom:2}}>✏️ Photo Editor</h2>
-        <div style={{fontSize:10,color:"#999"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move{aspectLock&&<span style={{marginLeft:8,background:"rgba(212,168,83,.12)",color:"#9a7422",fontWeight:700,padding:"1px 7px",borderRadius:4,fontSize:9}}>🔒 {aspectLock} locked — card preview ratio</span>}</div>
+        <div style={{fontSize:10,color:"#6b5e52"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move{aspectLock&&<span style={{marginLeft:8,background:"rgba(212,168,83,.12)",color:"#9a7422",fontWeight:700,padding:"1px 7px",borderRadius:4,fontSize:9}}>🔒 {aspectLock} locked — card preview ratio</span>}</div>
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={()=>setShowGrid(g=>!g)} style={{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:showGrid?"#d4a853":"#fff",color:showGrid?"#1a1714":"#5c4a3a",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>⊞ Grid {showGrid?"ON":"OFF"}</button>
@@ -808,10 +808,10 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
       <label style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.3}}>{label} ({ph.length} photo{ph.length!==1?"s":""})</label>
       {ph.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-        <span style={{fontSize:9,color:"#bbb"}}>🔍</span>
+        <span style={{fontSize:9,color:"#7a7067"}}>🔍</span>
         <input type="range" min={60} max={200} step={10} value={thumbSize} onChange={e=>setThumbSize(Number(e.target.value))}
           style={{width:64,accentColor:"#d4a853",cursor:"pointer"}} title="Thumbnail size"/>
-        <span style={{fontSize:9,color:"#bbb"}}>drag to reorder</span>
+        <span style={{fontSize:9,color:"#7a7067"}}>drag to reorder</span>
       </div>}
     </div>
     {readingCount>0&&<div style={{marginBottom:6,padding:"5px 10px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:6,fontSize:10,color:"#9a7422",display:"flex",alignItems:"center",gap:6}}>
@@ -854,7 +854,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
       {/* Add more tile */}
       <div onClick={openPicker} style={{aspectRatio:"1",borderRadius:7,border:"2px dashed rgba(0,0,0,.1)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#faf9f7",gap:3}} onMouseOver={e=>e.currentTarget.style.borderColor="#d4a853"} onMouseOut={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.1)"}>
         <span style={{fontSize:18}}>+</span>
-        <span style={{fontSize:8,color:"#999",fontWeight:600}}>Add</span>
+        <span style={{fontSize:8,color:"#6b5e52",fontWeight:600}}>Add</span>
       </div>
     </div>}
 
@@ -865,8 +865,8 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
       onClick={openPicker}
       style={{border:`2px dashed ${dropOver?"#d4a853":"rgba(0,0,0,.08)"}`,borderRadius:8,padding:18,textAlign:"center",cursor:"pointer",background:dropOver?"rgba(212,168,83,.04)":"transparent",marginBottom:6,transition:"all .15s"}}>
       <div style={{fontSize:22,marginBottom:4}}>📷</div>
-      <div style={{fontSize:11,color:"#999",fontWeight:600}}>Drop photos here or click to browse</div>
-      <div style={{fontSize:9,color:"#bbb",marginTop:2}}>Select multiple files at once — no limit</div>
+      <div style={{fontSize:11,color:"#6b5e52",fontWeight:600}}>Drop photos here or click to browse</div>
+      <div style={{fontSize:9,color:"#7a7067",marginTop:2}}>Select multiple files at once — no limit</div>
     </div>}
 
 
@@ -901,17 +901,17 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
   };
   return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600,maxHeight:"82vh",overflowY:"auto"}}>
     <h2 style={{marginBottom:4}}>Utility Templates</h2>
-    <p style={{fontSize:11,color:"#999",marginBottom:16}}>These templates appear in the Utilities dropdown when editing unit settings. Each template has a name, short description, and full lease clause.</p>
+    <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>These templates appear in the Utilities dropdown when editing unit settings. Each template has a name, short description, and full lease clause.</p>
     {templates.map(t=>(
       <div key={t.id} style={{border:"1px solid rgba(0,0,0,.07)",borderRadius:8,padding:12,marginBottom:8,background:"#faf9f7"}}>
         {editingId===t.id&&draftT
           ?<div>
             <div className="fr">
               <div className="fld"><label>Template Name</label><input value={draftT.name} onChange={e=>setDraftT(x=>({...x,name:e.target.value}))}/></div>
-              <div className="fld"><label>Key <span style={{fontWeight:400,color:"#999",textTransform:"none"}}>(no spaces)</span></label><input value={draftT.key} onChange={e=>setDraftT(x=>({...x,key:e.target.value.replace(/[^a-z0-9_]/gi,"_")}))}/></div>
+              <div className="fld"><label>Key <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none"}}>(no spaces)</span></label><input value={draftT.key} onChange={e=>setDraftT(x=>({...x,key:e.target.value.replace(/[^a-z0-9_]/gi,"_")}))}/></div>
             </div>
-            <div className="fld"><label>Short Description <span style={{fontWeight:400,color:"#999",textTransform:"none"}}>(shown below dropdown)</span></label><input value={draftT.desc} onChange={e=>setDraftT(x=>({...x,desc:e.target.value}))} placeholder="e.g. PM covers first $100/mo, overage split equally"/></div>
-            <div className="fld"><label>Lease Clause <span style={{fontWeight:400,color:"#999",textTransform:"none"}}>(inserted into lease agreement)</span></label>
+            <div className="fld"><label>Short Description <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none"}}>(shown below dropdown)</span></label><input value={draftT.desc} onChange={e=>setDraftT(x=>({...x,desc:e.target.value}))} placeholder="e.g. PM covers first $100/mo, overage split equally"/></div>
+            <div className="fld"><label>Lease Clause <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none"}}>(inserted into lease agreement)</span></label>
               <textarea value={draftT.clause} onChange={e=>setDraftT(x=>({...x,clause:e.target.value}))} rows={4} placeholder="Full clause text inserted into the lease document..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.5}}/>
             </div>
             <div style={{display:"flex",gap:6,marginTop:6}}>
@@ -923,10 +923,10 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
                 {t.name}
-                <span style={{fontSize:9,color:"#bbb",fontFamily:"monospace",fontWeight:400}}>{t.key}</span>
+                <span style={{fontSize:9,color:"#7a7067",fontFamily:"monospace",fontWeight:400}}>{t.key}</span>
               </div>
               {t.desc&&<div style={{fontSize:11,color:"#5c4a3a",marginTop:2}}>{t.desc}</div>}
-              {t.clause&&<div style={{fontSize:10,color:"#999",marginTop:3,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>"{t.clause}"</div>}
+              {t.clause&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>"{t.clause}"</div>}
             </div>
             <div style={{display:"flex",gap:4,flexShrink:0}}>
               <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>{setDraftT({...t});setEditingId(t.id);}}>Edit</button>
@@ -1010,10 +1010,10 @@ function TourSceneManager({tourFolder,scenes,onChange}){
           3D Tour Scenes ({scenes.length} scene{scenes.length!==1?"s":""})
         </label>
         {scenes.length>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-          <span style={{fontSize:9,color:"#bbb"}}>🔍</span>
+          <span style={{fontSize:9,color:"#7a7067"}}>🔍</span>
           <input type="range" min={60} max={200} step={10} value={thumbSize} onChange={e=>setThumbSize(Number(e.target.value))}
             style={{width:64,accentColor:"#d4a853",cursor:"pointer"}} title="Thumbnail size"/>
-          <span style={{fontSize:9,color:"#bbb"}}>drag to reorder</span>
+          <span style={{fontSize:9,color:"#7a7067"}}>drag to reorder</span>
         </div>}
       </div>
 
@@ -1040,7 +1040,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
                 </select>
               </div>
             </div>
-            <div style={{fontSize:9,color:"#999"}}>File: {editing.file}</div>
+            <div style={{fontSize:9,color:"#6b5e52"}}>File: {editing.file}</div>
           </div>
         </div>
         <div style={{display:"flex",gap:6,marginTop:8}}>
@@ -1096,7 +1096,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
           onMouseOver={e=>e.currentTarget.style.borderColor="#d4a853"}
           onMouseOut={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.1)"}>
           <span style={{fontSize:18}}>+</span>
-          <span style={{fontSize:8,color:"#999",fontWeight:600}}>Add</span>
+          <span style={{fontSize:8,color:"#6b5e52",fontWeight:600}}>Add</span>
         </div>
       </div>}
 
@@ -1104,8 +1104,8 @@ function TourSceneManager({tourFolder,scenes,onChange}){
       {scenes.length===0&&<div style={{border:"2px dashed rgba(0,0,0,.08)",borderRadius:8,padding:18,textAlign:"center",cursor:"pointer",marginBottom:6}}
         onClick={()=>{setShowFileBrowser(true);if(!tourFiles.length)loadBucketFiles();}}>
         <div style={{fontSize:22,marginBottom:4}}>🎥</div>
-        <div style={{fontSize:11,color:"#999",fontWeight:600}}>No scenes yet — click to browse bucket files</div>
-        <div style={{fontSize:9,color:"#bbb",marginTop:2}}>Or add manually below</div>
+        <div style={{fontSize:11,color:"#6b5e52",fontWeight:600}}>No scenes yet — click to browse bucket files</div>
+        <div style={{fontSize:9,color:"#7a7067",marginTop:2}}>Or add manually below</div>
       </div>}
 
       {/* Add buttons */}
@@ -1120,7 +1120,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
 
       {/* File browser */}
       {showFileBrowser&&<div style={{background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:8}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,flexWrap:"wrap"}}>
           <span>360/{tourFolder}/ ({tourFiles.length} files)</span>
           <div style={{display:"flex",gap:5,alignItems:"center"}}>
             {tourFiles.filter(f=>!scenes.some(s=>s.file===f)).length>0&&<>
@@ -1138,7 +1138,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
             <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={loadBucketFiles}>{tourFilesLoading?"Loading...":"Refresh"}</button>
           </div>
         </div>
-        {tourFilesLoading&&<div style={{fontSize:11,color:"#999",textAlign:"center",padding:8}}>Loading files...</div>}
+        {tourFilesLoading&&<div style={{fontSize:11,color:"#6b5e52",textAlign:"center",padding:8}}>Loading files...</div>}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(90px,1fr))",gap:6,maxHeight:220,overflowY:"auto"}}>
           {tourFiles.map(file=>{
             const already=scenes.some(s=>s.file===file);
@@ -1165,7 +1165,7 @@ function TourSceneManager({tourFolder,scenes,onChange}){
 
       {/* Manual add */}
       {showManual&&<div style={{background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:8}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8}}>Add Scene Manually</div>
+        <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",marginBottom:8}}>Add Scene Manually</div>
         <div className="fr" style={{gap:6,marginBottom:6}}>
           <input value={manualFile} onChange={e=>setManualFile(e.target.value)} placeholder="filename.jpg"
             style={{flex:2,padding:"6px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
@@ -1240,13 +1240,13 @@ function LeasePricingModal({room,onSave,onClose}){
               {t.months>12&&<span style={{fontSize:9,color:"#4a7c59",marginLeft:5}}>Discount</span>}
             </div>
             <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <span style={{fontSize:11,color:"#999"}}>$</span>
+              <span style={{fontSize:11,color:"#6b5e52"}}>$</span>
               <input type="number" value={t.price} min={0} step={5}
                 onChange={e=>updTier(t.id,"price",Number(e.target.value)||0)}
                 onFocus={()=>updTier(t.id,"override",true)}
                 style={{width:"100%",padding:"4px 6px",borderRadius:5,border:"1px solid "+(t.override?"rgba(212,168,83,.5)":"rgba(0,0,0,.08)"),fontSize:11,fontFamily:"inherit"}}/>
             </div>
-            <div style={{fontSize:10,color:"#999",textAlign:"right"}}>${(t.price*t.months).toLocaleString()}</div>
+            <div style={{fontSize:10,color:"#6b5e52",textAlign:"right"}}>${(t.price*t.months).toLocaleString()}</div>
             <button onClick={()=>removeTier(t.id)} style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:14,lineHeight:1,padding:0}}>x</button>
           </div>
         ))}
@@ -1323,7 +1323,7 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
   return(
   <div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520,animation:shake?"shake .4s ease":undefined}}>
     <h2 style={{marginBottom:4}}>Add Existing Tenant</h2>
-    <div style={{fontSize:11,color:"#999",marginBottom:14}}>
+    <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>
       Adding tenant to <strong>{room.name}</strong> at <strong>{propName}</strong>. This will mark the room as occupied immediately.
     </div>
     {shake&&Object.keys(errs).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,color:"#c45c4a",fontSize:11,fontWeight:700}}>
@@ -1367,7 +1367,7 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
         <div className="fld" style={{marginBottom:0}}>
           <label style={{color:errs.rent?"#c45c4a":undefined}}>Monthly Rent * {errs.rent&&<span style={{fontWeight:400,fontSize:9,color:"#c45c4a"}}>{errs.rent}</span>}</label>
           <div style={{display:"flex",alignItems:"center"}}>
-            <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+            <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
             <input type="number" value={form.rent} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",borderColor:errs.rent?"#c45c4a":undefined,width:"100%"}}
               onChange={e=>{setForm(p=>({...p,rent:e.target.value,sd:p.sdTouched?p.sd:e.target.value}));if(errs.rent)setErrs(p=>({...p,rent:null}));}} placeholder="0"/>
           </div>
@@ -1375,11 +1375,11 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
         <div className="fld" style={{marginBottom:0}}>
           <label>Security Deposit</label>
           <div style={{display:"flex",alignItems:"center"}}>
-            <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+            <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
             <input type="number" value={form.sd} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%"}}
               onChange={e=>setForm(p=>({...p,sd:e.target.value,sdTouched:true}))} placeholder="0"/>
           </div>
-          <div style={{fontSize:9,color:"#999",marginTop:3}}>Auto-fills from rent — edit if different</div>
+          <div style={{fontSize:9,color:"#6b5e52",marginTop:3}}>Auto-fills from rent — edit if different</div>
         </div>
       </div>
     </div>
@@ -1513,11 +1513,11 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
         </select>
       </div>
       <div className="fld"><label>Total Sq Ft</label><input type="number" value={p.sqft||""} onChange={e=>updP({...p,sqft:Number(e.target.value)})} placeholder="2400"/></div>
-      <div className="fld"><label>Property Photos</label><span style={{fontSize:10,color:"#999"}}>{(p.photos||[]).length} photo{(p.photos||[]).length!==1?"s":""}</span></div>
+      <div className="fld"><label>Property Photos</label><span style={{fontSize:10,color:"#6b5e52"}}>{(p.photos||[]).length} photo{(p.photos||[]).length!==1?"s":""}</span></div>
     </div>
     <PhotoManager photos={p.photos||[]} onChange={v=>{const newPhotos=typeof v==="function"?v(p.photos||[]):v;updP({...p,photos:newPhotos});}} label="Property Photos" propId={p.id} onFocalPoint={(x,y)=>updP({...p,focalPoint:{x,y}})}/>
     <div className="fld">
-      <label>360 Tour Folder <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— subfolder inside Supabase 360/ bucket</span></label>
+      <label>360 Tour Folder <span style={{fontWeight:400,color:"#6b5e52",fontSize:9,textTransform:"none",letterSpacing:0}}>— subfolder inside Supabase 360/ bucket</span></label>
       <input value={p.tourFolder||""} onChange={e=>updP({...p,tourFolder:e.target.value,tourScenes:[]})} placeholder="e.g. 908-lee-drive" style={{width:"100%"}}/>
       {p.tourFolder&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>property-photos/360/{p.tourFolder}/</div>}
     </div>
@@ -1527,7 +1527,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
     <div className="fr">
       <div className="fld" style={{flex:2}}><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
       <div className="fld" style={{flex:1}}>
-        <label>Turnover Buffer <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— days between leases</span></label>
+        <label>Turnover Buffer <span style={{fontWeight:400,color:"#6b5e52",fontSize:9,textTransform:"none",letterSpacing:0}}>— days between leases</span></label>
         <input type="number" min={0} max={60} value={p.turnoverDays||""} onChange={e=>updP({...p,turnoverDays:Number(e.target.value)||0})} placeholder="e.g. 7"/>
         {(p.turnoverDays||0)>0&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>{p.turnoverDays} days blocked after each lease ends</div>}
       </div>
@@ -1538,7 +1538,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <div style={{fontSize:11,fontWeight:800,color:"#5c4a3a",letterSpacing:.3}}>
           RENTAL CONFIGURATION
-          {(p.units||[]).length>1&&<span style={{fontWeight:400,color:"#999",marginLeft:6,fontSize:10}}>— select unit to configure</span>}
+          {(p.units||[]).length>1&&<span style={{fontWeight:400,color:"#6b5e52",marginLeft:6,fontSize:10}}>— select unit to configure</span>}
         </div>
         {/* Unit tabs — show for multi-unit, always */}
         {(p.units||[]).length>1&&<div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>
@@ -1569,7 +1569,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
             <div style={{fontSize:12,fontWeight:800,color:"#1a1714",marginBottom:2}}>
               {(p.units||[]).length>1?curUnit.name:"Rental Mode"}
             </div>
-            <div style={{fontSize:10,color:"#999"}}>
+            <div style={{fontSize:10,color:"#6b5e52"}}>
               {mode==="byRoom"?"Rented by individual bedroom — configure each room below":"Rented as a whole unit — single lease, one tenant or household"}
             </div>
           </div>
@@ -1590,7 +1590,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
 
         {/* Unit basics */}
         <div className="fr3">
-          {(p.units||[]).length>1&&<div className="fld"><label>Unit Name <span style={{fontWeight:400,color:"#999",textTransform:"none",fontSize:9}}>— editable</span></label><input value={curUnit.name||""} onChange={e=>updUnit("name",e.target.value)}/></div>}
+          {(p.units||[]).length>1&&<div className="fld"><label>Unit Name <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",fontSize:9}}>— editable</span></label><input value={curUnit.name||""} onChange={e=>updUnit("name",e.target.value)}/></div>}
           {(p.units||[]).length>1&&<div className="fld"><label>Sq Ft</label><input type="number" value={curUnit.sqft||""} onChange={e=>updUnit("sqft",Number(e.target.value))} placeholder="1200"/></div>}
           <div className="fld"><label>Bathrooms</label><input type="number" step="0.5" min="0.5" value={curUnit.baths||1} onChange={e=>updUnit("baths",Number(e.target.value))}/></div>
           <div className="fld"><label>Cleaning</label><select value={curUnit.clean||"Biweekly"} onChange={e=>updUnit("clean",e.target.value)}><option>Weekly</option><option>Biweekly</option><option>Monthly</option><option>None</option></select></div>
@@ -1605,7 +1605,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
           <select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}>
             {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
           </select>
-          {(()=>{const t=(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(curUnit.utils||"allIncluded"));return t?<div style={{fontSize:9,color:"#999",marginTop:3}}>{t.desc}</div>:null;})()}
+          {(()=>{const t=(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===(curUnit.utils||"allIncluded"));return t?<div style={{fontSize:9,color:"#6b5e52",marginTop:3}}>{t.desc}</div>:null;})()}
         </div>
 
         {/* Whole unit pricing */}
@@ -1614,7 +1614,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
           <div className="fld"><label>Security Deposit</label><input type="number" value={curUnit.sd||curUnit.rent||""} onChange={e=>updUnit("sd",Number(e.target.value))} placeholder="Defaults to 1 month rent"/></div>
         </div>}
 
-        <div className="fld" style={{marginBottom:4}}><label>Unit Notes <span style={{fontWeight:400,color:"#999",textTransform:"none",fontSize:9}}>— internal only</span></label><textarea value={curUnit.desc||""} onChange={e=>updUnit("desc",e.target.value)} placeholder="Finishes, features, notes for this unit..." rows={2}/></div>
+        <div className="fld" style={{marginBottom:4}}><label>Unit Notes <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",fontSize:9}}>— internal only</span></label><textarea value={curUnit.desc||""} onChange={e=>updUnit("desc",e.target.value)} placeholder="Finishes, features, notes for this unit..." rows={2}/></div>
       </div>}
 
       {/* ── Section 3: Rooms (only for byRoom mode) ── */}
@@ -1622,11 +1622,11 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <div>
             <div style={{fontSize:11,fontWeight:800,color:"#5c4a3a",letterSpacing:.3}}>BEDROOMS{(p.units||[]).length>1?` — ${curUnit.name}`:""}</div>
-            <div style={{fontSize:10,color:"#999"}}>{(curUnit.rooms||[]).length} room{(curUnit.rooms||[]).length!==1?"s":""} · each gets its own lease</div>
+            <div style={{fontSize:10,color:"#6b5e52"}}>{(curUnit.rooms||[]).length} room{(curUnit.rooms||[]).length!==1?"s":""} · each gets its own lease</div>
           </div>
           <button className="btn btn-out btn-sm" onClick={addRoom}>+ Add Room</button>
         </div>
-        {(curUnit.rooms||[]).length===0&&<div style={{padding:"12px",textAlign:"center",color:"#999",fontSize:12,border:"2px dashed rgba(0,0,0,.06)",borderRadius:8}}>No rooms yet — click Add Room</div>}
+        {(curUnit.rooms||[]).length===0&&<div style={{padding:"12px",textAlign:"center",color:"#6b5e52",fontSize:12,border:"2px dashed rgba(0,0,0,.06)",borderRadius:8}}>No rooms yet — click Add Room</div>}
         {(curUnit.rooms||[]).map((r,i)=>{const locked=isOcc(r);return(
           <div key={r.id} style={{padding:12,border:`1px solid ${locked?"rgba(0,0,0,.06)":"rgba(0,0,0,.05)"}`,borderRadius:8,marginBottom:8,background:locked?"#f0efec":"#faf9f7",position:"relative"}}>
             {locked&&<div style={{position:"absolute",top:6,right:8}}><span className="badge b-green" style={{fontSize:8}}>🔗 {r.tenant.name}</span></div>}
@@ -1649,7 +1649,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
             </div>
             <div className="fr3">
               <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:r.ownerOccupied?"rgba(59,130,246,.06)":locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:r.ownerOccupied?"#1d4ed8":locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{r.ownerOccupied?"Owner Occupied":locked?("Occupied — "+(r.tenant.name)):"Vacant"}</div></div>
-              <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#999"}}>{r.le?fmtD(r.le):"—"}</div></div>
+              <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#6b5e52"}}>{r.le?fmtD(r.le):"—"}</div></div>
               <div className="fld"><label>Furnished</label><select value={String(r.furnished!==false)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"furnished",e.target.value==="true")}><option value="true">✓ Furnished</option><option value="false">Unfurnished</option></select></div>
             </div>
             <div style={{marginBottom:8}}>
@@ -1660,13 +1660,13 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
             </div>
             <div className="fr" style={{alignItems:"flex-end",gap:8}}>
               <div className="fld" style={{flex:1}}>
-                <label>Utilities <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— overrides unit default for this room</span></label>
+                <label>Utilities <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0,fontSize:9}}>— overrides unit default for this room</span></label>
                 <select value={r.utils||curUnit?.utils||"allIncluded"} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"utils",e.target.value)}>
                   <option value="">— Use unit default —</option>
                   {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
                 </select>
                 {(r.utils&&r.utils!=="")&&<div style={{fontSize:9,color:"#5c4a3a",marginTop:3}}>{(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===r.utils)?.desc||""}</div>}
-                {(!r.utils||r.utils==="")&&curUnit?.utils&&<div style={{fontSize:9,color:"#999",marginTop:3}}>Using unit default: {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===curUnit.utils)?.name||curUnit.utils}</div>}
+                {(!r.utils||r.utils==="")&&curUnit?.utils&&<div style={{fontSize:9,color:"#6b5e52",marginTop:3}}>Using unit default: {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===curUnit.utils)?.name||curUnit.utils}</div>}
               </div>
               {!locked&&(curUnit?.rooms||[]).length>1&&<button className="btn btn-out btn-sm" style={{fontSize:9,whiteSpace:"nowrap",marginBottom:1}} title="Apply this room's utility setting to all rooms in this unit"
                 onClick={()=>{const utils=r.utils||curUnit?.utils||"allIncluded";const units=(p.units||[]).map((u,ui)=>ui===activeUnit?{...u,rooms:(u.rooms||[]).map(rm=>({...rm,utils}))}:u);updP({...p,units});}}>
@@ -1674,7 +1674,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
               </button>}
             </div>
             {!locked&&<div className="fld">
-              <label>Features <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— shown on public site (check all that apply)</span></label>
+              <label>Features <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0,fontSize:9}}>— shown on public site (check all that apply)</span></label>
               <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}}>
                 {["Walk-in closet","En-suite bath","Closet organizer","Street view","Backyard view","USB outlets","Blackout curtains","Ceiling fan","Private entrance","Corner room","Lots of natural light","Extra storage"].map(feat=>{
                   const checked=(r.feat||[]).includes(feat);
@@ -1685,7 +1685,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                 })}
               </div>
             </div>}
-            {!locked&&<div className="fld"><label>Description <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0,fontSize:9}}>— internal notes</span></label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Additional notes..."/></div>}
+            {!locked&&<div className="fld"><label>Description <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0,fontSize:9}}>— internal notes</span></label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Additional notes..."/></div>}
             {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
             <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap"}}>
               {!locked&&!r.ownerOccupied&&<button className="btn btn-green btn-sm" style={{fontSize:10}}
@@ -1698,7 +1698,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                 onSave(p);
                 setTimeout(()=>{if(onViewTenant)onViewTenant(r,p.name);},150);
               }}>📄 Manage Lease / Terminate</button>}
-              {locked&&<span style={{fontSize:10,color:"#999"}}>Save required to manage lease</span>}
+              {locked&&<span style={{fontSize:10,color:"#6b5e52"}}>Save required to manage lease</span>}
             </div>
           </div>);})}
       </div>}
@@ -1713,8 +1713,8 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
             <div style={{padding:"10px 14px",borderRadius:8,border:"1px solid rgba(0,0,0,.06)",background:anyOcc?"rgba(74,124,89,.04)":"rgba(196,92,74,.04)",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontSize:12,fontWeight:700,color:anyOcc?"#4a7c59":"#c45c4a"}}>{anyOcc?"Occupied":"Vacant"}</div>
-                {anyOcc&&occupant&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>{occupant.name}{latestLe?<span style={{color:"#999",marginLeft:6}}>· lease ends {fmtD(latestLe)}</span>:null}</div>}
-                {!anyOcc&&<div style={{fontSize:10,color:"#999",marginTop:2}}>No active tenant — ready to lease</div>}
+                {anyOcc&&occupant&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>{occupant.name}{latestLe?<span style={{color:"#6b5e52",marginLeft:6}}>· lease ends {fmtD(latestLe)}</span>:null}</div>}
+                {!anyOcc&&<div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>No active tenant — ready to lease</div>}
               </div>
               {anyOcc
                 ?<button className="btn btn-gold btn-sm" style={{fontSize:10}} onClick={()=>{
@@ -1767,7 +1767,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
       <p style={{fontSize:13,color:"#5c4a3a",marginBottom:6,lineHeight:1.6}}>
         Copy all settings from <strong>{(p.units||[])[0]?.name||"Unit A"}</strong> to <strong>{(p.units||[])[mirrorTarget]?.name||"Unit B"}</strong>?
       </p>
-      <p style={{fontSize:11,color:"#999",marginBottom:20,lineHeight:1.5}}>
+      <p style={{fontSize:11,color:"#6b5e52",marginBottom:20,lineHeight:1.5}}>
         Rental mode, utilities, cleaning schedule, room layout, and features will be copied. All rooms will be set to vacant — existing tenant data will not be affected.
       </p>
       <div className="mft">
@@ -1810,7 +1810,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
           setUnsaved(false);setJustSaved(true);setTimeout(()=>setJustSaved(false),3000);onSave(p);
         }}>Save & Close</button>
       </div>
-      <button style={{marginTop:14,background:"none",border:"none",fontSize:12,color:"#999",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowCloseConfirm(false)}>Keep editing</button>
+      <button style={{marginTop:14,background:"none",border:"none",fontSize:12,color:"#6b5e52",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setShowCloseConfirm(false)}>Keep editing</button>
     </div>
   </div>}
   </div></div>);
@@ -2587,45 +2587,45 @@ export default function Page(){
         ];
         const availableToAdd=ALL_WIDGETS.filter(w=>!activeWidgets.includes(w.id));
         const NeedsData=({label,goTo,field})=>(<div style={{padding:"10px 0"}}>
-          <div style={{fontSize:11,color:"#999",marginBottom:6}}>Enter {field} to calculate {label}</div>
+          <div style={{fontSize:11,color:"#6b5e52",marginBottom:6}}>Enter {field} to calculate {label}</div>
           <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={()=>goTab(goTo||"properties")}>Enter data</button>
         </div>);
         const renderWidget=(id)=>{switch(id){
           case "pastDue":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Past Due</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Past Due</div>
             {mtdPastDue.length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>No past due charges</div>}
             {mtdPastDue.slice(0,5).map(c=><div key={c.id} className="row" style={{cursor:"pointer",padding:"6px 0"}} onClick={()=>{goTab("payments");setPaySubTab("charges");}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t" style={{fontSize:12}}>{c.tenantName}</div><div className="row-s">{c.propName} · Due {fmtD(c.dueDate)}</div></div><div className="row-v kb" style={{fontSize:13}}>{fmtS(c.amount-c.amountPaid)}</div></div>)}
-            {mtdPastDue.length>5&&<div style={{fontSize:10,color:"#999",paddingTop:6,cursor:"pointer"}} onClick={()=>{goTab("payments");}}>+{mtdPastDue.length-5} more</div>}
+            {mtdPastDue.length>5&&<div style={{fontSize:10,color:"#6b5e52",paddingTop:6,cursor:"pointer"}} onClick={()=>{goTab("payments");}}>+{mtdPastDue.length-5} more</div>}
           </>);
           case "leaseExp":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Lease Expirations</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Lease Expirations</div>
             {m.expiring.length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>No leases expiring within 90 days</div>}
             {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer",padding:"6px 0"}} onClick={()=>goTab("tenants")}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t" style={{fontSize:12}}>{r.tenant&&r.tenant.name}</div><div className="row-s">{r.propName} · {r.name} · Ends {fmtD(r.le)}</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422",flexShrink:0}}>{r.daysLeft}d</span></div>)}
           </>);
           case "vacancy":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Vacant Rooms</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Vacant Rooms</div>
             {m.vacs.length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>Fully occupied</div>}
             {m.vacs.map(r=><div key={r.id} className="row" style={{padding:"6px 0"}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t" style={{fontSize:12}}>{r.name}</div><div className="row-s">{r.propName} · {fmtS(r.rent)}/mo lost</div></div><button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("applications")}>Find Tenant</button></div>)}
           </>);
           case "maintenance":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Open Maintenance ({openMaintItems.length})</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Open Maintenance ({openMaintItems.length})</div>
             {openMaintItems.length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>No open requests</div>}
             {openMaintItems.slice(0,5).map(x=><div key={x.id} className="row" style={{cursor:"pointer",padding:"6px 0"}} onClick={()=>goTab("maintenance")}><div className="row-dot" style={{background:x.priority==="high"?"#c45c4a":x.priority==="medium"?"#d4a853":"#999"}}/><div className="row-i"><div className="row-t" style={{fontSize:12}}>{x.title}</div><div className="row-s">{x.propName||""}{x.tenant?" · "+x.tenant:""}</div></div></div>)}
-            {openMaintItems.length>5&&<div style={{fontSize:10,color:"#999",paddingTop:6,cursor:"pointer"}} onClick={()=>goTab("maintenance")}>+{openMaintItems.length-5} more</div>}
+            {openMaintItems.length>5&&<div style={{fontSize:10,color:"#6b5e52",paddingTop:6,cursor:"pointer"}} onClick={()=>goTab("maintenance")}>+{openMaintItems.length-5} more</div>}
           </>);
           case "mtdCollection":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>MTD Collection</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>MTD Collection</div>
             <div style={{fontSize:24,fontWeight:800,color:"#4a7c59",marginBottom:4}}>{fmtS(mtdCollected)}</div>
-            <div style={{fontSize:11,color:"#999",marginBottom:10}}>{mtdExpected>0?Math.round(mtdCollected/mtdExpected*100):0}% of {fmtS(mtdExpected)} expected</div>
+            <div style={{fontSize:11,color:"#6b5e52",marginBottom:10}}>{mtdExpected>0?Math.round(mtdCollected/mtdExpected*100):0}% of {fmtS(mtdExpected)} expected</div>
             <div style={{height:6,borderRadius:3,background:"rgba(0,0,0,.06)"}}><div style={{height:"100%",borderRadius:3,background:"#4a7c59",width:(mtdExpected>0?Math.min(Math.round(mtdCollected/mtdExpected*100),100):0)+"%",transition:"width .4s"}}/></div>
             {mtdExpected>mtdCollected&&<div style={{fontSize:10,color:"#c45c4a",marginTop:6}}>{fmtS(mtdExpected-mtdCollected)} outstanding</div>}
           </>);
           case "recentActivity":return(<>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8}}>Recent Activity</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8}}>Recent Activity</div>
               {notifs.length>0&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>{setNotifs([]);save("hq-notifs",[]);}}>Clear All</button>}
             </div>
-            {notifs.length===0&&<div style={{fontSize:12,color:"#999"}}>No recent activity</div>}
+            {notifs.length===0&&<div style={{fontSize:12,color:"#6b5e52"}}>No recent activity</div>}
             {notifs.slice(0,8).map(n=><div key={n.id} className="row" style={{opacity:n.read?.7:1,cursor:"pointer",padding:"5px 0"}} onClick={()=>setNotifs(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}>
               <div className="row-dot" style={{background:n.type==="payment"?"#4a7c59":n.type==="lease"?"#3b82f6":n.type==="maint"?"#d4a853":"#999",flexShrink:0}}/>
               <div className="row-i"><div className="row-t" style={{fontWeight:n.read?500:700,fontSize:11}}>{n.msg}</div><div className="row-s">{n.date}</div></div>
@@ -2633,7 +2633,7 @@ export default function Page(){
             </div>)}
           </>);
           case "appPipeline":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Application Pipeline</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Application Pipeline</div>
             {[["new-lead","New Lead"],["applied","Applied"],["approved","Approved"],["onboarding","Onboarding"]].map(([k,l])=>(
               <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                 <span style={{fontSize:11,color:"#5c4a3a"}}>{l}</span>
@@ -2643,70 +2643,70 @@ export default function Page(){
             <div style={{marginTop:8}}><button className="btn btn-out btn-sm" style={{fontSize:10,width:"100%"}} onClick={()=>goTab("applications")}>View All</button></div>
           </>);
           case "upcomingRent":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Upcoming Rent</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Upcoming Rent</div>
             <div style={{fontSize:24,fontWeight:800,color:"#1a1714",marginBottom:4}}>{fmtS(nextRentTotal)}</div>
-            <div style={{fontSize:11,color:"#999",marginBottom:10}}>{daysUntilNextRent} day{daysUntilNextRent!==1?"s":""} · {nextRentCharges.filter(c=>c.category==="Rent").length} charges</div>
+            <div style={{fontSize:11,color:"#6b5e52",marginBottom:10}}>{daysUntilNextRent} day{daysUntilNextRent!==1?"s":""} · {nextRentCharges.filter(c=>c.category==="Rent").length} charges</div>
             {nextRentCharges.filter(c=>c.category==="Rent").slice(0,4).map(c=><div key={c.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11}}><span>{c.tenantName}</span><span style={{fontWeight:700}}>{fmtS(c.amount)}</span></div>)}
           </>);
           case "ytdRevenue":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>YTD Revenue</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>YTD Revenue</div>
             <div style={{fontSize:24,fontWeight:800,color:"#4a7c59",marginBottom:4}}>{fmtS(ytdCollected)}</div>
-            <div style={{fontSize:11,color:"#999"}}>Collected Jan – {TODAY.toLocaleString("default",{month:"short"})} {TODAY.getFullYear()}</div>
+            <div style={{fontSize:11,color:"#6b5e52"}}>Collected Jan – {TODAY.toLocaleString("default",{month:"short"})} {TODAY.getFullYear()}</div>
           </>);
           case "ytdExpenses":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>YTD Expenses</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>YTD Expenses</div>
             <div style={{fontSize:24,fontWeight:800,color:"#c45c4a",marginBottom:4}}>{fmtS(ytdExpenses)}</div>
-            <div style={{fontSize:11,color:"#999",marginBottom:6}}>Spent Jan – {TODAY.toLocaleString("default",{month:"short"})} {TODAY.getFullYear()}</div>
-            {ytdExpenses===0&&<div style={{fontSize:10,color:"#999"}}>No expenses yet. <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("accounting")}>Add in Accounting</button></div>}
+            <div style={{fontSize:11,color:"#6b5e52",marginBottom:6}}>Spent Jan – {TODAY.toLocaleString("default",{month:"short"})} {TODAY.getFullYear()}</div>
+            {ytdExpenses===0&&<div style={{fontSize:10,color:"#6b5e52"}}>No expenses yet. <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("accounting")}>Add in Accounting</button></div>}
           </>);
           case "noi":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Net Operating Income</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Net Operating Income</div>
             <div style={{fontSize:24,fontWeight:800,color:ytdNOI>=0?"#4a7c59":"#c45c4a",marginBottom:4}}>{fmtS(ytdNOI)}</div>
-            <div style={{fontSize:11,color:"#999",marginBottom:6}}>YTD · {fmtS(ytdCollected)} revenue minus {fmtS(ytdExpenses)} expenses</div>
-            {ytdExpenses===0&&<div style={{fontSize:10,color:"#999"}}>Add expenses in <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("accounting")}>Accounting</button> for accurate NOI</div>}
+            <div style={{fontSize:11,color:"#6b5e52",marginBottom:6}}>YTD · {fmtS(ytdCollected)} revenue minus {fmtS(ytdExpenses)} expenses</div>
+            {ytdExpenses===0&&<div style={{fontSize:10,color:"#6b5e52"}}>Add expenses in <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("accounting")}>Accounting</button> for accurate NOI</div>}
           </>);
           case "vacancyCost":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Vacancy Cost</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Vacancy Cost</div>
             {m.vacs.length===0?<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>Fully occupied — no vacancy loss</div>:<>
               <div style={{fontSize:24,fontWeight:800,color:"#c45c4a",marginBottom:4}}>{fmtS(m.lost)}/mo</div>
-              <div style={{fontSize:11,color:"#999"}}>{fmtS(Math.round(m.lost/30))}/day · {m.vacs.length} empty room{m.vacs.length!==1?"s":""}</div>
+              <div style={{fontSize:11,color:"#6b5e52"}}>{fmtS(Math.round(m.lost/30))}/day · {m.vacs.length} empty room{m.vacs.length!==1?"s":""}</div>
             </>}
           </>);
           case "leaseRenewals":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Renewals Needed (60d)</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Renewals Needed (60d)</div>
             {m.expiring.filter(r=>r.daysLeft<=60).length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>No renewals needed in next 60 days</div>}
             {m.expiring.filter(r=>r.daysLeft<=60).map(r=><div key={r.id} className="row" style={{padding:"6px 0"}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t" style={{fontSize:12}}>{r.tenant&&r.tenant.name}</div><div className="row-s">Expires {fmtD(r.le)} · {r.propName}</div></div><button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("tenants")}>Renew</button></div>)}
           </>);
           case "doorCodes":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Door Codes</div>
-            {allTenants.filter(r=>r.tenant&&r.tenant.doorCode).length===0&&<div style={{fontSize:12,color:"#999"}}>No door codes on file</div>}
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Door Codes</div>
+            {allTenants.filter(r=>r.tenant&&r.tenant.doorCode).length===0&&<div style={{fontSize:12,color:"#6b5e52"}}>No door codes on file</div>}
             {allTenants.filter(r=>r.tenant&&r.tenant.doorCode).map(r=><div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-              <div><div style={{fontSize:11,fontWeight:600}}>{r.tenant.name}</div><div style={{fontSize:9,color:"#999"}}>{r.propName} · {r.name}</div></div>
+              <div><div style={{fontSize:11,fontWeight:600}}>{r.tenant.name}</div><div style={{fontSize:9,color:"#6b5e52"}}>{r.propName} · {r.name}</div></div>
               <div style={{fontFamily:"monospace",fontSize:16,fontWeight:800,letterSpacing:4,color:"#1a1714"}}>{r.tenant.doorCode}</div>
             </div>)}
           </>);
           case "cleaning":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Cleaning Schedule</div>
-            {props.map(p=>{const freq=(p.units&&p.units[0]&&p.units[0].clean)||p.clean||"Biweekly";return(<div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{fontSize:11,fontWeight:600}}>{p.name}</span><span style={{fontSize:10,color:"#999"}}>{freq}</span></div>);})}
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Cleaning Schedule</div>
+            {props.map(p=>{const freq=(p.units&&p.units[0]&&p.units[0].clean)||p.clean||"Biweekly";return(<div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{fontSize:11,fontWeight:600}}>{p.name}</span><span style={{fontSize:10,color:"#6b5e52"}}>{freq}</span></div>);})}
           </>);
           case "propBreakdown":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Revenue by Property</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Revenue by Property</div>
             {m.propBreakdown.map(pr=><div key={pr.id} style={{marginBottom:10}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:11,fontWeight:600}}>{pr.name}</span><span style={{fontSize:11,fontWeight:700,color:"#4a7c59"}}>{fmtS(pr.collected)}</span></div>
               <div style={{height:4,borderRadius:2,background:"rgba(0,0,0,.06)"}}><div style={{height:"100%",borderRadius:2,background:"#4a7c59",width:(pr.fullOcc>0?Math.min(Math.round(pr.collected/pr.fullOcc*100),100):0)+"%"}}/></div>
-              <div style={{fontSize:9,color:"#999",marginTop:2}}>{pr.occCount} occupied · {fmtS(pr.fullOcc)}/mo at full</div>
+              <div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>{pr.occCount} occupied · {fmtS(pr.fullOcc)}/mo at full</div>
             </div>)}
           </>);
           case "roe":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Return on Equity</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Return on Equity</div>
             {totalPropValue===0?<NeedsData label="ROE" goTo="properties" field="estimated property values in each property"/>:<>
               <div style={{fontSize:24,fontWeight:800,color:roe&&roe>=8?"#4a7c59":"#c45c4a",marginBottom:4}}>{roe!==null?roe+"%":"—"}</div>
-              <div style={{fontSize:11,color:"#999",marginBottom:4}}>Annualized · Equity {fmtS(totalEquity)} · NOI {fmtS(Math.round(annualNOI))}/yr</div>
-              <div style={{fontSize:10,color:"#999"}}>Prop value {fmtS(totalPropValue)} minus debt {fmtS(totalDebt)}</div>
+              <div style={{fontSize:11,color:"#6b5e52",marginBottom:4}}>Annualized · Equity {fmtS(totalEquity)} · NOI {fmtS(Math.round(annualNOI))}/yr</div>
+              <div style={{fontSize:10,color:"#6b5e52"}}>Prop value {fmtS(totalPropValue)} minus debt {fmtS(totalDebt)}</div>
             </>}
           </>);
           case "profitability":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Profitability by Property</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Profitability by Property</div>
             {props.some(p=>!p.estimatedValue)?<NeedsData label="profitability" goTo="properties" field="estimated values in each property"/>:
               props.map(pr=>{
                 const prInc=ytdCharges.filter(c=>c.propName===pr.name).reduce((s,c)=>s+c.amountPaid,0);
@@ -2714,29 +2714,29 @@ export default function Page(){
                 const prNOI=prInc-prExp;const margin=prInc>0?Math.round(prNOI/prInc*100):0;
                 return(<div key={pr.id} style={{marginBottom:8,paddingBottom:8,borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}><span style={{fontSize:11,fontWeight:600}}>{pr.name}</span><span style={{fontSize:11,fontWeight:700,color:prNOI>=0?"#4a7c59":"#c45c4a"}}>{fmtS(prNOI)} NOI</span></div>
-                  <div style={{fontSize:9,color:"#999"}}>Income {fmtS(prInc)} · Expenses {fmtS(prExp)} · {margin}% margin</div>
+                  <div style={{fontSize:9,color:"#6b5e52"}}>Income {fmtS(prInc)} · Expenses {fmtS(prExp)} · {margin}% margin</div>
                 </div>);
               })
             }
           </>);
           case "dscr":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>DSCR</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>DSCR</div>
             {mortgages.length===0?<NeedsData label="DSCR" goTo="accounting" field="mortgage data in Accounting"/>:
               mortgages.map(mg=>{
                 const propInc=ytdCharges.filter(c=>c.propName===mg.propName).reduce((s,c)=>s+c.amountPaid,0)*(12/Math.max(TODAY.getMonth()+1,1));
                 const annDebt=(mg.payment||0)*12;const dscr=annDebt>0?(propInc/annDebt).toFixed(2):null;
                 return(<div key={mg.id} style={{marginBottom:8,paddingBottom:8,borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}><span style={{fontSize:11,fontWeight:600}}>{mg.propName}</span><span style={{fontSize:14,fontWeight:800,color:dscr&&dscr>=1.25?"#4a7c59":dscr&&dscr>=1?"#d4a853":"#c45c4a"}}>{dscr||"—"}x</span></div>
-                  <div style={{fontSize:9,color:"#999"}}>NOI {fmtS(Math.round(propInc))}/yr vs debt {fmtS(annDebt)}/yr</div>
+                  <div style={{fontSize:9,color:"#6b5e52"}}>NOI {fmtS(Math.round(propInc))}/yr vs debt {fmtS(annDebt)}/yr</div>
                 </div>);
               })
             }
           </>);
           case "rocks":return(<>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Traction Rocks</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Traction Rocks</div>
             {rocks.filter(r=>r.status!=="done").length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>All rocks complete</div>}
             {rocks.filter(r=>r.status!=="done").slice(0,5).map(r=><div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-              <div><div style={{fontSize:11,fontWeight:600}}>{r.title}</div><div style={{fontSize:9,color:"#999"}}>Due {fmtD(r.due)} · {r.owner}</div></div>
+              <div><div style={{fontSize:11,fontWeight:600}}>{r.title}</div><div style={{fontSize:9,color:"#6b5e52"}}>Due {fmtD(r.due)} · {r.owner}</div></div>
               <span className={"badge "+(r.status==="on-track"?"b-green":r.status==="off-track"?"b-red":"b-gray")} style={{fontSize:8,flexShrink:0}}>{r.status}</span>
             </div>)}
           </>);
@@ -2746,7 +2746,7 @@ export default function Page(){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
           <div>
             <h2 style={{fontSize:22,fontWeight:800,color:"#1a1714",marginBottom:2}}>{MO}</h2>
-            <div style={{fontSize:12,color:"#999"}}>{daysUntilNextRent} day{daysUntilNextRent!==1?"s":""} until next rent cycle</div>
+            <div style={{fontSize:12,color:"#6b5e52"}}>{daysUntilNextRent} day{daysUntilNextRent!==1?"s":""} until next rent cycle</div>
           </div>
           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
             <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
@@ -2758,31 +2758,31 @@ export default function Page(){
 
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
           <div className="card" style={{margin:0,cursor:"pointer"}} onClick={()=>setDrill(drill==="coll"?null:"coll")}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Collected</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Collected</div>
             <div style={{fontSize:22,fontWeight:800,color:"#4a7c59",marginBottom:2}}>{fmtS(mtdCollected)}</div>
-            <div style={{fontSize:10,color:"#999"}}>{mtdExpected>0?Math.round(mtdCollected/mtdExpected*100):0}% of {fmtS(mtdExpected)}</div>
+            <div style={{fontSize:10,color:"#6b5e52"}}>{mtdExpected>0?Math.round(mtdCollected/mtdExpected*100):0}% of {fmtS(mtdExpected)}</div>
           </div></div>
           <div className="card" style={{margin:0,cursor:"pointer",borderColor:mtdPastDue.length?"rgba(196,92,74,.3)":"rgba(0,0,0,.06)"}} onClick={()=>{goTab("payments");setPaySubTab("charges");setPayFilters({...payFilters,status:"pastdue"});}}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Past Due</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Past Due</div>
             <div style={{fontSize:22,fontWeight:800,color:mtdPastDue.length?"#c45c4a":"#4a7c59",marginBottom:2}}>{mtdPastDue.length?fmtS(mtdPastDue.reduce((s,c)=>s+(c.amount-c.amountPaid),0)):"None"}</div>
-            <div style={{fontSize:10,color:"#999"}}>{mtdPastDue.length} charge{mtdPastDue.length!==1?"s":""} overdue</div>
+            <div style={{fontSize:10,color:"#6b5e52"}}>{mtdPastDue.length} charge{mtdPastDue.length!==1?"s":""} overdue</div>
           </div></div>
           <div className="card" style={{margin:0,cursor:"pointer"}} onClick={()=>setDrill(drill==="occ"?null:"occ")}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Occupancy</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Occupancy</div>
             <div style={{fontSize:22,fontWeight:800,color:m.occRate>=90?"#4a7c59":"#c45c4a",marginBottom:2}}>{m.occRate}%</div>
-            <div style={{fontSize:10,color:"#999"}}>{m.occ}/{m.total} rooms · {fmtS(m.lost)}/mo lost</div>
+            <div style={{fontSize:10,color:"#6b5e52"}}>{m.occ}/{m.total} rooms · {fmtS(m.lost)}/mo lost</div>
           </div></div>
           <div className="card" style={{margin:0,cursor:"pointer"}} onClick={()=>goTab("maintenance")}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Maintenance</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Maintenance</div>
             <div style={{fontSize:22,fontWeight:800,color:m.openMaint?"#d4a853":"#4a7c59",marginBottom:2}}>{m.openMaint}</div>
-            <div style={{fontSize:10,color:"#999"}}>open request{m.openMaint!==1?"s":""}</div>
+            <div style={{fontSize:10,color:"#6b5e52"}}>open request{m.openMaint!==1?"s":""}</div>
           </div></div>
         </div>
 
         {drill==="occ"&&<div className="card" style={{marginBottom:16,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Occupancy — {m.occ}/{m.total} rooms</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>Close</button></div>
           {m.vacs.length===0&&<div style={{padding:20,textAlign:"center",color:"#4a7c59",fontWeight:700,fontSize:13}}>Fully occupied</div>}
-          {m.vacs.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.name}</div><div className="row-s">{r.propName} · {r.pb?"Private":"Shared"} bath</div></div><div className="row-v kb">{fmtS(r.rent)}<div style={{fontSize:9,color:"#999"}}>lost/mo</div></div><button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("applications")}>Find Tenant</button></div>)}
+          {m.vacs.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.name}</div><div className="row-s">{r.propName} · {r.pb?"Private":"Shared"} bath</div></div><div className="row-v kb">{fmtS(r.rent)}<div style={{fontSize:9,color:"#6b5e52"}}>lost/mo</div></div><button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("applications")}>Find Tenant</button></div>)}
         </div></div>}
         {drill==="coll"&&<div className="card" style={{marginBottom:16,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Collection — {fmtS(m.coll)} / {fmtS(m.due)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>Close</button></div>
@@ -2836,20 +2836,20 @@ export default function Page(){
               </div>
               <div style={{textAlign:"right"}}><div className="row-v">{fmtS(r.rent)}</div><div style={{fontSize:9,color:pd?"#4a7c59":"#c45c4a",fontWeight:600}}>{pd?"✓ Paid":"Unpaid"}</div></div>
             </div>);
-        })}{allTenants.length===0&&<div style={{textAlign:"center",padding:32,color:"#999"}}><div style={{fontSize:32,marginBottom:8}}>👥</div>No current tenants</div>}</>}
+        })}{allTenants.length===0&&<div style={{textAlign:"center",padding:32,color:"#6b5e52"}}><div style={{fontSize:32,marginBottom:8}}>👥</div>No current tenants</div>}</>}
 
         {/* Archived / past tenants */}
         {drill==="archive"&&<>
-          {archive.length===0?<div style={{textAlign:"center",padding:32,color:"#999"}}><div style={{fontSize:32,marginBottom:8}}>📋</div>No past tenants yet. Terminated leases will appear here.</div>:
+          {archive.length===0?<div style={{textAlign:"center",padding:32,color:"#6b5e52"}}><div style={{fontSize:32,marginBottom:8}}>📋</div>No past tenants yet. Terminated leases will appear here.</div>:
           archive.map(a=>(
             <div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"archived",data:a})}>
               <div className="row-dot" style={{background:"#999"}}/>
               <div className="row-i">
                 <div className="row-t">{a.name} <span className="badge b-gray">Past</span></div>
                 <div className="row-s">{a.propName} · {a.roomName} · {fmtS(a.rent)}/mo · {fmtD(a.moveIn)} → {fmtD(a.terminatedDate)}</div>
-                <div style={{fontSize:9,color:"#999",marginTop:2}}>Terminated: {a.reason}</div>
+                <div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Terminated: {a.reason}</div>
               </div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#999"}}>{fmtD(a.terminatedDate)}</div></div>
+              <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#6b5e52"}}>{fmtD(a.terminatedDate)}</div></div>
             </div>
           ))}</>}
       </>}
@@ -2915,10 +2915,10 @@ export default function Page(){
               <button className="btn btn-out btn-sm" onClick={()=>{setPortalTenant(null);setPortalTab("home");}}>← Portal Management</button>
               <div style={{flex:1}}>
                 <div style={{fontSize:15,fontWeight:800}}>{tRoom.tenant.name}</div>
-                <div style={{fontSize:11,color:"#999"}}>{tRoom.propName} · {tRoom.name} · Portal Preview</div>
+                <div style={{fontSize:11,color:"#6b5e52"}}>{tRoom.propName} · {tRoom.name} · Portal Preview</div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <div style={{fontSize:10,color:"#999",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",borderRadius:6,padding:"4px 10px"}}>
+                <div style={{fontSize:10,color:"#6b5e52",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",borderRadius:6,padding:"4px 10px"}}>
                   Admin preview — read only
                 </div>
               </div>
@@ -2926,7 +2926,7 @@ export default function Page(){
 
             {/* Onboarding status pills */}
             <div className="card" style={{marginBottom:14}}><div className="card-bd">
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Onboarding Status (live from portal)</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Onboarding Status (live from portal)</div>
               <div style={{display:"flex",gap:8}}>
                 {[["Lease Signed",ob.leaseSigned],["Security Deposit",ob.sdPaid],["First Month Rent",ob.firstMonthPaid],["Move In",ob.leaseSigned&&ob.sdPaid&&ob.firstMonthPaid]].map(([label,done])=>(
                   <div key={label} style={{flex:1,textAlign:"center",padding:"8px 6px",borderRadius:8,background:done?"rgba(74,124,89,.08)":"rgba(0,0,0,.04)",border:done?"1px solid rgba(74,124,89,.2)":"1px solid transparent"}}>
@@ -2974,7 +2974,7 @@ export default function Page(){
                 {tRoom.tenant.doorCode&&<div className="tp-card" style={{marginTop:10,border:"2px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.04)"}}>
                   <h3 style={{color:"#4a7c59"}}>Door Access</h3>
                   <div style={{textAlign:"center",padding:"14px 0"}}>
-                    <div style={{fontSize:11,color:"#999",marginBottom:6}}>Your 4-digit door code</div>
+                    <div style={{fontSize:11,color:"#6b5e52",marginBottom:6}}>Your 4-digit door code</div>
                     <div style={{fontSize:40,fontWeight:900,letterSpacing:12,color:"#4a7c59",fontFamily:"monospace"}}>{tRoom.tenant.doorCode}</div>
                     <div style={{fontSize:10,color:"#4a7c59",marginTop:6}}>Works on all exterior doors and your bedroom lock</div>
                   </div>
@@ -2982,14 +2982,14 @@ export default function Page(){
               </div>}
 
               {portalTab==="payments"&&<div style={{padding:18}}>
-                {tCharges.length===0&&<div style={{textAlign:"center",padding:28,color:"#999",fontSize:13}}>No charges on file yet.</div>}
+                {tCharges.length===0&&<div style={{textAlign:"center",padding:28,color:"#6b5e52",fontSize:13}}>No charges on file yet.</div>}
                 {tCharges.map(c=>{const st=chargeStatus(c);const stColors={paid:"#4a7c59",unpaid:"#3b82f6",pastdue:"#c45c4a",partial:"#d4a853",waived:"#999"};return(
                   <div key={c.id} className="tp-card" style={{marginBottom:8}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                      <div><div style={{fontSize:13,fontWeight:700}}>{c.desc||c.category}</div><div style={{fontSize:11,color:"#999"}}>Due {fmtD(c.dueDate)}</div></div>
+                      <div><div style={{fontSize:13,fontWeight:700}}>{c.desc||c.category}</div><div style={{fontSize:11,color:"#6b5e52"}}>Due {fmtD(c.dueDate)}</div></div>
                       <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:800}}>{fmtS(c.amount)}</div><span style={{fontSize:10,fontWeight:700,color:stColors[st]||"#999"}}>{st}</span></div>
                     </div>
-                    {c.amountPaid>0&&c.amountPaid<c.amount&&<div style={{fontSize:11,color:"#999",marginTop:4}}>{fmtS(c.amountPaid)} paid — {fmtS(c.amount-c.amountPaid)} remaining</div>}
+                    {c.amountPaid>0&&c.amountPaid<c.amount&&<div style={{fontSize:11,color:"#6b5e52",marginTop:4}}>{fmtS(c.amountPaid)} paid — {fmtS(c.amount-c.amountPaid)} remaining</div>}
                   </div>
                 );})}
                 <div className="tp-card" style={{marginTop:10,background:"rgba(74,124,89,.03)",borderColor:"rgba(74,124,89,.12)"}}>
@@ -2997,7 +2997,7 @@ export default function Page(){
                   <div className="tp-row"><span className="tp-label">Zelle</span><span style={{fontWeight:600,fontSize:12}}>{settings.phone||"(850) 696-8101"}</span></div>
                   <div className="tp-row"><span className="tp-label">Venmo</span><span style={{fontWeight:600,fontSize:12}}>@BlackBearRentals</span></div>
                   <div className="tp-row"><span className="tp-label">Check</span><span style={{fontWeight:600,fontSize:12}}>{settings.legalName||"Oak & Main Development LLC"}</span></div>
-                  <div style={{marginTop:10,fontSize:10,color:"#999"}}>Online payments via ACH/card coming soon in the portal.</div>
+                  <div style={{marginTop:10,fontSize:10,color:"#6b5e52"}}>Online payments via ACH/card coming soon in the portal.</div>
                 </div>
               </div>}
 
@@ -3011,16 +3011,16 @@ export default function Page(){
                   </div>
                   {maintForm.submitted?<div style={{textAlign:"center",padding:12,color:"#4a7c59",fontWeight:700,fontSize:13}}>Request submitted!</div>:<button className="btn btn-green" style={{width:"100%"}} onClick={submitMaint}>Submit Request</button>}
                 </div>
-                {tMaint.length>0&&<><div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:8}}>YOUR REQUESTS</div>
-                  {tMaint.map(r=><div key={r.id} className="tp-card" style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:12,fontWeight:600}}>{r.title}</div><div style={{fontSize:10,color:"#999"}}>{r.created}</div></div><span className={`badge ${r.status==="resolved"?"b-green":r.status==="in-progress"?"b-gold":"b-red"}`}>{r.status}</span></div></div>)}
+                {tMaint.length>0&&<><div style={{fontSize:11,fontWeight:700,color:"#6b5e52",marginBottom:8}}>YOUR REQUESTS</div>
+                  {tMaint.map(r=><div key={r.id} className="tp-card" style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:12,fontWeight:600}}>{r.title}</div><div style={{fontSize:10,color:"#6b5e52"}}>{r.created}</div></div><span className={`badge ${r.status==="resolved"?"b-green":r.status==="in-progress"?"b-gold":"b-red"}`}>{r.status}</span></div></div>)}
                 </>}
               </div>}
 
               {portalTab==="docs"&&<div style={{padding:18}}>
                 <div className="tp-card"><h3>Your Documents</h3>
                   {tRoom.tenant.documents&&tRoom.tenant.documents.length>0
-                    ?tRoom.tenant.documents.map((d,i)=><div key={d.id||i} className="tp-row"><span className="tp-label">{d.label||d.name}</span><span style={{fontSize:11,color:"#999"}}>{d.uploaded}</span></div>)
-                    :<div style={{color:"#999",fontSize:12,padding:"8px 0"}}>No documents uploaded yet.</div>}
+                    ?tRoom.tenant.documents.map((d,i)=><div key={d.id||i} className="tp-row"><span className="tp-label">{d.label||d.name}</span><span style={{fontSize:11,color:"#6b5e52"}}>{d.uploaded}</span></div>)
+                    :<div style={{color:"#6b5e52",fontSize:12,padding:"8px 0"}}>No documents uploaded yet.</div>}
                 </div>
               </div>}
 
@@ -3055,7 +3055,7 @@ export default function Page(){
           {/* Not yet invited — action needed */}
           {unlinked.length>0&&<div className="card" style={{marginBottom:14,border:"1px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}><div className="card-bd">
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div><div style={{fontSize:13,fontWeight:800,color:"#9a7422"}}>Not Yet Invited ({unlinked.length})</div><div style={{fontSize:11,color:"#999",marginTop:2}}>These tenants don't have portal access yet.</div></div>
+              <div><div style={{fontSize:13,fontWeight:800,color:"#9a7422"}}>Not Yet Invited ({unlinked.length})</div><div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>These tenants don't have portal access yet.</div></div>
             </div>
             {unlinked.map(t=>(
               <div key={t.id} className="row">
@@ -3096,7 +3096,7 @@ export default function Page(){
             })}
           </div></div>}
 
-          {allTenants.length===0&&<div style={{textAlign:"center",padding:48,color:"#999"}}>
+          {allTenants.length===0&&<div style={{textAlign:"center",padding:48,color:"#6b5e52"}}>
             <div style={{fontSize:40,marginBottom:8}}>🏠</div>
             <div style={{fontWeight:700,marginBottom:4}}>No active tenants</div>
             <div style={{fontSize:12}}>Add tenants from the Tenants tab to get started.</div>
@@ -3178,13 +3178,13 @@ export default function Page(){
             <div className="kpi" style={{cursor:"pointer"}} onClick={()=>setPaySubTab("deposits")}><div className="kl">In Transit</div><div className="kv kw">{fmtS(inTransit)}</div></div>
             <div className="kpi" style={{cursor:"pointer"}} onClick={()=>setPaySubTab("deposits")}><div className="kl">Deposited</div><div className="kv kg">{fmtS(deposited)}</div></div>
           </div>
-          <div style={{fontSize:10,color:"#999",textAlign:"center",marginTop:4,marginBottom:14}}>Showing {periodLabel} · Click any card to drill down</div>
+          <div style={{fontSize:10,color:"#6b5e52",textAlign:"center",marginTop:4,marginBottom:14}}>Showing {periodLabel} · Click any card to drill down</div>
 
           {/* Quick property breakdown */}
           {m.propBreakdown.map(pr=>{const prCh=pCharges.filter(c=>c.propName===pr.name);const prPaid=prCh.reduce((s,c)=>s+c.amountPaid,0);const prDue=prCh.reduce((s,c)=>s+c.amount,0);return(
             <div key={pr.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,property:pr.name});}}>
               <div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{allRooms(pr).length} rooms · {pr.occCount} occupied</div></div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:800}}>{fmtS(prPaid)}<small style={{color:"#999"}}> / {fmtS(prDue)}</small></div>
+              <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:800}}>{fmtS(prPaid)}<small style={{color:"#6b5e52"}}> / {fmtS(prDue)}</small></div>
                 <div style={{fontSize:9,color:prPaid>=prDue?"#4a7c59":"#c45c4a",fontWeight:600}}>{prDue?Math.round(prPaid/prDue*100):0}%</div></div>
             </div>
           );})}
@@ -3203,7 +3203,7 @@ export default function Page(){
             <button className="btn btn-out btn-sm" onClick={()=>setPayFilters({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""})}>Reset</button>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:10,color:"#999"}}>{filteredCharges.length} charge{filteredCharges.length!==1?"s":""} · {periodLabel}</div>
+            <div style={{fontSize:10,color:"#6b5e52"}}>{filteredCharges.length} charge{filteredCharges.length!==1?"s":""} · {periodLabel}</div>
             {payFilters.tenant&&<button className="btn btn-red btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"clearLedger",tenant:payFilters.tenant,confirm:""})}>Clear Ledger — {payFilters.tenant}</button>}
           </div>
           {/* Column headers */}
@@ -3215,12 +3215,12 @@ export default function Page(){
               <div style={{display:"grid",gridTemplateColumns:"90px 100px 1fr 72px 90px 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.03)",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"transparent",transition:"background .1s"}} onClick={()=>setExpCharge(isExp?null:c.id)}>
                 <div style={{fontSize:11,fontWeight:600}}>{fmtD(c.dueDate)}</div>
                 <div><span className="badge b-gray" style={{fontSize:8}}>{c.category}</span></div>
-                <div><div style={{fontSize:11,fontWeight:600}}>{c.tenantName}</div><div style={{fontSize:9,color:"#999"}}>{c.propName} · {c.roomName}</div></div>
+                <div><div style={{fontSize:11,fontWeight:600}}>{c.tenantName}</div><div style={{fontSize:9,color:"#6b5e52"}}>{c.propName} · {c.roomName}</div></div>
                 <div><span className={`badge ${stBadge[st]}`} style={{fontSize:8}}>{st}</span></div>
-                <div>{lastPay&&lastPay.depositDate?<div><div style={{fontSize:10}}>{fmtD(lastPay.depositDate)}</div><div style={{fontSize:8,color:"#999"}}>Redstone FCU</div></div>:lastPay&&lastPay.depositStatus==="transit"?<span style={{fontSize:9,color:"#d4a853"}}>In transit</span>:<span style={{fontSize:9,color:"#999"}}>—</span>}</div>
+                <div>{lastPay&&lastPay.depositDate?<div><div style={{fontSize:10}}>{fmtD(lastPay.depositDate)}</div><div style={{fontSize:8,color:"#6b5e52"}}>Redstone FCU</div></div>:lastPay&&lastPay.depositStatus==="transit"?<span style={{fontSize:9,color:"#d4a853"}}>In transit</span>:<span style={{fontSize:9,color:"#6b5e52"}}>—</span>}</div>
                 <div style={{textAlign:"right",fontWeight:800,fontSize:13,color:st==="paid"?"#4a7c59":st==="pastdue"?"#c45c4a":"inherit",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>
                   <span>{fmtS(c.amount)}</span>
-                  <span style={{fontSize:10,color:"#999",fontWeight:400}}>{isExp?"∧":"∨"}</span>
+                  <span style={{fontSize:10,color:"#6b5e52",fontWeight:400}}>{isExp?"∧":"∨"}</span>
                 </div>
               </div>
               {/* Expanded detail */}
@@ -3258,9 +3258,9 @@ export default function Page(){
                     <div style={{minWidth:140}}>
                       <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Payment #{pConfId.slice(-6)}</div>
                       <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{c.tenantName}</div>
-                      <div style={{fontSize:10,color:"#999",marginTop:2}}>Paid on {fmtD(p.date)}</div>
+                      <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>Paid on {fmtD(p.date)}</div>
                       {p.method&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>via {p.method}</div>}
-                      {p.notes&&<div style={{fontSize:9,color:"#999",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+                      {p.notes&&<div style={{fontSize:9,color:"#6b5e52",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
                     </div>
                     {/* Middle: status timeline */}
                     <div style={{flex:1}}>
@@ -3279,7 +3279,7 @@ export default function Page(){
                           </div>
                           <div style={{paddingTop:1}}>
                             <div style={{fontSize:10,fontWeight:700,color:step.done?"#1a1714":"#999"}}>{step.label}</div>
-                            {step.date&&<div style={{fontSize:9,color:"#999"}}>{step.date}</div>}
+                            {step.date&&<div style={{fontSize:9,color:"#6b5e52"}}>{step.date}</div>}
                           </div>
                         </div>
                       ))}
@@ -3313,14 +3313,14 @@ export default function Page(){
                   </div>);
                 })()}
 
-                {st==="waived"&&<div style={{background:"rgba(0,0,0,.03)",borderRadius:6,padding:8,fontSize:11,color:"#999",marginTop:8}}>Waived{c.waivedReason?`: ${c.waivedReason}`:""}</div>}
+                {st==="waived"&&<div style={{background:"rgba(0,0,0,.03)",borderRadius:6,padding:8,fontSize:11,color:"#6b5e52",marginTop:8}}>Waived{c.waivedReason?`: ${c.waivedReason}`:""}</div>}
                 {st==="voided"&&<div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.12)",borderRadius:6,padding:"10px 12px",fontSize:11,marginTop:8}}>
                   <div style={{fontWeight:700,color:"#c45c4a",marginBottom:4}}>Voided {c.voidedDate?`on ${fmtD(c.voidedDate)}`:""}</div>
                   <div style={{color:"#5c4a3a"}}>{c.voidedReason||"No reason recorded"}</div>
                 </div>}
               </div>}
             </div>);})}
-          {filteredCharges.length===0&&<div style={{textAlign:"center",padding:24,color:"#999"}}>No charges match your filters</div>}
+          {filteredCharges.length===0&&<div style={{textAlign:"center",padding:24,color:"#6b5e52"}}>No charges match your filters</div>}
         </>}
 
         {/* ── Deposits ── */}
@@ -3389,21 +3389,21 @@ export default function Page(){
               <div key={mk}>
                 <div style={{position:"sticky",top:0,zIndex:2,background:"#f4f3f0",padding:"10px 16px",borderBottom:"2px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div style={{fontSize:13,fontWeight:800}}>{mo.label}</div>
-                  <div style={{fontSize:13,fontWeight:800,color:"#4a7c59"}}>{fmtS(mo.total)} <span style={{fontSize:10,fontWeight:500,color:"#999"}}>({mo.items.length})</span></div>
+                  <div style={{fontSize:13,fontWeight:800,color:"#4a7c59"}}>{fmtS(mo.total)} <span style={{fontSize:10,fontWeight:500,color:"#6b5e52"}}>({mo.items.length})</span></div>
                 </div>
                 <table className="tbl" style={{marginBottom:0}}><thead><tr><th>Deposit Date</th><th>Date Paid</th><th>Tenant / Room</th><th>Bank Account</th><th style={{textAlign:"right"}}>Amount</th></tr></thead><tbody>
                   {mo.items.map(p=>(
                     <tr key={p.id}>
                       <td style={{fontWeight:600}}>{fmtD(p.depositDate)}</td>
                       <td>{fmtD(p.date)}</td>
-                      <td><div style={{fontSize:11,fontWeight:600}}>{p.tenantName}</div><div style={{fontSize:9,color:"#999"}}>{p.propName} · {p.roomName}</div></td>
-                      <td><div style={{fontSize:11}}>Redstone FCU</div><div style={{fontSize:9,color:"#999"}}>{p.method}</div></td>
+                      <td><div style={{fontSize:11,fontWeight:600}}>{p.tenantName}</div><div style={{fontSize:9,color:"#6b5e52"}}>{p.propName} · {p.roomName}</div></td>
+                      <td><div style={{fontSize:11}}>Redstone FCU</div><div style={{fontSize:9,color:"#6b5e52"}}>{p.method}</div></td>
                       <td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</td>
                     </tr>
                   ))}
                 </tbody></table>
               </div>
-            );}):<div style={{textAlign:"center",padding:40,color:"#999"}}>No deposits yet. When you record payments via ACH/Stripe and mark them deposited, they'll appear here grouped by month.</div>}
+            );}):<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}>No deposits yet. When you record payments via ACH/Stripe and mark them deposited, they'll appear here grouped by month.</div>}
           </div>
 
           {/* Security Deposits */}
@@ -3417,7 +3417,7 @@ export default function Page(){
                 <td>{r.le?<span style={{color:dl&&dl<=90?dl<=30?"#c45c4a":"#d4a853":"inherit"}}>{fmtD(r.le)}{dl&&dl<=90?` (${dl}d)`:""}</span>:"—"}</td>
                 <td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</td>
               </tr>);}):
-            <tr><td colSpan={5} style={{textAlign:"center",padding:20,color:"#999"}}>No security deposits</td></tr>}
+            <tr><td colSpan={5} style={{textAlign:"center",padding:20,color:"#6b5e52"}}>No security deposits</td></tr>}
             {sdTenants.length>0&&<tr style={{borderTop:"2px solid rgba(0,0,0,.06)"}}><td colSpan={4} style={{fontWeight:800}}>Total Held</td><td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalSD)}</td></tr>}
           </tbody></table></div></div>
 
@@ -3636,7 +3636,7 @@ export default function Page(){
           <div style={{display:"flex",alignItems:"center",background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden",flex:1,minWidth:260}}>
             <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:"1px solid rgba(0,0,0,.08)",flex:1,minWidth:0}}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" style={{flexShrink:0}}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              <span style={{fontSize:11,color:"#999",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(settings.siteUrl||"https://rentblackbear.com")}/apply</span>
+              <span style={{fontSize:11,color:"#6b5e52",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(settings.siteUrl||"https://rentblackbear.com")}/apply</span>
             </div>
             <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",whiteSpace:"nowrap",padding:"8px 14px"}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
             <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none",whiteSpace:"nowrap",padding:"8px 14px"}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
@@ -3677,7 +3677,7 @@ export default function Page(){
         {/* Bulk invite bar */}
         {(appView==="pipeline"||appView==="list")&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:bulkSel.length?"rgba(212,168,83,.08)":"rgba(0,0,0,.02)",borderRadius:8,marginBottom:10,border:bulkSel.length?"1px solid rgba(212,168,83,.2)":"1px solid transparent",transition:"all .2s",flexWrap:"wrap"}}>
           <input type="checkbox" checked={bulkSel.length>0&&bulkSel.length===activeApps.length} onChange={e=>{setBulkSel(e.target.checked?activeApps.map(a=>a.id):[]);}} style={{width:14,height:14,cursor:"pointer"}}/>
-          <span style={{fontSize:11,color:"#999",flex:1,minWidth:80}}>{bulkSel.length>0?`${bulkSel.length} selected`:"Select applicants"}</span>
+          <span style={{fontSize:11,color:"#6b5e52",flex:1,minWidth:80}}>{bulkSel.length>0?`${bulkSel.length} selected`:"Select applicants"}</span>
           {bulkSel.length>0&&<>
             {(()=>{
               const invitable=activeApps.filter(a=>bulkSel.includes(a.id)&&a.status==="new-lead");
@@ -3889,7 +3889,7 @@ export default function Page(){
                     })()}
 
                     {/* Standard card footer */}
-                    {!isOnboarding&&a.status!=="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#777",marginTop:5}}>
+                    {!isOnboarding&&a.status!=="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#5c4a3a",marginTop:5}}>
                       <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
                       <div style={{display:"flex",alignItems:"center",gap:4}}>
                         {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#888",fontWeight:700}}>{d}d</span>}
@@ -3908,7 +3908,7 @@ export default function Page(){
                     </div>}
                   </div>);
                 })}
-                {sa.length===0&&<div style={{textAlign:"center",padding:12,color:"#ccc",fontSize:9}}>Empty</div>}
+                {sa.length===0&&<div style={{textAlign:"center",padding:12,color:"#8a7d74",fontSize:9}}>Empty</div>}
               </div>
             </div>);
           })}
@@ -3930,7 +3930,7 @@ export default function Page(){
 
         {/* Denied — collapsible */}
         {deniedApps.length>0&&<div style={{marginTop:14}}>
-          <button className="btn btn-out btn-sm" style={{width:"100%",color:"#999",marginBottom:4}} onClick={()=>setExpanded(p=>({...p,showDenied:!p.showDenied}))}>
+          <button className="btn btn-out btn-sm" style={{width:"100%",color:"#6b5e52",marginBottom:4}} onClick={()=>setExpanded(p=>({...p,showDenied:!p.showDenied}))}>
             {expanded.showDenied?"▾ Hide":"▸ Show"} Denied ({deniedApps.length})
           </button>
           {expanded.showDenied&&deniedApps.map(a=><div key={a.id} className="row" style={{opacity:.7}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · {fmtD(a.deniedDate)}{a.deniedReason?" · "+a.deniedReason:""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button><button className="btn btn-out btn-sm" onClick={()=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:x.prevStage||"pre-screened",deniedReason:null,deniedDate:null}:x))}>Restore</button></div>)}
@@ -3942,8 +3942,8 @@ export default function Page(){
           if(totalVacant===0&&waitlistApps.length>0)return(
             <div style={{marginTop:8,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:14,background:"rgba(212,168,83,.03)"}}>
               <div style={{fontSize:13,fontWeight:700,color:"#9a7422",marginBottom:8}}>Waitlist — No Vacant Rooms</div>
-              <div style={{fontSize:10,color:"#999",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
-              {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
+              <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
+              {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
             </div>);
           return null;})()}
 
@@ -3953,10 +3953,10 @@ export default function Page(){
           const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status)).sort((a,b)=>getScore(b)-getScore(a));
           return waitlistApps.length>0?<div style={{marginTop:16,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:16,background:"rgba(212,168,83,.03)"}}>
             <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>Waitlist — No Vacancies</div>
-            <div style={{fontSize:10,color:"#999",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
+            <div style={{fontSize:10,color:"#6b5e52",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
             {waitlistApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
               <div style={{width:20,fontSize:11,fontWeight:700,color:"#d4a853"}}>#{i+1}</div>
-              <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>Score: {getScore(a)}</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div>
+              <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>Score: {getScore(a)}</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div>
             </div>)}
           </div>:null;
         })()}
@@ -3970,7 +3970,7 @@ export default function Page(){
         {/* ── Screening Questions Editor ── */}
         <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,screenEditor:!p.screenEditor}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Pre-Screen Questions</div><div style={{fontSize:9,color:"#999"}}>{screenQs.length} questions · Edit what prospects answer before applying</div></div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Pre-Screen Questions</div><div style={{fontSize:9,color:"#6b5e52"}}>{screenQs.length} questions · Edit what prospects answer before applying</div></div></div>
             <div style={{display:"flex",gap:4,alignItems:"center"}}>
               <span style={{fontSize:10,color:screenQs.filter(q=>q.active).length===screenQs.length?"#4a7c59":"#d4a853",fontWeight:600}}>{screenQs.filter(q=>q.active).length}/{screenQs.length} active</span>
               {screenQs.length===0&&<button className="btn btn-gold btn-sm" onClick={e=>{e.stopPropagation();setScreenQs([
@@ -3985,7 +3985,7 @@ export default function Page(){
             </div>
           </div>
           {expanded.screenEditor&&<div style={{padding:16,background:"#fff"}}>
-            {screenQs.length===0&&<div style={{textAlign:"center",padding:24,color:"#999"}}><p style={{fontSize:12,marginBottom:8}}>No screening questions configured.</p><button className="btn btn-gold" onClick={()=>setScreenQs([
+            {screenQs.length===0&&<div style={{textAlign:"center",padding:24,color:"#6b5e52"}}><p style={{fontSize:12,marginBottom:8}}>No screening questions configured.</p><button className="btn btn-gold" onClick={()=>setScreenQs([
               {id:uid(),q:"Are you a non-smoker? We have a strict no-smoking policy (including vapes).",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
               {id:uid(),q:"Do you agree to our zero-tolerance drug policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
               {id:uid(),q:"Are you comfortable with our no-pets policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
@@ -3998,8 +3998,8 @@ export default function Page(){
               <div key={q.id} style={{padding:12,border:"1px solid rgba(0,0,0,.04)",borderRadius:8,marginBottom:8,background:q.active?"#fff":"#f8f7f4",opacity:q.active?1:0.6}}>
                 <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:8}}>
                   <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:4}}>
-                    {i>0&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#999"}} onClick={()=>{const n=[...screenQs];[n[i-1],n[i]]=[n[i],n[i-1]];setScreenQs(n);}}>▲</button>}
-                    {i<screenQs.length-1&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#999"}} onClick={()=>{const n=[...screenQs];[n[i],n[i+1]]=[n[i+1],n[i]];setScreenQs(n);}}>▼</button>}
+                    {i>0&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52"}} onClick={()=>{const n=[...screenQs];[n[i-1],n[i]]=[n[i],n[i-1]];setScreenQs(n);}}>▲</button>}
+                    {i<screenQs.length-1&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52"}} onClick={()=>{const n=[...screenQs];[n[i],n[i+1]]=[n[i+1],n[i]];setScreenQs(n);}}>▼</button>}
                   </div>
                   <div style={{flex:1}}>
                     <textarea value={q.q} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,q:e.target.value}:x))} rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:12,fontFamily:"inherit",resize:"vertical"}}/>
@@ -4009,9 +4009,9 @@ export default function Page(){
                 <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",fontSize:11}}>
                   <label style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><input type="checkbox" checked={q.required} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,required:e.target.checked}:x))}/> Required</label>
                   <label style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><input type="checkbox" checked={q.active} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,active:e.target.checked}:x))}/> Active</label>
-                  <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#999"}}>Type:</span><select value={q.type||"yes-no"} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,type:e.target.value}:x))} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="yes-no">Yes / No</option><option value="text">Text</option><option value="number">Number</option></select></div>
-                  <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#999"}}>Pass:</span><select value={q.pass||"Yes"} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,pass:e.target.value}:x))} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="Yes">Yes</option><option value="No">No</option><option value="">Any</option></select></div>
-                  {(q.type==="text"||q.type==="number")&&<div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#999"}}>Min chars:</span><input type="number" value={q.minChars||0} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,minChars:Number(e.target.value)}:x))} style={{width:50,padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10}}/></div>}
+                  <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#6b5e52"}}>Type:</span><select value={q.type||"yes-no"} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,type:e.target.value}:x))} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="yes-no">Yes / No</option><option value="text">Text</option><option value="number">Number</option></select></div>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#6b5e52"}}>Pass:</span><select value={q.pass||"Yes"} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,pass:e.target.value}:x))} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="Yes">Yes</option><option value="No">No</option><option value="">Any</option></select></div>
+                  {(q.type==="text"||q.type==="number")&&<div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#6b5e52"}}>Min chars:</span><input type="number" value={q.minChars||0} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,minChars:Number(e.target.value)}:x))} style={{width:50,padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10}}/></div>}
                 </div>
               </div>
             ))}
@@ -4028,14 +4028,14 @@ export default function Page(){
                 {id:uid(),q:"Can you provide professional references and verifiable landlord history?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
               ])});}}>Reset to Defaults</button>
             </div>}
-            <div style={{fontSize:9,color:"#999",marginTop:8,textAlign:"center"}}>Saves to Supabase · Click "Save & Publish" to push changes live</div>
+            <div style={{fontSize:9,color:"#6b5e52",marginTop:8,textAlign:"center"}}>Saves to Supabase · Click "Save & Publish" to push changes live</div>
           </div>}
         </div>
 
         {/* ── Pre-Screen Preview ── */}
         {screenQs.length>0&&<div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,screenPreview:!p.screenPreview}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>👁 Pre-Screen Preview</div><div style={{fontSize:9,color:"#999"}}>See what tenants see on the public site</div></div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>👁 Pre-Screen Preview</div><div style={{fontSize:9,color:"#6b5e52"}}>See what tenants see on the public site</div></div></div>
           </div>
           {expanded.screenPreview&&(()=>{
             const activeQs=screenQs.filter(q=>q.active);
@@ -4078,7 +4078,7 @@ export default function Page(){
               <span style={{fontSize:14}}>{expanded.screenForm?"▼":"▶"}</span>
               <div>
                 <div style={{fontSize:13,fontWeight:700}}>Pre-Screen Contact Form</div>
-                <div style={{fontSize:9,color:"#999"}}>Heading, subtext, and "How did you hear about us?" options</div>
+                <div style={{fontSize:9,color:"#6b5e52"}}>Heading, subtext, and "How did you hear about us?" options</div>
               </div>
             </div>
           </div>
@@ -4092,7 +4092,7 @@ export default function Page(){
                 "How did you hear about us?" Options
                 <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),sources:[...(s.screenForm||DEF_SETTINGS.screenForm).sources,"New Option"]}}))}>+ Add</button>
               </label>
-              <div style={{fontSize:9,color:"#999",marginBottom:6}}>⠿ drag to reorder · click to edit · ✕ to remove</div>
+              <div style={{fontSize:9,color:"#6b5e52",marginBottom:6}}>⠿ drag to reorder · click to edit · ✕ to remove</div>
               <div style={{display:"flex",flexDirection:"column",gap:5}}>
                 {((settings.screenForm||DEF_SETTINGS.screenForm).sources||[]).map((src,i)=>{
                   const sf=settings.screenForm||DEF_SETTINGS.screenForm;
@@ -4110,19 +4110,19 @@ export default function Page(){
                       setSettings(s=>({...s,screenForm:{...sf,sources}}));
                     }}
                     style={{display:"flex",gap:6,alignItems:"center",background:"#faf9f7",borderRadius:6,padding:"4px 6px",border:"1px solid rgba(0,0,0,.06)",cursor:"grab"}}>
-                    <span style={{color:"#ccc",fontSize:13,flexShrink:0,cursor:"grab"}}>⠿</span>
+                    <span style={{color:"#8a7d74",fontSize:13,flexShrink:0,cursor:"grab"}}>⠿</span>
                     <input value={src} style={{flex:1,border:"none",background:"transparent",fontFamily:"inherit",fontSize:12,outline:"none",padding:0}}
                       onChange={e=>{const sources=[...sf.sources];sources[i]=e.target.value;setSettings(s=>({...s,screenForm:{...sf,sources}}));}}/>
                     <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1,flexShrink:0}} onClick={()=>{const sources=sf.sources.filter((_,j)=>j!==i);setSettings(s=>({...s,screenForm:{...sf,sources}}));}}>✕</button>
                   </div>);
                 })}
               </div>
-              <div style={{fontSize:9,color:"#999",marginTop:6}}>"Other" should stay last — it triggers a free-text field.</div>
+              <div style={{fontSize:9,color:"#6b5e52",marginTop:6}}>"Other" should stay last — it triggers a free-text field.</div>
             </div>
             <div style={{display:"flex",gap:8,marginTop:12}}>
               <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-settings",settings);save("hq-screen-form",settings.screenForm||DEF_SETTINGS.screenForm);setNotifs(p=>[{id:uid(),type:"app",msg:"Pre-screen form settings saved",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);}}>🚀 Save & Publish</button>
             </div>
-            <div style={{fontSize:9,color:"#999",marginTop:6,textAlign:"center"}}>Changes apply immediately on the public site</div>
+            <div style={{fontSize:9,color:"#6b5e52",marginTop:6,textAlign:"center"}}>Changes apply immediately on the public site</div>
           </div>}
         </div>
 
@@ -4130,7 +4130,7 @@ export default function Page(){
         {/* ── Application Fields Editor ── */}
         <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appFieldsEditor:!p.appFieldsEditor}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appFieldsEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Application Fields</div><div style={{fontSize:9,color:"#999"}}>{appFields.length} fields across {[...new Set(appFields.map(f=>f.section))].length} sections · Drives the entire /apply form</div></div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appFieldsEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Application Fields</div><div style={{fontSize:9,color:"#6b5e52"}}>{appFields.length} fields across {[...new Set(appFields.map(f=>f.section))].length} sections · Drives the entire /apply form</div></div></div>
             <div style={{display:"flex",gap:4,alignItems:"center"}}>
               <span style={{fontSize:10,color:appFields.filter(f=>f.active).length===appFields.length&&appFields.length>0?"#4a7c59":"#d4a853",fontWeight:600}}>{appFields.filter(f=>f.active).length}/{appFields.length} active</span>
               {appFields.length===0&&<button className="btn btn-gold btn-sm" onClick={e=>{e.stopPropagation();setAppFields(DEF_APP_FIELDS);}}>Load Defaults</button>}
@@ -4176,7 +4176,7 @@ export default function Page(){
             const TCOL={text:"#3b82f6",email:"#8b5cf6",phone:"#4a7c59",date:"#d4a853",number:"#f97316","yes-no":"#4a7c59",file:"#0ea5e9","long-text":"#6366f1",dropdown:"#d4a853",counter:"#f97316",address:"#8b5cf6"};
             return(
             <div style={{padding:16,background:"#fff"}}>
-              {appFields.length===0&&<div style={{textAlign:"center",padding:28,color:"#999"}}>
+              {appFields.length===0&&<div style={{textAlign:"center",padding:28,color:"#6b5e52"}}>
                 <div style={{fontSize:36,marginBottom:8}}>📝</div>
                 <p style={{fontSize:12,marginBottom:12}}>No fields configured yet. Load the defaults to get started — you can customize everything.</p>
                 <button className="btn btn-gold" onClick={()=>setAppFields(DEF_APP_FIELDS)}>Load 26 Default Fields</button>
@@ -4202,13 +4202,13 @@ export default function Page(){
                       />
                       <span style={{fontSize:9,color:"#c4a882",flexShrink:0,opacity:.6}}>✏️</span>
                     </div>
-                    <span style={{fontSize:9,color:"#999",whiteSpace:"nowrap"}}>{sFields.length} field{sFields.length!==1?"s":""}</span>
+                    <span style={{fontSize:9,color:"#6b5e52",whiteSpace:"nowrap"}}>{sFields.length} field{sFields.length!==1?"s":""}</span>
                     <button className="btn btn-gold btn-sm" style={{fontSize:9,padding:"2px 9px"}} onClick={()=>addFieldToSection(sec)}>+ Field</button>
                     <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 9px",color:"#d4a853",borderColor:"rgba(212,168,83,.35)"}} title="Duplicate this entire section" onClick={()=>duplicateSection(sec)}>⧉ Duplicate</button>
                     {sections.length>1&&<button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:12,padding:"0 2px"}} onClick={()=>deleteSection(sec)}>🗑</button>}
                   </div>
                   {/* Fields in this section */}
-                  {sFields.length===0&&<div style={{padding:"10px 14px",fontSize:11,color:"#bbb",fontStyle:"italic"}}>No fields — click + Field above</div>}
+                  {sFields.length===0&&<div style={{padding:"10px 14px",fontSize:11,color:"#7a7067",fontStyle:"italic"}}>No fields — click + Field above</div>}
                   {sFields.map(f=>{
                     const gi=appFields.indexOf(f);
                     const isExp=!!expanded["af_"+f.id];
@@ -4227,7 +4227,7 @@ export default function Page(){
                         </select>
                         <button onClick={()=>updateField(gi,"required",!f.required)} style={{padding:"3px 7px",borderRadius:6,border:"none",fontSize:9,fontWeight:700,cursor:"pointer",background:f.required?"rgba(196,92,74,.1)":"rgba(0,0,0,.04)",color:f.required?"#c45c4a":"#999",whiteSpace:"nowrap",flexShrink:0}}>{f.required?"Req ✓":"Optional"}</button>
                         <button onClick={()=>updateField(gi,"active",!f.active)} style={{padding:"3px 8px",borderRadius:6,border:"none",fontSize:9,fontWeight:800,cursor:"pointer",background:f.active?"rgba(74,124,89,.1)":"rgba(0,0,0,.04)",color:f.active?"#4a7c59":"#bbb",minWidth:32,flexShrink:0}}>{f.active?"ON":"OFF"}</button>
-                        <button style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#bbb",padding:"0 1px",flexShrink:0}} onClick={()=>toggleFieldExpand(f.id)}>{isExp?"▾":"▸"}</button>
+                        <button style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#7a7067",padding:"0 1px",flexShrink:0}} onClick={()=>toggleFieldExpand(f.id)}>{isExp?"▾":"▸"}</button>
                         <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:13,lineHeight:1,padding:"0 1px",flexShrink:0}} onClick={()=>deleteField(gi)}>✕</button>
                       </div>
                       {/* Expanded detail panel */}
@@ -4271,10 +4271,10 @@ export default function Page(){
         {/* ── Application Preview ── */}
         {appFields.filter(f=>f.active).length>0&&<div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appPreview:!p.appPreview,appPrevSec:p.appPreview?p.appPrevSec:0}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📱 Application Preview</div><div style={{fontSize:9,color:"#999"}}>Live preview — reflects your current fields exactly</div></div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📱 Application Preview</div><div style={{fontSize:9,color:"#6b5e52"}}>Live preview — reflects your current fields exactly</div></div></div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
               {expanded.appPreview&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={e=>{e.stopPropagation();setExpanded(p=>({...p,appPrevSec:0}));}}>↺ Restart</button>}
-              <span style={{fontSize:10,color:"#999"}}>{[...new Set(appFields.filter(f=>f.active).map(f=>f.section))].length} sections · {appFields.filter(f=>f.active).length} fields</span>
+              <span style={{fontSize:10,color:"#6b5e52"}}>{[...new Set(appFields.filter(f=>f.active).map(f=>f.section))].length} sections · {appFields.filter(f=>f.active).length} fields</span>
             </div>
           </div>
           {expanded.appPreview&&(()=>{
@@ -4354,7 +4354,7 @@ export default function Page(){
           const labels={open:"Open","in-progress":"In Progress",resolved:"Resolved"};
           const colors={open:"b-red","in-progress":"b-gold",resolved:"b-green"};
           return(<div key={status} style={{marginBottom:16}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{labels[status]} ({items.length})</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{labels[status]} ({items.length})</div>
             {items.map(req=>(
               <div key={req.id} className="row">
                 <div className="row-dot" style={{background:status==="open"?"#c45c4a":status==="in-progress"?"#d4a853":"#4a7c59"}}/>
@@ -4500,7 +4500,7 @@ export default function Page(){
                 <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(212,168,83,.1)"}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:600}}>{a.name}</div>
-                    <div style={{fontSize:10,color:"#999"}}>{a.property} · {a.room} · {a.termMoveIn||a.moveIn||"move-in TBD"}</div>
+                    <div style={{fontSize:10,color:"#6b5e52"}}>{a.property} · {a.room} · {a.termMoveIn||a.moveIn||"move-in TBD"}</div>
                   </div>
                   <button className="btn btn-gold btn-sm" onClick={()=>openCreateLease(a)}>Create Lease →</button>
                 </div>
@@ -4508,7 +4508,7 @@ export default function Page(){
             </div>
           )}
 
-          {leases.length===0&&!leaseForm&&<div style={{textAlign:"center",padding:48,color:"#999"}}>
+          {leases.length===0&&!leaseForm&&<div style={{textAlign:"center",padding:48,color:"#6b5e52"}}>
             <div style={{fontSize:40,marginBottom:12}}>📝</div>
             <h3 style={{fontSize:15,marginBottom:6}}>No leases yet</h3>
             <p style={{fontSize:12,marginBottom:16}}>Create your first lease from an approved application or manually.</p>
@@ -4526,7 +4526,7 @@ export default function Page(){
                     <div style={{fontSize:14,fontWeight:700}}>{l.tenantName||"—"}</div>
                     <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:sc.bg,color:sc.tx,textTransform:"uppercase",letterSpacing:.5}}>{sc.label}</span>
                   </div>
-                  <div style={{fontSize:11,color:"#999"}}>{l.property} · {l.room} · {fmtS(l.rent||0)}/mo · Move-in {fmtD(l.moveIn)}</div>
+                  <div style={{fontSize:11,color:"#6b5e52"}}>{l.property} · {l.room} · {fmtS(l.rent||0)}/mo · Move-in {fmtD(l.moveIn)}</div>
                   {l.signingLink&&<div style={{fontSize:10,color:"#3b82f6",marginTop:4,wordBreak:"break-all"}}>🔗 {l.signingLink}</div>}
                 </div>
                 <div style={{display:"flex",gap:6,flexShrink:0,marginLeft:12}}>
@@ -4562,7 +4562,7 @@ export default function Page(){
             <div className="fld"><label>Landlord Email</label>
               <input type="email" value={template.landlordEmail||""} onChange={e=>setLeaseTemplate(p=>({...(p||template),landlordEmail:e.target.value}))} placeholder="info@rentblackbear.com"/>
             </div>
-            <div style={{fontSize:10,color:"#999",marginTop:8}}>These defaults auto-fill every new lease. You can override per-lease in the lease editor.</div>
+            <div style={{fontSize:10,color:"#6b5e52",marginTop:8}}>These defaults auto-fill every new lease. You can override per-lease in the lease editor.</div>
           </div>
 
           <div style={{fontSize:12,fontWeight:700,color:"#5c4a3a",marginBottom:10}}>Lease Sections — toggle active, require initials, edit content</div>
@@ -4572,7 +4572,7 @@ export default function Page(){
                 <span style={{fontSize:11,color:expanded["lsec_"+sec.id]?"#d4a853":"#999"}}>{expanded["lsec_"+sec.id]?"▾":"▸"}</span>
                 <div style={{flex:1}}>
                   <div style={{fontSize:12,fontWeight:700,opacity:sec.active===false?.45:1}}>{sec.title}</div>
-                  <div style={{fontSize:9,color:"#999"}}>{sec.requiresInitials?"Initials required":"No initials"} · {sec.active===false?"Hidden":"Active"}</div>
+                  <div style={{fontSize:9,color:"#6b5e52"}}>{sec.requiresInitials?"Initials required":"No initials"} · {sec.active===false?"Hidden":"Active"}</div>
                 </div>
                 <div style={{display:"flex",gap:6}} onClick={e=>e.stopPropagation()}>
                   <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer"}}>
@@ -4590,7 +4590,7 @@ export default function Page(){
                 <div className="fld" style={{marginBottom:0}}><label>Content (HTML + {"{{VARIABLES}}"} supported)</label>
                   <textarea value={sec.content||""} rows={5} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],content:e.target.value};setLeaseTemplate(p=>({...(p||template),sections:secs}));}} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"monospace",resize:"vertical"}}/>
                 </div>
-                <div style={{fontSize:9,color:"#bbb",marginTop:4}}>Variables: {"{{MONTHLY_RENT}} {{SECURITY_DEPOSIT}} {{LEASE_START}} {{LEASE_END}} {{PARKING_SPACE}} {{DOOR_CODE}} {{UTILITIES_CLAUSE}} {{LANDLORD_NAME}}"}</div>
+                <div style={{fontSize:9,color:"#7a7067",marginTop:4}}>Variables: {"{{MONTHLY_RENT}} {{SECURITY_DEPOSIT}} {{LEASE_START}} {{LEASE_END}} {{PARKING_SPACE}} {{DOOR_CODE}} {{UTILITIES_CLAUSE}} {{LANDLORD_NAME}}"}</div>
               </div>}
             </div>
           ))}
@@ -4600,7 +4600,7 @@ export default function Page(){
         {/* Lease Form Modal */}
         {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:660,maxHeight:"90vh",overflowY:"auto"}}>
           <h2>{leaseForm.id?"Edit Lease":"Create New Lease"}</h2>
-          <div style={{fontSize:11,color:"#999",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
+          <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
 
           <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
             <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8}}>PARTIES</div>
@@ -4701,14 +4701,14 @@ export default function Page(){
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)"}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:700}}>Security Deposit</div>
-                    <div style={{fontSize:10,color:"#999"}}>Due today — secures the room</div>
+                    <div style={{fontSize:10,color:"#6b5e52"}}>Due today — secures the room</div>
                   </div>
                   <div style={{fontSize:15,fontWeight:800,color:"#1a1714"}}>{fmtS(sd)}</div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)"}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:700}}>🏠 {isFirstDay?"First Month's Rent":`Prorated Rent (${daysLeft} days × ${fmtS(dailyRate)})`}</div>
-                    <div style={{fontSize:10,color:"#999"}}>Due: {fmtD(mi)}</div>
+                    <div style={{fontSize:10,color:"#6b5e52"}}>Due: {fmtD(mi)}</div>
                   </div>
                   <div style={{fontSize:15,fontWeight:800,color:"#1a1714"}}>{fmtS(firstMonthAmt)}</div>
                 </div>
@@ -4740,7 +4740,7 @@ export default function Page(){
                   <img src={settings.savedSignature} alt="Saved sig" style={{maxHeight:50,border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:4,background:"#fff"}}/>
                   <div style={{flex:1}}>
                     <div style={{fontSize:11,fontWeight:600}}>Carolina Cooper</div>
-                    <div style={{fontSize:10,color:"#999"}}>Saved signature on file</div>
+                    <div style={{fontSize:10,color:"#6b5e52"}}>Saved signature on file</div>
                   </div>
                   <button className="btn btn-green btn-sm" onClick={()=>{setModal(p=>({...p,landlordSig:settings.savedSignature}));setLeaseSigErr(false);}}>Use This</button>
                 </div>
@@ -4790,7 +4790,7 @@ export default function Page(){
             The lease has been signed by you and a unique signing link has been generated for {modal.lease?.tenantEmail||"the tenant"}.
           </p>
           <div style={{background:"rgba(0,0,0,.03)",borderRadius:8,padding:"10px 14px",fontSize:11,color:"#5c4a3a",wordBreak:"break-all",marginBottom:16,textAlign:"left"}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#999",marginBottom:4}}>TENANT SIGNING LINK</div>
+            <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",marginBottom:4}}>TENANT SIGNING LINK</div>
             {modal.link}
           </div>
           <div style={{display:"flex",gap:8,justifyContent:"center"}}>
@@ -4804,10 +4804,10 @@ export default function Page(){
           <h2>Executed Lease</h2>
           <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
             <div style={{flex:1,padding:"10px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,fontSize:11}}>
-              <div style={{color:"#999",marginBottom:2}}>Tenant</div><strong>{modal.lease.tenantName}</strong>
+              <div style={{color:"#6b5e52",marginBottom:2}}>Tenant</div><strong>{modal.lease.tenantName}</strong>
             </div>
             <div style={{flex:1,padding:"10px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,fontSize:11}}>
-              <div style={{color:"#999",marginBottom:2}}>Property</div><strong>{modal.lease.property} · {modal.lease.room}</strong>
+              <div style={{color:"#6b5e52",marginBottom:2}}>Property</div><strong>{modal.lease.property} · {modal.lease.room}</strong>
             </div>
           </div>
           <div className="tp-card"><h3>📋 Lease Summary</h3>
@@ -4824,11 +4824,11 @@ export default function Page(){
             <div className="tp-row"><span className="tp-label">Executed</span><strong style={{color:"#4a7c59"}}>{modal.lease.executedAt?new Date(modal.lease.executedAt).toLocaleDateString():"—"}</strong></div>
           </div>
           {modal.lease.tenantSignature&&<div style={{marginTop:10}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:4}}>TENANT SIGNATURE</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",marginBottom:4}}>TENANT SIGNATURE</div>
             <img src={modal.lease.tenantSignature} alt="Tenant sig" style={{maxHeight:60,border:"1px solid rgba(0,0,0,.06)",borderRadius:6,padding:4,background:"#fff"}}/>
           </div>}
           {modal.lease.landlordSignature&&<div style={{marginTop:10}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:4}}>PM SIGNATURE</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",marginBottom:4}}>PM SIGNATURE</div>
             <img src={modal.lease.landlordSignature} alt="PM sig" style={{maxHeight:60,border:"1px solid rgba(0,0,0,.06)",borderRadius:6,padding:4,background:"#fff"}}/>
           </div>}
           <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
@@ -4845,7 +4845,7 @@ export default function Page(){
           const items=docs.filter(d=>d.type===type);if(!items.length)return null;
           const labels={addendum:"📝 Lease Addendums",lease:"📄 Leases & Agreements",rules:"📋 House Rules",checklist:"✅ Checklists"};
           return(<div key={type} style={{marginBottom:16}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{labels[type]}</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{labels[type]}</div>
             {items.map(d=><div key={d.id} className="row">
               <span style={{fontSize:16}}>{type==="addendum"?"📝":"📄"}</span>
               <div className="row-i">
@@ -5279,7 +5279,7 @@ export default function Page(){
                     </td>);
                     if(!acctHideCols.unit_room)visibleCells.push(<td key="unit" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.unitName?(e.roomName?e.unitName+" / "+e.roomName:e.unitName):e.roomName||"—"}</td>);
                     if(!acctHideCols.category)visibleCells.push(<td key="cat" style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(212,168,83,.1)",color:"#9a7422",fontWeight:700,whiteSpace:"nowrap"}}>{e.category}</span></td>);
-                    if(!acctHideCols.subcategory)visibleCells.push(<td key="subcat" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#aaa"}}>—</span>}</td>);
+                    if(!acctHideCols.subcategory)visibleCells.push(<td key="subcat" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.subcategory||<span style={{color:"#7a7067"}}>—</span>}</td>);
                     if(!acctHideCols.vendor)visibleCells.push(<td key="vendor" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.vendor||"—"}</td>);
                     if(!acctHideCols.description)visibleCells.push(<td key="desc" style={{padding:"8px 14px",fontWeight:600,maxWidth:180}}>{e.description}</td>);
                     if(!acctHideCols.method)visibleCells.push(<td key="method" style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{e.paymentMethod||"—"}</td>);
@@ -5411,7 +5411,7 @@ export default function Page(){
                         <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a",fontFamily:"monospace",whiteSpace:"nowrap"}}>{im.date}</td>
                         <td style={{padding:"8px 14px",fontSize:10}}>{(props.find(p=>p.id===im.propId)||{}).name||"—"}</td>
                         <td style={{padding:"8px 14px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,background:"rgba(59,130,246,.08)",color:"#3b82f6",fontWeight:700}}>{im.improvementType||"—"}</span></td>
-                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.subcategory||<span style={{color:"#aaa"}}>—</span>}</td>
+                        <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.subcategory||<span style={{color:"#7a7067"}}>—</span>}</td>
                         <td style={{padding:"8px 14px",fontWeight:600}}>{im.description}</td>
                         <td style={{padding:"8px 14px",fontSize:10,color:"#5c4a3a"}}>{im.contractor||"—"}</td>
                         <td style={{padding:"8px 14px"}}>
@@ -5535,7 +5535,7 @@ export default function Page(){
             <option value="all">All Properties</option>{props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <input type="date" value={reportPeriod.from} onChange={e=>setReportPeriod(p=>({...p,from:e.target.value}))} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
-          <span style={{fontSize:11,color:"#999"}}>to</span>
+          <span style={{fontSize:11,color:"#6b5e52"}}>to</span>
           <input type="date" value={reportPeriod.to} onChange={e=>setReportPeriod(p=>({...p,to:e.target.value}))} style={{padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
           <button className="btn btn-out btn-sm" onClick={()=>{setReportPeriod({from:TODAY.getFullYear()+"-01-01",to:TODAY.toISOString().split("T")[0]});}}>YTD</button>
           <button className="btn btn-out btn-sm" onClick={()=>{const y=TODAY.getFullYear()-1;setReportPeriod({from:y+"-01-01",to:y+"-12-31"});}}>Last Year</button>
@@ -5551,7 +5551,7 @@ export default function Page(){
               onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(0,0,0,.06)";e.currentTarget.style.background="#fff";}}>
               <div style={{marginBottom:10,color:"#5c4a3a"}}>{r.icon}</div>
               <div style={{fontWeight:800,fontSize:13,marginBottom:4}}>{r.title}</div>
-              <div style={{fontSize:11,color:"#999",lineHeight:1.5}}>{r.desc}</div>
+              <div style={{fontSize:11,color:"#6b5e52",lineHeight:1.5}}>{r.desc}</div>
               <div style={{marginTop:10,fontSize:10,color:"#d4a853",fontWeight:700}}>Open →</div>
             </div>
           ))}
@@ -5586,11 +5586,11 @@ export default function Page(){
                 </tr></thead>
                 <tbody>
                   {rows.map((r,i)=><tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                    <td style={{padding:"8px 12px",fontWeight:600}}>{r.prop}</td><td style={{padding:"8px 12px"}}>{r.unit}</td><td style={{padding:"8px 12px",fontSize:10,color:"#999"}}>{r.type}</td>
+                    <td style={{padding:"8px 12px",fontWeight:600}}>{r.prop}</td><td style={{padding:"8px 12px"}}>{r.unit}</td><td style={{padding:"8px 12px",fontSize:10,color:"#6b5e52"}}>{r.type}</td>
                     <td style={{padding:"8px 12px",fontWeight:r.tenant!=="Vacant"?700:400,color:r.tenant==="Vacant"?"#c45c4a":"inherit"}}>{r.tenant}</td>
                     <td style={{padding:"8px 12px",fontWeight:700}}>{r.rent}</td>
-                    <td style={{padding:"8px 12px",fontSize:10,color:"#999",fontFamily:"monospace"}}>{r.moveIn}</td>
-                    <td style={{padding:"8px 12px",fontSize:10,color:"#999",fontFamily:"monospace"}}>{r.leaseEnd}</td>
+                    <td style={{padding:"8px 12px",fontSize:10,color:"#6b5e52",fontFamily:"monospace"}}>{r.moveIn}</td>
+                    <td style={{padding:"8px 12px",fontSize:10,color:"#6b5e52",fontFamily:"monospace"}}>{r.leaseEnd}</td>
                     <td style={{padding:"8px 12px"}}><span style={{fontSize:9,padding:"2px 8px",borderRadius:100,fontWeight:700,background:r.status==="Occupied"?"rgba(74,124,89,.08)":"rgba(196,92,74,.08)",color:r.status==="Occupied"?"#4a7c59":"#c45c4a"}}>{r.status}</span></td>
                   </tr>)}
                 </tbody>
@@ -5686,7 +5686,7 @@ export default function Page(){
                   </tr>
                 </tbody>
               </table>
-              {rDSCR!=null&&<div style={{padding:"10px 16px",fontSize:11,color:"#999",borderTop:"1px solid rgba(0,0,0,.04)"}}>Lenders typically require DSCR ≥ 1.25. {rDSCR>=1.25?"✅ You qualify.":"⚠️ Below typical lender threshold."}</div>}
+              {rDSCR!=null&&<div style={{padding:"10px 16px",fontSize:11,color:"#6b5e52",borderTop:"1px solid rgba(0,0,0,.04)"}}>Lenders typically require DSCR ≥ 1.25. {rDSCR>=1.25?"✅ You qualify.":"⚠️ Below typical lender threshold."}</div>}
             </div>);
           })()}
 
@@ -5703,7 +5703,7 @@ export default function Page(){
                   <div style={{background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                     <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                       <thead><tr style={{background:"#f8f7f4"}}>{["Tenant","Property","Description","Due Date","Balance"].map(h=><th key={h} style={{padding:"7px 12px",textAlign:h==="Balance"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase"}}>{h}</th>)}</tr></thead>
-                      <tbody>{rows.map((c,i)=><tr key={c.id} style={{borderTop:"1px solid rgba(0,0,0,.03)"}}><td style={{padding:"7px 12px",fontWeight:600}}>{c.tenantName}</td><td style={{padding:"7px 12px",fontSize:10,color:"#999"}}>{c.propName}</td><td style={{padding:"7px 12px"}}>{c.desc}</td><td style={{padding:"7px 12px",fontSize:10,fontFamily:"monospace",color:"#c45c4a"}}>{c.dueDate}</td><td style={{padding:"7px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(c.amount-c.amountPaid)}</td></tr>)}</tbody>
+                      <tbody>{rows.map((c,i)=><tr key={c.id} style={{borderTop:"1px solid rgba(0,0,0,.03)"}}><td style={{padding:"7px 12px",fontWeight:600}}>{c.tenantName}</td><td style={{padding:"7px 12px",fontSize:10,color:"#6b5e52"}}>{c.propName}</td><td style={{padding:"7px 12px"}}>{c.desc}</td><td style={{padding:"7px 12px",fontSize:10,fontFamily:"monospace",color:"#c45c4a"}}>{c.dueDate}</td><td style={{padding:"7px 12px",textAlign:"right",fontWeight:800,color:"#c45c4a"}}>{fmtS(c.amount-c.amountPaid)}</td></tr>)}</tbody>
                     </table>
                   </div>
                 </div>);
@@ -5723,10 +5723,10 @@ export default function Page(){
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Tenant","Property","Room","SD Held","Deductions","Net Liability","Status"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["SD Held","Deductions","Net Liability"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
                 <tbody>
-                  {rows.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#999"}}>No security deposit records found.</td></tr>}
+                  {rows.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#6b5e52"}}>No security deposit records found.</td></tr>}
                   {rows.map((r,i)=>{const ded=((r.deductions||[]).reduce((s,d)=>s+d.amount,0));const net=r.amountHeld-ded;return(
                     <tr key={r.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"8px 12px",fontWeight:600}}>{r.tenantName}</td><td style={{padding:"8px 12px",fontSize:10}}>{r.propName}</td><td style={{padding:"8px 12px",fontSize:10,color:"#999"}}>{r.roomName}</td>
+                      <td style={{padding:"8px 12px",fontWeight:600}}>{r.tenantName}</td><td style={{padding:"8px 12px",fontSize:10}}>{r.propName}</td><td style={{padding:"8px 12px",fontSize:10,color:"#6b5e52"}}>{r.roomName}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",fontWeight:700}}>{fmtS(r.amountHeld||0)}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",color:"#c45c4a"}}>{ded>0?fmtS(ded):"—"}</td>
                       <td style={{padding:"8px 12px",textAlign:"right",fontWeight:800,color:"#9a7422"}}>{fmtS(net)}</td>
@@ -5805,7 +5805,7 @@ export default function Page(){
 
           {/* ── DSCR Report ── */}
           {activeReport==="dscr"&&(()=>{
-            if(rMortgages.length===0)return<div style={{textAlign:"center",padding:36,color:"#999",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>No mortgages on record. Add mortgages in the Accounting → Mortgages tab first.</div>;
+            if(rMortgages.length===0)return<div style={{textAlign:"center",padding:36,color:"#6b5e52",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>No mortgages on record. Add mortgages in the Accounting → Mortgages tab first.</div>;
             return(<>
               {rProps.map(pr=>{
                 const prInc=rPayments.filter(p=>p.propName===pr.name).reduce((s,p)=>s+p.amount,0);
@@ -5821,12 +5821,12 @@ export default function Page(){
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
                     {[["NOI",fmtS(prNOI),prNOI>=0?"#4a7c59":"#c45c4a"],["Debt Service",fmtS(prDebt),"#9a7422"],["DSCR",prDSCR!=null?prDSCR.toFixed(2)+"x":"—",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"],["Status",prDSCR==null?"No debt":prDSCR>=1.25?"✅ Strong":prDSCR>=1.0?"⚠️ Marginal":"❌ At Risk",prDSCR==null?"#999":prDSCR>=1.25?"#4a7c59":prDSCR>=1.0?"#d4a853":"#c45c4a"]].map(([lbl,v,clr])=>(
                       <div key={lbl} style={{textAlign:"center",padding:"10px",background:"rgba(0,0,0,.02)",borderRadius:8}}>
-                        <div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",marginBottom:4}}>{lbl}</div>
+                        <div style={{fontSize:9,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",marginBottom:4}}>{lbl}</div>
                         <div style={{fontSize:16,fontWeight:800,color:clr}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  {prMg.map(mg=><div key={mg.id} style={{fontSize:11,color:"#999",padding:"6px 0",borderTop:"1px solid rgba(0,0,0,.04)"}}>{mg.lender} · Balance: {fmtS(mg.currentBalance||0)} · Rate: {mg.interestRate||0}% · P&I: {fmtS(mg.monthlyPI||0)}/mo</div>)}
+                  {prMg.map(mg=><div key={mg.id} style={{fontSize:11,color:"#6b5e52",padding:"6px 0",borderTop:"1px solid rgba(0,0,0,.04)"}}>{mg.lender} · Balance: {fmtS(mg.currentBalance||0)} · Rate: {mg.interestRate||0}% · P&I: {fmtS(mg.monthlyPI||0)}/mo</div>)}
                 </div>);
               })}
             </>);
@@ -5853,7 +5853,7 @@ export default function Page(){
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>{["Date","Tenant","Description","Category","Debit","Credit","Balance"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:["Debit","Credit","Balance"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</th>)}</tr></thead>
                   <tbody>
                     {withBal.map((e,i)=><tr key={i} style={{borderBottom:"1px solid rgba(0,0,0,.03)",background:i%2===0?"#fff":"rgba(0,0,0,.01)"}}>
-                      <td style={{padding:"7px 12px",fontSize:10,fontFamily:"monospace",color:"#999",whiteSpace:"nowrap"}}>{e.date}</td>
+                      <td style={{padding:"7px 12px",fontSize:10,fontFamily:"monospace",color:"#6b5e52",whiteSpace:"nowrap"}}>{e.date}</td>
                       <td style={{padding:"7px 12px",fontWeight:600,fontSize:10}}>{e.tenant}</td>
                       <td style={{padding:"7px 12px"}}>{e.desc}</td>
                       <td style={{padding:"7px 12px"}}><span style={{fontSize:9,padding:"2px 6px",borderRadius:100,background:e.category==="Payment"?"rgba(74,124,89,.08)":"rgba(59,130,246,.08)",color:e.category==="Payment"?"#4a7c59":"#3b82f6",fontWeight:700}}>{e.category}</span></td>
@@ -5861,7 +5861,7 @@ export default function Page(){
                       <td style={{padding:"7px 12px",textAlign:"right",color:e.type==="credit"?"#4a7c59":"#ccc",fontWeight:e.type==="credit"?700:400}}>{e.type==="credit"?fmtS(e.amount):"—"}</td>
                       <td style={{padding:"7px 12px",textAlign:"right",fontWeight:800,color:e.balance>0?"#c45c4a":e.balance<0?"#3b82f6":"#4a7c59"}}>{e.balance===0?"$0":fmtS(e.balance)}</td>
                     </tr>)}
-                    {withBal.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#999"}}>No records found.</td></tr>}
+                    {withBal.length===0&&<tr><td colSpan={7} style={{padding:24,textAlign:"center",color:"#6b5e52"}}>No records found.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -5888,7 +5888,7 @@ export default function Page(){
           {activeReport==="tenantquality"&&(()=>{
             const allSources=[...new Set(apps.map(a=>a.source||"Unknown"))];
             return(<>
-            <div style={{fontSize:11,color:"#999",marginBottom:12,padding:"8px 12px",background:"rgba(0,0,0,.02)",borderRadius:8}}>
+            <div style={{fontSize:11,color:"#6b5e52",marginBottom:12,padding:"8px 12px",background:"rgba(0,0,0,.02)",borderRadius:8}}>
               Quality score is based on lease completion rate, broke-lease rate, and average tenure from past tenants linked to each source. More data = more accurate score.
             </div>
             <table className="tbl"><thead><tr>
@@ -5927,10 +5927,10 @@ export default function Page(){
                 <td style={{fontWeight:600}}>{src}</td>
                 <td>{srcApps.length}</td>
                 <td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td>
-                <td>{totalPast||<span style={{color:"#ccc"}}>—</span>}</td>
-                <td>{avgTenure?avgTenure+"mo":<span style={{color:"#ccc"}}>—</span>}</td>
+                <td>{totalPast||<span style={{color:"#8a7d74"}}>—</span>}</td>
+                <td>{avgTenure?avgTenure+"mo":<span style={{color:"#8a7d74"}}>—</span>}</td>
                 <td style={{color:brokeRate>20?"#c45c4a":"#999"}}>{totalPast?brokeRate+"%":"—"}</td>
-                <td>{completionRate!==null?<span style={{fontWeight:700,color:completionRate>=70?"#4a7c59":completionRate>=40?"#d4a853":"#c45c4a"}}>{completionRate}%</span>:<span style={{color:"#ccc"}}>—</span>}</td>
+                <td>{completionRate!==null?<span style={{fontWeight:700,color:completionRate>=70?"#4a7c59":completionRate>=40?"#d4a853":"#c45c4a"}}>{completionRate}%</span>:<span style={{color:"#8a7d74"}}>—</span>}</td>
                 <td><div style={{display:"flex",alignItems:"center",gap:6}}>
                   <div style={{height:6,width:60,borderRadius:3,background:"rgba(0,0,0,.06)"}}><div style={{height:"100%",borderRadius:3,background:qsColor,width:qs+"%"}}/></div>
                   <span style={{fontWeight:800,color:qsColor,fontSize:12}}>{qs}</span>
@@ -5938,7 +5938,7 @@ export default function Page(){
               </tr>);
             })}
             </tbody></table>
-            <div style={{marginTop:12,fontSize:10,color:"#999"}}>Quality score uses email matching between apps and past tenants. Sources with no past tenants default to 50 — increase as data grows.</div>
+            <div style={{marginTop:12,fontSize:10,color:"#6b5e52"}}>Quality score uses email matching between apps and past tenants. Sources with no past tenants default to 50 — increase as data grows.</div>
             </>);
           })()}
 
@@ -5973,7 +5973,7 @@ export default function Page(){
         {drill==="sc-occ"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Occupancy: {m.occ}/{m.total}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
           {m.propBreakdown.map(pr=>{const pct=pr.occCount/(pr.occCount+pr.vacCount)*100;return(<div key={pr.id} style={{marginBottom:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><div style={{fontWeight:700,fontSize:13}}>{pr.name} <span style={{fontSize:11,color:"#999"}}>{pr.type}</span></div><span className={`badge ${pr.vacCount?"b-red":"b-green"}`}>{pr.occCount}/{allRooms(pr).length} · {Math.round(pct)}%</span></div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}><div style={{fontWeight:700,fontSize:13}}>{pr.name} <span style={{fontSize:11,color:"#6b5e52"}}>{pr.type}</span></div><span className={`badge ${pr.vacCount?"b-red":"b-green"}`}>{pr.occCount}/{allRooms(pr).length} · {Math.round(pct)}%</span></div>
             <div style={{height:5,borderRadius:3,background:"#e5e3df",marginBottom:6}}><div style={{height:"100%",borderRadius:3,background:pct>=100?"#4a7c59":pct>=75?"#d4a853":"#c45c4a",width:`${pct}%`}}/></div>
             {allRooms(pr).map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:r.tenant?"pointer":"default"}} onClick={()=>{if(r.tenant)setModal({type:"tenant",data:{...r,propName:pr.name,propUtils:(pr.units||[])[0]?.utils||pr.utils,propClean:(pr.units||[])[0]?.clean||pr.clean}});}}><div className="row-dot" style={{background:r.st==="vacant"?"#c45c4a":"#4a7c59"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:r.tenant?"#999":"#c45c4a"}}>{(r.tenant&&r.tenant.name)||"Vacant"}{r.tenant&&<span style={{color:"#c4a882",marginLeft:4}}>→ view</span>}</div></div><div style={{fontSize:12,fontWeight:700}}>{fmtS(r.rent)}</div></div>)}
           </div>);})}
@@ -5995,31 +5995,31 @@ export default function Page(){
         {drill==="sc-vac"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Vacancy: {fmtS(m.lost)}/mo lost</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
           {m.vacs.length===0?<div style={{textAlign:"center",padding:20,color:"#4a7c59"}}>🎉 Fully occupied!</div>:
-            m.vacs.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.name}</div><div className="row-s">{r.propName} · {r.pb?"Private":"Shared"}</div></div><div className="row-v kb">{fmtS(r.rent)}<div style={{fontSize:8,color:"#999"}}>lost/mo</div></div></div>)}
+            m.vacs.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.name}</div><div className="row-s">{r.propName} · {r.pb?"Private":"Shared"}</div></div><div className="row-v kb">{fmtS(r.rent)}<div style={{fontSize:8,color:"#6b5e52"}}>lost/mo</div></div></div>)}
           <div style={{marginTop:10,padding:12,background:"rgba(196,92,74,.03)",borderRadius:8,fontSize:12}}><strong>Annual loss:</strong> {fmtS(m.lost*12)}</div>
         </div></div>}
 
         {/* Drill: Projected */}
         {drill==="sc-proj"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Projected: {fmtS(m.proj)} / {fmtS(m.full)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
-          {m.propBreakdown.map(pr=><div key={pr.id} className="row"><div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{pr.occCount} occupied · {pr.vacCount} vacant</div></div><div style={{display:"flex",gap:12,alignItems:"baseline"}}><span style={{fontSize:11,color:"#999"}}>Full: {fmtS(pr.fullOcc)}</span><span style={{fontSize:16,fontWeight:800,color:pr.projected===pr.fullOcc?"#4a7c59":"inherit"}}>{fmtS(pr.projected)}</span>{pr.vacCount>0&&<span style={{fontSize:11,fontWeight:700,color:"#c45c4a"}}>-{fmtS(pr.fullOcc-pr.projected)}</span>}</div></div>)}
+          {m.propBreakdown.map(pr=><div key={pr.id} className="row"><div className="row-i"><div className="row-t">{pr.name}</div><div className="row-s">{pr.occCount} occupied · {pr.vacCount} vacant</div></div><div style={{display:"flex",gap:12,alignItems:"baseline"}}><span style={{fontSize:11,color:"#6b5e52"}}>Full: {fmtS(pr.fullOcc)}</span><span style={{fontSize:16,fontWeight:800,color:pr.projected===pr.fullOcc?"#4a7c59":"inherit"}}>{fmtS(pr.projected)}</span>{pr.vacCount>0&&<span style={{fontSize:11,fontWeight:700,color:"#c45c4a"}}>-{fmtS(pr.fullOcc-pr.projected)}</span>}</div></div>)}
         </div></div>}
 
         {/* Charts */}
         <div className="card" style={{marginBottom:14}}>
-          <div className="card-hd" onClick={()=>setShowCharts(!showCharts)}><h3>📈 Visual Trends</h3><span style={{fontSize:11,color:"#999"}}>{showCharts?"▾ Collapse":"▸ Expand"}</span></div>
+          <div className="card-hd" onClick={()=>setShowCharts(!showCharts)}><h3>📈 Visual Trends</h3><span style={{fontSize:11,color:"#6b5e52"}}>{showCharts?"▾ Collapse":"▸ Expand"}</span></div>
           {showCharts&&<div className="card-bd">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-              <div><div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Revenue by Property</div>
+              <div><div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Revenue by Property</div>
                 <ResponsiveContainer width="100%" height={180}><BarChart data={m.propBreakdown.map(p=>({name:p.name.split(" ").slice(0,2).join(" "),Projected:p.projected,Lost:p.fullOcc-p.projected}))}>
                   <XAxis dataKey="name" tick={{fontSize:10}}/><YAxis tick={{fontSize:10}} tickFormatter={v=>`$${v/1000}k`}/><Tooltip formatter={v=>`$${v.toLocaleString()}`}/>
                   <Bar dataKey="Projected" fill="#4a7c59" radius={[3,3,0,0]}/><Bar dataKey="Lost" fill="#c45c4a" radius={[3,3,0,0]}/>
                 </BarChart></ResponsiveContainer></div>
-              <div><div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Occupancy</div>
+              <div><div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Occupancy</div>
                 <ResponsiveContainer width="100%" height={180}><PieChart><Pie data={[{name:"Occupied",value:m.occ},{name:"Vacant",value:m.total-m.occ}]} cx="50%" cy="50%" outerRadius={60} innerRadius={38} paddingAngle={3} dataKey="value"><Cell fill="#4a7c59"/><Cell fill="#c45c4a"/></Pie><Tooltip/></PieChart></ResponsiveContainer>
                 <div style={{textAlign:"center",marginTop:-6}}><span style={{fontSize:10,color:"#4a7c59",fontWeight:700,marginRight:10}}>● {m.occ} Occupied</span><span style={{fontSize:10,color:"#c45c4a",fontWeight:700}}>● {m.total-m.occ} Vacant</span></div></div>
             </div>
-            <div style={{marginTop:16}}><div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Weekly Trend</div>
+            <div style={{marginTop:16}}><div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Weekly Trend</div>
               <ResponsiveContainer width="100%" height={160}><LineChart data={scRows.map(w=>({week:w.label,"Occupancy Rate":w.occ,"Collection Rate":w.coll,"New Leads":w.leads}))}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee"/><XAxis dataKey="week" tick={{fontSize:10}}/><YAxis tick={{fontSize:10}}/><Tooltip/><Legend wrapperStyle={{fontSize:10}}/>
                 <Line type="monotone" dataKey="Occupancy Rate" stroke="#4a7c59" strokeWidth={2} dot={{r:3}}/><Line type="monotone" dataKey="Collection Rate" stroke="#3b82f6" strokeWidth={2} dot={{r:3}}/><Line type="monotone" dataKey="New Leads" stroke="#d4a853" strokeWidth={2} dot={{r:3}}/>
@@ -6029,7 +6029,7 @@ export default function Page(){
 
         {/* Monthly Comparison */}
         <div className="card" style={{marginBottom:14}}>
-          <div className="card-hd"><h3>📅 Monthly Comparison</h3><span style={{fontSize:10,color:"#999"}}>{allMonths.length} month{allMonths.length!==1?"s":""} of data</span></div>
+          <div className="card-hd"><h3>📅 Monthly Comparison</h3><span style={{fontSize:10,color:"#6b5e52"}}>{allMonths.length} month{allMonths.length!==1?"s":""} of data</span></div>
           <div className="card-bd">
             {/* Side-by-side cards: This Month vs Last Month vs 2 Months Ago */}
             <div style={{display:"grid",gridTemplateColumns:`repeat(${twoMonthsAgo?3:prevMonth?2:1},1fr)`,gap:12,marginBottom:16}}>
@@ -6037,48 +6037,48 @@ export default function Page(){
               <div style={{background:"rgba(212,168,83,.04)",borderRadius:10,padding:14,border:"2px solid rgba(212,168,83,.15)"}}>
                 <div style={{fontSize:10,fontWeight:700,color:"#d4a853",marginBottom:8}}>{liveMonth.label} (Current)</div>
                 <div style={{fontSize:11,display:"flex",flexDirection:"column",gap:6}}>
-                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>Occupancy</span><strong style={{color:liveMonth.occ>=90?"#4a7c59":"#c45c4a"}}>{liveMonth.occ}%</strong></div>
-                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>Collection</span><strong style={{color:liveMonth.collRate>=90?"#4a7c59":"#c45c4a"}}>{liveMonth.collRate}%</strong></div>
-                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>Vacancy Cost</span><strong style={{color:liveMonth.vacancy>0?"#c45c4a":"#4a7c59"}}>{fmtS(liveMonth.vacancy)}</strong></div>
-                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>Collected</span><strong style={{color:"#4a7c59"}}>{fmtS(liveMonth.collected)}</strong></div>
-                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>Projected</span><strong>{fmtS(liveMonth.projected)}</strong></div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#6b5e52"}}>Occupancy</span><strong style={{color:liveMonth.occ>=90?"#4a7c59":"#c45c4a"}}>{liveMonth.occ}%</strong></div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#6b5e52"}}>Collection</span><strong style={{color:liveMonth.collRate>=90?"#4a7c59":"#c45c4a"}}>{liveMonth.collRate}%</strong></div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#6b5e52"}}>Vacancy Cost</span><strong style={{color:liveMonth.vacancy>0?"#c45c4a":"#4a7c59"}}>{fmtS(liveMonth.vacancy)}</strong></div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#6b5e52"}}>Collected</span><strong style={{color:"#4a7c59"}}>{fmtS(liveMonth.collected)}</strong></div>
+                  <div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#6b5e52"}}>Projected</span><strong>{fmtS(liveMonth.projected)}</strong></div>
                 </div>
               </div>
               {/* Previous Month */}
               {prevMonth&&<div style={{background:"rgba(0,0,0,.02)",borderRadius:10,padding:14}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8}}>{prevMonth.label}</div>
+                <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",marginBottom:8}}>{prevMonth.label}</div>
                 <div style={{fontSize:11,display:"flex",flexDirection:"column",gap:6}}>
                   {[["Occupancy",prevMonth.occ,liveMonth.occ,"%"],["Collection",prevMonth.collRate,liveMonth.collRate,"%"],["Vacancy Cost",prevMonth.vacancy,liveMonth.vacancy,"$",true],["Collected",prevMonth.collected,liveMonth.collected,"$"],["Projected",prevMonth.projected,liveMonth.projected,"$"]].map(([label,prev,curr,unit,inverse])=>{
                     const diff=unit==="$"?curr-prev:curr-prev;const better=inverse?diff<=0:diff>=0;
-                    return(<div key={label} style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>{label}</span><div><strong>{unit==="$"?fmtS(prev):`${prev}${unit}`}</strong>{diff!==0&&<span style={{fontSize:9,marginLeft:4,color:better?"#4a7c59":"#c45c4a"}}>{diff>0?"+":""}{unit==="$"?fmtS(diff):`${diff}${unit}`}</span>}</div></div>);
+                    return(<div key={label} style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#6b5e52"}}>{label}</span><div><strong>{unit==="$"?fmtS(prev):`${prev}${unit}`}</strong>{diff!==0&&<span style={{fontSize:9,marginLeft:4,color:better?"#4a7c59":"#c45c4a"}}>{diff>0?"+":""}{unit==="$"?fmtS(diff):`${diff}${unit}`}</span>}</div></div>);
                   })}
                 </div>
               </div>}
               {/* 2 Months Ago */}
               {twoMonthsAgo&&<div style={{background:"rgba(0,0,0,.02)",borderRadius:10,padding:14}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:8}}>{twoMonthsAgo.label}</div>
+                <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",marginBottom:8}}>{twoMonthsAgo.label}</div>
                 <div style={{fontSize:11,display:"flex",flexDirection:"column",gap:6}}>
                   {[["Occupancy",twoMonthsAgo.occ,"%"],["Collection",twoMonthsAgo.collRate,"%"],["Vacancy Cost",twoMonthsAgo.vacancy,"$"],["Collected",twoMonthsAgo.collected,"$"],["Projected",twoMonthsAgo.projected,"$"]].map(([label,val,unit])=>(
-                    <div key={label} style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#999"}}>{label}</span><strong>{unit==="$"?fmtS(val):`${val}${unit}`}</strong></div>
+                    <div key={label} style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#6b5e52"}}>{label}</span><strong>{unit==="$"?fmtS(val):`${val}${unit}`}</strong></div>
                   ))}
                 </div>
               </div>}
             </div>
-            {!prevMonth&&<div style={{textAlign:"center",padding:12,color:"#999",fontSize:11}}>Monthly comparison will appear after your first month-end snapshot. Snapshots are taken automatically on the last day of each month.</div>}
+            {!prevMonth&&<div style={{textAlign:"center",padding:12,color:"#6b5e52",fontSize:11}}>Monthly comparison will appear after your first month-end snapshot. Snapshots are taken automatically on the last day of each month.</div>}
 
             {/* Monthly trend chart */}
             {allMonths.length>1&&<>
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Monthly Trends</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Monthly Trends</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
                 <div>
-                  <div style={{fontSize:9,color:"#999",marginBottom:4}}>Occupancy & Collection %</div>
+                  <div style={{fontSize:9,color:"#6b5e52",marginBottom:4}}>Occupancy & Collection %</div>
                   <ResponsiveContainer width="100%" height={160}><LineChart data={allMonths.map(mo=>({month:((mo.label||"").split(" ")[0]||"").slice(0,3)||mo.month,Occupancy:mo.occ,Collection:mo.collRate}))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee"/><XAxis dataKey="month" tick={{fontSize:9}}/><YAxis tick={{fontSize:9}} domain={[0,100]}/><Tooltip formatter={v=>`${v}%`}/>
                     <Line type="monotone" dataKey="Occupancy" stroke="#4a7c59" strokeWidth={2} dot={{r:3}}/><Line type="monotone" dataKey="Collection" stroke="#3b82f6" strokeWidth={2} dot={{r:3}}/>
                   </LineChart></ResponsiveContainer>
                 </div>
                 <div>
-                  <div style={{fontSize:9,color:"#999",marginBottom:4}}>Revenue</div>
+                  <div style={{fontSize:9,color:"#6b5e52",marginBottom:4}}>Revenue</div>
                   <ResponsiveContainer width="100%" height={160}><BarChart data={allMonths.map(mo=>({month:((mo.label||"").split(" ")[0]||"").slice(0,3)||mo.month,Collected:mo.collected,Vacancy:mo.vacancy}))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee"/><XAxis dataKey="month" tick={{fontSize:9}}/><YAxis tick={{fontSize:9}} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`}/><Tooltip formatter={v=>fmtS(v)}/>
                     <Bar dataKey="Collected" fill="#4a7c59" radius={[3,3,0,0]}/><Bar dataKey="Vacancy" fill="#c45c4a" radius={[3,3,0,0]}/>
@@ -6095,7 +6095,7 @@ export default function Page(){
           {scMeasurables.map((s)=>(
             <tr key={s.id} style={{cursor:"pointer"}} onClick={()=>setScDrill(scDrill===s.id?null:s.id)}>
               <td style={{fontWeight:700}}>{s.label} <span style={{fontSize:9,color:"#c4a882"}}>{scDrill===s.id?"▾":"▸"}</span></td>
-              <td style={{color:"#999"}}>{s.unit==="$"?fmtS(s.goal):s.goal}{s.unit==="%"?"%":""}</td>
+              <td style={{color:"#6b5e52"}}>{s.unit==="$"?fmtS(s.goal):s.goal}{s.unit==="%"?"%":""}</td>
               {scRows.map((w,i)=>{const v=w[s.key]||0;const isGood=s.goodFn(v,s.goal);const isCurrent=w.weekNum===CUR_WEEK;return(
                 <td key={i} style={{textAlign:"center"}}><span style={{display:"inline-block",padding:"3px 10px",borderRadius:100,fontWeight:700,fontSize:12,background:isGood?"rgba(74,124,89,.08)":"rgba(196,92,74,.08)",color:isGood?"#4a7c59":"#c45c4a",border:isCurrent?"2px solid rgba(212,168,83,.3)":"none"}}>{s.unit==="$"?fmtS(v):v}{s.unit==="%"?"%":""}</span></td>);})}
             </tr>))}
@@ -6122,7 +6122,7 @@ export default function Page(){
 
           {scDrill==="vacancy"&&<div>
             <p style={{fontSize:12,color:"#5c4a3a",marginBottom:10}}>Vacancy cost = total rent from empty rooms. Goal: $0. Currently <strong>{fmtS(m.lost)}</strong>/month across {m.vacs.length} room{m.vacs.length!==1?"s":""}.</p>
-            {m.vacs.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:"#999"}}>{r.propName} · {r.pb?"Private":"Shared"} bath</div></div><div style={{fontSize:12,fontWeight:700,color:"#c45c4a"}}>{fmtS(r.rent)}</div></div>)}
+            {m.vacs.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{r.name}</div><div style={{fontSize:9,color:"#6b5e52"}}>{r.propName} · {r.pb?"Private":"Shared"} bath</div></div><div style={{fontSize:12,fontWeight:700,color:"#c45c4a"}}>{fmtS(r.rent)}</div></div>)}
             {m.vacs.length>0&&<div style={{fontSize:12,color:"#c45c4a",fontWeight:600,marginTop:8}}>That's {fmtS(m.lost*12)}/year in lost revenue.</div>}
             {m.vacs.length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>🎉 No vacancies! $0 lost.</div>}
           </div>}
@@ -6206,12 +6206,12 @@ export default function Page(){
               borderRadius:12,transition:"opacity .15s,border-color .1s",cursor:"grab"}}>
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
-                <h3><span style={{color:"#ccc",marginRight:4,cursor:"grab",fontSize:14}}>⠿</span>{isExp?"▾":"▸"} {p.name}</h3>
-                <div style={{fontSize:10,color:"#999",marginTop:2}}>{p.addr} · {(PROP_TYPES[p.type]||PROP_TYPES.SFH).label} · {allWhole?"Whole Unit":anyWhole?"Mixed":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
+                <h3><span style={{color:"#8a7d74",marginRight:4,cursor:"grab",fontSize:14}}>⠿</span>{isExp?"▾":"▸"} {p.name}</h3>
+                <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>{p.addr} · {(PROP_TYPES[p.type]||PROP_TYPES.SFH).label} · {allWhole?"Whole Unit":anyWhole?"Mixed":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
-                {allWhole&&wholeUnitRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(wholeUnitRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#999"}}>whole unit</span></span>}
-                {!allWhole&&pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#999"}}>per room</span></span>}
+                {allWhole&&wholeUnitRent>0&&<span style={{fontWeight:800,color:"#d4a853",marginRight:4}}>{fmtS(wholeUnitRent)}/mo <span style={{fontSize:9,fontWeight:400,color:"#6b5e52"}}>whole unit</span></span>}
+                {!allWhole&&pr.length>0&&<span style={{fontWeight:800,marginRight:4}}>{fmtS(Math.min(...pr))}–{fmtS(Math.max(...pr))} <span style={{fontSize:9,fontWeight:400,color:"#6b5e52"}}>per room</span></span>}
                 {vac>0&&<span className="badge b-red">{vac} Vacant</span>}
                 {vac===0&&items.length>0&&<span className="badge b-green">{allWhole?"Whole Unit":"Full"}</span>}
                 {unpaidRooms.length>0&&<span className="badge b-red" title={`${unpaidRooms.map(r=>r.tenant.name).join(", ")} unpaid`}>💳 {unpaidRooms.length} Unpaid</span>}
@@ -6222,24 +6222,24 @@ export default function Page(){
             {isExp&&<div className="card-bd" style={{animation:"fadeIn .15s"}}>
               {/* Property summary */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
-                {!allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Rooms</div><div style={{fontSize:18,fontWeight:800}}>{allRooms(p).length}</div></div>}
-                {!allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Occupied</div><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{occRooms.length}</div></div>}
-                {allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center",gridColumn:"span 2"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Monthly Rent</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(wholeUnitRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>}
-                <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Projected</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(projRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
-                <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>At Full</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(totalRent)}<small style={{fontSize:9,color:"#999"}}>/mo</small></div></div>
+                {!allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Rooms</div><div style={{fontSize:18,fontWeight:800}}>{allRooms(p).length}</div></div>}
+                {!allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Occupied</div><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{occRooms.length}</div></div>}
+                {allWhole&&<div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center",gridColumn:"span 2"}}><div style={{fontSize:9,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Monthly Rent</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(wholeUnitRent)}<small style={{fontSize:9,color:"#6b5e52"}}>/mo</small></div></div>}
+                <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Projected</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(projRent)}<small style={{fontSize:9,color:"#6b5e52"}}>/mo</small></div></div>
+                <div style={{background:"#faf9f7",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:9,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>At Full</div><div style={{fontSize:18,fontWeight:800}}>{fmtS(totalRent)}<small style={{fontSize:9,color:"#6b5e52"}}>/mo</small></div></div>
               </div>
               {/* Whole unit info */}
               {allWhole&&<div style={{padding:"12px 14px",background:"#faf9f7",borderRadius:8,marginBottom:10}}>
                 {(p.units||[]).map(u=><div key={u.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:700}}>{(p.units||[]).length>1?u.name:"Whole Unit"} · {u.utils==="allIncluded"?"All Utilities":u.utils==="first100"?"First $100 Utilities":"Tenant Pays"} · {u.clean||"Biweekly"} Clean</div>
-                    <div style={{fontSize:10,color:"#999",marginTop:2}}>Single lease · {u.baths||1} bath{u.baths!==1?"s":""}</div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>Single lease · {u.baths||1} bath{u.baths!==1?"s":""}</div>
                   </div>
                   <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{setTab("applications");setBulkSel([])}}>+ Find Tenant</button>
                 </div>)}
               </div>}
               {/* Unit list — per-unit mode aware */}
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>{anyWhole&&!allWhole?"Units & Rooms":"Rooms by Unit"}</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>{anyWhole&&!allWhole?"Units & Rooms":"Rooms by Unit"}</div>
               {(p.units||[]).map(u=>{
                 const uIsWhole=(u.rentalMode||"byRoom")==="wholeHouse";
                 const uRooms=u.rooms||[];
@@ -6248,7 +6248,7 @@ export default function Page(){
                 return(<div key={u.id} style={{marginBottom:10}}>
                   {(p.units||[]).length>1&&<div style={{fontSize:10,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,padding:"3px 8px",background:"rgba(212,168,83,.06)",borderRadius:4,display:"inline-flex",alignItems:"center",gap:6}}>
                     {u.name}
-                    <span style={{fontSize:8,fontWeight:500,color:"#999",textTransform:"none",letterSpacing:0}}>{uIsWhole?"Whole Unit":"By Room"}</span>
+                    <span style={{fontSize:8,fontWeight:500,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>{uIsWhole?"Whole Unit":"By Room"}</span>
                   </div>}
                   {uIsWhole?(
                     <div className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default"}}>
@@ -6256,7 +6256,7 @@ export default function Page(){
                       <div className="row-i">
                         <div style={{fontSize:12,fontWeight:600}}>{u.name} — Whole Unit</div>
                         {uOcc
-                          ?<div style={{fontSize:10,color:"#999",marginTop:1}}>Occupied · ends {fmtD(uLatestLe)}</div>
+                          ?<div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>Occupied · ends {fmtD(uLatestLe)}</div>
                           :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(u.rent)}/mo</div>}
                       </div>
                       <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
@@ -6266,7 +6266,7 @@ export default function Page(){
                     </div>
                   ):(
                     <>
-                    {uRooms.length===0&&<div style={{fontSize:11,color:"#bbb",padding:"6px 0"}}>No rooms — edit property to add</div>}
+                    {uRooms.length===0&&<div style={{fontSize:11,color:"#7a7067",padding:"6px 0"}}>No rooms — edit property to add</div>}
                     {uRooms.map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
                       const tenantData={...r,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label};
                       return(<div key={r.id} className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default",background:occ&&dl&&dl<=30?"rgba(196,92,74,.02)":occ&&dl&&dl<=90?"rgba(212,168,83,.02)":"#fff"}}>
@@ -6275,10 +6275,10 @@ export default function Page(){
                           <div style={{fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
                             {r.name}
                             <span className={"badge "+(r.pb?"b-green":"b-gray")} style={{fontSize:7}}>{r.pb?"Private":"Shared"}</span>
-                            {r.sqft&&<span style={{fontSize:9,color:"#999"}}>{r.sqft} sqft</span>}
+                            {r.sqft&&<span style={{fontSize:9,color:"#6b5e52"}}>{r.sqft} sqft</span>}
                           </div>
                           {occ
-                            ?<div style={{fontSize:10,color:"#999",marginTop:1}}>{r.tenant.name} · ends {fmtD(r.le)}{dl&&dl<=90?<span style={{color:dl<=30?"#c45c4a":"#d4a853",fontWeight:700,marginLeft:4}}>⚠ {dl}d</span>:null}</div>
+                            ?<div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>{r.tenant.name} · ends {fmtD(r.le)}{dl&&dl<=90?<span style={{color:dl<=30?"#c45c4a":"#d4a853",fontWeight:700,marginLeft:4}}>⚠ {dl}d</span>:null}</div>
                             :r.ownerOccupied?<div style={{fontSize:10,color:"#1d4ed8",fontWeight:600,marginTop:1}}>Owner Occupied</div>
                             :<div style={{fontSize:10,color:"#c45c4a",fontWeight:600,marginTop:1}}>Vacant — {fmtS(r.rent)}/mo lost</div>}
                         </div>
@@ -6300,7 +6300,7 @@ export default function Page(){
               })}
             </div>}
           </div>);})}
-        {props.length===0&&<div style={{textAlign:"center",padding:40,color:"#999"}}><div style={{fontSize:40,marginBottom:8}}>🏠</div><h3 style={{fontSize:15}}>No Properties</h3><p style={{fontSize:12,marginTop:4}}>Add your first property above.</p></div>}
+        {props.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}><div style={{fontSize:40,marginBottom:8}}>🏠</div><h3 style={{fontSize:15}}>No Properties</h3><p style={{fontSize:12,marginTop:4}}>Add your first property above.</p></div>}
       </>}
 
       {/* ═══ SITE SETTINGS ═══ */}
@@ -6309,7 +6309,7 @@ export default function Page(){
         <div className="card"><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Company Info</h3>
           <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
-          <div className="fr3"><div className="fld"><label>Phone</label><input value={settings.phone} onChange={e=>setSettings({...settings,phone:e.target.value})}/></div><div className="fld"><label>Public Email</label><input value={settings.email} onChange={e=>setSettings({...settings,email:e.target.value})} placeholder="info@rentblackbear.com"/></div><div className="fld"><label>City</label><input value={settings.city} onChange={e=>setSettings({...settings,city:e.target.value})}/></div></div><div className="fld"><label>PM Notification Email <span style={{fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— where you receive application, lease, and payment alerts</span></label><input type="email" value={settings.pmEmail||""} onChange={e=>setSettings({...settings,pmEmail:e.target.value})} placeholder="blackbearhousing@gmail.com"/></div>
+          <div className="fr3"><div className="fld"><label>Phone</label><input value={settings.phone} onChange={e=>setSettings({...settings,phone:e.target.value})}/></div><div className="fld"><label>Public Email</label><input value={settings.email} onChange={e=>setSettings({...settings,email:e.target.value})} placeholder="info@rentblackbear.com"/></div><div className="fld"><label>City</label><input value={settings.city} onChange={e=>setSettings({...settings,city:e.target.value})}/></div></div><div className="fld"><label>PM Notification Email <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>— where you receive application, lease, and payment alerts</span></label><input type="email" value={settings.pmEmail||""} onChange={e=>setSettings({...settings,pmEmail:e.target.value})} placeholder="blackbearhousing@gmail.com"/></div>
         </div></div>
         {/* Signature Settings */}
         <div className="card" style={{marginTop:12}}><div className="card-bd">
@@ -6333,7 +6333,7 @@ export default function Page(){
               </div>}
             </div>
             :<div>
-              <div style={{fontSize:11,color:"#999",marginBottom:10}}>No signature saved yet. Draw one below and it will be offered automatically when signing leases.</div>
+              <div style={{fontSize:11,color:"#6b5e52",marginBottom:10}}>No signature saved yet. Draw one below and it will be offered automatically when signing leases.</div>
               <SigCanvas onSave={(data)=>{setSettings(p=>{const u={...p,savedSignature:data};save("hq-settings",u);return u;});}} height={100}/>
             </div>
           }
@@ -6342,7 +6342,7 @@ export default function Page(){
         {/* Email Notifications */}
         <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Email Notifications</h3>
-          <p style={{fontSize:11,color:"#999",marginBottom:14}}>Choose which events trigger an email to you at <strong>{settings.email||"info@rentblackbear.com"}</strong>. Tenant-facing emails always send regardless.</p>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Choose which events trigger an email to you at <strong>{settings.email||"info@rentblackbear.com"}</strong>. Tenant-facing emails always send regardless.</p>
           {[
             {key:"notifPrescreen",label:"New pre-screen submitted",desc:"When someone passes the qualifying questions and submits their contact info"},
             {key:"notifAppReceived",label:"New full application received",desc:"When an invited applicant submits their full application"},
@@ -6354,7 +6354,7 @@ export default function Page(){
             <div key={key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
               <div>
                 <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{label}</div>
-                <div style={{fontSize:10,color:"#999",marginTop:1}}>{desc}</div>
+                <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>{desc}</div>
               </div>
               <button onClick={()=>setSettings(p=>{const u={...p,[key]:!p[key]};save("hq-settings",u);return u;})} style={{
                 flexShrink:0,marginLeft:12,width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",
@@ -6375,7 +6375,7 @@ export default function Page(){
 
         <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Email Templates</h3>
-          <p style={{fontSize:11,color:"#999",marginBottom:14}}>Customize the subject line and body of notification emails sent to you. Use <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"name{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"property{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"room{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"amount{"+"}"}</code> as placeholders.</p>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Customize the subject line and body of notification emails sent to you. Use <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"name{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"property{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"room{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"amount{"+"}"}</code> as placeholders.</p>
           {[
             {key:"prescreen",label:"Pre-Screen Alert (to you)",icon:"📋",desc:"Sent to PM when someone completes the qualifying questions"},
             {key:"prescreenTenant",label:"Pre-Screen Confirmation (to applicant)",icon:"✉️",desc:"Sent to the applicant after they pass the pre-screen — the '24 hours' email"},
@@ -6387,7 +6387,7 @@ export default function Page(){
             const subjKey=key+"Subject";const bodyKey=key+"Body";
             return(<div key={key} style={{marginBottom:16,paddingBottom:16,borderBottom:"1px solid rgba(0,0,0,.04)"}}>
               <div style={{fontSize:11,fontWeight:800,color:"#1a1714",marginBottom:2}}>{icon} {label}</div>
-              <div style={{fontSize:10,color:"#999",marginBottom:8}}>{desc}</div>
+              <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>{desc}</div>
               <div className="fld" style={{marginBottom:6}}>
                 <label>Subject Line</label>
                 <input value={tpl[subjKey]||DEF_SETTINGS.emailTemplates[subjKey]||""} placeholder={DEF_SETTINGS.emailTemplates[subjKey]}
@@ -6416,7 +6416,7 @@ export default function Page(){
 
         <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Payment Reminder Template</h3>
-          <p style={{fontSize:11,color:"#999",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
           <div className="fld">
             <label style={{display:"flex",justifyContent:"space-between"}}>
               Message Template
@@ -6424,7 +6424,7 @@ export default function Page(){
             </label>
             <textarea value={settings.reminderTemplate||DEF_SETTINGS.reminderTemplate} onChange={e=>setSettings({...settings,reminderTemplate:e.target.value})} rows={4} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
           </div>
-          <div style={{fontSize:9,color:"#999",marginTop:4,lineHeight:1.6}}>
+          <div style={{fontSize:9,color:"#6b5e52",marginTop:4,lineHeight:1.6}}>
             Available variables: <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{firstName}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{fullName}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{amount}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{dueDate}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{category}"}</code>
           </div>
           <div style={{marginTop:8,background:"rgba(212,168,83,.06)",borderRadius:6,padding:10,fontSize:11,color:"#9a7422"}}>
@@ -6461,7 +6461,7 @@ export default function Page(){
         {tSub==="admin"&&<>
           <div className="card" style={{marginBottom:12}}><div className="card-bd">
             <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Style Preset</h3>
-            <p style={{fontSize:11,color:"#999",marginBottom:14}}>Pick a preset to instantly change the admin accent color. Saves automatically.</p>
+            <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Pick a preset to instantly change the admin accent color. Saves automatically.</p>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:10}}>
               {ADMIN_PRESETS.map(p=>{
                 const isActive=_pid===p.id;
@@ -6491,12 +6491,12 @@ export default function Page(){
 
           <div className="card" style={{marginBottom:12}}><div className="card-bd">
             <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Accent Color</h3>
-            <p style={{fontSize:11,color:"#999",marginBottom:12}}>Fine-tune the accent color independently of the preset.</p>
+            <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Fine-tune the accent color independently of the preset.</p>
             <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
               <div style={{width:36,height:36,borderRadius:8,background:_acc,border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}>
                 <input type="color" value={_acc} onChange={e=>applyAdminAccent(e.target.value)} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/>
               </div>
-              <div><div style={{fontSize:13,fontWeight:700,color:_acc}}>{_acc.toUpperCase()}</div><div style={{fontSize:10,color:"#999",marginTop:2}}>Click to pick a custom color</div></div>
+              <div><div style={{fontSize:13,fontWeight:700,color:_acc}}>{_acc.toUpperCase()}</div><div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>Click to pick a custom color</div></div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
                 {["#4a7c59","#3b6ea5","#b85c38","#2a7d7b","#2c3e50","#7c3aed","#b45309"].map(c=>(
                   <div key={c} onClick={()=>applyAdminAccent(c)} style={{width:22,height:22,borderRadius:"50%",background:c,cursor:"pointer",border:"2px solid "+(_acc===c?"#1a1714":"transparent"),transition:"border .15s"}}/>
@@ -6507,7 +6507,7 @@ export default function Page(){
 
           <div className="card" style={{marginBottom:12}}><div className="card-bd">
             <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Font</h3>
-            <p style={{fontSize:11,color:"#999",marginBottom:12}}>Changes the typeface across the entire admin interface.</p>
+            <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Changes the typeface across the entire admin interface.</p>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               {ADMIN_FONTS.map(f=>{const isActive=_font===f.stack;return(
                 <button key={f.name} onClick={()=>applyAdminFont(f)} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid "+(isActive?_acc:"rgba(0,0,0,.08)"),background:isActive?_acc+"12":"#fff",cursor:"pointer",fontFamily:f.stack,fontSize:13,fontWeight:isActive?700:400,color:isActive?_acc:"#1a1714",transition:"all .15s"}}>
@@ -6517,7 +6517,7 @@ export default function Page(){
 
           <div className="card"><div className="card-bd">
             <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Display Size</h3>
-            <p style={{fontSize:11,color:"#999",marginBottom:12}}>Scales the entire admin interface. Takes effect instantly.</p>
+            <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Scales the entire admin interface. Takes effect instantly.</p>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               {[[0.9,"90% — Compact"],[1,"100% — Default"],[1.15,"115% — Large"],[1.3,"130% — Largest"]].map(([z,lb])=>(
                 <button key={z} onClick={()=>applyAdminZoom(z)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid "+(_zoom===z?_acc:"rgba(0,0,0,.08)"),background:_zoom===z?_acc+"12":"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:_zoom===z?700:400,fontSize:13,color:_zoom===z?_acc:"#1a1714",transition:"all .15s"}}>
@@ -6542,7 +6542,7 @@ export default function Page(){
               {Object.entries(PRESETS).map(([n,c])=><button key={n} className="btn btn-out btn-sm" onClick={()=>applyTheme(c)}><span style={{width:10,height:10,borderRadius:"50%",background:c.accent,display:"inline-block",marginRight:4}}/>{n}</button>)}
             </div>
             {savedThemes.length>0&&<>
-              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Your Saved Themes</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Your Saved Themes</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {savedThemes.map(st=>(
                   <div key={st.id} style={{display:"flex",alignItems:"center",border:"1px solid rgba(0,0,0,.06)",borderRadius:6,overflow:"hidden"}}>
@@ -6567,7 +6567,7 @@ export default function Page(){
               </div>))}
             </div></div>
             <div style={{position:"sticky",top:80}}>
-              <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#999",marginBottom:8}}>Live Preview</div>
+              <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"#6b5e52",marginBottom:8}}>Live Preview</div>
               <div style={{borderRadius:12,overflow:"hidden",border:"1px solid rgba(0,0,0,.06)"}}>
                 <div style={{background:theme.bg,padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{color:theme.text,fontWeight:700,fontSize:11}}>BB <span style={{color:theme.accent}}>Rentals</span></span><div style={{background:theme.accent,color:contrast(theme.accent),padding:"3px 8px",borderRadius:4,fontSize:8,fontWeight:700}}>Apply</div></div>
                 <div style={{background:theme.surface,padding:10}}><div style={{background:"#fff",borderRadius:5,padding:6,border:"1px solid rgba(0,0,0,.04)",marginBottom:4}}><div style={{display:"flex",gap:3,marginBottom:3}}><span style={{background:theme.green+"18",color:theme.green,padding:"1px 5px",borderRadius:100,fontSize:6,fontWeight:700}}>Available</span></div><div style={{fontFamily:"Georgia,serif",fontSize:10,color:theme.dark}}>The Holmes House</div><div style={{fontSize:7,color:theme.warm}}>$600-$850/mo</div></div></div>
@@ -6607,7 +6607,7 @@ export default function Page(){
               <span style={{flexShrink:0,fontSize:8,fontWeight:800,padding:"2px 6px",borderRadius:4,background:priBg[i.priority],color:priColors[i.priority],marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>{priLabels[i.priority]}</span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:700,color:"#1a1714",lineHeight:1.4}}>{i.title}</div>
-                {i.notes&&<div style={{fontSize:10,color:"#999",lineHeight:1.4,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{i.notes}</div>}
+                {i.notes&&<div style={{fontSize:10,color:"#6b5e52",lineHeight:1.4,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{i.notes}</div>}
                 {i.link&&<a href={i.link} target="_blank" rel="noreferrer" style={{fontSize:9,color:"#3b82f6",textDecoration:"none",display:"block",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginTop:2}} onClick={e=>e.stopPropagation()}>↗ {i.link}</a>}
               </div>
             </div>
@@ -6686,7 +6686,7 @@ export default function Page(){
                 {/* Cards area */}
                 <div style={{padding:10,minHeight:80,background:"#faf9f7"}}>
                   {catIdeas.map(i=><IdeaCard key={i.id} i={i}/>)}
-                  {catIdeas.length===0&&<div style={{textAlign:"center",padding:20,color:"#ccc",fontSize:10,fontStyle:"italic"}}>No ideas yet — click + to add one</div>}
+                  {catIdeas.length===0&&<div style={{textAlign:"center",padding:20,color:"#8a7d74",fontSize:10,fontStyle:"italic"}}>No ideas yet — click + to add one</div>}
                 </div>
               </div>);})}
           </div>}
@@ -6694,7 +6694,7 @@ export default function Page(){
           {/* List view */}
           {ideaView==="list"&&<>
             {filtered.map(i=><IdeaRow key={i.id} i={i}/>)}
-            {filtered.length===0&&<div style={{textAlign:"center",padding:32,color:"#999",fontSize:12}}>No ideas match this filter</div>}
+            {filtered.length===0&&<div style={{textAlign:"center",padding:32,color:"#6b5e52",fontSize:12}}>No ideas match this filter</div>}
           </>}
 
           {/* Status view */}
@@ -6704,13 +6704,13 @@ export default function Page(){
                 {st} <span style={{fontWeight:500,opacity:.7}}>({stIdeas.length})</span>
               </div>
               {stIdeas.map(i=><IdeaRow key={i.id} i={i}/>)}
-              {stIdeas.length===0&&<div style={{padding:"8px 12px",fontSize:11,color:"#ccc",fontStyle:"italic"}}>Nothing here</div>}
+              {stIdeas.length===0&&<div style={{padding:"8px 12px",fontSize:11,color:"#8a7d74",fontStyle:"italic"}}>Nothing here</div>}
             </div>);})}
           </>}
 
           {/* Archived toggle */}
           {archived.length>0&&<div style={{marginTop:20,borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:14}}>
-            <button className="btn btn-out btn-sm" style={{width:"100%",color:"#999"}} onClick={()=>setExpanded(p=>({...p,showArchived:!p.showArchived}))}>
+            <button className="btn btn-out btn-sm" style={{width:"100%",color:"#6b5e52"}} onClick={()=>setExpanded(p=>({...p,showArchived:!p.showArchived}))}>
               {showArchived?"▾ Hide":"▸ Show"} Archived ({archived.length})
             </button>
             {showArchived&&<div style={{marginTop:10}}>
@@ -6760,7 +6760,7 @@ export default function Page(){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
               <h3 style={{margin:0,marginBottom:3}}>Tenant Portal</h3>
-              <div style={{fontSize:11,color:"#999"}}>
+              <div style={{fontSize:11,color:"#6b5e52"}}>
                 {portalInviteState==="sent"?"Invite sent — tenant will receive an email with a login link."
                   :portalInviteState==="error"?"Failed to send — check console and try again."
                   :"Send the tenant a link to access their portal."}
@@ -6775,7 +6775,7 @@ export default function Page(){
           </div>
           {portalInviteState==="sent"&&<div style={{marginTop:10,fontSize:11,color:"#4a7c59"}}>
             Invite sent to <strong>{r.tenant.email}</strong>. Link expires in 48 hours.
-            <button style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#999",marginLeft:8,fontFamily:"inherit"}} onClick={()=>setPortalInviteState("idle")}>Resend</button>
+            <button style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#6b5e52",marginLeft:8,fontFamily:"inherit"}} onClick={()=>setPortalInviteState("idle")}>Resend</button>
           </div>}
         </div>);
       })()}
@@ -6829,7 +6829,7 @@ export default function Page(){
             <h3 style={{margin:0}}>Payment Pattern</h3>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:11,fontWeight:700,color:badgeColor,background:badgeBg,padding:"3px 10px",borderRadius:100}}>{badge}</span>
-              <span style={{fontSize:10,color:"#999"}}>{isExp?"▾":"▸"} Details</span>
+              <span style={{fontSize:10,color:"#6b5e52"}}>{isExp?"▾":"▸"} Details</span>
             </div>
           </div>
 
@@ -6838,19 +6838,19 @@ export default function Page(){
             {/* Summary stats */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
               <div style={{background:"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
-                <div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>On-Time</div>
+                <div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>On-Time</div>
                 <div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{pct}%</div>
-                <div style={{fontSize:9,color:"#999"}}>{onTime} of {rentCharges.length} months</div>
+                <div style={{fontSize:9,color:"#6b5e52"}}>{onTime} of {rentCharges.length} months</div>
               </div>
               <div style={{background:lateMonths.length?"rgba(212,168,83,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
-                <div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Avg Days Late</div>
+                <div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Avg Days Late</div>
                 <div style={{fontSize:18,fontWeight:800,color:lateMonths.length?"#9a7422":"#4a7c59"}}>{lateMonths.length?avgDaysLate:0}</div>
-                <div style={{fontSize:9,color:"#999"}}>{lateMonths.length} late month{lateMonths.length!==1?"s":""}</div>
+                <div style={{fontSize:9,color:"#6b5e52"}}>{lateMonths.length} late month{lateMonths.length!==1?"s":""}</div>
               </div>
               <div style={{background:pastDueNow?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}>
-                <div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Past Due Now</div>
+                <div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Past Due Now</div>
                 <div style={{fontSize:18,fontWeight:800,color:pastDueNow?"#c45c4a":"#4a7c59"}}>{pastDueNow}</div>
-                <div style={{fontSize:9,color:"#999"}}>charge{pastDueNow!==1?"s":""}</div>
+                <div style={{fontSize:9,color:"#6b5e52"}}>charge{pastDueNow!==1?"s":""}</div>
               </div>
             </div>
 
@@ -6859,8 +6859,8 @@ export default function Page(){
               <div style={{fontSize:10,fontWeight:700,color:"#c45c4a",marginBottom:6}}>💸 Total Late Fees Charged</div>
               <div style={{display:"flex",gap:12,fontSize:12}}>
                 <div style={{flex:1}}>
-                  <div style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#999"}}>Initial fee ({lateFeeCharges.length}× $50)</span><strong>{fmtS(totalInitialFees)}</strong></div>
-                  <div style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#999"}}>Daily charges ($5/day)</span><strong>{fmtS(totalDailyFees)}</strong></div>
+                  <div style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#6b5e52"}}>Initial fee ({lateFeeCharges.length}× $50)</span><strong>{fmtS(totalInitialFees)}</strong></div>
+                  <div style={{display:"flex",justifyContent:"space-between",padding:"3px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#6b5e52"}}>Daily charges ($5/day)</span><strong>{fmtS(totalDailyFees)}</strong></div>
                   <div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",fontWeight:800}}><span>Total late fees</span><span style={{color:"#c45c4a"}}>{fmtS(totalLateFees)}</span></div>
                 </div>
               </div>
@@ -6872,10 +6872,10 @@ export default function Page(){
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead>
                   <tr style={{background:"rgba(0,0,0,.02)"}}>
-                    <th style={{padding:"6px 10px",textAlign:"left",fontSize:8,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Month</th>
-                    <th style={{padding:"6px 10px",textAlign:"center",fontSize:8,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Status</th>
-                    <th style={{padding:"6px 10px",textAlign:"center",fontSize:8,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Days Late</th>
-                    <th style={{padding:"6px 10px",textAlign:"right",fontSize:8,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Late Fee</th>
+                    <th style={{padding:"6px 10px",textAlign:"left",fontSize:8,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5}}>Month</th>
+                    <th style={{padding:"6px 10px",textAlign:"center",fontSize:8,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5}}>Status</th>
+                    <th style={{padding:"6px 10px",textAlign:"center",fontSize:8,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5}}>Days Late</th>
+                    <th style={{padding:"6px 10px",textAlign:"right",fontSize:8,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5}}>Late Fee</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -6892,27 +6892,27 @@ export default function Page(){
                           ?<span style={{fontWeight:700,color:daysLate>=14?"#c45c4a":daysLate>=7?"#9a7422":"#d4a853"}}>{daysLate}d</span>
                           :isPastDue
                           ?<span style={{fontWeight:700,color:"#c45c4a"}}>{daysOverdue}d</span>
-                          :<span style={{color:"#ccc"}}>—</span>}
+                          :<span style={{color:"#8a7d74"}}>—</span>}
                       </td>
                       <td style={{padding:"7px 10px",textAlign:"right"}}>
                         {lateFeeAmt>0
                           ?<div>
                             <div style={{fontWeight:700,color:"#c45c4a"}}>{fmtS(lateFeeAmt)}</div>
-                            <div style={{fontSize:9,color:"#999"}}>${initFee} base{dailyFee>0?` + $${dailyFee} (${Math.round(dailyFee/5)}d × $5)`:""}</div>
+                            <div style={{fontSize:9,color:"#6b5e52"}}>${initFee} base{dailyFee>0?` + $${dailyFee} (${Math.round(dailyFee/5)}d × $5)`:""}</div>
                           </div>
                           :isPastDue
                           ?(()=>{
                             const graceDays=3;
                             const daysOverdue2=Math.ceil((TODAY-new Date(c.dueDate+"T00:00:00"))/(864e5));
                             const daysChargeable2=Math.max(0,daysOverdue2-graceDays);
-                            if(daysChargeable2<=0)return<span style={{fontSize:10,color:"#999"}}>In grace period</span>;
+                            if(daysChargeable2<=0)return<span style={{fontSize:10,color:"#6b5e52"}}>In grace period</span>;
                             const accruing=50+daysChargeable2*5;
                             return(<div>
                               <div style={{fontWeight:700,color:"#c45c4a",animation:"pulse 1.5s ease-in-out infinite"}}>{fmtS(accruing)}</div>
                               <div style={{fontSize:9,color:"#c45c4a",opacity:.7}}>$50 + {daysChargeable2*5} ({daysChargeable2}d × $5)</div>
                             </div>);
                           })()
-                          :<span style={{color:"#ccc",fontSize:10}}>—</span>}
+                          :<span style={{color:"#8a7d74",fontSize:10}}>—</span>}
                       </td>
                     </tr>);
                   })}
@@ -6925,7 +6925,7 @@ export default function Page(){
                 </tfoot>}
               </table>
             </div>
-            <div style={{display:"flex",gap:12,marginTop:8,fontSize:9,color:"#999"}}>
+            <div style={{display:"flex",gap:12,marginTop:8,fontSize:9,color:"#6b5e52"}}>
               <span style={{color:"#4a7c59"}}>✓ On-time (within 3 days)</span>
               <span style={{color:"#9a7422"}}>⚠ Paid late</span>
               <span style={{color:"#c45c4a"}}>🔴 Still overdue</span>
@@ -6956,7 +6956,7 @@ export default function Page(){
           "Smoking Violation":{icon:"🚭",bg:"rgba(196,92,74,.04)",border:"rgba(196,92,74,.1)",color:"#c45c4a",label:"Violation"},
           "Guest Violation":{icon:"🚷",bg:"rgba(196,92,74,.04)",border:"rgba(196,92,74,.1)",color:"#c45c4a",label:"Violation"},
         };
-        const cs=(cat)=>catStyle[cat]||{icon:"💳",bg:"rgba(0,0,0,.02)",border:"rgba(0,0,0,.06)",color:"#999",label:cat};
+        const cs=(cat)=>catStyle[cat]||{icon:"💳",bg:"rgba(0,0,0,.02)",border:"rgba(0,0,0,.06)",color:"#6b5e52",label:cat};
 
         // Compute rolling accrued late fee for a past-due charge
         const accruedLateFee=(c)=>{
@@ -6973,9 +6973,9 @@ export default function Page(){
         return(
         <div className="tp-card"><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><h3 style={{margin:0}}>📒 Payment Ledger</h3><button className="btn btn-out btn-sm" onClick={()=>{setTab("accounting");setLedgerTenant(r.id);setModal(null);}}>View Full Ledger →</button></div>
           <div style={{display:"flex",gap:8,marginBottom:14}}>
-            <div style={{flex:1,background:"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Total Paid</div><div style={{fontSize:16,fontWeight:800,color:"#4a7c59"}}>{fmtS(totalPaid)}</div></div>
-            <div style={{flex:1,background:"rgba(0,0,0,.02)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Charges</div><div style={{fontSize:16,fontWeight:800}}>{tenantCharges.length}</div></div>
-            <div style={{flex:1,background:pastDueC?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Overdue</div><div style={{fontSize:16,fontWeight:800,color:pastDueC?"#c45c4a":"#4a7c59"}}>{pastDueC}</div></div>
+            <div style={{flex:1,background:"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Total Paid</div><div style={{fontSize:16,fontWeight:800,color:"#4a7c59"}}>{fmtS(totalPaid)}</div></div>
+            <div style={{flex:1,background:"rgba(0,0,0,.02)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Charges</div><div style={{fontSize:16,fontWeight:800}}>{tenantCharges.length}</div></div>
+            <div style={{flex:1,background:pastDueC?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:6,padding:8,textAlign:"center"}}><div style={{fontSize:8,color:"#6b5e52",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Overdue</div><div style={{fontSize:16,fontWeight:800,color:pastDueC?"#c45c4a":"#4a7c59"}}>{pastDueC}</div></div>
           </div>
 
           {tenantCharges.length>0?tenantCharges.map(c=>{
@@ -6995,7 +6995,7 @@ export default function Page(){
                     <span style={{fontWeight:700,fontSize:11,color:style.color}}>{style.label}</span>
                     <span style={{fontSize:11,color:"#5c4a3a",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.desc}</span>
                   </div>
-                  <div style={{fontSize:10,color:"#999",marginTop:1}}>Due {fmtD(c.dueDate)}{c.payments.length>0?` · ${c.payments.length} payment${c.payments.length>1?"s":""}`:""}</div>
+                  <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>Due {fmtD(c.dueDate)}{c.payments.length>0?` · ${c.payments.length} payment${c.payments.length>1?"s":""}`:""}</div>
                 </div>
                 <div style={{textAlign:"right",flexShrink:0}}>
                   <div style={{fontWeight:800,fontSize:13}}>{fmtS(c.amount)}</div>
@@ -7023,7 +7023,7 @@ export default function Page(){
                 </div>}
               </div>}
             </div>);}
-          ):<div style={{textAlign:"center",padding:16,color:"#999",fontSize:11}}>No charges yet. Rent charges auto-generate on the 20th for next month.</div>}
+          ):<div style={{textAlign:"center",padding:16,color:"#6b5e52",fontSize:11}}>No charges yet. Rent charges auto-generate on the 20th for next month.</div>}
         </div>);})()}
 
       {/* Lease Actions */}
@@ -7031,7 +7031,7 @@ export default function Page(){
         <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10}}>Lease renewals happen when the tenant signs a new lease. Use the actions below to manage room assignments or end the lease.</div>
         {(()=>{const allVacant=props.flatMap(pr=>(pr.units||[]).flatMap(u=>(u.rooms||[]).filter(x=>x.st==="vacant").map(x=>({...x,propName:pr.name,propId:pr.id,unitId:u.id,propUtils:u.utils||pr.utils}))));return allVacant.length>0?(
           <div style={{marginBottom:10}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#999",marginBottom:6}}>MOVE TO DIFFERENT ROOM (ADDENDUM)</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",marginBottom:6}}>MOVE TO DIFFERENT ROOM (ADDENDUM)</div>
             <button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,moveStep:1,moveTarget:null,moveDate:"immediately",moveCustomDate:TODAY.toISOString().split("T")[0],moveNewRent:null,moveNotes:"",moveAllVacant:allVacant}))}>Begin Room Move Process →</button>
           </div>
         ):null;})()}
@@ -7046,7 +7046,7 @@ export default function Page(){
         {(modal.moveAllVacant||[]).map(vr=>{const isSelected=modal.moveTarget===vr.id;const rentDiff=vr.rent-r.rent;const sdDiff=vr.rent-r.rent;const utilChange=vr.propUtils!==r.propUtils;return(
           <div key={vr.id} style={{padding:10,border:`2px solid ${isSelected?"#3b82f6":"rgba(0,0,0,.06)"}`,borderRadius:8,marginBottom:6,cursor:"pointer",background:isSelected?"rgba(59,130,246,.04)":"#fff",transition:"all .15s"}} onClick={()=>setModal(prev=>({...prev,moveTarget:vr.id,moveNewRent:vr.rent}))}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div><div style={{fontSize:13,fontWeight:700}}>{vr.name}</div><div style={{fontSize:10,color:"#999"}}>{vr.propName} · {vr.pb?"Private":"Shared"} bath · {vr.sqft||"—"} sqft</div></div>
+              <div><div style={{fontSize:13,fontWeight:700}}>{vr.name}</div><div style={{fontSize:10,color:"#6b5e52"}}>{vr.propName} · {vr.pb?"Private":"Shared"} bath · {vr.sqft||"—"} sqft</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:800}}>{fmtS(vr.rent)}/mo</div>
                 {rentDiff!==0&&<div style={{fontSize:10,fontWeight:700,color:rentDiff>0?"#c45c4a":"#4a7c59"}}>{rentDiff>0?`+${fmtS(rentDiff)} upgrade`:`${fmtS(rentDiff)} downgrade`}</div>}
                 {utilChange&&<div style={{fontSize:9,color:"#d4a853",fontWeight:600}}>⚠ Utility model changes</div>}
@@ -7292,7 +7292,7 @@ export default function Page(){
       <h2>Send Reminder</h2>
       <div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.1)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700,marginBottom:2}}>{c.tenantName}</div>
-        <div style={{color:"#999"}}>{c.category} — {fmtS(modal.rem)} overdue since {fmtD(c.dueDate)}</div>
+        <div style={{color:"#6b5e52"}}>{c.category} — {fmtS(modal.rem)} overdue since {fmtD(c.dueDate)}</div>
       </div>
 
       <div className="fld" style={{marginBottom:6}}>
@@ -7321,7 +7321,7 @@ export default function Page(){
       </div>
 
       {!editingDefault&&<>
-        <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Send via</div>
+        <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>Send via</div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>send("email",reminderMsg)} disabled={!email}
             style={{flex:1,padding:"14px 8px",borderRadius:8,border:"2px solid #3b82f6",background:"rgba(59,130,246,.06)",cursor:email?"pointer":"not-allowed",opacity:email?1:.5,textAlign:"center",fontFamily:"inherit",transition:"all .15s"}}
@@ -7598,7 +7598,7 @@ export default function Page(){
             onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="rgba(0,0,0,.1)";const file=e.dataTransfer.files[0];if(file)upd("receiptFile",file);}}>
             <label style={{cursor:"pointer",display:"block"}}>
               <div style={{fontSize:12,color:"#7a7067",marginBottom:4}}>📎 Click or drag to attach receipt</div>
-              <div style={{fontSize:10,color:"#aaa"}}>Photo, screenshot, or PDF</div>
+              <div style={{fontSize:10,color:"#7a7067"}}>Photo, screenshot, or PDF</div>
               <input type="file" accept="image/*,.pdf" capture="environment" style={{display:"none"}} onChange={e=>{const file=e.target.files[0];if(file)upd("receiptFile",file);}}/>
             </label>
           </div>}
@@ -7771,7 +7771,7 @@ export default function Page(){
         const exactSubcat=allSubcatList.some(s=>s.label.toLowerCase()===subcatInput.toLowerCase().trim());
         return(
         <div className="fld" style={{position:"relative"}}>
-          <label>Subcategory <span style={{fontSize:9,fontWeight:400,color:"#999",textTransform:"none",letterSpacing:0}}>— internal tracking only</span></label>
+          <label>Subcategory <span style={{fontSize:9,fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>— internal tracking only</span></label>
           <input value={subcatInput} onChange={e=>upd("subcategory",e.target.value)} placeholder="e.g. HVAC, Roofing, Electrical..." autoComplete="off"/>
           {subcatInput.trim()&&subcatMatches.length>0&&!exactSubcat&&<div style={{position:"absolute",top:"100%",left:0,right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:"0 0 8px 8px",boxShadow:"0 4px 12px rgba(0,0,0,.1)",zIndex:100,maxHeight:140,overflowY:"auto"}}>
             {subcatMatches.map(s=><div key={s.id} style={{padding:"7px 12px",cursor:"pointer",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.04)"}}
@@ -7898,7 +7898,7 @@ export default function Page(){
       <h2>🗑 Delete Charge?</h2>
       <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700,marginBottom:2}}>{modal.tenantName}</div>
-        <div style={{color:"#999"}}>{modal.category} — {modal.desc}</div>
+        <div style={{color:"#6b5e52"}}>{modal.category} — {modal.desc}</div>
       </div>
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>This will permanently delete the charge and all associated payment records. This cannot be undone.</p>
       <div className="mft">
@@ -7943,7 +7943,7 @@ export default function Page(){
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460,animation:shake?"shake .4s ease":undefined}}>
       <h2 style={{marginBottom:4}}>✏️ Edit Charge</h2>
-      <div style={{fontSize:11,color:"#999",marginBottom:14}}>{c.tenantName} · {c.propName}</div>
+      <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>{c.tenantName} · {c.propName}</div>
       {isPaid&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9a7422",fontWeight:600}}>⚠ This charge has been paid. A reason and audit note are required.</div>}
       <div className="fr3">
         <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($){errs.amount&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.amount}</span>}</label><input type="number" value={c.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/></div>
@@ -7965,7 +7965,7 @@ export default function Page(){
       <h2>Void Charge</h2>
       <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700}}>{modal.tenantName}</div>
-        <div style={{color:"#999",marginTop:2}}>{modal.category} — {modal.desc} · {fmtS(modal.amount)}</div>
+        <div style={{color:"#6b5e52",marginTop:2}}>{modal.category} — {modal.desc} · {fmtS(modal.amount)}</div>
       </div>
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:12,lineHeight:1.6}}>Voiding sets this charge to $0 and leaves an audit trail. Any recorded payments will be reversed. This cannot be undone.</p>
       <div className={`fld ${modal.voidReasonErr?"field-err":""}`}>
@@ -7994,9 +7994,9 @@ export default function Page(){
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
       <h2>🗑 Clear Ledger — {modal.tenant}</h2>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,margin:"14px 0"}}>
-        <div style={{background:"rgba(196,92,74,.06)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#c45c4a"}}>{outstanding.length}</div><div style={{fontSize:9,color:"#999",marginTop:2}}>Outstanding</div></div>
-        <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{paid.length}</div><div style={{fontSize:9,color:"#999",marginTop:2}}>Paid</div></div>
-        <div style={{background:"rgba(0,0,0,.03)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#999"}}>{alreadyVoided.length}</div><div style={{fontSize:9,color:"#999",marginTop:2}}>Voided/Waived</div></div>
+        <div style={{background:"rgba(196,92,74,.06)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#c45c4a"}}>{outstanding.length}</div><div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Outstanding</div></div>
+        <div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#4a7c59"}}>{paid.length}</div><div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Paid</div></div>
+        <div style={{background:"rgba(0,0,0,.03)",borderRadius:8,padding:10,textAlign:"center"}}><div style={{fontSize:18,fontWeight:800,color:"#6b5e52"}}>{alreadyVoided.length}</div><div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Voided/Waived</div></div>
       </div>
 
       <div style={{border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:14,marginBottom:12,background:"rgba(212,168,83,.02)"}}>
@@ -8108,7 +8108,7 @@ export default function Page(){
         {modal.selRoom&&roomCharges.length>0&&<div className="fld"><label>Select Charge</label>{roomCharges.map(c=>{const st=chargeStatus(c);return(
           <div key={c.id} style={{padding:8,border:`2px solid ${modal.selCharge===c.id?"#3b82f6":"rgba(0,0,0,.05)"}`,borderRadius:6,marginBottom:4,cursor:"pointer",background:modal.selCharge===c.id?"rgba(59,130,246,.04)":"#fff"}} onClick={()=>setModal(prev=>({...prev,selCharge:c.id,payAmount:c.amount-c.amountPaid}))}>
             <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:600}}>{c.category}: {c.desc}</span><span className={`badge ${st==="pastdue"?"b-red":"b-blue"}`}>{st}</span></div>
-            <div style={{fontSize:10,color:"#999"}}>Due {fmtD(c.dueDate)} - {fmtS(c.amount-c.amountPaid)} remaining</div>
+            <div style={{fontSize:10,color:"#6b5e52"}}>Due {fmtD(c.dueDate)} - {fmtS(c.amount-c.amountPaid)} remaining</div>
           </div>);})}</div>}
         {modal.selRoom&&roomCharges.length===0&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:12,color:"#9a7422",marginBottom:10}}>No unpaid charges. <button className="btn btn-gold btn-sm" style={{marginLeft:6}} onClick={()=>setModal({type:"createCharge",roomId:modal.selRoom,category:"Rent",desc:"",amount:(selRoom&&selRoom.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:""})}>Create Charge</button></div>}
         <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
@@ -8180,7 +8180,7 @@ export default function Page(){
           </div>
           <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:14,marginBottom:14,fontSize:12}}>
             {[["Tenant",selCh.tenantName],["Charge",`${selCh.category} — ${selCh.desc}`],["Amount",fmtS(modal.payAmount)],["Method",modal.payMethod],["Date",fmtD(modal.payDate)],["Status",modal.isTransit?"🟡 In Transit":"✅ Deposited"]].map(([l,v])=>(
-              <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#999"}}>{l}</span><strong>{v}</strong></div>
+              <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}><span style={{color:"#6b5e52"}}>{l}</span><strong>{v}</strong></div>
             ))}
           </div>
           <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.1)",borderRadius:8,padding:10,marginBottom:14,fontSize:11,color:"#3b82f6"}}>
@@ -8266,7 +8266,7 @@ export default function Page(){
       <div className="fld"><label>Tenant</label><select value={modal.roomId} onChange={e=>setModal(prev=>({...prev,roomId:e.target.value,deductions:[]}))}><option value="">Select...</option>{tenantList.map(t=><option key={t.id} value={t.id}>{t.name} - {t.propName} {t.roomName} ({t.type})</option>)}</select></div>
       {sel&&<>
         <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:12,marginBottom:10,fontSize:12}}><strong>SD Held:</strong> {fmtS(sdHeld)}</div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><label style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase"}}>Deductions</label><button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,deductions:[...deductions,{desc:"",amount:0}]}))}>+ Add</button></div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><label style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase"}}>Deductions</label><button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,deductions:[...deductions,{desc:"",amount:0}]}))}>+ Add</button></div>
         {deductions.map((d,i)=>(
           <div key={i} style={{display:"flex",gap:6,marginBottom:4,alignItems:"center"}}>
             <select value={d.desc} onChange={e=>{const ds=[...deductions];ds[i]={...ds[i],desc:e.target.value};setModal(prev=>({...prev,deductions:ds}));}} style={{flex:1,padding:"5px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">Type...</option><option>Damages</option><option>Cleaning</option><option>Unpaid Rent</option><option>Lock Change</option><option>Key Replacement</option><option>Other</option></select>
@@ -8300,7 +8300,7 @@ export default function Page(){
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
       <h2>📞 Add Lead Manually</h2>
-      <p style={{fontSize:11,color:"#999",marginBottom:14}}>Add someone who contacted you directly. They'll be placed in the <strong>Called / Follow Up</strong> stage and you can invite them to apply from there.</p>
+      <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Add someone who contacted you directly. They'll be placed in the <strong>Called / Follow Up</strong> stage and you can invite them to apply from there.</p>
       <div className={`fld ${errs.name?"field-err":""}`}>
         <label className={errs.name?"field-err-label":""}>Full Name *</label>
         <input value={modal.name||""} onChange={e=>setModal(prev=>({...prev,name:e.target.value,addErrs:{...(prev.addErrs||{}),name:null}}))} placeholder="Jane Smith" autoFocus/>
@@ -8358,9 +8358,9 @@ ${settings.phone||""}`);
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
       <h2 style={{marginBottom:6}}>Email Portal Invite</h2>
-      <p style={{fontSize:11,color:"#999",marginBottom:16}}>Opens your email client pre-filled with the tenant portal link.</p>
+      <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>Opens your email client pre-filled with the tenant portal link.</p>
       <div style={{padding:"8px 12px",background:"#1a1714",borderRadius:6,marginBottom:16,fontSize:11,fontFamily:"monospace",color:"#d4a853",wordBreak:"break-all"}}>{link}</div>
-      <div style={{fontSize:10,color:"#999",marginBottom:16}}>This link expires in 48 hours. The tenant signs in with Google or email/password.</div>
+      <div style={{fontSize:10,color:"#6b5e52",marginBottom:16}}>This link expires in 48 hours. The tenant signs in with Google or email/password.</div>
       <div className={`fld ${errs.to?"field-err":""}`}>
         <label className={errs.to?"field-err-label":""}>Recipient Email *</label>
         <input type="email" value={modal.to||""} onChange={e=>setModal(p=>({...p,to:e.target.value,errs:{}}))} placeholder="tenant@email.com" autoFocus/>
@@ -8395,7 +8395,7 @@ ${settings.phone||""}`);
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
       <h2 style={{marginBottom:6}}>Send Portal Invite</h2>
-      <p style={{fontSize:11,color:"#999",marginBottom:16}}>Send <strong>{a.name}</strong> a link to create their tenant portal account. They can sign in with Google or email — no application required.</p>
+      <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>Send <strong>{a.name}</strong> a link to create their tenant portal account. They can sign in with Google or email — no application required.</p>
       <div style={{padding:"12px 14px",background:"rgba(0,0,0,.03)",borderRadius:8,marginBottom:16,fontSize:12}}>
         <div className="tp-row"><span className="tp-label" style={{fontSize:10}}>Name</span><strong>{a.name}</strong></div>
         <div className="tp-row"><span className="tp-label" style={{fontSize:10}}>Email</span><strong>{a.email}</strong></div>
@@ -8436,7 +8436,7 @@ ${settings.phone||""}`);
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
       <h2 style={{marginBottom:6}}>Email Apply Link</h2>
-      <p style={{fontSize:11,color:"#999",marginBottom:16}}>Opens your email client pre-filled with the application link. The recipient can apply directly from there.</p>
+      <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>Opens your email client pre-filled with the application link. The recipient can apply directly from there.</p>
       <div style={{padding:"8px 12px",background:"rgba(0,0,0,.03)",borderRadius:6,marginBottom:16,fontSize:11,fontFamily:"monospace",color:"#5c4a3a",wordBreak:"break-all"}}>{link}</div>
       <div className={`fld ${errs.to?"field-err":""}`}>
         <label className={errs.to?"field-err-label":""}>Recipient Email *</label>
@@ -8459,7 +8459,7 @@ ${settings.phone||""}`);
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center",padding:28}}>
       <div style={{fontSize:36,marginBottom:8}}>✅</div>
       <h2 style={{color:"#4a7c59",marginBottom:6}}>{lead.name} Added!</h2>
-      <p style={{fontSize:12,color:"#999",marginBottom:20}}>They're now in the <strong>Called / Follow Up</strong> stage. Want to invite them to apply right now?</p>
+      <p style={{fontSize:12,color:"#6b5e52",marginBottom:20}}>They're now in the <strong>Called / Follow Up</strong> stage. Want to invite them to apply right now?</p>
       <div style={{display:"flex",gap:8,justifyContent:"center"}}>
         <button className="btn btn-out" onClick={()=>setModal(null)}>Not Yet</button>
         <button className="btn btn-gold" onClick={()=>setModal({type:"inviteApp",data:lead})}>✉️ Invite to Apply →</button>
@@ -8529,7 +8529,7 @@ ${settings.phone||""}`);
       </div>
 
       <div style={{background:"#faf9f7",border:"1px solid rgba(0,0,0,.06)",borderRadius:10,padding:16,marginBottom:14}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Document Details</div>
+        <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Document Details</div>
         {[["Date",c.createdDate||d.uploaded],["Property",c.newProp],["Tenant",c.tenant],["Email",c.email||"—"],["Phone",c.phone||"—"]].map(([l,v])=>(
           <div key={l} className="tp-row"><span className="tp-label">{l}</span><span style={{fontSize:12,fontWeight:600}}>{v}</span></div>
         ))}
@@ -8575,7 +8575,7 @@ ${settings.phone||""}`);
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
       <h2>💳 Pay Online</h2>
-      <div style={{fontSize:11,color:"#999",marginBottom:14}}>Select a charge to pay. Both ACH bank transfer and credit/debit card accepted.</div>
+      <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Select a charge to pay. Both ACH bank transfer and credit/debit card accepted.</div>
       {upcoming.map(c=>{
         const rem=c.amount-c.amountPaid;
         return(
@@ -8583,7 +8583,7 @@ ${settings.phone||""}`);
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
             <div>
               <div style={{fontSize:13,fontWeight:700}}>{c.category}</div>
-              <div style={{fontSize:11,color:"#999"}}>{c.desc} · Due {fmtD(c.dueDate)}</div>
+              <div style={{fontSize:11,color:"#6b5e52"}}>{c.desc} · Due {fmtD(c.dueDate)}</div>
               {c.amountPaid>0&&<div style={{fontSize:10,color:"#d4a853"}}>{fmtS(c.amountPaid)} already paid</div>}
             </div>
             <div style={{fontWeight:800,fontSize:16,color:chargeStatus(c)==="pastdue"?"#c45c4a":"#1a1714"}}>{fmtS(rem)}</div>
@@ -8651,18 +8651,18 @@ ${settings.phone||""}`);
       {modal.bulkSent?<div style={{textAlign:"center",padding:20}}>
         <div style={{fontSize:36,marginBottom:8}}>✓</div>
         <h2 style={{color:"#4a7c59"}}>Invites Sent!</h2>
-        <p style={{fontSize:12,color:"#999",marginTop:4}}>{targets.length} applicants moved to Invited.</p>
+        <p style={{fontSize:12,color:"#6b5e52",marginTop:4}}>{targets.length} applicants moved to Invited.</p>
         <button className="btn btn-gold" style={{marginTop:16,width:"100%"}} onClick={()=>setModal(null)}>Done</button>
       </div>:<>
         <h2>Bulk Invite — {targets.length} Applicant{targets.length>1?"s":""}</h2>
-        <p style={{fontSize:11,color:"#999",marginBottom:14}}>Set the screening package for each person individually. The admin fee (${adminFee}) is included in each total.</p>
+        <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Set the screening package for each person individually. The admin fee (${adminFee}) is included in each total.</p>
 
         {targets.map(a=>(
           <div key={a.id} style={{border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:12,marginBottom:10,background:"#fff"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <div>
                 <div style={{fontSize:13,fontWeight:700}}>{a.name}</div>
-                <div style={{fontSize:10,color:"#999"}}>{a.email} · {a.source||""}</div>
+                <div style={{fontSize:10,color:"#6b5e52"}}>{a.email} · {a.source||""}</div>
               </div>
               <div style={{fontSize:14,fontWeight:800,color:getFee(a.id)===0?"#4a7c59":"#d4a853"}}>{getFee(a.id)===0?"Free":"$"+getFee(a.id)}</div>
             </div>
@@ -8670,7 +8670,7 @@ ${settings.phone||""}`);
             <div style={{display:"flex",gap:5,marginBottom:6,flexWrap:"wrap"}}>
               {[["credit-bg","Credit + Full BG","$49"],["credit-only","Credit Only","$29"],["none","Waived","$0"]].map(([v,l,p])=>(
                 <button key={v} onClick={()=>setPersonPkg(a.id,v)} style={{fontSize:10,padding:"4px 9px",borderRadius:6,border:`1.5px solid ${getPkg(a.id)===v?"#d4a853":"rgba(0,0,0,.08)"}`,background:getPkg(a.id)===v?"rgba(212,168,83,.08)":"#fff",color:getPkg(a.id)===v?"#9a7422":"#999",cursor:"pointer",fontFamily:"inherit",fontWeight:getPkg(a.id)===v?700:400}}>
-                  {l} <span style={{color:"#ccc"}}>{p}</span>
+                  {l} <span style={{color:"#8a7d74"}}>{p}</span>
                 </button>
               ))}
             </div>
@@ -8684,9 +8684,9 @@ ${settings.phone||""}`);
             </div>
             {getPkg(a.id)==="none"&&<input value={perPerson[a.id]?.waiverReason||""} onChange={e=>setPersonWaiver(a.id,e.target.value)} placeholder="Waiver reason (required) — e.g. NASA intern" style={{width:"100%",marginTop:6,padding:"5px 8px",fontSize:10,borderRadius:5,border:"1px solid rgba(212,168,83,.3)",fontFamily:"inherit"}}/>}
             {getPkg(a.id)!=="none"&&<div style={{marginTop:6,padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:6,fontSize:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>RentPrep</span><span>${pkgFees[getPkg(a.id)]}</span></div>
-              {getIncome(a.id)!=="none"&&<div style={{display:"flex",justifyContent:"space-between",color:"#999",marginBottom:2}}><span>Income verification</span><span>+${incomeAdds[getIncome(a.id)]}</span></div>}
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",color:"#999",marginBottom:2}}>
+              <div style={{display:"flex",justifyContent:"space-between",color:"#6b5e52",marginBottom:2}}><span>RentPrep</span><span>${pkgFees[getPkg(a.id)]}</span></div>
+              {getIncome(a.id)!=="none"&&<div style={{display:"flex",justifyContent:"space-between",color:"#6b5e52",marginBottom:2}}><span>Income verification</span><span>+${incomeAdds[getIncome(a.id)]}</span></div>}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",color:"#6b5e52",marginBottom:2}}>
                 <span>Admin fee</span>
                 <div style={{display:"flex",alignItems:"center",gap:3}}>
                   <span>+$</span>
@@ -8800,18 +8800,18 @@ ${settings.phone||""}`);
           <div style={{fontSize:10,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Invite Summary</div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
             <tbody>
-              <tr><td style={{padding:"5px 0",color:"#999",width:"38%",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Applicant</td><td style={{padding:"5px 0",fontWeight:700,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.name}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} - {a.phone}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":(selRoom?selRoom.name:"Not specified")}</td></tr>
-              {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${inviteRent+"/mo"}</td></tr>}
-              {inviteMoveIn&&<tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtD(inviteMoveIn)}</td></tr>}
-              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Screening</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#999",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Fee (tenant)</td><td style={{padding:"5px 0",fontWeight:700,color:totalFee===0?"#4a7c59":"#d4a853",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{totalFee===0?"Free":"$"+totalFee}</td></tr>
-              {modal.sendNote&&<tr><td style={{padding:"5px 0",color:"#999"}}>Note</td><td style={{padding:"5px 0",fontStyle:"italic",color:"#5c4a3a",fontSize:11}}>{modal.sendNote}</td></tr>}
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",width:"38%",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Applicant</td><td style={{padding:"5px 0",fontWeight:700,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.name}</td></tr>
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} - {a.phone}</td></tr>
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}</td></tr>
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":(selRoom?selRoom.name:"Not specified")}</td></tr>
+              {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${inviteRent+"/mo"}</td></tr>}
+              {inviteMoveIn&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtD(inviteMoveIn)}</td></tr>}
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Screening</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</td></tr>
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Fee (tenant)</td><td style={{padding:"5px 0",fontWeight:700,color:totalFee===0?"#4a7c59":"#d4a853",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{totalFee===0?"Free":"$"+totalFee}</td></tr>
+              {modal.sendNote&&<tr><td style={{padding:"5px 0",color:"#6b5e52"}}>Note</td><td style={{padding:"5px 0",fontStyle:"italic",color:"#5c4a3a",fontSize:11}}>{modal.sendNote}</td></tr>}
             </tbody>
           </table>
-          <div style={{marginTop:10,padding:"6px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,fontSize:10,color:"#999",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link}</div>
+          <div style={{marginTop:10,padding:"6px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,fontSize:10,color:"#6b5e52",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link}</div>
         </div>
         {modal.sendErrors&&modal.sendErrors.length>0&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"10px 12px",marginBottom:10,animation:"shake .4s ease"}}>
           {modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:11,color:"#c45c4a"}}>{e}</div>)}
@@ -8838,7 +8838,7 @@ ${settings.phone||""}`);
       <h2 style={{marginBottom:4}}>Configure Invite</h2>
       <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:"#5c4a3a",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span><strong>{a.name}</strong> - {a.email} - {a.phone}</span>
-        <span style={{fontSize:10,color:"#999"}}>{a.source||""}</span>
+        <span style={{fontSize:10,color:"#6b5e52"}}>{a.source||""}</span>
       </div>
       <div className="tp-card" style={{marginBottom:10}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -8878,14 +8878,14 @@ ${settings.phone||""}`);
             <div className="fld" style={{marginBottom:0}}>
               <label>Monthly Rent</label>
               <div style={{display:"flex",alignItems:"center"}}>
-                <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
                 <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
               </div>
             </div>
             <div className="fld" style={{marginBottom:0}}>
               <label>Security Deposit</label>
               <div style={{display:"flex",alignItems:"center"}}>
-                <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
                 <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:(inviteRent||"")} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
               </div>
             </div>
@@ -8907,7 +8907,7 @@ ${settings.phone||""}`);
               <div style={{fontSize:12,fontWeight:700,color:"#c45c4a",marginBottom:4}}>Override Required</div>
               <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.6,marginBottom:8}}>
                 <strong>{selProp?selProp.name:""}</strong> is set up for by-bedroom rental. Converting to whole-unit for this invite?
-                {lastLeaseEnd&&<div style={{marginTop:4,fontSize:10,color:"#999"}}>{"Last bedroom lease ends "+fmtD(lastLeaseEnd)+" - property will not be fully vacant until after that date."}</div>}
+                {lastLeaseEnd&&<div style={{marginTop:4,fontSize:10,color:"#6b5e52"}}>{"Last bedroom lease ends "+fmtD(lastLeaseEnd)+" - property will not be fully vacant until after that date."}</div>}
               </div>
               <div style={{display:"flex",gap:6}}>
                 <button className="btn btn-red btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,whPropOverride:true}))}>Yes, override to whole unit</button>
@@ -8918,14 +8918,14 @@ ${settings.phone||""}`);
               <div className="fld" style={{marginBottom:0}}>
                 <label>Whole-House Rent</label>
                 <div style={{display:"flex",alignItems:"center"}}>
-                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
                   <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
                 </div>
               </div>
               <div className="fld" style={{marginBottom:0}}>
                 <label>Security Deposit</label>
                 <div style={{display:"flex",alignItems:"center"}}>
-                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
                   <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:(inviteRent||"")} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
                 </div>
               </div>
@@ -8945,7 +8945,7 @@ ${settings.phone||""}`);
         {[["credit-bg","Credit + Full BG Check","FCRA-certified - RentPrep","$49"],["credit-only","Credit Report Only","Automated SmartMove","$29"],["none","No Screening (Waived)","e.g. intern with employer BG check","$0"]].map(([v,l,sub,price])=>(
           <div key={v} onClick={()=>setModal(prev=>({...prev,pkg:v,...(v==="none"?{incomeAdd:"none"}:{})}))} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderRadius:8,border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.06)"),background:pkg===v?"rgba(212,168,83,.04)":"#fff",cursor:"pointer",marginBottom:5}}>
             <div style={{width:13,height:13,borderRadius:"50%",border:"2px solid "+(pkg===v?"#d4a853":"rgba(0,0,0,.15)"),background:pkg===v?"#d4a853":"transparent",flexShrink:0}}/>
-            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{l}</div><div style={{fontSize:10,color:"#999"}}>{sub}</div></div>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{l}</div><div style={{fontSize:10,color:"#6b5e52"}}>{sub}</div></div>
             <div style={{fontSize:13,fontWeight:800,color:pkg===v?"#d4a853":"#999"}}>{price}</div>
           </div>
         ))}
@@ -8957,9 +8957,9 @@ ${settings.phone||""}`);
             </div>
           ))}
         </div>}
-        {pkg==="none"&&<div style={{fontSize:10,color:"#999",fontStyle:"italic",padding:"6px 0"}}>Income verification not available when screening is waived.</div>}
+        {pkg==="none"&&<div style={{fontSize:10,color:"#6b5e52",fontStyle:"italic",padding:"6px 0"}}>Income verification not available when screening is waived.</div>}
         <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid "+(totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)")}}>
-          <span style={{fontSize:11,color:"#999"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}{pkg!=="none"?" + $"+adminFee+" admin":""}</span>
+          <span style={{fontSize:11,color:"#6b5e52"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}{pkg!=="none"?" + $"+adminFee+" admin":""}</span>
           <span style={{fontSize:16,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":"$"+totalFee}</span>
         </div>
         {pkg==="none"&&<div style={{marginTop:8}}>
@@ -9029,19 +9029,19 @@ ${settings.phone||""}`);
             <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>Signatures</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
               <div>
-                <div style={{fontSize:10,color:"#999",marginBottom:6}}>Property Manager</div>
+                <div style={{fontSize:10,color:"#6b5e52",marginBottom:6}}>Property Manager</div>
                 {modal.pmSig
                   ?<img src={modal.pmSig} alt="PM signature" style={{maxHeight:50,maxWidth:"100%",border:"1px solid rgba(0,0,0,.08)",borderRadius:4,padding:3,background:"#fff"}}/>
                   :<div style={{fontSize:12,fontFamily:"serif",color:"#1a1714"}}>{modal.previewVars?.LANDLORD_NAME}</div>
                 }
-                <div style={{fontSize:10,color:"#999",marginTop:4}}>{modal.previewVars?.LANDLORD_NAME} · Property Manager</div>
+                <div style={{fontSize:10,color:"#6b5e52",marginTop:4}}>{modal.previewVars?.LANDLORD_NAME} · Property Manager</div>
               </div>
               <div>
-                <div style={{fontSize:10,color:"#999",marginBottom:6}}>Resident</div>
+                <div style={{fontSize:10,color:"#6b5e52",marginBottom:6}}>Resident</div>
                 <div style={{height:50,border:"2px dashed rgba(0,0,0,.1)",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <span style={{fontSize:11,color:"#bbb"}}>Tenant signs here</span>
+                  <span style={{fontSize:11,color:"#7a7067"}}>Tenant signs here</span>
                 </div>
-                <div style={{fontSize:10,color:"#999",marginTop:4}}>{modal.data?.name} · Resident</div>
+                <div style={{fontSize:10,color:"#6b5e52",marginTop:4}}>{modal.data?.name} · Resident</div>
               </div>
             </div>
           </div>
@@ -9127,7 +9127,7 @@ ${settings.phone||""}`);
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560,maxHeight:"92vh",overflowY:"auto",animation:shake?"shake .4s ease":undefined}}>
       <h2 style={{marginBottom:4}}>Add Existing Tenant</h2>
-      <div style={{fontSize:11,color:"#999",marginBottom:14}}>Manually onboard a tenant who is already living in your property. This will mark the room as occupied immediately.</div>
+      <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Manually onboard a tenant who is already living in your property. This will mark the room as occupied immediately.</div>
       {shake&&Object.keys(errs).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,color:"#c45c4a",fontSize:11,fontWeight:700}}>Please fill in all required fields.</div>}
 
       <div style={{background:"rgba(74,124,89,.03)",border:"1px solid rgba(74,124,89,.1)",borderRadius:10,padding:12,marginBottom:12}}>
@@ -9188,7 +9188,7 @@ ${settings.phone||""}`);
           <div className="fld" style={{marginBottom:0}}>
             <label style={{color:errs.rent?"#c45c4a":undefined}}>Monthly Rent *{errs.rent&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.rent}</span>}</label>
             <div style={{display:"flex",alignItems:"center"}}>
-              <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+              <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
               <input type="number" value={mf.rent||""} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%",borderColor:errs.rent?"#c45c4a":undefined}}
                 onChange={e=>{upd("rent",e.target.value);if(!mf.sdTouched)upd("sd",e.target.value);}} placeholder="0"/>
             </div>
@@ -9196,11 +9196,11 @@ ${settings.phone||""}`);
           <div className="fld" style={{marginBottom:0}}>
             <label>Security Deposit</label>
             <div style={{display:"flex",alignItems:"center"}}>
-              <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+              <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
               <input type="number" value={mf.sd||""} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%"}}
                 onChange={e=>{upd("sd",e.target.value);upd("sdTouched",true);}} placeholder="0"/>
             </div>
-            <div style={{fontSize:9,color:"#999",marginTop:3}}>Auto-fills from rent</div>
+            <div style={{fontSize:9,color:"#6b5e52",marginTop:3}}>Auto-fills from rent</div>
           </div>
         </div>
       </div>
@@ -9346,7 +9346,7 @@ ${settings.phone||""}`);
           <input value={a.source||""} onChange={e=>saveApp(a.id,"source",e.target.value)} placeholder="e.g. Zillow, Roomies.com" style={{width:"100%"}}/>
         </div>
         <div className="fld" style={{marginBottom:0}}>
-          <label>Reason for Leaving <span style={{fontWeight:400,color:"#999",fontSize:9,textTransform:"none",letterSpacing:0}}>— from applicant's pre-screen</span></label>
+          <label>Reason for Leaving <span style={{fontWeight:400,color:"#6b5e52",fontSize:9,textTransform:"none",letterSpacing:0}}>— from applicant's pre-screen</span></label>
           <textarea value={a.notes||""} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,notes:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,notes:e.target.value}}));}} placeholder="Why are they leaving their current place? (auto-filled from pre-screen form)" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
         </div>
       </div>
@@ -9361,17 +9361,17 @@ ${settings.phone||""}`);
           {a.leaseTerm&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>{a.leaseTerm}</div>}
           {a.leasePrice&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>${a.leasePrice}/mo</div>}
         </div>
-        <div style={{fontSize:9,color:"#999",marginTop:8}}>These are the terms the applicant agreed to when they clicked Lease Now. Use as reference when assigning room and setting rent.</div>
+        <div style={{fontSize:9,color:"#6b5e52",marginTop:8}}>These are the terms the applicant agreed to when they clicked Lease Now. Use as reference when assigning room and setting rent.</div>
       </div>}
 
 
       {a.status==="reviewing"&&<div className="tp-card"><h3>Review Checklist</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"not-started";return(
           <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1}}>
-            <span style={{fontSize:12,textDecoration:isW?"line-through":"none"}}>{r.label}{isW&&<span style={{fontSize:9,color:"#999",marginLeft:6}}>Waived</span>}</span>
+            <span style={{fontSize:12,textDecoration:isW?"line-through":"none"}}>{r.label}{isW&&<span style={{fontSize:9,color:"#6b5e52",marginLeft:6}}>Waived</span>}</span>
             {!isW&&<select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}} style={{padding:"3px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}}><option value="not-started">Not Started</option><option value="pending">In Progress</option><option value="passed">Passed</option><option value="failed">Failed</option></select>}
           </div>);})}
-        {a.waiverReason&&<div style={{fontSize:10,color:"#999",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
+        {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
       </div>}
 
       {/* ── Room Assignment (all stages) ── */}
@@ -9412,7 +9412,7 @@ ${settings.phone||""}`);
             </div>
           </div>
           <div className="fld" style={{marginBottom:8}}>
-            <label>Assign Room / Unit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Vacant now + units whose lease ends by move-in date</span></label>
+            <label>Assign Room / Unit <span style={{fontWeight:400,color:"#5c4a3a",fontSize:9,textTransform:"none",letterSpacing:0}}>Vacant now + units whose lease ends by move-in date</span></label>
             <select value={a.termRoomId||termItem?.id||""} onChange={e=>{const item=availableItems.find(x=>x.id===e.target.value);if(item){saveTerm("termRoomId",item.id);saveTerm("termPropId",item.propId);saveTerm("termRent",item.rent);saveTerm("termSD",item.rent);}}} style={{width:"100%"}}>
               <option value="">No assignment at this time</option>
               {availableItems.map(item=>{
@@ -9428,16 +9428,16 @@ ${settings.phone||""}`);
           {(a.termRoomId||termItem?.id)&&<>
             <div className="fr" style={{gap:8,marginBottom:0}}>
               <div className="fld" style={{marginBottom:0}}>
-                <label>Monthly Rent <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit if rate differs from listing</span></label>
+                <label>Monthly Rent <span style={{fontWeight:400,color:"#5c4a3a",fontSize:9,textTransform:"none",letterSpacing:0}}>Edit if rate differs from listing</span></label>
                 <div style={{display:"flex",alignItems:"center",gap:0}}>
-                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
                   <input type="number" min={0} value={termRent||""} onChange={e=>{const v=Number(e.target.value)||0;saveTerm("termRent",v);if(a.termSD===undefined||a.termSD===termRent)saveTerm("termSD",v);}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
                 </div>
               </div>
               <div className="fld" style={{marginBottom:0}}>
-                <label>Security Deposit <span style={{fontWeight:400,color:"#777",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-fills from rent — editable</span></label>
+                <label>Security Deposit <span style={{fontWeight:400,color:"#5c4a3a",fontSize:9,textTransform:"none",letterSpacing:0}}>Auto-fills from rent — editable</span></label>
                 <div style={{display:"flex",alignItems:"center",gap:0}}>
-                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
                   <input type="number" min={0} value={a.termSD!==undefined?a.termSD:(termRent||"")} onChange={e=>saveTerm("termSD",Number(e.target.value)||0)} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
                 </div>
               </div>
@@ -9455,7 +9455,7 @@ ${settings.phone||""}`);
               <span style={{fontSize:12,opacity:isW?.45:1,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
               <span style={{fontSize:11,fontWeight:700,color:isW?"#bbb":passed?"#4a7c59":val==="pending"?"#d4a853":"#c45c4a"}}>{isW?"Bypassed":passed?"Pass":val}</span>
             </div>
-            {isW&&<div style={{fontSize:9,color:"#999",fontStyle:"italic",marginTop:1}}>{a.waiverReason?"Reason: "+a.waiverReason:"No waiver reason on file"}</div>}
+            {isW&&<div style={{fontSize:9,color:"#6b5e52",fontStyle:"italic",marginTop:1}}>{a.waiverReason?"Reason: "+a.waiverReason:"No waiver reason on file"}</div>}
           </div>);})}
         {a.approvedWithPending&&<div style={{marginTop:6,padding:"5px 8px",background:"rgba(212,168,83,.06)",borderRadius:5,fontSize:10,color:"#9a7422"}}>Approved with pending: {a.approvedWithPending}</div>}
       </div>}
@@ -9487,8 +9487,8 @@ ${settings.phone||""}`);
                       {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(item.rent)}/mo</div>
-                      <div style={{fontSize:8,color:"#bbb",marginTop:1}}>whole unit</div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#6b5e52"}}>{fmtS(item.rent)}/mo</div>
+                      <div style={{fontSize:8,color:"#7a7067",marginTop:1}}>whole unit</div>
                     </div>
                   </div>
                 );
@@ -9502,15 +9502,15 @@ ${settings.phone||""}`);
                     <div style={{fontSize:12,fontWeight:600}}>{item.name}</div>
                     {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>
                       {item.tenant.name||"Occupied"}
-                      {(genderShort||age||item.tenant.occupationType)&&<span style={{color:"#999",marginLeft:6}}>
+                      {(genderShort||age||item.tenant.occupationType)&&<span style={{color:"#6b5e52",marginLeft:6}}>
                         {[genderShort,age?"Age "+age:null,item.tenant.occupationType].filter(Boolean).join(" · ")}
                       </span>}
                     </div>}
                     {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
                   </div>
                   <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#999"}}>{fmtS(item.rent)}/mo</div>
-                    <div style={{fontSize:8,color:"#bbb",marginTop:1}}>12-mo lease</div>
+                    <div style={{fontSize:11,fontWeight:700,color:"#6b5e52"}}>{fmtS(item.rent)}/mo</div>
+                    <div style={{fontSize:8,color:"#7a7067",marginTop:1}}>12-mo lease</div>
                   </div>
                 </div>
               );
@@ -9531,9 +9531,9 @@ ${settings.phone||""}`);
         </div>}
         {(a.commLog||[]).length>0?<div style={{maxHeight:120,overflowY:"auto"}}>{(a.commLog||[]).map(function(c,i){return(
           <div key={i} style={{display:"flex",gap:6,padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.02)",fontSize:10}}>
-            <span style={{width:20,textAlign:"center",fontSize:9,color:"#999",fontWeight:700}}>{c.type[0]}</span>
-            <div style={{flex:1}}><div style={{color:"#333"}}>{c.text}</div><div style={{color:"#999",fontSize:9}}>{c.date}{" "}{c.time}</div></div>
-          </div>);})}</div>:<div style={{fontSize:10,color:"#ccc",textAlign:"center",padding:8}}>No communication logged</div>}
+            <span style={{width:20,textAlign:"center",fontSize:9,color:"#6b5e52",fontWeight:700}}>{c.type[0]}</span>
+            <div style={{flex:1}}><div style={{color:"#333"}}>{c.text}</div><div style={{color:"#6b5e52",fontSize:9}}>{c.date}{" "}{c.time}</div></div>
+          </div>);})}</div>:<div style={{fontSize:10,color:"#8a7d74",textAlign:"center",padding:8}}>No communication logged</div>}
       </div>
 
       {/* Documents from application */}
@@ -9551,12 +9551,12 @@ ${settings.phone||""}`);
           <div key={doc.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
             <div>
               <div style={{fontSize:12,fontWeight:600}}>{doc.label||doc.name}</div>
-              <div style={{fontSize:9,color:"#999"}}>{doc.name} · Uploaded {doc.uploaded}</div>
+              <div style={{fontSize:9,color:"#6b5e52"}}>{doc.name} · Uploaded {doc.uploaded}</div>
             </div>
             {doc.data&&<a href={doc.data} download={doc.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>Download</a>}
           </div>
         ))}
-        {(!a.documents||a.documents.length===0)&&<div style={{fontSize:11,color:"#999",fontStyle:"italic"}}>No files uploaded yet.</div>}
+        {(!a.documents||a.documents.length===0)&&<div style={{fontSize:11,color:"#6b5e52",fontStyle:"italic"}}>No files uploaded yet.</div>}
       </div>}
 
 
@@ -9569,11 +9569,11 @@ ${settings.phone||""}`);
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
               <div style={{fontSize:28,fontWeight:900,letterSpacing:8,fontFamily:"monospace",color:"#1a1714"}}>{lk.passcode||a.passcode}</div>
-              <div style={{fontSize:10,color:"#999",marginTop:4}}>Activates 12:00am on {fmtD(a.termMoveIn||a.moveIn)} · All exterior doors + bedroom</div>
+              <div style={{fontSize:10,color:"#6b5e52",marginTop:4}}>Activates 12:00am on {fmtD(a.termMoveIn||a.moveIn)} · All exterior doors + bedroom</div>
             </div>
             <div style={{textAlign:"right"}}>
               <span className={`badge ${lk.status==="active"?"b-green":"b-gold"}`}>{lk.status==="active"?"Active":"Pending"}</span>
-              <div style={{fontSize:9,color:"#999",marginTop:4}}>Smart lock API: stub ready</div>
+              <div style={{fontSize:9,color:"#6b5e52",marginTop:4}}>Smart lock API: stub ready</div>
             </div>
           </div>
           {!lk.passcode&&!a.passcode&&<div style={{fontSize:10,color:"#c45c4a",marginTop:6}}>No passcode — tenant didn't set one in their application.</div>}
@@ -9598,7 +9598,7 @@ ${settings.phone||""}`);
             <div key={c.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontSize:12,fontWeight:600}}>{c.desc}</div>
-                <div style={{fontSize:10,color:"#999"}}>Due {fmtD(c.dueDate)}</div>
+                <div style={{fontSize:10,color:"#6b5e52"}}>Due {fmtD(c.dueDate)}</div>
                 {paid>0&&paid<c.amount&&<div style={{fontSize:10,color:"#d4a853",fontWeight:600}}>{fmtS(paid)} paid · {fmtS(rem)} remaining</div>}
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
@@ -9706,7 +9706,7 @@ ${settings.phone||""}`);
       {leadToast.room&&<span>🚪 {leadToast.room}</span>}
     </div>
     <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>Review Application →</button>
-    <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#666",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
+    <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#5c4a3a",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
   </div>}
 
   </>);
