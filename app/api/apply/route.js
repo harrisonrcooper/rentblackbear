@@ -52,7 +52,7 @@ export async function POST(request) {
       income: income || "",
       source: source || "",
       notes: reason || "",
-      status: "pre-screened",
+      status: "new-lead",
       submitted: now,
       lastContact: now,
       bgCheck: "not-started",
