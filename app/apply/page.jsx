@@ -106,19 +106,20 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .prog-seg{flex:1;height:4px;border-radius:2px;background:rgba(0,0,0,.06);transition:all .4s}
 .prog-seg.done{background:var(--gn)}
 .prog-seg.cur{background:var(--ac)}
-.prog-label{font-size:10px;color:#999;margin-bottom:24px}
+.prog-label{font-size:10px;color:#5c4a3a;margin-bottom:24px}
 
 /* Welcome */
 .welcome{text-align:center;padding:60px 0 40px}
 .welcome-bear{font-size:48px;margin-bottom:16px;animation:bounce 2s ease infinite}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .welcome h1{font-family:'DM Serif Display',serif;font-size:28px;color:var(--dk);margin-bottom:12px}
-.welcome-sub{color:#999;font-size:14px;line-height:1.6;max-width:380px;margin:0 auto 24px}
+.welcome-sub{color:#4a3f35;font-size:14px;line-height:1.6;max-width:380px;margin:0 auto 24px}
 .welcome-perks{display:flex;flex-direction:column;gap:8px;margin-bottom:32px;text-align:left;max-width:340px;margin-left:auto;margin-right:auto}
 .welcome-perk{display:flex;align-items:center;gap:10px;font-size:13px;color:#5c4a3a}
 .welcome-perk .ic{width:28px;height:28px;border-radius:50%;background:rgba(74,124,89,.08);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
 .type-toggle{display:flex;gap:0;border:2px solid rgba(0,0,0,.08);border-radius:10px;overflow:hidden;margin-bottom:24px;max-width:300px;margin-left:auto;margin-right:auto}
-.type-btn{flex:1;padding:12px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#999}
+.type-btn{flex:1;padding:12px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#555}
+.type-btn:hover{background:rgba(0,0,0,.06);color:#1a1714}
 .type-btn.on{background:var(--dk);color:var(--cr)}
 .cosigner-note{background:rgba(212,168,83,.06);border:1px solid rgba(212,168,83,.15);border-radius:10px;padding:12px;margin-bottom:20px;font-size:12px;color:#9a7422}
 
@@ -129,7 +130,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 @keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-3px)}30%{transform:translateX(3px)}45%{transform:translateX(-2px)}60%{transform:translateX(2px)}}
 .sec-hd{margin-bottom:20px}
 .sec-hd h2{font-family:'DM Serif Display',serif;font-size:22px;color:var(--dk);margin-bottom:4px}
-.sec-hd p{font-size:12px;color:#999;line-height:1.5}
+.sec-hd p{font-size:12px;color:#5c4a3a;line-height:1.5}
 .sec-num{font-size:10px;font-weight:700;color:var(--ac);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
 
 /* Fields */
@@ -140,7 +141,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--ac)}
 .fld input.err,.fld select.err,.fld textarea.err{border-color:var(--rd);animation:shake .4s}
 .fld .err-msg{font-size:10px;color:var(--rd);margin-top:3px}
-.fld .help{font-size:10px;color:#999;margin-top:3px}
+.fld .help{font-size:10px;color:#5c4a3a;margin-top:3px}
 .fld-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fld-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .fld textarea{min-height:80px;resize:vertical}
@@ -155,13 +156,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .add-card{border:2px dashed rgba(0,0,0,.1);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px}
 .add-card:hover{border-color:var(--ac);background:rgba(212,168,83,.02)}
 .add-card .plus{font-size:20px;color:var(--ac);margin-bottom:4px}
-.add-card .lbl{font-size:12px;color:#999;font-weight:500}
+.add-card .lbl{font-size:12px;color:#5c4a3a;font-weight:500}
 
 /* Added item card */
 .item-card{border:2px solid rgba(74,124,89,.15);border-radius:12px;padding:14px;margin-bottom:10px;background:rgba(74,124,89,.02);position:relative}
 .item-card .item-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .item-card .item-nm{font-size:13px;font-weight:700;color:var(--dk)}
-.item-card .item-sub{font-size:10px;color:#999}
+.item-card .item-sub{font-size:10px;color:#5c4a3a}
 .item-card .item-del{background:none;border:none;color:var(--rd);cursor:pointer;font-size:11px;font-weight:600}
 .item-card .item-edit{background:none;border:none;color:var(--ac);cursor:pointer;font-size:11px;font-weight:600;margin-right:8px}
 
@@ -171,14 +172,14 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 
 /* Res type toggle */
 .res-toggle{display:flex;gap:0;border:2px solid rgba(0,0,0,.08);border-radius:10px;overflow:hidden;margin-bottom:16px}
-.res-btn{flex:1;padding:10px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#999}
+.res-btn{flex:1;padding:10px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#5c4a3a}
 .res-btn.on{background:var(--dk);color:var(--cr)}
 
 /* Strength tip */
 .strength-tip{background:rgba(212,168,83,.06);border-radius:8px;padding:10px;font-size:11px;color:#9a7422;margin:12px 0}
 
 /* Unemployed */
-.unemployed-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid rgba(0,0,0,.08);border-radius:10px;cursor:pointer;font-size:12px;color:#999;transition:all .2s;margin-bottom:16px;background:#fff}
+.unemployed-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid rgba(0,0,0,.08);border-radius:10px;cursor:pointer;font-size:12px;color:#5c4a3a;transition:all .2s;margin-bottom:16px;background:#fff}
 .unemployed-btn.on{border-color:var(--rd);background:rgba(196,92,74,.04);color:var(--rd)}
 
 /* File upload */
@@ -186,13 +187,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .upload:hover{border-color:var(--ac);background:rgba(212,168,83,.03)}
 .upload.has{border-color:var(--gn);border-style:solid;background:rgba(74,124,89,.03)}
 .upload-ic{font-size:28px;margin-bottom:6px}
-.upload-txt{font-size:12px;color:#999}
+.upload-txt{font-size:12px;color:#5c4a3a}
 .upload-file{font-size:12px;color:var(--gn);font-weight:600;margin-top:4px}
 
 /* Yes/No */
 .yn-row{display:flex;gap:8px;margin-bottom:16px}
 .yn-q{font-size:13px;font-weight:600;color:#3d3529;margin-bottom:8px}
-.yn-btn{flex:1;padding:12px;border:2px solid rgba(0,0,0,.08);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#999}
+.yn-btn{flex:1;padding:12px;border:2px solid rgba(0,0,0,.08);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#5c4a3a}
 .yn-btn.yes{border-color:var(--gn);background:rgba(74,124,89,.06);color:var(--gn)}
 .yn-btn.no{border-color:var(--rd);background:rgba(196,92,74,.06);color:var(--rd)}
 
@@ -201,18 +202,18 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .room-card:hover{border-color:var(--ac)}
 .room-card.sel{border-color:var(--ac);background:rgba(212,168,83,.04)}
 .room-name{font-size:14px;font-weight:700;color:var(--dk)}
-.room-meta{font-size:11px;color:#999;margin-top:2px}
+.room-meta{font-size:11px;color:#5c4a3a;margin-top:2px}
 .room-price{font-size:16px;font-weight:700;color:var(--ac)}
 .prop-card{background:#fff;border:2px solid rgba(0,0,0,.06);border-radius:14px;overflow:hidden;margin-bottom:20px}
 .prop-img{height:140px;background:linear-gradient(135deg,#2c2520,#1a1714);display:flex;align-items:center;justify-content:center;color:var(--ac);font-size:32px}
 .prop-info{padding:14px}
 .prop-name{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:2px}
-.prop-addr{font-size:11px;color:#999}
+.prop-addr{font-size:11px;color:#5c4a3a}
 
 /* Buttons */
 .btn-next{width:100%;padding:16px;background:var(--ac);color:var(--dk);border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
 .btn-next:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(212,168,83,.3)}
-.btn-back{width:100%;padding:14px;background:none;border:2px solid rgba(0,0,0,.08);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#999;transition:all .2s;margin-top:8px}
+.btn-back{width:100%;padding:14px;background:none;border:2px solid rgba(0,0,0,.08);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#5c4a3a;transition:all .2s;margin-top:8px}
 .btn-back:hover{border-color:#999}
 .btn-start{width:100%;padding:18px;background:var(--dk);color:var(--cr);border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .3s}
 .btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,23,20,.3)}
@@ -222,7 +223,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .rev-sec h3{font-size:13px;font-weight:700;color:var(--dk);margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .rev-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.03);font-size:12px}
 .rev-row:last-child{border:none}
-.rev-label{color:#999}
+.rev-label{color:#5c4a3a}
 .rev-val{font-weight:600;color:#3d3529;text-align:right;max-width:60%}
 .rev-edit{font-size:10px;color:var(--ac);cursor:pointer;font-weight:600;margin-left:auto}
 
@@ -233,14 +234,14 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .fee-total{display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.1);font-size:16px;font-weight:700;margin-top:6px}
 
 /* Legal */
-.legal{font-size:10px;color:#999;line-height:1.6;text-align:center;margin:16px 0 24px}
+.legal{font-size:10px;color:#5c4a3a;line-height:1.6;text-align:center;margin:16px 0 24px}
 .legal a{color:var(--ac);text-decoration:underline}
 
 /* Submitted */
 .submitted{text-align:center;padding:80px 20px}
 .submitted-ic{font-size:56px;margin-bottom:16px}
 .submitted h1{font-family:'DM Serif Display',serif;font-size:26px;color:var(--dk);margin-bottom:8px}
-.submitted p{color:#999;font-size:14px;line-height:1.6;max-width:400px;margin:0 auto}
+.submitted p{color:#5c4a3a;font-size:14px;line-height:1.6;max-width:400px;margin:0 auto}
 
 @media(max-width:500px){
   .fld-row,.fld-row3{grid-template-columns:1fr}
@@ -304,7 +305,11 @@ export default function ApplyPage(){
     const inv=inviteId?apps.find(a=>a.id===inviteId&&a.status==="invited"):null;
     if(inv){
       setInvite(inv);
-      setD(p=>({...p,phone:inv.phone||""}));
+      const nameParts=(inv.name||"").trim().split(" ");
+      const capWord=s=>s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():"";
+      const firstN=capWord(nameParts[0]||"");
+      const lastN=nameParts.slice(1).map(capWord).join(" ");
+      setD(p=>({...p,firstName:firstN,lastName:lastN,email:inv.email||"",phone:inv.phone||""}));
     }
     const p=await loadKey("hq-props",[]);setProps(p);
     const af=await loadKey("hq-app-fields",[]);setAppFields(af);
@@ -382,25 +387,25 @@ export default function ApplyPage(){
     if(f._editIdx!==undefined){setD(p=>({...p,employers:p.employers.map((e,i)=>i===f._editIdx?f:e),curEmployerForm:null}));}
     else{setD(p=>({...p,employers:[...p.employers,f],curEmployerForm:null}));}};
 
-  if(loading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif",color:"#999"}}><div style={{textAlign:"center"}}><div style={{fontSize:40,marginBottom:8}}>🐻</div>Loading your application...</div></div>);
-  if(submitted)return(<><style>{CSS}</style><div className="app-wrap"><div className="app-header"><div className="app-logo">🐻 Black Bear <span>Rentals</span></div></div><div className="app-body"><div className="submitted"><div className="submitted-ic">🎉</div><h1>Application Submitted!</h1><p>Thanks, {d.firstName}! We've received your application and screening payment. We'll review everything and get back to you within 24-48 hours.</p><div style={{marginTop:24,padding:16,background:"rgba(74,124,89,.06)",borderRadius:12,fontSize:12,color:"#4a7c59"}}><strong>What happens next?</strong><br/>1. Your background check and credit report are processing<br/>2. We'll review your application and references<br/>3. You'll receive an email with our decision<br/>4. If approved, we'll send your lease for e-signing</div></div></div><div className="app-footer">© {new Date().getFullYear()} Black Bear Rentals</div></div></>);
+  if(loading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif",color:"#999"}}><div style={{textAlign:"center"}}><div style={marginBottom:8}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="13" r="7"/><circle cx="5" cy="7" r="3"/><circle cx="19" cy="7" r="3"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/><path d="M10 15.5s.8 1 2 1 2-1 2-1"/></svg></div>Loading your application...</div></div>);
+  if(submitted)return(<><style>{CSS}</style><div className="app-wrap"><div className="app-header"><div className="app-logo">Black Bear <span>Rentals</span></div></div><div className="app-body"><div className="submitted"><div className="submitted-ic"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg></div><h1>Application Submitted!</h1><p>Thanks, {d.firstName}! We've received your application and screening payment. We'll review everything and get back to you within 24-48 hours.</p><div style={{marginTop:24,padding:16,background:"rgba(74,124,89,.06)",borderRadius:12,fontSize:12,color:"#4a7c59"}}><strong>What happens next?</strong><br/>1. Your background check and credit report are processing<br/>2. We'll review your application and references<br/>3. You'll receive an email with our decision<br/>4. If approved, we'll send your lease for e-signing</div></div></div><div className="app-footer">© {new Date().getFullYear()} Black Bear Rentals</div></div></>);
 
   return(<><style>{CSS}</style><div className="app-wrap">
-    <div className="app-header"><div className="app-logo">🐻 Black Bear <span>Rentals</span></div>{step!=="welcome"&&step!=="done"&&<div className="app-save">{saving?<><div className="dot"/>Saving...</>:"✓ Saved"}</div>}</div>
+    <div className="app-header"><div className="app-logo">Black Bear <span>Rentals</span></div>{step!=="welcome"&&step!=="done"&&<div className="app-save">{saving?<><div className="dot"/>Saving...</>:"✓ Saved"}</div>}</div>
     <div className="app-body">
       {step!=="welcome"&&step!=="done"&&<><div className="prog">{steps.filter(s=>s!=="welcome"&&s!=="done").map((s,i)=>{const si=steps.indexOf(s);return<div key={s} className={`prog-seg ${si<stepIdx?"done":si===stepIdx?"cur":""}`}/>;})}</div><div className="prog-label">Step {stepIdx} of {steps.length-2} · {LABELS[step]}</div></>}
 
       {/* ═══ WELCOME ═══ */}
       {step==="welcome"&&<div className="welcome">
-        <div className="welcome-bear">🐻</div>
+        <div className="welcome-bear"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="13" r="7"/><circle cx="5" cy="7" r="3"/><circle cx="19" cy="7" r="3"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/><path d="M10 15.5s.8 1 2 1 2-1 2-1"/></svg></div>
         <h1>Start My Application</h1>
         {invite?.inviteRoomName&&<div style={{fontSize:13,color:"var(--ac)",fontWeight:600,marginBottom:12}}>{invite.invitePropName} · {invite.inviteRoomName}{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}</div>}
         <div className="welcome-sub">We're excited you're interested! This application is quick, secure, and saves automatically.</div>
         <div className="welcome-perks">
-          <div className="welcome-perk"><div className="ic">⏱</div>Takes less than 11 minutes</div>
-          <div className="welcome-perk"><div className="ic">💾</div>Easy to save and resume at any time</div>
-          <div className="welcome-perk"><div className="ic">📊</div>Will never impact your credit score</div>
-          <div className="welcome-perk"><div className="ic">🔒</div>Your information is encrypted and secure</div>
+          <div className="welcome-perk"><div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>Takes less than 11 minutes</div>
+          <div className="welcome-perk"><div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div>Easy to save and resume at any time</div>
+          <div className="welcome-perk"><div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>Will never impact your credit score</div>
+          <div className="welcome-perk"><div className="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>Your information is encrypted and secure</div>
         </div>
         <div style={{fontSize:11,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>What are you applying as?</div>
         <div className="type-toggle"><button className={`type-btn ${appType==="tenant"?"on":""}`} onClick={()=>setAppType("tenant")}>Tenant</button><button className={`type-btn ${appType==="cosigner"?"on":""}`} onClick={()=>setAppType("cosigner")}>Co-Signer</button></div>
@@ -804,7 +809,7 @@ export default function ApplyPage(){
             <div style={{marginTop:12,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,padding:12}}>
               <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>📄 Estimated Move-In Package</div>
               <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
-                <span>🔒 Security Deposit</span><strong>{fmtS(sd)}</strong>
+                <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Security Deposit</span><strong>{fmtS(sd)}</strong>
               </div>
               <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
                 <span>🏠 {isFirstDay?`First Month's Rent`:`Prorated Rent (${daysLeft} days)`}</span><strong>{fmtS(firstMonthAmt)}</strong>
@@ -829,7 +834,7 @@ export default function ApplyPage(){
           <div className="fee-row"><span>Application Processing</span><span>$10</span></div>
           <div className="fee-total"><span>Total Due Now</span><span>${baseFee}</span></div>
         </div>
-        <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:20,fontSize:11,color:"var(--gn)"}}><strong>🔒 Secure Payment</strong> — Processed securely through Stripe. Card info never stored on our servers.</div>
+        <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:20,fontSize:11,color:"var(--gn)"}}><strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Secure Payment</strong> — Processed securely through Stripe. Card info never stored on our servers.</div>
         <div style={{border:"2px dashed rgba(0,0,0,.1)",borderRadius:12,padding:24,textAlign:"center",marginBottom:20,background:"rgba(0,0,0,.01)"}}><div style={{fontSize:24,marginBottom:8}}>💳</div><div style={{fontSize:13,fontWeight:600,color:"#999"}}>Stripe Payment Form</div><div style={{fontSize:10,color:"#ccc",marginTop:4}}>Card details will appear here</div></div>
         <button className="btn-start" onClick={async()=>{
           setSubmitted(true);
