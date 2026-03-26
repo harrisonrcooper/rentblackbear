@@ -4,7 +4,8 @@
 
 export async function POST(request) {
   try {
-    const { to, name, link, property, room, rent, fee, note, waived } = await request.json();
+    const { to, name, link, property, address, room, rent, fee, note, waived } = await request.json();
+    const propFull = address ? `${property} — ${address}` : property;
 
     if (!to || !name || !link) {
       return Response.json({ ok: false, error: "Missing required fields" }, { status: 400 });
@@ -20,9 +21,9 @@ export async function POST(request) {
     const hasWaived = waived && waived.length > 0;
 
     const roomLine = room && property
-      ? `<tr><td style="padding:8px 0;border-bottom:1px solid #e8e5e0;color:#666;font-size:13px;">Room</td><td style="padding:8px 0;border-bottom:1px solid #e8e5e0;font-weight:700;text-align:right;font-size:13px;">${room} at ${property}${rent ? ` — $${rent.toLocaleString()}/mo` : ""}</td></tr>`
+      ? `<tr><td style="padding:8px 0;border-bottom:1px solid #e8e5e0;color:#666;font-size:13px;">Room</td><td style="padding:8px 0;border-bottom:1px solid #e8e5e0;font-weight:700;text-align:right;font-size:13px;">${room} at ${propFull}${rent ? ` — $${rent.toLocaleString()}/mo` : ""}</td></tr>`
       : property
-      ? `<tr><td style="padding:8px 0;border-bottom:1px solid #e8e5e0;color:#666;font-size:13px;">Property</td><td style="padding:8px 0;border-bottom:1px solid #e8e5e0;font-weight:700;text-align:right;font-size:13px;">${property}</td></tr>`
+      ? `<tr><td style="padding:8px 0;border-bottom:1px solid #e8e5e0;color:#666;font-size:13px;">Property</td><td style="padding:8px 0;border-bottom:1px solid #e8e5e0;font-weight:700;text-align:right;font-size:13px;">${propFull}</td></tr>`
       : "";
 
     const feeLine = feeWaived
@@ -95,10 +96,10 @@ export async function POST(request) {
               </div>
 
               <p style="font-size:13px;color:#5c4a3a;line-height:1.7;margin-bottom:6px;">
-                Questions? Just reply to this email or text me directly at <strong>(256) 555-0192</strong>.
+                Questions? Just reply to this email or call/text us at <strong>(850) 696-8101</strong>.
               </p>
               <p style="font-size:13px;color:#5c4a3a;">Looking forward to having you!</p>
-              <p style="font-size:13px;color:#5c4a3a;margin-top:16px;">— Harrison Cooper<br/>Black Bear Rentals · Oak &amp; Main Development LLC</p>
+              <p style="font-size:13px;color:#5c4a3a;margin-top:16px;">— Black Bear Properties</p>
 
               <hr style="margin:24px 0;border:none;border-top:1px solid #e8e5e0;"/>
               <p style="font-size:10px;color:#bbb;margin:0;">

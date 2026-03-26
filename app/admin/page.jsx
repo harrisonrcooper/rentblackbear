@@ -9408,6 +9408,7 @@ export default function Page(){
           const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},
             body:JSON.stringify({to:a.email,name:a.name,link,
               property:selProp?selProp.name:a.property,
+              address:selProp?selProp.addr:"",
               room:roomMode==="property"?"Entire Property":(selRoom?selRoom.name:""),
               rent:inviteRent,fee:totalFee,screeningPkg:pkgLabel[pkg],
               note:modal.sendNote||"",waived:pkg==="none"?["Screening waived"]:[]
