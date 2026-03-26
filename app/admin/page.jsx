@@ -3957,20 +3957,7 @@ export default function Page(){
 
       {/* ═══ CONFIGURATION ═══ */}
       {tab==="configuration"&&<>
-        <div className="sec-hd"><div><h2>Configuration</h2><p>Pre-screen questions, application form, and lead analytics</p></div></div>
-
-        {/* Lead Source Analytics */}
-        <div style={{marginBottom:12,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,sourceAnalytics:!p.sourceAnalytics}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.sourceAnalytics?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Lead Source Analytics</div><div style={{fontSize:9,color:"#999"}}>Which channels are converting</div></div></div>
-          </div>
-          {expanded.sourceAnalytics&&<div style={{padding:0}}>
-            <table className="tbl"><thead><tr><th>Source</th><th>Leads</th><th>In Pipeline</th><th>Approved</th><th>Denied</th><th>Conv %</th></tr></thead><tbody>
-            {[...new Set(apps.map(a=>a.source||"Unknown"))].map(src=>{const sa=apps.filter(a=>(a.source||"Unknown")===src);const inPipe=sa.filter(a=>a.status!=="denied"&&a.status!=="approved"&&a.status!=="move-in").length;const approved=sa.filter(a=>["approved","move-in","onboarding"].includes(a.status)).length;const denied=sa.filter(a=>a.status==="denied").length;const rate=sa.length?Math.round(approved/sa.length*100):0;return(
-              <tr key={src}><td style={{fontWeight:600}}>{src}</td><td>{sa.length}</td><td>{inPipe}</td><td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td><td style={{color:denied?"#c45c4a":"#999"}}>{denied}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>);})}
-            </tbody></table>
-          </div>}
-        </div>
+        <div className="sec-hd"><div><h2>Configuration</h2><p>Pre-screen questions and application form</p></div></div>
 
         {/* ── Screening Questions Editor ── */}
         <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
@@ -5515,21 +5502,24 @@ export default function Page(){
           const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=filename+".csv";a.click();
         };
 
+        const RIcon=({d,d2})=><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d={d}/>{d2&&<path d={d2}/>}</svg>;
         const reports=[
-          {id:"rentroll",icon:"📋",title:"Rent Roll",desc:"Live snapshot of all units — tenant, lease dates, rent, status"},
-          {id:"pnl",icon:"📊",title:"P&L by Property",desc:"Income minus expenses per property — Net Operating Income"},
-          {id:"schede",icon:"🧾",title:"Schedule E Summary",desc:"All 19 Schedule E lines per property — ready for your CPA"},
-          {id:"cashflow",icon:"💵",title:"Cash Flow Statement",desc:"Collected rent minus expenses minus debt service"},
-          {id:"aging",icon:"⏱",title:"AR Aging",desc:"Outstanding receivables bucketed: current, 30, 60, 90+ days"},
-          {id:"sdledger",icon:"🔒",title:"SD Liability Ledger",desc:"Security deposits held — liability for your balance sheet"},
-          {id:"occupancy",icon:"🏠",title:"Occupancy Report",desc:"Occupancy rate, vacancy days, and lost revenue per property"},
-          {id:"trailing12",icon:"📈",title:"Trailing 12 Income",desc:"Month-by-month collected rent for the past 12 months"},
-          {id:"dscr",icon:"🏦",title:"DSCR Report",desc:"Debt Service Coverage Ratio — required for refi/acquisition loans"},
-          {id:"tenantledger",icon:"📒",title:"Tenant Ledger",desc:"Full charge and payment history per tenant — printable statement"},
+          {id:"rentroll",icon:<RIcon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" d2="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>,title:"Rent Roll",desc:"Live snapshot of all units — tenant, lease dates, rent, status"},
+          {id:"pnl",icon:<RIcon d="M18 20V10M12 20V4M6 20v-6"/>,title:"P&L by Property",desc:"Income minus expenses per property — Net Operating Income"},
+          {id:"schede",icon:<RIcon d="M9 11l3 3L22 4" d2="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>,title:"Schedule E Summary",desc:"All 19 Schedule E lines per property — ready for your CPA"},
+          {id:"cashflow",icon:<RIcon d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>,title:"Cash Flow Statement",desc:"Collected rent minus expenses minus debt service"},
+          {id:"aging",icon:<RIcon d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,title:"AR Aging",desc:"Outstanding receivables bucketed: current, 30, 60, 90+ days"},
+          {id:"sdledger",icon:<RIcon d="M19 11H5M19 11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2M19 11V9a7 7 0 1 0-14 0v2"/>,title:"SD Liability Ledger",desc:"Security deposits held — liability for your balance sheet"},
+          {id:"occupancy",icon:<RIcon d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" d2="M9 22V12h6v10"/>,title:"Occupancy Report",desc:"Occupancy rate, vacancy days, and lost revenue per property"},
+          {id:"trailing12",icon:<RIcon d="M23 6l-9.5 9.5-5-5L1 18"/>,title:"Trailing 12 Income",desc:"Month-by-month collected rent for the past 12 months"},
+          {id:"dscr",icon:<RIcon d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" d2="M13 13l6 6"/>,title:"DSCR Report",desc:"Debt Service Coverage Ratio — required for refi/acquisition loans"},
+          {id:"tenantledger",icon:<RIcon d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" d2="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 0 3-3h7z"/>,title:"Tenant Ledger",desc:"Full charge and payment history per tenant — printable statement"},
+          {id:"leadsource",icon:<RIcon d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" d2="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>,title:"Lead Source Analytics",desc:"Which channels convert best — pipeline, approvals, denials by source"},
+          {id:"tenantquality",icon:<RIcon d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,title:"Tenant Quality by Source",desc:"Avg tenure, lease completion rate, and broke-lease % by acquisition channel"},
         ];
 
         return(<>
-        <div className="sec-hd"><div><h2>📊 Reports</h2></div></div>
+        <div className="sec-hd"><div><h2>Reports</h2></div></div>
 
         {/* Filters */}
         <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:16,padding:"12px 14px",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>
@@ -5551,7 +5541,7 @@ export default function Page(){
               onClick={()=>setActiveReport(r.id)}
               onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(212,168,83,.4)";e.currentTarget.style.background="rgba(212,168,83,.02)";}}
               onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(0,0,0,.06)";e.currentTarget.style.background="#fff";}}>
-              <div style={{fontSize:24,marginBottom:8}}>{r.icon}</div>
+              <div style={{marginBottom:10,color:"#5c4a3a"}}>{r.icon}</div>
               <div style={{fontWeight:800,fontSize:13,marginBottom:4}}>{r.title}</div>
               <div style={{fontSize:11,color:"#999",lineHeight:1.5}}>{r.desc}</div>
               <div style={{marginTop:10,fontSize:10,color:"#d4a853",fontWeight:700}}>Open →</div>
@@ -5566,7 +5556,7 @@ export default function Page(){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <button className="btn btn-out btn-sm" onClick={()=>setActiveReport(null)}>← Back</button>
-              <h3 style={{margin:0,fontSize:15}}>{rep.icon} {rep.title}</h3>
+              <div style={{display:"flex",alignItems:"center",gap:8,color:"#5c4a3a"}}>{rep.icon}<h3 style={{margin:0,fontSize:15}}>{rep.title}</h3></div>
             </div>
             <div style={{display:"flex",gap:6}}>
               <button className="btn btn-out btn-sm" onClick={printReport}>🖨 Print / PDF</button>
@@ -5867,6 +5857,80 @@ export default function Page(){
                   </tbody>
                 </table>
               </div>
+            </>);
+          })()}
+
+
+          {activeReport==="leadsource"&&(()=>{
+            const sources=[...new Set(apps.map(a=>a.source||"Unknown"))];
+            return(<>
+            <table className="tbl"><thead><tr><th>Source</th><th>Leads</th><th>In Pipeline</th><th>Approved</th><th>Denied</th><th>Conv %</th></tr></thead><tbody>
+            {sources.map(src=>{
+              const sa=apps.filter(a=>(a.source||"Unknown")===src);
+              const inPipe=sa.filter(a=>!["denied","approved","onboarding"].includes(a.status)).length;
+              const approved=sa.filter(a=>["approved","onboarding"].includes(a.status)).length;
+              const denied=sa.filter(a=>a.status==="denied").length;
+              const rate=sa.length?Math.round(approved/sa.length*100):0;
+              return(<tr key={src}><td style={{fontWeight:600}}>{src}</td><td>{sa.length}</td><td>{inPipe}</td><td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td><td style={{color:denied?"#c45c4a":"#999"}}>{denied}</td><td><span style={{fontWeight:700,color:rate>=50?"#4a7c59":rate>=20?"#d4a853":"#999"}}>{rate}%</span></td></tr>);
+            })}
+            </tbody></table>
+            </>);
+          })()}
+
+          {activeReport==="tenantquality"&&(()=>{
+            const allSources=[...new Set(apps.map(a=>a.source||"Unknown"))];
+            return(<>
+            <div style={{fontSize:11,color:"#999",marginBottom:12,padding:"8px 12px",background:"rgba(0,0,0,.02)",borderRadius:8}}>
+              Quality score is based on lease completion rate, broke-lease rate, and average tenure from past tenants linked to each source. More data = more accurate score.
+            </div>
+            <table className="tbl"><thead><tr>
+              <th>Source</th><th>Leads</th><th>Approved</th><th>Past Tenants</th><th>Avg Tenure</th><th>Broke Lease</th><th>Completion %</th><th>Quality Score</th>
+            </tr></thead><tbody>
+            {allSources.map(src=>{
+              const srcApps=apps.filter(a=>(a.source||"Unknown")===src);
+              const approved=srcApps.filter(a=>["approved","onboarding"].includes(a.status)).length;
+              const srcEmails=new Set(srcApps.map(a=>(a.email||"").toLowerCase()).filter(Boolean));
+              const pastFromSrc=archive.filter(t=>srcEmails.has((t.email||"").toLowerCase()));
+              const totalPast=pastFromSrc.length;
+              const completed=pastFromSrc.filter(t=>{
+                if(!t.terminatedDate||!t.leaseEnd)return false;
+                return new Date(t.terminatedDate+"T00:00:00")>=new Date(t.leaseEnd+"T00:00:00");
+              }).length;
+              const broke=pastFromSrc.filter(t=>{
+                if(!t.reason)return false;
+                const r=t.reason.toLowerCase();
+                return r.includes("broke")||r.includes("early")||r.includes("evict")||r.includes("noise")||r.includes("violat");
+              }).length;
+              const tenures=pastFromSrc.map(t=>{
+                if(!t.moveIn||!t.terminatedDate)return null;
+                return Math.round((new Date(t.terminatedDate+"T00:00:00")-new Date(t.moveIn+"T00:00:00"))/(1e3*60*60*24*30));
+              }).filter(v=>v!==null&&v>0);
+              const avgTenure=tenures.length?Math.round(tenures.reduce((s,v)=>s+v,0)/tenures.length):null;
+              const completionRate=totalPast>0?Math.round(completed/totalPast*100):null;
+              const brokeRate=totalPast>0?Math.round(broke/totalPast*100):0;
+              let qs=50;
+              if(completionRate!==null){if(completionRate>=80)qs+=25;else if(completionRate>=50)qs+=10;else qs-=10;}
+              if(brokeRate>30)qs-=20;else if(brokeRate>10)qs-=10;
+              if(avgTenure){if(avgTenure>=10)qs+=15;else if(avgTenure>=6)qs+=5;}
+              if(approved>=3)qs+=10;
+              qs=Math.max(0,Math.min(100,qs));
+              const qsColor=qs>=70?"#4a7c59":qs>=50?"#d4a853":"#c45c4a";
+              return(<tr key={src}>
+                <td style={{fontWeight:600}}>{src}</td>
+                <td>{srcApps.length}</td>
+                <td style={{color:approved?"#4a7c59":"#999"}}>{approved}</td>
+                <td>{totalPast||<span style={{color:"#ccc"}}>—</span>}</td>
+                <td>{avgTenure?avgTenure+"mo":<span style={{color:"#ccc"}}>—</span>}</td>
+                <td style={{color:brokeRate>20?"#c45c4a":"#999"}}>{totalPast?brokeRate+"%":"—"}</td>
+                <td>{completionRate!==null?<span style={{fontWeight:700,color:completionRate>=70?"#4a7c59":completionRate>=40?"#d4a853":"#c45c4a"}}>{completionRate}%</span>:<span style={{color:"#ccc"}}>—</span>}</td>
+                <td><div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{height:6,width:60,borderRadius:3,background:"rgba(0,0,0,.06)"}}><div style={{height:"100%",borderRadius:3,background:qsColor,width:qs+"%"}}/></div>
+                  <span style={{fontWeight:800,color:qsColor,fontSize:12}}>{qs}</span>
+                </div></td>
+              </tr>);
+            })}
+            </tbody></table>
+            <div style={{marginTop:12,fontSize:10,color:"#999"}}>Quality score uses email matching between apps and past tenants. Sources with no past tenants default to 50 — increase as data grows.</div>
             </>);
           })()}
 
