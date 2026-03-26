@@ -2815,45 +2815,163 @@ export default function Page(){
       </>);})()} 
 
       {/* ═══ TENANTS ═══ */}
-      {tab==="tenants"&&<>
-        <div className="sec-hd"><div><h2>Tenants</h2><p>{allTenants.length} current · {archive.length} past</p></div>
-          <div style={{display:"flex",gap:4}}>
-            <button className="btn btn-green btn-sm" onClick={()=>setModal({type:"addExistingTenant",propId:"",unitId:"",roomId:"",form:{name:"",email:"",phone:"",moveIn:TODAY.toISOString().split("T")[0],leaseEnd:"",rent:"",sd:"",doorCode:"",notes:"",gender:"",occupationType:""}})}>+ Add Existing Tenant</button>
-            <button className={`btn ${!drill||drill!=="archive"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setDrill(null)}>Current ({allTenants.length})</button>
-            <button className={`btn ${drill==="archive"?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setDrill("archive")}>Past Tenants ({archive.length})</button>
+      {tab==="tenants"&&(()=>{
+        const tenantView=drill||"active";
+        const[tenantSel,setTenantSel]=useState([]);
+        const[tenantSearch,setTenantSearch]=useState("");
+        const[tenantPropFilter,setTenantPropFilter]=useState("all");
+        // Filter lists
+        const filteredActive=allTenants.filter(r=>{
+          if(tenantPropFilter!=="all"&&r.propId!==tenantPropFilter)return false;
+          if(tenantSearch){const q=tenantSearch.toLowerCase();if(![r.tenant?.name,r.tenant?.email,r.tenant?.phone,r.propName,r.name].some(v=>(v||"").toLowerCase().includes(q)))return false;}
+          return true;
+        });
+        const filteredArchive=archive.filter(a=>{
+          if(tenantPropFilter!=="all"&&props.find(p=>p.name===a.propName)?.id!==tenantPropFilter)return false;
+          if(tenantSearch){const q=tenantSearch.toLowerCase();if(![a.name,a.email,a.propName,a.roomName].some(v=>(v||"").toLowerCase().includes(q)))return false;}
+          return true;
+        });
+        const displayList=tenantView==="archive"?filteredArchive:filteredActive;
+        const allSelected=tenantView==="active"&&tenantSel.length===filteredActive.length&&filteredActive.length>0;
+        const ROW_HOVER={background:"rgba(0,0,0,.02)",transition:"background .12s"};
+        return(<>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+          <div>
+            <h2 style={{margin:0}}>Tenants</h2>
+            <p style={{margin:0,fontSize:11,color:"#6b5e52"}}>{allTenants.length} active · {archive.length} past</p>
+          </div>
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+            {/* Tab buttons */}
+            {[["active","Active",allTenants.length],["archive","Past",archive.length]].map(([v,l,c])=>(
+              <button key={v} onClick={()=>{setDrill(v==="active"?null:"archive");setTenantSel([]);}}
+                style={{padding:"6px 14px",borderRadius:7,border:`1px solid ${tenantView===v?(settings.adminAccent||"#4a7c59"):"rgba(0,0,0,.1)"}`,background:tenantView===v?`rgba(${settings.adminAccentRgb||"74,124,89"},.08)`:"#fff",color:tenantView===v?(settings.adminAccent||"#4a7c59"):"#5c4a3a",fontWeight:tenantView===v?700:500,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+                {l} ({c})
+              </button>
+            ))}
+            <button className="btn btn-green btn-sm" onClick={()=>setModal({type:"addExistingTenant",propId:"",unitId:"",roomId:"",form:{name:"",email:"",phone:"",moveIn:TODAY.toISOString().split("T")[0],leaseEnd:"",rent:"",sd:"",doorCode:"",notes:"",gender:"",occupationType:""}})}>+ Add Tenant</button>
           </div>
         </div>
 
-        {/* Current tenants */}
-        {drill!=="archive"&&<>{allTenants.map(r=>{
-          const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
-          return(
-            <div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:r})}>
-              <div className="row-dot" style={{background:pd?"#4a7c59":"#c45c4a"}}/>
-              <div className="row-i">
-                <div className="row-t">{r.tenant.name}</div>
-                <div className="row-s">{r.propName} · {r.name} · {r.pb?"Private":"Shared"} bath · {fmtS(r.rent)}/mo</div>
-                {dl!==null&&dl<=90&&<div style={{fontSize:9,color:dl<=30?"#c45c4a":"#d4a853",fontWeight:600,marginTop:2}}>⚠ Lease expires in {dl} days</div>}
-              </div>
-              <div style={{textAlign:"right"}}><div className="row-v">{fmtS(r.rent)}</div><div style={{fontSize:9,color:pd?"#4a7c59":"#c45c4a",fontWeight:600}}>{pd?"✓ Paid":"Unpaid"}</div></div>
-            </div>);
-        })}{allTenants.length===0&&<div style={{textAlign:"center",padding:32,color:"#6b5e52"}}><div style={{fontSize:32,marginBottom:8}}>👥</div>No current tenants</div>}</>}
+        {/* Search + filter bar */}
+        <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center",flexWrap:"wrap"}}>
+          <div style={{position:"relative",flex:1,minWidth:180}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7a7067" strokeWidth="2" style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input value={tenantSearch} onChange={e=>setTenantSearch(e.target.value)} placeholder="Search name, email, phone..." style={{width:"100%",padding:"7px 10px 7px 28px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+          </div>
+          <select value={tenantPropFilter} onChange={e=>setTenantPropFilter(e.target.value)} style={{padding:"7px 10px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",background:"#fff"}}>
+            <option value="all">All Properties</option>
+            {props.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          {tenantSel.length>0&&<>
+            <span style={{fontSize:11,fontWeight:700,color:"#5c4a3a"}}>{tenantSel.length} selected</span>
+            <button className="btn btn-green btn-sm" onClick={()=>{
+              const emails=filteredActive.filter(r=>tenantSel.includes(r.id)&&r.tenant?.email).map(r=>r.tenant.email);
+              if(emails.length)setModal({type:"bulkMessage",emails,count:tenantSel.length});
+            }}>Send Message</button>
+            <button className="btn btn-out btn-sm" onClick={()=>setTenantSel([])}>Clear</button>
+          </>}
+        </div>
 
-        {/* Archived / past tenants */}
-        {drill==="archive"&&<>
-          {archive.length===0?<div style={{textAlign:"center",padding:32,color:"#6b5e52"}}><div style={{fontSize:32,marginBottom:8}}>📋</div>No past tenants yet. Terminated leases will appear here.</div>:
-          archive.map(a=>(
-            <div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"archived",data:a})}>
-              <div className="row-dot" style={{background:"#999"}}/>
-              <div className="row-i">
-                <div className="row-t">{a.name} <span className="badge b-gray">Past</span></div>
-                <div className="row-s">{a.propName} · {a.roomName} · {fmtS(a.rent)}/mo · {fmtD(a.moveIn)} → {fmtD(a.terminatedDate)}</div>
-                <div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Terminated: {a.reason}</div>
+        {/* Table */}
+        <div className="card"><div className="card-bd" style={{padding:0}}>
+          {/* Table header */}
+          <div style={{display:"grid",gridTemplateColumns:"40px 1fr 200px 160px 120px",gap:0,padding:"8px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.02)"}}>
+            {tenantView==="active"&&<div style={{display:"flex",alignItems:"center"}}>
+              <input type="checkbox" checked={allSelected} onChange={e=>setTenantSel(e.target.checked?filteredActive.map(r=>r.id):[])} style={{width:14,height:14,cursor:"pointer"}}/>
+            </div>}
+            {tenantView==="archive"&&<div/>}
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.6}}>Tenant</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.6}}>Contact</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.6}}>{tenantView==="active"?"Rent":"Period"}</div>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.6}}>{tenantView==="active"?"Status":"Terminated"}</div>
+          </div>
+
+          {/* Rows — Active */}
+          {tenantView==="active"&&<>{filteredActive.map(r=>{
+            const pd=(payments[r.id]&&payments[r.id][MO])||0;
+            const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+            const sel=tenantSel.includes(r.id);
+            const tLease=leases.find(l=>l.applicationId&&apps.find(a=>a.name===r.tenant?.name&&a.id===l.applicationId));
+            const prop=props.find(p=>p.id===r.propId);
+            return(
+            <div key={r.id} style={{display:"grid",gridTemplateColumns:"40px 1fr 200px 160px 120px",gap:0,padding:"12px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",background:sel?"rgba(74,124,89,.04)":"#fff",cursor:"pointer",transition:"background .12s"}}
+              onMouseEnter={e=>{if(!sel)e.currentTarget.style.background="rgba(0,0,0,.02)";}}
+              onMouseLeave={e=>{if(!sel)e.currentTarget.style.background="#fff";}}
+              onClick={()=>setModal({type:"tenant",data:r})}>
+              {/* Checkbox */}
+              <div style={{display:"flex",alignItems:"center"}} onClick={e=>e.stopPropagation()}>
+                <input type="checkbox" checked={sel} onChange={e=>setTenantSel(p=>e.target.checked?[...p,r.id]:p.filter(x=>x!==r.id))} style={{width:14,height:14,cursor:"pointer"}}/>
               </div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#6b5e52"}}>{fmtD(a.terminatedDate)}</div></div>
+              {/* Name + lease */}
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:2}}>{r.tenant.name}</div>
+                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:4}}>{r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
+                <button onClick={e=>{e.stopPropagation();setModal({type:"tenant",data:r,startSection:"lease"});}}
+                  onMouseEnter={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.15)`;e.currentTarget.style.borderColor=(settings.adminAccent||"#4a7c59");}}
+                  onMouseLeave={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.08)`;e.currentTarget.style.borderColor=`rgba(${settings.adminAccentRgb||"74,124,89"},.25)`;}}
+                  style={{fontSize:10,fontWeight:600,padding:"3px 9px",borderRadius:5,border:`1px solid rgba(${settings.adminAccentRgb||"74,124,89"},.25)`,background:`rgba(${settings.adminAccentRgb||"74,124,89"},.08)`,color:(settings.adminAccent||"#4a7c59"),cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+                  {r.le?`Lease → ${fmtD(r.le)}`:"View Lease"}
+                </button>
+                {dl!==null&&dl<=90&&<span style={{marginLeft:6,fontSize:9,color:dl<=30?"#c45c4a":"#d4a853",fontWeight:700}}>Expires in {dl}d</span>}
+              </div>
+              {/* Contact */}
+              <div>
+                <div style={{fontSize:11,color:"#3b82f6",marginBottom:2}}>{r.tenant.email||"—"}</div>
+                <div style={{fontSize:11,color:"#5c4a3a"}}>{r.tenant.phone||"—"}</div>
+              </div>
+              {/* Rent */}
+              <div>
+                <div style={{fontSize:14,fontWeight:800,color:"#1a1714"}}>{fmtS(r.rent)}/mo</div>
+                <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>{r.tenant.moveIn?`Since ${fmtD(r.tenant.moveIn)}`:""}</div>
+              </div>
+              {/* Status */}
+              <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-start"}}>
+                <span className={`badge ${pd?"b-green":"b-red"}`}>{pd?"Paid":"Unpaid"}</span>
+                <button onClick={e=>{e.stopPropagation();setModal({type:"tenant",data:r});}}
+                  onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.08)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.background="rgba(0,0,0,.04)";}}
+                  style={{fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.04)",color:"#5c4a3a",cursor:"pointer",fontFamily:"inherit",transition:"background .12s"}}>
+                  View →
+                </button>
+              </div>
+            </div>);
+          })}
+          {filteredActive.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}>
+            {allTenants.length===0?"No active tenants yet.":"No tenants match your search."}
+          </div>}</>}
+
+          {/* Rows — Archive */}
+          {tenantView==="archive"&&<>{filteredArchive.map(a=>(
+            <div key={a.id} style={{display:"grid",gridTemplateColumns:"40px 1fr 200px 160px 120px",gap:0,padding:"12px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",background:"#fff",cursor:"pointer",transition:"background .12s"}}
+              onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.02)"}
+              onMouseLeave={e=>e.currentTarget.style.background="#fff"}
+              onClick={()=>setModal({type:"archived",data:a})}>
+              <div/>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:2}}>{a.name}</div>
+                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:3}}>{a.propName} · {a.roomName}</div>
+                {a.reason&&<div style={{fontSize:10,color:"#7a7067",fontStyle:"italic"}}>{a.reason}</div>}
+              </div>
+              <div>
+                <div style={{fontSize:11,color:"#5c4a3a"}}>{a.email||"—"}</div>
+                <div style={{fontSize:11,color:"#5c4a3a"}}>{a.phone||"—"}</div>
+              </div>
+              <div>
+                <div style={{fontSize:13,fontWeight:700}}>{fmtS(a.rent)}/mo</div>
+                <div style={{fontSize:10,color:"#6b5e52"}}>{fmtD(a.moveIn)} → {fmtD(a.leaseEnd)}</div>
+              </div>
+              <div>
+                <div style={{fontSize:11,color:"#6b5e52"}}>{fmtD(a.terminatedDate)}</div>
+                <span className="badge b-gray">Past</span>
+              </div>
             </div>
-          ))}</>}
-      </>}
+          ))}
+          {filteredArchive.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}>No past tenants yet.</div>}
+          </>}
+        </div></div>
+        </>);
+      })()}
 
       {/* ═══ PORTAL MANAGEMENT ═══ */}
       {tab==="portal"&&(()=>{
