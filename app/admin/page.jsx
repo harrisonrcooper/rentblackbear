@@ -3818,7 +3818,7 @@ export default function Page(){
                       </div>}
                     </div>
 
-                    <div className="pipe-sub">{a.property||"—"}{a.room?" · "+a.room:""}</div>
+                    <div className="pipe-sub">{(()=>{const p=props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";return(a.property||"—")+(addr?" · "+addr:"")+(a.room?" · "+a.room:"");})()}</div>
 
                     {/* Invited — "Awaiting Reply" badge + reinvite button */}
                     {false&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:5}}>
