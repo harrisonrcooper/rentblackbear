@@ -879,7 +879,7 @@ function PhotoManager({photos=[],onChange,label="Photos",propId="",onFocalPoint=
       <button className="btn btn-out btn-sm" onClick={addUrl} disabled={!urlInput.trim()}>Add URL</button>
     </div>
   </div>
-  </div>);
+  </>);
 }
 
 function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
