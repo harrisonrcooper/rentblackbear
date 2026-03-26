@@ -3641,16 +3641,22 @@ export default function Page(){
           </select>
           {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
           <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
-          {/* Apply Link — outlined/secondary */}
-          <div style={{display:"flex",alignItems:"center",gap:4,background:"#fff",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:"2px 2px 2px 10px"}}>
-            <span style={{fontSize:10,color:"#999",fontFamily:"monospace",whiteSpace:"nowrap"}}>{(settings.siteUrl||"https://rentblackbear.com")}/apply</span>
-            <button className="btn btn-out btn-sm" style={{flexShrink:0}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
-            <button className="btn btn-out btn-sm" style={{flexShrink:0}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
+          {/* Apply Link */}
+          <div style={{display:"flex",alignItems:"center",gap:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:7,overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRight:"1px solid rgba(0,0,0,.08)"}}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              <span style={{fontSize:10,color:"#999",fontFamily:"monospace"}}>/apply</span>
+            </div>
+            <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none",borderRight:"1px solid rgba(0,0,0,.08)"}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
+            <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none"}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email</button>
           </div>
-          {/* Portal Invite Link — green accent, distinct from apply link */}
-          <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.25)",borderRadius:6,padding:"2px 2px 2px 10px"}}>
-            <span style={{fontSize:10,color:"#4a7c59",fontFamily:"monospace",whiteSpace:"nowrap"}}>{portalLinkToken?`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${portalLinkToken.slice(0,12)}...`:"Portal Invite Link"}</span>
-            <button className="btn btn-sm" style={{flexShrink:0,background:"rgba(74,124,89,.12)",color:"#4a7c59",border:"1px solid rgba(74,124,89,.25)"}} onClick={async()=>{
+          {/* Portal Invite Link — green tint to distinguish */}
+          <div style={{display:"flex",alignItems:"center",gap:0,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.2)",borderRadius:7,overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRight:"1px solid rgba(74,124,89,.15)"}}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span style={{fontSize:10,color:"#4a7c59",fontFamily:"monospace"}}>{portalLinkToken?"/portal?token="+portalLinkToken.slice(0,8)+"...":"/portal invite"}</span>
+            </div>
+            <button className="btn btn-sm" style={{borderRadius:0,border:"none",borderRight:"1px solid rgba(74,124,89,.15)",background:"transparent",color:"#4a7c59",fontWeight:600}} onClick={async()=>{
               setPortalLinkLoading(true);
               try{
                 const res=await fetch("/api/portal-invite-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
@@ -3659,7 +3665,7 @@ export default function Page(){
               }catch(e){console.error(e);}
               setPortalLinkLoading(false);
             }}>{portalLinkLoading?"...":(portalLinkToken?"Copied":"Generate")}</button>
-            {portalLinkToken&&<button className="btn btn-sm" style={{flexShrink:0,background:"#4a7c59",color:"#fff",border:"none",fontWeight:700}} onClick={()=>setModal({type:"emailPortalLink",to:"",name:"",token:portalLinkToken})}>Email</button>}
+            {portalLinkToken&&<button className="btn btn-sm" style={{borderRadius:0,border:"none",background:"transparent",color:"#4a7c59",fontWeight:600}} onClick={()=>setModal({type:"emailPortalLink",to:"",name:"",token:portalLinkToken})}>Email</button>}
           </div>
         </div>
 
@@ -3810,11 +3816,11 @@ export default function Page(){
                       <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
                       <div style={{display:"flex",alignItems:"center",gap:4}}>
                         {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#888",fontWeight:700}}>{d}d</span>}
-                        {canInvite&&<button style={{fontSize:7,padding:"1px 5px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
-                          onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite</button>}
-                        <button style={{fontSize:7,padding:"1px 5px",background:"#1a1714",color:"#d4a853",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
+                        {canInvite&&<button style={{fontSize:7,padding:"2px 6px",background:"rgba(212,168,83,.12)",color:"#9a7422",border:"1px solid rgba(212,168,83,.25)",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
+                          onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite to Apply</button>}
+                        <button style={{fontSize:7,padding:"2px 6px",background:"rgba(74,124,89,.1)",color:"#4a7c59",border:"1px solid rgba(74,124,89,.2)",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                           title="Send portal invite — bypasses application requirement"
-                          onClick={e=>{e.stopPropagation();setPiState("idle");setModal({type:"sendPortalInviteApp",data:a});}}>Portal</button>
+                          onClick={e=>{e.stopPropagation();setPiState("idle");setModal({type:"sendPortalInviteApp",data:a});}}>Portal Invite</button>
                       </div>
                     </div>}
                   </div>);
@@ -8230,12 +8236,14 @@ ${settings.phone||""}`);
     const send=async()=>{
       setPiState("sending");
       try{
-        const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({tenantName:a.name,tenantEmail:a.email,propertyName:a.property,roomName:a.room,rent:a.negotiatedRent||a.rent,moveIn:a.termMoveIn||a.moveIn})
-        });
+        const endpoint=a.email?"/api/portal-invite":"/api/portal-invite-token";
+        const body=a.email
+          ?{tenantName:a.name,tenantEmail:a.email,propertyName:a.property,roomName:a.room,rent:a.negotiatedRent||a.rent,moveIn:a.termMoveIn||a.moveIn}
+          :{};
+        const res=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
         const d=await res.json();
-        if(d.ok)setPiState("sent"); else setPiState("error");
-      }catch(e){setPiState("error");}
+        if(d.ok||d.token)setPiState("sent"); else setPiState("error");
+      }catch(e){console.error(e);setPiState("error");}
     };
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
