@@ -9618,7 +9618,7 @@ export default function Page(){
       <div className="mft" style={{marginTop:0}}>
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
         <button className="btn btn-gold" onClick={()=>{
-          if(roomMode==="locked"&&!selRoomId){setModal(prev=>({...prev,inviteRoomErr:true}));shakeModal();setTimeout(()=>setModal(prev=>({...prev,inviteRoomErr:false})),1500);return;}
+          if(roomMode==="locked"&&!selRoomId){setModal(prev=>({...prev,inviteRoomErr:true}));shakeModal();return;}
           setModal(prev=>({...prev,inviteStep:"preview",sendErrors:[],inviteRoomErr:false}));
         }}>Preview Summary</button>
       </div>
