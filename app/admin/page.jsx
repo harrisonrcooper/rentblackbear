@@ -7052,7 +7052,7 @@ export default function Page(){
     };
 
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto",fontFamily:settings.adminFont||"inherit",zoom:settings.adminZoom||1}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",display:"flex",alignItems:"center",gap:16,height:56,position:"sticky",top:0,zIndex:10}}>
         <button onClick={()=>setViewingLease(null)}
@@ -7263,7 +7263,7 @@ export default function Page(){
       {id:"guide",label:"Home Guide"},
     ];
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto",fontFamily:settings.adminFont||"inherit",zoom:settings.adminZoom||1}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
 
       {/* ── Sticky top bar ── */}
       <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",position:"sticky",top:0,zIndex:10}}>
@@ -7479,8 +7479,8 @@ export default function Page(){
               </div>
             </div>
             {/* Column headers */}
-            <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 80px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-              {["Due Date","Category / Description","Status","Amount",""].map((h,i)=><div key={i} style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</div>)}
+            <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 140px 80px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+              {["Due Date","Category / Description","Status","Amount","Deposit",""].map((h,i)=><div key={i} style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</div>)}
             </div>
             {tenantCharges.length===0&&<div style={{textAlign:"center",padding:32,color:"#6b5e52",fontSize:13}}>No charges yet.</div>}
             {tenantCharges.map(c=>{
@@ -7489,7 +7489,7 @@ export default function Page(){
               const stBg={paid:"rgba(74,124,89,.08)",pastdue:"rgba(196,92,74,.08)",unpaid:"rgba(212,168,83,.08)",partial:"rgba(212,168,83,.08)",waived:"rgba(0,0,0,.04)",voided:"rgba(0,0,0,.04)"};
               const stTx={paid:"#4a7c59",pastdue:"#c45c4a",unpaid:"#9a7422",partial:"#9a7422",waived:"#7a7067",voided:"#7a7067"};
               return(
-              <div key={c.id} style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 80px",padding:"12px 20px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center",background:st==="pastdue"?"rgba(196,92,74,.02)":"#fff"}}>
+              <div key={c.id} style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 140px 80px",padding:"12px 20px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center",background:st==="pastdue"?"rgba(196,92,74,.02)":"#fff"}}>
                 <div style={{fontSize:12,color:"#5c4a3a"}}>{fmtD(c.dueDate)}</div>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                   <div style={{width:28,height:28,borderRadius:6,background:`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.1)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -7503,12 +7503,33 @@ export default function Page(){
                 </div>
                 <div><span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:stBg[st]||"rgba(0,0,0,.04)",color:stTx[st]||"#6b5e52"}}>{st==="pastdue"?"Late":st}</span></div>
                 <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714"}}>{fmtS(c.amount)}</div>
+                {/* Deposit info */}
+                <div style={{fontSize:10,color:"#5c4a3a"}}>
+                  {(c.payments||[]).length>0?(
+                    <div>
+                      {(c.payments||[]).slice(0,1).map((p,i)=>(
+                        <div key={i}>
+                          <div style={{fontWeight:600}}>{p.date?fmtD(p.date):""}</div>
+                          <div style={{color:"#7a7067"}}>{p.method||""}</div>
+                          <div style={{color:"#4a7c59",fontSize:9}}>Due: $0.00</div>
+                        </div>
+                      ))}
+                    </div>
+                  ):<span style={{color:"#8a7d74"}}>—</span>}
+                </div>
                 <div style={{display:"flex",flexDirection:"column",gap:3}}>
                   {st!=="paid"&&st!=="waived"&&st!=="voided"&&<button className="btn btn-green btn-sm" style={{fontSize:9,padding:"3px 8px"}} onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Pay</button>}
                   {st==="pastdue"&&!c.reminderActive&&<button style={{fontSize:9,padding:"2px 6px",borderRadius:3,border:"1px solid rgba(196,92,74,.2)",background:"transparent",color:"#c45c4a",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null})}>Remind</button>}
                 </div>
               </div>);
             })}
+          </div>
+
+          {/* View in Tenant Ledger link */}
+          <div style={{display:"flex",justifyContent:"flex-end",marginTop:12}}>
+            <button className="btn btn-out btn-sm" onClick={()=>{setModal(null);goTab("payments");setPayFilters({...payFilters,tenant:r.tenant.name});}}>
+              View in Tenant Ledger →
+            </button>
           </div>
 
           {/* Payment pattern */}
