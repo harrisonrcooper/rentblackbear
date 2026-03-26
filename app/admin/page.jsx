@@ -1461,11 +1461,28 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
   const isOcc=r=>r.st==="occupied"&&r.tenant;
   const mode=curUnit?.rentalMode||"byRoom";
   const tryClose=()=>{if(unsaved&&!justSaved)setShowCloseConfirm(true);else onClose();};
-  return(<div className="mbg" onClick={tryClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760,maxHeight:"90vh",overflowY:"auto"}}>
+  return(<div className="mbg" onClick={tryClose} style={{alignItems:"flex-start",paddingTop:24,paddingBottom:24}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760,maxHeight:"calc(100vh - 48px)",overflowY:"auto"}}>
     <h2>{isNew?"Add Property":`Edit: ${p.name}`}</h2>
 
     {/* Property-level info */}
-    <div className="fr"><div className="fld"><label>Property Name</label><input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House"/></div><div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div></div>
+    <div className="fr" style={{alignItems:"flex-end"}}>
+      <div className="fld" style={{opacity:p.usePropertyName===false?.35:1}}>
+        <label style={{display:"flex",alignItems:"center",gap:8}}>
+          Property Name
+          <span style={{fontSize:9,fontWeight:500,color:"#6b5e52"}}>{p.usePropertyName===false?"(disabled — address used instead)":""}</span>
+        </label>
+        <input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House" disabled={p.usePropertyName===false}/>
+      </div>
+      <div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div>
+      <div className="fld" style={{flexShrink:0,minWidth:0}}>
+        <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Use Property Name</label>
+        <div onClick={()=>updP({...p,usePropertyName:p.usePropertyName===false?true:false})}
+          style={{width:40,height:22,borderRadius:11,background:p.usePropertyName===false?"rgba(0,0,0,.15)":"#4a7c59",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+          <div style={{position:"absolute",top:3,left:p.usePropertyName===false?3:19,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+        </div>
+        <div style={{fontSize:9,color:"#6b5e52",marginTop:3}}>{p.usePropertyName===false?"Shows address":"Shows name"}</div>
+      </div>
+    </div>
     <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:10}}>
       <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Map Pin Location</div>
       <div className="fr3">
@@ -2515,6 +2532,7 @@ export default function Page(){
   })();
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
 
+  const getPropDisplayName=(prop)=>{if(!prop)return"";return prop.usePropertyName===false&&prop.addr?prop.addr:prop.name;};
   const getPropAddr=(propName)=>{const p=props.find(x=>x.name===propName);return p?.addr||"";};
   const roomSubLine=(propName,roomName)=>{const a=getPropAddr(propName);return a?`${propName} · ${a} · ${roomName}`:`${propName} · ${roomName}`;};
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);};
@@ -9426,7 +9444,6 @@ export default function Page(){
       return(
       <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-          <button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,inviteStep:"configure",sendErrors:[],emailSent:false}))}>Back</button>
           <h2 style={{margin:0,flex:1}}>Review and Send Invite</h2>
         </div>
         <div style={{background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:16,marginBottom:12}}>
@@ -9435,7 +9452,7 @@ export default function Page(){
             <tbody>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",width:"38%",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Applicant</td><td style={{padding:"5px 0",fontWeight:700,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.name}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} - {a.phone}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}</td></tr>
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}{selProp?.addr?" — "+selProp.addr:""}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":(selRoom?selRoom.name:"Not specified")}</td></tr>
               {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${inviteRent+"/mo"}</td></tr>}
               {inviteMoveIn&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtD(inviteMoveIn)}</td></tr>}
@@ -9450,19 +9467,41 @@ export default function Page(){
           {modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:11,color:"#c45c4a"}}>{e}</div>)}
         </div>}
         {modal.emailSent
-          ?<div style={{background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,padding:"12px 14px",textAlign:"center",fontSize:13,fontWeight:700,color:"#2d6a3f"}}>Invite email sent to {a.email}</div>
-          :<div style={{display:"flex",flexDirection:"column",gap:7}}>
-            <div style={{display:"flex",gap:7}}>
-              <button className="btn btn-green" style={{flex:1,opacity:modal.emailSending?0.6:1}} onClick={sendEmail} disabled={!!modal.emailSending}>{modal.emailSending?"Sending...":"Send Email Invite"}</button>
-              <a href={smsHref} className="btn btn-dk btn-sm" style={{flex:1,textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{if(!validate())return;commit("Text");}}>Send Text Invite</a>
+          ?<>
+            <div style={{background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,padding:"12px 14px",textAlign:"center",marginBottom:12}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#2d6a3f",marginBottom:2}}>Invite sent to {a.email}</div>
+              <div style={{fontSize:11,color:"#4a7c59"}}>They'll receive the application link and instructions.</div>
             </div>
-            <button className="btn btn-out btn-sm" style={{width:"100%",color:modal.linkCopied?"#4a7c59":"#5c4a3a"}} onClick={copyLink}>{modal.linkCopied?"Link Copied":"Copy Invite Link"}</button>
-          </div>
+            <div className="mft" style={{marginTop:0}}>
+              <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal(null)}>Done</button>
+            </div>
+          </>
+          :<>
+            <div style={{display:"flex",flexDirection:"column",gap:7,marginBottom:10}}>
+              <button style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,width:"100%",padding:"12px 16px",borderRadius:8,border:"none",background:settings.adminAccent||"#4a7c59",color:"#fff",fontWeight:700,fontSize:13,cursor:modal.emailSending?"not-allowed":"pointer",fontFamily:"inherit",opacity:modal.emailSending?0.6:1,transition:"opacity .15s"}}
+                onClick={sendEmail} disabled={!!modal.emailSending}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                {modal.emailSending?"Sending...":"Send Email Invite"}
+              </button>
+              <div style={{display:"flex",gap:7}}>
+                <a href={smsHref} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"10px 16px",borderRadius:8,border:"1px solid rgba(0,0,0,.1)",background:"#fff",color:"#1a1714",fontWeight:600,fontSize:12,textDecoration:"none",cursor:"pointer",fontFamily:"inherit",transition:"background .15s"}}
+                  onClick={()=>{if(!validate())return;commit("Text");}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Text Invite
+                </a>
+                <button style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"10px 16px",borderRadius:8,border:"1px solid rgba(0,0,0,.1)",background:modal.linkCopied?"rgba(74,124,89,.08)":"#fff",color:modal.linkCopied?"#4a7c59":"#1a1714",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}
+                  onClick={copyLink}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  {modal.linkCopied?"Copied!":"Copy Link"}
+                </button>
+              </div>
+            </div>
+            <div className="mft" style={{marginTop:0}}>
+              <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+              <button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,inviteStep:"configure",sendErrors:[],emailSent:false}))}>← Back</button>
+            </div>
+          </>
         }
-        <div className="mft" style={{marginTop:10}}>
-          <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-          <button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,inviteStep:"configure",sendErrors:[],emailSent:false}))}>Back</button>
-        </div>
       </div></div>);
     }
 
