@@ -8365,45 +8365,60 @@ export default function Page(){
   {/* ── Email Portal Link Modal ── */}
   {modal&&modal.type==="emailPortalLink"&&(()=>{
     const errs=modal.errs||{};
+    const sending=modal.sending||false;
+    const sent=modal.sent||false;
     const link=`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${modal.token}`;
-    const send=()=>{
+    const send=async()=>{
       const e={};
-      if(!(modal.to||"").trim())e.to="Email address is required";
+      const email=(modal.to||"").trim();
+      if(!email)e.to="Email address is required";
+      else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))e.to="Enter a valid email address";
       if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
-      const firstName=(modal.name||"").split(" ")[0]||"there";
-      const subject=encodeURIComponent(`Your tenant portal is ready — ${settings.companyName||"Black Bear Rentals"}`);
-      const body=encodeURIComponent(`Hi ${firstName},
-
-Your tenant portal is ready. Sign in to view your lease, pay your deposit, and access everything in one place.
-
-${link}
-
-This link expires in 48 hours. Sign in with Google or create an account using this email address.
-
-${settings.companyName||"Black Bear Rentals"}
-${settings.phone||""}`);
-      window.open(`mailto:${modal.to}?subject=${subject}&body=${body}`,"_blank");
-      setModal(null);
+      setModal(p=>({...p,sending:true}));
+      try{
+        const res=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            to:email,
+            subject:`Your tenant portal is ready — ${settings.companyName||"Black Bear Rentals"}`,
+            html:`<p>Hi ${firstName},</p><p>Your tenant portal is ready. Sign in to view your lease, pay your deposit, and access everything in one place.</p><p><a href="${link}" style="display:inline-block;background:#d4a853;color:#1a1714;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Access Your Portal →</a></p><p style="font-size:12px;color:#999;">This link expires in 48 hours. Sign in with Google or create an account using this email address.</p><p>${settings.companyName||"Black Bear Rentals"}<br/>${settings.phone||""}</p>`,
+          })
+        });
+        const d=await res.json();
+        if(d.ok){setModal(p=>({...p,sending:false,sent:true}));}
+        else{setModal(p=>({...p,sending:false,errs:{to:d.error||"Failed to send — try again"}}));shakeModal();}
+      }catch(err){setModal(p=>({...p,sending:false,errs:{to:"Network error — try again"}}));shakeModal();}
     };
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
-      <h2 style={{marginBottom:6}}>Email Portal Invite</h2>
-      <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>Opens your email client pre-filled with the tenant portal link.</p>
-      <div style={{padding:"8px 12px",background:"#1a1714",borderRadius:6,marginBottom:16,fontSize:11,fontFamily:"monospace",color:"#d4a853",wordBreak:"break-all"}}>{link}</div>
-      <div style={{fontSize:10,color:"#6b5e52",marginBottom:16}}>This link expires in 48 hours. The tenant signs in with Google or email/password.</div>
-      <div className={`fld ${errs.to?"field-err":""}`}>
-        <label className={errs.to?"field-err-label":""}>Recipient Email *</label>
-        <input type="email" value={modal.to||""} onChange={e=>setModal(p=>({...p,to:e.target.value,errs:{}}))} placeholder="tenant@email.com" autoFocus/>
-        {errs.to&&<div className="err-msg">{errs.to}</div>}
-      </div>
-      <div className="fld">
-        <label>Name (optional)</label>
-        <input value={modal.name||""} onChange={e=>setModal(p=>({...p,name:e.target.value}))} placeholder="Jane Smith"/>
-      </div>
-      <div className="mft">
-        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-green" style={{fontWeight:800}} onClick={send}>Open in Email Client</button>
-      </div>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
+      {sent?(
+        <div style={{textAlign:"center",padding:"20px 0"}}>
+          <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(74,124,89,.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style={{fontSize:16,fontWeight:800,color:"#1a1714",marginBottom:6}}>Invite sent!</div>
+          <div style={{fontSize:12,color:"#5c4a3a",marginBottom:20}}>Portal invite emailed to <strong>{modal.to}</strong>. Link expires in 48 hours.</div>
+          <button className="btn btn-out" onClick={()=>setModal(null)}>Done</button>
+        </div>
+      ):(
+        <>
+          <h2 style={{marginBottom:4}}>Send Portal Invite</h2>
+          <p style={{fontSize:11,color:"#5c4a3a",marginBottom:14}}>Send the tenant a link to access their portal. They sign in with Google or create an account.</p>
+          <div style={{padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:7,marginBottom:14,fontSize:11,fontFamily:"monospace",color:"#2d6a3f",wordBreak:"break-all"}}>{link}</div>
+          <div className={`fld ${errs.to?"field-err":""}`}>
+            <label className={errs.to?"field-err-label":""}>Recipient Email *</label>
+            <input type="email" value={modal.to||""} onChange={e=>setModal(p=>({...p,to:e.target.value,errs:{}}))} placeholder="tenant@email.com" autoFocus/>
+            {errs.to&&<div className="err-msg">{errs.to}</div>}
+          </div>
+          <div className="fld">
+            <label>Name <span style={{fontWeight:400,color:"#6b5e52"}}>(optional — personalizes the email)</span></label>
+            <input value={modal.name||""} onChange={e=>setModal(p=>({...p,name:e.target.value}))} placeholder="Jane Smith"/>
+          </div>
+          <div className="mft">
+            <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+            <button className="btn btn-green" disabled={sending} onClick={send}>{sending?"Sending...":"Send Invite"}</button>
+          </div>
+        </>
+      )}
     </div></div>);
   })()}
 
@@ -8443,44 +8458,61 @@ ${settings.phone||""}`);
   {/* ── Email Apply Link Modal ── */}
   {modal&&modal.type==="emailApplyLink"&&(()=>{
     const errs=modal.errs||{};
+    const sending=modal.sending||false;
+    const sent=modal.sent||false;
     const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply`;
     const send=async()=>{
       const e={};
-      if(!(modal.to||"").trim())e.to="Email address is required";
+      const email=(modal.to||"").trim();
+      if(!email)e.to="Email address is required";
+      else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))e.to="Enter a valid email address";
       if(Object.keys(e).length){setModal(p=>({...p,errs:e}));shakeModal();return;}
-      const firstName=(modal.name||"").split(" ")[0]||"there";
-      const subject=encodeURIComponent("Apply for a Room at Black Bear Rentals");
-      const body=encodeURIComponent(`Hi ${firstName},
-
-We have a room available at Black Bear Rentals in Huntsville, AL. Apply here:
-
-${link}
-
-Takes about 10-15 minutes. Let me know if you have any questions!
-
-${settings.companyName||"Black Bear Rentals"}
-${settings.phone||""}`);
-      window.open(`mailto:${modal.to}?subject=${subject}&body=${body}`,"_blank");
-      setModal(null);
+      setModal(p=>({...p,sending:true}));
+      try{
+        const firstName=(modal.name||"").split(" ")[0]||"there";
+        const res=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            to:email,
+            subject:`Apply for a room at ${settings.companyName||"Black Bear Rentals"}`,
+            html:`<p>Hi ${firstName},</p><p>We have a room available at ${settings.companyName||"Black Bear Rentals"} in Huntsville, AL. Apply here:</p><p><a href="${link}" style="display:inline-block;background:#d4a853;color:#1a1714;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Apply Now →</a></p><p style="font-size:12px;color:#999;">Takes about 10–15 minutes.</p><p>${settings.companyName||"Black Bear Rentals"}<br/>${settings.phone||""}</p>`,
+          })
+        });
+        const d=await res.json();
+        if(d.ok){setModal(p=>({...p,sending:false,sent:true}));}
+        else{setModal(p=>({...p,sending:false,errs:{to:d.error||"Failed to send — try again"}}));shakeModal();}
+      }catch(err){setModal(p=>({...p,sending:false,errs:{to:"Network error — try again"}}));shakeModal();}
     };
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
-      <h2 style={{marginBottom:6}}>Email Apply Link</h2>
-      <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>Opens your email client pre-filled with the application link. The recipient can apply directly from there.</p>
-      <div style={{padding:"8px 12px",background:"rgba(0,0,0,.03)",borderRadius:6,marginBottom:16,fontSize:11,fontFamily:"monospace",color:"#5c4a3a",wordBreak:"break-all"}}>{link}</div>
-      <div className={`fld ${errs.to?"field-err":""}`}>
-        <label className={errs.to?"field-err-label":""}>Recipient Email *</label>
-        <input type="email" value={modal.to||""} onChange={e=>setModal(p=>({...p,to:e.target.value,errs:{}}))} placeholder="jane@email.com" autoFocus/>
-        {errs.to&&<div className="err-msg">{errs.to}</div>}
-      </div>
-      <div className="fld">
-        <label>Name (optional — personalizes the email)</label>
-        <input value={modal.name||""} onChange={e=>setModal(p=>({...p,name:e.target.value}))} placeholder="Jane Smith"/>
-      </div>
-      <div className="mft">
-        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-gold" onClick={send}>Open in Email Client</button>
-      </div>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
+      {sent?(
+        <div style={{textAlign:"center",padding:"20px 0"}}>
+          <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(74,124,89,.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style={{fontSize:16,fontWeight:800,color:"#1a1714",marginBottom:6}}>Email sent!</div>
+          <div style={{fontSize:12,color:"#5c4a3a",marginBottom:20}}>Application link emailed to <strong>{modal.to}</strong>.</div>
+          <button className="btn btn-out" onClick={()=>setModal(null)}>Done</button>
+        </div>
+      ):(
+        <>
+          <h2 style={{marginBottom:4}}>Email Apply Link</h2>
+          <p style={{fontSize:11,color:"#5c4a3a",marginBottom:14}}>Send the application link directly from the website.</p>
+          <div style={{padding:"8px 12px",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",borderRadius:7,marginBottom:14,fontSize:11,fontFamily:"monospace",color:"#5c4a3a",wordBreak:"break-all"}}>{link}</div>
+          <div className={`fld ${errs.to?"field-err":""}`}>
+            <label className={errs.to?"field-err-label":""}>Recipient Email *</label>
+            <input type="email" value={modal.to||""} onChange={e=>setModal(p=>({...p,to:e.target.value,errs:{}}))} placeholder="jane@email.com" autoFocus/>
+            {errs.to&&<div className="err-msg">{errs.to}</div>}
+          </div>
+          <div className="fld">
+            <label>Name <span style={{fontWeight:400,color:"#6b5e52"}}>(optional — personalizes the email)</span></label>
+            <input value={modal.name||""} onChange={e=>setModal(p=>({...p,name:e.target.value}))} placeholder="Jane Smith"/>
+          </div>
+          <div className="mft">
+            <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+            <button className="btn btn-green" disabled={sending} onClick={send}>{sending?"Sending...":"Send Email"}</button>
+          </div>
+        </>
+      )}
     </div></div>);
   })()}
 
