@@ -2118,6 +2118,7 @@ export default function Page(){
   const[portalInviteState,setPortalInviteState]=useState("idle");
   const[portalLinkToken,setPortalLinkToken]=useState(null);
   const[portalLinkLoading,setPortalLinkLoading]=useState(false);
+  const[piState,setPiState]=useState("idle");
   const[widgetList,setWidgetList]=useState(null);
   const[dashEditMode,setDashEditMode]=useState(false);
   const[dashDragWidget,setDashDragWidget]=useState(null);
@@ -3646,19 +3647,19 @@ export default function Page(){
             <button className="btn btn-out btn-sm" style={{flexShrink:0}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
             <button className="btn btn-out btn-sm" style={{flexShrink:0}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
           </div>
-          {/* Portal Invite Link — dark/gold, visually distinct */}
-          <div style={{display:"flex",alignItems:"center",gap:4,background:"#1a1714",border:"1px solid rgba(212,168,83,.3)",borderRadius:6,padding:"2px 2px 2px 10px"}}>
-            <span style={{fontSize:10,color:"rgba(212,168,83,.7)",fontFamily:"monospace",whiteSpace:"nowrap"}}>{portalLinkToken?`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${portalLinkToken.slice(0,12)}...`:"Portal Invite Link"}</span>
-            <button className="btn btn-sm" style={{flexShrink:0,background:"rgba(212,168,83,.15)",color:"#d4a853",border:"1px solid rgba(212,168,83,.3)"}} onClick={async()=>{
+          {/* Portal Invite Link — green accent, distinct from apply link */}
+          <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.25)",borderRadius:6,padding:"2px 2px 2px 10px"}}>
+            <span style={{fontSize:10,color:"#4a7c59",fontFamily:"monospace",whiteSpace:"nowrap"}}>{portalLinkToken?`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${portalLinkToken.slice(0,12)}...`:"Portal Invite Link"}</span>
+            <button className="btn btn-sm" style={{flexShrink:0,background:"rgba(74,124,89,.12)",color:"#4a7c59",border:"1px solid rgba(74,124,89,.25)"}} onClick={async()=>{
               setPortalLinkLoading(true);
               try{
-                const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tenantName:"Guest",tenantEmail:"",propertyName:"",roomName:"",rent:""})});
+                const res=await fetch("/api/portal-invite-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
                 const d=await res.json();
                 if(d.token){setPortalLinkToken(d.token);navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${d.token}`);}
               }catch(e){console.error(e);}
               setPortalLinkLoading(false);
             }}>{portalLinkLoading?"...":(portalLinkToken?"Copied":"Generate")}</button>
-            {portalLinkToken&&<button className="btn btn-sm" style={{flexShrink:0,background:"#d4a853",color:"#1a1714",border:"none",fontWeight:700}} onClick={()=>setModal({type:"emailPortalLink",to:"",name:"",token:portalLinkToken})}>Email</button>}
+            {portalLinkToken&&<button className="btn btn-sm" style={{flexShrink:0,background:"#4a7c59",color:"#fff",border:"none",fontWeight:700}} onClick={()=>setModal({type:"emailPortalLink",to:"",name:"",token:portalLinkToken})}>Email</button>}
           </div>
         </div>
 
@@ -3813,7 +3814,7 @@ export default function Page(){
                           onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite</button>}
                         <button style={{fontSize:7,padding:"1px 5px",background:"#1a1714",color:"#d4a853",border:"none",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                           title="Send portal invite — bypasses application requirement"
-                          onClick={e=>{e.stopPropagation();setModal({type:"sendPortalInviteApp",data:a});}}>Portal</button>
+                          onClick={e=>{e.stopPropagation();setPiState("idle");setModal({type:"sendPortalInviteApp",data:a});}}>Portal</button>
                       </div>
                     </div>}
                   </div>);
@@ -3851,7 +3852,7 @@ export default function Page(){
         {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status));
           if(totalVacant===0&&waitlistApps.length>0)return(
             <div style={{marginTop:8,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:14,background:"rgba(212,168,83,.03)"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#9a7422",marginBottom:8}}>📋 Waitlist — No Vacant Rooms</div>
+              <div style={{fontSize:13,fontWeight:700,color:"#9a7422",marginBottom:8}}>Waitlist — No Vacant Rooms</div>
               <div style={{fontSize:10,color:"#999",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
               {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#999"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
             </div>);
@@ -3862,7 +3863,7 @@ export default function Page(){
           if(totalVacant>0)return null;
           const waitlistApps=activeApps.filter(a=>["pre-screened","called","invited"].includes(a.status)).sort((a,b)=>getScore(b)-getScore(a));
           return waitlistApps.length>0?<div style={{marginTop:16,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:16,background:"rgba(212,168,83,.03)"}}>
-            <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>📋 Waitlist — No Vacancies</div>
+            <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>Waitlist — No Vacancies</div>
             <div style={{fontSize:10,color:"#999",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
             {waitlistApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
               <div style={{width:20,fontSize:11,fontWeight:700,color:"#d4a853"}}>#{i+1}</div>
@@ -3893,7 +3894,7 @@ export default function Page(){
         {/* ── Screening Questions Editor ── */}
         <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,screenEditor:!p.screenEditor}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📋 Pre-Screen Questions</div><div style={{fontSize:9,color:"#999"}}>{screenQs.length} questions · Edit what prospects answer before applying</div></div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Pre-Screen Questions</div><div style={{fontSize:9,color:"#999"}}>{screenQs.length} questions · Edit what prospects answer before applying</div></div></div>
             <div style={{display:"flex",gap:4,alignItems:"center"}}>
               <span style={{fontSize:10,color:screenQs.filter(q=>q.active).length===screenQs.length?"#4a7c59":"#d4a853",fontWeight:600}}>{screenQs.filter(q=>q.active).length}/{screenQs.length} active</span>
               {screenQs.length===0&&<button className="btn btn-gold btn-sm" onClick={e=>{e.stopPropagation();setScreenQs([
@@ -4000,7 +4001,7 @@ export default function Page(){
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:14}}>{expanded.screenForm?"▼":"▶"}</span>
               <div>
-                <div style={{fontSize:13,fontWeight:700}}>📝 Pre-Screen Contact Form</div>
+                <div style={{fontSize:13,fontWeight:700}}>Pre-Screen Contact Form</div>
                 <div style={{fontSize:9,color:"#999"}}>Heading, subtext, and "How did you hear about us?" options</div>
               </div>
             </div>
@@ -4053,7 +4054,7 @@ export default function Page(){
         {/* ── Application Fields Editor ── */}
         <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appFieldsEditor:!p.appFieldsEditor}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appFieldsEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📝 Application Fields</div><div style={{fontSize:9,color:"#999"}}>{appFields.length} fields across {[...new Set(appFields.map(f=>f.section))].length} sections · Drives the entire /apply form</div></div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appFieldsEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Application Fields</div><div style={{fontSize:9,color:"#999"}}>{appFields.length} fields across {[...new Set(appFields.map(f=>f.section))].length} sections · Drives the entire /apply form</div></div></div>
             <div style={{display:"flex",gap:4,alignItems:"center"}}>
               <span style={{fontSize:10,color:appFields.filter(f=>f.active).length===appFields.length&&appFields.length>0?"#4a7c59":"#d4a853",fontWeight:600}}>{appFields.filter(f=>f.active).length}/{appFields.length} active</span>
               {appFields.length===0&&<button className="btn btn-gold btn-sm" onClick={e=>{e.stopPropagation();setAppFields(DEF_APP_FIELDS);}}>Load Defaults</button>}
@@ -4458,7 +4459,7 @@ export default function Page(){
                     <button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"signLease",leaseId:l.id,lease:l})}>✍ Sign & Send</button>
                   </>}
                   {l.status==="pending_tenant"&&<>
-                    <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied to clipboard."});}}>📋 Copy Link</button>
+                    <button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied to clipboard."});}}>Copy Link</button>
                   </>}
                   {l.status==="executed"&&<>
                     <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"viewLease",lease:l})}>👁 View</button>
@@ -4717,7 +4718,7 @@ export default function Page(){
             {modal.link}
           </div>
           <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-            <button className="btn btn-out" onClick={()=>{navigator.clipboard.writeText(modal.link||"");showAlert({title:"Copied",body:"Link copied to clipboard."});}}>📋 Copy Link</button>
+            <button className="btn btn-out" onClick={()=>{navigator.clipboard.writeText(modal.link||"");showAlert({title:"Copied",body:"Link copied to clipboard."});}}>Copy Link</button>
             <button className="btn btn-gold" onClick={()=>setModal(null)}>Done</button>
           </div>
         </div></div>}
@@ -8218,7 +8219,7 @@ ${settings.phone||""}`);
       </div>
       <div className="mft">
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn" style={{background:"#1a1714",color:"#d4a853",fontWeight:800}} onClick={send}>Open in Email Client</button>
+        <button className="btn btn-green" style={{fontWeight:800}} onClick={send}>Open in Email Client</button>
       </div>
     </div></div>);
   })()}
@@ -8226,7 +8227,6 @@ ${settings.phone||""}`);
   {/* ── Send Portal Invite from App Card ── */}
   {modal&&modal.type==="sendPortalInviteApp"&&(()=>{
     const a=modal.data;
-    const [piState,setPiState]=useState("idle");
     const send=async()=>{
       setPiState("sending");
       try{
@@ -8250,7 +8250,7 @@ ${settings.phone||""}`);
       {piState==="error"&&<div style={{padding:"10px 14px",background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,fontSize:12,color:"#c45c4a",marginBottom:16}}>Failed to send. Check console and try again.</div>}
       <div className="mft">
         <button className="btn btn-out" onClick={()=>setModal(null)}>{piState==="sent"?"Close":"Cancel"}</button>
-        {piState!=="sent"&&<button className="btn" style={{background:"#1a1714",color:"#d4a853",fontWeight:800}} onClick={send} disabled={piState==="sending"}>{piState==="sending"?"Sending...":"Send Portal Invite"}</button>}
+        {piState!=="sent"&&<button className="btn btn-green" style={{fontWeight:800}} onClick={send} disabled={piState==="sending"}>{piState==="sending"?"Sending...":"Send Portal Invite"}</button>}
       </div>
     </div></div>);
   })()}
@@ -9444,10 +9444,10 @@ ${settings.phone||""}`);
         {a.status==="pre-screened"&&<><button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"called",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(null);}}>📞 Mark as Called</button><button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button></>}
         {a.status==="called"&&<button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button>}
         {a.status==="invited"&&<div style={{flex:1,textAlign:"center",padding:"10px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:12,color:"#9a7422"}}>⏳ Waiting for {a.name} to submit their application...</div>}
-        {a.status==="applied"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"reviewing",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"reviewing"}}));}}>🔍 Start Review</button>}
+        {a.status==="applied"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"reviewing",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"reviewing"}}));}}>Start Review</button>}
         {a.status==="reviewing"&&<>
           {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
-            <div style={{fontWeight:700,marginBottom:4}}>⚠ Still pending — review before approving:</div>
+            <div style={{fontWeight:700,marginBottom:4}}>Still pending — review before approving:</div>
             {incompleteReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0"}}>
               <span style={{width:6,height:6,borderRadius:"50%",background:"#d4a853",flexShrink:0,display:"inline-block"}}/>
               {r.label}
@@ -9455,19 +9455,19 @@ ${settings.phone||""}`);
             <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
           </div>}
           <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
-            ⚙️ Configure Charges & Send Lease{incompleteReqs.length>0?" Anyway":""}
+            Configure Charges & Send Lease{incompleteReqs.length>0?" Anyway":""}
           </button>
         </>}
         {a.status==="lease-sent"&&<div style={{width:"100%"}}>
           <div style={{padding:"10px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,marginBottom:8,fontSize:11,color:"#9a7422",fontWeight:600,textAlign:"center"}}>
-            📨 Lease sent — awaiting tenant signature
+            Lease sent — awaiting tenant signature
           </div>
           {a.chargeConfig&&<div style={{padding:"10px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,fontSize:11,color:"#2d6a3f",marginBottom:8}}>
             <div style={{fontWeight:700,marginBottom:4}}>Charges pending tenant signature:</div>
             {(()=>{const cfg=a.chargeConfig;const items=[];items.push({l:"Security Deposit",v:cfg.sd});if(cfg.structure==="prorated")items.push({l:"Prorated Rent ("+cfg.proratedDays+"d)",v:cfg.proratedAmt});else items.push({l:"First Month Rent",v:cfg.rent});if(cfg.structure==="first-last")items.push({l:"Last Month Rent",v:cfg.rent});return items.map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between"}}><span>{it.l}</span><strong>{fmtS(it.v)}</strong></div>);})()}
           </div>}
           <button className="btn btn-out btn-sm" style={{width:"100%"}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs:[],step:1})}>
-            ✏️ Reconfigure Charges
+            Reconfigure Charges
           </button>
         </div>}
         {(a.status==="approved"||a.status==="onboarding")&&(()=>{
@@ -9482,7 +9482,7 @@ ${settings.phone||""}`);
               Pending move-in: {fmtD(moveInDate)}
             </div>}
             {fullyPaid
-              ?<button className="btn btn-green" style={{flex:1,width:"100%"}} onClick={()=>{if(targetRoom)convertToTenant(targetRoom.id,targetProp.id);else showAlert({title:"Room Not Found",body:"Could not find the assigned room. Please check the room assignment and try again."});}}>🔑 All Paid — Convert to Tenant</button>
+              ?<button className="btn btn-green" style={{flex:1,width:"100%"}} onClick={()=>{if(targetRoom)convertToTenant(targetRoom.id,targetProp.id);else showAlert({title:"Room Not Found",body:"Could not find the assigned room. Please check the room assignment and try again."});}}>All Paid — Convert to Tenant</button>
               :<div style={{padding:"8px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,fontSize:11,color:"#9a7422",textAlign:"center"}}>
                 {appCharges2.length===0?"No move-in charges found — go to Payments to add them.":`Waiting for payment — ${fmtS(totalDue2-totalPaid2)} remaining`}
               </div>
