@@ -2255,7 +2255,7 @@ export default function Page(){
       const collR=occR.reduce((s,r)=>s+((payments[r.id]&&payments[r.id][MO])||0),0);
       return{...pr,occCount:occR.length,vacCount:vacR.length,projected:prjR,fullOcc:fullR,collected:collR,occRooms:occR,vacRooms:vacR};
     });
-    const needsAttention=apps.filter(a=>a.status==="applied").length;return{total,occ,full,proj,coll,due,vacs,expiring,unpaid,paid,openMaint,activeApps,unreadNotifs,needsAttention,propBreakdown,
+    const needsAttention=apps.filter(a=>["new-lead","applied"].includes(a.status)).length;return{total,occ,full,proj,coll,due,vacs,expiring,unpaid,paid,openMaint,activeApps,unreadNotifs,needsAttention,propBreakdown,
       occRate:total?Math.round(occ/total*100):0,collRate:due?Math.round(coll/due*100):0,lost:full-proj};
   },[props,payments,maint,apps,notifs]);
 
@@ -3997,7 +3997,7 @@ export default function Page(){
                 style={{background:active?`rgba(${settings.adminAccentRgb||"74,124,89"},.08)`:"#fff",borderRadius:10,padding:"12px 14px",border:active?`2px solid ${settings.adminAccent||"#4a7c59"}`:"1px solid rgba(0,0,0,.07)",cursor:"pointer",transition:"all .15s",boxShadow:active?`0 3px 12px rgba(${settings.adminAccentRgb||"74,124,89"},.15)`:"none"}}>
                 <div style={{fontSize:10,fontWeight:700,color:active?(settings.adminAccent||"#4a7c59"):"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>{label}</div>
                 <div style={{fontSize:24,fontWeight:800,color:active?(settings.adminAccent||"#4a7c59"):(color||"#1a1714"),lineHeight:1,marginBottom:3}}>{value}</div>
-                <div style={{fontSize:9,color:active?(settings.adminAccent||"#4a7c59"):"#7a7067"}}>{active?"Click to clear":sub}</div>
+                <div style={{fontSize:9,color:active?(settings.adminAccent||"#4a7c59"):"#7a7067"}}>{sub}</div>
               </div>);
             })}
           </div>
