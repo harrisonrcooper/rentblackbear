@@ -2826,12 +2826,19 @@ export default function Page(){
           if(tenantSearch){const q=tenantSearch.toLowerCase();if(![r.tenant?.name,r.tenant?.email,r.tenant?.phone,r.propName,r.name].some(v=>(v||"").toLowerCase().includes(q)))return false;}
           return true;
         });
-        const filteredArchive=archive.filter(a=>{
+        const pastTenants=archive.filter(a=>!a.isArchived);
+        const archivedTenants=archive.filter(a=>a.isArchived);
+        const filterArchiveList=(list)=>list.filter(a=>{
           if(tenantPropFilter!=="all"&&props.find(p=>p.name===a.propName)?.id!==tenantPropFilter)return false;
           if(tenantSearch){const q=tenantSearch.toLowerCase();if(![a.name,a.email,a.propName,a.roomName].some(v=>(v||"").toLowerCase().includes(q)))return false;}
           return true;
         });
+        const filteredPast=filterArchiveList(pastTenants);
+        const filteredArchived=filterArchiveList(archivedTenants);
+        const filteredArchive=tenantView==="archived"?filteredArchived:filteredPast;
         const allSelected=tenantView==="active"&&tenantSel.length===filteredActive.length&&filteredActive.length>0;
+        const archiveTenant=(id)=>setArchive(p=>p.map(a=>a.id===id?{...a,isArchived:true}:a));
+        const unarchiveTenant=(id)=>setArchive(p=>p.map(a=>a.id===id?{...a,isArchived:false}:a));
         const tz=settings.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone;
         const tzShort=new Intl.DateTimeFormat("en-US",{timeZoneName:"short",timeZone:tz}).format(new Date()).split(" ").pop();
         const fmtLastActive=(iso)=>{if(!iso)return null;try{return new Intl.DateTimeFormat("en-US",{month:"numeric",day:"numeric",year:"2-digit",hour:"numeric",minute:"2-digit",hour12:true,timeZone:tz}).format(new Date(iso));}catch{return iso;}};
@@ -2842,11 +2849,11 @@ export default function Page(){
         {/* Browser-tab style header */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:0,flexWrap:"wrap",gap:8}}>
           <div style={{display:"flex",alignItems:"flex-end",gap:0}}>
-            {[["active","Active",allTenants.length],["archive","Past",archive.length]].map(([v,l,c],i)=>{
+            {[["active","Active",allTenants.length],["archive","Past",pastTenants.length],["archived","Archived",archivedTenants.length]].map(([v,l,c])=>{
               const active=tenantView===v;
               return(
-              <button key={v} onClick={()=>{setDrill(v==="active"?null:"archive");setTenantSel([]);}}
-                style={{padding:"10px 22px",border:"1px solid rgba(0,0,0,.1)",borderBottom:active?"none":"1px solid rgba(0,0,0,.1)",borderRadius:active?"8px 8px 0 0":"8px 8px 0 0",marginRight:4,background:active?"#fff":"rgba(0,0,0,.04)",color:active?"#1a1714":"#7a7067",fontWeight:active?700:500,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",position:"relative",zIndex:active?2:1,boxShadow:active?"0 -2px 0 0 "+(settings.adminAccent||"#4a7c59")+" inset":"none"}}>
+              <button key={v} onClick={()=>{setDrill(v==="active"?null:v);setTenantSel([]);}}
+                style={{padding:"10px 22px",border:"1px solid rgba(0,0,0,.1)",borderBottom:active?"none":"1px solid rgba(0,0,0,.1)",borderRadius:"8px 8px 0 0",marginRight:4,background:active?"#fff":"rgba(0,0,0,.04)",color:active?"#1a1714":"#7a7067",fontWeight:active?700:500,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",position:"relative",zIndex:active?2:1,boxShadow:active?"0 -2px 0 0 "+(settings.adminAccent||"#4a7c59")+" inset":"none"}}>
                 {l} <span style={{fontSize:11,fontWeight:400,opacity:.7}}>({c})</span>
               </button>);
             })}
@@ -2882,7 +2889,7 @@ export default function Page(){
             <div style={HDR}>Tenant</div>
             <div style={HDR}>Contact</div>
             <div style={HDR}>Rent</div>
-            <div style={HDR}>Portal Access <span style={{fontWeight:400,textTransform:"none",letterSpacing:0,fontSize:9}}>({tzShort})</span></div>
+            <div style={HDR}>{tenantView==="active"?<>Portal Access <span style={{fontWeight:400,textTransform:"none",letterSpacing:0,fontSize:9}}>({tzShort})</span></>:tenantView==="archived"?"Archived":"Actions"}</div>
           </div>
 
           {/* Active rows */}
@@ -2950,9 +2957,10 @@ export default function Page(){
           {filteredActive.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}>{allTenants.length===0?"No active tenants yet.":"No tenants match your search."}</div>}
           </>}
 
-          {/* Archive rows */}
-          {tenantView==="archive"&&<>{filteredArchive.map(a=>{
+          {/* Past + Archived rows */}
+          {(tenantView==="archive"||tenantView==="archived")&&<>{filteredArchive.map(a=>{
             const prop=props.find(p=>p.name===a.propName);
+            const isArch=a.isArchived;
             return(
             <div key={a.id} style={{display:"grid",gridTemplateColumns:COLS,padding:"14px 16px",borderBottom:"1px solid rgba(0,0,0,.05)",background:"#fff",cursor:"pointer",transition:"all .15s"}}
               onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.04)";e.currentTarget.style.boxShadow="inset 3px 0 0 #8a7d74";}}
@@ -2971,14 +2979,39 @@ export default function Page(){
               <div style={{display:"flex",flexDirection:"column",gap:3,justifyContent:"center"}}>
                 <div style={{fontSize:13,fontWeight:700}}>{fmtS(a.rent)}<span style={{fontSize:10,fontWeight:400,color:"#7a7067"}}>/mo</span></div>
                 <div style={{fontSize:10,color:"#7a7067"}}>{fmtD(a.moveIn)} → {fmtD(a.leaseEnd)}</div>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:3,justifyContent:"center"}}>
-                <span className="badge b-gray" style={{alignSelf:"flex-start"}}>Past</span>
                 <div style={{fontSize:10,color:"#7a7067"}}>Terminated {fmtD(a.terminatedDate)}</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:4,justifyContent:"center"}} onClick={e=>e.stopPropagation()}>
+                {isArch
+                  ?<>
+                    <span className="badge b-gray" style={{alignSelf:"flex-start",fontSize:9}}>Archived</span>
+                    <button
+                      onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.08)"}
+                      onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
+                      onClick={()=>unarchiveTenant(a.id)}
+                      style={{fontSize:9,fontWeight:600,padding:"3px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.04)",color:"#5c4a3a",cursor:"pointer",fontFamily:"inherit",transition:"background .12s",alignSelf:"flex-start"}}>
+                      Unarchive
+                    </button>
+                  </>
+                  :<>
+                    <span className="badge b-gray" style={{alignSelf:"flex-start",fontSize:9}}>Past</span>
+                    <button
+                      onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.1)";e.currentTarget.style.borderColor="rgba(0,0,0,.2)";}}
+                      onMouseLeave={e=>{e.currentTarget.style.background="rgba(0,0,0,.04)";e.currentTarget.style.borderColor="rgba(0,0,0,.1)";}}
+                      onClick={()=>archiveTenant(a.id)}
+                      style={{fontSize:9,fontWeight:600,padding:"3px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.04)",color:"#5c4a3a",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",alignSelf:"flex-start"}}>
+                      Archive →
+                    </button>
+                  </>
+                }
               </div>
             </div>);
           })}
-          {filteredArchive.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}>No past tenants yet.</div>}
+          {filteredArchive.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}>
+            {tenantView==="archived"
+              ?<><div style={{fontSize:13,fontWeight:600,marginBottom:6}}>No archived tenants</div><div style={{fontSize:12}}>Move past tenants here when they're fully resolved — SD returned, no disputes.</div></>
+              :"No past tenants yet."}
+          </div>}
           </>}
         </div></div>
         </>);
