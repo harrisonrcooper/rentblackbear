@@ -332,7 +332,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
@@ -6618,6 +6618,28 @@ export default function Page(){
 
 
         <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Lease & M2M Settings</h3>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Controls automatic month-to-month conversion and daily payment reminders.</p>
+          <div className="fr" style={{marginBottom:12}}>
+            <div className="fld" style={{marginBottom:0}}>
+              <label>M2M Rent Increase <span style={{fontWeight:400,color:"#6b5e52"}}>($/mo added when lease converts to month-to-month)</span></label>
+              <div style={{display:"flex",alignItems:"center",gap:0}}>
+                <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+                <input type="number" min={0} value={settings.m2mIncrease||50} onChange={e=>{const u={...settings,m2mIncrease:Number(e.target.value)};setSettings(u);save("hq-settings",u);}} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%"}}/>
+              </div>
+            </div>
+            <div className="fld" style={{marginBottom:0}}>
+              <label>Renewal Prompt <span style={{fontWeight:400,color:"#6b5e52"}}>(days before expiry to show renewal options)</span></label>
+              <input type="number" min={7} max={180} value={settings.m2mNoticeDays||90} onChange={e=>{const u={...settings,m2mNoticeDays:Number(e.target.value)};setSettings(u);save("hq-settings",u);}} style={{width:"100%"}}/>
+            </div>
+          </div>
+          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,cursor:"pointer"}}>
+            <input type="checkbox" checked={settings.autoReminders!==false} onChange={e=>{const u={...settings,autoReminders:e.target.checked};setSettings(u);save("hq-settings",u);}}/>
+            <span>Auto-send daily payment reminders for past-due charges (stops when paid)</span>
+          </label>
+        </div></div>
+
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Payment Reminder Template</h3>
           <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
           <div className="fld">
@@ -7202,6 +7224,75 @@ export default function Page(){
               {pd&&<div style={{padding:"10px 14px",background:"rgba(74,124,89,.06)",borderRadius:8,fontSize:12,color:"#2d6a3f",fontWeight:600,textAlign:"center"}}>✓ Paid for {MO}</div>}
             </div>
 
+            {/* M2M / Lease Renewal panel */}
+            {(()=>{
+              const leaseEnd=r.le?new Date(r.le+"T00:00:00"):null;
+              const dl=leaseEnd?Math.ceil((leaseEnd-TODAY)/(1e3*60*60*24)):null;
+              const isM2M=r.m2m||(!r.le);
+              const isExpiring=dl!==null&&dl>=0&&dl<=90;
+              const isExpired=dl!==null&&dl<0;
+              if(!isM2M&&!isExpiring&&!isExpired)return null;
+              const m2mIncrease=settings.m2mIncrease||50;
+              const currentRent=r.rent||0;
+              const m2mRent=currentRent+(isM2M?0:m2mIncrease);
+              return(
+              <div style={{background:isM2M?"rgba(59,130,246,.05)":isExpired?"rgba(196,92,74,.05)":"rgba(212,168,83,.05)",border:`1px solid ${isM2M?"rgba(59,130,246,.2)":isExpired?"rgba(196,92,74,.2)":"rgba(212,168,83,.2)"}`,borderRadius:12,padding:"20px 24px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={isM2M?"#3b82f6":isExpired?"#c45c4a":"#d4a853"} strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:800,color:isM2M?"#1d4ed8":isExpired?"#c45c4a":"#9a7422"}}>
+                      {isM2M?"Month-to-Month Active":isExpired?"Lease Expired — Action Required":"Lease Expiring Soon"}
+                    </div>
+                    <div style={{fontSize:11,color:"#5c4a3a"}}>
+                      {isM2M?`Rent: ${fmtS(currentRent)}/mo · No fixed end date`:isExpired?`Expired ${fmtD(r.le)}`:`${dl} days remaining — ${fmtD(r.le)}`}
+                    </div>
+                  </div>
+                </div>
+                {/* Renewal options */}
+                {(isExpiring||isExpired||isM2M)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  {!isM2M&&<button
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(74,124,89,.15)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="rgba(74,124,89,.06)"}
+                    style={{padding:"12px 10px",borderRadius:8,border:"1px solid rgba(74,124,89,.25)",background:"rgba(74,124,89,.06)",cursor:"pointer",fontFamily:"inherit",textAlign:"center",transition:"all .15s"}}
+                    onClick={()=>{
+                      const newEnd=new Date(TODAY);newEnd.setFullYear(newEnd.getFullYear()+1);
+                      const newLease=leases.find(l=>l.applicationId&&apps.find(a=>a.name===r.tenant?.name&&a.id===l.applicationId));
+                      setModal({type:"renewLease",room:r,prop:prop,currentRent:r.rent,newRent:r.rent,newEnd:newEnd.toISOString().split("T")[0],mode:"renew",existingLease:newLease});
+                    }}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#4a7c59"}}>Renew 12 Months</div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>Same rate · {fmtS(currentRent)}/mo</div>
+                  </button>}
+                  {!isM2M&&<button
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(59,130,246,.1)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="rgba(59,130,246,.04)"}
+                    style={{padding:"12px 10px",borderRadius:8,border:"1px solid rgba(59,130,246,.2)",background:"rgba(59,130,246,.04)",cursor:"pointer",fontFamily:"inherit",textAlign:"center",transition:"all .15s"}}
+                    onClick={()=>{
+                      const newEnd=new Date(TODAY);newEnd.setFullYear(newEnd.getFullYear()+1);
+                      setModal({type:"renewLease",room:r,prop:prop,currentRent:r.rent,newRent:r.rent,newEnd:newEnd.toISOString().split("T")[0],mode:"renew_rate",existingLease:null});
+                    }}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#3b82f6"}}>Renew at New Rate</div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>Edit rent amount</div>
+                  </button>}
+                  <button
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(212,168,83,.15)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="rgba(212,168,83,.06)"}
+                    style={{padding:"12px 10px",borderRadius:8,border:"1px solid rgba(212,168,83,.25)",background:"rgba(212,168,83,.06)",cursor:"pointer",fontFamily:"inherit",textAlign:"center",transition:"all .15s"}}
+                    onClick={()=>setModal({type:"renewLease",room:r,prop:prop,currentRent:r.rent,newRent:m2mRent,newEnd:null,mode:"m2m"})}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#9a7422"}}>{isM2M?"Stay Month-to-Month":"Go Month-to-Month"}</div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>{isM2M?`${fmtS(currentRent)}/mo`:`+${fmtS(m2mIncrease)}/mo · ${fmtS(m2mRent)}/mo`}</div>
+                  </button>
+                  {!modal?.termStep&&<button
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(196,92,74,.1)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="rgba(196,92,74,.04)"}
+                    style={{padding:"12px 10px",borderRadius:8,border:"1px solid rgba(196,92,74,.2)",background:"rgba(196,92,74,.04)",cursor:"pointer",fontFamily:"inherit",textAlign:"center",transition:"all .15s"}}
+                    onClick={()=>setModal({type:"tenant",data:r,termStep:1,termErrs:{}})}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#c45c4a"}}>Do Not Renew</div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>Start termination flow</div>
+                  </button>}
+                </div>}
+              </div>);
+            })()}
+
             {/* Payment Pattern */}
             {rentCharges.length>0&&<div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -7258,7 +7349,11 @@ export default function Page(){
                     <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714"}}>{fmtS(c.amount)}</div>
                     <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="unpaid"?"b-gold":st==="partial"?"b-gold":"b-gray"}`} style={{fontSize:8}}>{st==="pastdue"?"Late":st}</span>
                   </div>
-                  {st!=="paid"&&st!=="waived"&&<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Pay</button>}
+                  {st!=="paid"&&st!=="waived"&&<div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
+                    <button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Pay</button>
+                    {c.reminderActive&&<span style={{fontSize:8,color:"#d4a853",fontWeight:700}}>Reminding daily</span>}
+                    {!c.reminderActive&&st==="pastdue"&&<button style={{fontSize:8,padding:"1px 6px",borderRadius:3,border:"1px solid rgba(196,92,74,.2)",background:"transparent",color:"#c45c4a",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null})}>Send reminder</button>}
+                  </div>}
                 </div>);
               })}
               {tenantCharges.length>8&&<button className="btn btn-out btn-sm" style={{width:"100%",marginTop:10}} onClick={()=>{setModal(null);goTab("payments");setPayFilters({...payFilters,tenant:r.tenant.name});}}>View all {tenantCharges.length} charges →</button>}
@@ -7468,10 +7563,19 @@ export default function Page(){
       .replace(/{portalLink}/g,portalLink);
     const defaultMsg=buildMsg(template);
     const emailSubject=`Payment Reminder — ${c.category} ${fmtS(modal.rem)} Due`;
-    const send=(method,customMsg)=>{
-      if(method==="email"&&email){window.open(`mailto:${email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(customMsg)}`);}
+    const send=async(method,customMsg)=>{
+      if(method==="email"&&email){
+        try{
+          await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+            to:email,
+            subject:emailSubject,
+            html:`<p>${customMsg.replace(/\n/g,"<br/>")}</p>`,
+          })});
+        }catch(e){console.error(e);}
+      }
       if(method==="text"&&phone){window.open(`sms:${phone.replace(/\D/g,"")}?body=${encodeURIComponent(customMsg)}`);}
-      setCharges(p=>p.map(x=>x.id===c.id?{...x,reminders:[...(x.reminders||[]),{method,date:TODAY.toISOString().split("T")[0]}]}:x));
+      // Set reminderActive so cron sends daily until paid
+      setCharges(p=>p.map(x=>x.id===c.id?{...x,reminderActive:true,reminders:[...(x.reminders||[]),{method,date:TODAY.toISOString().split("T")[0]}]}:x));
       setNotifs(p=>[{id:uid(),type:"payment",msg:`Reminder sent to ${c.tenantName} via ${method}: ${c.category} ${fmtS(modal.rem)} due ${fmtD(c.dueDate)}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
       setModal(null);
     };
@@ -7491,7 +7595,7 @@ export default function Page(){
           <span>Message</span>
           <div style={{display:"flex",gap:4}}>
             {isEdited&&!editingDefault&&<button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,reminderMsg:defaultMsg}))}>↺ Reset</button>}
-            {!editingDefault&&<button className="btn btn-gold btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,editingDefault:true,reminderMsg:template}))}>✏️ Edit Default</button>}
+            {!editingDefault&&<button className="btn btn-gold btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={()=>setModal(prev=>({...prev,editingDefault:true,reminderMsg:template}))}>Edit Default</button>}
             {editingDefault&&<span style={{fontSize:9,color:"#d4a853",fontWeight:700}}>Editing saved default</span>}
           </div>
         </label>
@@ -7518,7 +7622,7 @@ export default function Page(){
             style={{flex:1,padding:"14px 8px",borderRadius:8,border:"2px solid #3b82f6",background:"rgba(59,130,246,.06)",cursor:email?"pointer":"not-allowed",opacity:email?1:.5,textAlign:"center",fontFamily:"inherit",transition:"all .15s"}}
             onMouseEnter={e=>{if(email)e.currentTarget.style.background="rgba(59,130,246,.12)"}}
             onMouseLeave={e=>{e.currentTarget.style.background="rgba(59,130,246,.06)"}}>
-            <div style={{fontSize:20,marginBottom:4}}>✉️</div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.75" style={{marginBottom:4}}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             <div style={{fontSize:12,fontWeight:700,color:"#3b82f6"}}>Email</div>
             <div style={{fontSize:9,color:"#3b82f6",opacity:.7,marginTop:2}}>{email||"No email on file"}</div>
           </button>
@@ -7526,7 +7630,7 @@ export default function Page(){
             style={{flex:1,padding:"14px 8px",borderRadius:8,border:"2px solid #4a7c59",background:"rgba(74,124,89,.06)",cursor:phone?"pointer":"not-allowed",opacity:phone?1:.5,textAlign:"center",fontFamily:"inherit",transition:"all .15s"}}
             onMouseEnter={e=>{if(phone)e.currentTarget.style.background="rgba(74,124,89,.12)"}}
             onMouseLeave={e=>{e.currentTarget.style.background="rgba(74,124,89,.06)"}}>
-            <div style={{fontSize:20,marginBottom:4}}>💬</div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="1.75" style={{marginBottom:4}}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             <div style={{fontSize:12,fontWeight:700,color:"#4a7c59"}}>Text</div>
             <div style={{fontSize:9,color:"#4a7c59",opacity:.7,marginTop:2}}>{phone||"No phone on file"}</div>
           </button>
