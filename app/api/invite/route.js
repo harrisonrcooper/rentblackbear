@@ -2,6 +2,8 @@
 // Sends a personal application invite email via Resend.
 // Requires RESEND_API_KEY in Vercel environment variables.
 
+import { getSettings, fromAddress } from "@/lib/getSettings";
+
 export async function POST(request) {
   try {
     const { to, name, link, property, address, room, rent, fee, note, waived } = await request.json();
@@ -16,6 +18,7 @@ export async function POST(request) {
       return Response.json({ ok: false, error: "RESEND_API_KEY not configured in Vercel environment variables" }, { status: 500 });
     }
 
+    const s = await getSettings();
     const firstName = name.split(" ")[0];
     const feeWaived = !fee || fee === 0;
     const hasWaived = waived && waived.length > 0;
@@ -45,7 +48,7 @@ export async function POST(request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Harrison at Black Bear Rentals <hello@rentblackbear.com>",
+        from: fromAddress(s),
         to,
         subject: `You're invited to apply — Black Bear Rentals 🐻`,
         html: `
