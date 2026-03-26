@@ -2912,8 +2912,8 @@ export default function Page(){
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:2}}>{r.tenant.name}</div>
                 <div style={{fontSize:11,color:"#5c4a3a",marginBottom:5}}>{r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
-                <button onClick={e=>{e.stopPropagation();setModal({type:"tenant",data:r,startSection:"lease"});}}
-                  onMouseEnter={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.2)`;e.currentTarget.style.transform="scale(1.03)";}}
+                <button onClick={e=>{e.stopPropagation();setModal({type:"tenant",data:r});}}
+                  onMouseEnter={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.2)`;e.currentTarget.style.transform="scale(1.02)";}}
                   onMouseLeave={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.08)`;e.currentTarget.style.transform="";}}
                   style={{fontSize:10,fontWeight:600,padding:"3px 10px",borderRadius:5,border:`1px solid rgba(${settings.adminAccentRgb||"74,124,89"},.3)`,background:`rgba(${settings.adminAccentRgb||"74,124,89"},.08)`,color:(settings.adminAccent||"#4a7c59"),cursor:"pointer",fontFamily:"inherit",transition:"all .15s",display:"inline-flex",alignItems:"center",gap:4}}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -6980,7 +6980,7 @@ export default function Page(){
       "Damage Charge":{d:"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",color:"#c45c4a"},
     };
     return(
-    <div style={{position:"fixed",inset:0,background:"#f5f4f1",zIndex:200,overflowY:"auto",fontFamily:settings.adminFont||"inherit",zoom:settings.adminZoom||1}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto",fontFamily:settings.adminFont||"inherit",zoom:settings.adminZoom||1}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",display:"flex",alignItems:"center",gap:16,height:56,position:"sticky",top:0,zIndex:10}}>
         <button onClick={()=>{setModal(null);setPortalInviteState("idle");}}
@@ -7176,6 +7176,46 @@ export default function Page(){
                 <div style={{fontSize:10,color:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#6b5e52",marginTop:4}}>{dl} days remaining ({months} mo)</div>
               </>}
             </div>
+
+            {/* Leases */}
+            {(()=>{
+              const tLease=leases.find(l=>{
+                const matchApp=apps.find(a=>a.name===r.tenant?.name&&a.id===l.applicationId);
+                return !!matchApp;
+              })||leases.find(l=>l.tenantName===r.tenant?.name||l.tenantEmail===r.tenant?.email);
+              const leaseStatusColors={draft:"#6b5e52",pending_landlord:"#d4a853",pending_tenant:"#3b82f6",executed:"#4a7c59"};
+              const leaseStatusLabels={draft:"Draft",pending_landlord:"Awaiting Your Signature",pending_tenant:"Sent to Tenant",executed:"Current"};
+              return(
+              <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                  <TIcon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" d2="M14 2v6h6M16 13H8M16 17H8M10 9H8" size={16}/>
+                  <span style={{fontSize:14,fontWeight:700}}>Lease</span>
+                </div>
+                {tLease?(
+                  <div style={{border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:"14px 16px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                      <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:100,background:tLease.status==="executed"?"rgba(74,124,89,.1)":tLease.status==="pending_tenant"?"rgba(59,130,246,.1)":"rgba(212,168,83,.1)",color:leaseStatusColors[tLease.status]||"#6b5e52"}}>{leaseStatusLabels[tLease.status]||tLease.status}</span>
+                      <button onClick={()=>goTab("leases")} onMouseEnter={e=>e.currentTarget.style.color="#1a1714"} onMouseLeave={e=>e.currentTarget.style.color="#6b5e52"} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#6b5e52",fontFamily:"inherit",transition:"color .15s"}}>View →</button>
+                    </div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#1a1714",marginBottom:8}}>{r.propName}{props.find(p=>allRooms(p).some(x=>x.id===r.id))?.addr?" · "+props.find(p=>allRooms(p).some(x=>x.id===r.id))?.addr:""} · {r.name}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      <span style={{fontSize:11,color:"#5c4a3a"}}>{fmtD(r.tenant?.moveIn)} — {fmtD(r.le)}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                      <span style={{fontSize:11,color:"#5c4a3a"}}>{r.tenant?.name}</span>
+                    </div>
+                    {tLease.status==="pending_tenant"&&<div style={{marginTop:10,padding:"6px 10px",background:"rgba(59,130,246,.06)",borderRadius:6,fontSize:10,color:"#3b82f6",fontWeight:600}}>Awaiting tenant signature</div>}
+                  </div>
+                ):(
+                  <div style={{textAlign:"center",padding:"14px 0"}}>
+                    <div style={{fontSize:12,color:"#6b5e52",marginBottom:10}}>No lease on file.</div>
+                    <button className="btn btn-out btn-sm" style={{width:"100%"}} onClick={()=>goTab("leases")}>Create Lease →</button>
+                  </div>
+                )}
+              </div>);
+            })()}
 
             {/* Portal Invite */}
             <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
