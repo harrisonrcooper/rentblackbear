@@ -3633,17 +3633,27 @@ export default function Page(){
         <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"stretch"}}>
 
           {/* Apply Link */}
-          <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:240}}>
-            <div style={{display:"flex",alignItems:"center",background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden"}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:"1px solid rgba(0,0,0,.08)",flex:1,minWidth:0}}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" style={{flexShrink:0}}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                <span style={{fontSize:11,color:"#5c4a3a",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(settings.siteUrl||"https://rentblackbear.com")}/apply</span>
+          {(()=>{
+            const AB={padding:"8px 14px",border:"none",background:"transparent",fontWeight:600,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"background .15s",color:"#5c4a3a"};
+            return(
+            <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:240}}>
+              <div style={{display:"flex",alignItems:"center",background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:"1px solid rgba(0,0,0,.08)",flex:1,minWidth:0}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" style={{flexShrink:0}}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  <span style={{fontSize:11,color:"#5c4a3a",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(settings.siteUrl||"https://rentblackbear.com")}/apply</span>
+                </div>
+                <button style={{...AB,borderRight:"1px solid rgba(0,0,0,.08)"}}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+                  onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
+                <button style={AB}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+                  onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
               </div>
-              <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",whiteSpace:"nowrap",padding:"8px 14px"}} onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/apply`);setModal({type:"genericLinkCopied"});}}>Copy</button>
-              <button className="btn btn-out btn-sm" style={{borderRadius:0,border:"none",whiteSpace:"nowrap",padding:"8px 14px"}} onClick={()=>setModal({type:"emailApplyLink",to:"",name:""})}>Email Link</button>
-            </div>
-            <div style={{fontSize:9,color:"#7a7067",paddingLeft:4}}>Application form — anyone can apply</div>
-          </div>
+              <div style={{fontSize:9,color:"#7a7067",paddingLeft:4}}>Application form — anyone can apply</div>
+            </div>);
+          })()}
 
           {/* Portal Invite */}
           <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:240}}>
