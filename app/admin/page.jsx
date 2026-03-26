@@ -9569,7 +9569,7 @@ ${settings.phone||""}`);
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
               <div style={{fontSize:28,fontWeight:900,letterSpacing:8,fontFamily:"monospace",color:"#1a1714"}}>{lk.passcode||a.passcode}</div>
-              <div style={{fontSize:10,color:"#999",marginTop:4}}>Activates 12:00am on {fmtD(termMoveIn||a.moveIn)} · All exterior doors + bedroom</div>
+              <div style={{fontSize:10,color:"#999",marginTop:4}}>Activates 12:00am on {fmtD(a.termMoveIn||a.moveIn)} · All exterior doors + bedroom</div>
             </div>
             <div style={{textAlign:"right"}}>
               <span className={`badge ${lk.status==="active"?"b-green":"b-gold"}`}>{lk.status==="active"?"Active":"Pending"}</span>
