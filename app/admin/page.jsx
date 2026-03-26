@@ -9746,5 +9746,5 @@ export default function Page(){
     <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#5c4a3a",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
   </div>}
 
-  </>);
+  </div>);
 }
