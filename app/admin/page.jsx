@@ -641,7 +641,7 @@ function PhotoEditor({src,onSave,onClose,aspectLock=null}){
       onMouseOut={e=>{if(!active){e.currentTarget.style.background="#fff";}}}>{label}</button>
   );
 
-  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:1000,overflowY:"auto",padding:20}}>
+  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:1000,padding:20}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div><h2 style={{marginBottom:2}}>✏️ Photo Editor</h2>
         <div style={{fontSize:10,color:"#6b5e52"}}>Drag on photo to crop · Drag handles to resize · Drag inside box to move{aspectLock&&<span style={{marginLeft:8,background:"rgba(212,168,83,.12)",color:"#9a7422",fontWeight:700,padding:"1px 7px",borderRadius:4,fontSize:9}}>🔒 {aspectLock} locked — card preview ratio</span>}</div>
@@ -899,7 +899,7 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
     const t={id:uid(),name:"New Template",key:"custom_"+uid().slice(0,4),desc:"",clause:""};
     setDraftT(t);setEditingId(t.id);
   };
-  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600,overflowY:"auto"}}>
+  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
     <h2 style={{marginBottom:4}}>Utility Templates</h2>
     <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>These templates appear in the Utilities dropdown when editing unit settings. Each template has a name, short description, and full lease clause.</p>
     {templates.map(t=>(
@@ -5042,7 +5042,7 @@ export default function Page(){
         </>}
 
         {/* Lease Form Modal */}
-        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:660,overflowY:"auto"}}>
+        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:660}}>
           <h2>{leaseForm.id?"Edit Lease":"Create New Lease"}</h2>
           <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
 
@@ -5244,7 +5244,7 @@ export default function Page(){
         </div></div>}
 
         {/* View executed lease */}
-        {modal?.type==="viewLease"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560,overflowY:"auto"}}>
+        {modal?.type==="viewLease"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
           <h2>Executed Lease</h2>
           <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
             <div style={{flex:1,padding:"10px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,fontSize:11}}>
@@ -9671,7 +9671,7 @@ export default function Page(){
   {/* ── Lease Preview Modal ── */}
   {modal&&modal.previewLeaseOpen&&(
     <div className="mbg" style={{zIndex:110}} onClick={()=>setModal(p=>({...p,previewLeaseOpen:false}))}>
-      <div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:700,overflowY:"auto",padding:0}}>
+      <div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:700,padding:0}}>
 
         {/* Sticky header */}
         <div style={{position:"sticky",top:0,background:"#1a1714",padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:10,borderRadius:"14px 14px 0 0"}}>
@@ -9811,7 +9811,7 @@ export default function Page(){
       </div>
     );
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560,overflowY:"auto",animation:shake?"shake .4s ease":undefined}}>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560,animation:shake?"shake .4s ease":undefined}}>
       <h2 style={{marginBottom:4}}>Add Existing Tenant</h2>
       <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Manually onboard a tenant who is already living in your property. This will mark the room as occupied immediately.</div>
       {shake&&Object.keys(errs).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,color:"#c45c4a",fontSize:11,fontWeight:700}}>Please fill in all required fields.</div>}
