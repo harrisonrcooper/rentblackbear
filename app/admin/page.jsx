@@ -3125,7 +3125,7 @@ export default function Page(){
                         <div style={{fontSize:10,color:"#999"}}>{d.source==="application"?"Application document":d.type==="lease"?"Executed Lease Agreement":d.type==="addendum"?"Lease Addendum":"Document"} · {d.uploaded}</div>
                       </div>
                       <div style={{display:"flex",gap:4}}>
-                        {d.data&&<a href={d.data} download={d.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>⬇ Download</a>}
+                        {d.data&&<a href={d.data} download={d.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>Download</a>}
                         {d.content&&<button className="btn btn-out btn-sm" onClick={()=>setModal({type:"viewAddendum",doc:d})}>📄 View</button>}
                       </div>
                     </div>
@@ -3804,11 +3804,10 @@ export default function Page(){
                 {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){
                   var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=a.status==="new-lead";
                   var isOnboarding=a.status==="onboarding";
-                  var prog=isOnboarding?getOnboardingProgress(a):null;
                   return(
                   <div key={a.id} className="pipe-card" style={{
-                    border:isOnboarding?`2px solid ${prog.color}`:"1px solid rgba(0,0,0,.07)",
-                    borderLeft:isOnboarding?`2px solid ${prog.color}`:sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",
+                    border:isOnboarding?"2px solid #4a7c59":"1px solid rgba(0,0,0,.07)",
+                    borderLeft:isOnboarding?"2px solid #4a7c59":sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",
                     cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",
                     padding:isOnboarding?"10px":"10px 10px 10px 30px",
                   }} onClick={function(){setModal({type:"app",data:a});}}>
@@ -3848,26 +3847,7 @@ export default function Page(){
                     </div>}
 
                     {/* Onboarding progress bar */}
-                    {isOnboarding&&prog&&<>
-                      <div style={{marginTop:6,height:5,background:"rgba(0,0,0,.08)",borderRadius:3,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:`${prog.pct}%`,background:prog.color,borderRadius:3,transition:"width .3s ease"}}/>
-                      </div>
-                      <div style={{display:"flex",gap:3,marginTop:5}}>
-                        {[
-                          {key:"leaseSigned",label:"Lease"},
-                          {key:"docsUploaded",label:"Docs"},
-                          {key:"sdPaid",label:"SD"},
-                          {key:"firstMonthPaid",label:"Rent"},
-                        ].map(({key,label})=>(
-                          <div key={key} style={{flex:1,textAlign:"center",fontSize:7,fontWeight:800,padding:"2px 0",borderRadius:3,
-                            background:prog[key]?"rgba(74,124,89,.15)":"rgba(0,0,0,.06)",
-                            color:prog[key]?"#2d6a3f":"#666"}}>
-                            {prog[key]?"✓ ":""}{label}
-                          </div>
-                        ))}
-                      </div>
-                      {prog.ready&&<div style={{marginTop:4,fontSize:8,fontWeight:800,color:"#2d6a3f",textAlign:"center",padding:"3px 0",background:"rgba(74,124,89,.1)",borderRadius:3}}>Ready to Move In</div>}
-                    </>}
+
 
                     {/* Onboarding status pills — shown for approved/onboarding cards, reads from Supabase */}
                     {(isOnboarding||a.status==="approved")&&(()=>{
@@ -3905,9 +3885,15 @@ export default function Page(){
                       <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
                       <div style={{display:"flex",alignItems:"center",gap:4}}>
                         {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#888",fontWeight:700}}>{d}d</span>}
-                        {canInvite&&<button style={{fontSize:7,padding:"2px 6px",background:"rgba(212,168,83,.12)",color:"#9a7422",border:"1px solid rgba(212,168,83,.25)",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
+                        {canInvite&&<button
+                          onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,168,83,.3)";e.currentTarget.style.color="#7a5a10";}}
+                          onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,168,83,.12)";e.currentTarget.style.color="#9a7422";}}
+                          style={{fontSize:7,padding:"3px 7px",background:"rgba(212,168,83,.12)",color:"#9a7422",border:"1px solid rgba(212,168,83,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s"}}
                           onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite to Apply</button>}
-                        <button style={{fontSize:7,padding:"2px 6px",background:"rgba(74,124,89,.1)",color:"#4a7c59",border:"1px solid rgba(74,124,89,.2)",borderRadius:3,cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
+                        <button
+                          onMouseEnter={e=>{e.currentTarget.style.background="rgba(74,124,89,.25)";e.currentTarget.style.color="#2d6a3f";}}
+                          onMouseLeave={e=>{e.currentTarget.style.background="rgba(74,124,89,.1)";e.currentTarget.style.color="#4a7c59";}}
+                          style={{fontSize:7,padding:"3px 7px",background:"rgba(74,124,89,.1)",color:"#4a7c59",border:"1px solid rgba(74,124,89,.3)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s"}}
                           title="Send portal invite — bypasses application requirement"
                           onClick={e=>{e.stopPropagation();setPiState("idle");setModal({type:"sendPortalInviteApp",data:a});}}>Portal Invite</button>
                       </div>
@@ -9191,14 +9177,14 @@ ${settings.phone||""}`);
         const isEarly=t.reason&&(t.reason.toLowerCase().includes("early")||t.reason.toLowerCase().includes("broke"));
         mf.push({
           type:isEviction?"evicted":isEarly?"early":"past",
-          label:(isEviction?"⚠ Previously evicted":isEarly?"⚠ Broke lease early":"↩ Returning tenant")+" — "+(t.propName||"unknown")+(t.reason?" ("+t.reason+")":"")
+          label:(isEviction?"Previously evicted":isEarly?"Broke lease early":"Returning tenant")+" — "+(t.propName||"unknown")+(t.reason?" ("+t.reason+")":"")
         });
       }
     });
     apps.filter(x=>x.id!==a.id&&x.status==="denied").forEach(x=>{
       const nameMatch=(x.name||"").toLowerCase()===nm3&&nm3.length>0;
       const emailMatch=(x.email||"").toLowerCase()===(a.email||"").toLowerCase()&&(a.email||"").length>0;
-      if(emailMatch||(nameMatch&&emailMatch))mf.push({type:"denied",label:"⚠ Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});
+      if(emailMatch||(nameMatch&&emailMatch))mf.push({type:"denied",label:"Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});
     });
     const reqs=[{key:"bgCheck",label:"Background Check"},{key:"creditScore",label:"Credit Check"},{key:"incomeVerified",label:"Income Verification"},{key:"refs",label:"References"},{key:"idVerified",label:"ID Verified"}];
     const waived=a.waived||[];
@@ -9260,7 +9246,7 @@ ${settings.phone||""}`);
       {/* ── Editable Applicant Info ── */}
       <div className="tp-card">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <h3 style={{margin:0}}>👤 Applicant Info</h3>
+          <h3 style={{margin:0}}>Applicant Info</h3>
           <span style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Editable — syncs to lease</span>
         </div>
         <div className="fr" style={{marginBottom:6}}>
@@ -9295,19 +9281,19 @@ ${settings.phone||""}`);
 
       {/* ── Lease Preference (from Lease Now flow) ── */}
       {(a.leaseTerm||a.leasePrice||a.room)&&<div className="tp-card" style={{background:"rgba(74,124,89,.03)",border:"1px solid rgba(74,124,89,.12)"}}>
-        <h3 style={{color:"#4a7c59"}}>✅ Lease Preferences — Submitted by Applicant</h3>
+        <h3 style={{color:"#4a7c59"}}>Lease Preferences — Submitted by Applicant</h3>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:6}}>
-          {a.property&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>🏠 {a.property}</div>}
-          {a.room&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>🛏 {a.room}</div>}
-          {a.moveIn&&a.moveIn!=="Flexible"&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>📆 {fmtD(a.moveIn)}</div>}
-          {a.leaseTerm&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>📅 {a.leaseTerm}</div>}
-          {a.leasePrice&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>💰 ${a.leasePrice}/mo</div>}
+          {a.property&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>{a.property}</div>}
+          {a.room&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>{a.room}</div>}
+          {a.moveIn&&a.moveIn!=="Flexible"&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>{fmtD(a.moveIn)}</div>}
+          {a.leaseTerm&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>{a.leaseTerm}</div>}
+          {a.leasePrice&&<div style={{padding:"6px 12px",borderRadius:7,background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.15)",fontSize:11,fontWeight:700,color:"#2d6a3f"}}>${a.leasePrice}/mo</div>}
         </div>
         <div style={{fontSize:9,color:"#999",marginTop:8}}>These are the terms the applicant agreed to when they clicked Lease Now. Use as reference when assigning room and setting rent.</div>
       </div>}
 
 
-      {a.status==="reviewing"&&<div className="tp-card"><h3>📋 Review Checklist</h3>
+      {a.status==="reviewing"&&<div className="tp-card"><h3>Review Checklist</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"not-started";return(
           <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1}}>
             <span style={{fontSize:12,textDecoration:isW?"line-through":"none"}}>{r.label}{isW&&<span style={{fontSize:9,color:"#999",marginLeft:6}}>Waived</span>}</span>
@@ -9339,7 +9325,7 @@ ${settings.phone||""}`);
         };
         return(
         <div className="tp-card" style={{border:"2px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
-          <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>🏠 Room / Unit Assignment</h3>
+          <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>Room / Unit Assignment</h3>
           <div className="fr" style={{marginBottom:8,gap:8}}>
             <div className="fld" style={{marginBottom:0}}>
               <label>Property</label>
@@ -9362,10 +9348,10 @@ ${settings.phone||""}`);
                 const rent=isSelected?termRent:item.rent;
                 return<option key={item.id} value={item.id}>{itemLabel(item,rent)}</option>;
               })}
-              {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<option value={termItem.id}>⚠ {termItem.name} at {termProp?.name} — occupied, lease not expired by move-in</option>}
+              {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<option value={termItem.id}>{termItem.name} at {termProp?.name} (occupied) — occupied, lease not expired by move-in</option>}
             </select>
-            {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ This unit is currently occupied and its lease does not end by the selected move-in date.</div>}
-            {!termItem&&!a.termRoomId&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>⚠ "{a.room}" is not available — select an available room or unit.</div>}
+            {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>This unit is currently occupied and its lease does not end by the selected move-in date.</div>}
+            {!termItem&&!a.termRoomId&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>"{a.room}" is not available — select an available room or unit.</div>}
           </div>
           {(a.termRoomId||termItem?.id)&&<>
             <div className="fr" style={{gap:8,marginBottom:0}}>
@@ -9385,24 +9371,24 @@ ${settings.phone||""}`);
               </div>
             </div>
             {selectedAvail?._willVacate&&<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"7px 10px"}}>
-              ⏳ Current lease ends {fmtD(selectedAvail.le)} — unit will be vacant by move-in date.
+              Current lease ends {fmtD(selectedAvail.le)} — unit will be vacant by move-in date.
             </div>}
           </>}
         </div>);
       })()}
-      {(a.status==="approved"||a.status==="move-in"||a.status==="onboarding")&&<div className="tp-card"><h3>📋 Screening Summary</h3>
+      {(a.status==="approved"||a.status==="move-in"||a.status==="onboarding")&&<div className="tp-card"><h3>Screening Summary</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"—";const passed=val==="passed"||val==="verified";return(
           <div key={r.key} style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:12,opacity:isW?.45:1,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
-              <span style={{fontSize:11,fontWeight:700,color:isW?"#bbb":passed?"#4a7c59":val==="pending"?"#d4a853":"#c45c4a"}}>{isW?"Bypassed":passed?"✓ "+val:val}</span>
+              <span style={{fontSize:11,fontWeight:700,color:isW?"#bbb":passed?"#4a7c59":val==="pending"?"#d4a853":"#c45c4a"}}>{isW?"Bypassed":passed?"Pass":val}</span>
             </div>
-            {isW&&<div style={{fontSize:9,color:"#999",fontStyle:"italic",marginTop:1}}>{a.waiverReason?"Reason: "+a.waiverReason:"⚠ No waiver reason on file"}</div>}
+            {isW&&<div style={{fontSize:9,color:"#999",fontStyle:"italic",marginTop:1}}>{a.waiverReason?"Reason: "+a.waiverReason:"No waiver reason on file"}</div>}
           </div>);})}
         {a.approvedWithPending&&<div style={{marginTop:6,padding:"5px 8px",background:"rgba(212,168,83,.06)",borderRadius:5,fontSize:10,color:"#9a7422"}}>Approved with pending: {a.approvedWithPending}</div>}
       </div>}
       {/* Roommate Compatibility */}
-      {a.property&&<div className="tp-card"><h3>🏠 Housemates at {a.property}</h3>
+      {a.property&&<div className="tp-card"><h3>Housemates at {a.property}</h3>
         {(function(){
           var pr=props.find(function(p){return p.name===a.property;});
           if(!pr)return null;
@@ -9462,10 +9448,10 @@ ${settings.phone||""}`);
       </div>}
 
       {/* Communication Log */}
-      <div className="tp-card"><h3>📞 Comm Log</h3>
+      <div className="tp-card"><h3>Comm Log</h3>
         <div style={{display:"flex",gap:4,marginBottom:8}}>
           {["Call","Text","Email","Note"].map(function(tp){return(
-            <button key={tp} className="btn btn-out btn-sm" style={{flex:1,fontSize:9}} onClick={function(){setModal(function(prev){return Object.assign({},prev,{showCommInput:tp,commText:""});});}}>{tp==="Call"?"📞":tp==="Text"?"💬":tp==="Email"?"✉️":"📝"}{" "+tp}</button>);})}
+            <button key={tp} className="btn btn-out btn-sm" style={{flex:1,fontSize:9}} onClick={function(){setModal(function(prev){return Object.assign({},prev,{showCommInput:tp,commText:""});});}}>{tp}</button>);})}
         </div>
         {modal.showCommInput&&<div style={{display:"flex",gap:4,marginBottom:8}}>
           <input value={modal.commText||""} onChange={function(e){setModal(function(prev){return Object.assign({},prev,{commText:e.target.value});});}} placeholder={"Log this "+modal.showCommInput+"..."} style={{flex:1,padding:"6px 10px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}} autoFocus/>
@@ -9473,20 +9459,20 @@ ${settings.phone||""}`);
         </div>}
         {(a.commLog||[]).length>0?<div style={{maxHeight:120,overflowY:"auto"}}>{(a.commLog||[]).map(function(c,i){return(
           <div key={i} style={{display:"flex",gap:6,padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.02)",fontSize:10}}>
-            <span style={{width:20,textAlign:"center"}}>{c.type==="Call"?"📞":c.type==="Text"?"💬":c.type==="Email"?"✉️":"📝"}</span>
+            <span style={{width:20,textAlign:"center",fontSize:9,color:"#999",fontWeight:700}}>{c.type[0]}</span>
             <div style={{flex:1}}><div style={{color:"#333"}}>{c.text}</div><div style={{color:"#999",fontSize:9}}>{c.date}{" "}{c.time}</div></div>
           </div>);})}</div>:<div style={{fontSize:10,color:"#ccc",textAlign:"center",padding:8}}>No communication logged</div>}
       </div>
 
       {/* Documents from application */}
       {((a.documents&&a.documents.length>0)||a.docsFlag)&&<div className="tp-card">
-        <h3>📎 Application Documents</h3>
+        <h3>Application Documents</h3>
         {a.docsFlag&&<>
           {!a.docsFlag.idUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.idUploadLater?"rgba(212,168,83,.06)":"rgba(196,92,74,.06)",color:a.docsFlag.idUploadLater?"#9a7422":"#c45c4a",marginBottom:4}}>
-            {a.docsFlag.idUploadLater?"⏳ Photo ID — will upload later":"⚠ Photo ID — not submitted"}
+            {a.docsFlag.idUploadLater?"Photo ID — will upload later":"Photo ID — not submitted"}
           </div>}
           {!a.docsFlag.incomeUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.incomeUploadLater?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",color:a.docsFlag.incomeUploadLater?"#9a7422":"#4a7c59",marginBottom:4}}>
-            {a.docsFlag.incomeUploadLater?"⏳ Proof of Income — will upload later":"ℹ Proof of Income — not submitted"}
+            {a.docsFlag.incomeUploadLater?"Proof of Income — will upload later":"Proof of Income — not submitted"}
           </div>}
         </>}
         {(a.documents||[]).map((doc,i)=>(
@@ -9495,7 +9481,7 @@ ${settings.phone||""}`);
               <div style={{fontSize:12,fontWeight:600}}>{doc.label||doc.name}</div>
               <div style={{fontSize:9,color:"#999"}}>{doc.name} · Uploaded {doc.uploaded}</div>
             </div>
-            {doc.data&&<a href={doc.data} download={doc.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>⬇ Download</a>}
+            {doc.data&&<a href={doc.data} download={doc.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>Download</a>}
           </div>
         ))}
         {(!a.documents||a.documents.length===0)&&<div style={{fontSize:11,color:"#999",fontStyle:"italic"}}>No files uploaded yet.</div>}
@@ -9507,7 +9493,7 @@ ${settings.phone||""}`);
         const lk=a.lockActivation;
         if(lk)return(
         <div className="tp-card" style={{marginTop:10,border:"1px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
-          <h3 style={{color:"#9a7422"}}>🔑 Door Passcode</h3>
+          <h3 style={{color:"#9a7422"}}>Door Passcode</h3>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
               <div style={{fontSize:28,fontWeight:900,letterSpacing:8,fontFamily:"monospace",color:"#1a1714"}}>{lk.passcode||a.passcode}</div>
@@ -9518,7 +9504,7 @@ ${settings.phone||""}`);
               <div style={{fontSize:9,color:"#999",marginTop:4}}>Smart lock API: stub ready</div>
             </div>
           </div>
-          {!lk.passcode&&!a.passcode&&<div style={{fontSize:10,color:"#c45c4a",marginTop:6}}>⚠ No passcode — tenant didn't set one in their application.</div>}
+          {!lk.passcode&&!a.passcode&&<div style={{fontSize:10,color:"#c45c4a",marginTop:6}}>No passcode — tenant didn't set one in their application.</div>}
         </div>);
         return null;
       })()}
@@ -9531,7 +9517,7 @@ ${settings.phone||""}`);
         return(
         <div className="tp-card" style={{marginTop:10,border:"1px solid rgba(74,124,89,.2)",background:"rgba(74,124,89,.02)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <h3 style={{margin:0,color:"#4a7c59"}}>💳 Move-In Charges</h3>
+            <h3 style={{margin:0,color:"#4a7c59"}}>Move-In Charges</h3>
             <span style={{fontSize:11,fontWeight:700,color:remaining>0?"#c45c4a":"#4a7c59"}}>{remaining>0?`${fmtS(remaining)} remaining`:"✓ Fully paid"}</span>
           </div>
           {appCharges.map(c=>{
@@ -9539,14 +9525,14 @@ ${settings.phone||""}`);
             return(
             <div key={c.id} style={{padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
-                <div style={{fontSize:12,fontWeight:600}}>{c.category==="Security Deposit"?"🔒":"🏠"} {c.desc}</div>
+                <div style={{fontSize:12,fontWeight:600}}>{c.desc}</div>
                 <div style={{fontSize:10,color:"#999"}}>Due {fmtD(c.dueDate)}</div>
                 {paid>0&&paid<c.amount&&<div style={{fontSize:10,color:"#d4a853",fontWeight:600}}>{fmtS(paid)} paid · {fmtS(rem)} remaining</div>}
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
                 <span style={{fontWeight:800,fontSize:13}}>{fmtS(c.amount)}</span>
                 <span className={`badge ${st==="paid"?"b-green":st==="partial"?"b-gold":st==="pastdue"?"b-red":"b-gray"}`} style={{fontSize:7}}>{st}</span>
-                {st!=="paid"&&<button className="btn btn-green btn-sm" style={{fontSize:9,padding:"3px 8px"}} onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>💰 Pay</button>}
+                {st!=="paid"&&<button className="btn btn-green btn-sm" style={{fontSize:9,padding:"3px 8px"}} onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Record Payment</button>}
               </div>
             </div>);
           })}
@@ -9558,10 +9544,7 @@ ${settings.phone||""}`);
       })()}
 
       <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
-        {a.status==="pre-screened"&&<><button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"new-lead",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(null);}}>📞 Mark as Called</button><button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button></>}
-        {a.status==="called"&&<button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button>}
-        {a.status==="invited"&&<div style={{flex:1,textAlign:"center",padding:"10px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:12,color:"#9a7422"}}>⏳ Waiting for {a.name} to submit their application...</div>}
-        {a.status==="applied"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"applied",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"applied"}}));}}>Start Review</button>}
+        {a.status==="new-lead"&&<button className="btn btn-gold" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite to Apply</button>}
         {a.status==="applied"&&<>
           {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
             <div style={{fontWeight:700,marginBottom:4}}>Still pending — review before approving:</div>
@@ -9575,18 +9558,7 @@ ${settings.phone||""}`);
             Approve{incompleteReqs.length>0?" Anyway":""}
           </button>
         </>}
-        {a.status==="lease-sent"&&<div style={{width:"100%"}}>
-          <div style={{padding:"10px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,marginBottom:8,fontSize:11,color:"#9a7422",fontWeight:600,textAlign:"center"}}>
-            Lease sent — awaiting tenant signature
-          </div>
-          {a.chargeConfig&&<div style={{padding:"10px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,fontSize:11,color:"#2d6a3f",marginBottom:8}}>
-            <div style={{fontWeight:700,marginBottom:4}}>Charges pending tenant signature:</div>
-            {(()=>{const cfg=a.chargeConfig;const items=[];items.push({l:"Security Deposit",v:cfg.sd});if(cfg.structure==="prorated")items.push({l:"Prorated Rent ("+cfg.proratedDays+"d)",v:cfg.proratedAmt});else items.push({l:"First Month Rent",v:cfg.rent});if(cfg.structure==="first-last")items.push({l:"Last Month Rent",v:cfg.rent});return items.map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between"}}><span>{it.l}</span><strong>{fmtS(it.v)}</strong></div>);})()}
-          </div>}
-          <button className="btn btn-out btn-sm" style={{width:"100%"}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs:[],step:1})}>
-            Reconfigure Charges
-          </button>
-        </div>}
+
         {(a.status==="approved"||a.status==="onboarding")&&(()=>{
           const appCharges2=charges.filter(c=>c.tenantName===a.name&&["Security Deposit","Rent","Move-In Fee"].includes(c.category));
           const totalDue2=appCharges2.reduce((s,c)=>s+c.amount,0);
