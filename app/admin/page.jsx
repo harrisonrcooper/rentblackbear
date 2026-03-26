@@ -7054,7 +7054,7 @@ export default function Page(){
     };
 
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto",zoom:1/_zoom}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",display:"flex",alignItems:"center",gap:16,height:56,position:"sticky",top:0,zIndex:10}}>
         <button onClick={()=>setViewingLease(null)}
@@ -7265,7 +7265,7 @@ export default function Page(){
       {id:"guide",label:"Home Guide"},
     ];
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto",zoom:1/_zoom}}>
 
       {/* ── Sticky top bar ── */}
       <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",position:"sticky",top:0,zIndex:10}}>
