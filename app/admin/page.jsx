@@ -2391,10 +2391,13 @@ export default function Page(){
             setTimeout(()=>setShowConfetti(false),8000);
             setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
           }
-          // Notification for pre-screens
+          // Notification for pre-screens — confetti + toast same as full apps
           if(newPrescreened.length>0){
             const newest=newPrescreened[0];
-            setNotifs(p=>[{id:uid(),type:"app",msg:`📋 New pre-screen from ${newest.name}${newest.property?" · "+newest.property:""}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
+            setNotifs(p=>[{id:uid(),type:"app",msg:`New pre-screen from ${newest.name}${newest.property?" · "+newest.property:""}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
+            setShowConfetti(true);setLeadToast(newest);setToastDismissing(false);
+            setTimeout(()=>setShowConfetti(false),8000);
+            setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
           }
         } else {
           // Silently sync known IDs
@@ -10319,14 +10322,14 @@ export default function Page(){
 
   {/* New Application Toast */}
   {leadToast&&<div className={`lead-toast ${toastDismissing?"out":""}`}>
-    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:"#d4a853",letterSpacing:1.5}}>🎉 NEW APPLICATION!</div></div>
+    <div style={{textAlign:"center",marginBottom:12}}><div style={{fontSize:14,fontWeight:800,color:"#d4a853",letterSpacing:1.5}}>{leadToast.status==="applied"?"NEW APPLICATION!":"NEW LEAD!"}</div></div>
     <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:22,fontWeight:800,color:"#f5f0e8"}}>{leadToast.name}</div></div>
     <div style={{display:"flex",justifyContent:"center",gap:16,fontSize:12,color:"#c4a882",marginBottom:14,flexWrap:"wrap"}}>
-      {leadToast.phone&&<span>📞 {leadToast.phone}</span>}
-      {leadToast.property&&<span>🏠 {leadToast.property}</span>}
-      {leadToast.room&&<span>🚪 {leadToast.room}</span>}
+      {leadToast.phone&&<span>{leadToast.phone}</span>}
+      {leadToast.property&&<span>{leadToast.property}</span>}
+      {leadToast.room&&<span>{leadToast.room}</span>}
     </div>
-    <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>Review Application →</button>
+    <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>{leadToast.status==="applied"?"Review Application →":"View New Lead →"}</button>
     <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#5c4a3a",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
   </div>}
 
