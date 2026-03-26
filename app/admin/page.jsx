@@ -1823,7 +1823,9 @@ const S=`
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
-@keyframes spin{to{transform:rotate(360deg)}}@keyframes wiggle{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-4px)}30%{transform:translateX(4px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}75%{transform:translateX(-1px)}90%{transform:translateX(1px)}}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes wiggle{0%,100%{transform:rotate(0deg) translate(0,0)}20%{transform:rotate(-1.5deg) translate(-0.5px,0.5px)}40%{transform:rotate(1deg) translate(0.5px,-0.5px)}60%{transform:rotate(-0.5deg) translate(-0.5px,0)}80%{transform:rotate(1.5deg) translate(0.5px,0.5px)}}
+@keyframes wiggle2{0%,100%{transform:rotate(0deg) translate(0,0)}15%{transform:rotate(1deg) translate(0.5px,0.5px)}35%{transform:rotate(-1.5deg) translate(-0.5px,-0.5px)}55%{transform:rotate(0.5deg) translate(0.5px,0)}75%{transform:rotate(-1deg) translate(-0.5px,0.5px)}90%{transform:rotate(1.5deg) translate(0,0.5px)}}
+@keyframes wiggle3{0%,100%{transform:rotate(0deg) translate(0,0)}10%{transform:rotate(1.5deg) translate(0.5px,-0.5px)}30%{transform:rotate(-1deg) translate(-0.5px,0.5px)}50%{transform:rotate(0.5deg) translate(0,0.5px)}70%{transform:rotate(-1.5deg) translate(0.5px,-0.5px)}85%{transform:rotate(1deg) translate(-0.5px,0)}}@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-4px)}30%{transform:translateX(4px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}75%{transform:translateX(-1px)}90%{transform:translateX(1px)}}
 @keyframes redFlash{0%{box-shadow:none}40%{box-shadow:inset 0 0 0 2px rgba(196,92,74,.2)}100%{box-shadow:none}}
 @keyframes fieldShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 .field-err input,.field-err select,.field-err textarea{border-color:#c45c4a!important;background:rgba(196,92,74,.03)!important;animation:fieldShake .35s ease}
@@ -2571,7 +2573,7 @@ export default function Page(){
                   setSidebarConfig(cfg);
                   setSidebarDrag(null);setSidebarDragOver(null);
                 }}
-                style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",margin:"1px 4px",borderRadius:6,cursor:"grab",background:isDragOver?"rgba(212,168,83,.15)":isDragging?"rgba(0,0,0,.3)":"rgba(255,255,255,.04)",border:isDragOver?"1px solid rgba(212,168,83,.3)":"1px solid transparent",transition:"all .1s",animation:"wiggle 0.3s ease-in-out infinite",opacity:isDragging?0.4:1}}>
+                style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",margin:"1px 4px",borderRadius:6,cursor:"grab",background:isDragOver?"rgba(212,168,83,.15)":isDragging?"rgba(0,0,0,.3)":"rgba(255,255,255,.04)",border:isDragOver?"1px solid rgba(212,168,83,.3)":"1px solid transparent",transition:"all .1s",animation:`wiggle${(si*7+ii)%3+1} ${1.8+(si+ii*3)%5*0.3}s ease-in-out ${(ii*0.15+si*0.07).toFixed(2)}s infinite`,opacity:isDragging?0.4:1}}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" strokeWidth="2" style={{flexShrink:0}}><circle cx="9" cy="5" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="5" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="9" cy="12" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="12" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="9" cy="19" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="19" r="1.5" fill="rgba(255,255,255,.4)"/></svg>
                 <span style={{fontSize:9,color:"rgba(255,255,255,.5)",flexShrink:0}}>{t.i}</span>
                 <input value={t.l} onChange={e=>{
@@ -2593,13 +2595,13 @@ export default function Page(){
         </div>
       ))}
 
-      {/* Add Expense shortcut — always visible */}
-      {!sidebarEditMode&&<button className="sn" onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}>
+      {/* Add Expense shortcut — always visible, sits right after sections */}
+      <button className="sn" onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}>
         <span className="sn-i">＋</span>Add Expense
-      </button>}
+      </button>
 
-      {/* Edit / Done button */}
-      <div style={{padding:"12px 10px 6px",marginTop:"auto"}}>
+      {/* Edit / Done button — immediately after last item, no marginTop:auto */}
+      <div style={{padding:"8px 10px 4px"}}>
         {sidebarEditMode
           ?<div style={{display:"flex",flexDirection:"column",gap:6}}>
             <button onClick={()=>{setSidebarEditMode(false);setSidebarDrag(null);setSidebarDragOver(null);}}
