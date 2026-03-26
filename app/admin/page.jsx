@@ -4340,16 +4340,20 @@ export default function Page(){
         </div>}
 
         {/* List */}
-        {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody>
-          {activeApps.sort((a,b)=>getScore(b)-getScore(a)).map(a=>{const sc=getScore(a);const d=daysSince(a.lastContact||a.submitted);return(
-            <tr key={a.id} style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}><td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
+        {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th style={{width:32}}></th><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody>
+          {activeApps.sort((a,b)=>getScore(b)-getScore(a)).map(a=>{const sc=getScore(a);const d=daysSince(a.lastContact||a.submitted);const sel=bulkSel.includes(a.id);return(
+            <tr key={a.id} style={{cursor:"pointer",background:sel?"rgba(212,168,83,.07)":"",transition:"background .1s"}}
+              onClick={()=>setModal({type:"app",data:a})}>
+              <td style={{width:32}} onClick={e=>e.stopPropagation()}>
+                <input type="checkbox" checked={sel} onChange={e=>setBulkSel(p=>e.target.checked?[...p,a.id]:p.filter(x=>x!==a.id))} style={{width:14,height:14,cursor:"pointer"}}/>
+              </td>
+              <td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
               <td><span style={{fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a"}}>{sc}</span></td>
-              <td><span className={`badge ${SC2[a.status]}`}>{SL[a.status]}</span></td>
+              <td><span className={`badge ${SC2[a.status]||"b-gray"}`}>{SL[a.status]||a.status}</span></td>
               <td style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:600}}>{d}d</td>
               <td style={{fontSize:10}}>{a.source||"—"}</td>
               <td onClick={e=>e.stopPropagation()}>
                 {["pre-screened","called","new-lead"].includes(a.status)&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite</button>}
-                
               </td></tr>);})}
         </tbody></table></div></div>}
 
@@ -9587,7 +9591,19 @@ export default function Page(){
         </div>}
         {pkg==="none"&&<div style={{fontSize:10,color:"#6b5e52",fontStyle:"italic",padding:"6px 0"}}>Income verification not available when screening is waived.</div>}
         <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid "+(totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)")}}>
-          <span style={{fontSize:11,color:"#6b5e52"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}{pkg!=="none"?" + $"+adminFee+" admin":""}</span>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            <span style={{fontSize:11,color:"#6b5e52"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</span>
+            {pkg!=="none"&&<div style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:"#6b5e52"}}>
+              Admin fee:
+              <div style={{display:"flex",alignItems:"center",gap:0}}>
+                <span style={{padding:"2px 5px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"4px 0 0 4px",fontSize:11,color:"#999",fontWeight:700}}>$</span>
+                <input type="number" min={0} max={200} value={adminFee}
+                  onChange={e=>{const u={...settings,adminFee:Number(e.target.value)||0};setSettings(u);save("hq-settings",u);}}
+                  style={{width:52,borderRadius:"0 4px 4px 0",borderLeft:"none",padding:"2px 6px",fontSize:11,border:"1px solid rgba(0,0,0,.08)",fontFamily:"inherit"}}/>
+              </div>
+              <span style={{color:"#aaa",fontSize:9}}>saved to settings</span>
+            </div>}
+          </div>
           <span style={{fontSize:16,fontWeight:800,color:totalFee===0?"#4a7c59":"#d4a853"}}>{totalFee===0?"Free":"$"+totalFee}</span>
         </div>
         {pkg==="none"&&<div style={{marginTop:8}}>
