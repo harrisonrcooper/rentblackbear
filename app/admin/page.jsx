@@ -2360,8 +2360,8 @@ export default function Page(){
   const knownAppliedIds=useRef(new Set());
   useEffect(()=>{
     if(!loaded)return;
-    // Seed only the IDs that are already "applied" on load — so we don't re-fire for them
-    apps.filter(a=>a.status==="applied").forEach(a=>knownAppliedIds.current.add(a.id));
+    // Seed ALL existing app IDs on load — so we never fire confetti for pre-existing apps
+    apps.forEach(a=>knownAppliedIds.current.add(a.id));
   },[loaded]);
 
   useEffect(()=>{
