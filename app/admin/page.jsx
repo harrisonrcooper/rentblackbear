@@ -1462,7 +1462,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
   const mode=curUnit?.rentalMode||"byRoom";
   const tryClose=()=>{if(unsaved&&!justSaved)setShowCloseConfirm(true);else onClose();};
   return(<div className="mbg" onClick={tryClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760}}>
-    <h2>{isNew?"Add Property":`Edit: ${getPropDisplayName(p)}`}</h2>
+    <h2>{isNew?"Add Property":`Edit: ${p.usePropertyName===false&&p.addr?p.addr:p.name}`}</h2>
 
     {/* Property-level info */}
     <div className="fr" style={{alignItems:"flex-end"}}>
@@ -9573,8 +9573,8 @@ export default function Page(){
               <label>Property</label>
               <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,inviteRent:undefined,inviteSD:undefined,whPropOverride:false}))} style={{width:"100%"}}>
                 <option value="">Select property...</option>
-                {props.filter(p=>isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{(()=>{const d=getPropDisplayName(p);return d+(p.addr&&!d.includes(p.addr)?" — "+p.addr:"");})()}</option>)}
-                {props.filter(p=>!isWholeProp(p)).map(p=><option key={p.id} value={p.id}>{(()=>{const d=getPropDisplayName(p);return d+(p.addr&&!d.includes(p.addr)?" — "+p.addr:"")+" (by-bedroom)";})()}</option>)}
+                {props.filter(p=>isWholeProp(p)).map(p=>{const d=getPropDisplayName(p);const lbl=d+(p.addr&&!d.includes(p.addr)?" — "+p.addr:"");return<option key={p.id} value={p.id}>{lbl}</option>;})}
+                {props.filter(p=>!isWholeProp(p)).map(p=>{const d=getPropDisplayName(p);const lbl=d+(p.addr&&!d.includes(p.addr)?" — "+p.addr:"")+" (by-bedroom)";return<option key={p.id} value={p.id}>{lbl}</option>;})}
               </select>
             </div>
             {selPropId&&byRoomOnly&&!overrideConfirmed&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"12px 14px",marginBottom:8}}>
