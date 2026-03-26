@@ -2137,6 +2137,7 @@ export default function Page(){
   const[leaseTemplate,setLeaseTemplate]=useState(null);
   const[leaseSubTab,setLeaseSubTab]=useState("active");
   const[leaseForm,setLeaseForm]=useState(null);
+  const[viewingLease,setViewingLease]=useState(null); // {lease, room}
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
@@ -6933,6 +6934,174 @@ export default function Page(){
     </div>
   </div>
 
+  {/* ═══ LEASE DETAIL PAGE ═══ */}
+  {viewingLease&&(()=>{
+    const l=viewingLease.lease;
+    const r=viewingLease.room;
+    const prop=props.find(p=>allRooms(p).some(x=>x.id===r?.id));
+    const statusColors={draft:{bg:"rgba(0,0,0,.06)",tx:"#5c4a3a",label:"Draft"},pending_landlord:{bg:"rgba(212,168,83,.1)",tx:"#9a7422",label:"Awaiting Your Signature"},pending_tenant:{bg:"rgba(59,130,246,.1)",tx:"#1d4ed8",label:"Sent to Tenant"},executed:{bg:"rgba(74,124,89,.1)",tx:"#2d6a3f",label:"Executed"}};
+    const sc=statusColors[l.status]||statusColors.draft;
+    const isExec=l.status==="executed";
+    const isPending=l.status==="pending_tenant";
+    const isDraft=l.status==="draft";
+
+    // Variable replacement for lease preview
+    const fillVars=(text)=>{
+      if(!text)return"";
+      const v=l.variables||{};
+      return text.replace(/\{\{(\w+)\}\}/g,(_,k)=>v[k]||`{{${k}}}`);
+    };
+
+    return(
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto",fontFamily:settings.adminFont||"inherit",zoom:settings.adminZoom||1}}>
+      {/* Top bar */}
+      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",display:"flex",alignItems:"center",gap:16,height:56,position:"sticky",top:0,zIndex:10}}>
+        <button onClick={()=>setViewingLease(null)}
+          onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"}
+          onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+          style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,color:"#5c4a3a",padding:"6px 10px",borderRadius:6,transition:"background .15s"}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to Tenant
+        </button>
+        <div style={{width:1,height:20,background:"rgba(0,0,0,.1)"}}/>
+        <div style={{flex:1}}>
+          <div style={{fontSize:16,fontWeight:800,color:"#1a1714"}}>{l.tenantName} — Lease</div>
+          <div style={{fontSize:11,color:"#6b5e52"}}>{l.property}{prop?.addr?" · "+prop.addr:""}{l.room?" · "+l.room:""}</div>
+        </div>
+        <span style={{fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:100,background:sc.bg,color:sc.tx}}>{sc.label}</span>
+        <div style={{display:"flex",gap:8}}>
+          {isDraft&&<button className="btn btn-out btn-sm" onClick={()=>{setLeaseForm({...l});setViewingLease(null);goTab("leases");}}>Edit Lease</button>}
+          {isDraft&&<button className="btn btn-green btn-sm" onClick={()=>{setModal({type:"signLease",leaseId:l.id,lease:l});setViewingLease(null);goTab("leases");}}>Sign & Send</button>}
+          {isPending&&<button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied."});}}>Copy Signing Link</button>}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"24px 32px 60px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 320px",gap:24,alignItems:"start"}}>
+
+          {/* LEFT — lease document */}
+          <div>
+            {/* Pending tenant banner */}
+            {isPending&&<div style={{background:"rgba(59,130,246,.06)",border:"1px solid rgba(59,130,246,.2)",borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#1d4ed8"}}>Awaiting tenant signature</div>
+                <div style={{fontSize:11,color:"#3b82f6"}}>Sent to {l.tenantEmail} · Link: <span style={{fontFamily:"monospace",fontSize:10}}>{l.signingLink}</span></div>
+              </div>
+            </div>}
+
+            {/* Executed banner */}
+            {isExec&&<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <div style={{fontSize:13,fontWeight:700,color:"#2d6a3f"}}>Fully executed — signed by both parties</div>
+            </div>}
+
+            {/* Lease document preview */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",overflow:"hidden"}}>
+              <div style={{padding:"20px 24px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontSize:15,fontWeight:800}}>Lease Agreement</div>
+                {isDraft&&<button className="btn btn-out btn-sm" onClick={()=>{setLeaseForm({...l});setViewingLease(null);goTab("leases");}}>Edit Document</button>}
+              </div>
+              <div style={{padding:"32px 40px",lineHeight:1.8,fontSize:13}}>
+                {/* Header */}
+                <div style={{textAlign:"center",marginBottom:32}}>
+                  <div style={{fontSize:18,fontWeight:800,marginBottom:4}}>{l.company||settings.companyName||"Black Bear Properties"}</div>
+                  <div style={{fontSize:13,color:"#5c4a3a",marginBottom:16}}>ROOM RENTAL AGREEMENT</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,textAlign:"left",background:"rgba(0,0,0,.02)",borderRadius:8,padding:"14px 18px",marginBottom:8}}>
+                    {[["Tenant",l.tenantName],["Property",l.property+(prop?.addr?" — "+prop.addr:"")],["Room",l.room],["Move-in",fmtD(l.moveIn)],["Lease End",fmtD(l.leaseEnd)],["Monthly Rent","$"+(l.rent||0).toLocaleString()],["Security Deposit","$"+(l.sd||0).toLocaleString()],["Landlord",l.landlordName||"Carolina Cooper"]].map(([k,v])=>(
+                      <div key={k}><span style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.6}}>{k}</span><div style={{fontWeight:600,fontSize:12,marginTop:2}}>{v||"—"}</div></div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sections */}
+                {(l.sections||[]).filter(s=>s.active!==false).map((sec,i)=>(
+                  <div key={sec.id||i} style={{marginBottom:24}}>
+                    <div style={{fontSize:13,fontWeight:800,marginBottom:6,paddingBottom:4,borderBottom:"1px solid rgba(0,0,0,.08)"}}>{i+1}. {sec.title}</div>
+                    <div style={{fontSize:12,color:"#3c3228",lineHeight:1.8}} dangerouslySetInnerHTML={{__html:fillVars(sec.content||"")}}/>
+                    {sec.requiresInitials&&<div style={{marginTop:8,fontSize:10,color:"#6b5e52",fontStyle:"italic"}}>Tenant initials required for this section.</div>}
+                  </div>
+                ))}
+
+                {/* Signatures */}
+                <div style={{marginTop:40,display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",marginBottom:8}}>LANDLORD / PROPERTY MANAGER</div>
+                    {l.landlordSignedAt
+                      ?<div><div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>Signed {new Date(l.landlordSignedAt).toLocaleDateString()}</div><div style={{fontSize:11,color:"#5c4a3a"}}>{l.landlordName||"Carolina Cooper"}</div></div>
+                      :<div style={{borderBottom:"1px solid #333",paddingBottom:4,marginBottom:4,fontSize:11,color:"#aaa"}}>Signature</div>}
+                  </div>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",marginBottom:8}}>TENANT</div>
+                    {l.tenantSignedAt
+                      ?<div><div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>Signed {new Date(l.tenantSignedAt).toLocaleDateString()}</div><div style={{fontSize:11,color:"#5c4a3a"}}>{l.tenantName}</div></div>
+                      :<div style={{borderBottom:"1px solid #333",paddingBottom:4,marginBottom:4,fontSize:11,color:"#aaa"}}>Signature</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Addenda */}
+            {(l.addenda||[]).length>0&&<div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px",marginTop:16}}>
+              <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>Addenda</div>
+              {(l.addenda||[]).map((a,i)=>(
+                <div key={i} style={{padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                  <div style={{fontSize:12,fontWeight:600}}>{a.title||"Addendum "+(i+1)}</div>
+                  <div style={{fontSize:11,color:"#5c4a3a",marginTop:4}}>{a.text}</div>
+                  <div style={{fontSize:10,color:"#7a7067",marginTop:2}}>{a.date}</div>
+                </div>
+              ))}
+            </div>}
+          </div>
+
+          {/* RIGHT sidebar */}
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* Lease details */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+              <div style={{fontSize:14,fontWeight:700,marginBottom:14}}>Lease Details</div>
+              {[["Tenant",l.tenantName],["Email",l.tenantEmail],["Phone",l.tenantPhone],["Property",l.property],["Room",l.room],["Move-in",fmtD(l.moveIn)],["Lease End",fmtD(l.leaseEnd)],["Rent",fmtS(l.rent||0)+"/mo"],["Security Deposit",fmtS(l.sd||0)],["Prorated Rent",l.proratedRent>0?fmtS(l.proratedRent):"None"],["Status",sc.label]].filter(([,v])=>v).map(([k,v])=>(
+                <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:12}}>
+                  <span style={{color:"#6b5e52"}}>{k}</span>
+                  <span style={{fontWeight:600,textAlign:"right",maxWidth:"60%"}}>{v}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
+              <div style={{fontSize:14,fontWeight:700,marginBottom:14}}>Actions</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {isDraft&&<button className="btn btn-green" onClick={()=>{setLeaseForm({...l});setViewingLease(null);goTab("leases");}}>Edit Lease</button>}
+                {isDraft&&<button className="btn btn-gold" onClick={()=>{setModal({type:"signLease",leaseId:l.id,lease:l});setViewingLease(null);goTab("leases");}}>Sign & Send to Tenant</button>}
+                {isPending&&<button className="btn btn-out" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied to clipboard."});}}>Copy Signing Link</button>}
+                <button className="btn btn-out" onClick={()=>{
+                  const input=document.createElement("input");input.type="file";input.accept=".pdf,.docx,.doc";
+                  input.onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{setLeases(p=>p.map(x=>x.id===l.id?{...x,uploadedLease:{name:file.name,data:ev.target.result,uploadedAt:new Date().toISOString()}}:x));showAlert({title:"Uploaded",body:file.name+" attached to lease."});};reader.readAsDataURL(file);};
+                  input.click();
+                }}>Upload Signed PDF</button>
+                {l.uploadedLease&&<a href={l.uploadedLease.data} download={l.uploadedLease.name} className="btn btn-out" style={{textDecoration:"none",textAlign:"center",fontSize:11}}>Download: {l.uploadedLease.name}</a>}
+                <button className="btn btn-out" onClick={()=>setModal({type:"confirmAction",title:"Add Addendum",body:"Add a note or clause amendment to this executed lease.",confirmLabel:"Add",confirmStyle:"btn-green",onConfirm:()=>{setModal({type:"addAddendum",leaseId:l.id,text:"",title:""});}})}>Add Addendum</button>
+                <div style={{borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:10,marginTop:4}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#c45c4a",textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>Danger Zone</div>
+                  <button className="btn btn-out" style={{width:"100%",color:"#c45c4a",borderColor:"rgba(196,92,74,.2)",marginBottom:6}} onClick={()=>setModal({type:"confirmAction",
+                    title:"Remove from Lease",
+                    body:`This will unlink ${l.tenantName} from this lease. The lease record will remain but will have no tenant attached. This does NOT terminate their tenancy. Are you sure?`,
+                    confirmLabel:"Remove from Lease",confirmStyle:"btn-red",
+                    onConfirm:()=>{setLeases(p=>p.map(x=>x.id===l.id?{...x,tenantName:"",tenantEmail:"",tenantPhone:""}:x));setViewingLease(null);showAlert({title:"Removed",body:"Tenant unlinked from lease."});}
+                  })}>Remove from Lease</button>
+                  {r&&<button className="btn btn-out" style={{width:"100%",color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>{setViewingLease(null);setModal({type:"tenant",data:r,termStep:1,termErrs:{}});}}>Terminate Tenancy</button>}
+                </div>
+              </div>
+            </div>
+
+          </div>{/* end right */}
+        </div>{/* end grid */}
+      </div>{/* end body */}
+    </div>);
+  })()}
+
   {/* ═══ MODALS ═══ */}
   {modal&&modal.type==="tenant"&&(()=>{
     const r=modal.data;
@@ -7195,7 +7364,7 @@ export default function Page(){
                   <div style={{border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:"14px 16px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                       <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:100,background:tLease.status==="executed"?"rgba(74,124,89,.1)":tLease.status==="pending_tenant"?"rgba(59,130,246,.1)":"rgba(212,168,83,.1)",color:leaseStatusColors[tLease.status]||"#6b5e52"}}>{leaseStatusLabels[tLease.status]||tLease.status}</span>
-                      <button onClick={()=>goTab("leases")} onMouseEnter={e=>e.currentTarget.style.color="#1a1714"} onMouseLeave={e=>e.currentTarget.style.color="#6b5e52"} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#6b5e52",fontFamily:"inherit",transition:"color .15s"}}>View →</button>
+                      <button onClick={()=>setViewingLease({lease:tLease,room:r})} onMouseEnter={e=>e.currentTarget.style.color="#1a1714"} onMouseLeave={e=>e.currentTarget.style.color="#6b5e52"} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#6b5e52",fontFamily:"inherit",transition:"color .15s"}}>View →</button>
                     </div>
                     <div style={{fontSize:12,fontWeight:700,color:"#1a1714",marginBottom:8}}>{r.propName}{props.find(p=>allRooms(p).some(x=>x.id===r.id))?.addr?" · "+props.find(p=>allRooms(p).some(x=>x.id===r.id))?.addr:""} · {r.name}</div>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
@@ -7243,6 +7412,23 @@ export default function Page(){
 
   {/* Record Payment Modal */}
   {/* Confirm Action Modal — generic destructive confirmation */}
+  {modal&&modal.type==="addAddendum"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+      <h2 style={{marginBottom:4}}>Add Addendum</h2>
+      <p style={{fontSize:11,color:"#5c4a3a",marginBottom:14}}>This will be appended to the lease as a signed amendment. Make sure both parties are aware.</p>
+      <div className="fld"><label>Addendum Title</label><input value={modal.title||""} onChange={e=>setModal(p=>({...p,title:e.target.value}))} placeholder="e.g. Pet Policy Amendment" autoFocus/></div>
+      <div className="fld"><label>Content</label><textarea value={modal.text||""} onChange={e=>setModal(p=>({...p,text:e.target.value}))} placeholder="Describe the amendment in full..." rows={4} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-green" disabled={!(modal.text||"").trim()} onClick={()=>{
+          const addendum={title:modal.title||"Addendum",text:modal.text,date:TODAY.toISOString().split("T")[0],addedBy:settings.companyName||"Property Manager"};
+          setLeases(p=>p.map(x=>x.id===modal.leaseId?{...x,addenda:[...(x.addenda||[]),addendum]}:x));
+          setModal(null);showAlert({title:"Addendum Added",body:"Amendment appended to the lease record."});
+        }}>Add Addendum</button>
+      </div>
+    </div></div>
+  )}
+
   {modal&&modal.type==="confirmAction"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
       <h2>{modal.title||"Are you sure?"}</h2>
