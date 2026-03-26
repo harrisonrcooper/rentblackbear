@@ -2071,7 +2071,7 @@ export default function Page(){
   const[acctOverviewMode,setAcctOverviewMode]=useState("property"); // "property" | "unit"
   const[payPeriod,setPayPeriod]=useState("mtd");
   const[payFilters,setPayFilters]=useState({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""});
-  const[depFilters,setDepFilters]=useState({property:"",tenant:"",lease:"",dateFrom:"",dateTo:""});
+  const[depFilters,setDepFilters]=useState({property:"",tenant:"",lease:"",dateFrom:"",dateTo:"",view:""});
   const[expCharge,setExpCharge]=useState(null);
   const[newCatInput,setNewCatInput]=useState("");
   const[showNewCat,setShowNewCat]=useState(false);
@@ -3594,112 +3594,193 @@ export default function Page(){
 
         {/* ── Deposits ── */}
         {paySubTab==="deposits"&&(()=>{
-          // Collect all payments with full context from their parent charge
-          const allPays=charges.flatMap(c=>c.payments.map(p=>({...p,chargeId:c.id,tenantName:c.tenantName,propName:c.propName,roomName:c.roomName,category:c.category,chargeDueDate:c.dueDate})));
+          const allPays=charges.flatMap(c=>c.payments.map(p=>({...p,chargeId:c.id,tenantName:c.tenantName,propName:c.propName,roomName:c.roomName,category:c.category,chargeDueDate:c.dueDate,roomId:c.roomId})));
           const transit=allPays.filter(p=>p.depositStatus==="transit");
-          const deposited=allPays.filter(p=>p.depositStatus==="deposited");
-          const allDeposited=[...deposited].sort((a,b)=>new Date(b.depositDate||b.date)-new Date(a.depositDate||a.date));
+          const deposited=allPays.filter(p=>p.depositStatus==="deposited"||(!p.depositStatus&&p.depositDate));
 
-          // Apply filters
-          let filtered=allDeposited;
+          // Period date range from top buttons
+          const now=TODAY;
+          const periodFrom=payPeriod==="mtd"?new Date(now.getFullYear(),now.getMonth(),1).toISOString().split("T")[0]
+            :payPeriod==="ytd"?`${now.getFullYear()}-01-01`
+            :payPeriod==="next"?now.toISOString().split("T")[0]
+            :null;
+          const periodTo=payPeriod==="next"?new Date(now.getFullYear(),now.getMonth()+2,0).toISOString().split("T")[0]:null;
+
+          let filtered=[...deposited].sort((a,b)=>new Date(b.depositDate||b.date)-new Date(a.depositDate||a.date));
+          if(periodFrom)filtered=filtered.filter(p=>(p.depositDate||p.date)>=periodFrom);
+          if(periodTo)filtered=filtered.filter(p=>(p.depositDate||p.date)<=periodTo);
           if(depFilters.property)filtered=filtered.filter(p=>p.propName===depFilters.property);
           if(depFilters.tenant)filtered=filtered.filter(p=>p.tenantName===depFilters.tenant);
-          if(depFilters.lease)filtered=filtered.filter(p=>p.roomName===depFilters.lease);
-          if(depFilters.dateFrom)filtered=filtered.filter(p=>(p.depositDate||p.date)>=depFilters.dateFrom);
-          if(depFilters.dateTo)filtered=filtered.filter(p=>(p.depositDate||p.date)<=depFilters.dateTo);
 
-          // Group by month for display
           const months={};
           filtered.forEach(p=>{const d=new Date((p.depositDate||p.date)+"T00:00:00");const mk=`${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,"0")}`;const label=d.toLocaleString("default",{month:"long",year:"numeric"});if(!months[mk])months[mk]={label,key:mk,items:[],total:0};months[mk].items.push(p);months[mk].total+=p.amount;});
           const monthKeys=Object.keys(months).sort().reverse();
 
           const totalTransit=transit.reduce((s,p)=>s+p.amount,0);
           const totalDeposited=filtered.reduce((s,p)=>s+p.amount,0);
-
-          // SD section
           const sdTenants=occLeases;
           const totalSD=sdTenants.reduce((s,r)=>{const sd=sdLedger.find(x=>x.roomId===r.id);return s+((sd&&sd.amountHeld)||r.rent);},0);
 
+          const COL="120px 110px 1fr 160px 90px";
+
           return(<>
-          {/* KPIs */}
-          <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
-            <div className="kpi"><div className="kl">In Transit</div><div className="kv kw">{fmtS(totalTransit)}</div><div className="ks">{transit.length} pending</div></div>
-            <div className="kpi"><div className="kl">Deposited</div><div className="kv kg">{fmtS(totalDeposited)}</div><div className="ks">{filtered.length} deposits</div></div>
-            <div className="kpi"><div className="kl">SD Held</div><div className="kv">{fmtS(totalSD)}</div><div className="ks">{sdTenants.length} tenants · Redstone FCU</div></div>
+          {/* KPI cards — clickable */}
+          <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)",marginBottom:16}}>
+            <div className="kpi" style={{cursor:"pointer",borderBottom:depFilters.view==="transit"?"3px solid #d4a853":"none"}} onClick={()=>setDepFilters(f=>({...f,view:f.view==="transit"?"":"transit"}))}>
+              <div className="kl">In Transit</div><div className="kv kw">{fmtS(totalTransit)}</div><div className="ks">{transit.length} pending</div>
+            </div>
+            <div className="kpi" style={{cursor:"pointer",borderBottom:depFilters.view==="deposited"?"3px solid #4a7c59":"none"}} onClick={()=>setDepFilters(f=>({...f,view:f.view==="deposited"?"":"deposited"}))}>
+              <div className="kl">Deposited</div><div className="kv kg">{fmtS(totalDeposited)}</div><div className="ks">{filtered.length} deposits</div>
+            </div>
+            <div className="kpi" style={{cursor:"pointer",borderBottom:depFilters.view==="sd"?"3px solid #7c3aed":"none"}} onClick={()=>setDepFilters(f=>({...f,view:f.view==="sd"?"":"sd"}))}>
+              <div className="kl">Security Deposit Held</div><div className="kv" style={{color:"#7c3aed"}}>{fmtS(totalSD)}</div><div className="ks">{sdTenants.length} tenants · Redstone FCU</div>
+            </div>
           </div>
 
-          {/* In Transit */}
-          {transit.length>0&&<>
-            <div className="sec-hd"><div><h2>In Transit ({transit.length})</h2><p>Payments waiting to clear</p></div></div>
-            {transit.map(p=><div key={p.id} className="row">
-              <div className="row-dot" style={{background:"#d4a853"}}/>
-              <div className="row-i"><div className="row-t">{p.tenantName}</div><div className="row-s">{p.propName} · {p.roomName} · {p.method} · Paid {fmtD(p.date)}</div></div>
-              <div className="row-v kw">{fmtS(p.amount)}</div>
-              <button className="btn btn-green btn-sm" onClick={()=>{setCharges(prev=>prev.map(c=>({...c,payments:c.payments.map(pp=>pp.id===p.id?{...pp,depositStatus:"deposited",depositDate:TODAY.toISOString().split("T")[0]}:pp)})));}}>Mark Deposited</button>
-            </div>)}
+          {/* Filter bar */}
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14,alignItems:"center"}}>
+            <select value={depFilters.property||""} onChange={e=>setDepFilters(f=>({...f,property:e.target.value}))} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",background:"#fff"}}>
+              <option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+            </select>
+            <select value={depFilters.tenant||""} onChange={e=>setDepFilters(f=>({...f,tenant:e.target.value}))} style={{padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",background:"#fff"}}>
+              <option value="">All Tenants</option>{[...new Set(deposited.map(p=>p.tenantName))].sort().map(n=><option key={n} value={n}>{n}</option>)}
+            </select>
+            {(depFilters.property||depFilters.tenant)&&<button className="btn btn-out btn-sm" onClick={()=>setDepFilters(f=>({...f,property:"",tenant:""}))}>Reset</button>}
+          </div>
+
+          {/* ── In Transit section ── */}
+          {((!depFilters.view||depFilters.view==="transit"))&&transit.length>0&&<>
+            <div style={{fontSize:13,fontWeight:800,color:"#1a1714",marginBottom:8,display:"flex",alignItems:"center",gap:8}}>
+              In Transit <span style={{fontSize:11,fontWeight:500,color:"#6b5e52"}}>({transit.length} payment{transit.length!==1?"s":""} waiting to clear)</span>
+            </div>
+            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.07)",marginBottom:20,overflow:"hidden"}}>
+              {/* Col headers */}
+              <div style={{display:"grid",gridTemplateColumns:COL,padding:"8px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>
+                <div>Deposit Date</div><div>Date Paid</div><div>Tenant / Room</div><div>Bank Account</div><div style={{textAlign:"right"}}>Amount</div>
+              </div>
+              {transit.map(p=>(
+                <div key={p.id} style={{display:"grid",gridTemplateColumns:COL,padding:"12px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center"}}>
+                  <div><span style={{fontSize:11,fontWeight:700,color:"#d4a853"}}>In Transit</span><div style={{fontSize:9,color:"#6b5e52"}}>Est. {fmtD(p.date)}</div></div>
+                  <div style={{fontSize:11}}>{fmtD(p.date)}</div>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:700}}>{p.tenantName}</div>
+                    <div style={{fontSize:9,color:"#6b5e52"}}>{p.propName} · {p.roomName}</div>
+                  </div>
+                  <div><div style={{fontSize:11}}>Redstone FCU</div><div style={{fontSize:9,color:"#6b5e52"}}>{p.method}</div></div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:8}}>
+                    <span style={{fontSize:13,fontWeight:800,color:"#d4a853"}}>{fmtS(p.amount)}</span>
+                    <button className="btn btn-green btn-sm" style={{fontSize:9,whiteSpace:"nowrap"}} onClick={()=>setCharges(prev=>prev.map(c=>({...c,payments:c.payments.map(pp=>pp.id===p.id?{...pp,depositStatus:"deposited",depositDate:TODAY.toISOString().split("T")[0]}:pp)})))}>Mark Deposited</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </>}
 
-          {/* Deposit Ledger */}
-          <div className="sec-hd" style={{marginTop:16}}><div><h2>Deposit Ledger</h2></div></div>
-
-          {/* Filters */}
-          <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
-            <select value={depFilters.property} onChange={e=>setDepFilters({...depFilters,property:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>
-            <select value={depFilters.tenant} onChange={e=>setDepFilters({...depFilters,tenant:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Tenants</option>{[...new Set(allDeposited.map(p=>p.tenantName))].map(n=><option key={n} value={n}>{n}</option>)}</select>
-            <select value={depFilters.lease} onChange={e=>setDepFilters({...depFilters,lease:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Rooms</option>{[...new Set(allDeposited.map(p=>p.roomName))].map(n=><option key={n} value={n}>{n}</option>)}</select>
-            <input type="date" value={depFilters.dateFrom} onChange={e=>setDepFilters({...depFilters,dateFrom:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10}}/>
-            <input type="date" value={depFilters.dateTo} onChange={e=>setDepFilters({...depFilters,dateTo:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10}}/>
-            <button className="btn btn-out btn-sm" onClick={()=>setDepFilters({property:"",tenant:"",lease:"",dateFrom:"",dateTo:""})}>Reset</button>
-          </div>
-
-          {/* Monthly grouped table */}
-          <div style={{maxHeight:500,overflowY:"auto",borderRadius:10,border:"1px solid rgba(0,0,0,.04)"}}>
-            {monthKeys.length>0?monthKeys.map(mk=>{const mo=months[mk];return(
-              <div key={mk}>
-                <div style={{position:"sticky",top:0,zIndex:2,background:"#f4f3f0",padding:"10px 16px",borderBottom:"2px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{fontSize:13,fontWeight:800}}>{mo.label}</div>
-                  <div style={{fontSize:13,fontWeight:800,color:"#4a7c59"}}>{fmtS(mo.total)} <span style={{fontSize:10,fontWeight:500,color:"#6b5e52"}}>({mo.items.length})</span></div>
+          {/* ── Deposit Ledger section ── */}
+          {(!depFilters.view||depFilters.view==="deposited")&&<>
+            <div style={{fontSize:13,fontWeight:800,color:"#1a1714",marginBottom:8}}>Deposit Ledger</div>
+            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.07)",marginBottom:20,overflow:"hidden"}}>
+              {monthKeys.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52",fontSize:12}}>No deposits in this period.</div>}
+              {monthKeys.map(mk=>{const mo=months[mk];return(
+                <div key={mk}>
+                  <div style={{padding:"10px 16px",background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:2}}>
+                    <div style={{fontSize:13,fontWeight:800}}>{mo.label}</div>
+                    <div style={{fontSize:13,fontWeight:800,color:"#4a7c59"}}>{fmtS(mo.total)} <span style={{fontSize:10,fontWeight:500,color:"#6b5e52"}}>({mo.items.length})</span></div>
+                  </div>
+                  {/* Col headers */}
+                  <div style={{display:"grid",gridTemplateColumns:COL,padding:"6px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>
+                    <div>Deposit Date</div><div>Date Paid</div><div>Tenant / Room</div><div>Bank Account</div><div style={{textAlign:"right"}}>Amount</div>
+                  </div>
+                  {mo.items.map(p=>{
+                    const isExp=expCharge===("dep-"+p.id);
+                    const tRoom=allTenants.find(t=>t.id===p.roomId);
+                    const tLease=leases.find(l=>l.tenantEmail===tRoom?.tenant?.email||l.tenantName===tRoom?.tenant?.name);
+                    const confId=p.confId||`BB-${(p.chargeId||"").slice(0,6).toUpperCase()}-${Date.now().toString(36).slice(-3).toUpperCase()}`;
+                    return(
+                    <div key={p.id}>
+                      <div style={{display:"grid",gridTemplateColumns:COL,padding:"12px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"#fff",transition:"background .1s"}}
+                        onClick={()=>setExpCharge(isExp?null:"dep-"+p.id)}>
+                        <div style={{fontSize:11,fontWeight:600}}>{fmtD(p.depositDate||p.date)}</div>
+                        <div style={{fontSize:11}}>{fmtD(p.date)}</div>
+                        <div>
+                          <button style={{background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}
+                            onClick={e=>{e.stopPropagation();if(tRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:tRoom});}}}>
+                            <div style={{fontSize:11,fontWeight:700,color:tRoom?"#3b82f6":"#3c3228",textDecoration:tRoom?"underline":"none"}}>{p.tenantName}</div>
+                          </button>
+                          <div style={{fontSize:9,color:"#6b5e52"}}>{p.propName} · {p.roomName}</div>
+                        </div>
+                        <div><div style={{fontSize:11,fontWeight:600}}>Redstone FCU</div><div style={{fontSize:9,color:"#6b5e52"}}>{p.method}</div></div>
+                        <div style={{textAlign:"right",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>
+                          <span style={{fontSize:13,fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</span>
+                          <span style={{fontSize:10,color:"#6b5e52"}}>{isExp?"∧":"∨"}</span>
+                        </div>
+                      </div>
+                      {/* Expanded detail */}
+                      {isExp&&<div style={{padding:"16px 20px",background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.04)"}}>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 14px"}}>
+                            <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Payment ID</div>
+                            <div style={{fontSize:11,fontFamily:"monospace",fontWeight:700}}>{confId}</div>
+                          </div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 14px"}}>
+                            <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Method</div>
+                            <div style={{fontSize:12,fontWeight:600}}>{p.method}</div>
+                          </div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 14px"}}>
+                            <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Status</div>
+                            <div style={{fontSize:11,fontWeight:700,color:"#4a7c59"}}>Deposited {fmtD(p.depositDate||p.date)}</div>
+                          </div>
+                        </div>
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          {tLease&&<button className="btn btn-out btn-sm" onClick={()=>{setViewingLease({lease:tLease,room:tRoom||null});}}>View Lease →</button>}
+                          {tRoom&&<button className="btn btn-out btn-sm" onClick={()=>{setTenantProfileTab("payments");setModal({type:"tenant",data:tRoom});}}>Tenant Payments →</button>}
+                          <button className="btn btn-out btn-sm" onClick={()=>{
+                            const w=window.open("","_blank");
+                            w.document.write(`<!DOCTYPE html><html><head><title>Receipt ${confId}</title><style>body{font-family:Georgia,serif;max-width:560px;margin:40px auto;padding:0 24px;color:#1a1714;line-height:1.6}h1{font-size:20px;font-weight:700;border-bottom:2px solid #1a1714;padding-bottom:8px;margin-bottom:20px}.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}.label{color:#666}.value{font-weight:600}.total{display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:800;border-top:2px solid #1a1714;margin-top:4px}.conf{font-family:monospace;font-size:18px;font-weight:900;text-align:center;padding:12px;background:#f5f0e8;border-radius:6px;margin:16px 0}.footer{margin-top:32px;font-size:11px;color:#999;text-align:center}</style></head><body><h1>Payment Receipt</h1><div class="conf">${confId}</div><div class="row"><span class="label">Date Paid</span><span class="value">${p.date}</span></div><div class="row"><span class="label">Deposit Date</span><span class="value">${p.depositDate||p.date}</span></div><div class="row"><span class="label">Tenant</span><span class="value">${p.tenantName}</span></div><div class="row"><span class="label">Property</span><span class="value">${p.propName} · ${p.roomName}</span></div><div class="row"><span class="label">Method</span><span class="value">${p.method}</span></div><div class="total"><span>Amount</span><span>$${Number(p.amount).toLocaleString()}</span></div><div class="footer">Oak &amp; Main Development LLC · Black Bear Rentals · blackbearhousing@gmail.com</div></body></html>`);
+                            w.document.close();w.print();
+                          }}>PDF Receipt</button>
+                        </div>
+                      </div>}
+                    </div>);
+                  })}
                 </div>
-                <table className="tbl" style={{marginBottom:0}}><thead><tr><th>Deposit Date</th><th>Date Paid</th><th>Tenant / Room</th><th>Bank Account</th><th style={{textAlign:"right"}}>Amount</th></tr></thead><tbody>
-                  {mo.items.map(p=>(
-                    <tr key={p.id}>
-                      <td style={{fontWeight:600}}>{fmtD(p.depositDate)}</td>
-                      <td>{fmtD(p.date)}</td>
-                      <td><div style={{fontSize:11,fontWeight:600}}>{p.tenantName}</div><div style={{fontSize:9,color:"#6b5e52"}}>{p.propName} · {p.roomName}</div></td>
-                      <td><div style={{fontSize:11}}>Redstone FCU</div><div style={{fontSize:9,color:"#6b5e52"}}>{p.method}</div></td>
-                      <td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</td>
-                    </tr>
-                  ))}
-                </tbody></table>
-              </div>
-            );}):<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}>No deposits yet. When you record payments via ACH/Stripe and mark them deposited, they'll appear here grouped by month.</div>}
-          </div>
+              );})}
+            </div>
+          </>}
 
-          {/* Security Deposits */}
-          <div className="sec-hd" style={{marginTop:20}}><div><h2>Security Deposits — Redstone FCU</h2></div></div>
-          <div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th>Tenant</th><th>Property</th><th>Room</th><th>Lease End</th><th style={{textAlign:"right"}}>SD Held</th></tr></thead><tbody>
-            {sdTenants.length>0?sdTenants.map(r=>{const sd=sdLedger.find(x=>x.roomId===r.id);const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;return(
-              <tr key={r.id}>
-                <td style={{fontWeight:600}}>{r.tenant.name}</td>
-                <td>{r.propName}</td>
-                <td>{r.name}</td>
-                <td>{r.le?<span style={{color:dl&&dl<=90?dl<=30?"#c45c4a":"#d4a853":"inherit"}}>{fmtD(r.le)}{dl&&dl<=90?` (${dl}d)`:""}</span>:"—"}</td>
-                <td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</td>
-              </tr>);}):
-            <tr><td colSpan={5} style={{textAlign:"center",padding:20,color:"#6b5e52"}}>No security deposits</td></tr>}
-            {sdTenants.length>0&&<tr style={{borderTop:"2px solid rgba(0,0,0,.06)"}}><td colSpan={4} style={{fontWeight:800}}>Total Held</td><td style={{textAlign:"right",fontWeight:800,color:"#4a7c59"}}>{fmtS(totalSD)}</td></tr>}
-          </tbody></table></div></div>
-
-          {/* SD Returns History */}
-          {sdLedger.length>0&&<>
-            <div className="sec-hd" style={{marginTop:16}}><div><h2>SD Returns</h2></div></div>
-            {sdLedger.map(s=>(
-              <div key={s.id} className="row">
-                <div className="row-dot" style={{background:"#999"}}/>
-                <div className="row-i"><div className="row-t">{s.tenantName}</div><div className="row-s">{s.propName} · {s.roomName} · Held {fmtS(s.amountHeld)} · Deducted {fmtS(s.amountHeld-s.returned)} · Returned {fmtD(s.returnDate)}</div></div>
-                <div className="row-v" style={{color:"#4a7c59"}}>{fmtS(s.returned)}</div>
+          {/* ── Security Deposits section ── */}
+          {(!depFilters.view||depFilters.view==="sd")&&<>
+            <div style={{fontSize:13,fontWeight:800,color:"#1a1714",marginBottom:8}}>Security Deposits Held — Redstone FCU</div>
+            <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.07)",overflow:"hidden",marginBottom:20}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"8px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>
+                <div>Tenant</div><div>Property</div><div>Room</div><div>Lease End</div><div style={{textAlign:"right"}}>Security Deposit</div>
               </div>
-            ))}
+              {sdTenants.length===0&&<div style={{textAlign:"center",padding:24,color:"#6b5e52",fontSize:12}}>No security deposits on file.</div>}
+              {sdTenants.map(r=>{const sd=sdLedger.find(x=>x.roomId===r.id);const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;return(
+                <div key={r.id} style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"11px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center"}}>
+                  <div style={{fontSize:12,fontWeight:700}}>{r.tenant.name}</div>
+                  <div style={{fontSize:11,color:"#5c4a3a"}}>{r.propName}</div>
+                  <div style={{fontSize:11,color:"#5c4a3a"}}>{r.name}</div>
+                  <div style={{fontSize:11,color:dl&&dl<=30?"#c45c4a":dl&&dl<=90?"#d4a853":"#5c4a3a"}}>{r.le?`${fmtD(r.le)}${dl&&dl<=90?` (${dl}d)`:""}` :"—"}</div>
+                  <div style={{fontSize:13,fontWeight:800,color:"#7c3aed",textAlign:"right"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</div>
+                </div>
+              );})}
+              {sdTenants.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"10px 16px",borderTop:"2px solid rgba(0,0,0,.07)",background:"rgba(0,0,0,.02)"}}>
+                <div style={{fontSize:12,fontWeight:800,gridColumn:"1/5"}}>Total Held</div>
+                <div style={{fontSize:14,fontWeight:800,color:"#7c3aed",textAlign:"right"}}>{fmtS(totalSD)}</div>
+              </div>}
+            </div>
+
+            {/* SD Returns */}
+            {sdLedger.filter(s=>s.returned).length>0&&<>
+              <div style={{fontSize:13,fontWeight:800,color:"#1a1714",marginBottom:8}}>Security Deposit Returns</div>
+              {sdLedger.map(s=>(
+                <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",background:"#fff",borderRadius:8,marginBottom:6,border:"1px solid rgba(0,0,0,.06)"}}>
+                  <div><div style={{fontSize:12,fontWeight:700}}>{s.tenantName}</div><div style={{fontSize:10,color:"#6b5e52"}}>{s.propName} · {s.roomName} · Held {fmtS(s.amountHeld)} · Deducted {fmtS(s.amountHeld-s.returned)} · Returned {fmtD(s.returnDate)}</div></div>
+                  <div style={{fontSize:14,fontWeight:800,color:"#4a7c59"}}>{fmtS(s.returned)}</div>
+                </div>
+              ))}
+            </>}
           </>}
           </>);
         })()}
