@@ -273,22 +273,22 @@ const DEF_MAINT=[ // maintenance requests
 ];
 const DEF_APPS=[
   // ── Pre-Screened (just submitted, not yet called) ──
-  {id:"a1",name:"Jordan Lee",email:"jordan.lee@email.com",phone:"(256) 555-9001",property:"Lee Drive East",room:"",moveIn:"2026-04-15",income:"$3,800",status:"pre-screened",submitted:"2026-03-13",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Roomies.com",lastContact:"2026-03-13",notes:"Found us on Roomies.com. Interested in a 3BR."},
-  {id:"a2",name:"Priya Sharma",email:"priya.s@email.com",phone:"(256) 555-9002",property:"The Holmes House",room:"",moveIn:"2026-05-01",income:"$4,500",status:"pre-screened",submitted:"2026-03-12",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Google Search",lastContact:"2026-03-12",notes:""},
+  {id:"a1",name:"Jordan Lee",email:"jordan.lee@email.com",phone:"(256) 555-9001",property:"Lee Drive East",room:"",moveIn:"2026-04-15",income:"$3,800",status:"new-lead",submitted:"2026-03-13",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Roomies.com",lastContact:"2026-03-13",notes:"Found us on Roomies.com. Interested in a 3BR."},
+  {id:"a2",name:"Priya Sharma",email:"priya.s@email.com",phone:"(256) 555-9002",property:"The Holmes House",room:"",moveIn:"2026-05-01",income:"$4,500",status:"new-lead",submitted:"2026-03-12",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Google Search",lastContact:"2026-03-12",notes:""},
   // ── Called (spoke on phone, deciding whether to invite) ──
-  {id:"a3",name:"Rachel Kim",email:"rachel.k@email.com",phone:"(256) 555-9003",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-05-15",income:"$5,500",status:"called",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-13",notes:"NASA summer intern rotating through Redstone. Has employer security clearance — skip BG check. Offer letter on file."},
-  {id:"a4",name:"Derek Owens",email:"derek.o@email.com",phone:"(256) 555-9004",property:"Lee Drive East",room:"",moveIn:"2026-05-01",income:"$3,900",status:"called",submitted:"2026-03-11",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Drive-by / Sign",lastContact:"2026-03-12",notes:"Saw the sign on Lee Drive. Works at Boeing."},
+  {id:"a3",name:"Rachel Kim",email:"rachel.k@email.com",phone:"(256) 555-9003",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-05-15",income:"$5,500",status:"new-lead",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-13",notes:"NASA summer intern rotating through Redstone. Has employer security clearance — skip BG check. Offer letter on file."},
+  {id:"a4",name:"Derek Owens",email:"derek.o@email.com",phone:"(256) 555-9004",property:"Lee Drive East",room:"",moveIn:"2026-05-01",income:"$3,900",status:"new-lead",submitted:"2026-03-11",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Drive-by / Sign",lastContact:"2026-03-12",notes:"Saw the sign on Lee Drive. Works at Boeing."},
   // ── Invited (sent application link, waiting for them to apply) ──
-  {id:"a5",name:"Sam Patel",email:"sam.p@email.com",phone:"(256) 555-9005",property:"The Holmes House",room:"Bedroom 5",moveIn:"2026-06-01",income:"$6,200",status:"invited",submitted:"2026-03-08",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-11",screenPkg:"none",incomeAdd:"none",appFee:0,waiverReason:"Toyota intern — employer background check accepted. Offer letter on file.",inviteLink:"https://rentblackbear.com/apply?invite=a5",sentVia:"Email",notes:"Toyota intern, summer rotation",history:[{from:"pre-screened",to:"called",date:"2026-03-08"},{from:"called",to:"invited",date:"2026-03-11",note:"Invited via Email · No Screening (Waived) · Fee waived — Toyota intern — employer background check accepted."}]},
-  {id:"a6",name:"Chris Walker",email:"chris.w@email.com",phone:"(256) 555-9006",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-05-01",income:"$4,100",status:"invited",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Facebook / Instagram",lastContact:"2026-03-12",screenPkg:"credit-bg",incomeAdd:"none",appFee:49,inviteLink:"https://rentblackbear.com/apply?invite=a6",sentVia:"Text",history:[{from:"pre-screened",to:"called",date:"2026-03-10"},{from:"called",to:"invited",date:"2026-03-12",note:"Invited via Text · Credit Report + Full Background Check · $49 fee"}]},
+  {id:"a5",name:"Sam Patel",email:"sam.p@email.com",phone:"(256) 555-9005",property:"The Holmes House",room:"Bedroom 5",moveIn:"2026-06-01",income:"$6,200",status:"new-lead",submitted:"2026-03-08",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"NASA Intern Program",lastContact:"2026-03-11",screenPkg:"none",incomeAdd:"none",appFee:0,waiverReason:"Toyota intern — employer background check accepted. Offer letter on file.",inviteLink:"https://rentblackbear.com/apply?invite=a5",sentVia:"Email",notes:"Toyota intern, summer rotation",history:[{from:"pre-screened",to:"called",date:"2026-03-08"},{from:"called",to:"invited",date:"2026-03-11",note:"Invited via Email · No Screening (Waived) · Fee waived — Toyota intern — employer background check accepted."}]},
+  {id:"a6",name:"Chris Walker",email:"chris.w@email.com",phone:"(256) 555-9006",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-05-01",income:"$4,100",status:"new-lead",submitted:"2026-03-10",bgCheck:"not-started",creditScore:"—",refs:"not-started",source:"Facebook / Instagram",lastContact:"2026-03-12",screenPkg:"credit-bg",incomeAdd:"none",appFee:49,inviteLink:"https://rentblackbear.com/apply?invite=a6",sentVia:"Text",history:[{from:"pre-screened",to:"called",date:"2026-03-10"},{from:"called",to:"invited",date:"2026-03-12",note:"Invited via Text · Credit Report + Full Background Check · $49 fee"}]},
   // ── Applied (filled out application, payment submitted) ──
   {id:"a7",name:"Taylor Morgan",email:"taylor@email.com",phone:"(256) 555-9007",property:"The Holmes House",room:"Bedroom 4",moveIn:"2026-04-01",income:"$4,200",status:"applied",submitted:"2026-03-09",bgCheck:"pending",creditScore:"710",refs:"pending",source:"Google Search",lastContact:"2026-03-12",screenPkg:"credit-bg",incomeAdd:"income-only",appFee:59,notes:"Strong applicant. Income verification in progress.",history:[{from:"pre-screened",to:"called",date:"2026-03-09"},{from:"called",to:"invited",date:"2026-03-10"},{from:"invited",to:"applied",date:"2026-03-12",note:"Application submitted + $59 screening fee paid"}]},
   // ── Reviewing (BG check back, refs contacted, making decision) ──
-  {id:"a8",name:"Marcus Johnson",email:"marcus.j@email.com",phone:"(256) 555-9008",property:"Lee Drive West",room:"Bedroom 2",moveIn:"2026-04-01",income:"$5,100",status:"reviewing",submitted:"2026-03-05",bgCheck:"passed",creditScore:"755",refs:"pending",source:"Military / Contractor Network",lastContact:"2026-03-13",screenPkg:"credit-bg",incomeAdd:"income-employment",appFee:64,notes:"Army contractor at Redstone. BG passed. Waiting on ref from previous landlord.",history:[{from:"pre-screened",to:"called",date:"2026-03-05"},{from:"called",to:"invited",date:"2026-03-06"},{from:"invited",to:"applied",date:"2026-03-08"},{from:"applied",to:"reviewing",date:"2026-03-10",note:"BG check passed. Credit 755. In review."}]},
+  {id:"a8",name:"Marcus Johnson",email:"marcus.j@email.com",phone:"(256) 555-9008",property:"Lee Drive West",room:"Bedroom 2",moveIn:"2026-04-01",income:"$5,100",status:"applied",submitted:"2026-03-05",bgCheck:"passed",creditScore:"755",refs:"pending",source:"Military / Contractor Network",lastContact:"2026-03-13",screenPkg:"credit-bg",incomeAdd:"income-employment",appFee:64,notes:"Army contractor at Redstone. BG passed. Waiting on ref from previous landlord.",history:[{from:"pre-screened",to:"called",date:"2026-03-05"},{from:"called",to:"invited",date:"2026-03-06"},{from:"invited",to:"applied",date:"2026-03-08"},{from:"applied",to:"reviewing",date:"2026-03-10",note:"BG check passed. Credit 755. In review."}]},
   // ── Approved (approved, lease being generated) ──
   {id:"a9",name:"Alex Rivera",email:"alex.r@email.com",phone:"(256) 555-9009",property:"Lee Drive East",room:"Bedroom 3",moveIn:"2026-04-01",income:"$4,800",status:"approved",submitted:"2026-03-01",bgCheck:"passed",creditScore:"740",refs:"verified",source:"Zillow",lastContact:"2026-03-13",screenPkg:"credit-bg",incomeAdd:"none",appFee:49,notes:"Excellent applicant. All refs verified. Lease being prepared.",history:[{from:"pre-screened",to:"called",date:"2026-03-02"},{from:"called",to:"invited",date:"2026-03-03"},{from:"invited",to:"applied",date:"2026-03-05"},{from:"applied",to:"reviewing",date:"2026-03-06"},{from:"reviewing",to:"approved",date:"2026-03-13",note:"All checks clear. Approved. Preparing lease."}]},
   // ── Move-In (lease signed, SD paid, ready to move in) ──
-  {id:"a10",name:"Jamie Chen",email:"jamie.c@email.com",phone:"(256) 555-9010",property:"The Holmes House",room:"Bedroom 2",moveIn:"2026-04-01",income:"$5,200",status:"move-in",submitted:"2026-02-20",bgCheck:"passed",creditScore:"780",refs:"verified",source:"Friend / Referral",lastContact:"2026-03-13",screenPkg:"credit-bg",incomeAdd:"none",appFee:49,notes:"Lease signed 3/12. SD paid. Moving in April 1.",history:[{from:"pre-screened",to:"called",date:"2026-02-21"},{from:"called",to:"invited",date:"2026-02-22"},{from:"invited",to:"applied",date:"2026-02-24"},{from:"applied",to:"reviewing",date:"2026-02-26"},{from:"reviewing",to:"approved",date:"2026-03-05"},{from:"approved",to:"move-in",date:"2026-03-12",note:"Lease signed. SD received. Moving in 4/1."}]},
+  {id:"a10",name:"Jamie Chen",email:"jamie.c@email.com",phone:"(256) 555-9010",property:"The Holmes House",room:"Bedroom 2",moveIn:"2026-04-01",income:"$5,200",status:"onboarding",submitted:"2026-02-20",bgCheck:"passed",creditScore:"780",refs:"verified",source:"Friend / Referral",lastContact:"2026-03-13",screenPkg:"credit-bg",incomeAdd:"none",appFee:49,notes:"Lease signed 3/12. SD paid. Moving in April 1.",history:[{from:"pre-screened",to:"called",date:"2026-02-21"},{from:"called",to:"invited",date:"2026-02-22"},{from:"invited",to:"applied",date:"2026-02-24"},{from:"applied",to:"reviewing",date:"2026-02-26"},{from:"reviewing",to:"approved",date:"2026-03-05"},{from:"approved",to:"move-in",date:"2026-03-12",note:"Lease signed. SD received. Moving in 4/1."}]},
   // ── Denied ──
   {id:"a11",name:"David Park",email:"david.p@email.com",phone:"(256) 555-9011",property:"Lee Drive West",room:"Bedroom 3",moveIn:"2026-04-01",income:"$3,200",status:"denied",submitted:"2026-03-05",bgCheck:"failed",creditScore:"520",refs:"not-started",source:"Craigslist",lastContact:"2026-03-08",deniedReason:"Failed background check — criminal record",deniedDate:"2026-03-08",prevStage:"reviewing"},
 ];
@@ -2188,7 +2188,7 @@ export default function Page(){
   // ── Load onboarding statuses for approved/onboarding applicants ──────
   useEffect(()=>{
     if(!loaded)return;
-    const approvedApps=apps.filter(a=>["approved","onboarding","lease-sent","move-in"].includes(a.status)&&a.email);
+    const approvedApps=apps.filter(a=>["approved","onboarding"].includes(a.status)&&a.email);
     if(!approvedApps.length)return;
     const SUPA_URL=process.env.NEXT_PUBLIC_SUPABASE_URL;
     const SUPA_KEY=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -2244,7 +2244,7 @@ export default function Page(){
       const collR=occR.reduce((s,r)=>s+((payments[r.id]&&payments[r.id][MO])||0),0);
       return{...pr,occCount:occR.length,vacCount:vacR.length,projected:prjR,fullOcc:fullR,collected:collR,occRooms:occR,vacRooms:vacR};
     });
-    const needsAttention=apps.filter(a=>["applied","reviewing"].includes(a.status)).length;return{total,occ,full,proj,coll,due,vacs,expiring,unpaid,paid,openMaint,activeApps,unreadNotifs,needsAttention,propBreakdown,
+    const needsAttention=apps.filter(a=>a.status==="applied").length;return{total,occ,full,proj,coll,due,vacs,expiring,unpaid,paid,openMaint,activeApps,unreadNotifs,needsAttention,propBreakdown,
       occRate:total?Math.round(occ/total*100):0,collRate:due?Math.round(coll/due*100):0,lost:full-proj};
   },[props,payments,maint,apps,notifs]);
 
@@ -2367,7 +2367,7 @@ export default function Page(){
         // Find new apps of any status that weren't known before
         const knownIds=knownAppliedIds.current;
         const newApplied=fresh.filter(a=>a.status==="applied"&&!knownIds.has(a.id));
-        const newPrescreened=fresh.filter(a=>a.status==="pre-screened"&&!knownIds.has(a.id));
+        const newPrescreened=fresh.filter(a=>a.status==="new-lead"&&!knownIds.has(a.id));
         const hasNew=newApplied.length>0||newPrescreened.length>0;
         if(hasNew){
           setApps(fresh);
@@ -2562,8 +2562,8 @@ export default function Page(){
         const openMaintItems=maint.filter(x=>x.status!=="resolved");
         const nextRentCharges=getChargesForPeriod("next");
         const nextRentTotal=nextRentCharges.filter(c=>c.category==="Rent").reduce((s,c)=>s+c.amount,0);
-        const appsByStage={"pre-screened":0,"called":0,"invited":0,"applied":0,"reviewing":0};
-        apps.filter(a=>!["approved","move-in","onboarding","lease-sent","denied"].includes(a.status)).forEach(a=>{if(appsByStage[a.status]!==undefined)appsByStage[a.status]++;});
+        const appsByStage={"new-lead":0,"applied":0,"approved":0,"onboarding":0};
+        apps.filter(a=>a.status!=="denied").forEach(a=>{if(appsByStage[a.status]!==undefined)appsByStage[a.status]++;});
         const defWidgets=settings.dashWidgets||["pastDue","leaseExp","vacancy","maintenance","mtdCollection","recentActivity","appPipeline","upcomingRent"];
         const activeWidgets=widgetList||defWidgets;
         const editMode=dashEditMode;
@@ -2634,7 +2634,7 @@ export default function Page(){
           </>);
           case "appPipeline":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Application Pipeline</div>
-            {[["pre-screened","Pre-Screened"],["called","Called"],["invited","Invited"],["applied","Applied"],["reviewing","Reviewing"]].map(([k,l])=>(
+            {[["new-lead","New Lead"],["applied","Applied"],["approved","Approved"],["onboarding","Onboarding"]].map(([k,l])=>(
               <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                 <span style={{fontSize:11,color:"#5c4a3a"}}>{l}</span>
                 <span style={{fontSize:12,fontWeight:700,color:appsByStage[k]>0?"#1a1714":"#ccc"}}>{appsByStage[k]}</span>
@@ -3495,9 +3495,9 @@ export default function Page(){
 
       {/* ═══ APPLICATIONS ═══ */}
       {tab==="applications"&&(()=>{
-        const STAGES=["pre-screened","called","invited","applied","reviewing","lease-sent","onboarding"];
-        const SL={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","lease-sent":"Lease Sent","onboarding":"Onboarding","approved":"Onboarding","move-in":"Onboarding","denied":"Denied"};
-        const SC2={"pre-screened":"b-blue","called":"b-gold","invited":"b-gold","applied":"b-blue","reviewing":"b-gold","lease-sent":"b-gold","onboarding":"b-green","approved":"b-green","move-in":"b-green","denied":"b-red"};
+        const STAGES=["new-lead","applied","approved","onboarding"];
+        const SL={"new-lead":"New Lead","applied":"Applied","approved":"Approved","onboarding":"Onboarding","denied":"Denied"};
+        const SC2={"new-lead":"b-blue","applied":"b-gold","approved":"b-green","onboarding":"b-green","denied":"b-red"};
         const SI2={};
         const moveApp=(id,ns)=>{
           setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));
@@ -3578,7 +3578,7 @@ export default function Page(){
           if(monthFilter!=="all"&&!(a.submitted||"").startsWith(monthFilter))return false;
           return true;
         });
-        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","move-in","onboarding","lease-sent"].includes(a.status));
+        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","onboarding"].includes(a.status));
         // Duplicate / returning detection
         const allTenantsList=props.flatMap(p=>allRooms(p).filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
         const archiveList=archive.map(a=>({name:a.name||"",email:a.email||"",phone:a.phone||"",propName:a.propName,roomName:a.roomName,reason:a.reason,type:"past"}));
@@ -3736,7 +3736,7 @@ export default function Page(){
           <span style={{fontSize:11,color:"#999",flex:1,minWidth:80}}>{bulkSel.length>0?`${bulkSel.length} selected`:"Select applicants"}</span>
           {bulkSel.length>0&&<>
             {(()=>{
-              const invitable=activeApps.filter(a=>bulkSel.includes(a.id)&&["pre-screened","called"].includes(a.status));
+              const invitable=activeApps.filter(a=>bulkSel.includes(a.id)&&a.status==="new-lead");
               const reinvitable=activeApps.filter(a=>bulkSel.includes(a.id)&&a.status==="invited");
               return(<>
                 {invitable.length>0&&<button className="btn btn-gold btn-sm"
@@ -3780,23 +3780,20 @@ export default function Page(){
         {/* Pipeline */}
         {appView==="pipeline"&&<div className="pipeline">
           {STAGES.map(function(stage,si){
-            // Onboarding column shows "onboarding" and "move-in"; lease-sent shows "lease-sent" only
+            // Onboarding column shows approved+onboarding; approved column shows approved only
             var sa=stage==="onboarding"
-              ?activeApps.filter(function(a){return["approved","onboarding","move-in"].includes(a.status);})
-              :stage==="lease-sent"
-              ?activeApps.filter(function(a){return a.status==="lease-sent";})
+              ?activeApps.filter(function(a){return a.status==="onboarding";})
+              :stage==="approved"
+              ?activeApps.filter(function(a){return a.status==="approved";})
               :activeApps.filter(function(a){return a.status===stage;});
             return(
             <div key={stage} className="pipe-col">
               <div className="pipe-hd">
               <h4 style={{fontSize:10,display:"flex",alignItems:"center",gap:5}}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:.55,flexShrink:0}}>
-                  {stage==="pre-screened"&&<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>}
-                  {stage==="called"&&<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.16 12a19.79 19.79 0 0 1-3-8.57A2 2 0 0 1 3.13 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/></>}
-                  {stage==="invited"&&<><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>}
+                  {stage==="new-lead"&&<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>}
                   {stage==="applied"&&<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></>}
-                  {stage==="reviewing"&&<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>}
-                  {stage==="lease-sent"&&<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></>}
+                  {stage==="approved"&&<><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></>}
                   {stage==="onboarding"&&<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>}
                 </svg>
                 {SL[stage]}
@@ -3805,8 +3802,8 @@ export default function Page(){
             </div>
               <div className="pipe-bd">
                 {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){
-                  var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=["pre-screened","called"].includes(a.status);
-                  var isOnboarding=["approved","onboarding","move-in"].includes(a.status);var isLeaseSent=a.status==="lease-sent";
+                  var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=a.status==="new-lead";
+                  var isOnboarding=a.status==="onboarding";
                   var prog=isOnboarding?getOnboardingProgress(a):null;
                   return(
                   <div key={a.id} className="pipe-card" style={{
@@ -3840,7 +3837,7 @@ export default function Page(){
                     <div className="pipe-sub">{a.property||"—"}{a.room?" · "+a.room:""}</div>
 
                     {/* Invited — "Awaiting Reply" badge + reinvite button */}
-                    {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:5}}>
+                    {false&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:5}}>
                       <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 6px",borderRadius:99}}>Awaiting Reply</span>
                       <button style={{fontSize:8,padding:"2px 7px",background:"none",border:"1px solid rgba(59,130,246,.25)",borderRadius:4,color:"#3b82f6",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                         onClick={e=>{e.stopPropagation();
@@ -3873,7 +3870,7 @@ export default function Page(){
                     </>}
 
                     {/* Onboarding status pills — shown for approved/onboarding cards, reads from Supabase */}
-                    {(isOnboarding||["approved","onboarding","lease-sent"].includes(a.status))&&(()=>{
+                    {(isOnboarding||a.status==="approved")&&(()=>{
                       const ob=obStatuses[a.email]||{};
                       const pills=[
                         {key:"leaseSigned",label:"Lease",done:ob.leaseSigned},
@@ -3933,7 +3930,7 @@ export default function Page(){
               <td style={{fontSize:10}}>{a.source||"—"}</td>
               <td onClick={e=>e.stopPropagation()}>
                 {["pre-screened","called"].includes(a.status)&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite</button>}
-                {a.status==="invited"&&<span style={{fontSize:9,color:"#3b82f6",fontWeight:600}}>Awaiting reply</span>}
+                
               </td></tr>);})}
         </tbody></table></div></div>}
 
@@ -8237,7 +8234,7 @@ export default function Page(){
       if(!(modal.name||"").trim())e.name="Name is required";
       if(!(modal.phone||"").trim()&&!(modal.email||"").trim())e.contact="Phone or email is required";
       if(Object.keys(e).length){setModal(prev=>({...prev,addErrs:e}));shakeModal();return;}
-      const newLead={id:uid(),name:modal.name.trim(),phone:modal.phone||"",email:modal.email||"",property:modal.property||"",room:"",moveIn:"",income:"",status:"called",submitted:TODAY.toISOString().split("T")[0],bgCheck:"not-started",creditScore:"—",refs:"not-started",source:modal.source||"Phone / Direct Call",lastContact:TODAY.toISOString().split("T")[0],notes:modal.notes||"Added manually — direct call",history:[{from:"new",to:"called",date:TODAY.toISOString().split("T")[0],note:"Added manually by admin"}]};
+      const newLead={id:uid(),name:modal.name.trim(),phone:modal.phone||"",email:modal.email||"",property:modal.property||"",room:"",moveIn:"",income:"",status:"new-lead",submitted:TODAY.toISOString().split("T")[0],bgCheck:"not-started",creditScore:"—",refs:"not-started",source:modal.source||"Phone / Direct Call",lastContact:TODAY.toISOString().split("T")[0],notes:modal.notes||"Added manually — direct call",history:[{from:"new",to:"called",date:TODAY.toISOString().split("T")[0],note:"Added manually by admin"}]};
       setApps(p=>[newLead,...p]);
       setNotifs(p=>[{id:uid(),type:"app",msg:`New lead added: ${modal.name.trim()} (${modal.source||"Direct Call"})`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
       setModal({type:"addLeadDone",lead:newLead});
@@ -8586,7 +8583,7 @@ ${settings.phone||""}`);
         if(!modal.ids.includes(a.id))return a;
         const pkg=getPkg(a.id);const inc=getIncome(a.id);const fee=getFee(a.id);
         const link=`${settings.siteUrl||"https://rentblackbear.com"}/apply?invite=${a.id}`;
-        return{...a,status:"invited",lastContact:TODAY.toISOString().split("T")[0],screenPkg:pkg,incomeAdd:inc,appFee:fee,waiverReason:perPerson[a.id]?.waiverReason||"",inviteLink:link,history:[...(a.history||[]),{from:a.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Bulk invited · ${pkgLabel[pkg]} · ${fee===0?"Fee waived":"$"+fee}${perPerson[a.id]?.waiverReason?" — "+perPerson[a.id].waiverReason:""}`}]};
+        return{...a,status:"new-lead",lastContact:TODAY.toISOString().split("T")[0],screenPkg:pkg,incomeAdd:inc,appFee:fee,waiverReason:perPerson[a.id]?.waiverReason||"",inviteLink:link,history:[...(a.history||[]),{from:a.status,to:"invited",date:TODAY.toISOString().split("T")[0],note:`Bulk invited · ${pkgLabel[pkg]} · ${fee===0?"Fee waived":"$"+fee}${perPerson[a.id]?.waiverReason?" — "+perPerson[a.id].waiverReason:""}`}]};
       }));
       setBulkSel([]);setModal(prev=>({...prev,bulkSent:true}));
     };
@@ -8696,7 +8693,7 @@ ${settings.phone||""}`);
       const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
       const commit=(method)=>{
         setApps(p=>p.map(x=>x.id===a.id?{...x,
-          status:"invited",lastContact:TODAY.toISOString().split("T")[0],
+          status:"new-lead",lastContact:TODAY.toISOString().split("T")[0],
           screenPkg:pkg,incomeAdd,appFee:totalFee,
           waiverReason:modal.waiverReason||"",
           property:selProp?selProp.name:a.property,
@@ -9175,9 +9172,9 @@ ${settings.phone||""}`);
   )}
 
   {modal&&modal.type==="app"&&(()=>{const a=modal.data;
-    const STAGES=["pre-screened","called","invited","applied","reviewing","lease-sent","onboarding"];
+    const STAGES=["new-lead","applied","approved","onboarding"];
     const SL2={"pre-screened":"Pre-Screened","called":"Called / Follow Up","invited":"Invited","applied":"Applied","reviewing":"Reviewing","lease-sent":"Lease Sent","approved":"Onboarding","onboarding":"Onboarding","move-in":"Onboarding"};
-    const SI3={"pre-screened":"📋","called":"📞","invited":"✉️","applied":"📝","reviewing":"🔍","lease-sent":"📨","approved":"✅","onboarding":"🏠","move-in":"🏠"};
+    const SI3={"new-lead":"Lead","applied":"Applied","approved":"Approved","onboarding":"Onboarding","denied":"Denied"};
     const si=STAGES.indexOf(a.status);
     const sc2=(x)=>{let s=50;if(x.income){const n=parseInt((x.income+"").replace(/[^0-9]/g,""));if(n>=5000)s+=15;else if(n>=4000)s+=10;else if(n>=3000)s+=5;}if(x.bgCheck==="passed")s+=15;if(x.creditScore&&x.creditScore!=="—"){const c=parseInt(x.creditScore);if(c>=750)s+=15;else if(c>=700)s+=10;else if(c>=650)s+=5;}if(x.refs==="verified")s+=10;return Math.min(s,100);};
     const score=sc2(a);
@@ -9561,11 +9558,11 @@ ${settings.phone||""}`);
       })()}
 
       <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
-        {a.status==="pre-screened"&&<><button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"called",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(null);}}>📞 Mark as Called</button><button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button></>}
+        {a.status==="pre-screened"&&<><button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"new-lead",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(null);}}>📞 Mark as Called</button><button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button></>}
         {a.status==="called"&&<button className="btn btn-dk" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>📋 Set Up Invite →</button>}
         {a.status==="invited"&&<div style={{flex:1,textAlign:"center",padding:"10px",background:"rgba(212,168,83,.06)",borderRadius:8,fontSize:12,color:"#9a7422"}}>⏳ Waiting for {a.name} to submit their application...</div>}
-        {a.status==="applied"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"reviewing",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"reviewing"}}));}}>Start Review</button>}
-        {a.status==="reviewing"&&<>
+        {a.status==="applied"&&<button className="btn btn-green" style={{flex:1}} onClick={()=>{setApps(p=>p.map(x=>x.id===a.id?{...x,status:"applied",lastContact:TODAY.toISOString().split("T")[0]}:x));setModal(prev=>({...prev,data:{...prev.data,status:"applied"}}));}}>Start Review</button>}
+        {a.status==="applied"&&<>
           {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
             <div style={{fontWeight:700,marginBottom:4}}>Still pending — review before approving:</div>
             {incompleteReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0"}}>
@@ -9575,7 +9572,7 @@ ${settings.phone||""}`);
             <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
           </div>}
           <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
-            Configure Charges & Send Lease{incompleteReqs.length>0?" Anyway":""}
+            Approve{incompleteReqs.length>0?" Anyway":""}
           </button>
         </>}
         {a.status==="lease-sent"&&<div style={{width:"100%"}}>
