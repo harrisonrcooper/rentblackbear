@@ -2482,6 +2482,7 @@ export default function Page(){
     {id:"notifications",i:<IconBell/>,l:"Alerts",badge:m.unreadNotifs||null},
     {id:"settings_dummy",i:<IconSettings/>,l:"Settings"},
     {id:"configuration",i:<IconClipboard/>,l:"Configuration"},
+    {id:"add-expense",i:<span>＋</span>,l:"Add Expense"},
   ];
 
   // Default sidebar config — can be customized per PM
@@ -2495,6 +2496,7 @@ export default function Page(){
     {label:"Portfolio",ids:["properties"]},
     {label:"System",ids:["site-settings","theme","ideas","notifications","settings_dummy"]},
     {label:"Configuration",ids:["configuration"]},
+    {label:"Financials (Actions)",ids:["add-expense"]},
   ];
   const sidebarConfig=settings.sidebarConfig||DEF_SIDEBAR;
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
@@ -2573,7 +2575,7 @@ export default function Page(){
                   setSidebarConfig(cfg);
                   setSidebarDrag(null);setSidebarDragOver(null);
                 }}
-                style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",margin:"1px 4px",borderRadius:6,cursor:"grab",background:isDragOver?"rgba(212,168,83,.15)":isDragging?"rgba(0,0,0,.3)":"rgba(255,255,255,.04)",border:isDragOver?"1px solid rgba(212,168,83,.3)":"1px solid transparent",transition:"all .1s",animation:`wiggle${(si*7+ii)%3+1} ${1.8+(si+ii*3)%5*0.3}s ease-in-out ${(ii*0.15+si*0.07).toFixed(2)}s infinite`,opacity:isDragging?0.4:1}}>
+                style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",margin:"1px 4px",borderRadius:6,cursor:"grab",background:isDragOver?"rgba(212,168,83,.15)":isDragging?"rgba(0,0,0,.3)":"rgba(255,255,255,.04)",border:isDragOver?"1px solid rgba(212,168,83,.3)":"1px solid transparent",transition:"all .1s",opacity:isDragging?0.4:1}}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" strokeWidth="2" style={{flexShrink:0}}><circle cx="9" cy="5" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="5" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="9" cy="12" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="12" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="9" cy="19" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="19" r="1.5" fill="rgba(255,255,255,.4)"/></svg>
                 <span style={{fontSize:9,color:"rgba(255,255,255,.5)",flexShrink:0}}>{t.i}</span>
                 <input value={t.l} onChange={e=>{
@@ -2587,6 +2589,10 @@ export default function Page(){
             }
             // Normal mode
             const label=(settings.sidebarLabels||{})[t.id]||t.l;
+            if(t.id==="add-expense"){return(
+            <button key={id} className="sn" onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}>
+              <span className="sn-i">＋</span>{label}
+            </button>);}
             return(
             <button key={id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}>
               <span className="sn-i">{t.i}</span>{label}{t.badge&&<span className="sn-badge">{t.badge}</span>}
@@ -2595,12 +2601,7 @@ export default function Page(){
         </div>
       ))}
 
-      {/* Add Expense shortcut — always visible, sits right after sections */}
-      <button className="sn" onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}>
-        <span className="sn-i">＋</span>Add Expense
-      </button>
-
-      {/* Edit / Done button — immediately after last item, no marginTop:auto */}
+      {/* Edit / Done button — immediately after last item */}
       <div style={{padding:"8px 10px 4px"}}>
         {sidebarEditMode
           ?<div style={{display:"flex",flexDirection:"column",gap:6}}>
