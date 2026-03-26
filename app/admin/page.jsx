@@ -2122,6 +2122,9 @@ export default function Page(){
   const[piState,setPiState]=useState("idle");
   const[obStatuses,setObStatuses]=useState({}); // {email: {leaseSigned,sdPaid,firstMonthPaid}}
   const[appKpiFilter,setAppKpiFilter]=useState(null); // null | "needsAction" | "stale" | "denied"
+  const[tenantSel,setTenantSel]=useState([]);
+  const[tenantSearch,setTenantSearch]=useState("");
+  const[tenantPropFilter,setTenantPropFilter]=useState("all");
   const[widgetList,setWidgetList]=useState(null);
   const[dashEditMode,setDashEditMode]=useState(false);
   const[dashDragWidget,setDashDragWidget]=useState(null);
@@ -2817,9 +2820,7 @@ export default function Page(){
       {/* ═══ TENANTS ═══ */}
       {tab==="tenants"&&(()=>{
         const tenantView=drill||"active";
-        const[tenantSel,setTenantSel]=useState([]);
-        const[tenantSearch,setTenantSearch]=useState("");
-        const[tenantPropFilter,setTenantPropFilter]=useState("all");
+
         // Filter lists
         const filteredActive=allTenants.filter(r=>{
           if(tenantPropFilter!=="all"&&r.propId!==tenantPropFilter)return false;
