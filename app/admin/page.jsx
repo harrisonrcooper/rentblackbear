@@ -2854,308 +2854,252 @@ export default function Page(){
           ))}</>}
       </>}
 
-      {/* ═══ TENANT PORTAL (Admin Preview) ═══ */}
+      {/* ═══ PORTAL MANAGEMENT ═══ */}
       {tab==="portal"&&(()=>{
-        const tRoom=portalTenant||(allTenants[0]||null);
-        const tProp=tRoom?props.find(p=>allRooms(p).some(r=>r.id===tRoom.id)):null;
-        const tUnit=tProp?(tProp.units||[]).find(u=>(u.rooms||[]).some(r=>r.id===tRoom.id)):null;
-        const tCharges=tRoom?charges.filter(c=>c.roomId===tRoom.id):[];
-        const tMaint=tRoom?maint.filter(m=>m.roomId===tRoom.id):[];
-        const submitMaint=()=>{
-          if(!maintForm.title.trim()){setMaintForm(p=>({...p,titleErr:true}));shakeModal();return;}
-          setMaint(p=>[...p,{id:uid(),roomId:tRoom.id,propId:tProp&&tProp.id,tenant:tRoom.tenant.name,title:maintForm.title,desc:maintForm.desc,status:"open",priority:maintForm.priority,created:TODAY.toISOString().split("T")[0],photos:0}]);
-          setMaintForm({title:"",desc:"",priority:"medium",submitted:true,titleErr:false});
+        const SUPA_URL2=process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const SUPA_KEY2=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        // Derive portal status from obStatuses (already polled every 30s)
+        const getPortalStatus=(t)=>{
+          const email=(t.tenant?.email||"").toLowerCase();
+          const ob=obStatuses[email]||null;
+          return ob?"linked":"unknown";
         };
-        const tUtils=tUnit?.utils||tProp?.utils||"allIncluded";
-        const tClean=tUnit?.clean||tProp?.clean||"Biweekly";
-        const utilDesc=tUtils==="allIncluded"?"All utilities included (electric, water, gas, WiFi)":"Tenant pays utilities — split equally among roommates. WiFi always included.";
-        const cleanDesc=tClean==="Weekly"?"Common areas cleaned weekly":"Common areas cleaned biweekly";
-        const houseRules=[{icon:"🚭",rule:"No smoking or vaping anywhere on the property, including outdoors"},
-          {icon:"🐾",rule:"No pets allowed"},
-          {icon:"👟",rule:"No shoes inside — please remove at the door"},
-          {icon:"🔇",rule:"Quiet hours: 10pm–7am weekdays, 11pm–10am weekends"},
-          {icon:"🧹",rule:"Clean up after yourself in shared common areas"},
-          {icon:"🔑",rule:"Do not duplicate keys or grant property access to unauthorized guests"},
-          {icon:"🚗",rule:"Parking in designated spots only"},
-          {icon:"🔥",rule:"No open flames, candles, or grills inside"},
-        ];
-        return(<>
-          <div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:"10px 16px",marginBottom:16,fontSize:12,color:"#9a7422",display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:16}}>👁️</span>
-            <span><strong>Admin Preview Mode</strong> — This is what your tenants will see when the portal is live. Select a tenant to preview their view.</span>
-          </div>
+        // Tenants with invite info
+        const withPortal=allTenants.filter(t=>t.tenant?.email);
+        const linked=withPortal.filter(t=>obStatuses[(t.tenant?.email||"").toLowerCase()]);
+        const unlinked=withPortal.filter(t=>!obStatuses[(t.tenant?.email||"").toLowerCase()]);
 
-          {/* Tenant selector */}
-          <div className="card" style={{marginBottom:14}}><div className="card-bd" style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#999",whiteSpace:"nowrap"}}>Previewing as:</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",flex:1}}>
-              {allTenants.map(t=>(
-                <button key={t.id} className={`btn btn-sm ${portalTenant&&portalTenant.id===t.id?"btn-dk":"btn-out"}`} onClick={()=>{setPortalTenant(t);setPortalTab("home");}}>
-                  {t.tenant.name} <span style={{opacity:.6,fontSize:9}}>· {t.propName}</span>
-                </button>
-              ))}
-              {allTenants.length===0&&<span style={{fontSize:12,color:"#999"}}>No active tenants.</span>}
-            </div>
-          </div></div>
+        // Send invite helper
+        const sendInvite=async(t)=>{
+          setPortalInviteState("sending");
+          try{
+            const res=await fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
+              body:JSON.stringify({tenantName:t.tenant.name,tenantEmail:t.tenant.email,propertyName:t.propName,roomName:t.name,rent:t.rent,moveIn:t.tenant.moveIn})
+            });
+            const d=await res.json();
+            if(d.ok){setPortalInviteState("sent");setTimeout(()=>setPortalInviteState("idle"),3000);}
+            else setPortalInviteState("idle");
+          }catch(e){setPortalInviteState("idle");}
+        };
 
-          {!tRoom&&<div style={{textAlign:"center",padding:40,color:"#999"}}><div style={{fontSize:40,marginBottom:8}}>🏡</div><p>Select a tenant above to preview their portal.</p></div>}
-
-          {tRoom&&<div style={{background:"#f9f8f5",borderRadius:14,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
-            {/* Portal Header */}
-            <div style={{background:"#1a1714",padding:"18px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:800,color:"#f5f0e8"}}>🐻 Black Bear Rentals</div>
-                <div style={{fontSize:10,color:"#c4a882",marginTop:2}}>Welcome back, {tRoom.tenant.name.split(" ")[0]}!</div>
+        // If drilling into a specific tenant's portal preview
+        if(portalTenant){
+          const tRoom=portalTenant;
+          const tProp=props.find(p=>allRooms(p).some(r=>r.id===tRoom.id));
+          const tUnit=tProp?(tProp.units||[]).find(u=>(u.rooms||[]).some(r=>r.id===tRoom.id)):null;
+          const tCharges=tRoom?charges.filter(c=>c.roomId===tRoom.id):[];
+          const tMaint=tRoom?maint.filter(m=>m.roomId===tRoom.id):[];
+          const submitMaint=()=>{
+            if(!maintForm.title.trim()){shakeModal();return;}
+            setMaint(p=>[...p,{id:uid(),roomId:tRoom.id,propId:tProp&&tProp.id,tenant:tRoom.tenant.name,title:maintForm.title,desc:maintForm.desc,status:"open",priority:maintForm.priority,created:TODAY.toISOString().split("T")[0],photos:0}]);
+            setMaintForm({title:"",desc:"",priority:"medium",submitted:true,titleErr:false});
+          };
+          const tUtils=tUnit?.utils||tProp?.utils||"allIncluded";
+          const tClean=tUnit?.clean||tProp?.clean||"Biweekly";
+          const utilDesc=tUtils==="allIncluded"?"All utilities included (electric, water, gas, WiFi)":"Tenant pays utilities — split equally among roommates. WiFi always included.";
+          const cleanDesc=tClean==="Weekly"?"Common areas cleaned weekly":"Common areas cleaned biweekly";
+          const houseRules=[
+            {rule:"No smoking or vaping anywhere on the property, including outdoors"},
+            {rule:"No pets allowed"},
+            {rule:"No shoes inside — please remove at the door"},
+            {rule:"Quiet hours: 10pm to 7am weekdays, 11pm to 10am weekends"},
+            {rule:"Clean up after yourself in shared common areas"},
+            {rule:"Do not duplicate keys or grant property access to unauthorized guests"},
+            {rule:"Parking in designated spots only"},
+            {rule:"No open flames, candles, or grills inside"},
+          ];
+          const ob=obStatuses[(tRoom.tenant?.email||"").toLowerCase()]||{};
+          return(<>
+            {/* Preview header */}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <button className="btn btn-out btn-sm" onClick={()=>{setPortalTenant(null);setPortalTab("home");}}>← Portal Management</button>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,fontWeight:800}}>{tRoom.tenant.name}</div>
+                <div style={{fontSize:11,color:"#999"}}>{tRoom.propName} · {tRoom.name} · Portal Preview</div>
               </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#d4a853"}}>{tRoom.propName}</div>
-                <div style={{fontSize:9,color:"#c4a882"}}>{tRoom.name}</div>
-              </div>
-            </div>
-
-            {/* Portal Nav */}
-            <div style={{display:"flex",background:"#fff",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-              {[["home","🏠","Home"],["payments","💳","Payments"],["maintenance","🔧","Maintenance"],["docs","📄","Documents"],["rules","📋","Rules"]].map(([id,icon,label])=>(
-                <button key={id} onClick={()=>setPortalTab(id)} style={{flex:1,padding:"11px 4px",border:"none",background:portalTab===id?"#faf9f7":"#fff",borderBottom:portalTab===id?"2px solid #d4a853":"2px solid transparent",cursor:"pointer",fontSize:10,fontWeight:portalTab===id?800:500,color:portalTab===id?"#1a1714":"#999",fontFamily:"inherit",transition:"all .15s"}}>
-                  <div style={{fontSize:16,marginBottom:2}}>{icon}</div>{label}
-                </button>
-              ))}
-            </div>
-
-            {/* ── HOME ── */}
-            {portalTab==="home"&&<div style={{padding:18}}>
-              <div className="tp-card">
-                <h3>📄 Your Lease</h3>
-                {[
-                  ["Room",`${tUnit&&tUnit.label?"Unit "+tUnit.label+" — ":""}${tRoom.name} · ${tRoom.pb?"Private bathroom":"Shared bathroom"}`],
-                  ["Property",`${tRoom.propName}${tUnit&&tUnit.label?" · Unit "+tUnit.label:""} — ${tProp&&tProp.addr}`],
-                  ["Monthly Rent",`$${tRoom.rent.toLocaleString()}/mo`],
-                  ["Move-In Date",fmtD(tRoom.tenant.moveIn)],
-                  ["Lease Ends",tRoom.le?fmtD(tRoom.le):"Month-to-Month"],
-                  ["Utilities",utilDesc],
-                  ["Cleaning",cleanDesc],
-                  ["WiFi","Google Fiber — always included"],
-                ].map(([l,v])=><div key={l} className="tp-row"><span className="tp-label">{l}</span><span style={{fontWeight:600,fontSize:12,textAlign:"right",maxWidth:"60%"}}>{v}</span></div>)}
-              </div>
-
-              {/* Door Access Code — shown once rent portion is paid */}
-              {(()=>{
-                // Find this tenant's app record by matching room
-                const tenantApp=apps.find(ap=>ap.lockActivation&&(ap.name===tRoom.tenant.name||ap.passcode));
-                const liveApp=tenantApp||(tRoom.tenant.passcode?{passcode:tRoom.tenant.passcode,lockActivation:{activatesAt:`${tRoom.tenant.moveIn}T00:00:00`,status:"active"}}:null);
-                // Check if rent portion (non-SD) charges are paid
-                const rentChargesPaid=tCharges.filter(c=>c.category==="Rent").every(c=>chargeStatus(c)==="paid"||chargeStatus(c)==="waived");
-                const passcode=liveApp?.passcode||tRoom.tenant.passcode;
-                if(!passcode)return null;
-                const moveInPassed=new Date(tRoom.tenant.moveIn+"T00:00:00")<=TODAY;
-                const lockActive=rentChargesPaid&&moveInPassed;
-                return(
-                <div className="tp-card" style={{marginTop:10,border:`2px solid ${lockActive?"rgba(74,124,89,.3)":"rgba(212,168,83,.2)"}`,background:lockActive?"rgba(74,124,89,.04)":"rgba(212,168,83,.02)"}}>
-                  <h3 style={{color:lockActive?"#4a7c59":"#9a7422"}}>{lockActive?"🔓 Door Access Active":"🔒 Door Access Pending"}</h3>
-                  {lockActive
-                    ?<>
-                      <div style={{textAlign:"center",padding:"14px 0"}}>
-                        <div style={{fontSize:11,color:"#999",marginBottom:6}}>Your 4-digit door code</div>
-                        <div style={{fontSize:40,fontWeight:900,letterSpacing:12,color:"#4a7c59",fontFamily:"monospace"}}>{passcode}</div>
-                        <div style={{fontSize:10,color:"#4a7c59",marginTop:6}}>Works on all exterior doors and your bedroom lock</div>
-                      </div>
-                      <div style={{fontSize:10,color:"#999",textAlign:"center"}}>Active since 12:00am on {fmtD(tRoom.tenant.moveIn)}</div>
-                    </>
-                    :<>
-                      <div style={{fontSize:12,color:"#5c4a3a",marginBottom:8}}>Your passcode is ready but will not activate until:</div>
-                      {!rentChargesPaid&&<div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#c45c4a",marginBottom:4}}>⬜ Rent portion received</div>}
-                      {!moveInPassed&&<div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#d4a853",marginBottom:4}}>⬜ Move-in date reached ({fmtD(tRoom.tenant.moveIn)} at 12:00am)</div>}
-                      <div style={{fontSize:10,color:"#999",marginTop:8}}>Once both conditions are met, your code will appear here automatically.</div>
-                    </>}
-                </div>);
-              })()}
-              <div className="tp-card" style={{marginTop:10}}>
-                <h3>💳 Payment Summary</h3>
-                {(()=>{
-                  const recentPaid=tCharges.filter(c=>chargeStatus(c)==="paid").slice(-3);
-                  const totalDue=upcoming.reduce((s,c)=>s+c.amount,0);
-                  return(<>
-                    <div style={{background:totalDue>0?"rgba(196,92,74,.04)":"rgba(74,124,89,.04)",borderRadius:8,padding:12,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>Amount Due</div><div style={{fontSize:22,fontWeight:800,color:totalDue>0?"#c45c4a":"#4a7c59"}}>{totalDue>0?`$${totalDue.toLocaleString()}`:"All clear ✓"}</div></div>
-                      {upcoming.length>0&&<button className="btn btn-gold btn-sm" onClick={()=>setModal({type:"stripePayPortal",charges:upcoming,tRoom})}>Pay Now →</button>}
-                    </div>
-                    {upcoming.length>0&&upcoming.map(c=><div key={c.id} className="tp-row"><span style={{fontSize:11}}>{c.category} — {c.desc}<div style={{fontSize:9,color:"#999"}}>Due {fmtD(c.dueDate)}</div></span><span style={{fontWeight:800,color:chargeStatus(c)==="pastdue"?"#c45c4a":"#5c4a3a"}}>${c.amount.toLocaleString()}</span></div>)}
-                    {recentPaid.length>0&&<><div style={{fontSize:9,color:"#999",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginTop:8,marginBottom:4}}>Recent Payments</div>
-                      {recentPaid.map(c=><div key={c.id} className="tp-row"><span style={{fontSize:11,color:"#4a7c59"}}>✓ {c.category}<div style={{fontSize:9,color:"#999"}}>{fmtD(c.dueDate)}</div></span><span style={{fontWeight:700,color:"#4a7c59"}}>${c.amount.toLocaleString()}</span></div>)}</>}
-                    {tCharges.length===0&&<div style={{fontSize:12,color:"#999",textAlign:"center",padding:8}}>No charges on file yet. Rent invoices appear here on the 20th of each month.</div>}
-                  </>);
-                })()}
-              </div>
-
-              <div className="tp-card" style={{marginTop:10}}>
-                <h3>🔧 Open Maintenance Requests</h3>
-                {tMaint.filter(x=>x.status!=="resolved").length===0
-                  ?<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>✓ No open requests</div>
-                  :tMaint.filter(x=>x.status!=="resolved").map(r=><div key={r.id} className="tp-row">
-                    <span style={{fontSize:11}}>{r.title}<div style={{fontSize:9,color:"#999"}}>Submitted {fmtD(r.created)}</div></span>
-                    <span className={`badge ${r.status==="open"?"b-red":r.status==="in-progress"?"b-gold":"b-green"}`}>{r.status}</span>
-                  </div>)}
-                <button className="btn btn-out btn-sm" style={{marginTop:8,width:"100%"}} onClick={()=>setPortalTab("maintenance")}>Submit New Request →</button>
-              </div>
-            </div>}
-
-            {/* ── PAYMENTS ── */}
-            {portalTab==="payments"&&<div style={{padding:18}}>
-              <div className="tp-card">
-                <h3>💳 Payment History</h3>
-                <div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:12,marginBottom:12,fontSize:12,color:"#9a7422"}}>
-                  💡 Rent is due on the <strong>1st of each month</strong>. A $50 late fee applies after the 3rd. You'll receive an invoice on the 20th of the prior month.
-                </div>
-                {tCharges.length===0&&<div style={{textAlign:"center",padding:16,color:"#999",fontSize:12}}>No charge history yet.</div>}
-                {tCharges.map(c=>{
-                  const st=chargeStatus(c);
-                  const lastPay=c.payments&&c.payments[c.payments.length-1];
-                  const confId=lastPay&&lastPay.confId?lastPay.confId:`BB-${c.id.slice(0,8).toUpperCase()}`;
-                  const printReceipt=()=>{
-                    if(!lastPay)return;
-                    const w=window.open("","_blank");
-                    w.document.write(`<!DOCTYPE html><html><head><title>Receipt ${confId}</title><style>
-                      body{font-family:Georgia,serif;max-width:560px;margin:40px auto;padding:0 24px;color:#1a1714;line-height:1.6}
-                      h1{font-size:20px;font-weight:700;border-bottom:2px solid #1a1714;padding-bottom:8px;margin-bottom:20px}
-                      .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:13px}
-                      .label{color:#666}.value{font-weight:600}
-                      .total{display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:800;border-top:2px solid #1a1714;margin-top:4px}
-                      .conf{font-family:monospace;font-size:18px;font-weight:900;color:#1a1714;letter-spacing:2px;text-align:center;padding:12px;background:#f5f0e8;border-radius:6px;margin:16px 0}
-                      .footer{margin-top:32px;font-size:11px;color:#999;text-align:center}
-                    </style></head><body>
-                      <h1>Payment Receipt</h1>
-                      <div class="conf">${confId}</div>
-                      <div class="row"><span class="label">Date</span><span class="value">${lastPay.date}</span></div>
-                      <div class="row"><span class="label">Tenant</span><span class="value">${c.tenantName}</span></div>
-                      <div class="row"><span class="label">Property</span><span class="value">${c.propName} · ${c.roomName}</span></div>
-                      <div class="row"><span class="label">Charge</span><span class="value">${c.category} — ${c.desc}</span></div>
-                      <div class="row"><span class="label">Payment Method</span><span class="value">${lastPay.method}</span></div>
-                      <div class="total"><span>Amount Paid</span><span>$${Number(c.amountPaid).toLocaleString()}</span></div>
-                      <div class="footer">Oak &amp; Main Development LLC · Black Bear Rentals · blackbearhousing@gmail.com</div>
-                    </body></html>`);
-                    w.document.close();w.print();
-                  };
-                  return(
-                  <div key={c.id} style={{padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                      <div>
-                        <div style={{fontSize:12,fontWeight:600}}>{c.category} — {c.desc}</div>
-                        <div style={{fontSize:9,color:"#999",marginTop:1}}>Due {fmtD(c.dueDate)}</div>
-                        {lastPay&&<div style={{fontSize:9,color:"#4a7c59",marginTop:1}}>✓ {fmtS(lastPay.amount)} via {lastPay.method} on {fmtD(lastPay.date)}</div>}
-                      </div>
-                      <div style={{textAlign:"right",display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-                        <div style={{fontSize:14,fontWeight:800}}>${c.amount.toLocaleString()}</div>
-                        <span className={`badge ${st==="paid"?"b-green":st==="pastdue"?"b-red":st==="partial"?"b-gold":"b-gray"}`}>{st}</span>
-                        {(st==="paid"||st==="partial")&&lastPay&&
-                          <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 8px"}} onClick={printReceipt}>📄 Receipt PDF</button>}
-                      </div>
-                    </div>
-                    {st==="partial"&&<div style={{fontSize:10,color:"#d4a853",marginTop:4}}>
-                      {fmtS(c.amountPaid)} paid · {fmtS(c.amount-c.amountPaid)} remaining
-                    </div>}
-                  </div>);
-                })}
-                <div style={{marginTop:14,background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#5c4a3a"}}>
-                  <strong>Payment Methods Accepted:</strong> Zelle, Venmo, CashApp, Check, or ACH (coming soon via Stripe).<br/>
-                  Send to: <strong>blackbearhousing@gmail.com</strong>
+              <div style={{display:"flex",gap:8}}>
+                <div style={{fontSize:10,color:"#999",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",borderRadius:6,padding:"4px 10px"}}>
+                  Admin preview — read only
                 </div>
               </div>
-            </div>}
+            </div>
 
-            {/* ── MAINTENANCE ── */}
-            {portalTab==="maintenance"&&<div style={{padding:18}}>
-              <div className="tp-card" style={{marginBottom:10}}>
-                <h3>🔧 Submit a Maintenance Request</h3>
-                {maintForm.submitted
-                  ?<div style={{background:"rgba(74,124,89,.08)",borderRadius:8,padding:14,textAlign:"center"}}>
-                    <div style={{fontSize:24,marginBottom:4}}>✅</div>
-                    <div style={{fontSize:13,fontWeight:700,color:"#4a7c59"}}>Request Submitted!</div>
-                    <div style={{fontSize:11,color:"#999",marginTop:4}}>We typically respond within 24–48 hours.</div>
-                    <button className="btn btn-out btn-sm" style={{marginTop:10}} onClick={()=>setMaintForm({title:"",desc:"",priority:"medium",submitted:false})}>Submit Another</button>
-                  </div>
-                  :<div>
-                    <div className={`fld ${maintForm.titleErr?"field-err":""}`}>
-                      <label className={maintForm.titleErr?"field-err-label":""}>Issue Title *</label>
-                      <input placeholder="e.g. Faucet dripping, Heater not working..." value={maintForm.title} onChange={e=>setMaintForm(p=>({...p,title:e.target.value,titleErr:false}))}/>
-                      {maintForm.titleErr&&<div className="err-msg">Title is required</div>}
-                    </div>
-                    <div className="fld"><label>Description</label><textarea placeholder="Please describe the issue in detail. When did it start? How bad is it?" value={maintForm.desc} onChange={e=>setMaintForm(p=>({...p,desc:e.target.value}))} rows={3}/></div>
-                    <div className="fld"><label>Priority</label>
-                      <div style={{display:"flex",gap:6}}>
-                        {[["low","🟢 Low — not urgent"],["medium","🟡 Medium — soon"],["high","🔴 High — urgent"]].map(([v,l])=>(
-                          <button key={v} className={`btn btn-sm ${maintForm.priority===v?"btn-dk":"btn-out"}`} style={{fontSize:9,flex:1}} onClick={()=>setMaintForm(p=>({...p,priority:v}))}>{l}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <button className="btn btn-gold" style={{width:"100%",marginTop:4}} onClick={submitMaint}>Submit Request</button>
-                    <div style={{fontSize:9,color:"#999",textAlign:"center",marginTop:6}}>You'll receive a confirmation email when we acknowledge your request.</div>
-                  </div>}
-              </div>
-
-              <div className="tp-card">
-                <h3>📋 Your Request History</h3>
-                {tMaint.length===0&&<div style={{fontSize:12,color:"#999",textAlign:"center",padding:8}}>No requests on file.</div>}
-                {tMaint.map(r=>(
-                  <div key={r.id} style={{padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                    <div>
-                      <div style={{fontSize:12,fontWeight:600}}>{r.title}</div>
-                      <div style={{fontSize:10,color:"#999"}}>{r.desc}</div>
-                      <div style={{fontSize:9,color:"#999",marginTop:2}}>Submitted {fmtD(r.created)}</div>
-                    </div>
-                    <span className={`badge ${r.status==="resolved"?"b-green":r.status==="in-progress"?"b-gold":"b-red"}`}>{r.status}</span>
+            {/* Onboarding status pills */}
+            <div className="card" style={{marginBottom:14}}><div className="card-bd">
+              <div style={{fontSize:10,fontWeight:700,color:"#999",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Onboarding Status (live from portal)</div>
+              <div style={{display:"flex",gap:8}}>
+                {[["Lease Signed",ob.leaseSigned],["Security Deposit",ob.sdPaid],["First Month Rent",ob.firstMonthPaid],["Move In",ob.leaseSigned&&ob.sdPaid&&ob.firstMonthPaid]].map(([label,done])=>(
+                  <div key={label} style={{flex:1,textAlign:"center",padding:"8px 6px",borderRadius:8,background:done?"rgba(74,124,89,.08)":"rgba(0,0,0,.04)",border:done?"1px solid rgba(74,124,89,.2)":"1px solid transparent"}}>
+                    <div style={{fontSize:16,marginBottom:4}}>{done?"✓":""}</div>
+                    <div style={{fontSize:10,fontWeight:700,color:done?"#4a7c59":"#aaa"}}>{label}</div>
                   </div>
                 ))}
               </div>
-            </div>}
+            </div></div>
 
-            {/* ── DOCUMENTS ── */}
-            {portalTab==="docs"&&<div style={{padding:18}}>
-              <div className="tp-card">
-                <h3>📄 Your Documents</h3>
-                <div style={{fontSize:11,color:"#999",marginBottom:12}}>All documents related to your tenancy — application files, lease agreements, and addendums.</div>
-                {(()=>{
-                  const tenantDocs=docs.filter(d=>d.tenantRoomId===tRoom.id||d.tenant===tRoom.tenant.name);
-                  const appDocs=(tRoom.tenant.documents||[]);
-                  const allDocs=[...appDocs,...tenantDocs];
-                  if(allDocs.length===0)return<div style={{textAlign:"center",padding:16,color:"#999",fontSize:12}}>No documents on file yet.</div>;
-                  return allDocs.map((d,i)=>(
-                    <div key={d.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                      <div>
-                        <div style={{fontSize:12,fontWeight:700}}>{d.label||d.name}</div>
-                        <div style={{fontSize:10,color:"#999"}}>{d.source==="application"?"Application document":d.type==="lease"?"Executed Lease Agreement":d.type==="addendum"?"Lease Addendum":"Document"} · {d.uploaded}</div>
-                      </div>
-                      <div style={{display:"flex",gap:4}}>
-                        {d.data&&<a href={d.data} download={d.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>Download</a>}
-                        {d.content&&<button className="btn btn-out btn-sm" onClick={()=>setModal({type:"viewAddendum",doc:d})}>📄 View</button>}
-                      </div>
+            {/* Portal preview */}
+            <div style={{background:"#f9f8f5",borderRadius:14,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              <div style={{background:"#1a1714",padding:"18px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:800,color:"#f5f0e8"}}>Black Bear Rentals</div>
+                  <div style={{fontSize:10,color:"#c4a882",marginTop:2}}>Welcome back, {tRoom.tenant.name.split(" ")[0]}!</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#d4a853"}}>{tRoom.propName}</div>
+                  <div style={{fontSize:9,color:"#c4a882"}}>{tRoom.name}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",background:"#fff",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+                {[["home","Home"],["payments","Payments"],["maintenance","Maintenance"],["docs","Documents"],["rules","Rules"]].map(([id,label])=>(
+                  <button key={id} onClick={()=>setPortalTab(id)} style={{flex:1,padding:"11px 4px",border:"none",background:portalTab===id?"#faf9f7":"#fff",borderBottom:portalTab===id?"2px solid #d4a853":"2px solid transparent",cursor:"pointer",fontSize:10,fontWeight:portalTab===id?800:500,color:portalTab===id?"#1a1714":"#999",fontFamily:"inherit",transition:"all .15s"}}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {portalTab==="home"&&<div style={{padding:18}}>
+                <div className="tp-card">
+                  <h3>Your Lease</h3>
+                  {[
+                    ["Room",`${tUnit&&tUnit.label?"Unit "+tUnit.label+" — ":""}${tRoom.name} · ${tRoom.pb?"Private bathroom":"Shared bathroom"}`],
+                    ["Property",`${tRoom.propName}${tUnit&&tUnit.label?" · Unit "+tUnit.label:""} — ${tProp&&tProp.addr}`],
+                    ["Monthly Rent",`$${tRoom.rent.toLocaleString()}/mo`],
+                    ["Move-In Date",fmtD(tRoom.tenant.moveIn)],
+                    ["Lease Ends",tRoom.le?fmtD(tRoom.le):"Month-to-Month"],
+                    ["Utilities",utilDesc],
+                    ["Cleaning",cleanDesc],
+                    ["WiFi","Google Fiber — always included"],
+                  ].map(([l,v])=><div key={l} className="tp-row"><span className="tp-label">{l}</span><span style={{fontWeight:600,fontSize:12,textAlign:"right",maxWidth:"60%"}}>{v}</span></div>)}
+                </div>
+                {tRoom.tenant.doorCode&&<div className="tp-card" style={{marginTop:10,border:"2px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.04)"}}>
+                  <h3 style={{color:"#4a7c59"}}>Door Access</h3>
+                  <div style={{textAlign:"center",padding:"14px 0"}}>
+                    <div style={{fontSize:11,color:"#999",marginBottom:6}}>Your 4-digit door code</div>
+                    <div style={{fontSize:40,fontWeight:900,letterSpacing:12,color:"#4a7c59",fontFamily:"monospace"}}>{tRoom.tenant.doorCode}</div>
+                    <div style={{fontSize:10,color:"#4a7c59",marginTop:6}}>Works on all exterior doors and your bedroom lock</div>
+                  </div>
+                </div>}
+              </div>}
+
+              {portalTab==="payments"&&<div style={{padding:18}}>
+                {tCharges.length===0&&<div style={{textAlign:"center",padding:28,color:"#999",fontSize:13}}>No charges on file yet.</div>}
+                {tCharges.map(c=>{const st=chargeStatus(c);const stColors={paid:"#4a7c59",unpaid:"#3b82f6",pastdue:"#c45c4a",partial:"#d4a853",waived:"#999"};return(
+                  <div key={c.id} className="tp-card" style={{marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <div><div style={{fontSize:13,fontWeight:700}}>{c.desc||c.category}</div><div style={{fontSize:11,color:"#999"}}>Due {fmtD(c.dueDate)}</div></div>
+                      <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:800}}>{fmtS(c.amount)}</div><span style={{fontSize:10,fontWeight:700,color:stColors[st]||"#999"}}>{st}</span></div>
                     </div>
-                  ));
-                })()}
-              </div>
-            </div>}
+                    {c.amountPaid>0&&c.amountPaid<c.amount&&<div style={{fontSize:11,color:"#999",marginTop:4}}>{fmtS(c.amountPaid)} paid — {fmtS(c.amount-c.amountPaid)} remaining</div>}
+                  </div>
+                );})}
+                <div className="tp-card" style={{marginTop:10,background:"rgba(74,124,89,.03)",borderColor:"rgba(74,124,89,.12)"}}>
+                  <h3 style={{color:"#4a7c59"}}>How to Pay</h3>
+                  <div className="tp-row"><span className="tp-label">Zelle</span><span style={{fontWeight:600,fontSize:12}}>{settings.phone||"(850) 696-8101"}</span></div>
+                  <div className="tp-row"><span className="tp-label">Venmo</span><span style={{fontWeight:600,fontSize:12}}>@BlackBearRentals</span></div>
+                  <div className="tp-row"><span className="tp-label">Check</span><span style={{fontWeight:600,fontSize:12}}>{settings.legalName||"Oak & Main Development LLC"}</span></div>
+                  <div style={{marginTop:10,fontSize:10,color:"#999"}}>Online payments via ACH/card coming soon in the portal.</div>
+                </div>
+              </div>}
 
-            {/* ── HOUSE RULES ── */}
-            {portalTab==="rules"&&<div style={{padding:18}}>
-              <div className="tp-card" style={{marginBottom:10}}>
-                <h3>📋 House Standards</h3>
-                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10}}>By living here, you've agreed to these standards. They exist to keep everyone comfortable and the home in great shape.</div>
-                {houseRules.map((r,i)=><div key={i} style={{display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.03)",alignItems:"flex-start"}}>
-                  <span style={{fontSize:18,flexShrink:0}}>{r.icon}</span>
-                  <span style={{fontSize:12,color:"#3c3228",lineHeight:1.5}}>{r.rule}</span>
-                </div>)}
-              </div>
-              <div className="tp-card">
-                <h3>📞 Contact & Emergency</h3>
-                {[
-                  ["Property Manager","Harrison Cooper"],
-                  ["Email","blackbearhousing@gmail.com"],
-                  ["Emergency Maintenance","(256) 555-0192"],
-                  ["After Hours","Text first, call if urgent"],
-                  ["Non-Emergency Tip","For non-urgent items, use the Maintenance tab above"],
-                ].map(([l,v])=><div key={l} className="tp-row"><span className="tp-label">{l}</span><span style={{fontSize:12,fontWeight:600}}>{v}</span></div>)}
-              </div>
-            </div>}
+              {portalTab==="maintenance"&&<div style={{padding:18}}>
+                <div className="tp-card" style={{marginBottom:14}}>
+                  <h3 style={{marginBottom:10}}>Submit a Request</h3>
+                  <div className="fld" style={{marginBottom:8}}><label>What is the issue?</label><input value={maintForm.title||""} onChange={e=>setMaintForm(p=>({...p,title:e.target.value,titleErr:false}))} placeholder="e.g. Leaky faucet in bathroom" style={{width:"100%"}}/></div>
+                  <div className="fld" style={{marginBottom:8}}><label>Details (optional)</label><textarea value={maintForm.desc||""} onChange={e=>setMaintForm(p=>({...p,desc:e.target.value}))} placeholder="Describe the issue..." rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
+                  <div style={{display:"flex",gap:6,marginBottom:10}}>
+                    {["low","medium","high"].map(p=><button key={p} onClick={()=>setMaintForm(f=>({...f,priority:p}))} style={{flex:1,padding:"6px",borderRadius:6,border:`1px solid ${maintForm.priority===p?"#d4a853":"rgba(0,0,0,.08)"}`,background:maintForm.priority===p?"rgba(212,168,83,.08)":"#fff",cursor:"pointer",fontSize:10,fontWeight:maintForm.priority===p?700:400,fontFamily:"inherit"}}>{p}</button>)}
+                  </div>
+                  {maintForm.submitted?<div style={{textAlign:"center",padding:12,color:"#4a7c59",fontWeight:700,fontSize:13}}>Request submitted!</div>:<button className="btn btn-green" style={{width:"100%"}} onClick={submitMaint}>Submit Request</button>}
+                </div>
+                {tMaint.length>0&&<><div style={{fontSize:11,fontWeight:700,color:"#999",marginBottom:8}}>YOUR REQUESTS</div>
+                  {tMaint.map(r=><div key={r.id} className="tp-card" style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:12,fontWeight:600}}>{r.title}</div><div style={{fontSize:10,color:"#999"}}>{r.created}</div></div><span className={`badge ${r.status==="resolved"?"b-green":r.status==="in-progress"?"b-gold":"b-red"}`}>{r.status}</span></div></div>)}
+                </>}
+              </div>}
 
+              {portalTab==="docs"&&<div style={{padding:18}}>
+                <div className="tp-card"><h3>Your Documents</h3>
+                  {tRoom.tenant.documents&&tRoom.tenant.documents.length>0
+                    ?tRoom.tenant.documents.map((d,i)=><div key={d.id||i} className="tp-row"><span className="tp-label">{d.label||d.name}</span><span style={{fontSize:11,color:"#999"}}>{d.uploaded}</span></div>)
+                    :<div style={{color:"#999",fontSize:12,padding:"8px 0"}}>No documents uploaded yet.</div>}
+                </div>
+              </div>}
+
+              {portalTab==="rules"&&<div style={{padding:18}}>
+                <div className="tp-card"><h3>House Rules</h3>
+                  {houseRules.map((r,i)=><div key={i} className="tp-row"><span style={{fontSize:12}}>{r.rule}</span></div>)}
+                </div>
+                <div className="tp-card" style={{marginTop:10}}><h3>Your Amenities</h3>
+                  {[["Utilities",utilDesc],["Cleaning",cleanDesc],["WiFi","Google Fiber — always included"],["Parking","One spot per tenant — first come first served"]].map(([l,v])=><div key={l} className="tp-row"><span className="tp-label">{l}</span><span style={{fontSize:12,fontWeight:600,textAlign:"right",maxWidth:"60%"}}>{v}</span></div>)}
+                </div>
+                <div className="tp-card" style={{marginTop:10}}><h3>Contact & Emergency</h3>
+                  <div className="tp-row"><span className="tp-label">Phone</span><strong>{settings.phone||"(850) 696-8101"}</strong></div>
+                  <div className="tp-row"><span className="tp-label">Email</span><strong>{settings.pmEmail||settings.email}</strong></div>
+                  <div className="tp-row"><span className="tp-label">Emergency</span><strong>911 — then notify us immediately</strong></div>
+                </div>
+              </div>}
+            </div>
+          </>);
+        }
+
+        // ── PORTAL MANAGEMENT (default view) ─────────────────────────
+        return(<>
+          <div className="sec-hd"><div><h2>Portal Management</h2><p>{linked.length} connected · {unlinked.length} not yet linked</p></div></div>
+
+          {/* Summary KPIs */}
+          <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)",marginBottom:16}}>
+            <div className="kpi"><div className="kl">Portal Access</div><div className="kv" style={{color:"#4a7c59"}}>{linked.length}</div><div className="ks">tenants linked</div></div>
+            <div className="kpi"><div className="kl">Not Invited</div><div className="kv" style={{color:unlinked.length?"#d4a853":"#4a7c59"}}>{unlinked.length}</div><div className="ks">tenants without access</div></div>
+            <div className="kpi"><div className="kl">Total Tenants</div><div className="kv">{allTenants.length}</div><div className="ks">active</div></div>
+          </div>
+
+          {/* Not yet invited — action needed */}
+          {unlinked.length>0&&<div className="card" style={{marginBottom:14,border:"1px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}><div className="card-bd">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <div><div style={{fontSize:13,fontWeight:800,color:"#9a7422"}}>Not Yet Invited ({unlinked.length})</div><div style={{fontSize:11,color:"#999",marginTop:2}}>These tenants don't have portal access yet.</div></div>
+            </div>
+            {unlinked.map(t=>(
+              <div key={t.id} className="row">
+                <div className="row-dot" style={{background:"#d4a853"}}/>
+                <div className="row-i">
+                  <div className="row-t">{t.tenant.name}</div>
+                  <div className="row-s">{t.propName} · {t.name} · {t.tenant.email||"No email on file"}</div>
+                </div>
+                <button className="btn btn-out btn-sm" onClick={()=>setPortalTenant(t)}>Preview</button>
+                {t.tenant.email&&<button className="btn btn-gold btn-sm" onClick={()=>sendInvite(t)} disabled={portalInviteState==="sending"}>
+                  {portalInviteState==="sending"?"Sending...":portalInviteState==="sent"?"Sent!":"Send Invite"}
+                </button>}
+              </div>
+            ))}
+          </div></div>}
+
+          {/* Linked tenants */}
+          {linked.length>0&&<div className="card" style={{marginBottom:14}}><div className="card-bd">
+            <div style={{fontSize:13,fontWeight:800,marginBottom:12}}>Portal Active ({linked.length})</div>
+            {linked.map(t=>{
+              const ob=obStatuses[(t.tenant?.email||"").toLowerCase()]||{};
+              const steps=[ob.leaseSigned,ob.sdPaid,ob.firstMonthPaid];
+              const doneCount=steps.filter(Boolean).length;
+              return(
+              <div key={t.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setPortalTenant(t);setPortalTab("home");}}>
+                <div className="row-dot" style={{background:"#4a7c59"}}/>
+                <div className="row-i">
+                  <div className="row-t">{t.tenant.name}</div>
+                  <div className="row-s">{t.propName} · {t.name} · {t.tenant.email}</div>
+                </div>
+                <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                  {[["Lease",ob.leaseSigned],["SD",ob.sdPaid],["Rent",ob.firstMonthPaid]].map(([label,done])=>(
+                    <span key={label} style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:4,background:done?"rgba(74,124,89,.12)":"rgba(0,0,0,.06)",color:done?"#4a7c59":"#aaa"}}>{done?"✓ ":""}{label}</span>
+                  ))}
+                </div>
+                <span style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginLeft:4}}>Preview →</span>
+              </div>);
+            })}
+          </div></div>}
+
+          {allTenants.length===0&&<div style={{textAlign:"center",padding:48,color:"#999"}}>
+            <div style={{fontSize:40,marginBottom:8}}>🏠</div>
+            <div style={{fontWeight:700,marginBottom:4}}>No active tenants</div>
+            <div style={{fontSize:12}}>Add tenants from the Tenants tab to get started.</div>
           </div>}
         </>);
       })()}
