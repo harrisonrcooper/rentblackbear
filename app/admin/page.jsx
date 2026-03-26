@@ -2121,6 +2121,7 @@ export default function Page(){
   const[portalLinkLoading,setPortalLinkLoading]=useState(false);
   const[piState,setPiState]=useState("idle");
   const[obStatuses,setObStatuses]=useState({}); // {email: {leaseSigned,sdPaid,firstMonthPaid}}
+  const[appKpiFilter,setAppKpiFilter]=useState(null); // null | "needsAction" | "stale" | "denied"
   const[widgetList,setWidgetList]=useState(null);
   const[dashEditMode,setDashEditMode]=useState(false);
   const[dashDragWidget,setDashDragWidget]=useState(null);
@@ -3510,19 +3511,20 @@ export default function Page(){
           const color=count===4?"#4a7c59":count>=3?"#e8903a":count>=1?"#d4a853":"#c45c4a";
           return{count,leaseSigned,docsUploaded,sdPaid,firstMonthPaid,pct,color,ready:count===4};
         };
-        const monthFilter=expanded.appMonthFilter||"all";
-        const activeApps=apps.filter(a=>{
-          if(a.status==="denied")return false;
-          if(appSearch&&![a.name,a.email,a.phone,a.property,a.source].some(v=>(v||"").toLowerCase().includes(appSearch.toLowerCase())))return false;
-          if(monthFilter!=="all"&&!(a.submitted||"").startsWith(monthFilter))return false;
-          return true;
-        });
-        const deniedApps=apps.filter(a=>{
-          if(a.status!=="denied")return false;
-          if(monthFilter!=="all"&&!(a.submitted||"").startsWith(monthFilter))return false;
-          return true;
-        });
-        const staleApps=activeApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","onboarding"].includes(a.status));
+        // All active (non-denied) apps — search only within pipeline
+        const allActiveApps=apps.filter(a=>a.status!=="denied");
+        const staleApps=allActiveApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","onboarding"].includes(a.status));
+        const needsActionApps=allActiveApps.filter(a=>a.status==="applied");
+        const deniedApps=apps.filter(a=>a.status==="denied");
+        // Apply KPI filter + search
+        const activeApps=(()=>{
+          let base=appKpiFilter==="needsAction"?needsActionApps
+            :appKpiFilter==="stale"?staleApps
+            :appKpiFilter==="denied"?deniedApps
+            :allActiveApps;
+          if(appSearch)base=base.filter(a=>[a.name,a.email,a.phone,a.property,a.source].some(v=>(v||"").toLowerCase().includes(appSearch.toLowerCase())));
+          return base;
+        })();
         // Duplicate / returning detection
         const allTenantsList=props.flatMap(p=>allRooms(p).filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
         const archiveList=archive.map(a=>({name:a.name||"",email:a.email||"",phone:a.phone||"",propName:a.propName,roomName:a.roomName,reason:a.reason,type:"past"}));
@@ -3600,31 +3602,40 @@ export default function Page(){
           </div>);
         })()}
 
-        {/* KPIs + controls */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
-          <div className="kgrid" style={{gridTemplateColumns:"repeat(4,1fr)",flex:1,marginBottom:0}}>
-            <div className="kpi"><div className="kl">Pipeline</div><div className="kv">{activeApps.length}</div></div>
-            <div className="kpi"><div className="kl">Needs Action</div><div className="kv" style={{color:m.needsAttention?"#c45c4a":"#4a7c59"}}>{m.needsAttention}</div><div className="ks">Applied + Reviewing</div></div>
-            <div className="kpi"><div className="kl">Stale</div><div className="kv" style={{color:staleApps.length?"#c45c4a":"#4a7c59"}}>{staleApps.length}</div></div>
-            <div className="kpi"><div className="kl">Denied</div><div className="kv">{deniedApps.length}</div></div>
+        {/* KPIs — clickable filters */}
+        <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,flex:1}}>
+            {[
+              {key:null,label:"Pipeline",value:allActiveApps.length,sub:"All active",color:null},
+              {key:"needsAction",label:"Needs Action",value:needsActionApps.length,sub:"Applied — awaiting review",color:needsActionApps.length?"#c45c4a":"#4a7c59"},
+              {key:"stale",label:"Follow Up",value:staleApps.length,sub:"No contact 3+ days",color:staleApps.length?"#d4a853":null},
+              {key:"denied",label:"Denied",value:deniedApps.length,sub:"All time",color:null},
+            ].map(({key,label,value,sub,color})=>{
+              const active=appKpiFilter===key;
+              return(
+              <div key={label}
+                onClick={()=>setAppKpiFilter(appKpiFilter===key?null:key)}
+                onMouseEnter={e=>{if(!active){e.currentTarget.style.background="rgba(0,0,0,.04)";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 3px 10px rgba(0,0,0,.08)";}}}
+                onMouseLeave={e=>{if(!active){e.currentTarget.style.background="#fff";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}}
+                style={{background:active?"#1a1714":"#fff",borderRadius:10,padding:"12px 14px",border:active?"2px solid #1a1714":"1px solid rgba(0,0,0,.07)",cursor:"pointer",transition:"all .15s",boxShadow:active?"0 3px 12px rgba(0,0,0,.15)":"none"}}>
+                <div style={{fontSize:10,fontWeight:700,color:active?"rgba(255,255,255,.6)":"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>{label}</div>
+                <div style={{fontSize:24,fontWeight:800,color:active?"#d4a853":(color||"#1a1714"),lineHeight:1,marginBottom:3}}>{value}</div>
+                <div style={{fontSize:9,color:active?"rgba(255,255,255,.4)":"#7a7067"}}>{active?"Click to clear":sub}</div>
+              </div>);
+            })}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff",flexShrink:0}}>
-            <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Action badge</span>
+            <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Badge</span>
             <div onClick={()=>{const u={...settings,showAppBadge:settings.showAppBadge===false};setSettings(u);save("hq-settings",u);}}
               style={{width:32,height:18,borderRadius:9,background:settings.showAppBadge!==false?"#4a7c59":"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
               <div style={{position:"absolute",top:2,left:settings.showAppBadge!==false?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
             </div>
           </div>
         </div>
-        {/* ── Search + Controls row ── */}
+        {/* Search + Controls */}
         <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-          <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search..." style={{width:140,padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-          <select value={expanded.appMonthFilter||"all"} onChange={e=>setExpanded(p=>({...p,appMonthFilter:e.target.value}))} style={{padding:"6px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-            <option value="all">All Time</option>
-            {[...new Set(apps.map(a=>(a.submitted||"").slice(0,7)).filter(Boolean).sort().reverse())].map(m=>{
-              const d=new Date(m+"-02");return<option key={m} value={m}>{d.toLocaleString("default",{month:"long",year:"numeric"})}</option>;
-            })}
-          </select>
+          <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search pipeline..." style={{flex:1,minWidth:160,padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+          {appKpiFilter&&<button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>setAppKpiFilter(null)}>✕ Clear filter</button>}
           {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
           <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
         </div>
