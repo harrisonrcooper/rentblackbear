@@ -1823,7 +1823,7 @@ const S=`
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
-@keyframes spin{to{transform:rotate(360deg)}}@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-4px)}30%{transform:translateX(4px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}75%{transform:translateX(-1px)}90%{transform:translateX(1px)}}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes wiggle{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-2deg)}75%{transform:rotate(2deg)}}@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-4px)}30%{transform:translateX(4px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}75%{transform:translateX(-1px)}90%{transform:translateX(1px)}}
 @keyframes redFlash{0%{box-shadow:none}40%{box-shadow:inset 0 0 0 2px rgba(196,92,74,.2)}100%{box-shadow:none}}
 @keyframes fieldShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 .field-err input,.field-err select,.field-err textarea{border-color:#c45c4a!important;background:rgba(196,92,74,.03)!important;animation:fieldShake .35s ease}
@@ -2133,6 +2133,9 @@ export default function Page(){
   const[portalTenant,setPortalTenant]=useState(null);
   const[portalTab,setPortalTab]=useState("home");
   const[tenantProfileTab,setTenantProfileTab]=useState("summary");
+  const[sidebarEditMode,setSidebarEditMode]=useState(false);
+  const[sidebarDrag,setSidebarDrag]=useState(null); // {secIdx,itemIdx}
+  const[sidebarDragOver,setSidebarDragOver]=useState(null);
   const[maintForm,setMaintForm]=useState({title:"",desc:"",priority:"medium",submitted:false});
   const[leases,setLeases]=useState([]);
   const[leaseTemplate,setLeaseTemplate]=useState(null);
@@ -2463,7 +2466,7 @@ export default function Page(){
     {id:"issues",i:<IconAlert/>,l:"Issues"},
     {id:"tenants",i:<IconUsers/>,l:"Tenants"},
     {id:"portal",i:<IconHome/>,l:"Tenant Portal"},
-    {id:"payments",i:<IconDollar/>,l:"Payments",badge:settings.showPayBadge!==false&&pastDueCount>0?pastDueCount:null},
+    {id:"payments",i:<IconDollar/>,l:"Tenant Ledger",badge:settings.showPayBadge!==false&&pastDueCount>0?pastDueCount:null},
     {id:"applications",i:<IconClipboard/>,l:"Applications",badge:(settings.showAppBadge!==false&&m.needsAttention>0)?m.needsAttention:null},
     {id:"maintenance",i:<IconWrench/>,l:"Maintenance",badge:m.openMaint||null},
     {id:"leases",i:<IconFile/>,l:"Leases & Docs",badge:pendingLeases||null},
@@ -2478,6 +2481,21 @@ export default function Page(){
     {id:"settings_dummy",i:<IconSettings/>,l:"Settings"},
     {id:"configuration",i:<IconClipboard/>,l:"Configuration"},
   ];
+
+  // Default sidebar config — can be customized per PM
+  const DEF_SIDEBAR=[
+    {label:"Overview",ids:["dashboard"]},
+    {label:"Traction",ids:["scorecard","rocks","issues"]},
+    {label:"Tenants",ids:["tenants","portal","payments"]},
+    {label:"Leasing",ids:["applications"]},
+    {label:"Operations",ids:["maintenance","leases","documents"]},
+    {label:"Financials",ids:["accounting","reports"]},
+    {label:"Portfolio",ids:["properties"]},
+    {label:"System",ids:["site-settings","theme","ideas","notifications","settings_dummy"]},
+    {label:"Configuration",ids:["configuration"]},
+  ];
+  const sidebarConfig=settings.sidebarConfig||DEF_SIDEBAR;
+  const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
 
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);};
   const confirmAction=(title,onConfirm,body="This cannot be undone.")=>{setModal({type:"confirmAction",title,body,confirmLabel:"Confirm",confirmStyle:"btn-red",onConfirm:()=>{onConfirm();setModal(null);}});};
@@ -2519,28 +2537,91 @@ export default function Page(){
     {/* Sidebar */}
     <div className={`side ${sideOpen?"open":""}`}>
       <div className="s-logo">🐻 Black Bear <span>HQ</span></div>
-      <div className="s-lbl">Overview</div>
-      {tabs.slice(0,1).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">Traction</div>
-      {tabs.slice(1,4).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">Tenants</div>
-      {tabs.slice(4,7).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">Leasing</div>
-      {tabs.slice(7,8).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">Operations</div>
-      {tabs.slice(8,11).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">Financials</div>
-      {tabs.slice(11,12).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <button className="sn" onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}><span className="sn-i">＋</span>Add Expense</button>
-      {tabs.slice(12,13).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">Portfolio</div>
-      {tabs.slice(13,14).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">System</div>
-      {tabs.filter(t=>["site-settings","theme","ideas","notifications","settings_dummy"].includes(t.id)).map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}{t.badge&&<span className="sn-badge">{t.badge}</span>}</button>)}
-      <div className="s-lbl">Configuration</div>
-      {tabs.filter(t=>t.id==="configuration").map(t=><button key={t.id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}><span className="sn-i">{t.i}</span>{t.l}</button>)}
+
+      {/* Data-driven sections */}
+      {sidebarConfig.map((sec,si)=>(
+        <div key={si}>
+          {/* Section label */}
+          {sidebarEditMode
+            ?<input value={sec.label} onChange={e=>{const c=sidebarConfig.map((s,i)=>i===si?{...s,label:e.target.value}:s);setSidebarConfig(c);}}
+              style={{background:"transparent",border:"none",borderBottom:"1px solid rgba(255,255,255,.2)",color:"rgba(212,168,83,.8)",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1,width:"calc(100% - 20px)",margin:"8px 10px 4px",padding:"2px 0",fontFamily:"inherit",outline:"none"}}/>
+            :<div className="s-lbl">{sec.label}</div>}
+
+          {/* Items */}
+          {sec.ids.map((id,ii)=>{
+            const t=tabs.find(x=>x.id===id);
+            if(!t)return null;
+            const isDragging=sidebarDrag&&sidebarDrag.si===si&&sidebarDrag.ii===ii;
+            const isDragOver=sidebarDragOver&&sidebarDragOver.si===si&&sidebarDragOver.ii===ii;
+            if(sidebarEditMode){
+              return(
+              <div key={id}
+                draggable
+                onDragStart={()=>setSidebarDrag({si,ii})}
+                onDragOver={e=>{e.preventDefault();setSidebarDragOver({si,ii});}}
+                onDragLeave={()=>setSidebarDragOver(null)}
+                onDrop={e=>{
+                  e.preventDefault();
+                  if(!sidebarDrag)return;
+                  const cfg=sidebarConfig.map(s=>({...s,ids:[...s.ids]}));
+                  // Remove from source
+                  const srcId=cfg[sidebarDrag.si].ids.splice(sidebarDrag.ii,1)[0];
+                  // Insert at target
+                  cfg[si].ids.splice(ii,0,srcId);
+                  setSidebarConfig(cfg);
+                  setSidebarDrag(null);setSidebarDragOver(null);
+                }}
+                style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",margin:"1px 4px",borderRadius:6,cursor:"grab",background:isDragOver?"rgba(212,168,83,.15)":isDragging?"rgba(0,0,0,.3)":"rgba(255,255,255,.04)",border:isDragOver?"1px solid rgba(212,168,83,.3)":"1px solid transparent",transition:"all .1s",animation:"wiggle 0.3s ease-in-out infinite",opacity:isDragging?0.4:1}}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" strokeWidth="2" style={{flexShrink:0}}><circle cx="9" cy="5" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="5" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="9" cy="12" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="12" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="9" cy="19" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="15" cy="19" r="1.5" fill="rgba(255,255,255,.4)"/></svg>
+                <span style={{fontSize:9,color:"rgba(255,255,255,.5)",flexShrink:0}}>{t.i}</span>
+                <input value={t.l} onChange={e=>{
+                    // Store custom label overrides in settings
+                    const u={...settings,sidebarLabels:{...(settings.sidebarLabels||{}),[t.id]:e.target.value}};
+                    setSettings(u);save("hq-settings",u);
+                  }}
+                  onClick={e=>e.stopPropagation()}
+                  style={{background:"transparent",border:"none",color:"rgba(255,255,255,.8)",fontSize:11,fontFamily:"inherit",outline:"none",flex:1,minWidth:0}}/>
+              </div>);
+            }
+            // Normal mode
+            const label=(settings.sidebarLabels||{})[t.id]||t.l;
+            return(
+            <button key={id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}>
+              <span className="sn-i">{t.i}</span>{label}{t.badge&&<span className="sn-badge">{t.badge}</span>}
+            </button>);
+          })}
+        </div>
+      ))}
+
+      {/* Add Expense shortcut — always visible */}
+      {!sidebarEditMode&&<button className="sn" onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}>
+        <span className="sn-i">＋</span>Add Expense
+      </button>}
+
+      {/* Edit / Done button */}
+      <div style={{padding:"12px 10px 6px",marginTop:"auto"}}>
+        {sidebarEditMode
+          ?<div style={{display:"flex",flexDirection:"column",gap:6}}>
+            <button onClick={()=>{setSidebarEditMode(false);setSidebarDrag(null);setSidebarDragOver(null);}}
+              style={{width:"100%",padding:"8px",borderRadius:7,border:"none",background:"rgba(74,124,89,.8)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+              Done
+            </button>
+            <button onClick={()=>{setSidebarConfig(DEF_SIDEBAR);setSettings(s=>{const u={...s,sidebarConfig:DEF_SIDEBAR,sidebarLabels:{}};save("hq-settings",u);return u;});setSidebarEditMode(false);}}
+              style={{width:"100%",padding:"6px",borderRadius:7,border:"1px solid rgba(255,255,255,.15)",background:"transparent",color:"rgba(255,255,255,.5)",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>
+              Reset to Default
+            </button>
+          </div>
+          :<button onClick={()=>setSidebarEditMode(true)}
+            style={{width:"100%",padding:"7px",borderRadius:7,border:"1px solid rgba(255,255,255,.12)",background:"transparent",color:"rgba(255,255,255,.4)",fontSize:10,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5,transition:"all .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.color="rgba(255,255,255,.7)";e.currentTarget.style.borderColor="rgba(255,255,255,.25)";}}
+            onMouseLeave={e=>{e.currentTarget.style.color="rgba(255,255,255,.4)";e.currentTarget.style.borderColor="rgba(255,255,255,.12)";}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit Sidebar
+          </button>}
+      </div>
+
       <div className="s-ft">
-        <a href="#">🌐 View Public Site</a>
+        <a href="#">View Public Site</a>
       </div>
     </div>
 
