@@ -92,6 +92,7 @@ function SigCanvas({onSave,height=120}){
       <button className="btn btn-out btn-sm" onClick={clear}>Clear</button>
       <button className="btn btn-gold btn-sm" onClick={save}>Apply Signature</button>
     </div>
+  </div>{/* end outside zoom wrapper */}
   </div>);
 }
 
@@ -2533,7 +2534,7 @@ export default function Page(){
 
   const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-green{background:${acc}!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
   const _acc=settings.adminAccent||"#4a7c59";const _rgb=settings.adminAccentRgb||"74,124,89";const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";const _zoom=settings.adminZoom||1;
-  return(<div style={{zoom:_zoom,fontFamily:_font}}><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app">
+  return(<div style={{fontFamily:_font}}><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app" style={{zoom:_zoom}}>
     {/* Mobile header */}
     <div className="mob-header"><div style={{display:"flex",alignItems:"center",gap:8}}><div className="s-logo" style={{fontSize:16}}>🐻 BB <span>HQ</span></div><span style={{fontSize:11,color:"#c4a882"}}>· {(tabs.find(t=>t.id===tab)||{}).l}</span></div><button className="mob-toggle" onClick={()=>setSideOpen(!sideOpen)}>{sideOpen?"✕":"☰"}</button></div>
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
@@ -7036,6 +7037,8 @@ export default function Page(){
     </div>
   </div>
 
+  {/* Fixed pages + modals — own zoom wrapper so they scale correctly */}
+  <div style={{zoom:_zoom,fontFamily:_font}}>
   {/* ═══ LEASE DETAIL PAGE ═══ */}
   {viewingLease&&(()=>{
     const l=viewingLease.lease;
@@ -7055,7 +7058,7 @@ export default function Page(){
     };
 
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto",zoom:_zoom}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",display:"flex",alignItems:"center",gap:16,height:56,position:"sticky",top:0,zIndex:10}}>
         <button onClick={()=>setViewingLease(null)}
@@ -7266,7 +7269,7 @@ export default function Page(){
       {id:"guide",label:"Home Guide"},
     ];
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto",zoom:_zoom}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
 
       {/* ── Sticky top bar ── */}
       <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",position:"sticky",top:0,zIndex:10}}>
