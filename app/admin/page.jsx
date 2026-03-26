@@ -1461,7 +1461,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
   const isOcc=r=>r.st==="occupied"&&r.tenant;
   const mode=curUnit?.rentalMode||"byRoom";
   const tryClose=()=>{if(unsaved&&!justSaved)setShowCloseConfirm(true);else onClose();};
-  return(<div className="mbg" onClick={tryClose} style={{alignItems:"flex-start",paddingTop:24,paddingBottom:24}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760,maxHeight:"calc(100vh - 48px)",overflowY:"auto"}}>
+  return(<div className="mbg" onClick={tryClose} style={{alignItems:"flex-start",overflowY:"auto",paddingTop:24,paddingBottom:24}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760,width:"100%",flexShrink:0}}>
     <h2>{isNew?"Add Property":`Edit: ${p.name}`}</h2>
 
     {/* Property-level info */}
