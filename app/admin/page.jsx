@@ -2512,6 +2512,8 @@ export default function Page(){
   })();
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
 
+  const getPropAddr=(propName)=>{const p=props.find(x=>x.name===propName);return p?.addr||"";};
+  const roomSubLine=(propName,roomName)=>{const a=getPropAddr(propName);return a?`${propName} · ${a} · ${roomName}`:`${propName} · ${roomName}`;};
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);};
   const confirmAction=(title,onConfirm,body="This cannot be undone.")=>{setModal({type:"confirmAction",title,body,confirmLabel:"Confirm",confirmStyle:"btn-red",onConfirm:()=>{onConfirm();setModal(null);}});};
   const shakeModal=()=>{const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .5s ease";}};
@@ -2782,7 +2784,7 @@ export default function Page(){
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Door Codes</div>
             {allTenants.filter(r=>r.tenant&&r.tenant.doorCode).length===0&&<div style={{fontSize:12,color:"#6b5e52"}}>No door codes on file</div>}
             {allTenants.filter(r=>r.tenant&&r.tenant.doorCode).map(r=><div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-              <div><div style={{fontSize:11,fontWeight:600}}>{r.tenant.name}</div><div style={{fontSize:9,color:"#6b5e52"}}>{r.propName} · {r.name}</div></div>
+              <div><div style={{fontSize:11,fontWeight:600}}>{r.tenant.name}</div><div style={{fontSize:9,color:"#6b5e52"}}>{roomSubLine(r.propName,r.name)}</div></div>
               <div style={{fontFamily:"monospace",fontSize:16,fontWeight:800,letterSpacing:4,color:"#1a1714"}}>{r.tenant.doorCode}</div>
             </div>)}
           </>);
@@ -2888,7 +2890,7 @@ export default function Page(){
         {drill==="coll"&&<div className="card" style={{marginBottom:16,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Collection — {fmtS(m.coll)} / {fmtS(m.due)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>Close</button></div>
           {m.unpaid.length>0&&<><div style={{fontSize:10,fontWeight:700,color:"#c45c4a",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Unpaid ({m.unpaid.length})</div>
-            {m.unpaid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.tenant&&r.tenant.name}</div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Record Payment</button></div>)}</>}
+            {m.unpaid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.tenant&&r.tenant.name}</div><div className="row-s">{roomSubLine(r.propName,r.name)}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Record Payment</button></div>)}</>}
           {m.paid.length>0&&<><div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginTop:12,marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Paid ({m.paid.length})</div>
             {m.paid.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{r.tenant&&r.tenant.name}</div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
         </div></div>}
@@ -3321,7 +3323,7 @@ export default function Page(){
                 <div className="row-dot" style={{background:"#d4a853"}}/>
                 <div className="row-i">
                   <div className="row-t">{t.tenant.name}</div>
-                  <div className="row-s">{t.propName} · {t.name} · {t.tenant.email||"No email on file"}</div>
+                  <div className="row-s">{roomSubLine(t.propName,t.name)} · {t.tenant.email||"No email on file"}</div>
                 </div>
                 <button className="btn btn-out btn-sm" onClick={()=>setPortalTenant(t)}>Preview</button>
                 {t.tenant.email&&<button className="btn btn-gold btn-sm" onClick={()=>sendInvite(t)} disabled={portalInviteState==="sending"}>
@@ -3343,7 +3345,7 @@ export default function Page(){
                 <div className="row-dot" style={{background:"#4a7c59"}}/>
                 <div className="row-i">
                   <div className="row-t">{t.tenant.name}</div>
-                  <div className="row-s">{t.propName} · {t.name} · {t.tenant.email}</div>
+                  <div className="row-s">{roomSubLine(t.propName,t.name)} · {t.tenant.email}</div>
                 </div>
                 <div style={{display:"flex",gap:4,alignItems:"center"}}>
                   {[["Lease",ob.leaseSigned],["SD",ob.sdPaid],["Rent",ob.firstMonthPaid]].map(([label,done])=>(
@@ -3492,7 +3494,7 @@ export default function Page(){
                           onClick={e=>{e.stopPropagation();if(tRoom)setModal({type:"tenant",data:tRoom});}}>
                           <div style={{fontSize:11,fontWeight:700,color:tRoom?"#3b82f6":"#3c3228",textDecoration:tRoom?"underline":"none"}}>{c.tenantName}</div>
                         </button>
-                        <div style={{fontSize:9,color:"#6b5e52"}}>{c.propName} · {c.roomName}</div>
+                        <div style={{fontSize:9,color:"#6b5e52"}}>{roomSubLine(c.propName,c.roomName)}</div>
                       </div>
                       <div style={{display:"flex",alignItems:"center"}}><span className={`badge ${stBadge[st]}`} style={{fontSize:8}}>{st}</span></div>
                       <div style={{display:"flex",alignItems:"center"}}>{lastPay&&lastPay.depositDate?<div><div style={{fontSize:10,fontWeight:600}}>{fmtD(lastPay.depositDate)}</div><div style={{fontSize:8,color:"#6b5e52"}}>{lastPay.method||"—"}</div><div style={{fontSize:8,color:"#4a7c59"}}>Due: $0.00</div></div>:lastPay&&lastPay.depositStatus==="transit"?<span style={{fontSize:9,color:"#d4a853",fontWeight:600}}>In transit</span>:<span style={{fontSize:9,color:"#aaa"}}>—</span>}</div>
@@ -3690,7 +3692,7 @@ export default function Page(){
                   <div style={{fontSize:11}}>{fmtD(p.date)}</div>
                   <div>
                     <div style={{fontSize:11,fontWeight:700}}>{p.tenantName}</div>
-                    <div style={{fontSize:9,color:"#6b5e52"}}>{p.propName} · {p.roomName}</div>
+                    <div style={{fontSize:9,color:"#6b5e52"}}>{roomSubLine(p.propName,p.roomName)}</div>
                   </div>
                   <div><div style={{fontSize:11}}>Redstone FCU</div><div style={{fontSize:9,color:"#6b5e52"}}>{p.method}</div></div>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:8}}>
@@ -3733,7 +3735,7 @@ export default function Page(){
                             onClick={e=>{e.stopPropagation();if(tRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:tRoom});}}}>
                             <div style={{fontSize:11,fontWeight:700,color:tRoom?"#3b82f6":"#3c3228",textDecoration:tRoom?"underline":"none"}}>{p.tenantName}</div>
                           </button>
-                          <div style={{fontSize:9,color:"#6b5e52"}}>{p.propName} · {p.roomName}</div>
+                          <div style={{fontSize:9,color:"#6b5e52"}}>{roomSubLine(p.propName,p.roomName)}</div>
                         </div>
                         <div><div style={{fontSize:11,fontWeight:600}}>Redstone FCU</div><div style={{fontSize:9,color:"#6b5e52"}}>{p.method}</div></div>
                         <div style={{textAlign:"right",display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>
@@ -6393,7 +6395,7 @@ export default function Page(){
         {/* Drill: Collection */}
         {drill==="sc-coll"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
           <div className="sec-hd"><div><h2>Collection: {fmtS(m.coll)} / {fmtS(m.due)}</h2></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>✕</button></div>
-          {m.unpaid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#c45c4a",marginBottom:6}}>UNPAID ({m.unpaid.length})</div>{m.unpaid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName} · {r.name}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();openPayForm(r.id);}}>Pay</button></div>)}</>}
+          {m.unpaid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#c45c4a",marginBottom:6}}>UNPAID ({m.unpaid.length})</div>{m.unpaid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{roomSubLine(r.propName,r.name)}</div></div><div className="row-v kb">{fmtS(r.rent)}</div><button className="btn btn-green btn-sm" onClick={e=>{e.stopPropagation();openPayForm(r.id);}}>Pay</button></div>)}</>}
           {m.paid.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#4a7c59",margin:"10px 0 6px"}}>PAID ({m.paid.length})</div>{m.paid.map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#4a7c59"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div className="row-s">{r.propName}</div></div><div className="row-v kg">{fmtS(r.paidAmt)}</div></div>)}</>}
           <div style={{marginTop:12,padding:14,background:"rgba(0,0,0,.02)",borderRadius:10}}>
             <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}><span>Total Due</span><strong>{fmtS(m.due)}</strong></div>
@@ -6526,7 +6528,7 @@ export default function Page(){
 
           {scDrill==="coll"&&<div>
             <p style={{fontSize:12,color:"#5c4a3a",marginBottom:10}}>Collection = rent collected / rent due. Goal: 100%. Currently <strong>{m.collRate}%</strong>.</p>
-            {m.unpaid.length>0?<>{m.unpaid.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div style={{fontSize:9,color:"#c45c4a"}}>{r.propName} · {r.name} · {fmtS(r.rent)} unpaid</div></div></div>)}
+            {m.unpaid.length>0?<>{m.unpaid.map(r=><div key={r.id} className="row" style={{padding:"6px 12px",marginBottom:2,cursor:"pointer"}} onClick={()=>setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}})}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div style={{fontSize:11,fontWeight:600}}>{(r.tenant&&r.tenant.name)} <span style={{fontSize:9,color:"#c4a882"}}>→ view</span></div><div style={{fontSize:9,color:"#c45c4a"}}>{roomSubLine(r.propName,r.name)} · {fmtS(r.rent)} unpaid</div></div></div>)}
               <div style={{fontSize:12,color:"#c45c4a",fontWeight:600,marginTop:8}}>Outstanding: {fmtS(m.due-m.coll)} from {m.unpaid.length} tenant{m.unpaid.length>1?"s":""}</div></>
             :<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>✓ All rent collected for {MO}!</div>}
           </div>}
@@ -6545,7 +6547,7 @@ export default function Page(){
           </div>}
         </div></div>}
         {m.expiring.length>0&&<><div className="sec-hd" style={{marginTop:16}}><div><h2>⚠️ Leases Expiring</h2></div></div>
-          {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}});}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{r.propName} · {r.name} · {r.daysLeft} days</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}</>}
+          {m.expiring.sort((a,b)=>a.daysLeft-b.daysLeft).map(r=><div key={r.id} className="row" style={{cursor:"pointer"}} onClick={()=>{setTab("tenants");setModal({type:"tenant",data:{...r,propUtils:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).utils,propClean:(props.find(p=>allRooms(p).some(x=>x.id===r.id))||{}).clean}});}}><div className="row-dot" style={{background:r.daysLeft<=30?"#c45c4a":"#d4a853"}}/><div className="row-i"><div className="row-t">{(r.tenant&&r.tenant.name)}</div><div className="row-s">{roomSubLine(r.propName,r.name)} · {r.daysLeft} days</div></div><span className="badge" style={{background:r.daysLeft<=30?"rgba(196,92,74,.08)":"rgba(212,168,83,.1)",color:r.daysLeft<=30?"#c45c4a":"#9a7422"}}>{r.daysLeft}d</span></div>)}</>}
       </>}
 
       {/* ═══ ROCKS ═══ */}
