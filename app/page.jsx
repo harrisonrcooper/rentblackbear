@@ -1258,7 +1258,7 @@ function Chat(){
 
 function Screening({properties}){
   const PROPS=properties||[];
-  const[step,setStep]=useState(0);const[form,setForm]=useState({name:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
+  const[step,setStep]=useState(0);const[form,setForm]=useState({firstName:"",lastName:"",name:"",email:"",phone:"",property:"",moveIn:"",moveInMonth:"",moveInDay:"",moveInYear:"",source:"",sourceOther:"",reason:""});
   const[submitting,setSubmitting]=useState(false);const[subError,setSubError]=useState("");const[touched,setTouched]=useState({});const[formShake,setFormShake]=useState(false);
   const shakeForm=()=>{setFormShake(true);setTimeout(()=>setFormShake(false),500);};
   const[qs,setQs]=useState(SCREEN_QS);
@@ -1273,7 +1273,7 @@ function Screening({properties}){
   const isValidEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
   const isValidPhone=p=>p.replace(/\D/g,"").length===10;
   const errs={};
-  if(touched.name&&!form.name.trim())errs.name="Full name is required";
+  if(touched.firstName&&!form.firstName.trim())errs.firstName="First name is required";if(touched.lastName&&!form.lastName.trim())errs.lastName="Last name is required";
   if(touched.email&&!form.email)errs.email="Email is required";
   else if(touched.email&&!isValidEmail(form.email))errs.email="Enter a valid email address";
   if(touched.phone&&!form.phone)errs.phone="Phone is required";
@@ -1285,13 +1285,13 @@ function Screening({properties}){
   if(touched.sourceOther&&form.source==="Other"&&!form.sourceOther?.trim())errs.sourceOther="Please tell us how you heard about us";
   if(touched.reason&&!form.reason)errs.reason="This field is required";
   else if(touched.reason&&form.reason.length<10)errs.reason="Please provide at least 10 characters";
-  const canSubmit=form.name.trim()&&isValidEmail(form.email)&&isValidPhone(form.phone)&&form.property&&form.moveIn&&form.source&&(form.source!=="Other"||form.sourceOther?.trim())&&form.reason.length>=10;
-  const touchAll=()=>setTouched({name:true,email:true,phone:true,property:true,moveIn:true,source:true,sourceOther:true,reason:true});
+  const canSubmit=form.firstName.trim()&&form.lastName.trim()&&isValidEmail(form.email)&&isValidPhone(form.phone)&&form.property&&form.moveIn&&form.source&&(form.source!=="Other"||form.sourceOther?.trim())&&form.reason.length>=10;
+  const touchAll=()=>setTouched({firstName:true,lastName:true,email:true,phone:true,property:true,moveIn:true,source:true,sourceOther:true,reason:true});
   const submitApp=async()=>{
     touchAll();if(!canSubmit){setSubError("Please complete all required fields.");shakeForm();return;}
     setSubmitting(true);setSubError("");
     try{
-      const submitData={...form,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
+      const submitData={...form,name:`${form.firstName.trim()} ${form.lastName.trim()}`,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
       const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(submitData)});
       const d=await res.json();
       if(d.ok){
@@ -1318,11 +1318,18 @@ function Screening({properties}){
         <div className="scr-hd" style={{marginBottom:20}}><h2>{formSettings.heading||"Almost There"}</h2><p>{formSettings.subtext||"All fields are required."}</p></div>
         <div className="sform">
           <div className="sform-row">
-            <div style={{flex:1}}><input className="sinp" placeholder="Full Name *" style={fldStyle("name")} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} onBlur={()=>setTouched({...touched,name:true})}/>{errMsg("name")}</div>
+            <div style={{flex:1}}><input className="sinp" placeholder="First Name *" style={fldStyle("firstName")} value={form.firstName} onChange={e=>setForm({...form,firstName:e.target.value})} onBlur={()=>setTouched({...touched,firstName:true})}/>{errMsg("firstName")}</div><div style={{flex:1}}><input className="sinp" placeholder="Last Name *" style={fldStyle("lastName")} value={form.lastName} onChange={e=>setForm({...form,lastName:e.target.value})} onBlur={()=>setTouched({...touched,lastName:true})}/>{errMsg("lastName")}</div>
             <div style={{flex:1}}><input className="sinp" placeholder="Phone *" type="tel" style={fldStyle("phone")} value={form.phone} onChange={e=>setForm({...form,phone:fmtPhone(e.target.value)})} onBlur={()=>setTouched({...touched,phone:true})}/>{errMsg("phone")}</div>
           </div>
           <div><input className="sinp" placeholder="Email *" type="email" style={fldStyle("email")} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onBlur={()=>setTouched({...touched,email:true})}/>{errMsg("email")}</div>
-          <div><select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}><option value="">Property interested in? *</option>{PROPS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}</select>{errMsg("property")}</div>
+          <div>{(()=>{
+  const names=PROPS.map(p=>p.name);
+  const hasDupe=n=>names.filter(x=>x===n).length>1;
+  return(<select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}>
+    <option value="">Property interested in? *</option>
+    {PROPS.map(p=><option key={p.id} value={p.name}>{hasDupe(p.name)&&p.addr?`${p.name} — ${p.addr}`:p.name}</option>)}
+  </select>);
+})()}{errMsg("property")}</div>
           <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
             <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
               {(()=>{
@@ -1632,13 +1639,13 @@ export default function Page(){
     <section className="sec" id="availability"><div className="sec-inner"><div className="sh"><div className="sl">Availability</div><h2 className="st">Room Availability</h2><p className="ss">Rooms available now are ready for immediate move-in. Click upcoming openings to see the calendar.</p></div>
       <div className="tabs"><button className={`tab ${calProp==="all"?"on":""}`} onClick={()=>{setCalProp("all");setCalRoom(null);}}>All</button>{P.map(p=><button key={p.id} className={`tab ${calProp===p.id?"on":""}`} onClick={()=>{setCalProp(p.id);setCalRoom(null);}}>{p.name}</button>)}</div>
       <div className="cal-grid">{calProps.map(prop=>{
-        const units=prop.units&&prop.units.length>0?prop.units.filter(u=>!u.ownerOccupied):[{id:"_",rentalMode:"byRoom",rooms:allRoomsP(prop)}];
+        const units=prop.units&&prop.units.length>0?prop.units:[{id:"_",rentalMode:"byRoom",rooms:allRoomsP(prop)}];
         const unitCount=units.length;
         return(
         <div key={prop.id} className="cal-card"><div className="cal-hd"><h3>{prop.name}</h3><span>{prop.type} · {unitCount>1?unitCount+" units":prop.allWholeHouse?"Whole property":allRoomsP(prop).length+" rooms"}</span></div><div className="cal-bd">
           {units.map(u=>{
             const uIsWhole=(u.rentalMode||"byRoom")==="wholeHouse";
-            const uRooms=(u.rooms||[]).filter(r=>!r.ownerOccupied);
+            const uRooms=u.rooms||[];
             return(<div key={u.id}>
               {unitCount>1&&<div style={{fontSize:9,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:.5,padding:"6px 0 4px"}}>{u.name||"Unit"} · {uIsWhole?"Whole Unit":"By Room"}</div>}
               {uIsWhole?(()=>{
