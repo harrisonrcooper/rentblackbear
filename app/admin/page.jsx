@@ -4150,6 +4150,10 @@ export default function Page(){
               ?activeApps.filter(function(a){return a.status==="onboarding";})
               :stage==="approved"
               ?activeApps.filter(function(a){return a.status==="approved";})
+              :stage==="new-lead"
+              ?activeApps.filter(function(a){return["new-lead","pre-screened","called","invited"].includes(a.status);})
+              :stage==="applied"
+              ?activeApps.filter(function(a){return["applied","reviewing"].includes(a.status);})
               :activeApps.filter(function(a){return a.status===stage;});
             return(
             <div key={stage} className="pipe-col">
