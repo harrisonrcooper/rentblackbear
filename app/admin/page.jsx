@@ -3796,29 +3796,93 @@ export default function Page(){
                     {/* Onboarding status pills — shown for approved/onboarding cards, reads from Supabase */}
                     {(isOnboarding||a.status==="approved")&&(()=>{
                       const ob=obStatuses[a.email]||{};
+                      // Lease state: check local leases array for sent/signed status
+                      const appLease=leases.find(l=>l.applicationId===a.id);
+                      const leaseSent=appLease&&(appLease.status==="pending_tenant"||appLease.status==="executed");
+                      const leaseSignedLocal=appLease?.status==="executed"||!!a.leaseSigned;
+                      const leaseSignedSupa=ob.leaseSigned;
+                      const leaseDone=leaseSignedLocal||leaseSignedSupa;
+                      const leaseAmber=leaseSent&&!leaseDone; // sent but not yet signed
+                      // SD and Rent charges
+                      const sdCharge=charges.find(c=>c.tenantName===a.name&&c.category==="Security Deposit");
+                      const rentCharge=charges.find(c=>c.tenantName===a.name&&c.category==="Rent");
+                      const allDone=leaseDone&&ob.sdPaid&&ob.firstMonthPaid;
+                      // Pill config: state = "done" | "pending" | "idle"
                       const pills=[
-                        {key:"leaseSigned",label:"Lease",done:ob.leaseSigned},
-                        {key:"sdPaid",label:"SD",done:ob.sdPaid},
-                        {key:"firstMonthPaid",label:"Rent",done:ob.firstMonthPaid},
-                        {key:"moveIn",label:"Move In",done:ob.leaseSigned&&ob.sdPaid&&ob.firstMonthPaid},
+                        {
+                          key:"lease",label:"Lease",
+                          state:leaseDone?"done":leaseAmber?"pending":"idle",
+                          pendingLabel:"Awaiting Signature",
+                          onClick:(e)=>{e.stopPropagation();
+                            if(leaseDone&&appLease){setModal({type:"app",data:a,startSection:"lease"});}
+                            else if(leaseAmber&&appLease){setModal({type:"app",data:a,startSection:"lease"});}
+                            else{setModal({type:"app",data:a});}
+                          }
+                        },
+                        {
+                          key:"sd",label:"SD",
+                          state:ob.sdPaid?"done":sdCharge?"pending":"idle",
+                          pendingLabel:"Awaiting Payment",
+                          onClick:(e)=>{e.stopPropagation();
+                            if(sdCharge){goTab("payments");setPaySubTab("charges");setPayFilters({...payFilters,tenant:a.name,category:"Security Deposit"});}
+                            else{setModal({type:"app",data:a});}
+                          }
+                        },
+                        {
+                          key:"rent",label:"Rent",
+                          state:ob.firstMonthPaid?"done":rentCharge?"pending":"idle",
+                          pendingLabel:"Awaiting Payment",
+                          onClick:(e)=>{e.stopPropagation();
+                            if(rentCharge){goTab("payments");setPaySubTab("charges");setPayFilters({...payFilters,tenant:a.name,category:"Rent"});}
+                            else{setModal({type:"app",data:a});}
+                          }
+                        },
+                        {
+                          key:"movein",label:"Move In",
+                          state:allDone?"done":"idle",
+                          pendingLabel:"",
+                          onClick:(e)=>{e.stopPropagation();setModal({type:"app",data:a});}
+                        },
                       ];
-                      const allDone=pills.every(p=>p.done);
+                      const doneCount=pills.filter(p=>p.state==="done").length;
                       return(
-                      <div style={{marginTop:8}}>
+                      <div style={{marginTop:8}} onClick={e=>e.stopPropagation()}>
                         <div style={{display:"flex",gap:3,marginBottom:4}}>
-                          {pills.map(p=>(
-                            <div key={p.key} style={{flex:1,textAlign:"center",fontSize:7,fontWeight:700,padding:"3px 2px",borderRadius:4,
-                              background:p.done?"rgba(74,124,89,.15)":"rgba(0,0,0,.05)",
-                              color:p.done?"#2d6a3f":"#aaa",
-                              border:p.done?"1px solid rgba(74,124,89,.2)":"1px solid transparent",
-                              transition:"all .2s",
-                            }}>
-                              {p.done?"✓ ":""}{p.label}
-                            </div>
-                          ))}
+                          {pills.map(p=>{
+                            const bg=p.state==="done"?"rgba(74,124,89,.15)":p.state==="pending"?"rgba(212,168,83,.15)":"rgba(0,0,0,.05)";
+                            const col=p.state==="done"?"#2d6a3f":p.state==="pending"?"#9a7422":"#aaa";
+                            const bdr=p.state==="done"?"1px solid rgba(74,124,89,.25)":p.state==="pending"?"1px solid rgba(212,168,83,.3)":"1px solid transparent";
+                            return(
+                            <div key={p.key}
+                              onClick={p.onClick}
+                              title={p.state==="pending"?p.pendingLabel:p.state==="done"?"Completed — click to view":"Not started"}
+                              style={{flex:1,textAlign:"center",fontSize:7,fontWeight:700,padding:"3px 2px",borderRadius:4,
+                                background:bg,color:col,border:bdr,cursor:"pointer",transition:"all .15s",
+                                position:"relative",
+                              }}
+                              onMouseEnter={e=>{
+                                const el=e.currentTarget;
+                                el.style.transform="scale(1.08)";
+                                el.style.boxShadow="0 2px 8px rgba(0,0,0,.15)";
+                                el.style.zIndex="10";
+                                if(p.state==="done"){el.style.background="rgba(74,124,89,.35)";el.style.color="#1a5c30";}
+                                else if(p.state==="pending"){el.style.background="rgba(212,168,83,.35)";el.style.color="#7a5a10";}
+                                else{el.style.background="rgba(0,0,0,.14)";el.style.color="#333";}
+                              }}
+                              onMouseLeave={e=>{
+                                const el=e.currentTarget;
+                                el.style.transform="";el.style.boxShadow="";el.style.zIndex="";
+                                el.style.background=p.state==="done"?"rgba(74,124,89,.15)":p.state==="pending"?"rgba(212,168,83,.15)":"rgba(0,0,0,.05)";
+                                el.style.color=p.state==="done"?"#2d6a3f":p.state==="pending"?"#9a7422":"#aaa";
+                              }}>
+                              {p.state==="done"?"✓ ":p.state==="pending"?"⋯ ":""}{p.label}
+                            </div>);
+                          })}
                         </div>
-                        {!allDone&&<div style={{height:3,borderRadius:2,background:"rgba(0,0,0,.06)"}}>
-                          <div style={{height:"100%",borderRadius:2,background:"#4a7c59",width:(pills.filter(p=>p.done).length/4*100)+"%",transition:"width .3s"}}/>
+                        {/* Lease waiting indicator */}
+                        {leaseAmber&&<div style={{fontSize:7,color:"#9a7422",fontWeight:700,textAlign:"center",padding:"2px 0",background:"rgba(212,168,83,.08)",borderRadius:3,marginBottom:3}}>Awaiting tenant signature</div>}
+                        {!allDone&&!leaseAmber&&<div style={{height:3,borderRadius:2,background:"rgba(0,0,0,.06)"}}>
+                          <div style={{height:"100%",borderRadius:2,background:"#4a7c59",width:(doneCount/4*100)+"%",transition:"width .3s"}}/>
                         </div>}
                         {allDone&&<div style={{fontSize:7,color:"#2d6a3f",fontWeight:800,textAlign:"center",padding:"2px 0",background:"rgba(74,124,89,.08)",borderRadius:3}}>Ready to Move In</div>}
                       </div>);
