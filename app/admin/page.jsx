@@ -3821,8 +3821,8 @@ export default function Page(){
       {/* ═══ APPLICATIONS ═══ */}
       {tab==="applications"&&(()=>{
         const STAGES=["new-lead","applied","approved","onboarding"];
-        const SL={"new-lead":"New Lead","applied":"Applied","approved":"Approved","onboarding":"Onboarding","denied":"Denied"};
-        const SC2={"new-lead":"b-blue","applied":"b-gold","approved":"b-green","onboarding":"b-green","denied":"b-red"};
+        const SL={"new-lead":"New Lead","pre-screened":"New Lead","called":"New Lead","invited":"New Lead","applied":"Applied","reviewing":"Applied","approved":"Approved","onboarding":"Onboarding","denied":"Denied"};
+        const SC2={"new-lead":"b-blue","pre-screened":"b-blue","called":"b-blue","invited":"b-blue","applied":"b-gold","reviewing":"b-gold","approved":"b-green","onboarding":"b-green","denied":"b-red"};
         const SI2={};
         const moveApp=(id,ns)=>{
           setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));
@@ -4167,7 +4167,7 @@ export default function Page(){
             </div>
               <div className="pipe-bd">
                 {sa.sort(function(a,b){return getScore(b)-getScore(a);}).map(function(a){
-                  var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=a.status==="new-lead";
+                  var sc=getScore(a);var bd=getBreakdown(a);var d=daysSince(a.lastContact||a.submitted);var flags=getFlags(a);var isChecked=bulkSel.includes(a.id);var canInvite=["new-lead","pre-screened","called"].includes(a.status);
                   var isOnboarding=a.status==="onboarding";
                   return(
                   <div key={a.id} className="pipe-card" style={{
@@ -4344,7 +4344,7 @@ export default function Page(){
               <td style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:600}}>{d}d</td>
               <td style={{fontSize:10}}>{a.source||"—"}</td>
               <td onClick={e=>e.stopPropagation()}>
-                {["pre-screened","called"].includes(a.status)&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite</button>}
+                {["pre-screened","called","new-lead"].includes(a.status)&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite</button>}
                 
               </td></tr>);})}
         </tbody></table></div></div>}
