@@ -10322,8 +10322,9 @@ export default function Page(){
               return(
               <div style={{marginTop:8,borderRadius:7,overflow:"hidden",border:"1px solid rgba(212,168,83,.35)"}}>
                 {/* Header */}
-                <div style={{padding:"8px 11px",background:"rgba(212,168,83,.08)",borderBottom:"1px solid rgba(212,168,83,.2)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{padding:"8px 11px",background:"rgba(212,168,83,.08)",borderBottom:"1px solid rgba(212,168,83,.2)",display:"flex",flexDirection:"column",gap:2}}>
                   <span style={{fontSize:11,fontWeight:700,color:"#9a7422"}}>Turnover buffer conflict</span>
+                  <span style={{fontSize:10,color:"#5c4a3a"}}>Reduce the buffer below to move the tenant in earlier — move-in date updates automatically.</span>
                 </div>
                 {/* Equation row */}
                 <div style={{padding:"10px 11px",background:"rgba(212,168,83,.04)"}}>
