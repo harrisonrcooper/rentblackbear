@@ -10213,8 +10213,10 @@ export default function Page(){
               <label>Move-in Date</label>
               <input type="date" value={moveInDate} onChange={e=>{
                 const ds=e.target.value;
+                // If a room is selected, sync buffer = moveIn - leaseEnd
+                const newBuf=selectedItem?.le&&ds?Math.max(0,Math.round((new Date(ds+"T00:00:00")-new Date(selectedItem.le+"T00:00:00"))/(86400000))):null;
                 setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
-                setModal(prev=>({...prev,_overrideStep:0,_turnoverOverride:false,_customBuffer:null,data:{...prev.data,moveIn:ds,termMoveIn:ds}}));
+                setModal(prev=>({...prev,_overrideStep:0,_turnoverOverride:false,_customBuffer:newBuf,data:{...prev.data,moveIn:ds,termMoveIn:ds}}));
               }} style={{width:"100%"}}/>
             </div>
           </div>
@@ -10318,37 +10320,24 @@ export default function Page(){
 
                   {/* Synced controls */}
                   <div style={{background:"rgba(255,255,255,.5)",borderRadius:6,padding:"8px 10px",border:"1px solid rgba(212,168,83,.2)"}}>
-                    <div style={{fontSize:10,fontWeight:700,color:"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.3}}>Adjust either — they update together</div>
+                    <div style={{fontSize:10,fontWeight:700,color:"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.3}}>Adjust buffer — move-in date above updates automatically</div>
                     <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-                      {/* Buffer input */}
+                      {/* Buffer input only — move-in is the top field */}
                       <div style={{display:"flex",alignItems:"center",gap:5}}>
-                        <label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Buffer:</label>
+                        <label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Buffer days:</label>
                         <input type="number" min={0} max={defaultBuf} value={curBuf}
                           onChange={e=>{
                             const v=Math.max(0,Number(e.target.value)||0);
-                            setModal(p=>({...p,_customBuffer:v}));
                             // Sync move-in: leaseEnd + newBuffer
                             if(leaseEnd){const d=new Date(leaseEnd+"T00:00:00");d.setDate(d.getDate()+v);const ds=d.toISOString().split("T")[0];
                               setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
                               setModal(p=>({...p,_customBuffer:v,data:{...p.data,moveIn:ds,termMoveIn:ds}}));
+                            } else {
+                              setModal(p=>({...p,_customBuffer:v}));
                             }
                           }}
                           style={{width:52,padding:"4px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.12)",fontSize:12,fontFamily:"inherit",textAlign:"center"}}/>
-                        <span style={{fontSize:11,color:"#6b5e52"}}>days</span>
-                      </div>
-                      <span style={{fontSize:11,color:"#9a7422",fontWeight:700}}>↔</span>
-                      {/* Move-in input */}
-                      <div style={{display:"flex",alignItems:"center",gap:5}}>
-                        <label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Move-in:</label>
-                        <input type="date" value={moveInDate} min={leaseEnd||undefined}
-                          onChange={e=>{
-                            const ds=e.target.value;
-                            // Sync buffer: moveIn - leaseEnd
-                            const newBuf=leaseEnd&&ds?Math.max(0,Math.round((new Date(ds+"T00:00:00")-new Date(leaseEnd+"T00:00:00"))/(86400000))):null;
-                            setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
-                            setModal(p=>({...p,_customBuffer:newBuf,_overrideStep:0,data:{...p.data,moveIn:ds,termMoveIn:ds}}));
-                          }}
-                          style={{padding:"4px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.12)",fontSize:11,fontFamily:"inherit"}}/>
+                        <span style={{fontSize:11,color:"#6b5e52"}}>→ move-in auto-updates above</span>
                       </div>
                     </div>
                     {/* Live feedback */}
