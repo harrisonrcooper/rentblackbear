@@ -10147,16 +10147,22 @@ export default function Page(){
         const caseB=!caseA&&selectedItem&&leaseEnd&&(defaultConflict||(customBuf!=null&&!overrideConfirmed&&selectedItem.st!=="vacant"));
         const hasConflict=caseA||(caseB&&!overrideConfirmed);
 
-        // Property-level availability warning
+        // Property-level availability warning — switches to selected room once one is picked
         const warnProp=a.property?props.find(p=>p.name===a.property):null;
         const warnItems=warnProp?leaseableItems(warnProp):[];
         const warnVacant=warnItems.filter(i=>i.st==="vacant");
         const warnOccWithLe=warnItems.filter(i=>i.st!=="vacant"&&i.le);
         const warnFullyLeased=warnProp&&warnVacant.length===0;
-        const warnEarliestItem=warnOccWithLe.length?warnOccWithLe.reduce((mn,i)=>i.le<mn.le?i:mn,warnOccWithLe[0]):null;
-        const warnEarliestLe=warnEarliestItem?.le||null;
-        const warnTurnover=warnEarliestItem?.itemTurnoverDays||0;
-        const warnEarliestAvail=warnEarliestLe?(()=>{const d=new Date(warnEarliestLe+"T00:00:00");d.setDate(d.getDate()+Math.max(warnTurnover,0));return d.toISOString().split("T")[0];})():null;
+        // If a room is selected use its data; otherwise use earliest in property
+        const warnFocusItem=selectedItem&&selectedItem.st!=="vacant"?selectedItem
+          :(warnOccWithLe.length?warnOccWithLe.reduce((mn,i)=>i.le<mn.le?i:mn,warnOccWithLe[0]):null);
+        const warnLe=warnFocusItem?.le||null;
+        const warnTurnover=warnFocusItem?.itemTurnoverDays||0;
+        const warnReadyDate=warnLe?(()=>{const d=new Date(warnLe+"T00:00:00");d.setDate(d.getDate()+Math.max(warnTurnover,0));return d.toISOString().split("T")[0];})():null;
+        // Status relative to current move-in date
+        const warnStatus=moveInDate&&warnReadyDate?(moveInDate<warnLe?"overlap":moveInDate<warnReadyDate?"buffer-conflict":"clears"):null;
+        const warnEarliestLe=warnLe; // keep for backward compat
+        const warnEarliestAvail=warnReadyDate;
 
         const itemLabel=(item)=>{
           const ready=getReadyDate(item);
@@ -10195,18 +10201,32 @@ export default function Page(){
                 <option value="">No preference</option>
                 {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
               </select>
-              {warnFullyLeased&&warnEarliestLe&&<div style={{marginTop:5,borderRadius:6,overflow:"hidden",border:"1px solid rgba(212,168,83,.3)"}}>
-                <div style={{padding:"8px 10px",background:"rgba(212,168,83,.07)",fontSize:11,color:"#5c4a3a"}}>
-                  <div style={{fontWeight:700,color:"#9a7422",marginBottom:3}}>No rooms available now</div>
+              {warnProp&&warnLe&&<div style={{marginTop:5,borderRadius:6,overflow:"hidden",border:`1px solid ${warnStatus==="overlap"?"rgba(196,92,74,.35)":warnStatus==="buffer-conflict"?"rgba(212,168,83,.35)":warnStatus==="clears"?"rgba(74,124,89,.25)":"rgba(212,168,83,.3)"}`}}>
+                <div style={{padding:"8px 10px",background:warnStatus==="overlap"?"rgba(196,92,74,.06)":warnStatus==="clears"?"rgba(74,124,89,.05)":"rgba(212,168,83,.06)",fontSize:11,color:"#5c4a3a"}}>
+                  <div style={{fontWeight:700,marginBottom:3,color:warnStatus==="overlap"?"#c45c4a":warnStatus==="clears"?"#2d6a3f":"#9a7422"}}>
+                    {selectedItem&&selectedItem.st!=="vacant"
+                      ?(warnStatus==="overlap"?"Lease overlap — tenant still active":warnStatus==="buffer-conflict"?"Buffer conflict — within turnover window":warnStatus==="clears"?"Room clears before move-in":"Room occupied")
+                      :(warnFullyLeased?"No rooms available now":"Room occupied")}
+                  </div>
                   <div style={{display:"flex",flexDirection:"column",gap:2}}>
-                    <span>Next lease ends: <strong>{fmtD(warnEarliestLe)}</strong></span>
+                    {selectedItem&&selectedItem.st!=="vacant"&&<span style={{fontSize:10,color:"#6b5e52"}}>{selectedItem.name}</span>}
+                    <span>Lease ends: <strong>{fmtD(warnLe)}</strong></span>
                     {warnTurnover>0&&<span>Turnover buffer: <strong>+{warnTurnover} days</strong></span>}
-                    <span>Earliest move-in: <strong style={{color:"#9a7422"}}>{fmtD(warnEarliestAvail)}</strong></span>
+                    <span>Room ready: <strong style={{color:warnStatus==="clears"?"#2d6a3f":warnStatus==="overlap"?"#c45c4a":"#9a7422"}}>{fmtD(warnReadyDate)}</strong></span>
+                    {moveInDate&&warnStatus&&<span>Your move-in: <strong style={{color:warnStatus==="clears"?"#2d6a3f":"#c45c4a"}}>{fmtD(moveInDate)}</strong>
+                      <span style={{marginLeft:6,fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:3,background:warnStatus==="clears"?"rgba(74,124,89,.1)":warnStatus==="overlap"?"rgba(196,92,74,.1)":"rgba(212,168,83,.1)",color:warnStatus==="clears"?"#2d6a3f":warnStatus==="overlap"?"#c45c4a":"#9a7422"}}>
+                        {warnStatus==="clears"?"clears":warnStatus==="overlap"?"lease overlap":"buffer conflict"}
+                      </span>
+                    </span>}
                   </div>
                 </div>
-                <div style={{padding:"5px 10px",background:"rgba(212,168,83,.04)",borderTop:"1px solid rgba(212,168,83,.15)",fontSize:10,color:"#7a5c1e"}}>Move-in date auto-filled above. Select a room below.</div>
+                <div style={{padding:"5px 10px",background:"rgba(0,0,0,.02)",borderTop:`1px solid ${warnStatus==="overlap"?"rgba(196,92,74,.1)":warnStatus==="clears"?"rgba(74,124,89,.1)":"rgba(212,168,83,.1)"}`,fontSize:10,color:"#7a5c1e"}}>
+                  {selectedItem&&selectedItem.st!=="vacant"
+                    ?(warnStatus==="clears"?"Move-in clears after room is ready.":warnStatus==="overlap"?"Adjust move-in date or terminate lease early.":"Adjust move-in date or reduce buffer below.")
+                    :"Move-in date auto-filled above. Select a room below."}
+                </div>
               </div>}
-              {warnFullyLeased&&!warnEarliestLe&&<div style={{fontSize:11,color:"#c45c4a",marginTop:5,padding:"7px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,fontWeight:600}}>
+              {warnProp&&!warnLe&&warnFullyLeased&&<div style={{fontSize:11,color:"#c45c4a",marginTop:5,padding:"7px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,fontWeight:600}}>
                 No rooms available — no lease end dates on file.
               </div>}
             </div>
