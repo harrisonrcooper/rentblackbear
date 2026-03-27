@@ -160,7 +160,8 @@ const findUnit=(props,unitId)=>{for(const p of props){const u=(p.units||[]).find
 // Each item: { id, name, rent, st, le, propName, propId, unitId, unitName, unitLabel, isWholeUnit }
 const leaseableItems=(prop,propName)=>{
   const pn=propName||prop.name||"";
-  const td=prop.turnoverDays||0;
+  const propTd=prop.turnoverDays||0;
+  const mode=prop.turnoverMode||"property"; // "property" | "per-room"
   return(prop.units||[]).flatMap(u=>{
     if((u.rentalMode||"byRoom")==="wholeHouse"){
       const rooms=u.rooms||[];
@@ -171,10 +172,15 @@ const leaseableItems=(prop,propName)=>{
         id:u.id,name:(prop.units||[]).length>1?u.name:"Whole Unit",
         rent:u.rent||0,st:anyOcc?"occupied":"vacant",le:latestLe,
         propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,
-        isWholeUnit:true,baths:u.baths,sqft:u.sqft,beds:rooms.length,propTurnoverDays:td,
+        isWholeUnit:true,baths:u.baths,sqft:u.sqft,beds:rooms.length,
+        itemTurnoverDays:propTd,
       }];
     }
-    return(u.rooms||[]).filter(r=>!r.ownerOccupied).map(r=>({...r,st:r.st||(r.tenant?"occupied":"vacant"),propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,isWholeUnit:false,propTurnoverDays:td}));
+    return(u.rooms||[]).filter(r=>!r.ownerOccupied).map(r=>{
+      // Per-room mode: use room's own turnoverDays if set, else fall back to property
+      const itemTd=mode==="per-room"&&r.turnoverDays!=null?r.turnoverDays:propTd;
+      return{...r,st:r.st||(r.tenant?"occupied":"vacant"),propName:pn,propId:prop.id,unitId:u.id,unitName:u.name,unitLabel:u.label,isWholeUnit:false,itemTurnoverDays:itemTd};
+    });
   });
 };
 // Update a room by ID inside its unit, preserving hierarchy
@@ -1546,8 +1552,29 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
       <div className="fld" style={{flex:2}}><label>Internal Notes</label><textarea value={p.desc||""} onChange={e=>updP({...p,desc:e.target.value})} placeholder="Internal notes about this property..." rows={2}/></div>
       <div className="fld" style={{flex:1}}>
         <label>Turnover Buffer <span style={{fontWeight:400,color:"#6b5e52",fontSize:9,textTransform:"none",letterSpacing:0}}>— days between leases</span></label>
-        <input type="number" min={0} max={60} value={p.turnoverDays||""} onChange={e=>updP({...p,turnoverDays:Number(e.target.value)||0})} placeholder="e.g. 7"/>
-        {(p.turnoverDays||0)>0&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>{p.turnoverDays} days blocked after each lease ends</div>}
+        <div style={{display:"flex",gap:6,marginBottom:6}}>
+          {[["property","Whole property"],["per-room","Per room"]].map(([val,lbl])=>(
+            <button key={val} onClick={()=>updP({...p,turnoverMode:val})} style={{flex:1,padding:"5px 0",borderRadius:6,border:"1px solid",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",
+              background:(p.turnoverMode||"property")===val?"#1a1714":"#fff",
+              color:(p.turnoverMode||"property")===val?"#d4a853":"#5c4a3a",
+              borderColor:(p.turnoverMode||"property")===val?"#1a1714":"rgba(0,0,0,.12)",
+            }}>{lbl}</button>
+          ))}
+        </div>
+        {(p.turnoverMode||"property")==="property"&&<>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <input type="number" min={0} max={60} value={p.turnoverDays||""} onChange={e=>updP({...p,turnoverDays:Number(e.target.value)||0})} placeholder="e.g. 7" style={{width:"100%"}}/>
+            <span style={{fontSize:11,color:"#6b5e52",whiteSpace:"nowrap"}}>days</span>
+          </div>
+          {(p.turnoverDays||0)>0&&<>
+            <div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>{p.turnoverDays} days blocked after each lease ends</div>
+            <button style={{marginTop:6,width:"100%",padding:"5px 0",borderRadius:6,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",color:"#4a7c59"}}
+              onClick={()=>{const units=(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>({...r,turnoverDays:p.turnoverDays}))}));updP({...p,units});}}>
+              Apply {p.turnoverDays}d to all rooms
+            </button>
+          </>}
+        </>}
+        {(p.turnoverMode||"property")==="per-room"&&<div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Set buffer days on each room below.</div>}
       </div>
     </div>
 
@@ -1676,6 +1703,19 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                 Owner Occupied - exclude from rent, financials, and public listings
               </label>
             </div>
+            {(p.turnoverMode||"property")==="per-room"&&<div className="fld" style={{marginBottom:8}}>
+              <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span>Turnover Buffer <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0,fontSize:9}}>— days after lease ends before room is ready</span></span>
+                {p.turnoverDays>0&&(r.turnoverDays==null)&&<span style={{fontSize:9,color:"#6b5e52"}}>inheriting {p.turnoverDays}d from property</span>}
+                {r.turnoverDays!=null&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:9,color:"#c45c4a",fontFamily:"inherit",padding:0}} onClick={()=>updRoom(i,"turnoverDays",null)}>Reset to property default</button>}
+              </label>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <input type="number" min={0} max={60} value={r.turnoverDays!=null?r.turnoverDays:""} placeholder={r.turnoverDays==null?(p.turnoverDays||0)+"d (property default)":"0"} style={{width:"100%"}}
+                  onChange={e=>{const v=e.target.value===""?null:Math.max(0,Number(e.target.value));updRoom(i,"turnoverDays",v);}}/>
+                <span style={{fontSize:11,color:"#6b5e52",whiteSpace:"nowrap"}}>days</span>
+              </div>
+              {(r.turnoverDays!=null?r.turnoverDays:p.turnoverDays||0)>0&&<div style={{fontSize:9,color:"#4a7c59",marginTop:2}}>{r.turnoverDays!=null?r.turnoverDays:p.turnoverDays}d blocked after lease ends for {r.name}</div>}
+            </div>}
             <div className="fr" style={{alignItems:"flex-end",gap:8}}>
               <div className="fld" style={{flex:1}}>
                 <label>Utilities <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0,fontSize:9}}>— overrides unit default for this room</span></label>
@@ -9382,9 +9422,8 @@ export default function Page(){
     const allAvailForInvite=props.flatMap(p=>leaseableItems(p).filter(item=>{
       if(item.st==="vacant")return true;
       if(item.st==="occupied"&&item.le&&inviteMoveInMs){
-        const buf=item.propTurnoverDays||0;
-        const readyMs=new Date(item.le+"T00:00:00").getTime()+(buf*86400000);
-        return readyMs<=inviteMoveInMs;
+        const buf=item.itemTurnoverDays||0;
+        return new Date(item.le+"T00:00:00").getTime()+(buf*86400000)<=inviteMoveInMs;
       }
       return false;
     }).map(item=>({...item,willVacate:item.st==="occupied"&&!!item.le})));
@@ -9569,7 +9608,7 @@ export default function Page(){
               </div>
             </div>
           </div>}
-          {selRoom&&selRoom.willVacate&&(()=>{const buf=selRoom.propTurnoverDays||0;const readyD=new Date(selRoom.le+"T00:00:00");readyD.setDate(readyD.getDate()+buf);return(<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>Lease ends {fmtD(selRoom.le)}{buf>0?" · "+buf+"-day turnover buffer · ready "+fmtD(readyD.toISOString().split("T")[0]):" — room available by move-in date."}</div>);})()}
+          {selRoom&&selRoom.willVacate&&(()=>{const buf=selRoom.itemTurnoverDays||0;const readyD=new Date(selRoom.le+"T00:00:00");readyD.setDate(readyD.getDate()+buf);return(<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>Lease ends {fmtD(selRoom.le)}{buf>0?" · "+buf+"-day buffer · ready "+fmtD(readyD.toISOString().split("T")[0]):" — room available by move-in."}</div>);})()}
         </>}
         {roomMode==="property"&&(()=>{
           const showProp=!selPropId||!byRoomOnly||overrideConfirmed;
@@ -10072,9 +10111,8 @@ export default function Page(){
         const availableItems=props.flatMap(p=>leaseableItems(p).filter(item=>{
           if(item.st==="vacant")return true;
           if(item.st==="occupied"&&item.le&&moveInMs){
-            const buf=item.propTurnoverDays||0;
-            const readyMs=new Date(item.le+"T00:00:00").getTime()+(buf*86400000);
-            return readyMs<=moveInMs;
+            const buf=item.itemTurnoverDays||0;
+            return new Date(item.le+"T00:00:00").getTime()+(buf*86400000)<=moveInMs;
           }
           return false;
         }).map(item=>({...item,_willVacate:item.st==="occupied"&&!!item.le})));
@@ -10084,18 +10122,20 @@ export default function Page(){
         const termRent=a.termRent!==undefined?a.termRent:(termItem?termItem.rent:0);
         const saveTerm=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
         const selectedAvail=availableItems.find(i=>i.id===(a.termRoomId||termItem?.id));
-        // Property availability warning vars
+        // Property-level availability warning
         const warnProp=a.property?props.find(p=>p.name===a.property):null;
         const warnItems=warnProp?leaseableItems(warnProp):[];
         const warnVacant=warnItems.filter(i=>i.st==="vacant");
         const warnOccWithLe=warnItems.filter(i=>i.st!=="vacant"&&i.le);
         const warnFullyLeased=warnProp&&warnVacant.length===0;
-        const warnEarliestLe=warnOccWithLe.length?warnOccWithLe.reduce((mn,i)=>i.le<mn?i.le:mn,warnOccWithLe[0].le):null;
-        const warnTurnover=warnProp?.turnoverDays||0;
+        // Find the earliest-ending room and its specific buffer
+        const warnEarliestItem=warnOccWithLe.length?warnOccWithLe.reduce((mn,i)=>i.le<mn.le?i:mn,warnOccWithLe[0]):null;
+        const warnEarliestLe=warnEarliestItem?.le||null;
+        const warnTurnover=warnEarliestItem?.itemTurnoverDays||0;
         const warnEarliestAvail=warnEarliestLe?(()=>{const d=new Date(warnEarliestLe+"T00:00:00");d.setDate(d.getDate()+Math.max(warnTurnover,0));return d.toISOString().split("T")[0];})():null;
         const itemLabel=(item,rent)=>{
           let label=(item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":"")+item.name+" at "+(item.propName||"")+" — "+fmtS(rent)+"/mo";
-          if(item._willVacate){const buf=item.propTurnoverDays||0;const readyD=new Date(item.le+"T00:00:00");readyD.setDate(readyD.getDate()+buf);label+=buf>0?" · lease ends "+fmtD(item.le)+" + "+buf+"d buffer → ready "+fmtD(readyD.toISOString().split("T")[0]):" · lease ends "+fmtD(item.le);}
+          if(item._willVacate){const buf=item.itemTurnoverDays||0;const readyD=new Date(item.le+"T00:00:00");readyD.setDate(readyD.getDate()+buf);label+=buf>0?" · lease ends "+fmtD(item.le)+" + "+buf+"d buffer → ready "+fmtD(readyD.toISOString().split("T")[0]):" · lease ends "+fmtD(item.le);}
           if(item.isWholeUnit)label+=" (Whole Unit)";
           return label;
         };
@@ -10109,33 +10149,31 @@ export default function Page(){
                 const pName=e.target.value;
                 saveApp(a.id,"property",pName);saveApp(a.id,"room","");saveApp(a.id,"termRoomId",null);saveApp(a.id,"termPropId",null);
                 setModal(p=>({...p,_turnoverOverride:false}));
-                // Auto-fill move-in to earliest available if fully leased
                 const np=props.find(pr=>pr.name===pName);
                 const npItems=np?leaseableItems(np):[];
                 const npVac=npItems.filter(i=>i.st==="vacant");
                 const npOcc=npItems.filter(i=>i.st!=="vacant"&&i.le);
-                const npLe=npOcc.length?npOcc.reduce((mn,i)=>i.le<mn?i.le:mn,npOcc[0].le):null;
-                const npTo=np?.turnoverDays||0;
+                const npEarliestItem=npOcc.length?npOcc.reduce((mn,i)=>i.le<mn.le?i:mn,npOcc[0]):null;
+                const npLe=npEarliestItem?.le||null;
+                const npTo=npEarliestItem?.itemTurnoverDays||0;
                 if(np&&npVac.length===0&&npLe){const d=new Date(npLe+"T00:00:00");d.setDate(d.getDate()+Math.max(npTo,0));const ds=d.toISOString().split("T")[0];saveApp(a.id,"moveIn",ds);saveApp(a.id,"termMoveIn",ds);}
               }} style={{width:"100%"}}>
                 <option value="">No preference</option>
                 {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
               </select>
-              {warnFullyLeased&&warnEarliestLe&&(()=>{
-                return(<div style={{marginTop:5,borderRadius:6,overflow:"hidden",border:"1px solid rgba(212,168,83,.3)"}}>
-                  <div style={{padding:"8px 10px",background:"rgba(212,168,83,.07)",fontSize:11,color:"#5c4a3a"}}>
-                    <div style={{fontWeight:700,color:"#9a7422",marginBottom:3}}>No rooms available now</div>
-                    <div style={{display:"flex",flexDirection:"column",gap:2}}>
-                      <span>Next lease ends: <strong>{fmtD(warnEarliestLe)}</strong></span>
-                      {warnTurnover>0&&<span>Turnover buffer ({warnTurnover}d): <strong>+{warnTurnover} days</strong></span>}
-                      <span>Earliest move-in: <strong style={{color:"#9a7422"}}>{fmtD(warnEarliestAvail)}</strong></span>
-                    </div>
+              {warnFullyLeased&&warnEarliestLe&&<div style={{marginTop:5,borderRadius:6,overflow:"hidden",border:"1px solid rgba(212,168,83,.3)"}}>
+                <div style={{padding:"8px 10px",background:"rgba(212,168,83,.07)",fontSize:11,color:"#5c4a3a"}}>
+                  <div style={{fontWeight:700,color:"#9a7422",marginBottom:3}}>No rooms available now</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                    <span>Next lease ends: <strong>{fmtD(warnEarliestLe)}</strong></span>
+                    {warnTurnover>0&&<span>Turnover buffer: <strong>+{warnTurnover} days</strong></span>}
+                    <span>Earliest move-in: <strong style={{color:"#9a7422"}}>{fmtD(warnEarliestAvail)}</strong></span>
                   </div>
-                  <div style={{padding:"5px 10px",background:"rgba(212,168,83,.04)",borderTop:"1px solid rgba(212,168,83,.15)",fontSize:10,color:"#7a5c1e"}}>Move-in date auto-filled above.</div>
-                </div>);
-              })()}
+                </div>
+                <div style={{padding:"5px 10px",background:"rgba(212,168,83,.04)",borderTop:"1px solid rgba(212,168,83,.15)",fontSize:10,color:"#7a5c1e"}}>Move-in date auto-filled above.</div>
+              </div>}
               {warnFullyLeased&&!warnEarliestLe&&<div style={{fontSize:11,color:"#c45c4a",marginTop:5,padding:"7px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,fontWeight:600}}>
-                No rooms available at this property and no known lease end dates on file.
+                No rooms available — no lease end dates on file.
               </div>}
             </div>
             <div className="fld" style={{marginBottom:0}}>
@@ -10144,17 +10182,17 @@ export default function Page(){
             </div>
           </div>
           <div className="fld" style={{marginBottom:8}}>
-            <label>Assign Room / Unit <span style={{fontWeight:400,color:"#5c4a3a",fontSize:9,textTransform:"none",letterSpacing:0}}>Vacant now + units whose lease ends by move-in date</span></label>
-            <select value={a.termRoomId||termItem?.id||""} onChange={e=>{const item=availableItems.find(x=>x.id===e.target.value);if(item){saveTerm("termRoomId",item.id);saveTerm("termPropId",item.propId);saveTerm("termRent",item.rent);saveTerm("termSD",item.rent);}}} style={{width:"100%"}}>
+            <label>Assign Room / Unit <span style={{fontWeight:400,color:"#5c4a3a",fontSize:9,textTransform:"none",letterSpacing:0}}>Vacant now + rooms whose lease ends (+ buffer) by move-in date</span></label>
+            <select value={a.termRoomId||termItem?.id||""} onChange={e=>{const item=availableItems.find(x=>x.id===e.target.value);if(item){saveTerm("termRoomId",item.id);saveTerm("termPropId",item.propId);saveTerm("termRent",item.rent);saveTerm("termSD",item.rent);setModal(p=>({...p,_turnoverOverride:false}));}}} style={{width:"100%"}}>
               <option value="">No assignment at this time</option>
               {availableItems.map(item=>{
                 const isSelected=item.id===(a.termRoomId||termItem?.id);
                 const rent=isSelected?termRent:item.rent;
                 return<option key={item.id} value={item.id}>{itemLabel(item,rent)}</option>;
               })}
-              {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<option value={termItem.id}>{termItem.name} at {termProp?.name} (occupied) — occupied, lease not expired by move-in</option>}
+              {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<option value={termItem.id}>{termItem.name} at {termProp?.name} — occupied, lease not cleared by move-in</option>}
             </select>
-            {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>This unit is currently occupied and its lease does not end by the selected move-in date.</div>}
+            {termItem&&!availableItems.find(i=>i.id===termItem.id)&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>This unit is occupied and its lease + buffer does not clear by the selected move-in date.</div>}
             {!termItem&&!a.termRoomId&&a.room&&<div style={{fontSize:10,color:"#c45c4a",marginTop:4,fontWeight:600,animation:"shake .4s ease"}}>"{a.room}" is not available — select an available room or unit.</div>}
           </div>
           {(a.termRoomId||termItem?.id)&&<>
@@ -10175,7 +10213,7 @@ export default function Page(){
               </div>
             </div>
             {selectedAvail?._willVacate&&(()=>{
-              const buf=selectedAvail.propTurnoverDays||0;
+              const buf=selectedAvail.itemTurnoverDays||0;
               const leD=new Date(selectedAvail.le+"T00:00:00");
               const readyD=new Date(leD);readyD.setDate(readyD.getDate()+buf);
               const readyStr=readyD.toISOString().split("T")[0];
@@ -10189,12 +10227,12 @@ export default function Page(){
                     <span>Earliest ready: <strong style={{color:buf>0?"#9a7422":"#4a7c59"}}>{fmtD(readyStr)}</strong></span>
                   </div>
                 </div>
-                {!overrideActive&&moveInDate&&moveInDate<readyStr&&<div style={{padding:"7px 11px",background:"rgba(196,92,74,.06)",borderTop:"1px solid rgba(196,92,74,.15)",fontSize:11}}>
-                  <span style={{color:"#c45c4a",fontWeight:700}}>Move-in date is before room is ready. </span>
+                {!overrideActive&&moveInDate&&moveInDate<readyStr&&<div style={{padding:"7px 11px",background:"rgba(196,92,74,.06)",borderTop:"1px solid rgba(196,92,74,.15)",fontSize:11,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:"#c45c4a",fontWeight:700}}>Move-in is before room is ready.</span>
                   <button style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#3b82f6",fontFamily:"inherit",fontWeight:700,padding:0,textDecoration:"underline"}} onClick={()=>setModal(p=>({...p,_turnoverOverride:true}))}>Override?</button>
                 </div>}
                 {overrideActive&&<div style={{padding:"7px 11px",background:"rgba(196,92,74,.06)",borderTop:"1px solid rgba(196,92,74,.15)",fontSize:11,color:"#c45c4a",fontWeight:700,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span>Override active — move-in before buffer ends</span>
+                  <span>Override active — move-in before buffer clears</span>
                   <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>setModal(p=>({...p,_turnoverOverride:false}))}>Undo</button>
                 </div>}
               </div>);
