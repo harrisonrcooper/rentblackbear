@@ -10413,21 +10413,42 @@ export default function Page(){
               const occ=item.st==="occupied"&&item.tenant;
               const age=occ?calcAge(item.tenant.dob):null;
               const genderShort=occ&&item.tenant.gender?item.tenant.gender==="Male"?"M":item.tenant.gender==="Female"?"F":item.tenant.gender==="Non-binary"?"NB":null:null;
+              // Pull employer from applicationData employers array
+              const employers=occ&&item.tenant.applicationData?Object.values(item.tenant.applicationData).find(v=>Array.isArray(v)&&v[0]?.company):null;
+              const primaryEmployer=employers?employers[0]?.company:null;
+              const occupType=occ&&item.tenant.occupationType||null;
+              const leaseEnd=item.le||null;
+              const dl=leaseEnd?Math.ceil((new Date(leaseEnd+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+              const occupBadgeColor=occupType==="NASA Intern"||occupType==="Intern"?"#3b82f6":occupType==="Student"?"#8b5cf6":occupType==="Military"||occupType==="Contractor"?"#059669":"#6b5e52";
+              const occupBadgeBg=occupType==="NASA Intern"||occupType==="Intern"?"rgba(59,130,246,.1)":occupType==="Student"?"rgba(139,92,246,.1)":occupType==="Military"||occupType==="Contractor"?"rgba(5,150,105,.1)":"rgba(0,0,0,.05)";
               return(
-                <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:600}}>{item.name}</div>
-                    {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>
-                      {item.tenant.name||"Occupied"}
-                      {(genderShort||age||item.tenant.occupationType)&&<span style={{color:"#6b5e52",marginLeft:6}}>
-                        {[genderShort,age?"Age "+age:null,item.tenant.occupationType].filter(Boolean).join(" · ")}
-                      </span>}
-                    </div>}
-                    {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
-                  </div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#6b5e52"}}>{fmtS(item.rent)}/mo</div>
-                    <div style={{fontSize:8,color:"#7a7067",marginTop:1}}>12-mo lease</div>
+                <div key={item.id} style={{padding:"9px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:700,color:occ?"#1a1714":"#4a7c59"}}>{item.name}</div>
+                      {occ&&<>
+                        {/* Name + identity chips */}
+                        <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
+                          {item.tenant.name&&<span style={{fontSize:10,color:"#5c4a3a",fontWeight:600}}>{item.tenant.name}</span>}
+                          {genderShort&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:3,background:"rgba(0,0,0,.05)",color:"#6b5e52",fontWeight:600}}>{genderShort}</span>}
+                          {age&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:3,background:"rgba(0,0,0,.05)",color:"#6b5e52",fontWeight:600}}>{age}y</span>}
+                          {occupType&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:3,background:occupBadgeBg,color:occupBadgeColor,fontWeight:700}}>{occupType}</span>}
+                        </div>
+                        {/* Employer */}
+                        {primaryEmployer&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>
+                          <span style={{color:"#9a7422",fontWeight:600}}>Works at: </span>{primaryEmployer}
+                        </div>}
+                        {/* Lease end */}
+                        {leaseEnd&&<div style={{fontSize:10,color:dl!=null&&dl<=30?"#c45c4a":dl!=null&&dl<=90?"#9a7422":"#6b5e52",marginTop:2}}>
+                          Lease ends {fmtD(leaseEnd)}{dl!=null?<span style={{marginLeft:4,fontWeight:600}}>({dl}d)</span>:null}
+                        </div>}
+                      </>}
+                      {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
+                    </div>
+                    <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#6b5e52"}}>{fmtS(item.rent)}/mo</div>
+                      <div style={{fontSize:8,color:"#7a7067",marginTop:1}}>{leaseEnd?"ends "+fmtD(leaseEnd):"no lease"}</div>
+                    </div>
                   </div>
                 </div>
               );
