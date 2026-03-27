@@ -10381,10 +10381,62 @@ export default function Page(){
             {selectedItem&&caseB&&overrideConfirmed&&(()=>{
               const defaultBuf=selectedItem.itemTurnoverDays||0;
               const curBuf=customBuf!=null?customBuf:defaultBuf;
-              return(<div style={{marginTop:8,padding:"7px 11px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:7,fontSize:11,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{color:"#2d6a3f",fontWeight:700}}>Confirmed — {fmtD(moveInDate)} · {curBuf}d buffer{curBuf!==defaultBuf?<span style={{fontWeight:400,color:"#5c4a3a"}}> (default {defaultBuf}d)</span>:""}</span>
-                <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>setModal(p=>({...p,_turnoverOverride:false,_customBuffer:null}))}>Edit</button>
-              </div>);
+              const bufferShortfall=defaultBuf-curBuf;
+              const applied=modal._bufferApplyChoice;
+              // Build options based on property structure
+              const isWholeUnit=selectedItem.isWholeUnit;
+              const unitRooms=termProp?(termProp.units||[]).find(u=>u.id===selectedItem.unitId)?.rooms||[]:[]; 
+              const otherRooms=unitRooms.filter(r=>r.id!==selectedItem.id&&!r.ownerOccupied);
+              const opts=[
+                {key:"none",label:"One-time only",sub:"Don't save — just for this move-in"},
+                {key:"room",label:"This room only",sub:`Save ${curBuf}d to ${selectedItem.name}`},
+                ...(!isWholeUnit&&otherRooms.length>0?[{key:"unit",label:"All bedrooms in unit",sub:`Apply ${curBuf}d to all ${unitRooms.filter(r=>!r.ownerOccupied).length} rooms`}]:[]),
+                ...((termProp?.units||[]).length>1?[{key:"property",label:"Whole property",sub:`Set ${curBuf}d as property default`}]:[]),
+              ];
+              const applyBuffer=()=>{
+                if(!applied||applied==="none")return;
+                const newBuf=curBuf;
+                if(applied==="room"){
+                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===selectedItem.id?{...r,turnoverDays:newBuf}:r)}))}));
+                }else if(applied==="unit"){
+                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,units:(p.units||[]).map(u=>u.id!==selectedItem.unitId?u:{...u,rooms:(u.rooms||[]).map(r=>r.ownerOccupied?r:{...r,turnoverDays:newBuf})})}));
+                }else if(applied==="property"){
+                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,turnoverDays:newBuf}));
+                }
+                setModal(p=>({...p,_bufferApplied:true}));
+              };
+              return(<>
+                <div style={{marginTop:8,padding:"8px 11px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:7,fontSize:11,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:"#2d6a3f",fontWeight:700}}>Confirmed — {fmtD(moveInDate)} · {curBuf}d buffer{bufferShortfall>0?<span style={{fontWeight:400,color:"#5c4a3a"}}> ({bufferShortfall}d shorter than default)</span>:""}</span>
+                  <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>setModal(p=>({...p,_turnoverOverride:false,_customBuffer:null,_bufferApplyChoice:null,_bufferApplied:false}))}>Edit</button>
+                </div>
+                {/* Apply buffer prompt — only if buffer was actually changed */}
+                {bufferShortfall!==0&&!modal._bufferApplied&&<div style={{marginTop:6,borderRadius:7,overflow:"hidden",border:"1px solid rgba(0,0,0,.07)"}}>
+                  <div style={{padding:"7px 10px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.05)",fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.3}}>
+                    Save {curBuf}d buffer to settings?
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                    {opts.map((opt,i)=>(
+                      <label key={opt.key} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 11px",cursor:"pointer",borderBottom:i<opts.length-1?"1px solid rgba(0,0,0,.04)":"none",background:applied===opt.key?"rgba(212,168,83,.06)":"transparent"}}>
+                        <input type="radio" name="bufApply" value={opt.key} checked={applied===opt.key} onChange={()=>setModal(p=>({...p,_bufferApplyChoice:opt.key}))} style={{accentColor:"#d4a853",width:13,height:13,flexShrink:0}}/>
+                        <div>
+                          <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{opt.label}</div>
+                          <div style={{fontSize:10,color:"#6b5e52"}}>{opt.sub}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <div style={{padding:"7px 10px",borderTop:"1px solid rgba(0,0,0,.05)"}}>
+                    <button className="btn btn-sm" style={{width:"100%",background:applied?"#d4a853":"rgba(0,0,0,.05)",color:applied?"#1a1714":"#999",border:"none",fontSize:10,fontWeight:700,padding:"6px 0",borderRadius:5,cursor:applied?"pointer":"default"}}
+                      disabled={!applied} onClick={applyBuffer}>
+                      {applied?`Apply — ${opts.find(o=>o.key===applied)?.label}`:"Select an option above"}
+                    </button>
+                  </div>
+                </div>}
+                {modal._bufferApplied&&<div style={{marginTop:4,fontSize:10,color:"#4a7c59",padding:"4px 8px"}}>
+                  Buffer saved to {opts.find(o=>o.key===applied)?.label?.toLowerCase()||"settings"}.
+                </div>}
+              </>);
             })()}
 
             {/* No conflict: green info if room will vacate before move-in */}
