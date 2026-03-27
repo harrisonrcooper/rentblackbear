@@ -10254,99 +10254,159 @@ export default function Page(){
                   <div style={{fontSize:11,fontWeight:800,color:"#c45c4a",marginBottom:5}}>Lease Overlap — Current Tenant Still Active</div>
                   <div style={{fontSize:11,color:"#5c4a3a",display:"flex",flexDirection:"column",gap:3,lineHeight:1.5}}>
                     <span>Current lease ends: <strong>{fmtD(leaseEnd)}</strong></span>
-                    <span>Your move-in date: <strong style={{color:"#c45c4a"}}>{fmtD(moveInDate)}</strong> — <strong style={{color:"#c45c4a"}}>before lease ends</strong></span>
-                    <span style={{marginTop:2,color:"#7a5c1e"}}>To assign this room, the existing lease must be terminated early. The tenant must be notified and agree, or have already vacated.</span>
+                    <span>Your move-in: <strong style={{color:"#c45c4a"}}>{fmtD(moveInDate)}</strong> — <strong style={{color:"#c45c4a"}}>{Math.ceil((new Date(leaseEnd+"T00:00:00")-new Date(moveInDate+"T00:00:00"))/(86400000))} day{Math.ceil((new Date(leaseEnd+"T00:00:00")-new Date(moveInDate+"T00:00:00"))/(86400000))!==1?"s":""} before lease ends.</strong></span>
                   </div>
                 </div>
                 <div style={{padding:"8px 11px",background:"rgba(196,92,74,.04)",borderTop:"1px solid rgba(196,92,74,.2)",display:"flex",gap:6}}>
-                  <button className="btn btn-out btn-sm" style={{flex:1,fontSize:10}} onClick={()=>setModal(p=>({...p,_overrideStep:0}))}>Adjust Move-in Date</button>
-                  <button className="btn btn-sm" style={{flex:2,background:"#c45c4a",color:"#fff",border:"none",fontSize:10}} onClick={()=>setModal(p=>({...p,_overrideStep:1}))}>Terminate Existing Lease Early →</button>
+                  <button className="btn btn-out btn-sm" style={{flex:1,fontSize:10}} onClick={()=>{
+                    const rdy=defaultReadyDate||leaseEnd;
+                    setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:rdy,termMoveIn:rdy}:x));
+                    setModal(p=>({...p,_customBuffer:null,_overrideStep:0,_turnoverOverride:false,data:{...p.data,moveIn:rdy,termMoveIn:rdy}}));
+                  }}>Use {fmtD(defaultReadyDate||leaseEnd)} Instead</button>
+                  <button className="btn btn-sm" style={{flex:2,background:"#c45c4a",color:"#fff",border:"none",fontSize:10,fontWeight:700}} onClick={()=>setModal(p=>({...p,_overrideStep:1}))}>Terminate Existing Lease Early →</button>
                 </div>
               </div>}
               {overrideStep===1&&<div style={{marginTop:8,borderRadius:7,overflow:"hidden",border:"2px solid rgba(196,92,74,.5)"}}>
                 <div style={{padding:"10px 11px",background:"rgba(196,92,74,.1)"}}>
                   <div style={{fontSize:11,fontWeight:800,color:"#c45c4a",marginBottom:6}}>Confirm Early Termination</div>
                   <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10,lineHeight:1.6}}>
-                    You are terminating {selectedItem.tenant?.name?"<strong>"+selectedItem.tenant.name+"'s</strong> lease":"the current lease"} at <strong>{selectedItem.name}</strong> early. Lease end was <strong>{fmtD(leaseEnd)}</strong> — new move-in is <strong>{fmtD(moveInDate)}</strong>. This action will require handling the security deposit and proper notice to the tenant.
+                    You are terminating the current lease at <strong>{selectedItem.name}</strong> early. Lease end was <strong>{fmtD(leaseEnd)}</strong> — new move-in is <strong>{fmtD(moveInDate)}</strong>. You will need to handle the security deposit and provide proper notice.
                   </div>
                   <div style={{display:"flex",gap:6}}>
                     <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setModal(p=>({...p,_overrideStep:0}))}>← Go Back</button>
                     <button className="btn btn-sm" style={{flex:2,background:"#c45c4a",color:"#fff",border:"none",fontSize:10,fontWeight:700}} onClick={()=>{
-                      // Close this modal and open terminate flow for the existing tenant's room
                       setModal(null);
-                      setTimeout(()=>{
-                        if(termRoomForModal&&termProp){
-                          setTenantProfileTab("summary");
-                          setModal({type:"tenant",data:termRoomForModal,termStep:1,termDate:moveInDate,termErrs:{}});
-                        }
-                      },50);
+                      setTimeout(()=>{if(termRoomForModal&&termProp){setTenantProfileTab("summary");setModal({type:"tenant",data:termRoomForModal,termStep:1,termDate:moveInDate,termErrs:{}});}},50);
                     }}>Yes — Go to Terminate Lease Flow</button>
                   </div>
                 </div>
               </div>}
             </>}
 
-            {/* ── CASE A: override confirmed (came back after terminate) ── */}
+            {/* ── CASE A: override confirmed ── */}
             {selectedItem&&caseA&&overrideConfirmed&&<div style={{marginTop:8,padding:"7px 11px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.3)",borderRadius:7,fontSize:11,color:"#c45c4a",fontWeight:700,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span>Early termination acknowledged — proceed with lease setup.</span>
               <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>setModal(p=>({...p,_turnoverOverride:false,_overrideStep:0}))}>Undo</button>
             </div>}
 
-            {/* ── CASE B: buffer-only conflict — reduce buffer with confirmation ── */}
-            {selectedItem&&caseB&&!overrideConfirmed&&<>
+            {/* ── CASE B: buffer-only conflict — synced move-in ↔ buffer ── */}
+            {selectedItem&&caseB&&!overrideConfirmed&&(()=>{
+              const defaultBuf=selectedItem.itemTurnoverDays||0;
+              const curBuf=customBuf!=null?customBuf:defaultBuf;
+              // Days between moveIn and leaseEnd — this IS the current effective buffer
+              const daysFromLeaseEnd=leaseEnd&&moveInDate?Math.round((new Date(moveInDate+"T00:00:00")-new Date(leaseEnd+"T00:00:00"))/(86400000)):null;
+              const bufferShortfall=defaultBuf-curBuf;
+              const isResolved=moveInDate&&effectiveReadyDate&&moveInDate>=effectiveReadyDate;
+              return(<>
               {overrideStep===0&&<div style={{marginTop:8,borderRadius:7,overflow:"hidden",border:"1px solid rgba(212,168,83,.4)"}}>
-                <div style={{padding:"9px 11px",background:"rgba(212,168,83,.07)"}}>
-                  <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:5}}>Turnover Buffer Conflict</div>
-                  <div style={{fontSize:11,color:"#5c4a3a",display:"flex",flexDirection:"column",gap:3,lineHeight:1.5}}>
-                    <span>Lease ends: <strong style={{color:"#4a7c59"}}>{fmtD(leaseEnd)}</strong> — move-in is after lease ends, no overlap.</span>
-                    <span>Default buffer: <strong>{selectedItem.itemTurnoverDays||0} days</strong> → room ready <strong>{fmtD(defaultReadyDate)}</strong></span>
-                    <span>Your move-in: <strong style={{color:"#9a7422"}}>{fmtD(moveInDate)}</strong> — within the buffer window.</span>
+                <div style={{padding:"10px 11px",background:"rgba(212,168,83,.07)"}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:6}}>Turnover Buffer Conflict</div>
+
+                  {/* Status row */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+                    {[
+                      ["Lease Ends",fmtD(leaseEnd),"#4a7c59"],
+                      ["Default Buffer",defaultBuf+"d → "+fmtD(defaultReadyDate),"#9a7422"],
+                      ["Your Move-in",fmtD(moveInDate),"#c45c4a"],
+                    ].map(([lbl,val,col])=>(
+                      <div key={lbl} style={{background:"rgba(255,255,255,.6)",borderRadius:5,padding:"6px 8px",fontSize:10}}>
+                        <div style={{color:"#6b5e52",marginBottom:2,fontWeight:600}}>{lbl}</div>
+                        <div style={{color:col,fontWeight:700}}>{val}</div>
+                      </div>
+                    ))}
                   </div>
-                  <div style={{marginTop:8,display:"flex",alignItems:"center",gap:8}}>
-                    <label style={{fontSize:11,fontWeight:700,color:"#5c4a3a",whiteSpace:"nowrap"}}>Adjust buffer for this move-in:</label>
-                    <input type="number" min={0} max={selectedItem.itemTurnoverDays||30} value={customBuf!=null?customBuf:(selectedItem.itemTurnoverDays||0)}
-                      onChange={e=>{const v=Math.max(0,Number(e.target.value));setModal(p=>({...p,_customBuffer:v}));}}
-                      style={{width:60,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.12)",fontSize:12,fontFamily:"inherit",textAlign:"center"}}/>
-                    <span style={{fontSize:11,color:"#6b5e52"}}>days</span>
-                    {customBuf!=null&&customBuf!==(selectedItem.itemTurnoverDays||0)&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>setModal(p=>({...p,_customBuffer:null}))}>Reset</button>}
+
+                  {/* Synced controls */}
+                  <div style={{background:"rgba(255,255,255,.5)",borderRadius:6,padding:"8px 10px",border:"1px solid rgba(212,168,83,.2)"}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.3}}>Adjust either — they update together</div>
+                    <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                      {/* Buffer input */}
+                      <div style={{display:"flex",alignItems:"center",gap:5}}>
+                        <label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Buffer:</label>
+                        <input type="number" min={0} max={defaultBuf} value={curBuf}
+                          onChange={e=>{
+                            const v=Math.max(0,Number(e.target.value)||0);
+                            setModal(p=>({...p,_customBuffer:v}));
+                            // Sync move-in: leaseEnd + newBuffer
+                            if(leaseEnd){const d=new Date(leaseEnd+"T00:00:00");d.setDate(d.getDate()+v);const ds=d.toISOString().split("T")[0];
+                              setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
+                              setModal(p=>({...p,_customBuffer:v,data:{...p.data,moveIn:ds,termMoveIn:ds}}));
+                            }
+                          }}
+                          style={{width:52,padding:"4px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.12)",fontSize:12,fontFamily:"inherit",textAlign:"center"}}/>
+                        <span style={{fontSize:11,color:"#6b5e52"}}>days</span>
+                      </div>
+                      <span style={{fontSize:11,color:"#9a7422",fontWeight:700}}>↔</span>
+                      {/* Move-in input */}
+                      <div style={{display:"flex",alignItems:"center",gap:5}}>
+                        <label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Move-in:</label>
+                        <input type="date" value={moveInDate} min={leaseEnd||undefined}
+                          onChange={e=>{
+                            const ds=e.target.value;
+                            // Sync buffer: moveIn - leaseEnd
+                            const newBuf=leaseEnd&&ds?Math.max(0,Math.round((new Date(ds+"T00:00:00")-new Date(leaseEnd+"T00:00:00"))/(86400000))):null;
+                            setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
+                            setModal(p=>({...p,_customBuffer:newBuf,_overrideStep:0,data:{...p.data,moveIn:ds,termMoveIn:ds}}));
+                          }}
+                          style={{padding:"4px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.12)",fontSize:11,fontFamily:"inherit"}}/>
+                      </div>
+                    </div>
+                    {/* Live feedback */}
+                    <div style={{marginTop:6,fontSize:11}}>
+                      {isResolved
+                        ?<span style={{color:"#4a7c59",fontWeight:700}}>Room ready {fmtD(effectiveReadyDate)} — move-in clears.{bufferShortfall>0?` (${bufferShortfall}d shorter than default)`:""}</span>
+                        :<span style={{color:"#9a7422"}}>Need {leaseEnd&&moveInDate?Math.round((new Date(effectiveReadyDate+"T00:00:00")-new Date(moveInDate+"T00:00:00"))/(86400000)):0} more day(s) — set move-in to <strong>{fmtD(effectiveReadyDate)}</strong> or reduce buffer to <strong>{daysFromLeaseEnd!=null?daysFromLeaseEnd:0}d</strong>.</span>
+                      }
+                    </div>
+                    {curBuf!==defaultBuf&&<button style={{marginTop:4,background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>{
+                      setModal(p=>({...p,_customBuffer:null}));
+                      if(leaseEnd){const d=new Date(leaseEnd+"T00:00:00");d.setDate(d.getDate()+defaultBuf);const ds=d.toISOString().split("T")[0];
+                        setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
+                        setModal(p=>({...p,_customBuffer:null,data:{...p.data,moveIn:ds,termMoveIn:ds}}));
+                      }
+                    }}>Reset to default ({defaultBuf}d buffer → {fmtD(defaultReadyDate)})</button>}
                   </div>
-                  {customBuf!=null&&effectiveReadyDate&&moveInDate>=effectiveReadyDate&&<div style={{marginTop:6,fontSize:11,color:"#4a7c59",fontWeight:600}}>With {customBuf}d buffer → room ready {fmtD(effectiveReadyDate)} — move-in clears.</div>}
-                  {customBuf!=null&&effectiveReadyDate&&moveInDate<effectiveReadyDate&&leaseEnd&&moveInDate>=leaseEnd&&<div style={{marginTop:6,fontSize:11,color:"#9a7422"}}>With {customBuf}d buffer → room ready {fmtD(effectiveReadyDate)} — still a conflict, reduce further.</div>}
                 </div>
-                <div style={{padding:"8px 11px",background:"rgba(212,168,83,.04)",borderTop:"1px solid rgba(212,168,83,.2)",display:"flex",gap:6}}>
-                  <button className="btn btn-out btn-sm" style={{flex:1,fontSize:10}} onClick={()=>{
-                    // Auto-fill move-in to the room's default ready date so conflict clears
-                    const rdy=defaultReadyDate;
-                    if(rdy){
-                      setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:rdy,termMoveIn:rdy}:x));
-                      setModal(p=>({...p,_customBuffer:null,_overrideStep:0,_turnoverOverride:false,data:{...p.data,moveIn:rdy,termMoveIn:rdy}}));
-                    }
-                  }}>Use Earliest Date ({fmtD(defaultReadyDate)})</button>
-                  <button className="btn btn-sm" style={{flex:2,background:"#d4a853",color:"#1a1714",border:"none",fontSize:10,fontWeight:700,
-                    opacity:moveInDate>=(effectiveReadyDate||"9999")?1:.5}}
-                    disabled={!(moveInDate>=(effectiveReadyDate||"9999"))}
-                    onClick={()=>setModal(p=>({...p,_overrideStep:1}))}>Confirm Reduced Buffer →</button>
+                <div style={{padding:"8px 11px",background:"rgba(212,168,83,.04)",borderTop:"1px solid rgba(212,168,83,.2)"}}>
+                  <button className="btn btn-sm" style={{width:"100%",background:isResolved?"#d4a853":"rgba(0,0,0,.06)",color:isResolved?"#1a1714":"#9a7422",border:"none",fontSize:10,fontWeight:700,opacity:isResolved?1:.6}}
+                    disabled={!isResolved}
+                    onClick={()=>setModal(p=>({...p,_overrideStep:1}))}>
+                    {isResolved?`Confirm — Move-in ${fmtD(moveInDate)} · ${curBuf}d buffer${bufferShortfall>0?" ("+bufferShortfall+"d shorter than default)":""}  →`:"Resolve the conflict above to continue"}
+                  </button>
                 </div>
               </div>}
               {overrideStep===1&&<div style={{marginTop:8,borderRadius:7,overflow:"hidden",border:"2px solid rgba(212,168,83,.5)"}}>
                 <div style={{padding:"10px 11px",background:"rgba(212,168,83,.1)"}}>
-                  <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:6}}>Confirm Shorter Turnover Buffer</div>
-                  <div style={{fontSize:11,color:"#5c4a3a",marginBottom:10,lineHeight:1.6}}>
-                    The standard buffer for <strong>{selectedItem.name}</strong> is <strong>{selectedItem.itemTurnoverDays||0} days</strong>. You are reducing it to <strong>{customBuf!=null?customBuf:0} days</strong> for this move-in. The lease ends <strong>{fmtD(leaseEnd)}</strong> — no overlap. You acknowledge the shorter prep window.
+                  <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:8}}>Confirm Move-in & Buffer</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                    {[["Move-in Date",fmtD(moveInDate)],["Turnover Buffer",curBuf+"d"+(curBuf!==defaultBuf?" (default: "+defaultBuf+"d)":"")]].map(([k,v])=>(
+                      <div key={k} style={{background:"rgba(255,255,255,.7)",borderRadius:5,padding:"7px 10px",fontSize:11}}>
+                        <div style={{color:"#6b5e52",marginBottom:2,fontWeight:600,fontSize:10}}>{k}</div>
+                        <div style={{color:"#1a1714",fontWeight:800}}>{v}</div>
+                      </div>
+                    ))}
                   </div>
+                  {curBuf<defaultBuf&&<div style={{fontSize:11,color:"#9a7422",marginBottom:10,padding:"6px 8px",background:"rgba(212,168,83,.08)",borderRadius:5}}>
+                    Buffer is {defaultBuf-curBuf}d shorter than default. No lease overlap — you acknowledge the shorter prep window.
+                  </div>}
                   <div style={{display:"flex",gap:6}}>
-                    <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setModal(p=>({...p,_overrideStep:0}))}>← Go Back</button>
-                    <button className="btn btn-sm" style={{flex:2,background:"#d4a853",color:"#1a1714",border:"none",fontSize:10,fontWeight:700}} onClick={()=>setModal(p=>({...p,_overrideStep:2,_turnoverOverride:true}))}>Yes, Confirmed</button>
+                    <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setModal(p=>({...p,_overrideStep:0}))}>← Edit</button>
+                    <button className="btn btn-sm" style={{flex:2,background:"#d4a853",color:"#1a1714",border:"none",fontSize:10,fontWeight:700}} onClick={()=>setModal(p=>({...p,_overrideStep:2,_turnoverOverride:true}))}>Confirm & Proceed</button>
                   </div>
                 </div>
               </div>}
-            </>}
+              </>);
+            })()}
 
             {/* ── CASE B confirmed ── */}
-            {selectedItem&&caseB&&overrideConfirmed&&<div style={{marginTop:8,padding:"7px 11px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:11,color:"#9a7422",fontWeight:700,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span>Reduced buffer confirmed — {customBuf!=null?customBuf:0}d (was {selectedItem.itemTurnoverDays||0}d). No lease overlap.</span>
-              <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>setModal(p=>({...p,_turnoverOverride:false,_overrideStep:0,_customBuffer:null}))}>Undo</button>
-            </div>}
+            {selectedItem&&caseB&&overrideConfirmed&&(()=>{
+              const defaultBuf=selectedItem.itemTurnoverDays||0;
+              const curBuf=customBuf!=null?customBuf:defaultBuf;
+              return(<div style={{marginTop:8,padding:"7px 11px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:11,color:"#9a7422",fontWeight:700,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span>Confirmed — {fmtD(moveInDate)} · {curBuf}d buffer{curBuf!==defaultBuf?` (default ${defaultBuf}d)`:""}</span>
+                <button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>setModal(p=>({...p,_turnoverOverride:false,_overrideStep:0}))}>Edit</button>
+              </div>);
+            })()}
 
             {/* No conflict: green info if room will vacate before move-in */}
             {selectedItem&&!hasConflict&&selectedItem.le&&<div style={{marginTop:6,padding:"6px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:6,fontSize:11,color:"#2d6a3f"}}>
