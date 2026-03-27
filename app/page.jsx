@@ -1325,40 +1325,45 @@ function Screening({properties}){
           <div>{(()=>{
   const names=PROPS.map(p=>p.name);
   const hasDupe=n=>names.filter(x=>x===n).length>1;
-  // Availability check for selected property
+  // Compute earliest available date for a property using turnoverDays
+  const getEarliestAvail=(p)=>{
+    const rooms=(p.rooms||[]).filter(r=>!r.ownerOccupied);
+    const vacant=rooms.filter(r=>(r.st||"vacant")==="vacant");
+    if(vacant.length>0)return null; // has vacancy — no warning needed
+    const withLe=rooms.filter(r=>(r.st||"vacant")!=="vacant"&&r.le);
+    if(!withLe.length)return{noData:true};
+    const earliestLe=withLe.reduce((mn,r)=>r.le<mn?r.le:mn,withLe[0].le);
+    const buf=p.turnoverDays||0;
+    const d=new Date(earliestLe+"T00:00:00");
+    d.setDate(d.getDate()+Math.max(buf,0));
+    return{leDate:earliestLe,buf,readyDate:d,readyStr:d.toISOString().split("T")[0]};
+  };
+  const autoFillMoveIn=(d)=>{const mo=String(d.getMonth()+1),dy=String(d.getDate()),yr=String(d.getFullYear());setForm(f=>({...f,moveInMonth:mo,moveInDay:dy,moveInYear:yr,moveIn:`${yr}-${mo.padStart(2,"0")}-${dy.padStart(2,"0")}`}));};
   const selP=form.property?PROPS.find(p=>p.name===form.property):null;
-  const vacantRooms=(selP?.rooms||[]).filter(r=>(r.st||"vacant")==="vacant");
-  const occupiedWithLe=(selP?.rooms||[]).filter(r=>(r.st||"vacant")!=="vacant"&&r.le);
-  const fullyLeased=selP&&vacantRooms.length===0;
-  const turnover=selP?.turnoverDays||0;
-  // Earliest date a room opens up
-  const earliestLeStr=occupiedWithLe.length?occupiedWithLe.reduce((mn,r)=>r.le<mn?r.le:mn,occupiedWithLe[0].le):null;
-  const earliestAvailDate=earliestLeStr?(()=>{const d=new Date(earliestLeStr+"T00:00:00");d.setDate(d.getDate()+Math.max(turnover,1));return d;})():null;
-  const noInfoAtAll=selP&&fullyLeased&&!earliestAvailDate;
-  const fmtAvail=d=>d?d.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";
-  // Auto-fill move-in if fully leased + earliest known date
-  const autoFillMoveIn=(d)=>{if(!d)return;const mo=String(d.getMonth()+1),dy=String(d.getDate()),yr=String(d.getFullYear());setForm(f=>({...f,moveInMonth:mo,moveInDay:dy,moveInYear:yr,moveIn:`${yr}-${mo.padStart(2,"0")}-${dy.padStart(2,"0")}`}));};
+  const avail=selP?getEarliestAvail(selP):null;
   return(<>
     <select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{
       const pName=e.target.value;
       const np=PROPS.find(p=>p.name===pName);
-      const nvac=(np?.rooms||[]).filter(r=>(r.st||"vacant")==="vacant");
-      const nocc=(np?.rooms||[]).filter(r=>(r.st||"vacant")!=="vacant"&&r.le);
-      const nle=nocc.length?nocc.reduce((mn,r)=>r.le<mn?r.le:mn,nocc[0].le):null;
-      const nto=np?.turnoverDays||0;
-      const nAvail=nle?(()=>{const d=new Date(nle+"T00:00:00");d.setDate(d.getDate()+Math.max(nto,1));return d;})():null;
+      const na=np?getEarliestAvail(np):null;
       setForm(f=>({...f,property:pName}));
       setTouched(t=>({...t,property:true}));
-      if(np&&nvac.length===0&&nAvail)autoFillMoveIn(nAvail);
+      if(na&&!na.noData&&na.readyDate)autoFillMoveIn(na.readyDate);
     }} onBlur={()=>setTouched(t=>({...t,property:true}))}>
       <option value="">Property interested in? *</option>
       {PROPS.map(p=><option key={p.id} value={p.name}>{hasDupe(p.name)&&(p.address||p.addr)?`${p.name} — ${p.address||p.addr}`:p.name}</option>)}
     </select>
-    {fullyLeased&&earliestAvailDate&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#7a5c1e",lineHeight:1.5}}>
-      <strong>No rooms available right now</strong> at {form.property}. Next opening estimated <strong>{fmtAvail(earliestAvailDate)}</strong>. Move-in date updated — confirm below.
+    {avail&&!avail.noData&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#5c4a3a",lineHeight:1.6}}>
+      <strong style={{color:"#7a5c1e"}}>No rooms available right now.</strong>
+      <div style={{marginTop:3,fontSize:11}}>
+        <span>Next lease ends: <strong>{new Date(avail.leDate+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</strong></span>
+        {avail.buf>0&&<span style={{marginLeft:8}}>+ {avail.buf}-day turnover buffer</span>}
+        <span style={{marginLeft:8}}>→ Earliest move-in: <strong>{avail.readyDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</strong></span>
+      </div>
+      <div style={{marginTop:3,fontSize:10,color:"#9a7422"}}>Move-in date pre-filled below — you can adjust it.</div>
     </div>}
-    {noInfoAtAll&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#7a5c1e",lineHeight:1.5}}>
-      <strong>No rooms currently available</strong> at {form.property}. Contact us to join the waitlist.
+    {avail?.noData&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#7a5c1e",lineHeight:1.5}}>
+      <strong>No rooms currently available</strong> at this property. Contact us to join the waitlist.
     </div>}
   </>);
 })()}{errMsg("property")}</div>
