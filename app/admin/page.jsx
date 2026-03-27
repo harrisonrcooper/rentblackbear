@@ -10380,21 +10380,36 @@ export default function Page(){
               const isWholeUnit=selectedItem.isWholeUnit;
               const unitRooms=termProp?(termProp.units||[]).find(u=>u.id===selectedItem.unitId)?.rooms||[]:[]; 
               const otherRooms=unitRooms.filter(r=>r.id!==selectedItem.id&&!r.ownerOccupied);
-              const opts=[
+              const allNonOwnerRooms=unitRooms.filter(r=>!r.ownerOccupied);
+              const isMultiUnit=(termProp?.units||[]).length>1;
+              // Options depend on rental mode
+              const opts=isWholeUnit?[
                 {key:"none",label:"One-time only",sub:"Don't save — just for this move-in"},
-                {key:"room",label:"This room only",sub:`Save ${curBuf}d to ${selectedItem.name}`},
-                ...(!isWholeUnit&&otherRooms.length>0?[{key:"unit",label:"All bedrooms in unit",sub:`Apply ${curBuf}d to all ${unitRooms.filter(r=>!r.ownerOccupied).length} rooms`}]:[]),
-                ...((termProp?.units||[]).length>1?[{key:"property",label:"Whole property",sub:`Set ${curBuf}d as property default`}]:[]),
+                {key:"unit",label:"This unit",sub:`Save ${curBuf}-day buffer to this unit`},
+                ...(isMultiUnit?[{key:"property",label:"Whole property",sub:`Set ${curBuf}-day buffer as property default`}]:[]),
+              ]:[
+                {key:"none",label:"One-time only",sub:"Don't save — just for this move-in"},
+                {key:"room",label:"This room only",sub:`Save ${curBuf}-day buffer to ${selectedItem.name}`},
+                ...(otherRooms.length>0?[{key:"unit",label:"All bedrooms in unit",sub:`Apply ${curBuf}-day buffer to all rooms`}]:[]),
+                ...(isMultiUnit?[{key:"property",label:"Whole property",sub:`Set ${curBuf}-day buffer as property default`}]:[]),
               ];
+              const appliedOpt=opts.find(o=>o.key===applied);
               const applyBuffer=()=>{
-                if(!applied||applied==="none")return;
+                if(!applied||applied==="none"){setModal(p=>({...p,_bufferApplied:true}));return;}
                 const newBuf=curBuf;
                 if(applied==="room"){
-                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===selectedItem.id?{...r,turnoverDays:newBuf}:r)}))}));
+                  // Switch to per-room mode and save room-level buffer
+                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,turnoverMode:"per-room",units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===selectedItem.id?{...r,turnoverDays:newBuf}:r))}))}));
                 }else if(applied==="unit"){
-                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,units:(p.units||[]).map(u=>u.id!==selectedItem.unitId?u:{...u,rooms:(u.rooms||[]).map(r=>r.ownerOccupied?r:{...r,turnoverDays:newBuf})})}));
+                  if(isWholeUnit){
+                    // Whole unit — save to property-level turnoverDays (single unit)
+                    setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,turnoverDays:newBuf}));
+                  } else {
+                    // By bedroom — switch to per-room, apply to all non-owner rooms in unit
+                    setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,turnoverMode:"per-room",units:(p.units||[]).map(u=>u.id!==selectedItem.unitId?u:{...u,rooms:(u.rooms||[]).map(r=>r.ownerOccupied?r:{...r,turnoverDays:newBuf})})}));
+                  }
                 }else if(applied==="property"){
-                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,turnoverDays:newBuf}));
+                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,turnoverDays:newBuf,turnoverMode:"property"}));
                 }
                 setModal(p=>({...p,_bufferApplied:true}));
               };
@@ -10422,12 +10437,12 @@ export default function Page(){
                   <div style={{padding:"7px 10px",borderTop:"1px solid rgba(0,0,0,.05)"}}>
                     <button className="btn btn-sm" style={{width:"100%",background:applied?"#d4a853":"rgba(0,0,0,.05)",color:applied?"#1a1714":"#999",border:"none",fontSize:10,fontWeight:700,padding:"6px 0",borderRadius:5,cursor:applied?"pointer":"default"}}
                       disabled={!applied} onClick={applyBuffer}>
-                      {applied?`Apply — ${opts.find(o=>o.key===applied)?.label}`:"Select an option above"}
+                      {applied?`Apply — ${appliedOpt?.label||applied}`:"Select an option above"}
                     </button>
                   </div>
                 </div>}
                 {modal._bufferApplied&&<div style={{marginTop:4,fontSize:10,color:"#4a7c59",padding:"4px 8px"}}>
-                  Buffer saved to {opts.find(o=>o.key===applied)?.label?.toLowerCase()||"settings"}.
+                  {applied==="none"?"One-time adjustment — not saved to settings.":`${curBuf}-day buffer saved to: ${appliedOpt?.label||applied}.`}
                 </div>}
               </>);
             })()}
