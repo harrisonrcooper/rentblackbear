@@ -1325,10 +1325,42 @@ function Screening({properties}){
           <div>{(()=>{
   const names=PROPS.map(p=>p.name);
   const hasDupe=n=>names.filter(x=>x===n).length>1;
-  return(<select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}>
-    <option value="">Property interested in? *</option>
-    {PROPS.map(p=><option key={p.id} value={p.name}>{hasDupe(p.name)&&(p.address||p.addr)?`${p.name} — ${p.address||p.addr}`:p.name}</option>)}
-  </select>);
+  // Availability check for selected property
+  const selP=form.property?PROPS.find(p=>p.name===form.property):null;
+  const vacantRooms=(selP?.rooms||[]).filter(r=>(r.st||"vacant")==="vacant");
+  const occupiedWithLe=(selP?.rooms||[]).filter(r=>(r.st||"vacant")!=="vacant"&&r.le);
+  const fullyLeased=selP&&vacantRooms.length===0;
+  const turnover=selP?.turnoverDays||0;
+  // Earliest date a room opens up
+  const earliestLeStr=occupiedWithLe.length?occupiedWithLe.reduce((mn,r)=>r.le<mn?r.le:mn,occupiedWithLe[0].le):null;
+  const earliestAvailDate=earliestLeStr?(()=>{const d=new Date(earliestLeStr+"T00:00:00");d.setDate(d.getDate()+Math.max(turnover,1));return d;})():null;
+  const noInfoAtAll=selP&&fullyLeased&&!earliestAvailDate;
+  const fmtAvail=d=>d?d.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";
+  // Auto-fill move-in if fully leased + earliest known date
+  const autoFillMoveIn=(d)=>{if(!d)return;const mo=String(d.getMonth()+1),dy=String(d.getDate()),yr=String(d.getFullYear());setForm(f=>({...f,moveInMonth:mo,moveInDay:dy,moveInYear:yr,moveIn:`${yr}-${mo.padStart(2,"0")}-${dy.padStart(2,"0")}`}));};
+  return(<>
+    <select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{
+      const pName=e.target.value;
+      const np=PROPS.find(p=>p.name===pName);
+      const nvac=(np?.rooms||[]).filter(r=>(r.st||"vacant")==="vacant");
+      const nocc=(np?.rooms||[]).filter(r=>(r.st||"vacant")!=="vacant"&&r.le);
+      const nle=nocc.length?nocc.reduce((mn,r)=>r.le<mn?r.le:mn,nocc[0].le):null;
+      const nto=np?.turnoverDays||0;
+      const nAvail=nle?(()=>{const d=new Date(nle+"T00:00:00");d.setDate(d.getDate()+Math.max(nto,1));return d;})():null;
+      setForm(f=>({...f,property:pName}));
+      setTouched(t=>({...t,property:true}));
+      if(np&&nvac.length===0&&nAvail)autoFillMoveIn(nAvail);
+    }} onBlur={()=>setTouched(t=>({...t,property:true}))}>
+      <option value="">Property interested in? *</option>
+      {PROPS.map(p=><option key={p.id} value={p.name}>{hasDupe(p.name)&&(p.address||p.addr)?`${p.name} — ${p.address||p.addr}`:p.name}</option>)}
+    </select>
+    {fullyLeased&&earliestAvailDate&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#7a5c1e",lineHeight:1.5}}>
+      <strong>No rooms available right now</strong> at {form.property}. Next opening estimated <strong>{fmtAvail(earliestAvailDate)}</strong>. Move-in date updated — confirm below.
+    </div>}
+    {noInfoAtAll&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#7a5c1e",lineHeight:1.5}}>
+      <strong>No rooms currently available</strong> at {form.property}. Contact us to join the waitlist.
+    </div>}
+  </>);
 })()}{errMsg("property")}</div>
           <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
             <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
