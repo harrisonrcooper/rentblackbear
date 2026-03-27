@@ -7594,6 +7594,44 @@ export default function Page(){
                 <div style={{fontSize:10,color:dl<=30?"#c45c4a":dl<=90?"#d4a853":"#6b5e52",marginTop:4}}>{dl} days remaining{months?` (${months} mo)`:""}</div>
               </div>}
             </div>
+            {/* Prior History */}
+            {(()=>{
+              const tn=(r.tenant?.name||"").toLowerCase();
+              const te=(r.tenant?.email||"").toLowerCase();
+              const priorRecs=archive.filter(t=>(tn&&(t.name||"").toLowerCase()===tn)||(te&&(t.email||"").toLowerCase()===te));
+              if(!priorRecs.length)return null;
+              const hasBadHist=priorRecs.some(t=>t.sdStatus==="kept"||t.terminatedDate);
+              return(
+              <div style={{background:"#fff",borderRadius:12,border:"1px solid "+(hasBadHist?"rgba(196,92,74,.25)":"rgba(0,0,0,.07)"),padding:"20px 24px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={hasBadHist?"#c45c4a":"#4a7c59"} strokeWidth="2"/><polyline points="12 6 12 12 16 14" stroke={hasBadHist?"#c45c4a":"#4a7c59"} strokeWidth="2" strokeLinecap="round"/></svg>
+                  <span style={{fontSize:14,fontWeight:700,color:hasBadHist?"#c45c4a":"#1a1714"}}>Prior History</span>
+                  <span style={{fontSize:10,color:"#999",marginLeft:"auto"}}>{priorRecs.length} record{priorRecs.length>1?"s":""}</span>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {priorRecs.map((t,i)=>{
+                    const wasTerminated=!!t.terminatedDate;
+                    const sdKept=t.sdStatus==="kept";
+                    const sdPartial=t.sdStatus==="partial";
+                    const leaseCompleted=!wasTerminated&&!!t.leaseEnd;
+                    const lateCount=charges.filter(c=>c.category==="Late Fee"&&(c.tenantName||"").toLowerCase()===(t.name||"").toLowerCase()).length;
+                    return(
+                    <div key={i} style={{padding:"8px 10px",borderRadius:7,background:"rgba(0,0,0,.025)",border:"1px solid rgba(0,0,0,.05)",fontSize:11}}>
+                      <div style={{fontWeight:700,color:"#1a1714",marginBottom:2}}>{t.propName||"—"}{t.roomName?" · "+t.roomName:""}</div>
+                      <div style={{color:"#6b5e52",marginBottom:5}}>{t.moveIn?fmtD(t.moveIn):"?"} {"->"} {(t.terminatedDate||t.leaseEnd)?fmtD(t.terminatedDate||t.leaseEnd):"—"}</div>
+                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                        {wasTerminated&&<span style={{background:"rgba(196,92,74,.1)",padding:"2px 6px",borderRadius:4,color:"#c45c4a",fontWeight:700,fontSize:10}}>Terminated Early</span>}
+                        {sdKept&&<span style={{background:"rgba(196,92,74,.1)",padding:"2px 6px",borderRadius:4,color:"#c45c4a",fontWeight:700,fontSize:10}}>SD Kept</span>}
+                        {sdPartial&&<span style={{background:"rgba(212,168,83,.1)",padding:"2px 6px",borderRadius:4,color:"#9a7422",fontWeight:700,fontSize:10}}>SD Partial</span>}
+                        {leaseCompleted&&!wasTerminated&&!sdKept&&!sdPartial&&<span style={{background:"rgba(74,124,89,.1)",padding:"2px 6px",borderRadius:4,color:"#4a7c59",fontWeight:700,fontSize:10}}>Good Standing</span>}
+                        {lateCount>0&&<span style={{background:"rgba(196,92,74,.08)",padding:"2px 6px",borderRadius:4,color:"#c45c4a",fontWeight:600,fontSize:10}}>{lateCount}x Late</span>}
+                      </div>
+                      {t.reason&&<div style={{color:"#6b5e52",marginTop:4,fontSize:10,fontStyle:"italic"}}>{t.reason}</div>}
+                    </div>);
+                  })}
+                </div>
+              </div>);
+            })()}
             {/* Portal Invite */}
             <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><TI d="M19 11H5M19 11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2M19 11V9a7 7 0 1 0-14 0v2"/><span style={{fontSize:14,fontWeight:700}}>Tenant Portal</span></div>
@@ -9935,15 +9973,22 @@ export default function Page(){
         const isEarly=t.reason&&(t.reason.toLowerCase().includes("early")||t.reason.toLowerCase().includes("broke"));
         mf.push({
           type:isEviction?"evicted":isEarly?"early":"past",
-          label:(isEviction?"Previously evicted":isEarly?"Broke lease early":"Returning tenant")+" — "+(t.propName||"unknown")+(t.reason?" ("+t.reason+")":"")
+          label:(isEviction?"Previously evicted":isEarly?"Broke lease early":"Returning tenant")+" — "+(t.propName||"unknown")+(t.reason?" ("+t.reason+")":""),
+          data:t
         });
       }
     });
     apps.filter(x=>x.id!==a.id&&x.status==="denied").forEach(x=>{
       const nameMatch=(x.name||"").toLowerCase()===nm3&&nm3.length>0;
       const emailMatch=(x.email||"").toLowerCase()===(a.email||"").toLowerCase()&&(a.email||"").length>0;
-      if(emailMatch||(nameMatch&&emailMatch))mf.push({type:"denied",label:"Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});
+      if(emailMatch||(nameMatch&&emailMatch))mf.push({type:"denied",label:"Previously denied"+(x.deniedReason?" — "+x.deniedReason:""),data:x});
     });
+    const hasBad=mf.some(f=>f.type==="denied"||f.type==="evicted");
+    const hasWarn=!hasBad&&mf.some(f=>f.type==="early");
+    const bnrColor=hasBad?"#c45c4a":hasWarn?"#9a7422":"#2d6a3f";
+    const bnrBg=hasBad?"rgba(196,92,74,.1)":hasWarn?"rgba(212,168,83,.08)":"rgba(74,124,89,.08)";
+    const bnrBorder=hasBad?"rgba(196,92,74,.35)":hasWarn?"rgba(212,168,83,.35)":"rgba(74,124,89,.25)";
+    const bnrLabel=mf.some(f=>f.type==="evicted")?"Previously Evicted":hasBad?"Previously Denied":hasWarn?"Broke Lease Early":"Returning Tenant";
     const reqs=[{key:"bgCheck",label:"Background Check"},{key:"creditScore",label:"Credit Check"},{key:"incomeVerified",label:"Income Verification"},{key:"refs",label:"References"},{key:"idVerified",label:"ID Verified"}];
     const waived=a.waived||[];
     const incompleteReqs=reqs.filter(r=>!waived.includes(r.label)&&a[r.key]!=="passed"&&a[r.key]!=="verified");
@@ -9997,10 +10042,63 @@ export default function Page(){
         </div>
       </div>
       <div style={{display:"flex",gap:2,marginBottom:12}}>{STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}><div style={{height:4,borderRadius:2,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:2}}/><div style={{fontSize:7,color:i<=si?"#d4a853":"#999"}}>{SI3[s]}</div></div>)}</div>
-      {mf.length>0&&<div style={{marginBottom:10}}>{mf.map((f,i)=><div key={i} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,
-        background:f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",
-        color:f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f"
-      }}>{f.label}</div>)}</div>}
+      {mf.length>0&&!modal.histDismissed&&<div style={{marginBottom:12,borderRadius:8,border:"1px solid "+bnrBorder,background:bnrBg,overflow:"hidden"}}>
+        {/* Banner header — always visible */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",cursor:"pointer"}} onClick={()=>setModal(p=>({...p,histExpanded:!p.histExpanded}))}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke={bnrColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <span style={{fontSize:11,fontWeight:800,color:bnrColor,textTransform:"uppercase",letterSpacing:.7}}>{bnrLabel} — {mf.length} {mf.length===1?"record":"records"} on file</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:10,color:bnrColor,fontWeight:600}}>{modal.histExpanded?"Collapse ▴":"View History ▾"}</span>
+            <span style={{fontSize:16,color:bnrColor,fontWeight:400,lineHeight:1,cursor:"pointer",padding:"0 2px"}} onClick={e=>{e.stopPropagation();setModal(p=>({...p,histDismissed:true}));}}>×</span>
+          </div>
+        </div>
+        {/* Expanded detail */}
+        {modal.histExpanded&&<div style={{borderTop:"1px solid "+bnrBorder,padding:"10px 12px",display:"flex",flexDirection:"column",gap:7}}>
+          {mf.map((f,i)=>{
+            const td=f.data||{};
+            const isPast=f.type==="past"||f.type==="early"||f.type==="evicted";
+            const isDenied=f.type==="denied";
+            const sdKept=td.sdStatus==="kept";
+            const sdPartial=td.sdStatus==="partial";
+            const sdReturned=td.sdStatus==="returned";
+            const lateCount=charges.filter(c=>c.category==="Late Fee"&&(c.tenantName||"").toLowerCase()===(td.name||"").toLowerCase()).length;
+            const endDate=td.terminatedDate||td.leaseEnd;
+            const wasTerminated=!!td.terminatedDate;
+            const leaseCompleted=!wasTerminated&&!!td.leaseEnd&&new Date(td.leaseEnd+"T00:00:00")<=TODAY;
+            return(
+            <div key={i} style={{background:"rgba(255,255,255,.55)",borderRadius:6,padding:"8px 10px",fontSize:11}}>
+              {isPast&&<>
+                <div style={{fontWeight:700,color:"#1a1714",marginBottom:3}}>{td.propName||"Unknown"}{td.roomName?" · "+td.roomName:""}</div>
+                <div style={{color:"#5c4a3a",marginBottom:5}}>
+                  {td.moveIn?fmtD(td.moveIn):"?"} → {endDate?fmtD(endDate):"present"}
+                  <span style={{color:wasTerminated?"#c45c4a":leaseCompleted?"#4a7c59":"#999",marginLeft:6,fontWeight:600}}>
+                    {wasTerminated?"(terminated early)":leaseCompleted?"(completed)":"(lease active)"}
+                  </span>
+                </div>
+                <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+                  {td.rent&&<span style={{background:"rgba(0,0,0,.06)",padding:"2px 7px",borderRadius:4,color:"#3d3529",fontWeight:600}}>${Number(td.rent).toLocaleString()}/mo</span>}
+                  {sdKept&&<span style={{background:"rgba(196,92,74,.12)",padding:"2px 7px",borderRadius:4,color:"#c45c4a",fontWeight:700}}>SD Kept</span>}
+                  {sdPartial&&<span style={{background:"rgba(212,168,83,.12)",padding:"2px 7px",borderRadius:4,color:"#9a7422",fontWeight:700}}>SD Partial</span>}
+                  {sdReturned&&<span style={{background:"rgba(74,124,89,.12)",padding:"2px 7px",borderRadius:4,color:"#4a7c59",fontWeight:700}}>SD Returned</span>}
+                  {lateCount>0&&<span style={{background:"rgba(196,92,74,.12)",padding:"2px 7px",borderRadius:4,color:"#c45c4a",fontWeight:700}}>{lateCount}x Late Fee</span>}
+                  {f.type==="evicted"&&<span style={{background:"rgba(196,92,74,.12)",padding:"2px 7px",borderRadius:4,color:"#c45c4a",fontWeight:700}}>Evicted</span>}
+                </div>
+                {td.reason&&<div style={{color:"#5c4a3a",marginTop:4,fontStyle:"italic",fontSize:10}}>{td.reason}</div>}
+              </>}
+              {isDenied&&<>
+                <div style={{fontWeight:700,color:"#c45c4a",marginBottom:3}}>Denied{td.property?" — "+td.property:""}</div>
+                <div style={{color:"#5c4a3a",marginBottom:td.deniedReason?4:0}}>
+                  Applied {td.submitted?fmtD(td.submitted):"unknown"}{td.deniedDate?" · Denied "+fmtD(td.deniedDate):""}
+                  {td.lastContact&&td.lastContact!==td.submitted?<span style={{color:"#999",marginLeft:4}}>· Last contact {fmtD(td.lastContact)}</span>:null}
+                </div>
+                {td.deniedReason&&<div style={{color:"#5c4a3a",fontStyle:"italic",fontSize:10}}>{td.deniedReason}</div>}
+              </>}
+            </div>);
+          })}
+        </div>}
+      </div>}
       {/* ── Editable Applicant Info ── */}
       <div className="tp-card">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
