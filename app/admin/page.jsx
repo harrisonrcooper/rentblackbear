@@ -10140,12 +10140,12 @@ export default function Page(){
         // Case A: move-in < lease end → true lease overlap, must terminate early
         // Case B: buffer-only — panel shows while user is adjusting (customBuf set) OR original conflict still exists
         const leaseEnd=selectedItem?.le||null;
-        const defaultConflict=selectedItem&&moveInDate&&defaultReadyDate&&!( moveInDate<leaseEnd)&&moveInDate<defaultReadyDate;
-        const caseA=selectedItem&&moveInDate&&leaseEnd&&moveInDate<leaseEnd;
-        const caseB=!caseA&&selectedItem&&leaseEnd&&(defaultConflict||(customBuf!=null&&!overrideConfirmed&&selectedItem.st!=="vacant"));
-        const hasConflict=caseA||(caseB&&!overrideConfirmed); // blocks Rent/SD only when unresolved
         const overrideStep=modal._overrideStep||0;
         const overrideConfirmed=!!modal._turnoverOverride;
+        const defaultConflict=selectedItem&&moveInDate&&defaultReadyDate&&!(moveInDate<leaseEnd)&&moveInDate<defaultReadyDate;
+        const caseA=selectedItem&&moveInDate&&leaseEnd&&moveInDate<leaseEnd;
+        const caseB=!caseA&&selectedItem&&leaseEnd&&(defaultConflict||(customBuf!=null&&!overrideConfirmed&&selectedItem.st!=="vacant"));
+        const hasConflict=caseA||(caseB&&!overrideConfirmed);
 
         // Property-level availability warning
         const warnProp=a.property?props.find(p=>p.name===a.property):null;
