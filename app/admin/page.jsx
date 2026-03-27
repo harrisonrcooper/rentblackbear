@@ -10314,9 +10314,17 @@ export default function Page(){
                   {customBuf!=null&&effectiveReadyDate&&moveInDate<effectiveReadyDate&&leaseEnd&&moveInDate>=leaseEnd&&<div style={{marginTop:6,fontSize:11,color:"#9a7422"}}>With {customBuf}d buffer → room ready {fmtD(effectiveReadyDate)} — still a conflict, reduce further.</div>}
                 </div>
                 <div style={{padding:"8px 11px",background:"rgba(212,168,83,.04)",borderTop:"1px solid rgba(212,168,83,.2)",display:"flex",gap:6}}>
-                  <button className="btn btn-out btn-sm" style={{flex:1,fontSize:10}} onClick={()=>setModal(p=>({...p,_overrideStep:0}))}>Adjust Move-in Instead</button>
-                  <button className="btn btn-sm" style={{flex:2,background:"#d4a853",color:"#1a1714",border:"none",fontSize:10,fontWeight:700,opacity:(customBuf!=null&&moveInDate>=effectiveReadyDate)||moveInDate>=(effectiveReadyDate||"9999")?1:.5}}
-                    disabled={!((customBuf!=null&&moveInDate>=effectiveReadyDate)||moveInDate>=(effectiveReadyDate||"9999"))}
+                  <button className="btn btn-out btn-sm" style={{flex:1,fontSize:10}} onClick={()=>{
+                    // Auto-fill move-in to the room's default ready date so conflict clears
+                    const rdy=defaultReadyDate;
+                    if(rdy){
+                      setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:rdy,termMoveIn:rdy}:x));
+                      setModal(p=>({...p,_customBuffer:null,_overrideStep:0,_turnoverOverride:false,data:{...p.data,moveIn:rdy,termMoveIn:rdy}}));
+                    }
+                  }}>Use Earliest Date ({fmtD(defaultReadyDate)})</button>
+                  <button className="btn btn-sm" style={{flex:2,background:"#d4a853",color:"#1a1714",border:"none",fontSize:10,fontWeight:700,
+                    opacity:moveInDate>=(effectiveReadyDate||"9999")?1:.5}}
+                    disabled={!(moveInDate>=(effectiveReadyDate||"9999"))}
                     onClick={()=>setModal(p=>({...p,_overrideStep:1}))}>Confirm Reduced Buffer →</button>
                 </div>
               </div>}
@@ -10412,7 +10420,7 @@ export default function Page(){
               }
               const occ=item.st==="occupied"&&item.tenant;
               const age=occ?calcAge(item.tenant.dob):null;
-              const genderShort=occ&&item.tenant.gender?item.tenant.gender==="Male"?"M":item.tenant.gender==="Female"?"F":item.tenant.gender==="Non-binary"?"NB":null:null;
+              const genderShort=occ&&item.tenant.gender?item.tenant.gender==="Male"?"M":item.tenant.gender==="Female"?"F":null:null;
               // Pull employer from applicationData employers array
               const employers=occ&&item.tenant.applicationData?Object.values(item.tenant.applicationData).find(v=>Array.isArray(v)&&v[0]?.company):null;
               const primaryEmployer=employers?employers[0]?.company:null;
