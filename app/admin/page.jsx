@@ -10215,8 +10215,10 @@ export default function Page(){
                 const ds=e.target.value;
                 // If a room is selected, sync buffer = moveIn - leaseEnd
                 const newBuf=selectedItem?.le&&ds?Math.max(0,Math.round((new Date(ds+"T00:00:00")-new Date(selectedItem.le+"T00:00:00"))/(86400000))):null;
+                const newReadyDate=selectedItem?.le&&newBuf!=null?(()=>{const d=new Date(selectedItem.le+"T00:00:00");d.setDate(d.getDate()+newBuf);return d.toISOString().split("T")[0];})():null;
+                const autoResolved=newReadyDate&&ds&&ds>=newReadyDate;
                 setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
-                setModal(prev=>({...prev,_overrideStep:0,_turnoverOverride:false,_customBuffer:newBuf,data:{...prev.data,moveIn:ds,termMoveIn:ds}}));
+                setModal(prev=>({...prev,_overrideStep:0,_turnoverOverride:autoResolved?true:false,_customBuffer:newBuf,data:{...prev.data,moveIn:ds,termMoveIn:ds}}));
               }} style={{width:"100%"}}/>
             </div>
           </div>
@@ -10326,8 +10328,9 @@ export default function Page(){
                           onChange={e=>{
                             const v=Math.max(0,Number(e.target.value)||0);
                             if(leaseEnd){const d=new Date(leaseEnd+"T00:00:00");d.setDate(d.getDate()+v);const ds=d.toISOString().split("T")[0];
+                              const resolved=moveInDate&&ds&&moveInDate>=ds;
                               setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
-                              setModal(p=>({...p,_customBuffer:v,_turnoverOverride:false,data:{...p.data,moveIn:ds,termMoveIn:ds}}));
+                              setModal(p=>({...p,_customBuffer:v,_turnoverOverride:resolved?true:false,data:{...p.data,moveIn:ds,termMoveIn:ds}}));
                             } else setModal(p=>({...p,_customBuffer:v,_turnoverOverride:false}));
                           }}
                           style={{width:44,padding:"4px 6px",borderRadius:5,border:"1.5px solid #d4a853",fontSize:12,fontFamily:"inherit",textAlign:"center",fontWeight:700,background:"#fff"}}/>
