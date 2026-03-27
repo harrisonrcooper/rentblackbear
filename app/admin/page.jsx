@@ -10304,11 +10304,6 @@ export default function Page(){
                 {/* Header */}
                 <div style={{padding:"8px 11px",background:"rgba(212,168,83,.08)",borderBottom:"1px solid rgba(212,168,83,.2)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontSize:11,fontWeight:700,color:"#9a7422"}}>Turnover buffer conflict</span>
-                  {curBuf!==defaultBuf&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52",fontFamily:"inherit",padding:0,textDecoration:"underline"}} onClick={()=>{
-                    const d=new Date(leaseEnd+"T00:00:00");d.setDate(d.getDate()+defaultBuf);const ds=d.toISOString().split("T")[0];
-                    setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
-                    setModal(p=>({...p,_customBuffer:null,_turnoverOverride:false,data:{...p.data,moveIn:ds,termMoveIn:ds}}));
-                  }}>Reset to {defaultBuf}d default</button>}
                 </div>
                 {/* Equation row */}
                 <div style={{padding:"10px 11px",background:"rgba(212,168,83,.04)"}}>
