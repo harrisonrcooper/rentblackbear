@@ -10419,7 +10419,7 @@ export default function Page(){
                 const newBuf=curBuf;
                 if(applied==="room"){
                   // Switch to per-room mode and save room-level buffer
-                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,turnoverMode:"per-room",units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===selectedItem.id?{...r,turnoverDays:newBuf}:r))}))}));
+                  setProps(prev=>prev.map(p=>p.id!==termProp?.id?p:{...p,turnoverMode:"per-room",units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===selectedItem.id?{...r,turnoverDays:newBuf}:r)}))}));
                 }else if(applied==="unit"){
                   if(isWholeUnit){
                     // Whole unit — save to property-level turnoverDays (single unit)
