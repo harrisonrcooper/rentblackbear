@@ -10138,11 +10138,12 @@ export default function Page(){
         const effectiveReadyDate=selectedItem?getReadyDate(selectedItem,effectiveBuf):null;
 
         // Case A: move-in < lease end → true lease overlap, must terminate early
-        // Case B: move-in >= lease end but < effective ready date → buffer-only conflict
+        // Case B: buffer-only — panel shows while user is adjusting (customBuf set) OR original conflict still exists
         const leaseEnd=selectedItem?.le||null;
+        const defaultConflict=selectedItem&&moveInDate&&defaultReadyDate&&!( moveInDate<leaseEnd)&&moveInDate<defaultReadyDate;
         const caseA=selectedItem&&moveInDate&&leaseEnd&&moveInDate<leaseEnd;
-        const caseB=selectedItem&&moveInDate&&effectiveReadyDate&&!caseA&&moveInDate<effectiveReadyDate;
-        const hasConflict=caseA||caseB;
+        const caseB=!caseA&&selectedItem&&leaseEnd&&(defaultConflict||(customBuf!=null&&!overrideConfirmed&&selectedItem.st!=="vacant"));
+        const hasConflict=caseA||(caseB&&!overrideConfirmed); // blocks Rent/SD only when unresolved
         const overrideStep=modal._overrideStep||0;
         const overrideConfirmed=!!modal._turnoverOverride;
 
