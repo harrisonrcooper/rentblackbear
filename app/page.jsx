@@ -1354,13 +1354,9 @@ function Screening({properties}){
       {PROPS.map(p=><option key={p.id} value={p.name}>{hasDupe(p.name)&&(p.address||p.addr)?`${p.name} — ${p.address||p.addr}`:p.name}</option>)}
     </select>
     {avail&&!avail.noData&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#5c4a3a",lineHeight:1.6}}>
-      <strong style={{color:"#7a5c1e"}}>No rooms available right now.</strong>
-      <div style={{marginTop:3,fontSize:11}}>
-        <span>Next lease ends: <strong>{new Date(avail.leDate+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</strong></span>
-        {avail.buf>0&&<span style={{marginLeft:8}}>+ {avail.buf}-day turnover buffer</span>}
-        <span style={{marginLeft:8}}>→ Earliest move-in: <strong>{avail.readyDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</strong></span>
-      </div>
-      <div style={{marginTop:3,fontSize:10,color:"#9a7422"}}>Move-in date pre-filled below — you can adjust it.</div>
+      <strong style={{color:"#7a5c1e"}}>No rooms available right now</strong> — currently occupied until lease ends.
+      <div style={{marginTop:3}}>Earliest move-in: <strong>{avail.readyDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</strong></div>
+      <div style={{marginTop:3,fontSize:11,color:"#9a7422"}}>Move-in date pre-filled below — you can adjust it, or check other properties if this date doesn't work for you.</div>
     </div>}
     {avail?.noData&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#7a5c1e",lineHeight:1.5}}>
       <strong>No rooms currently available</strong> at this property. Contact us to join the waitlist.
