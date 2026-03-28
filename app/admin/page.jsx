@@ -10899,13 +10899,17 @@ export default function Page(){
         </div>);
       })()}
       {/* ── Mini Tenant Timeline ── */}
-      {a.property&&(()=>{
+      {(()=>{
         const tlOpen=modal._appTlOpen!==false;
         const tlView=modal._appTlView||"gantt";
         const tlMonthOff=modal._tlMonthOffset||0;
-        const tlProp=props.find(p=>p.name===a.property);
-        if(!tlProp)return null;
-        const tlRooms=allRooms(tlProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(tlProp),propId:tlProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlProp.turnoverDays||0)}));
+        // Resolve prop from: explicit property name → termRoomId lookup → null (show all)
+        const tlPropFromRoom=a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)):null;
+        const tlPropFromName=a.property?props.find(p=>p.name===a.property):null;
+        const tlProp=tlPropFromName||tlPropFromRoom||null;
+        const tlRooms=tlProp
+          ?allRooms(tlProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(tlProp),propId:tlProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlProp.turnoverDays||0)}))
+          :props.flatMap(p=>allRooms(p).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(p),propId:p.id,buf:r.turnoverDays!=null?r.turnoverDays:(p.turnoverDays||0)})));
         const TODAY_STR2=TODAY.toISOString().split("T")[0];
         const tlGetReady=(r)=>{if(!r.le)return null;const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));return d.toISOString().split("T")[0];};
         const tlDaysUntil=(ds)=>{if(!ds)return null;return Math.ceil((new Date(ds+"T00:00:00")-TODAY)/(86400000));};
@@ -10920,7 +10924,7 @@ export default function Page(){
         <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none"}}>
             <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-              <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>Availability</span>
+              <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>{tlProp?`Availability — ${getPropDisplayName(tlProp)}`:"Availability — All Properties"}</span>
               {tlOpen&&<div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,overflow:"hidden",background:"rgba(0,0,0,.02)"}}>
                 {tlViews.map(v=>(
                   <button key={v.id}
@@ -11070,9 +11074,13 @@ export default function Page(){
         {a.approvedWithPending&&<div style={{marginTop:6,padding:"5px 8px",background:"rgba(212,168,83,.06)",borderRadius:5,fontSize:10,color:"#9a7422"}}>Approved with pending: {a.approvedWithPending}</div>}
       </div>}
       {/* Roommate Compatibility */}
-      {a.property&&<div className="tp-card"><h3>Housemates at {a.property}</h3>
+      {(()=>{
+        const hmProp=a.property?props.find(p=>p.name===a.property):a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)):null;
+        if(!hmProp)return null;
+        const hmPropName=getPropDisplayName(hmProp);
+        return(<div className="tp-card"><h3>Housemates at {hmPropName}</h3>
         {(function(){
-          var pr=props.find(function(p){return p.name===a.property;});
+          var pr=hmProp;
           if(!pr)return null;
           const calcAge=(dob)=>{if(!dob)return null;const b=new Date(dob+"T00:00:00");if(isNaN(b))return null;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=10&&age<120?age:null;};
           // Find which unit the applicant is interested in — use termRoomId, then room name, then fall back to all units
@@ -11148,7 +11156,8 @@ export default function Page(){
             })}
           </>);
         })()}
-      </div>}
+      </div>);
+      })()}
 
       {/* Communication Log */}
       <div className="tp-card"><h3>Comm Log</h3>
