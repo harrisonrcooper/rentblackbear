@@ -9803,7 +9803,8 @@ export default function Page(){
     const incomeAdd=pkg==="none"?"none":(modal.incomeAdd||"none");
     const pkgFees={"none":0,"credit-only":29,"credit-bg":49};
     const incomeAdds={"none":0,"income-only":10,"income-employment":15};
-    const totalFee=pkg==="none"?0:pkgFees[pkg]+incomeAdds[incomeAdd]+adminFee;
+    const waivedAdminFee=modal.waivedAdminFee!==undefined?modal.waivedAdminFee:adminFee;
+    const totalFee=pkg==="none"?waivedAdminFee:pkgFees[pkg]+incomeAdds[incomeAdd]+adminFee;
     const pkgLabel={"none":"No screening (waived)","credit-only":"Credit Report Only","credit-bg":"Credit + Full BG Check"};
     const incomeLabel={"none":"None","income-only":"Income Verify (+$10)","income-employment":"Income + Employer (+$15)"};
     const roomMode=modal.roomMode||(a.skipRoomAssign?"none":"locked");
@@ -9892,7 +9893,7 @@ export default function Page(){
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}{selProp?.addr?" — "+selProp.addr:""}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="none"?"Assign at lease":roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":(selRoom?selRoom.name:"Not specified")}</td></tr>
               {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${inviteRent+"/mo"}</td></tr>}
-              {inviteMoveIn&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtD(inviteMoveIn)}</td></tr>}
+              {(inviteMoveIn||a.moveInTbd)&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontWeight:a.moveInTbd?700:400,color:a.moveInTbd?"#9a7422":"inherit"}}>{a.moveInTbd?"To Be Determined":fmtD(inviteMoveIn)}</td></tr>}
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Screening</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Fee (tenant)</td><td style={{padding:"5px 0",fontWeight:700,color:totalFee===0?"#4a7c59":"#d4a853",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{totalFee===0?"Free":"$"+totalFee}</td></tr>
               {modal.sendNote&&<tr><td style={{padding:"5px 0",color:"#6b5e52"}}>Note</td><td style={{padding:"5px 0",fontStyle:"italic",color:"#5c4a3a",fontSize:11}}>{modal.sendNote}</td></tr>}
@@ -9949,109 +9950,58 @@ export default function Page(){
         <span><strong>{a.name}</strong> - {a.email} - {a.phone}</span>
         <span style={{fontSize:10,color:"#6b5e52"}}>{a.source||""}</span>
       </div>
-      <div className="tp-card" style={{marginBottom:10}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:roomMode==="none"?0:10}}>
-          <h3 style={{margin:0}}>Room Assignment</h3>
-          <div style={{display:"flex",gap:4}}>
-            {[["none","Assign at Lease"],["locked","Lock Room"],["property","Entire Prop"],["choice","Tenant Picks"]].map(([v,l])=>(
-              <button key={v} className={"btn "+(roomMode===v?"btn-dk":"btn-out")+" btn-sm"} style={{fontSize:9,padding:"3px 7px"}} onClick={()=>setModal(prev=>({...prev,roomMode:v,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))}>{l}</button>
-            ))}
+      {/* Room / Move-in summary — read-only, pulled from app modal */}
+      {(()=>{
+        const appProp=props.find(p=>p.name===a.property);
+        const appRoom=a.termRoomId?allRooms(appProp||{units:[]}).find(r=>r.id===a.termRoomId):null;
+        const modeLabel=a.skipRoomAssign?"Assign at lease":a.roomAssignMode==="entire"?"Entire property":a.roomAssignMode==="choice"?"Tenant picks room":"Room locked";
+        const moveInDisplay=a.moveInTbd?"TBD":(fmtD(a.termMoveIn||a.moveIn)||"Not set");
+        const hasAnyDetail=a.property||a.room||a.termMoveIn||a.moveIn||a.termRoomId;
+        return(
+        <div className="tp-card" style={{marginBottom:10,background:"rgba(0,0,0,.01)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:hasAnyDetail?10:0}}>
+            <h3 style={{margin:0}}>Room Assignment</h3>
+            <button onClick={()=>setModal({type:"app",data:a})}
+              onMouseEnter={e=>{e.currentTarget.style.color="#1a1714";e.currentTarget.style.textDecorationColor="#1a1714";}}
+              onMouseLeave={e=>{e.currentTarget.style.color="#9a7422";e.currentTarget.style.textDecorationColor="#9a7422";}}
+              style={{background:"none",border:"none",cursor:"pointer",fontSize:10,fontWeight:600,color:"#9a7422",fontFamily:"inherit",textDecoration:"underline",textDecorationColor:"#9a7422",padding:0,transition:"color .12s"}}>
+              Edit in applicant
+            </button>
           </div>
-        </div>
-        {roomMode==="none"&&<div style={{fontSize:11,color:"#4a7c59",padding:"7px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
-          Room assignment skipped &#8212; will be locked in when sending the lease.
-        </div>}
-        {roomMode==="locked"&&<>
-          <div className="fr" style={{marginBottom:8,gap:8}}>
-            <div className="fld" style={{marginBottom:0}}>
-              <label>Move-in Date</label>
-              <input type="date" value={inviteMoveIn} onChange={e=>setModal(prev=>({...prev,inviteMoveIn:e.target.value,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))} style={{width:"100%"}}/>
-            </div>
-            <div className="fld" style={{marginBottom:0}}>
-              <label>Property</label>
-              <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))} style={{width:"100%"}}>
-                <option value="">Any</option>
-                {props.map(p=>{const dispName=getPropDisplayName(p);const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr&&!dispName.includes(p.addr)?`${dispName} — ${p.addr}`:dispName;return<option key={p.id} value={p.id}>{label}</option>;})}
-              </select>
-            </div>
-          </div>
-          <div className="fld" style={{marginBottom:selRoom?8:0}}>
-            <label>Assign Room / Unit</label>
-            <select value={selRoomId} onChange={e=>{const r=allAvailForInvite.find(x=>x.id===e.target.value);setModal(prev=>({...prev,selRoomId:e.target.value,selPropId:r?r.propId:prev.selPropId,inviteRent:r?r.rent:undefined,inviteSD:r?r.rent:undefined,inviteRoomErr:false}));}} style={{width:"100%",borderColor:modal.inviteRoomErr?"#c45c4a":undefined}}>
-              <option value="">-- Select a room or unit --</option>
-              <option value="__none__">No room decided yet</option>
-              {allAvailForInvite.filter(r=>!selPropId||r.propId===selPropId).map(r=>(
-                <option key={r.id} value={r.id}>{(r.unitLabel&&!r.isWholeUnit?"Unit "+r.unitLabel+" - ":"")+r.name+(r.isWholeUnit?" (Whole Unit)":"")+" at "+r.propName+" - $"+r.rent+"/mo"+(r.willVacate?" (lease ends "+fmtD(r.le)+")":"")}</option>
-              ))}
-            </select>
-          </div>
-          {modal.inviteRoomErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease"}}>Please make a selection or choose "No room decided yet".</div>}
-          {selRoom&&<div className="fr" style={{gap:8,marginBottom:0}}>
-            <div className="fld" style={{marginBottom:0}}>
-              <label>Monthly Rent</label>
-              <div style={{display:"flex",alignItems:"center"}}>
-                <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
-                <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
-              </div>
-            </div>
-            <div className="fld" style={{marginBottom:0}}>
-              <label>Security Deposit</label>
-              <div style={{display:"flex",alignItems:"center"}}>
-                <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
-                <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:(inviteRent||"")} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
-              </div>
-            </div>
+          {!hasAnyDetail&&!a.skipRoomAssign&&<div style={{fontSize:11,color:"#9a7422",padding:"7px 10px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:6}}>
+            No room assigned yet. Go back to the applicant to set property, room, and move-in date.
           </div>}
-          {selRoom&&selRoom.willVacate&&(()=>{const buf=selRoom.itemTurnoverDays||0;const readyD=new Date(selRoom.le+"T00:00:00");readyD.setDate(readyD.getDate()+buf);return(<div style={{marginTop:8,fontSize:10,color:"#9a7422",background:"rgba(212,168,83,.06)",borderRadius:6,padding:"6px 10px"}}>Lease ends {fmtD(selRoom.le)}{buf>0?" · "+buf+"-day buffer · ready "+fmtD(readyD.toISOString().split("T")[0]):" — room available by move-in."}</div>);})()}
-        </>}
-        {roomMode==="property"&&(()=>{
-          const showProp=!selPropId||!byRoomOnly||overrideConfirmed;
-          return(<>
-            <div className="fld" style={{marginBottom:selPropId&&showProp?8:0}}>
-              <label>Property</label>
-              <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value,inviteRent:undefined,inviteSD:undefined,whPropOverride:false}))} style={{width:"100%"}}>
-                <option value="">Select property...</option>
-                {props.filter(p=>isWholeProp(p)).map(p=>{const d=getPropDisplayName(p);const lbl=d+(p.addr&&!d.includes(p.addr)?" — "+p.addr:"");return<option key={p.id} value={p.id}>{lbl}</option>;})}
-                {props.filter(p=>!isWholeProp(p)).map(p=>{const d=getPropDisplayName(p);const lbl=d+(p.addr&&!d.includes(p.addr)?" — "+p.addr:"")+" (by-bedroom)";return<option key={p.id} value={p.id}>{lbl}</option>;})}
-              </select>
-            </div>
-            {selPropId&&byRoomOnly&&!overrideConfirmed&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"12px 14px",marginBottom:8}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#c45c4a",marginBottom:4}}>Override Required</div>
-              <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.6,marginBottom:8}}>
-                <strong>{selProp?selProp.name:""}</strong> is set up for by-bedroom rental. Converting to whole-unit for this invite?
-                {lastLeaseEnd&&<div style={{marginTop:4,fontSize:10,color:"#6b5e52"}}>{"Last bedroom lease ends "+fmtD(lastLeaseEnd)+" - property will not be fully vacant until after that date."}</div>}
+          {(hasAnyDetail||a.skipRoomAssign)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 16px"}}>
+            {a.skipRoomAssign
+              ?<div style={{gridColumn:"1/-1",fontSize:11,color:"#4a7c59",padding:"7px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
+                Room assignment skipped &#8212; will be confirmed at lease signing.
               </div>
-              <div style={{display:"flex",gap:6}}>
-                <button className="btn btn-red btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,whPropOverride:true}))}>Yes, override to whole unit</button>
-                <button className="btn btn-out btn-sm" style={{flex:1}} onClick={()=>setModal(prev=>({...prev,selPropId:"",whPropOverride:false}))}>Cancel</button>
-              </div>
-            </div>}
-            {selPropId&&selProp&&showProp&&<div className="fr" style={{gap:8,marginBottom:0}}>
-              <div className="fld" style={{marginBottom:0}}>
-                <label>Whole-House Rent</label>
-                <div style={{display:"flex",alignItems:"center"}}>
-                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
-                  <input type="number" min={0} value={inviteRent||""} onChange={e=>{const v=Number(e.target.value)||0;setModal(prev=>({...prev,inviteRent:v,...(prev.inviteSD===undefined||prev.inviteSD===prev.inviteRent?{inviteSD:v}:{})}));}} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
+              :<>
+                <div>
+                  <div style={{fontSize:9,color:"#9a7422",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Assignment Mode</div>
+                  <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{modeLabel}</div>
                 </div>
-              </div>
-              <div className="fld" style={{marginBottom:0}}>
-                <label>Security Deposit</label>
-                <div style={{display:"flex",alignItems:"center"}}>
-                  <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#6b5e52",fontWeight:700}}>$</span>
-                  <input type="number" min={0} value={modal.inviteSD!==undefined?modal.inviteSD:(inviteRent||"")} onChange={e=>setModal(prev=>({...prev,inviteSD:Number(e.target.value)||0}))} style={{width:"100%",borderRadius:"0 6px 6px 0",borderLeft:"none"}} placeholder="0"/>
+                {a.property&&<div>
+                  <div style={{fontSize:9,color:"#9a7422",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Property</div>
+                  <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{getPropDisplayName(appProp||{name:a.property})}</div>
+                </div>}
+                {(a.room||appRoom)&&<div>
+                  <div style={{fontSize:9,color:"#9a7422",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Room</div>
+                  <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{appRoom?appRoom.name:a.room}</div>
+                </div>}
+                <div>
+                  <div style={{fontSize:9,color:"#9a7422",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Move-In</div>
+                  <div style={{fontSize:12,fontWeight:600,color:a.moveInTbd?"#9a7422":"#1a1714"}}>{moveInDisplay}</div>
                 </div>
-              </div>
-            </div>}
-          </>);
-        })()}
-        {roomMode==="choice"&&<div className="fld" style={{marginBottom:0}}>
-          <label>Property Preference</label>
-          <select value={selPropId} onChange={e=>setModal(prev=>({...prev,selPropId:e.target.value}))} style={{width:"100%"}}>
-            <option value="">No preference</option>
-            {props.map(p=>{const dispName=getPropDisplayName(p);const dupes=props.filter(x=>x.name===p.name).length>1;const label=dupes&&p.addr&&!dispName.includes(p.addr)?`${dispName} — ${p.addr}`:dispName;return<option key={p.id} value={p.id}>{label}</option>;})}
-          </select>
-        </div>}
-      </div>
+                {(a.termRent||a.negotiatedRent)&&<div>
+                  <div style={{fontSize:9,color:"#9a7422",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:2}}>Monthly Rent</div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#2d6a3f"}}>${a.termRent||a.negotiatedRent}/mo</div>
+                </div>}
+              </>
+            }
+          </div>}
+        </div>);
+      })()}
       <div className="tp-card" style={{marginBottom:10}}>
         <h3>Screening Package</h3>
         {[["credit-bg","Credit + Full BG Check","FCRA-certified - RentPrep","$49"],["credit-only","Credit Report Only","Automated SmartMove","$29"],["none","No Screening (Waived)","e.g. intern with employer BG check","$0"]].map(([v,l,sub,price])=>(
@@ -10069,10 +10019,22 @@ export default function Page(){
             </div>
           ))}
         </div>}
-        {pkg==="none"&&<div style={{fontSize:10,color:"#6b5e52",fontStyle:"italic",padding:"6px 0"}}>Income verification not available when screening is waived.</div>}
+        {pkg==="none"&&<div style={{padding:"8px 10px",borderRadius:6,background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",marginBottom:4}}>
+          <div style={{fontSize:10,color:"#6b5e52",marginBottom:6}}>Income verification not available when screening is waived.</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:"#6b5e52"}}>
+            Admin fee (optional):
+            <div style={{display:"flex",alignItems:"center",gap:0}}>
+              <span style={{padding:"2px 5px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"4px 0 0 4px",fontSize:11,color:"#999",fontWeight:700}}>$</span>
+              <input type="number" min={0} max={200} value={waivedAdminFee}
+                onChange={e=>setModal(prev=>({...prev,waivedAdminFee:Number(e.target.value)||0}))}
+                style={{width:52,borderRadius:"0 4px 4px 0",borderLeft:"none",padding:"2px 6px",fontSize:11,border:"1px solid rgba(0,0,0,.08)",fontFamily:"inherit"}}/>
+            </div>
+            <span style={{color:"#aaa",fontSize:9}}>one-time for this invite</span>
+          </div>
+        </div>}
         <div style={{marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:totalFee===0?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid "+(totalFee===0?"rgba(74,124,89,.15)":"rgba(212,168,83,.15)")}}>
           <div style={{display:"flex",flexDirection:"column",gap:4}}>
-            <span style={{fontSize:11,color:"#6b5e52"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</span>
+            <span style={{fontSize:11,color:"#6b5e52"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}{pkg==="none"&&waivedAdminFee>0?" + admin fee":""}</span>
             {pkg!=="none"&&<div style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:"#6b5e52"}}>
               Admin fee:
               <div style={{display:"flex",alignItems:"center",gap:0}}>
@@ -10662,14 +10624,31 @@ export default function Page(){
               </div>}
             </div>
             <div className="fld" style={{marginBottom:0}}>
-              <label>Move-in Date</label>
-              <input type="date" value={moveInDate} onChange={e=>{
-                const ds=e.target.value;
-                // If a room is selected, sync buffer = moveIn - leaseEnd
-                const newBuf=selectedItem?.le&&ds?Math.max(0,Math.round((new Date(ds+"T00:00:00")-new Date(selectedItem.le+"T00:00:00"))/(86400000))):null;
-                setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
-                setModal(prev=>({...prev,_overrideStep:0,_turnoverOverride:false,_customBuffer:newBuf,data:{...prev.data,moveIn:ds,termMoveIn:ds}}));
-              }} style={{width:"100%"}}/>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <label style={{margin:0}}>Move-in Date</label>
+                <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",userSelect:"none"}}
+                  onClick={()=>{
+                    const next=!a.moveInTbd;
+                    setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveInTbd:next}:x));
+                    setModal(prev=>({...prev,data:{...prev.data,moveInTbd:next}}));
+                  }}>
+                  <div style={{width:26,height:14,borderRadius:7,background:a.moveInTbd?"rgba(212,168,83,.3)":"rgba(0,0,0,.1)",position:"relative",transition:"background .15s",flexShrink:0}}>
+                    <div style={{position:"absolute",top:1,left:a.moveInTbd?13:1,width:12,height:12,borderRadius:"50%",background:a.moveInTbd?"#d4a853":"#aaa",transition:"all .15s"}}/>
+                  </div>
+                  <span style={{fontSize:9,fontWeight:700,color:a.moveInTbd?"#9a7422":"#6b5e52",textTransform:"uppercase",letterSpacing:.3}}>TBD</span>
+                </label>
+              </div>
+              {a.moveInTbd
+                ?<div style={{padding:"8px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.25)",background:"rgba(212,168,83,.04)",fontSize:11,color:"#9a7422",fontWeight:600}}>
+                  To Be Determined &#8212; dates will be confirmed and updated on or before move-in.
+                </div>
+                :<input type="date" value={moveInDate} onChange={e=>{
+                  const ds=e.target.value;
+                  const newBuf=selectedItem?.le&&ds?Math.max(0,Math.round((new Date(ds+"T00:00:00")-new Date(selectedItem.le+"T00:00:00"))/(86400000))):null;
+                  setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveIn:ds,termMoveIn:ds}:x));
+                  setModal(prev=>({...prev,_overrideStep:0,_turnoverOverride:false,_customBuffer:newBuf,data:{...prev.data,moveIn:ds,termMoveIn:ds}}));
+                }} style={{width:"100%"}}/>
+              }
             </div>
           </div>}
 
