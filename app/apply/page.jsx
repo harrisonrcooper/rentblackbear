@@ -327,6 +327,7 @@ export default function ApplyPage(){
       if(req("email")&&(!d.email.trim()||!d.email.includes("@")))e.email="Valid email address is required";
       if(req("phone")&&d.phone.replace(/\D/g,"").length!==10)e.phone="A 10-digit phone number is required";
       if(req("dob")&&(!d.dob||d.dob.includes(" ")))e.dob="Date of birth is required";
+      if(d.dob&&!d.dob.includes(" ")&&!ageOk(d.dob))e.dob="Applicant must be at least 18 years old to apply";
     }
     if(s==="appinfo"){
       if(fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
@@ -411,6 +412,13 @@ export default function ApplyPage(){
         <div className="type-toggle"><button className={`type-btn ${appType==="tenant"?"on":""}`} onClick={()=>setAppType("tenant")}>Tenant</button><button className={`type-btn ${appType==="cosigner"?"on":""}`} onClick={()=>setAppType("cosigner")}>Co-Signer</button></div>
         {appType==="cosigner"&&<div className="cosigner-note">As a co-signer, you'll complete a shorter application covering your identity and income.</div>}
         <div style={{textAlign:"left",maxWidth:400,margin:"0 auto"}}>
+          {invite&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gn)" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span style={{color:"var(--gn)",fontWeight:600}}>Your info was pre-filled from your pre-screen.</span>
+            </div>
+            <span style={{color:"var(--gn)",fontWeight:700,fontSize:11,opacity:.7,whiteSpace:"nowrap",marginLeft:8}}>Incorrect? Edit below.</span>
+          </div>}
           <div className="fld-row">
             <div className="fld"><label>{fieldLabel("firstName","First Name")}{fieldRequired("firstName")&&<span className="req">*</span>}</label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder={fieldPlaceholder("firstName","First name")}/>{errors.firstName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.firstName}</div>}</div>
             <div className="fld"><label>{fieldLabel("lastName","Last Name")}{fieldRequired("lastName")&&<span className="req">*</span>}</label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder={fieldPlaceholder("lastName","Last name")}/>{errors.lastName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.lastName}</div>}</div>
