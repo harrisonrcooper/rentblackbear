@@ -535,7 +535,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
       <p className="mdesc">{p.desc}</p>
       <div className="istrip"><div className="ii">📶 WiFi</div><div className="ii">🛋️ Furnished</div><div className="ii">🅿️ Parking</div><div className="ii">🧹 {p.clean} Cleaning</div>{p.utils==="allIncluded"?<div className="ii">💡 All Utilities</div>:<div className="ii pt">💡 First $100 Covered · Overage Split</div>}</div>
       <h3 className="rh">Rooms & Pricing</h3>
-      {(p.units&&p.units.length>1)?p.units.map(u=>{
+      {(p.units&&p.units.length>1)?p.units.filter(u=>!u.ownerOccupied).map(u=>{
         const uMode=u.rentalMode||"byRoom";
         const uRooms=u.rooms||[];
         const isWhole=uMode==="wholeHouse";
@@ -1325,43 +1325,10 @@ function Screening({properties}){
           <div>{(()=>{
   const names=PROPS.map(p=>p.name);
   const hasDupe=n=>names.filter(x=>x===n).length>1;
-  // Compute earliest available date for a property using turnoverDays
-  const getEarliestAvail=(p)=>{
-    const rooms=(p.rooms||[]).filter(r=>!r.ownerOccupied);
-    const vacant=rooms.filter(r=>(r.st||"vacant")==="vacant");
-    if(vacant.length>0)return null; // has vacancy — no warning needed
-    const withLe=rooms.filter(r=>(r.st||"vacant")!=="vacant"&&r.le);
-    if(!withLe.length)return{noData:true};
-    const earliestLe=withLe.reduce((mn,r)=>r.le<mn?r.le:mn,withLe[0].le);
-    const buf=p.turnoverDays||0;
-    const d=new Date(earliestLe+"T00:00:00");
-    d.setDate(d.getDate()+Math.max(buf,0));
-    return{leDate:earliestLe,buf,readyDate:d,readyStr:d.toISOString().split("T")[0]};
-  };
-  const autoFillMoveIn=(d)=>{const mo=String(d.getMonth()+1),dy=String(d.getDate()),yr=String(d.getFullYear());setForm(f=>({...f,moveInMonth:mo,moveInDay:dy,moveInYear:yr,moveIn:`${yr}-${mo.padStart(2,"0")}-${dy.padStart(2,"0")}`}));};
-  const selP=form.property?PROPS.find(p=>p.name===form.property):null;
-  const avail=selP?getEarliestAvail(selP):null;
-  return(<>
-    <select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{
-      const pName=e.target.value;
-      const np=PROPS.find(p=>p.name===pName);
-      const na=np?getEarliestAvail(np):null;
-      setForm(f=>({...f,property:pName}));
-      setTouched(t=>({...t,property:true}));
-      if(na&&!na.noData&&na.readyDate)autoFillMoveIn(na.readyDate);
-    }} onBlur={()=>setTouched(t=>({...t,property:true}))}>
-      <option value="">Property interested in? *</option>
-      {PROPS.map(p=><option key={p.id} value={p.name}>{hasDupe(p.name)&&(p.address||p.addr)?`${p.name} — ${p.address||p.addr}`:p.name}</option>)}
-    </select>
-    {avail&&!avail.noData&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#5c4a3a",lineHeight:1.6}}>
-      <strong style={{color:"#7a5c1e"}}>No rooms available right now</strong> — currently occupied until lease ends.
-      <div style={{marginTop:3}}>Earliest move-in: <strong>{avail.readyDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</strong></div>
-      <div style={{marginTop:3,fontSize:11,color:"#9a7422"}}>Move-in date pre-filled below — you can adjust it, or check other properties if this date doesn't work for you.</div>
-    </div>}
-    {avail?.noData&&<div style={{marginTop:6,padding:"9px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:7,fontSize:12,color:"#7a5c1e",lineHeight:1.5}}>
-      <strong>No rooms currently available</strong> at this property. Contact us to join the waitlist.
-    </div>}
-  </>);
+  return(<select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}>
+    <option value="">Property interested in? *</option>
+    {PROPS.map(p=><option key={p.id} value={p.name}>{hasDupe(p.name)&&(p.address||p.addr)?`${p.name} — ${p.address||p.addr}`:p.name}</option>)}
+  </select>);
 })()}{errMsg("property")}</div>
           <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
             <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 2fr",gap:8}}>
@@ -1469,7 +1436,7 @@ export default function Page(){
     if(!liveProps||!liveProps.length)return[];
     return liveProps.map(p=>{
       const rooms=allRoomsP(p);
-      const firstUnit=(p.units&&p.units.length>0)?p.units[0]:null;
+      const firstUnit=(p.units&&p.units.length>0)?p.units.find(u=>!u.ownerOccupied)||p.units[0]:null;
       return{
         id:p.id,name:p.name,address:p.addr||p.address||"",type:p.type,focalPoint:p.focalPoint||null,
         typeTag:p.type==="SFH"?"SFH":p.type==="Duplex"?"Duplex":"Townhome",
@@ -1482,12 +1449,12 @@ export default function Page(){
         tourScenes:p.tourScenes||[],
         turnoverDays:p.turnoverDays||0,
         imgs:(p.photos&&p.photos.length>0)?p.photos:[],
-        units:p.units||[],
+        units:(p.units||[]).filter(u=>!u.ownerOccupied),
         rooms:rooms.filter(r=>!r.ownerOccupied).map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le,leaseTiers:r.leaseTiers||[]})),
         rentalMode:firstUnit?.rentalMode||"byRoom",
-        wholeRent:(p.units||[]).reduce((s,u)=>(u.rentalMode||"byRoom")==="wholeHouse"?s+(u.rent||0):s,0),
-        // true only if ALL units are wholeHouse
-        allWholeHouse:(p.units||[]).length>0&&(p.units||[]).every(u=>(u.rentalMode||"byRoom")==="wholeHouse"),
+        wholeRent:(p.units||[]).filter(u=>!u.ownerOccupied).reduce((s,u)=>(u.rentalMode||"byRoom")==="wholeHouse"?s+(u.rent||0):s,0),
+        // true only if ALL non-owner-occupied units are wholeHouse
+        allWholeHouse:(p.units||[]).filter(u=>!u.ownerOccupied).length>0&&(p.units||[]).filter(u=>!u.ownerOccupied).every(u=>(u.rentalMode||"byRoom")==="wholeHouse"),
       };
     });
   },[liveProps]);
@@ -1672,7 +1639,7 @@ export default function Page(){
     <section className="sec" id="availability"><div className="sec-inner"><div className="sh"><div className="sl">Availability</div><h2 className="st">Room Availability</h2><p className="ss">Rooms available now are ready for immediate move-in. Click upcoming openings to see the calendar.</p></div>
       <div className="tabs"><button className={`tab ${calProp==="all"?"on":""}`} onClick={()=>{setCalProp("all");setCalRoom(null);}}>All</button>{P.map(p=><button key={p.id} className={`tab ${calProp===p.id?"on":""}`} onClick={()=>{setCalProp(p.id);setCalRoom(null);}}>{p.name}</button>)}</div>
       <div className="cal-grid">{calProps.map(prop=>{
-        const units=prop.units&&prop.units.length>0?prop.units:[{id:"_",rentalMode:"byRoom",rooms:allRoomsP(prop)}];
+        const units=(prop.units&&prop.units.length>0?prop.units:[{id:"_",rentalMode:"byRoom",rooms:allRoomsP(prop)}]).filter(u=>!u.ownerOccupied);
         const unitCount=units.length;
         return(
         <div key={prop.id} className="cal-card"><div className="cal-hd"><h3>{prop.name}</h3><span>{prop.type} · {unitCount>1?unitCount+" units":prop.allWholeHouse?"Whole property":allRoomsP(prop).length+" rooms"}</span></div><div className="cal-bd">
@@ -1684,11 +1651,11 @@ export default function Page(){
               {uIsWhole?(()=>{
                 const allVacant=uRooms.every(r=>(r.st||"vacant")!=="occupied");
                 const latestLe=uRooms.filter(r=>r.le).sort((a,b)=>new Date(b.le)-new Date(a.le))[0]?.le;
-                if(allVacant)return(<div className="cal-avail"><div className="cal-rm-l"><div className="cal-rm-n">{unitCount>1?u.name:prop.name} — ${u.rent||0}/mo</div><div className="cal-rm-d">{uRooms.length} bed · {u.baths||prop.baths} bath · Ready now</div></div><button className="cal-avail-btn" onClick={()=>nav("apply")}>Apply Now →</button></div>);
+                if(allVacant)return(<div className="cal-avail"><div className="cal-rm-l"><div className="cal-rm-n">{unitCount>1?u.name:prop.name} — ${u.rent||0}/mo</div><div className="cal-rm-d">{uRooms.length} bed · {u.baths||prop.baths} bath · Ready now</div></div><button className="cal-avail-btn" onClick={()=>setLeaseNow({room:{id:u.id,name:u.name,rent:u.rent||0,st:"vacant",le:null,leaseTiers:[]},prop})}>Apply Now →</button></div>);
                 return(<div className="cal-rm cal-occ"><div className="cal-rm-l"><div className="cal-rm-n">{unitCount>1?u.name:prop.name}</div><div className="cal-rm-d">{uRooms.length} bed · {u.baths||prop.baths} bath</div></div><span className="cal-rm-st" style={{background:CLR.occBg,color:CLR.occTx}}>Thru {fmtD(latestLe)}</span></div>);
               })():(
               uRooms.map(r=>{const isV=(r.st||"vacant")==="vacant";const le=r.le?new Date(r.le+"T00:00:00"):null;const dl=le?Math.ceil((le-TODAY)/(1e3*60*60*24)):null;const isSoon=!isV&&dl&&dl<=90;const isExp=calRoom===r.id;
-                if(isV)return(<div key={r.id} className="cal-avail"><div className="cal-rm-l"><div className="cal-rm-n">{r.name} — ${r.rent}/mo</div><div className="cal-rm-d">{r.bed} · {r.pb?"Private bath":"Shared bath"} · {r.sqft} sqft · Ready now</div></div><button className="cal-avail-btn" onClick={()=>nav("apply")}>Apply Now →</button></div>);
+                if(isV)return(<div key={r.id} className="cal-avail"><div className="cal-rm-l"><div className="cal-rm-n">{r.name} — ${r.rent}/mo</div><div className="cal-rm-d">{r.bed} · {r.pb?"Private bath":"Shared bath"} · {r.sqft} sqft · Ready now</div></div><button className="cal-avail-btn" onClick={()=>setLeaseNow({room:r,prop})}>Apply Now →</button></div>);
                 if(isSoon)return(<div key={r.id}><div className="cal-rm cal-soon" onClick={()=>setCalRoom(isExp?null:r.id)} style={{borderColor:isExp?"rgba(154,116,34,.3)":undefined,background:isExp?"rgba(254,243,218,.1)":undefined}}><div className="cal-rm-l"><div className="cal-rm-n">{r.name}</div><div className="cal-rm-d">{r.bed} · {r.pb?"Private":"Shared"} bath · Opens <strong>{fmtD(r.le)}</strong></div></div><span className="cal-rm-st" style={{background:CLR.soonBg,color:CLR.soonTx}}>Opening {fmtD(r.le)} {isExp?"▾":"▸"}</span></div>
                   {isExp&&<div style={{padding:"8px 0 12px",animation:"fadeIn .2s"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><button className="tab" style={{padding:"3px 8px",fontSize:9}} onClick={()=>setMOff(o=>o-1)}>←</button><div style={{fontSize:12,fontWeight:800}}>{mLbl}</div><button className="tab" style={{padding:"3px 8px",fontSize:9}} onClick={()=>setMOff(o=>o+1)}>→</button></div>
                     <div className="cal-days-hd">{["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=><div key={d} className="cal-day-lb">{d}</div>)}</div>
