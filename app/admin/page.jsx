@@ -9896,7 +9896,7 @@ export default function Page(){
         }catch{setModal(prev=>({...prev,sendErrors:["Network error - check connection and try again"],emailSending:false}));}
       };
       const phoneNum=(a.phone||"").replace(/\D/g,"");
-      const smsTxt="Hey "+a.name.split(" ")[0]+"! You are invited to apply at Black Bear Rentals"+(a.property?" - "+a.property:"")+(invRoomObj?" ("+invRoomObj.name+")":(a.room?" ("+a.room+")"):"")+(invRent?" at $"+invRent+"/mo":"")+". Apply: "+link+(totalFee===0?". No screening fee!":(". Fee: $"+totalFee))+" - Black Bear Rentals";
+      const smsTxt="Hey "+a.name.split(" ")[0]+"! You are invited to apply at Black Bear Rentals"+(a.property?" - "+a.property:"")+(invRoomObj?" ("+invRoomObj.name+")":(a.room?" ("+a.room+")":""))+(invRent?" at $"+invRent+"/mo":"")+". Apply: "+link+(totalFee===0?". No screening fee!":(". Fee: $"+totalFee))+" - Black Bear Rentals";
       const smsHref="sms:"+phoneNum+"?&body="+encodeURIComponent(smsTxt);
       const copyLink=()=>{navigator.clipboard.writeText(link).then(()=>{setModal(prev=>({...prev,linkCopied:true}));setTimeout(()=>setModal(prev=>({...prev,linkCopied:false})),2500);});};
       return(
