@@ -3985,10 +3985,20 @@ export default function Page(){
               <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>Lease end dates, turnover buffers, and availability across all properties</div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              <select value={ttPropFilter} onChange={e=>setTtPropFilter(e.target.value)} style={{fontSize:11,padding:"4px 8px"}}>
-                <option value="all">All properties</option>
-                {props.map(p=><option key={p.id} value={p.id}>{getPropDisplayName(p)}</option>)}
-              </select>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+                <button onClick={()=>setTtPropFilter("all")}
+                  onMouseEnter={e=>{if(ttPropFilter!=="all")e.currentTarget.style.background="rgba(0,0,0,.06)";}}
+                  onMouseLeave={e=>{if(ttPropFilter!=="all")e.currentTarget.style.background="transparent";}}
+                  style={{padding:"4px 10px",fontSize:10,fontWeight:600,borderRadius:20,border:"1px solid rgba(0,0,0,.12)",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",background:ttPropFilter==="all"?"#1a1714":"transparent",color:ttPropFilter==="all"?"#d4a853":"#5c4a3a"}}>All</button>
+                {props.filter(p=>!(p.units||[]).every(u=>u.ownerOccupied)).map(p=>(
+                  <button key={p.id} onClick={()=>setTtPropFilter(ttPropFilter===p.id?"all":p.id)}
+                    onMouseEnter={e=>{if(ttPropFilter!==p.id)e.currentTarget.style.background="rgba(0,0,0,.06)";}}
+                    onMouseLeave={e=>{if(ttPropFilter!==p.id)e.currentTarget.style.background="transparent";}}
+                    style={{padding:"4px 10px",fontSize:10,fontWeight:600,borderRadius:20,border:"1px solid rgba(0,0,0,.12)",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",background:ttPropFilter===p.id?"#1a1714":"transparent",color:ttPropFilter===p.id?"#d4a853":"#5c4a3a"}}>
+                    {getPropDisplayName(p)}
+                  </button>
+                ))}
+              </div>
               <select value={ttSort} onChange={e=>setTtSort(e.target.value)} style={{fontSize:11,padding:"4px 8px"}}>
                 <option value="lease-end-asc">Lease end ↑ soonest</option>
                 <option value="lease-end-desc">Lease end ↓ latest</option>
@@ -10084,6 +10094,10 @@ export default function Page(){
       </div>
       <div className="mft" style={{marginTop:0}}>
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-out" onClick={()=>setModal({type:"app",data:a})}
+          onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.04)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="";}}
+          style={{transition:"background .12s"}}>&#8592; Back to Applicant</button>
         <button className="btn btn-gold" onClick={()=>{
           if(roomMode==="locked"&&!selRoomId){setModal(prev=>({...prev,inviteRoomErr:true}));shakeModal();return;}
           setModal(prev=>({...prev,inviteStep:"preview",sendErrors:[],inviteRoomErr:false}));
@@ -10873,7 +10887,7 @@ export default function Page(){
       })()}
       {/* ── Mini Tenant Timeline ── */}
       {a.property&&(()=>{
-        const tlOpen=modal._appTlOpen!==false;
+        const tlOpen=modal._appTlOpen===true||(modal._appTlOpen===undefined&&!!(a.termRoomId));
         const tlView=modal._appTlView||"gantt";
         const tlMonthOff=modal._tlMonthOffset||0;
         const tlProp=props.find(p=>p.name===a.property);
