@@ -9806,7 +9806,7 @@ export default function Page(){
     const totalFee=pkg==="none"?0:pkgFees[pkg]+incomeAdds[incomeAdd]+adminFee;
     const pkgLabel={"none":"No screening (waived)","credit-only":"Credit Report Only","credit-bg":"Credit + Full BG Check"};
     const incomeLabel={"none":"None","income-only":"Income Verify (+$10)","income-employment":"Income + Employer (+$15)"};
-    const roomMode=modal.roomMode||"locked";
+    const roomMode=modal.roomMode||(a.skipRoomAssign?"none":"locked");
     const inviteStep=modal.inviteStep||"configure";
     const inviteMoveIn=modal.inviteMoveIn||a.moveIn||"";
     const inviteMoveInMs=inviteMoveIn?new Date(inviteMoveIn+"T00:00:00").getTime():null;
@@ -9890,7 +9890,7 @@ export default function Page(){
               <tr><td style={{padding:"5px 0",color:"#6b5e52",width:"38%",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Applicant</td><td style={{padding:"5px 0",fontWeight:700,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.name}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} - {a.phone}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}{selProp?.addr?" — "+selProp.addr:""}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":(selRoom?selRoom.name:"Not specified")}</td></tr>
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="none"?"Assign at lease":roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":(selRoom?selRoom.name:"Not specified")}</td></tr>
               {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${inviteRent+"/mo"}</td></tr>}
               {inviteMoveIn&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{fmtD(inviteMoveIn)}</td></tr>}
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Screening</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</td></tr>
@@ -9950,14 +9950,17 @@ export default function Page(){
         <span style={{fontSize:10,color:"#6b5e52"}}>{a.source||""}</span>
       </div>
       <div className="tp-card" style={{marginBottom:10}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:roomMode==="none"?0:10}}>
           <h3 style={{margin:0}}>Room Assignment</h3>
           <div style={{display:"flex",gap:4}}>
-            {[["locked","Lock Room"],["property","Entire Prop"],["choice","Tenant Picks"]].map(([v,l])=>(
+            {[["none","Assign at Lease"],["locked","Lock Room"],["property","Entire Prop"],["choice","Tenant Picks"]].map(([v,l])=>(
               <button key={v} className={"btn "+(roomMode===v?"btn-dk":"btn-out")+" btn-sm"} style={{fontSize:9,padding:"3px 7px"}} onClick={()=>setModal(prev=>({...prev,roomMode:v,selRoomId:"",inviteRent:undefined,inviteSD:undefined}))}>{l}</button>
             ))}
           </div>
         </div>
+        {roomMode==="none"&&<div style={{fontSize:11,color:"#4a7c59",padding:"7px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
+          Room assignment skipped &#8212; will be locked in when sending the lease.
+        </div>}
         {roomMode==="locked"&&<>
           <div className="fr" style={{marginBottom:8,gap:8}}>
             <div className="fld" style={{marginBottom:0}}>
@@ -10593,6 +10596,24 @@ export default function Page(){
             Room assignment skipped — you&#39;ll lock in the room and rent when sending the lease.
           </div>}
           {!skipRoom&&<>
+            {/* Room mode selector */}
+            <div style={{display:"flex",gap:6,marginBottom:10}}>
+              {[["locked","Lock Room"],["entire","Entire Property"],["choice","Tenant Picks"]].map(([v,l])=>{
+                const rm=a.roomAssignMode||"locked";
+                return(
+                <button key={v}
+                  className={"btn "+(rm===v?"btn-dk":"btn-out")+" btn-sm"}
+                  style={{fontSize:10,padding:"4px 10px",flex:1}}
+                  onClick={()=>{
+                    setApps(prev=>prev.map(x=>x.id===a.id?{...x,roomAssignMode:v,room:v!=="locked"?"":x.room,termRoomId:v!=="locked"?null:x.termRoomId}:x));
+                    setModal(prev=>({...prev,data:{...prev.data,roomAssignMode:v,room:v!=="locked"?"":prev.data.room,termRoomId:v!=="locked"?null:prev.data.termRoomId}}));
+                  }}>{l}</button>);
+              })}
+            </div>
+            {(a.roomAssignMode==="entire"||a.roomAssignMode==="choice")&&<div style={{fontSize:11,color:"#5c4a3a",padding:"8px 10px",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",borderRadius:6,marginBottom:8}}>
+              {a.roomAssignMode==="entire"?"Entire property selected — rent and details set at lease signing.":"Tenant will choose their room during the application — rent and details set at lease signing."}
+            </div>}
+            {(!a.roomAssignMode||a.roomAssignMode==="locked")&&<div className="fr" style={{marginBottom:8,gap:8}}>
             <div className="fld" style={{marginBottom:0}}>
               <label>Property</label>
               <select value={a.property||""} onChange={e=>{
@@ -10650,9 +10671,10 @@ export default function Page(){
                 setModal(prev=>({...prev,_overrideStep:0,_turnoverOverride:false,_customBuffer:newBuf,data:{...prev.data,moveIn:ds,termMoveIn:ds}}));
               }} style={{width:"100%"}}/>
             </div>
-          </div>
+          </div>}
 
-          {/* Room dropdown — all rooms at property, sorted by ready date */}
+          {/* Room dropdown — only when locking a room */}
+          {(!a.roomAssignMode||a.roomAssignMode==="locked")&&<>{/* Room dropdown — all rooms at property, sorted by ready date */}
           <div className="fld" style={{marginBottom:selectedItem?8:0}}>
             <label>Assign Room / Unit
               <span style={{fontWeight:400,color:"#5c4a3a",fontSize:9,textTransform:"none",letterSpacing:0}}> — sorted by earliest availability</span>
@@ -10883,6 +10905,7 @@ export default function Page(){
               Lease ends {fmtD(selectedItem.le)}{effectiveBuf>0?` · ${effectiveBuf}-day buffer`:""}  · Ready {fmtD(effectiveReadyDate)} — clears before move-in.
             </div>}
           </div>
+          </>}
 
           {/* Rent / SD — only show when no unresolved conflict */}
           {(a.termRoomId||termItem?.id)&&(!hasConflict||overrideConfirmed)&&<div className="fr" style={{gap:8,marginBottom:0}}>
