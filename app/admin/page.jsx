@@ -10422,10 +10422,7 @@ export default function Page(){
         </div>
       </div>
       <div style={{display:"flex",gap:2,marginBottom:12}}>{STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}><div style={{height:4,borderRadius:2,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:2}}/><div style={{fontSize:7,color:i<=si?"#d4a853":"#999"}}>{SI3[s]}</div></div>)}</div>
-      {mf.length>0&&<div style={{marginBottom:10}}>{mf.map((f,i)=><div key={i} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,
-        background:f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",
-        color:f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f"
-      }}>{f.label}</div>)}</div>}
+      {mf.length>0&&(()=>{const dmf=modal._dismissedFlags||[];const vis=mf.filter((_,i)=>!dmf.includes(i));if(!vis.length)return null;return(<div style={{marginBottom:10}}>{vis.map(f=>{const oi=mf.indexOf(f);const bg=f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)";const col=f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f";return(<div key={oi} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center",background:bg,color:col}}><span>{f.label}</span><button onClick={()=>setModal(p=>({...p,_dismissedFlags:[...(p._dismissedFlags||[]),oi]}))} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".45"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,fontFamily:"inherit",padding:"0 2px",opacity:.45,lineHeight:1,color:"inherit",transition:"opacity .15s",flexShrink:0}}>&#x2715;</button></div>);})}</div>);})()}
       {/* ── Editable Applicant Info ── */}
       <div className="tp-card">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -10874,7 +10871,167 @@ export default function Page(){
           </div>}
         </div>);
       })()}
-      {(a.status==="approved"||a.status==="move-in"||a.status==="onboarding")&&<div className="tp-card"><h3>Screening Summary</h3>
+      {/* ── Mini Tenant Timeline ── */}
+      {a.property&&(()=>{
+        const tlOpen=modal._appTlOpen!==false;
+        const tlView=modal._appTlView||"gantt";
+        const tlMonthOff=modal._tlMonthOffset||0;
+        const tlProp=props.find(p=>p.name===a.property);
+        if(!tlProp)return null;
+        const tlRooms=allRooms(tlProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(tlProp),propId:tlProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlProp.turnoverDays||0)}));
+        const TODAY_STR2=TODAY.toISOString().split("T")[0];
+        const tlGetReady=(r)=>{if(!r.le)return null;const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));return d.toISOString().split("T")[0];};
+        const tlDaysUntil=(ds)=>{if(!ds)return null;return Math.ceil((new Date(ds+"T00:00:00")-TODAY)/(86400000));};
+        const tlBase=new Date(TODAY.getFullYear(),TODAY.getMonth()+tlMonthOff,1);
+        const tlWinStart=new Date(tlBase);tlWinStart.setMonth(tlWinStart.getMonth()-1);
+        const tlWinEnd=new Date(tlBase);tlWinEnd.setMonth(tlWinEnd.getMonth()+4);
+        const tlTotalDays=Math.ceil((tlWinEnd-tlWinStart)/86400000);
+        const tlToX=(ds)=>{if(!ds)return 0;const d=Math.ceil((new Date(ds+"T00:00:00")-tlWinStart)/86400000);return Math.max(0,Math.min(100,(d/tlTotalDays)*100));};
+        const tlMonths=[];for(let i=0;i<6;i++){const dd=new Date(tlWinStart);dd.setMonth(dd.getMonth()+i);tlMonths.push({label:dd.toLocaleString("default",{month:"short",year:"2-digit"}),x:tlToX(dd.toISOString().split("T")[0])});}
+        const tlViews=[{id:"gantt",label:"Gantt"},{id:"countdown",label:"Countdown"},{id:"kanban",label:"Kanban"}];
+        return(
+        <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none"}}>
+            <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+              <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>Availability</span>
+              {tlOpen&&<div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,overflow:"hidden",background:"rgba(0,0,0,.02)"}}>
+                {tlViews.map(v=>(
+                  <button key={v.id}
+                    onClick={()=>setModal(p=>({...p,_appTlView:v.id}))}
+                    onMouseEnter={e=>{if(tlView!==v.id)e.currentTarget.style.background="rgba(0,0,0,.06)";}}
+                    onMouseLeave={e=>{if(tlView!==v.id)e.currentTarget.style.background="transparent";}}
+                    style={{padding:"2px 9px",fontSize:9,fontWeight:600,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",background:tlView===v.id?"#1a1714":"transparent",color:tlView===v.id?"#d4a853":"#5c4a3a"}}>
+                    {v.label}
+                  </button>
+                ))}
+              </div>}
+              {tlOpen&&tlView==="gantt"&&<div style={{display:"flex",gap:2,alignItems:"center"}}>
+                <button onClick={()=>setModal(p=>({...p,_tlMonthOffset:(p._tlMonthOffset||0)-1}))}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.07)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.03)"}
+                  style={{padding:"1px 6px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.03)",cursor:"pointer",fontFamily:"inherit",color:"#5c4a3a",transition:"background .12s"}}>&#8592;</button>
+                <span style={{fontSize:9,color:"#9a7422",fontWeight:600,minWidth:50,textAlign:"center"}}>{tlBase.toLocaleString("default",{month:"short",year:"numeric"})}</span>
+                <button onClick={()=>setModal(p=>({...p,_tlMonthOffset:(p._tlMonthOffset||0)+1}))}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.07)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.03)"}
+                  style={{padding:"1px 6px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.03)",cursor:"pointer",fontFamily:"inherit",color:"#5c4a3a",transition:"background .12s"}}>&#8594;</button>
+              </div>}
+            </div>
+            <button
+              onClick={()=>setModal(p=>({...p,_appTlOpen:tlOpen?false:true}))}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.06)";e.currentTarget.style.color="#1a1714";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="#9a7422";}}
+              style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",transition:"all .12s",textTransform:"uppercase",letterSpacing:.4}}>
+              {tlOpen?"Hide":"Show"}
+            </button>
+          </div>
+
+          {tlOpen&&<div>
+            {/* GANTT */}
+            {tlView==="gantt"&&<div>
+              <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                <div style={{width:96,flexShrink:0,padding:"2px 10px",fontSize:8,color:"#bbb",textTransform:"uppercase",letterSpacing:.4}}>Room</div>
+                <div style={{flex:1,position:"relative",height:16}}>
+                  {tlMonths.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:7,color:"#bbb",transform:"translateX(-50%)",whiteSpace:"nowrap",top:3}}>{m.label}</div>)}
+                </div>
+              </div>
+              {tlRooms.map(r=>{
+                const buf=r.buf||0;
+                const readyStr=tlGetReady(r);
+                const isOcc=r.st==="occupied"&&r.tenant;
+                const leX=r.le?tlToX(r.le):null;
+                const rdX=readyStr?tlToX(readyStr):null;
+                const todayX=tlToX(TODAY_STR2);
+                const moveInX=r.tenant&&r.tenant.moveIn?tlToX(r.tenant.moveIn):null;
+                const isAssigned=a.termRoomId===r.id||a.room===r.name;
+                return(
+                <div key={r.id} style={{display:"flex",alignItems:"center",borderBottom:"1px solid rgba(0,0,0,.03)",minHeight:26,background:isAssigned?"rgba(212,168,83,.05)":"transparent"}}>
+                  <div style={{width:96,flexShrink:0,padding:"2px 10px"}}>
+                    <div style={{fontSize:9,fontWeight:isAssigned?700:500,color:isAssigned?"#9a7422":"#1a1714",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.name}{isAssigned&&<span style={{marginLeft:3,fontSize:7,color:"#d4a853"}}>&#9670;</span>}</div>
+                    {isOcc&&<div style={{fontSize:7,color:"#6b5e52",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.tenant.name}</div>}
+                    {!isOcc&&<div style={{fontSize:7,color:"#4a7c59",fontWeight:600}}>Vacant</div>}
+                  </div>
+                  <div style={{flex:1,position:"relative",height:26,display:"flex",alignItems:"center"}}>
+                    <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"#c45c4a",zIndex:3,opacity:.55}}/>
+                    {!isOcc&&<div style={{position:"absolute",left:"0%",right:"0%",height:11,borderRadius:2,background:"rgba(74,124,89,.1)",border:"1px solid rgba(74,124,89,.2)",display:"flex",alignItems:"center",paddingLeft:4}}>
+                      <span style={{fontSize:7,color:"#2d6a3f",fontWeight:600}}>Available now</span>
+                    </div>}
+                    {isOcc&&moveInX!==null&&leX!==null&&<div style={{position:"absolute",left:Math.min(moveInX,leX)+"%",width:Math.abs(leX-Math.min(moveInX,leX))+"%",height:13,borderRadius:2,background:"#B5D4F4",top:6,display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
+                      <span style={{fontSize:7,color:"#0C447C",fontWeight:600,whiteSpace:"nowrap"}}>ends {fmtD(r.le)}</span>
+                    </div>}
+                    {isOcc&&leX!==null&&rdX!==null&&buf>0&&<div style={{position:"absolute",left:leX+"%",width:(rdX-leX)+"%",height:13,top:6,background:"#FAC775",borderRadius:"0 2px 2px 0",minWidth:2}}/>}
+                    {isOcc&&rdX!==null&&rdX<100&&<div style={{position:"absolute",left:rdX+"%",right:"0%",height:11,top:7,background:"rgba(74,124,89,.07)",border:"1px dashed rgba(74,124,89,.2)",borderRadius:"0 2px 2px 0",display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
+                      <span style={{fontSize:7,color:"#2d6a3f",whiteSpace:"nowrap"}}>Avail. {fmtD(readyStr)}</span>
+                    </div>}
+                  </div>
+                </div>);
+              })}
+            </div>}
+
+            {/* COUNTDOWN */}
+            {tlView==="countdown"&&<div style={{padding:"2px 0"}}>
+              {tlRooms.map(r=>{
+                const readyStr=tlGetReady(r);
+                const isOcc=r.st==="occupied"&&r.tenant;
+                const dl=r.le?tlDaysUntil(r.le):null;
+                const rdl=readyStr?tlDaysUntil(readyStr):null;
+                const isAssigned=a.termRoomId===r.id||a.room===r.name;
+                const statusColor=!isOcc?"#4a7c59":dl!==null&&dl<=0?"#4a7c59":dl!==null&&dl<=30?"#c45c4a":dl!==null&&dl<=90?"#9a7422":"#6b5e52";
+                return(
+                <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 12px",borderBottom:"1px solid rgba(0,0,0,.04)",background:isAssigned?"rgba(212,168,83,.04)":"transparent"}}>
+                  <div>
+                    <div style={{fontSize:10,fontWeight:isAssigned?700:500,color:isAssigned?"#9a7422":"#1a1714"}}>{r.name}{isAssigned&&<span style={{marginLeft:5,fontSize:8,color:"#d4a853"}}>&#9670;</span>}</div>
+                    {isOcc&&<div style={{fontSize:9,color:"#6b5e52"}}>{r.tenant.name}</div>}
+                    {!isOcc&&<div style={{fontSize:9,color:"#4a7c59",fontWeight:600}}>Vacant</div>}
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    {isOcc&&r.le&&<div style={{fontSize:10,fontWeight:700,color:statusColor}}>Lease ends {fmtD(r.le)}{dl!==null&&<span style={{marginLeft:4,fontSize:9,fontWeight:400}}>({dl}d)</span>}</div>}
+                    {isOcc&&readyStr&&<div style={{fontSize:9,color:"#9a7422"}}>Avail. {fmtD(readyStr)}{rdl!==null&&<span style={{marginLeft:3,fontSize:8}}>({rdl}d)</span>}</div>}
+                    {!isOcc&&<div style={{fontSize:10,fontWeight:700,color:"#4a7c59"}}>Ready now</div>}
+                  </div>
+                </div>);
+              })}
+            </div>}
+
+            {/* KANBAN */}
+            {tlView==="kanban"&&<div style={{padding:9}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+                {[
+                  {id:"active",label:"Active",color:"#6b5e52",bg:"rgba(0,0,0,.02)",filter:r=>r.st==="occupied"&&r.le&&tlDaysUntil(r.le)>30},
+                  {id:"expiring",label:"Expiring 30d",color:"#9a7422",bg:"rgba(212,168,83,.04)",border:"rgba(212,168,83,.2)",filter:r=>r.st==="occupied"&&r.le&&tlDaysUntil(r.le)<=30&&tlDaysUntil(r.le)>0},
+                  {id:"avail",label:"Available",color:"#2d6a3f",bg:"rgba(74,124,89,.04)",border:"rgba(74,124,89,.2)",filter:r=>r.st!=="occupied"||!r.tenant||(r.le&&tlDaysUntil(r.le)<=0)},
+                ].map(col=>{
+                  const colRooms=tlRooms.filter(col.filter);
+                  return(
+                  <div key={col.id} style={{background:col.bg||"rgba(0,0,0,.02)",borderRadius:7,padding:7,border:col.border?`1px solid ${col.border}`:"0.5px solid rgba(0,0,0,.06)"}}>
+                    <div style={{fontSize:8,fontWeight:700,color:col.color,textTransform:"uppercase",letterSpacing:.4,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
+                      <span>{col.label}</span>
+                      <span style={{background:"rgba(255,255,255,.8)",borderRadius:8,padding:"0 5px",fontWeight:700,color:"#3d3529"}}>{colRooms.length}</span>
+                    </div>
+                    {colRooms.length===0&&<div style={{fontSize:9,color:"#bbb"}}>None</div>}
+                    {colRooms.map(r=>{
+                      const dl=r.le?tlDaysUntil(r.le):null;
+                      const rs=tlGetReady(r);
+                      const rdl=rs?tlDaysUntil(rs):null;
+                      const isAssigned=a.termRoomId===r.id||a.room===r.name;
+                      return(
+                      <div key={r.id} style={{background:"#fff",borderRadius:5,border:isAssigned?"1.5px solid #d4a853":"0.5px solid rgba(0,0,0,.07)",padding:"5px 7px",marginBottom:4}}>
+                        <div style={{fontSize:9,fontWeight:700,color:isAssigned?"#9a7422":"#1a1714"}}>{r.name}</div>
+                        {r.tenant&&<div style={{fontSize:8,color:"#6b5e52"}}>{r.tenant.name}</div>}
+                        {!r.tenant&&<div style={{fontSize:8,color:"#4a7c59",fontWeight:600}}>Vacant</div>}
+                        {r.le&&<div style={{fontSize:8,fontWeight:600,color:col.color,marginTop:2}}>Ends {fmtD(r.le)}{dl!==null?" \u00b7 "+dl+"d":""}</div>}
+                        {rs&&rdl!==null&&rdl>0&&<div style={{fontSize:7,color:"#9a7422"}}>Avail. {fmtD(rs)}</div>}
+                      </div>);
+                    })}
+                  </div>);
+                })}
+              </div>
+            </div>}
+          </div>}
+        </div>);
+      })()}
+
+            {(a.status==="approved"||a.status==="move-in"||a.status==="onboarding")&&<div className="tp-card"><h3>Screening Summary</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"—";const passed=val==="passed"||val==="verified";return(
           <div key={r.key} style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -11063,7 +11220,10 @@ export default function Page(){
       })()}
 
       <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
-        {a.status==="new-lead"&&<button className="btn btn-gold" style={{flex:1}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite to Apply</button>}
+        {a.status==="new-lead"&&<button className="btn btn-gold" style={{flex:1,transition:"all .2s"}}
+          onMouseEnter={e=>{e.currentTarget.style.background="linear-gradient(135deg,#d4a853 0%,#c8943a 100%)";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 5px 18px rgba(212,168,83,.4)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}
+          onClick={()=>setModal({type:"inviteApp",data:a})}>Invite to Apply</button>}
         {a.status==="applied"&&<>
           {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
             <div style={{fontWeight:700,marginBottom:4}}>Still pending — review before approving:</div>
