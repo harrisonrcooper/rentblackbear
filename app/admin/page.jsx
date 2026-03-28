@@ -9858,29 +9858,38 @@ export default function Page(){
       if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Waiver reason required when screening is skipped.");
       const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
       const commit=(method)=>{
-        setApps(p=>p.map(x=>x.id===a.id?{...x,
-          status:"invited",lastContact:TODAY.toISOString().split("T")[0],
-          screenPkg:pkg,incomeAdd,appFee:totalFee,
-          waiverReason:modal.waiverReason||"",
-          property:a.property||"",
-          room:invRoomLabel,
-          inviteRent:invRent,inviteRoomId:a.termRoomId||null,
-          inviteRoomMode:a.skipRoomAssign?"none":"locked",inviteLink:link,
-          sentVia:(x.sentVia?x.sentVia+", ":"")+method,
-          history:[...(x.history||[]),{from:x.status,to:"invited",
-            date:TODAY.toISOString().split("T")[0],
-            note:"Invited via "+method+" - "+pkgLabel[pkg]+" - $"+totalFee+(modal.waiverReason?" - "+modal.waiverReason:"")
-          }]
-        }:x));
+        const updatedApp=buildUpdatedApp(method);
+        const updatedApps=apps.map(x=>x.id===a.id?updatedApp:x);
+        setApps(()=>updatedApps);
+        save("hq-apps",updatedApps);
         setNotifs(p=>[{id:uid(),type:"app",
           msg:"Invite sent to "+a.name+" via "+method+" - "+(totalFee===0?"Fee waived":"$"+totalFee),
           date:TODAY.toISOString().split("T")[0],read:false,urgent:false
         },...p]);
       };
+      const buildUpdatedApp=(method)=>({...a,
+        status:"invited",lastContact:TODAY.toISOString().split("T")[0],
+        screenPkg:pkg,incomeAdd,appFee:totalFee,
+        waiverReason:modal.waiverReason||"",
+        property:a.property||"",
+        room:invRoomLabel,
+        inviteRent:invRent,inviteRoomId:a.termRoomId||null,
+        inviteRoomMode:a.skipRoomAssign?"none":"locked",inviteLink:link,
+        sentVia:(a.sentVia?a.sentVia+", ":"")+method,
+        history:[...(a.history||[]),{from:a.status,to:"invited",
+          date:TODAY.toISOString().split("T")[0],
+          note:"Invited via "+method+" - "+pkgLabel[pkg]+" - $"+totalFee+(modal.waiverReason?" - "+modal.waiverReason:"")
+        }]
+      });
       const sendEmail=async()=>{
         if(!validate())return;
         setModal(prev=>({...prev,emailSending:true,sendErrors:[]}));
         try{
+          // Save to Supabase FIRST — tenant clicks link before debounce fires
+          const updatedApp=buildUpdatedApp("Email");
+          const updatedApps=apps.map(x=>x.id===a.id?updatedApp:x);
+          await save("hq-apps",updatedApps);
+          setApps(()=>updatedApps);
           const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},
             body:JSON.stringify({to:a.email,name:a.name,link,
               property:a.property||"",
@@ -9891,8 +9900,10 @@ export default function Page(){
             })
           });
           const d=await res.json();
-          if(d.ok){commit("Email");setModal(prev=>({...prev,emailSent:true,emailSending:false}));}
-          else{setModal(prev=>({...prev,sendErrors:[d.error||"Email failed - check Resend config"],emailSending:false}));}
+          if(d.ok){
+            setNotifs(p=>[{id:uid(),type:"app",msg:"Invite sent to "+a.name+" via Email - "+(totalFee===0?"Fee waived":"$"+totalFee),date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+            setModal(prev=>({...prev,emailSent:true,emailSending:false}));
+          } else{setModal(prev=>({...prev,sendErrors:[d.error||"Email failed - check Resend config"],emailSending:false}));}
         }catch{setModal(prev=>({...prev,sendErrors:["Network error - check connection and try again"],emailSending:false}));}
       };
       const phoneNum=(a.phone||"").replace(/\D/g,"");
