@@ -3966,18 +3966,26 @@ export default function Page(){
                 <option value="avail-desc">Available date ↓ latest</option>
               </select>
               {/* View toggle */}
-              <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:7,overflow:"hidden"}}>
+              <div style={{display:"flex",border:"1px solid rgba(0,0,0,.12)",borderRadius:8,overflow:"hidden",background:"rgba(0,0,0,.02)"}}>
                 {views.map(v=>(
-                  <button key={v.id} onClick={()=>setTtView(v.id)} style={{padding:"5px 12px",fontSize:11,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",
-                    background:ttView===v.id?"#1a1714":"transparent",color:ttView===v.id?"#d4a853":"#5c4a3a"}}>
+                  <button key={v.id} onClick={()=>setTtView(v.id)}
+                    onMouseEnter={e=>{if(ttView!==v.id)e.currentTarget.style.background="rgba(0,0,0,.06)";}}
+                    onMouseLeave={e=>{if(ttView!==v.id)e.currentTarget.style.background="transparent";}}
+                    style={{padding:"6px 14px",fontSize:11,fontWeight:600,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",
+                      background:ttView===v.id?"#1a1714":"transparent",color:ttView===v.id?"#d4a853":"#5c4a3a"}}>
                     {v.label}
-                    {v.id===ttPref&&<span style={{marginLeft:4,fontSize:8,color:ttView===v.id?"#d4a853":"#9a7422"}}>★</span>}
+                    {v.id===ttPref&&<span style={{marginLeft:4,fontSize:9,color:ttView===v.id?"#d4a853":"#9a7422"}}>★</span>}
                   </button>
                 ))}
               </div>
-              <button onClick={()=>setTtPref(ttView)} style={{fontSize:10,padding:"5px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"rgba(212,168,83,.06)",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",fontWeight:600}} title="Set as daily driver">
-                {ttPref===ttView?"★ Daily driver":"Set as daily driver"}
-              </button>
+              {ttPref!==ttView&&<button
+                onClick={()=>setTtPref(ttView)}
+                onMouseEnter={e=>{e.currentTarget.style.background="#d4a853";e.currentTarget.style.color="#1a1714";e.currentTarget.style.borderColor="#d4a853";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,168,83,.08)";e.currentTarget.style.color="#9a7422";e.currentTarget.style.borderColor="rgba(212,168,83,.3)";}}
+                style={{fontSize:10,padding:"6px 12px",borderRadius:7,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",fontWeight:600,transition:"all .15s"}}>
+                Set as daily driver ★
+              </button>}
+              {ttPref===ttView&&<span style={{fontSize:10,color:"#9a7422",fontWeight:600,padding:"6px 4px"}}>★ Daily driver</span>}
             </div>
           </div>
 
@@ -3985,16 +3993,21 @@ export default function Page(){
           {ttView==="gantt"&&<div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",overflow:"hidden"}}>
             {/* Month nav */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.015)"}}>
-              <button className="btn btn-out btn-sm" onClick={()=>setTtMonthOffset(o=>o-1)}>← Earlier</button>
+              <button className="btn btn-out btn-sm" onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""} onClick={()=>setTtMonthOffset(o=>o-1)}>← Earlier</button>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={{fontSize:12,fontWeight:600,color:"#5c4a3a"}}>{baseDate.toLocaleString("default",{month:"long",year:"numeric"})} window</span>
-                <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
-                  <button onClick={()=>setTtGanttGrouped(true)} style={{padding:"3px 10px",fontSize:10,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",background:ttGanttGrouped?"#1a1714":"transparent",color:ttGanttGrouped?"#d4a853":"#5c4a3a"}}>By property</button>
-                  <button onClick={()=>setTtGanttGrouped(false)} style={{padding:"3px 10px",fontSize:10,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",background:!ttGanttGrouped?"#1a1714":"transparent",color:!ttGanttGrouped?"#d4a853":"#5c4a3a"}}>Flat</button>
+                <div style={{display:"flex",border:"1px solid rgba(0,0,0,.12)",borderRadius:7,overflow:"hidden",background:"rgba(0,0,0,.02)"}}>
+                  <button onClick={()=>setTtGanttGrouped(true)}
+                    onMouseEnter={e=>{if(ttGanttGrouped)return;e.currentTarget.style.background="rgba(0,0,0,.06)";}}
+                    onMouseLeave={e=>{if(ttGanttGrouped)return;e.currentTarget.style.background="transparent";}}
+                    style={{padding:"4px 12px",fontSize:10,fontWeight:600,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",background:ttGanttGrouped?"#1a1714":"transparent",color:ttGanttGrouped?"#d4a853":"#5c4a3a"}}>By property</button>
+                  <button onClick={()=>setTtGanttGrouped(false)}
+                    onMouseEnter={e=>{if(!ttGanttGrouped)return;e.currentTarget.style.background="rgba(0,0,0,.06)";}}
+                    onMouseLeave={e=>{if(!ttGanttGrouped)return;e.currentTarget.style.background="transparent";}}
+                    style={{padding:"4px 12px",fontSize:10,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",background:!ttGanttGrouped?"#1a1714":"transparent",color:!ttGanttGrouped?"#d4a853":"#5c4a3a"}}>By date</button>
                 </div>
-                {!ttGanttGrouped&&<button onClick={()=>setTtGanttGrouped(true)} style={{fontSize:10,background:"none",border:"none",cursor:"pointer",color:"#9a7422",fontFamily:"inherit",textDecoration:"underline",padding:0}}>Reset to default</button>}
               </div>
-              <button className="btn btn-out btn-sm" onClick={()=>setTtMonthOffset(o=>o+1)}>Later →</button>
+              <button className="btn btn-out btn-sm" onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""} onClick={()=>setTtMonthOffset(o=>o+1)}>Later →</button>
             </div>
             {/* Month headers */}
             <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
