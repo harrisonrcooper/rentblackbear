@@ -10595,24 +10595,7 @@ export default function Page(){
             Room assignment skipped — you&#39;ll lock in the room and rent when sending the lease.
           </div>}
           {!skipRoom&&<>
-            {/* Room mode selector */}
-            <div style={{display:"flex",gap:6,marginBottom:10}}>
-              {[["locked","Lock Room"],["entire","Entire Property"],["choice","Tenant Picks"]].map(([v,l])=>{
-                const rm=a.roomAssignMode||"locked";
-                return(
-                <button key={v}
-                  className={"btn "+(rm===v?"btn-dk":"btn-out")+" btn-sm"}
-                  style={{fontSize:10,padding:"4px 10px",flex:1}}
-                  onClick={()=>{
-                    setApps(prev=>prev.map(x=>x.id===a.id?{...x,roomAssignMode:v,room:v!=="locked"?"":x.room,termRoomId:v!=="locked"?null:x.termRoomId}:x));
-                    setModal(prev=>({...prev,data:{...prev.data,roomAssignMode:v,room:v!=="locked"?"":prev.data.room,termRoomId:v!=="locked"?null:prev.data.termRoomId}}));
-                  }}>{l}</button>);
-              })}
-            </div>
-            {(a.roomAssignMode==="entire"||a.roomAssignMode==="choice")&&<div style={{fontSize:11,color:"#5c4a3a",padding:"8px 10px",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",borderRadius:6,marginBottom:8}}>
-              {a.roomAssignMode==="entire"?"Entire property selected — rent and details set at lease signing.":"Tenant will choose their room during the application — rent and details set at lease signing."}
-            </div>}
-            {(!a.roomAssignMode||a.roomAssignMode==="locked")&&<div style={{marginBottom:8}}>
+            <div style={{marginBottom:8}}>
             <div className="fld" style={{marginBottom:0}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                 <label style={{margin:0}}>Move-in Date</label>
@@ -10642,8 +10625,8 @@ export default function Page(){
             </div>
           </div>}
 
-          {/* Room dropdown — only when locking a room */}
-          {(!a.roomAssignMode||a.roomAssignMode==="locked")&&<>{/* Room dropdown — all rooms at property, sorted by ready date */}
+          {/* Room dropdown */}
+          {true&&<>{/* All rooms across properties, sorted by ready date */}
           <div className="fld" style={{marginBottom:selectedItem?8:0}}>
             <label>Assign Room / Unit
               <span style={{fontWeight:400,color:"#5c4a3a",fontSize:9,textTransform:"none",letterSpacing:0}}> — sorted by earliest availability</span>
@@ -10920,6 +10903,19 @@ export default function Page(){
         const tlToX=(ds)=>{if(!ds)return 0;const d=Math.ceil((new Date(ds+"T00:00:00")-tlWinStart)/86400000);return Math.max(0,Math.min(100,(d/tlTotalDays)*100));};
         const tlMonths=[];for(let i=0;i<6;i++){const dd=new Date(tlWinStart);dd.setMonth(dd.getMonth()+i);tlMonths.push({label:dd.toLocaleString("default",{month:"short",year:"2-digit"}),x:tlToX(dd.toISOString().split("T")[0])});}
         const tlViews=[{id:"gantt",label:"Gantt"},{id:"countdown",label:"Countdown"},{id:"kanban",label:"Kanban"}];
+        const tlSort=modal._appTlSort||"avail-asc";
+        const tlGrouped=modal._appTlGrouped!==false; // default grouped by property
+        const tlSortFn=(arr)=>{
+          const cp=[...arr];
+          const noLe=r=>!r.le;
+          const leMs=r=>r.le?new Date(r.le+"T00:00:00").getTime():Infinity;
+          const rdMs=r=>{const s=tlGetReady(r);return s?new Date(s+"T00:00:00").getTime():r.le?leMs(r):Infinity;};
+          if(tlSort==="lease-end-asc")return cp.sort((a,b)=>noLe(a)&&noLe(b)?0:noLe(a)?-1:noLe(b)?1:leMs(a)-leMs(b));
+          if(tlSort==="lease-end-desc")return cp.sort((a,b)=>noLe(a)&&noLe(b)?0:noLe(a)?1:noLe(b)?-1:leMs(b)-leMs(a));
+          if(tlSort==="avail-desc")return cp.sort((a,b)=>rdMs(b)-rdMs(a));
+          return cp.sort((a,b)=>rdMs(a)-rdMs(b)); // avail-asc default
+        };
+        const tlSortedRooms=tlSortFn(tlRooms);
         return(
         <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none"}}>
@@ -10936,17 +10932,40 @@ export default function Page(){
                   </button>
                 ))}
               </div>}
-              {tlOpen&&tlView==="gantt"&&<div style={{display:"flex",gap:2,alignItems:"center"}}>
-                <button onClick={()=>setModal(p=>({...p,_tlMonthOffset:(p._tlMonthOffset||0)-1}))}
-                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.07)"}
-                  onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.03)"}
-                  style={{padding:"1px 6px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.03)",cursor:"pointer",fontFamily:"inherit",color:"#5c4a3a",transition:"background .12s"}}>&#8592;</button>
-                <span style={{fontSize:9,color:"#9a7422",fontWeight:600,minWidth:50,textAlign:"center"}}>{tlBase.toLocaleString("default",{month:"short",year:"numeric"})}</span>
-                <button onClick={()=>setModal(p=>({...p,_tlMonthOffset:(p._tlMonthOffset||0)+1}))}
-                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.07)"}
-                  onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.03)"}
-                  style={{padding:"1px 6px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.03)",cursor:"pointer",fontFamily:"inherit",color:"#5c4a3a",transition:"background .12s"}}>&#8594;</button>
-              </div>}
+              {tlOpen&&tlView==="gantt"&&<>
+                {/* Group toggle */}
+                {!tlProp&&<div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,overflow:"hidden",background:"rgba(0,0,0,.02)"}}>
+                  {[["grouped","By property"],["flat","By date"]].map(([v,l])=>(
+                    <button key={v}
+                      onClick={()=>setModal(p=>({...p,_appTlGrouped:v==="grouped"}))}
+                      onMouseEnter={e=>{if((v==="grouped")!==tlGrouped)e.currentTarget.style.background="rgba(0,0,0,.06)";}}
+                      onMouseLeave={e=>{if((v==="grouped")!==tlGrouped)e.currentTarget.style.background="transparent";}}
+                      style={{padding:"2px 9px",fontSize:9,fontWeight:600,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",background:(v==="grouped")===tlGrouped?"#1a1714":"transparent",color:(v==="grouped")===tlGrouped?"#d4a853":"#5c4a3a"}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>}
+                {/* Sort */}
+                <select value={tlSort} onChange={e=>setModal(p=>({...p,_appTlSort:e.target.value}))}
+                  style={{fontSize:9,padding:"2px 5px",borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.02)",color:"#5c4a3a",fontFamily:"inherit",cursor:"pointer"}}>
+                  <option value="avail-asc">Available ↑ soonest</option>
+                  <option value="avail-desc">Available ↓ latest</option>
+                  <option value="lease-end-asc">Lease end ↑ soonest</option>
+                  <option value="lease-end-desc">Lease end ↓ latest</option>
+                </select>
+                {/* Month nav */}
+                <div style={{display:"flex",gap:2,alignItems:"center"}}>
+                  <button onClick={()=>setModal(p=>({...p,_tlMonthOffset:(p._tlMonthOffset||0)-1}))}
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.07)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.03)"}
+                    style={{padding:"1px 6px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.03)",cursor:"pointer",fontFamily:"inherit",color:"#5c4a3a",transition:"background .12s"}}>&#8592;</button>
+                  <span style={{fontSize:9,color:"#9a7422",fontWeight:600,minWidth:50,textAlign:"center"}}>{tlBase.toLocaleString("default",{month:"short",year:"numeric"})}</span>
+                  <button onClick={()=>setModal(p=>({...p,_tlMonthOffset:(p._tlMonthOffset||0)+1}))}
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.07)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.03)"}
+                    style={{padding:"1px 6px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(0,0,0,.1)",background:"rgba(0,0,0,.03)",cursor:"pointer",fontFamily:"inherit",color:"#5c4a3a",transition:"background .12s"}}>&#8594;</button>
+                </div>
+              </>}
             </div>
             <button
               onClick={()=>setModal(p=>({...p,_appTlOpen:tlOpen?false:true}))}
@@ -10960,48 +10979,70 @@ export default function Page(){
           {tlOpen&&<div>
             {/* GANTT */}
             {tlView==="gantt"&&<div>
+              {/* Month headers */}
               <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                <div style={{width:96,flexShrink:0,padding:"2px 10px",fontSize:8,color:"#bbb",textTransform:"uppercase",letterSpacing:.4}}>Room</div>
+                <div style={{width:110,flexShrink:0,padding:"2px 10px",fontSize:8,color:"#bbb",textTransform:"uppercase",letterSpacing:.4}}>Room</div>
                 <div style={{flex:1,position:"relative",height:16}}>
                   {tlMonths.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:7,color:"#bbb",transform:"translateX(-50%)",whiteSpace:"nowrap",top:3}}>{m.label}</div>)}
                 </div>
               </div>
-              {tlRooms.map(r=>{
-                const buf=r.buf||0;
-                const readyStr=tlGetReady(r);
-                const isOcc=r.st==="occupied"&&r.tenant;
-                const leX=r.le?tlToX(r.le):null;
-                const rdX=readyStr?tlToX(readyStr):null;
-                const todayX=tlToX(TODAY_STR2);
-                const moveInX=r.tenant&&r.tenant.moveIn?tlToX(r.tenant.moveIn):null;
-                const isAssigned=a.termRoomId===r.id||a.room===r.name;
-                return(
-                <div key={r.id} style={{display:"flex",alignItems:"center",borderBottom:"1px solid rgba(0,0,0,.03)",minHeight:26,background:isAssigned?"rgba(212,168,83,.05)":"transparent"}}>
-                  <div style={{width:96,flexShrink:0,padding:"2px 10px"}}>
-                    <div style={{fontSize:9,fontWeight:isAssigned?700:500,color:isAssigned?"#9a7422":"#1a1714",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.name}{isAssigned&&<span style={{marginLeft:3,fontSize:7,color:"#d4a853"}}>&#9670;</span>}</div>
-                    {isOcc&&<div style={{fontSize:7,color:"#6b5e52",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.tenant.name}</div>}
-                    {!isOcc&&<div style={{fontSize:7,color:"#4a7c59",fontWeight:600}}>Vacant</div>}
-                  </div>
-                  <div style={{flex:1,position:"relative",height:26,display:"flex",alignItems:"center"}}>
-                    <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"#c45c4a",zIndex:3,opacity:.55}}/>
-                    {!isOcc&&<div style={{position:"absolute",left:"0%",right:"0%",height:11,borderRadius:2,background:"rgba(74,124,89,.1)",border:"1px solid rgba(74,124,89,.2)",display:"flex",alignItems:"center",paddingLeft:4}}>
-                      <span style={{fontSize:7,color:"#2d6a3f",fontWeight:600}}>Available now</span>
-                    </div>}
-                    {isOcc&&moveInX!==null&&leX!==null&&<div style={{position:"absolute",left:Math.min(moveInX,leX)+"%",width:Math.abs(leX-Math.min(moveInX,leX))+"%",height:13,borderRadius:2,background:"#B5D4F4",top:6,display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
-                      <span style={{fontSize:7,color:"#0C447C",fontWeight:600,whiteSpace:"nowrap"}}>ends {fmtD(r.le)}</span>
-                    </div>}
-                    {isOcc&&leX!==null&&rdX!==null&&buf>0&&<div style={{position:"absolute",left:leX+"%",width:(rdX-leX)+"%",height:13,top:6,background:"#FAC775",borderRadius:"0 2px 2px 0",minWidth:2}}/>}
-                    {isOcc&&rdX!==null&&rdX<100&&<div style={{position:"absolute",left:rdX+"%",right:"0%",height:11,top:7,background:"rgba(74,124,89,.07)",border:"1px dashed rgba(74,124,89,.2)",borderRadius:"0 2px 2px 0",display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
-                      <span style={{fontSize:7,color:"#2d6a3f",whiteSpace:"nowrap"}}>Avail. {fmtD(readyStr)}</span>
-                    </div>}
-                  </div>
-                </div>);
-              })}
+              {/* Grouped by property (default) or flat */}
+              {(()=>{
+                const renderRow=(r)=>{
+                  const buf=r.buf||0;
+                  const readyStr=tlGetReady(r);
+                  const isOcc=r.st==="occupied"&&r.tenant;
+                  const leX=r.le?tlToX(r.le):null;
+                  const rdX=readyStr?tlToX(readyStr):null;
+                  const todayX=tlToX(TODAY_STR2);
+                  const moveInX=r.tenant&&r.tenant.moveIn?tlToX(r.tenant.moveIn):null;
+                  const isAssigned=a.termRoomId===r.id||a.room===r.name;
+                  return(
+                  <div key={r.id} style={{display:"flex",alignItems:"center",borderBottom:"1px solid rgba(0,0,0,.03)",minHeight:26,background:isAssigned?"rgba(212,168,83,.05)":"transparent"}}>
+                    <div style={{width:110,flexShrink:0,padding:"2px 10px"}}>
+                      <div style={{fontSize:9,fontWeight:isAssigned?700:500,color:isAssigned?"#9a7422":"#1a1714",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.name}{isAssigned&&<span style={{marginLeft:3,fontSize:7,color:"#d4a853"}}>&#9670;</span>}</div>
+                      {isOcc&&<div style={{fontSize:7,color:"#6b5e52",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.tenant.name}</div>}
+                      {!isOcc&&<div style={{fontSize:7,color:"#4a7c59",fontWeight:600}}>Vacant</div>}
+                    </div>
+                    <div style={{flex:1,position:"relative",height:26,display:"flex",alignItems:"center"}}>
+                      <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"#c45c4a",zIndex:3,opacity:.55}}/>
+                      {!isOcc&&<div style={{position:"absolute",left:"0%",right:"0%",height:11,borderRadius:2,background:"rgba(74,124,89,.1)",border:"1px solid rgba(74,124,89,.2)",display:"flex",alignItems:"center",paddingLeft:4}}>
+                        <span style={{fontSize:7,color:"#2d6a3f",fontWeight:600}}>Available now</span>
+                      </div>}
+                      {isOcc&&moveInX!==null&&leX!==null&&<div style={{position:"absolute",left:Math.min(moveInX,leX)+"%",width:Math.abs(leX-Math.min(moveInX,leX))+"%",height:13,borderRadius:2,background:"#B5D4F4",top:6,display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
+                        <span style={{fontSize:7,color:"#0C447C",fontWeight:600,whiteSpace:"nowrap"}}>ends {fmtD(r.le)}</span>
+                      </div>}
+                      {isOcc&&leX!==null&&rdX!==null&&buf>0&&<div style={{position:"absolute",left:leX+"%",width:(rdX-leX)+"%",height:13,top:6,background:"#FAC775",borderRadius:"0 2px 2px 0",minWidth:2}}/>}
+                      {isOcc&&rdX!==null&&rdX<100&&<div style={{position:"absolute",left:rdX+"%",right:"0%",height:11,top:7,background:"rgba(74,124,89,.07)",border:"1px dashed rgba(74,124,89,.2)",borderRadius:"0 2px 2px 0",display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
+                        <span style={{fontSize:7,color:"#2d6a3f",whiteSpace:"nowrap"}}>Avail. {fmtD(readyStr)}</span>
+                      </div>}
+                    </div>
+                  </div>);
+                };
+                // Grouped: property header + sorted rooms under each
+                if(tlGrouped&&!tlProp){
+                  const propOrder=props.filter(p=>!(p.units||[]).every(u=>u.ownerOccupied));
+                  return propOrder.map(p=>{
+                    const pRooms=tlSortedRooms.filter(r=>r.propId===p.id);
+                    if(!pRooms.length)return null;
+                    return(<div key={p.id}>
+                      <div style={{padding:"4px 10px",fontSize:9,fontWeight:800,color:"#9a7422",background:"rgba(212,168,83,.07)",borderBottom:"1px solid rgba(212,168,83,.15)",borderTop:"1px solid rgba(212,168,83,.1)",textTransform:"uppercase",letterSpacing:.5,display:"flex",alignItems:"center",gap:6}}>
+                        <span>{getPropDisplayName(p)}</span>
+                        {p.addr&&<span style={{fontWeight:400,fontSize:8,color:"#9a7422",opacity:.7}}>{p.addr}</span>}
+                        <span style={{marginLeft:"auto",fontWeight:600,fontSize:8,color:"#9a7422",opacity:.7}}>{pRooms.length} room{pRooms.length!==1?"s":""}</span>
+                      </div>
+                      {pRooms.map(r=>renderRow(r))}
+                    </div>);
+                  });
+                }
+                // Flat: just sorted rows
+                return tlSortedRooms.map(r=>renderRow(r));
+              })()}
             </div>}
 
             {/* COUNTDOWN */}
             {tlView==="countdown"&&<div style={{padding:"2px 0"}}>
-              {tlRooms.map(r=>{
+              {tlSortedRooms.map(r=>{
                 const readyStr=tlGetReady(r);
                 const isOcc=r.st==="occupied"&&r.tenant;
                 const dl=r.le?tlDaysUntil(r.le):null;
@@ -11032,7 +11073,7 @@ export default function Page(){
                   {id:"expiring",label:"Expiring 30d",color:"#9a7422",bg:"rgba(212,168,83,.04)",border:"rgba(212,168,83,.2)",filter:r=>r.st==="occupied"&&r.le&&tlDaysUntil(r.le)<=30&&tlDaysUntil(r.le)>0},
                   {id:"avail",label:"Available",color:"#2d6a3f",bg:"rgba(74,124,89,.04)",border:"rgba(74,124,89,.2)",filter:r=>r.st!=="occupied"||!r.tenant||(r.le&&tlDaysUntil(r.le)<=0)},
                 ].map(col=>{
-                  const colRooms=tlRooms.filter(col.filter);
+                  const colRooms=tlSortedRooms.filter(col.filter);
                   return(
                   <div key={col.id} style={{background:col.bg||"rgba(0,0,0,.02)",borderRadius:7,padding:7,border:col.border?`1px solid ${col.border}`:"0.5px solid rgba(0,0,0,.06)"}}>
                     <div style={{fontSize:8,fontWeight:700,color:col.color,textTransform:"uppercase",letterSpacing:.4,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
