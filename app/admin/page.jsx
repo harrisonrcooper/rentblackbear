@@ -10623,7 +10623,7 @@ export default function Page(){
                 }} style={{width:"100%"}}/>
               }
             </div>
-          </div>}
+          </div>
 
           {/* Room dropdown */}
           {true&&<>{/* All rooms across properties, sorted by ready date */}
