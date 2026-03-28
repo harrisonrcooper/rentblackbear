@@ -9841,27 +9841,14 @@ export default function Page(){
     const totalFee=pkg==="none"?waivedAdminFee:pkgFees[pkg]+incomeAdds[incomeAdd]+adminFee;
     const pkgLabel={"none":"No screening (waived)","credit-only":"Credit Report Only","credit-bg":"Credit + Full BG Check"};
     const incomeLabel={"none":"None","income-only":"Income Verify (+$10)","income-employment":"Income + Employer (+$15)"};
-    const roomMode=modal.roomMode||(a.skipRoomAssign?"none":"locked");
     const inviteStep=modal.inviteStep||"configure";
-    const inviteMoveIn=modal.inviteMoveIn||a.moveIn||"";
-    const inviteMoveInMs=inviteMoveIn?new Date(inviteMoveIn+"T00:00:00").getTime():null;
-    const allAvailForInvite=props.flatMap(p=>leaseableItems(p).filter(item=>{
-      if(item.st==="vacant")return true;
-      if(item.st==="occupied"&&item.le&&inviteMoveInMs){
-        const buf=item.itemTurnoverDays||0;
-        return new Date(item.le+"T00:00:00").getTime()+(buf*86400000)<=inviteMoveInMs;
-      }
-      return false;
-    }).map(item=>({...item,willVacate:item.st==="occupied"&&!!item.le})));
-    const selPropId=modal.selPropId||(()=>{const mp=props.find(p=>p.name===a.property);return mp?mp.id:"";})();
-    const selProp=props.find(p=>p.id===selPropId);
-    const selRoomId=modal.selRoomId||"";
-    const selRoom=allAvailForInvite.find(r=>r.id===selRoomId);
-    const inviteRent=modal.inviteRent!==undefined?modal.inviteRent:(selRoom?selRoom.rent:(selProp&&selProp.wholeHouseRent?selProp.wholeHouseRent:0));
-    const isWholeProp=p=>(p.units||[]).some(u=>u.rentalMode==="wholeHouse");
-    const byRoomOnly=selProp&&!isWholeProp(selProp);
-    const overrideConfirmed=!!modal.whPropOverride;
-    const lastLeaseEnd=selProp?allRooms(selProp).filter(r=>r.le).map(r=>r.le).sort().slice(-1)[0]:null;
+    // Source of truth: everything comes from app modal data, not Configure Invite dropdowns
+    const invProp=a.property?props.find(p=>p.name===a.property):null;
+    const invRoomObj=a.termRoomId&&invProp?allRooms(invProp).find(r=>r.id===a.termRoomId):null;
+    const invRent=a.termRent||(invRoomObj?invRoomObj.rent:0);
+    const invMoveIn=a.moveInTbd?"TBD":(a.termMoveIn||a.moveIn||"");
+    const invRoomLabel=a.skipRoomAssign?"Assign at lease":(invRoomObj?invRoomObj.name:(a.room||"Not specified"));
+    const invModeLabel=a.skipRoomAssign?"Assign at lease":invRoomObj?"Room locked":"Not specified";
     const link=(settings.siteUrl||"https://rentblackbear.com")+"/apply?invite="+a.id;
     const doShake=shakeModal;
 
@@ -9875,10 +9862,10 @@ export default function Page(){
           status:"new-lead",lastContact:TODAY.toISOString().split("T")[0],
           screenPkg:pkg,incomeAdd,appFee:totalFee,
           waiverReason:modal.waiverReason||"",
-          property:selProp?selProp.name:a.property,
-          room:roomMode==="property"?"Entire Property":(selRoom?selRoom.name:a.room),
-          inviteRent,inviteRoomId:selRoom?selRoom.id:null,
-          inviteRoomMode:roomMode,inviteLink:link,
+          property:a.property||"",
+          room:invRoomLabel,
+          inviteRent:invRent,inviteRoomId:a.termRoomId||null,
+          inviteRoomMode:a.skipRoomAssign?"none":"locked",inviteLink:link,
           sentVia:(x.sentVia?x.sentVia+", ":"")+method,
           history:[...(x.history||[]),{from:x.status,to:"invited",
             date:TODAY.toISOString().split("T")[0],
@@ -9896,10 +9883,10 @@ export default function Page(){
         try{
           const res=await fetch("/api/invite",{method:"POST",headers:{"Content-Type":"application/json"},
             body:JSON.stringify({to:a.email,name:a.name,link,
-              property:selProp?selProp.name:a.property,
-              address:selProp?selProp.addr:"",
-              room:roomMode==="property"?"Entire Property":(selRoom?selRoom.name:""),
-              rent:inviteRent,fee:totalFee,screeningPkg:pkgLabel[pkg],
+              property:a.property||"",
+              address:invProp?invProp.addr:"",
+              room:a.skipRoomAssign?"Assign at lease":(invRoomObj?invRoomObj.name:a.room||""),
+              rent:invRent,fee:totalFee,screeningPkg:pkgLabel[pkg],
               note:modal.sendNote||"",waived:pkg==="none"?["Screening waived"]:[]
             })
           });
@@ -9909,7 +9896,7 @@ export default function Page(){
         }catch{setModal(prev=>({...prev,sendErrors:["Network error - check connection and try again"],emailSending:false}));}
       };
       const phoneNum=(a.phone||"").replace(/\D/g,"");
-      const smsTxt="Hey "+a.name.split(" ")[0]+"! You are invited to apply at Black Bear Rentals"+(selProp?" - "+selProp.name:"")+(selRoom?" ("+selRoom.name+")":"")+(inviteRent?" at $"+inviteRent+"/mo":"")+". Apply: "+link+(totalFee===0?". No screening fee!":(". Fee: $"+totalFee))+" - Black Bear Rentals";
+      const smsTxt="Hey "+a.name.split(" ")[0]+"! You are invited to apply at Black Bear Rentals"+(a.property?" - "+a.property:"")+(invRoomObj?" ("+invRoomObj.name+")":(a.room?" ("+a.room+")"):"")+(invRent?" at $"+invRent+"/mo":"")+". Apply: "+link+(totalFee===0?". No screening fee!":(". Fee: $"+totalFee))+" - Black Bear Rentals";
       const smsHref="sms:"+phoneNum+"?&body="+encodeURIComponent(smsTxt);
       const copyLink=()=>{navigator.clipboard.writeText(link).then(()=>{setModal(prev=>({...prev,linkCopied:true}));setTimeout(()=>setModal(prev=>({...prev,linkCopied:false})),2500);});};
       return(
@@ -9923,9 +9910,9 @@ export default function Page(){
             <tbody>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",width:"38%",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Applicant</td><td style={{padding:"5px 0",fontWeight:700,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.name}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} - {a.phone}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{selProp?selProp.name:"No preference"}{selProp?.addr?" — "+selProp.addr:""}</td></tr>
-              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{roomMode==="none"?"Assign at lease":roomMode==="property"?"Entire property":roomMode==="choice"?"Tenant chooses":(selRoom?selRoom.name:"Not specified")}</td></tr>
-              {inviteRent>0&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${inviteRent+"/mo"}</td></tr>}
+              {a.property&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.property}{invProp?.addr?" — "+invProp.addr:""}</td></tr>}
+              <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",color:a.skipRoomAssign?"#4a7c59":"inherit",fontWeight:a.skipRoomAssign?600:400}}>{invRoomLabel}</td></tr>
+              {invRent>0&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${invRent}/mo</td></tr>}
               {(inviteMoveIn||a.moveInTbd)&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontWeight:a.moveInTbd?700:400,color:a.moveInTbd?"#9a7422":"inherit"}}>{a.moveInTbd?"To Be Determined":fmtD(inviteMoveIn)}</td></tr>}
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Screening</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{pkgLabel[pkg]}{incomeAdd!=="none"?" + "+incomeLabel[incomeAdd]:""}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Fee (tenant)</td><td style={{padding:"5px 0",fontWeight:700,color:totalFee===0?"#4a7c59":"#d4a853",borderBottom:"1px solid rgba(0,0,0,.04)"}}>{totalFee===0?"Free":"$"+totalFee}</td></tr>
@@ -9987,7 +9974,7 @@ export default function Page(){
       {(()=>{
         const appProp=props.find(p=>p.name===a.property);
         const appRoom=a.termRoomId?allRooms(appProp||{units:[]}).find(r=>r.id===a.termRoomId):null;
-        const modeLabel=a.skipRoomAssign?"Assign at lease":a.roomAssignMode==="entire"?"Entire property":a.roomAssignMode==="choice"?"Tenant picks room":"Room locked";
+        const modeLabel=a.skipRoomAssign?"Assign at lease":a.termRoomId?"Room locked":"Not yet assigned";
         const moveInDisplay=a.moveInTbd?"TBD":(fmtD(a.termMoveIn||a.moveIn)||"Not set");
         const hasAnyDetail=a.property||a.room||a.termMoveIn||a.moveIn||a.termRoomId;
         return(
