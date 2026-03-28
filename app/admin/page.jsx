@@ -10515,8 +10515,10 @@ export default function Page(){
         const termRent=a.termRent!==undefined?a.termRent:(termItem?termItem.rent:0);
         const saveTerm=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
 
-        // All rooms at property sorted: vacant first, then by default ready date asc
-        const propRooms=allItems.filter(i=>!i.ownerOccupied).sort((x,y)=>{
+        // All rooms across ALL properties sorted by earliest availability — cross-property view
+        const propRooms=props.flatMap(p=>leaseableItems(p).filter(i=>!i.ownerOccupied).map(i=>({
+          ...i,propName:getPropDisplayName(p),propId:p.id,propObj:p,
+        }))).sort((x,y)=>{
           const xr=getReadyDate(x),yr=getReadyDate(y);
           if(!xr&&!yr)return 0;if(!xr)return -1;if(!yr)return 1;
           return xr<yr?-1:1;
@@ -10558,7 +10560,8 @@ export default function Page(){
         const itemLabel=(item)=>{
           const ready=getReadyDate(item);
           const buf=item.itemTurnoverDays||0;
-          let label=(item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":"")+item.name+(item.isWholeUnit?" (Whole Unit)":"")+" — "+fmtS(item.id===(a.termRoomId||termItem?.id)?termRent:item.rent)+"/mo";
+          const propPart=item.propName?" — "+item.propName:"";
+          let label=(item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":"")+item.name+(item.isWholeUnit?" (Whole Unit)":"")+propPart+" — "+fmtS(item.id===(a.termRoomId||termItem?.id)?termRent:item.rent)+"/mo";
           if(!ready)label+=" · Available now";
           else if(buf>0)label+=" · Ready "+fmtD(ready)+" (lease ends "+fmtD(item.le)+" + "+buf+"d buffer)";
           else label+=" · Ready "+fmtD(ready)+" (lease ends "+fmtD(item.le)+")";
@@ -10609,54 +10612,7 @@ export default function Page(){
             {(a.roomAssignMode==="entire"||a.roomAssignMode==="choice")&&<div style={{fontSize:11,color:"#5c4a3a",padding:"8px 10px",background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",borderRadius:6,marginBottom:8}}>
               {a.roomAssignMode==="entire"?"Entire property selected — rent and details set at lease signing.":"Tenant will choose their room during the application — rent and details set at lease signing."}
             </div>}
-            {(!a.roomAssignMode||a.roomAssignMode==="locked")&&<div className="fr" style={{marginBottom:8,gap:8}}>
-            <div className="fld" style={{marginBottom:0}}>
-              <label>Property</label>
-              <select value={a.property||""} onChange={e=>{
-                const pName=e.target.value;
-                const np=props.find(pr=>pr.name===pName);
-                const npItems=np?leaseableItems(np):[];
-                const npVac=npItems.filter(i=>i.st==="vacant");
-                const npOcc=npItems.filter(i=>i.st!=="vacant"&&i.le);
-                const npEarliestItem=npOcc.length?npOcc.reduce((mn,i)=>i.le<mn.le?i:mn,npOcc[0]):null;
-                const npLe=npEarliestItem?.le||null;
-                const npTo=npEarliestItem?.itemTurnoverDays||0;
-                const autoMoveIn=(np&&npVac.length===0&&npLe)?(()=>{const d=new Date(npLe+"T00:00:00");d.setDate(d.getDate()+Math.max(npTo,0));return d.toISOString().split("T")[0];})():null;
-                setApps(prev=>prev.map(x=>x.id===a.id?{...x,property:pName,room:"",termRoomId:null,termPropId:null,...(autoMoveIn?{moveIn:autoMoveIn,termMoveIn:autoMoveIn}:{})}:x));
-                setModal(prev=>({...prev,_turnoverOverride:false,_overrideStep:0,_customBuffer:null,data:{...prev.data,property:pName,room:"",termRoomId:null,termPropId:null,...(autoMoveIn?{moveIn:autoMoveIn,termMoveIn:autoMoveIn}:{})}}));
-              }} style={{width:"100%"}}>
-                <option value="">No preference</option>
-                {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
-              </select>
-              {warnProp&&warnLe&&<div style={{marginTop:5,borderRadius:6,overflow:"hidden",border:`1px solid ${warnStatus==="overlap"?"rgba(196,92,74,.35)":warnStatus==="buffer-conflict"?"rgba(212,168,83,.35)":warnStatus==="clears"?"rgba(74,124,89,.25)":"rgba(212,168,83,.3)"}`}}>
-                <div style={{padding:"8px 10px",background:warnStatus==="overlap"?"rgba(196,92,74,.06)":warnStatus==="clears"?"rgba(74,124,89,.05)":"rgba(212,168,83,.06)",fontSize:11,color:"#5c4a3a"}}>
-                  <div style={{fontWeight:700,marginBottom:3,color:warnStatus==="overlap"?"#c45c4a":warnStatus==="clears"?"#2d6a3f":"#9a7422"}}>
-                    {selectedItem&&selectedItem.st!=="vacant"
-                      ?(warnStatus==="overlap"?"Lease overlap — tenant still active":warnStatus==="buffer-conflict"?"Buffer conflict — within turnover window":warnStatus==="clears"?"Room clears before move-in":"Room occupied")
-                      :(warnFullyLeased?"No rooms available now":"Room occupied")}
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:2}}>
-                    {selectedItem&&selectedItem.st!=="vacant"&&<span style={{fontSize:10,color:"#6b5e52"}}>{selectedItem.name}</span>}
-                    <span>Lease ends: <strong>{fmtD(warnLe)}</strong></span>
-                    {warnTurnover>0&&<span>Turnover buffer: <strong>+{warnTurnover} days</strong></span>}
-                    <span>Room ready: <strong style={{color:warnStatus==="clears"?"#2d6a3f":warnStatus==="overlap"?"#c45c4a":"#9a7422"}}>{fmtD(warnReadyDate)}</strong></span>
-                    {moveInDate&&warnStatus&&<span>Your move-in: <strong style={{color:warnStatus==="clears"?"#2d6a3f":"#c45c4a"}}>{fmtD(moveInDate)}</strong>
-                      <span style={{marginLeft:6,fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:3,background:warnStatus==="clears"?"rgba(74,124,89,.1)":warnStatus==="overlap"?"rgba(196,92,74,.1)":"rgba(212,168,83,.1)",color:warnStatus==="clears"?"#2d6a3f":warnStatus==="overlap"?"#c45c4a":"#9a7422"}}>
-                        {warnStatus==="clears"?"clears":warnStatus==="overlap"?"lease overlap":"buffer conflict"}
-                      </span>
-                    </span>}
-                  </div>
-                </div>
-                <div style={{padding:"5px 10px",background:"rgba(0,0,0,.02)",borderTop:`1px solid ${warnStatus==="overlap"?"rgba(196,92,74,.1)":warnStatus==="clears"?"rgba(74,124,89,.1)":"rgba(212,168,83,.1)"}`,fontSize:10,color:"#7a5c1e"}}>
-                  {selectedItem&&selectedItem.st!=="vacant"
-                    ?(warnStatus==="clears"?"Move-in clears after room is ready.":warnStatus==="overlap"?"Adjust move-in date or terminate lease early.":"Adjust move-in date or reduce buffer below.")
-                    :"Move-in date auto-filled above. Select a room below."}
-                </div>
-              </div>}
-              {warnProp&&!warnLe&&warnFullyLeased&&<div style={{fontSize:11,color:"#c45c4a",marginTop:5,padding:"7px 10px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:6,fontWeight:600}}>
-                No rooms available — no lease end dates on file.
-              </div>}
-            </div>
+            {(!a.roomAssignMode||a.roomAssignMode==="locked")&&<div style={{marginBottom:8}}>
             <div className="fld" style={{marginBottom:0}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                 <label style={{margin:0}}>Move-in Date</label>
@@ -10684,7 +10640,7 @@ export default function Page(){
                 }} style={{width:"100%"}}/>
               }
             </div>
-          </div>}
+          </div>
 
           {/* Room dropdown — only when locking a room */}
           {(!a.roomAssignMode||a.roomAssignMode==="locked")&&<>{/* Room dropdown — all rooms at property, sorted by ready date */}
@@ -10696,6 +10652,8 @@ export default function Page(){
               const item=propRooms.find(x=>x.id===e.target.value);
               if(item){
                 saveTerm("termRoomId",item.id);saveTerm("termPropId",item.propId);saveTerm("termRent",item.rent);saveTerm("termSD",item.rent);
+                // Auto-set property from the selected room
+                if(item.propName&&item.propObj){setApps(prev=>prev.map(x=>x.id===a.id?{...x,property:item.propObj.name}:x));setModal(prev=>({...prev,data:{...prev.data,property:item.propObj.name}}));}
                 // Auto-fill move-in to this room's earliest ready date if not already set
                 const rdy=getReadyDate(item);
                 const curMoveIn=a.termMoveIn||a.moveIn||"";
@@ -10942,7 +10900,7 @@ export default function Page(){
       })()}
       {/* ── Mini Tenant Timeline ── */}
       {a.property&&(()=>{
-        const tlOpen=modal._appTlOpen===true||(modal._appTlOpen===undefined&&!!(a.termRoomId));
+        const tlOpen=modal._appTlOpen!==false;
         const tlView=modal._appTlView||"gantt";
         const tlMonthOff=modal._tlMonthOffset||0;
         const tlProp=props.find(p=>p.name===a.property);
