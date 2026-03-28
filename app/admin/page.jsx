@@ -2198,6 +2198,8 @@ export default function Page(){
   const[ttPref,setTtPref]=useState("gantt"); // user's chosen daily driver
   const[ttPropFilter,setTtPropFilter]=useState("all");
   const[ttMonthOffset,setTtMonthOffset]=useState(0);
+  const[ttSort,setTtSort]=useState("lease-end-asc");
+  const[ttGanttGrouped,setTtGanttGrouped]=useState(true); // true = by property, false = flat sorted
   const[sidebarEditMode,setSidebarEditMode]=useState(false);
   const[sidebarDrag,setSidebarDrag]=useState(null); // {secIdx,itemIdx}
   const[sidebarDragOver,setSidebarDragOver]=useState(null);
@@ -3906,6 +3908,20 @@ export default function Page(){
         })));
         const filtered=ttPropFilter==="all"?allRoomsFull:allRoomsFull.filter(r=>r.propId===ttPropFilter);
 
+        // Sort helper
+        const sortRooms=(rooms)=>{
+          const cp=[...rooms];
+          const noLe=r=>!r.le;
+          const leMs=r=>r.le?new Date(r.le+"T00:00:00").getTime():Infinity;
+          const rdMs=r=>{const s=getReadyStr(r);return s?new Date(s+"T00:00:00").getTime():r.le?leMs(r):Infinity;};
+          if(ttSort==="lease-end-asc")return cp.sort((a,b)=>noLe(a)&&noLe(b)?0:noLe(a)?-1:noLe(b)?1:leMs(a)-leMs(b));
+          if(ttSort==="lease-end-desc")return cp.sort((a,b)=>noLe(a)&&noLe(b)?0:noLe(a)?1:noLe(b)?-1:leMs(b)-leMs(a));
+          if(ttSort==="avail-asc")return cp.sort((a,b)=>rdMs(a)-rdMs(b));
+          if(ttSort==="avail-desc")return cp.sort((a,b)=>rdMs(b)-rdMs(a));
+          return cp;
+        };
+        const sortedFiltered=sortRooms(filtered);
+
         const getReadyStr=(r)=>{
           if(!r.le)return null;
           const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));
@@ -3943,6 +3959,12 @@ export default function Page(){
                 <option value="all">All properties</option>
                 {props.map(p=><option key={p.id} value={p.id}>{getPropDisplayName(p)}</option>)}
               </select>
+              <select value={ttSort} onChange={e=>setTtSort(e.target.value)} style={{fontSize:11,padding:"4px 8px"}}>
+                <option value="lease-end-asc">Lease end ↑ soonest</option>
+                <option value="lease-end-desc">Lease end ↓ latest</option>
+                <option value="avail-asc">Available date ↑ soonest</option>
+                <option value="avail-desc">Available date ↓ latest</option>
+              </select>
               {/* View toggle */}
               <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:7,overflow:"hidden"}}>
                 {views.map(v=>(
@@ -3964,58 +3986,71 @@ export default function Page(){
             {/* Month nav */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.015)"}}>
               <button className="btn btn-out btn-sm" onClick={()=>setTtMonthOffset(o=>o-1)}>← Earlier</button>
-              <span style={{fontSize:12,fontWeight:600,color:"#5c4a3a"}}>{baseDate.toLocaleString("default",{month:"long",year:"numeric"})} window</span>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:12,fontWeight:600,color:"#5c4a3a"}}>{baseDate.toLocaleString("default",{month:"long",year:"numeric"})} window</span>
+                <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
+                  <button onClick={()=>setTtGanttGrouped(true)} style={{padding:"3px 10px",fontSize:10,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",background:ttGanttGrouped?"#1a1714":"transparent",color:ttGanttGrouped?"#d4a853":"#5c4a3a"}}>By property</button>
+                  <button onClick={()=>setTtGanttGrouped(false)} style={{padding:"3px 10px",fontSize:10,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",background:!ttGanttGrouped?"#1a1714":"transparent",color:!ttGanttGrouped?"#d4a853":"#5c4a3a"}}>Flat</button>
+                </div>
+                {!ttGanttGrouped&&<button onClick={()=>setTtGanttGrouped(true)} style={{fontSize:10,background:"none",border:"none",cursor:"pointer",color:"#9a7422",fontFamily:"inherit",textDecoration:"underline",padding:0}}>Reset to default</button>}
+              </div>
               <button className="btn btn-out btn-sm" onClick={()=>setTtMonthOffset(o=>o+1)}>Later →</button>
             </div>
             {/* Month headers */}
             <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-              <div style={{width:140,flexShrink:0,padding:"4px 12px",fontSize:9,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>Room</div>
+              <div style={{width:140,flexShrink:0,padding:"4px 12px",fontSize:9,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{ttGanttGrouped?"Room":"Room · Property"}</div>
               <div style={{flex:1,position:"relative",height:22}}>
                 {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:9,color:"#999",transform:"translateX(-50%)",whiteSpace:"nowrap",top:5}}>{m.label}</div>)}
               </div>
             </div>
-            {/* Rows grouped by property */}
-            {props.filter(p=>ttPropFilter==="all"||p.id===ttPropFilter).map(p=>{
-              const pRooms=allRooms(p).filter(r=>!r.ownerOccupied);
-              if(!pRooms.length)return null;
-              return(<div key={p.id}>
-                <div style={{padding:"5px 12px",fontSize:10,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.04)",borderBottom:"1px solid rgba(0,0,0,.04)",textTransform:"uppercase",letterSpacing:.3}}>
-                  {getPropDisplayName(p)}
-                </div>
-                {pRooms.map(r=>{
-                  const buf=r.turnoverDays!=null?r.turnoverDays:(p.turnoverDays||0);
-                  const readyStr=r.le?(()=>{const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+buf);return d.toISOString().split("T")[0];})():null;
-                  const isOcc=r.st==="occupied"&&r.tenant;
-                  const isVac=!isOcc;
-                  const leX=r.le?dateToX(r.le):null;
-                  const rdX=readyStr?dateToX(readyStr):null;
-                  const todayX=dateToX(TODAY_STR);
-                  const moveInX=r.tenant?.moveIn?dateToX(r.tenant.moveIn):null;
-                  return(
-                  <div key={r.id} style={{display:"flex",alignItems:"center",borderBottom:"1px solid rgba(0,0,0,.04)",minHeight:36}}>
-                    <div style={{width:140,flexShrink:0,padding:"4px 12px"}}>
-                      <div style={{fontSize:11,fontWeight:600,color:"#1a1714",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.name}</div>
-                      {isOcc&&<div style={{fontSize:9,color:"#6b5e52",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.tenant.name}</div>}
-                      {isVac&&<div style={{fontSize:9,color:"#4a7c59",fontWeight:600}}>Vacant</div>}
-                    </div>
-                    <div style={{flex:1,position:"relative",height:36,display:"flex",alignItems:"center"}}>
-                      {/* Today line */}
-                      <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"#c45c4a",zIndex:3,opacity:.7}}/>
-                      {isVac&&<div style={{position:"absolute",left:"0%",right:"0%",height:16,borderRadius:3,background:"rgba(74,124,89,.15)",border:"1px solid rgba(74,124,89,.3)",display:"flex",alignItems:"center",paddingLeft:6}}>
-                        <span style={{fontSize:9,color:"#2d6a3f",fontWeight:600}}>Available now</span>
-                      </div>}
-                      {isOcc&&r.tenant?.moveIn&&moveInX!==null&&leX!==null&&<div style={{position:"absolute",left:Math.min(moveInX,leX)+"%",width:Math.abs(leX-Math.min(moveInX,leX))+"%",height:20,borderRadius:3,background:"#B5D4F4",top:8,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden"}}>
-                        <span style={{fontSize:9,color:"#0C447C",fontWeight:600,whiteSpace:"nowrap"}}>{r.tenant.name} · ends {fmtD(r.le)}</span>
-                      </div>}
-                      {isOcc&&leX!==null&&rdX!==null&&buf>0&&<div style={{position:"absolute",left:leX+"%",width:(rdX-leX)+"%",height:20,top:8,background:"#FAC775",borderRadius:"0 3px 3px 0",minWidth:2}}/>}
-                      {isOcc&&rdX!==null&&rdX<100&&<div style={{position:"absolute",left:rdX+"%",right:"0%",height:16,top:10,background:"rgba(74,124,89,.1)",border:"1px dashed rgba(74,124,89,.3)",borderRadius:"0 3px 3px 0",display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden"}}>
-                        <span style={{fontSize:9,color:"#2d6a3f",whiteSpace:"nowrap"}}>Avail. {fmtD(readyStr)}</span>
-                      </div>}
-                    </div>
+            {/* Gantt row renderer — shared between grouped + flat */}
+            {(()=>{
+              const renderRow=(r,showProp=false)=>{
+                const buf=r.buf!=null?r.buf:0;
+                const readyStr=r.le?(()=>{const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+buf);return d.toISOString().split("T")[0];})():null;
+                const isOcc=r.st==="occupied"&&r.tenant;
+                const isVac=!isOcc;
+                const leX=r.le?dateToX(r.le):null;
+                const rdX=readyStr?dateToX(readyStr):null;
+                const todayX=dateToX(TODAY_STR);
+                const moveInX=r.tenant?.moveIn?dateToX(r.tenant.moveIn):null;
+                return(
+                <div key={r.id} style={{display:"flex",alignItems:"center",borderBottom:"1px solid rgba(0,0,0,.04)",minHeight:36}}>
+                  <div style={{width:140,flexShrink:0,padding:"4px 12px"}}>
+                    <div style={{fontSize:11,fontWeight:600,color:"#1a1714",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.name}</div>
+                    {showProp&&<div style={{fontSize:9,color:"#9a7422",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.propName}</div>}
+                    {isOcc&&!showProp&&<div style={{fontSize:9,color:"#6b5e52",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.tenant.name}</div>}
+                    {isOcc&&showProp&&<div style={{fontSize:9,color:"#6b5e52",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.tenant.name}</div>}
+                    {isVac&&<div style={{fontSize:9,color:"#4a7c59",fontWeight:600}}>Vacant</div>}
+                  </div>
+                  <div style={{flex:1,position:"relative",height:36,display:"flex",alignItems:"center"}}>
+                    <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"#c45c4a",zIndex:3,opacity:.7}}/>
+                    {isVac&&<div style={{position:"absolute",left:"0%",right:"0%",height:16,borderRadius:3,background:"rgba(74,124,89,.15)",border:"1px solid rgba(74,124,89,.3)",display:"flex",alignItems:"center",paddingLeft:6}}>
+                      <span style={{fontSize:9,color:"#2d6a3f",fontWeight:600}}>Available now</span>
+                    </div>}
+                    {isOcc&&r.tenant?.moveIn&&moveInX!==null&&leX!==null&&<div style={{position:"absolute",left:Math.min(moveInX,leX)+"%",width:Math.abs(leX-Math.min(moveInX,leX))+"%",height:20,borderRadius:3,background:"#B5D4F4",top:8,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden"}}>
+                      <span style={{fontSize:9,color:"#0C447C",fontWeight:600,whiteSpace:"nowrap"}}>{r.tenant.name} · ends {fmtD(r.le)}</span>
+                    </div>}
+                    {isOcc&&leX!==null&&rdX!==null&&buf>0&&<div style={{position:"absolute",left:leX+"%",width:(rdX-leX)+"%",height:20,top:8,background:"#FAC775",borderRadius:"0 3px 3px 0",minWidth:2}}/>}
+                    {isOcc&&rdX!==null&&rdX<100&&<div style={{position:"absolute",left:rdX+"%",right:"0%",height:16,top:10,background:"rgba(74,124,89,.1)",border:"1px dashed rgba(74,124,89,.3)",borderRadius:"0 3px 3px 0",display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden"}}>
+                      <span style={{fontSize:9,color:"#2d6a3f",whiteSpace:"nowrap"}}>Avail. {fmtD(readyStr)}</span>
+                    </div>}
+                  </div>
+                </div>);
+              };
+              if(ttGanttGrouped){
+                return props.filter(p=>ttPropFilter==="all"||p.id===ttPropFilter).map(p=>{
+                  const pRooms=sortRooms(allRooms(p).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(p),propId:p.id,buf:r.turnoverDays!=null?r.turnoverDays:(p.turnoverDays||0)})));
+                  if(!pRooms.length)return null;
+                  return(<div key={p.id}>
+                    <div style={{padding:"5px 12px",fontSize:10,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.04)",borderBottom:"1px solid rgba(0,0,0,.04)",textTransform:"uppercase",letterSpacing:.3}}>{getPropDisplayName(p)}</div>
+                    {pRooms.map(r=>renderRow(r,false))}
                   </div>);
-                })}
-              </div>);
-            })}
+                });
+              } else {
+                return sortedFiltered.map(r=>renderRow(r,true));
+              }
+            })()}
             <div style={{padding:"8px 16px",display:"flex",gap:16,borderTop:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.01)"}}>
               {[["#B5D4F4","Occupied"],["#FAC775","Turnover buffer"],["rgba(74,124,89,.15)","Available"]].map(([c,l])=>(
                 <div key={l} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"#6b5e52"}}>
@@ -4032,13 +4067,7 @@ export default function Page(){
           {/* ── COUNTDOWN ── */}
           {ttView==="countdown"&&<div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
-              {[...filtered].sort((a,b)=>{
-                const ar=getReadyStr(a),br=getReadyStr(b);
-                if(!a.le&&!b.le)return 0;
-                if(!a.le)return -1;if(!b.le)return 1;
-                const as=ar||a.le,bs=br||b.le;
-                return as<bs?-1:1;
-              }).map(r=>{
+              {sortedFiltered.map(r=>{
                 const readyStr=getReadyStr(r);
                 const days=daysUntil(readyStr||(r.st==="vacant"?TODAY_STR:null));
                 const isVac=r.st==="vacant"||!r.tenant;
@@ -4119,7 +4148,7 @@ export default function Page(){
                 {id:"buffer",label:"In buffer",color:"#633806",bg:"rgba(212,168,83,.04)",filter:r=>{const rs=getReadyStr(r);return r.le&&daysUntil(r.le)<=0&&rs&&daysUntil(rs)>0;}},
                 {id:"avail",label:"Available",color:"#27500A",bg:"rgba(74,124,89,.04)",border:"rgba(74,124,89,.2)",filter:r=>r.st==="vacant"||!r.tenant||(r.le&&daysUntil(r.le)<=0&&(!getReadyStr(r)||daysUntil(getReadyStr(r))<=0))},
               ].map(col=>{
-                const colRooms=filtered.filter(col.filter);
+                const colRooms=sortedFiltered.filter(col.filter);
                 return(
                 <div key={col.id} style={{background:col.bg||"rgba(0,0,0,.02)",borderRadius:10,padding:10,border:col.border?`1px solid ${col.border}`:"0.5px solid rgba(0,0,0,.06)"}}>
                   <div style={{fontSize:10,fontWeight:700,color:col.color,textTransform:"uppercase",letterSpacing:.4,marginBottom:8,display:"flex",justifyContent:"space-between"}}>
