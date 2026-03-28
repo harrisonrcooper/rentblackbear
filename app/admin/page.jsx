@@ -10640,7 +10640,7 @@ export default function Page(){
                 }} style={{width:"100%"}}/>
               }
             </div>
-          </div>
+          </div>}
 
           {/* Room dropdown — only when locking a room */}
           {(!a.roomAssignMode||a.roomAssignMode==="locked")&&<>{/* Room dropdown — all rooms at property, sorted by ready date */}
