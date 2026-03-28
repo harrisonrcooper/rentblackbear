@@ -309,7 +309,18 @@ export default function ApplyPage(){
       const capWord=s=>s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():"";
       const firstN=capWord(nameParts[0]||"");
       const lastN=nameParts.slice(1).map(capWord).join(" ");
-      setD(p=>({...p,firstName:firstN,lastName:lastN,email:inv.email||"",phone:inv.phone||""}));
+      // Prefill everything available from the pre-screen / invite record
+      setD(p=>({...p,
+        firstName:firstN,
+        lastName:lastN,
+        email:inv.email||"",
+        phone:inv.phone||"",
+        moveIn:inv.termMoveIn||inv.moveIn||"",
+        preferredProperty:inv.property||"",
+        selectedRoom:inv.termRoomId||"",
+        income:inv.income||"",
+        source:inv.source||"",
+      }));
     }
     const p=await loadKey("hq-props",[]);setProps(p);
     const af=await loadKey("hq-app-fields",[]);setAppFields(af);

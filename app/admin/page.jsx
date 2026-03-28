@@ -9859,7 +9859,7 @@ export default function Page(){
       const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
       const commit=(method)=>{
         setApps(p=>p.map(x=>x.id===a.id?{...x,
-          status:"new-lead",lastContact:TODAY.toISOString().split("T")[0],
+          status:"invited",lastContact:TODAY.toISOString().split("T")[0],
           screenPkg:pkg,incomeAdd,appFee:totalFee,
           waiverReason:modal.waiverReason||"",
           property:a.property||"",
