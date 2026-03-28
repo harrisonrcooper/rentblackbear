@@ -340,7 +340,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","accounting"],
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
@@ -1943,6 +1943,11 @@ const S=`
 .mob-toggle{background:none;border:none;color:#f5f0e8;font-size:20px;cursor:pointer;padding:4px}
 .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
 .mob-overlay.show{display:block}
+.bot-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:#1a1714;border-top:1px solid rgba(255,255,255,.08);z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.bot-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border:none;background:none;cursor:pointer;font-family:inherit;color:#888;font-size:9px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;transition:color .15s;min-height:54px}
+.bot-tab.act{color:#d4a853}
+.bot-tab svg{opacity:.7;transition:opacity .15s}
+.bot-tab.act svg{opacity:1}
 
 /* Main */
 .mn{flex:1;overflow-y:auto;background:#f4f3f0;display:flex;flex-direction:column;will-change:transform;transform:translateZ(0);-webkit-overflow-scrolling:touch}
@@ -2052,13 +2057,14 @@ const S=`
   .fr3{grid-template-columns:1fr 1fr}
 }
 
-/* Phone */
 @media(max-width:768px){
   .side{position:fixed;left:-260px;top:0;bottom:0;z-index:100;transition:left .25s;width:260px;box-shadow:4px 0 24px rgba(0,0,0,.3)}
   .side.open{left:0}
-  .mob-header{display:flex}
+  .mob-header{display:none}
+  .bot-bar{display:flex}
+  .mn{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
   .cnt{margin-left:0;padding:14px}
-  .tbar{padding:10px 14px}
+  .tbar{padding:10px 14px;top:0}
   .tbar h1{font-size:18px}
   .kgrid{grid-template-columns:1fr 1fr;gap:8px}
   .kpi{padding:12px 10px}
@@ -2069,26 +2075,19 @@ const S=`
   .fr,.fr3{grid-template-columns:1fr}
   .sec-hd{flex-direction:column;gap:8px;align-items:flex-start}
   .row{padding:10px 12px;gap:8px}
-  /* Tables scroll horizontally */
   .tbl{display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch}
   .tbl thead,.tbl tbody,.tbl tr{display:table;width:100%;table-layout:auto}
   .tbl th,.tbl td{padding:8px 10px;font-size:10px}
-  /* Modals slide up from bottom */
   .mbg{align-items:flex-end}
   .mbox{max-width:100%!important;width:100%;border-radius:16px 16px 0 0;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease-out}
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   .mft{flex-wrap:wrap}.mft button{flex:1;min-width:100px}
-  /* Forms */
   .fld input,.fld select,.fld textarea{font-size:14px!important;padding:10px 12px}
   .sform-row{grid-template-columns:1fr}
-  /* Payments tabs */
   .pay-tab{padding:10px 12px;font-size:12px!important}
-  /* Charges inline expand */
   .card-bd{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  /* Buttons */
   .btn{padding:8px 14px;font-size:11px}
   .btn-sm{padding:6px 10px;font-size:9px}
-  /* Filter rows */
   select,input[type="date"]{font-size:12px!important;min-width:0}
 }
 
@@ -2630,8 +2629,39 @@ export default function Page(){
   const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-green{background:${acc}!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
   const _acc=settings.adminAccent||"#4a7c59";const _rgb=settings.adminAccentRgb||"74,124,89";const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";const _zoom=settings.adminZoom||1;
   return(<div style={{fontFamily:_font}}><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app" style={{zoom:_zoom}}>
-    {/* Mobile header */}
-    <div className="mob-header"><div style={{display:"flex",alignItems:"center",gap:8}}><div className="s-logo" style={{fontSize:16}}>🐻 BB <span>HQ</span></div><span style={{fontSize:11,color:"#c4a882"}}>· {(tabs.find(t=>t.id===tab)||{}).l}</span></div><button className="mob-toggle" onClick={()=>setSideOpen(!sideOpen)}>{sideOpen?"✕":"☰"}</button></div>
+    {/* Mobile bottom tab bar */}
+    <div className="bot-bar">
+      {(()=>{
+        const TAB_ICONS={
+          dashboard:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>,
+          tenants:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+          applications:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>,
+          accounting:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+          maintenance:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
+          payments:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+          timeline:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>,
+          leases:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+          properties:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+          reports:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+        };
+        const TAB_LABELS={dashboard:"Dashboard",tenants:"Tenants",applications:"Apply",accounting:"Money",maintenance:"Maint.",payments:"Ledger",timeline:"Timeline",leases:"Leases",properties:"Portfolio",reports:"Reports"};
+        const mobTabs=(settings.mobileTabs||["dashboard","tenants","applications","accounting"]).slice(0,4);
+        return[...mobTabs,{id:"__more__"}].map(t=>{
+          const id=typeof t==="string"?t:t.id;
+          const isMore=id==="__more__";
+          const icon=isMore
+            ?<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            :(TAB_ICONS[id]||TAB_ICONS.dashboard);
+          const label=isMore?"More":(TAB_LABELS[id]||id);
+          const isActive=isMore?sideOpen:tab===id;
+          return(
+          <button key={id} className={`bot-tab ${isActive?"act":""}`}
+            onClick={()=>{if(isMore){setSideOpen(s=>!s);}else{goTab(id);setSideOpen(false);}}}>
+            {icon}{label}
+          </button>);
+        });
+      })()}
+    </div>
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
 
     {/* Sidebar */}
@@ -3908,7 +3938,7 @@ export default function Page(){
         })));
         const filtered=ttPropFilter==="all"?allRoomsFull:allRoomsFull.filter(r=>r.propId===ttPropFilter);
 
-        const getReadyStr=(r)=>{
+        const getReadyStr=(r)=>{ // v2
           if(!r.le)return null;
           const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));
           return d.toISOString().split("T")[0];
@@ -3927,7 +3957,7 @@ export default function Page(){
           if(ttSort==="avail-desc")return cp.sort((a,b)=>rdMs(b)-rdMs(a));
           return cp;
         };
-        const sortedFiltered=sortRooms(filtered);;
+        const sortedFiltered=sortRooms(filtered);
 
         // Month window for Gantt/Calendar
         const baseDate=new Date(TODAY.getFullYear(),TODAY.getMonth()+ttMonthOffset,1);
@@ -7346,6 +7376,43 @@ export default function Page(){
                 </button>
               ))}
             </div>
+          </div></div>
+
+          {/* Mobile Tab Bar */}
+          <div className="card" style={{marginBottom:12}}><div className="card-bd">
+            <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Mobile Tab Bar</h3>
+            <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Pick up to 4 tabs for the bottom bar on mobile. "More" is always added automatically.</p>
+            {(()=>{
+              const ALL_MOB_TABS=[
+                {id:"dashboard",label:"Dashboard"},{id:"tenants",label:"Tenants"},{id:"applications",label:"Applications"},
+                {id:"accounting",label:"Accounting"},{id:"payments",label:"Tenant Ledger"},{id:"maintenance",label:"Maintenance"},
+                {id:"timeline",label:"Tenant Timeline"},{id:"leases",label:"Leases & Docs"},{id:"properties",label:"Properties"},{id:"reports",label:"Reports"},
+              ];
+              const cur=settings.mobileTabs||["dashboard","tenants","applications","accounting"];
+              const saveMobTabs=(tabs)=>{const u={...settings,mobileTabs:tabs};setSettings(u);save("hq-settings",u);};
+              const toggle=(id)=>{
+                if(cur.includes(id)){saveMobTabs(cur.filter(x=>x!==id));}
+                else if(cur.length<4){saveMobTabs([...cur,id]);}
+              };
+              return(<>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {ALL_MOB_TABS.map((t,i)=>{
+                    const on=cur.includes(t.id);
+                    const pos=cur.indexOf(t.id);
+                    return(
+                    <button key={t.id} onClick={()=>toggle(t.id)}
+                      style={{padding:"7px 14px",borderRadius:8,border:`1.5px solid ${on?_acc:"rgba(0,0,0,.08)"}`,background:on?_acc+"18":"#fff",cursor:!on&&cur.length>=4?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:on?700:400,color:on?_acc:"#5c4a3a",opacity:!on&&cur.length>=4?.4:1,transition:"all .15s",display:"flex",alignItems:"center",gap:6}}>
+                      {on&&<span style={{width:16,height:16,borderRadius:"50%",background:_acc,color:"#fff",fontSize:9,fontWeight:800,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{pos+1}</span>}
+                      {t.label}
+                    </button>);
+                  })}
+                </div>
+                <div style={{marginTop:10,fontSize:11,color:"#6b5e52"}}>
+                  Selected ({cur.length}/4): <strong style={{color:_acc}}>{cur.map(id=>ALL_MOB_TABS.find(t=>t.id===id)?.label||id).join(" · ")}</strong>
+                  {cur.length>0&&<button onClick={()=>saveMobTabs(["dashboard","tenants","applications","accounting"])} style={{marginLeft:10,fontSize:10,background:"none",border:"none",cursor:"pointer",color:"#9a7422",fontFamily:"inherit",textDecoration:"underline",padding:0}}>Reset to default</button>}
+                </div>
+              </>);
+            })()}
           </div></div>
         </>}
 
