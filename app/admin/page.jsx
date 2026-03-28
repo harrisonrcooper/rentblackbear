@@ -10339,7 +10339,7 @@ export default function Page(){
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
       <h2>Deny Application</h2>
       <div className="fld"><label>Reason (required)</label><textarea value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value}))} placeholder="e.g. Failed background check, insufficient income..." rows={3} autoFocus/></div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(modal.data?{type:"app",data:modal.data}:null)}>← Back</button>
         <button className="btn btn-red" disabled={!(modal.reason||"").trim()} onClick={()=>{setApps(p=>p.map(a=>a.id===modal.appId?{...a,status:"denied",deniedReason:modal.reason,deniedDate:TODAY.toISOString().split("T")[0],prevStage:a.status,lastContact:TODAY.toISOString().split("T")[0],history:[...(a.history||[]),{from:a.status,to:"denied",date:TODAY.toISOString().split("T")[0],note:modal.reason}]}:a));setModal(null);}}>Deny</button></div>
     </div></div>
   )}
@@ -11289,8 +11289,8 @@ export default function Page(){
 
       <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
         {a.status==="new-lead"&&<button className="btn btn-gold" style={{flex:1,transition:"all .2s"}}
-          onMouseEnter={e=>{e.currentTarget.style.background="linear-gradient(135deg,#d4a853 0%,#c8943a 100%)";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 5px 18px rgba(212,168,83,.4)";}}
-          onMouseLeave={e=>{e.currentTarget.style.background="";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}
+          onMouseEnter={e=>{e.currentTarget.style.background="#1a1714";e.currentTarget.style.color="#d4a853";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 14px rgba(0,0,0,.25)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="";e.currentTarget.style.color="";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}
           onClick={()=>setModal({type:"inviteApp",data:a})}>Invite to Apply</button>}
         {a.status==="applied"&&<>
           {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
@@ -11326,7 +11326,7 @@ export default function Page(){
           </div>);
         })()}
         
-        <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,reason:""})}>Deny</button>
+        <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,data:a,reason:""})}>Deny</button>
       </div>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
     </div></div>);})()}
