@@ -10571,10 +10571,28 @@ export default function Page(){
         // Find the room in props hierarchy for terminate flow
         const termRoomForModal=selectedItem&&termProp?allRooms(termProp).find(r=>r.id===selectedItem.id):null;
 
+        const skipRoom=!!a.skipRoomAssign;
+
         return(
         <div className="tp-card" style={{border:"2px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
-          <h3 style={{margin:"0 0 12px",color:"#9a7422"}}>Room / Unit Assignment</h3>
-          <div className="fr" style={{marginBottom:8,gap:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:skipRoom?0:12}}>
+            <h3 style={{margin:0,color:"#9a7422"}}>Room / Unit Assignment</h3>
+            <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",userSelect:"none"}}
+              onClick={()=>{
+                const next=!skipRoom;
+                setApps(prev=>prev.map(x=>x.id===a.id?{...x,skipRoomAssign:next,property:next?"":x.property,room:next?"":x.room,termRoomId:next?null:x.termRoomId}:x));
+                setModal(prev=>({...prev,_turnoverOverride:false,_overrideStep:0,_customBuffer:null,data:{...prev.data,skipRoomAssign:next,property:next?"":prev.data.property,room:next?"":prev.data.room,termRoomId:next?null:prev.data.termRoomId}}));
+              }}>
+              <div style={{width:30,height:16,borderRadius:8,background:skipRoom?"rgba(74,124,89,.2)":"rgba(0,0,0,.1)",position:"relative",transition:"background .15s",flexShrink:0}}>
+                <div style={{position:"absolute",top:2,left:skipRoom?14:2,width:12,height:12,borderRadius:"50%",background:skipRoom?"#4a7c59":"#aaa",transition:"all .15s"}}/>
+              </div>
+              <span style={{fontSize:10,fontWeight:600,color:skipRoom?"#4a7c59":"#6b5e52",transition:"color .15s"}}>Assign at lease</span>
+            </label>
+          </div>
+          {skipRoom&&<div style={{fontSize:11,color:"#4a7c59",padding:"7px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
+            Room assignment skipped — you&#39;ll lock in the room and rent when sending the lease.
+          </div>}
+          {!skipRoom&&<>
             <div className="fld" style={{marginBottom:0}}>
               <label>Property</label>
               <select value={a.property||""} onChange={e=>{
@@ -10883,6 +10901,7 @@ export default function Page(){
               </div>
             </div>
           </div>}
+          </>}
         </div>);
       })()}
       {/* ── Mini Tenant Timeline ── */}
