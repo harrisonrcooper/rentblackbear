@@ -9867,9 +9867,8 @@ export default function Page(){
 
     if(inviteStep==="preview"){
       const errors=[];
-      if(roomMode==="locked"&&!selPropId)errors.push("Select a property");
-      if(roomMode==="property"&&!selPropId)errors.push("Select a property");
-      if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Waiver reason required when screening is skipped");
+      if(!a.skipRoomAssign&&!a.termRoomId&&!a.moveInTbd)errors.push("No room assigned — go back to applicant and assign a room or enable Assign at Lease.");
+      if(pkg==="none"&&!(modal.waiverReason||"").trim())errors.push("Waiver reason required when screening is skipped.");
       const validate=()=>{if(errors.length>0){setModal(prev=>({...prev,sendErrors:errors}));doShake();return false;}return true;};
       const commit=(method)=>{
         setApps(p=>p.map(x=>x.id===a.id?{...x,
@@ -10098,10 +10097,15 @@ export default function Page(){
           onMouseLeave={e=>{e.currentTarget.style.background="";}}
           style={{transition:"background .12s"}}>&#8592; Back to Applicant</button>
         <button className="btn btn-gold" onClick={()=>{
-          if(roomMode==="locked"&&!selRoomId){setModal(prev=>({...prev,inviteRoomErr:true}));shakeModal();return;}
+          if(!a.skipRoomAssign&&!a.termRoomId&&!a.moveInTbd){
+            setModal(prev=>({...prev,inviteRoomErr:true}));shakeModal();return;
+          }
           setModal(prev=>({...prev,inviteStep:"preview",sendErrors:[],inviteRoomErr:false}));
         }}>Preview Summary</button>
       </div>
+      {modal.inviteRoomErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:8,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:7,animation:"shake .4s ease"}}>
+        Go back to the applicant and assign a room or toggle &ldquo;Assign at lease&rdquo; to continue without one.
+      </div>}
     </div></div>);
   })()}
 
