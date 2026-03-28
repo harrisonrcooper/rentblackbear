@@ -2202,6 +2202,8 @@ export default function Page(){
   const[sidebarEditMode,setSidebarEditMode]=useState(false);
   const[sidebarDrag,setSidebarDrag]=useState(null); // {secIdx,itemIdx}
   const[sidebarDragOver,setSidebarDragOver]=useState(null);
+  const[sidebarSecDrag,setSidebarSecDrag]=useState(null); // section index being dragged
+  const[sidebarSecDragOver,setSidebarSecDragOver]=useState(null); // section index drag target
   const[maintForm,setMaintForm]=useState({title:"",desc:"",priority:"medium",submitted:false});
   const[leases,setLeases]=useState([]);
   const[leaseTemplate,setLeaseTemplate]=useState(null);
@@ -2557,8 +2559,8 @@ export default function Page(){
   const DEF_SIDEBAR=[
     {label:"Overview",ids:["dashboard"]},
     {label:"Traction",ids:["scorecard","rocks","issues"]},
-    {label:"Tenants",ids:["tenants","portal","payments","timeline"]},
     {label:"Leasing",ids:["applications"]},
+    {label:"Tenants",ids:["tenants","portal","payments","timeline"]},
     {label:"Operations",ids:["maintenance","leases","documents"]},
     {label:"Financials",ids:["accounting","add-expense","reports"]},
     {label:"Portfolio",ids:["properties"]},
@@ -2669,12 +2671,44 @@ export default function Page(){
       <div className="s-logo">🐻 Black Bear <span>HQ</span></div>
 
       {/* Data-driven sections */}
-      {sidebarConfig.map((sec,si)=>(
-        <div key={si}>
+      {sidebarConfig.map((sec,si)=>{
+        const isSecDragging=sidebarSecDrag===si;
+        const isSecDragOver=sidebarSecDragOver===si;
+        return(
+        <div key={si}
+          style={{opacity:isSecDragging?0.35:1,transition:"opacity .15s"}}
+          onDragOver={e=>{if(sidebarSecDrag!==null&&sidebarDrag===null){e.preventDefault();setSidebarSecDragOver(si);}}}
+          onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setSidebarSecDragOver(null);}}
+          onDrop={e=>{
+            e.preventDefault();
+            if(sidebarSecDrag===null||sidebarDrag!==null)return;
+            if(sidebarSecDrag===si){setSidebarSecDrag(null);setSidebarSecDragOver(null);return;}
+            const cfg=sidebarConfig.map(s=>({...s,ids:[...s.ids]}));
+            const[moved]=cfg.splice(sidebarSecDrag,1);
+            const target=sidebarSecDrag<si?si-1:si;
+            cfg.splice(target,0,moved);
+            setSidebarConfig(cfg);
+            setSidebarSecDrag(null);setSidebarSecDragOver(null);
+          }}>
           {/* Section label */}
           {sidebarEditMode
-            ?<input value={sec.label} onChange={e=>{const c=sidebarConfig.map((s,i)=>i===si?{...s,label:e.target.value}:s);setSidebarConfig(c);}}
-              style={{background:"transparent",border:"none",borderBottom:"1px solid rgba(255,255,255,.2)",color:"rgba(212,168,83,.8)",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1,width:"calc(100% - 20px)",margin:"8px 10px 4px",padding:"2px 0",fontFamily:"inherit",outline:"none"}}/>
+            ?<div
+                draggable
+                onDragStart={e=>{e.stopPropagation();setSidebarSecDrag(si);setSidebarDrag(null);}}
+                onDragEnd={()=>{setSidebarSecDrag(null);setSidebarSecDragOver(null);}}
+                style={{display:"flex",alignItems:"center",gap:4,margin:"8px 4px 2px",padding:"3px 6px",borderRadius:5,cursor:"grab",background:isSecDragOver?"rgba(212,168,83,.15)":"rgba(255,255,255,.04)",border:isSecDragOver?"1px solid rgba(212,168,83,.3)":"1px solid rgba(255,255,255,.06)",transition:"all .1s"}}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
+                  <circle cx="9" cy="5" r="1.5" fill="rgba(255,255,255,.45)"/>
+                  <circle cx="15" cy="5" r="1.5" fill="rgba(255,255,255,.45)"/>
+                  <circle cx="9" cy="12" r="1.5" fill="rgba(255,255,255,.45)"/>
+                  <circle cx="15" cy="12" r="1.5" fill="rgba(255,255,255,.45)"/>
+                  <circle cx="9" cy="19" r="1.5" fill="rgba(255,255,255,.45)"/>
+                  <circle cx="15" cy="19" r="1.5" fill="rgba(255,255,255,.45)"/>
+                </svg>
+                <input value={sec.label} onChange={e=>{const cfg2=sidebarConfig.map((s,i)=>i===si?{...s,label:e.target.value}:s);setSidebarConfig(cfg2);}}
+                  onClick={e=>e.stopPropagation()}
+                  style={{background:"transparent",border:"none",color:"rgba(212,168,83,.9)",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1,padding:"1px 0",fontFamily:"inherit",outline:"none",flex:1,minWidth:0,cursor:"text"}}/>
+              </div>
             :<div className="s-lbl">{sec.label}</div>}
 
           {/* Items */}
@@ -2724,14 +2758,14 @@ export default function Page(){
               <span className="sn-i">{t.i}</span>{label}{t.badge&&<span className="sn-badge">{t.badge}</span>}
             </button>);
           })}
-        </div>
-      ))}
+        </div>);
+      })}
 
       {/* Edit / Done button — immediately after last item */}
       <div style={{padding:"8px 10px 4px"}}>
         {sidebarEditMode
           ?<div style={{display:"flex",flexDirection:"column",gap:6}}>
-            <button onClick={()=>{setSidebarEditMode(false);setSidebarDrag(null);setSidebarDragOver(null);}}
+            <button onClick={()=>{setSidebarEditMode(false);setSidebarDrag(null);setSidebarDragOver(null);setSidebarSecDrag(null);setSidebarSecDragOver(null);}}
               style={{width:"100%",padding:"8px",borderRadius:7,border:"none",background:"rgba(74,124,89,.8)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
               Done
             </button>
