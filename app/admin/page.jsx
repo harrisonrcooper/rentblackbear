@@ -3908,6 +3908,13 @@ export default function Page(){
         })));
         const filtered=ttPropFilter==="all"?allRoomsFull:allRoomsFull.filter(r=>r.propId===ttPropFilter);
 
+        const getReadyStr=(r)=>{
+          if(!r.le)return null;
+          const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));
+          return d.toISOString().split("T")[0];
+        };
+        const daysUntil=(ds)=>{if(!ds)return null;return Math.ceil((new Date(ds+"T00:00:00")-TODAY)/(86400000));};
+
         // Sort helper
         const sortRooms=(rooms)=>{
           const cp=[...rooms];
@@ -3920,14 +3927,7 @@ export default function Page(){
           if(ttSort==="avail-desc")return cp.sort((a,b)=>rdMs(b)-rdMs(a));
           return cp;
         };
-        const sortedFiltered=sortRooms(filtered);
-
-        const getReadyStr=(r)=>{
-          if(!r.le)return null;
-          const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));
-          return d.toISOString().split("T")[0];
-        };
-        const daysUntil=(ds)=>{if(!ds)return null;return Math.ceil((new Date(ds+"T00:00:00")-TODAY)/(86400000));};
+        const sortedFiltered=sortRooms(filtered);;
 
         // Month window for Gantt/Calendar
         const baseDate=new Date(TODAY.getFullYear(),TODAY.getMonth()+ttMonthOffset,1);
