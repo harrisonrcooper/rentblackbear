@@ -259,7 +259,7 @@ export default function ApplyPage(){
   const[appType,setAppType]=useState("tenant");
   const[d,setD]=useState({
     firstName:"",lastName:"",email:"",phone:"",dob:"",gender:"",occupationType:"",
-    moveIn:"",occupants:1,
+    moveIn:"",occupants:1,occupancyAck:false,coApplicants:[],
     // Personal
     ssn:"",idFile:null,idFileName:"",
     // Rental
@@ -347,6 +347,12 @@ export default function ApplyPage(){
       if(!invite&&req("preferredProperty")&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
       if(!d.gender)e.gender="Please select a gender option";
       if(!d.occupationType)e.occupationType="Please select what best describes you";
+      // Occupancy validation — dynamic based on rental mode
+      const appInfoPropName=invite?.property||d.preferredProperty;
+      const appInfoProp=appInfoPropName?props_.find(p=>p.name===appInfoPropName):null;
+      const appInfoWholeUnit=appInfoProp?(appInfoProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||appInfoProp.rentalMode==="wholeHouse":false;
+      if(!appInfoWholeUnit&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
+      d.coApplicants.forEach((ca,i)=>{if(ca.email&&!ca.email.includes("@"))e["coApp_"+i+"_email"]="Valid email address required";});
     }
     if(s==="personal"){
       if(fieldActive("idFile")&&fieldRequired("idFile")&&!d.idFileName&&!d.idUploadLater)e.idFile="Please upload your photo ID, or check the box to upload it later";
@@ -485,11 +491,49 @@ export default function ApplyPage(){
           🏠 Applying for <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
         </div>}
 
-        <div className="fld"><label>How many people will be living with you?</label>
-          <div className="counter"><button className="counter-btn" onClick={()=>upd("occupants",Math.max(1,d.occupants-1))}>−</button><div className="counter-val">{d.occupants}</div><button className="counter-btn" onClick={()=>upd("occupants",d.occupants+1)}>+</button></div>
-          {d.occupants>1&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.15)",borderRadius:8,padding:10,fontSize:12,color:"var(--rd)"}}>⚠ Only 1 person per room is allowed. Each additional occupant over 18 must submit their own application. If you're renting the entire property, please contact us.</div>}
-        </div>
+        {/* ── OCCUPANCY — dynamic per rental mode ── */}
+        {(()=>{
+          const aPropName=invite?.property||d.preferredProperty;
+          const aProp=aPropName?props_.find(p=>p.name===aPropName):null;
+          const isWhole=aProp?((aProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||aProp.rentalMode==="wholeHouse"):false;
+          if(isWhole){
+            // Whole-unit: co-applicant roster
+            return(<div style={{marginBottom:20}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Who else will be living here?</div>
+              <div style={{fontSize:11,color:"#5c4a3a",marginBottom:12,lineHeight:1.5}}>List all adults (18 or older) who will live in this property. Each person will automatically receive their own application link.</div>
+              {d.coApplicants.map((ca,i)=>(
+                <div key={i} style={{border:"2px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:8,background:"rgba(74,124,89,.02)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <span style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>Occupant {i+2}</span>
+                    <button onClick={()=>setD(p=>({...p,coApplicants:p.coApplicants.filter((_,j)=>j!==i)}))} style={{background:"none",border:"none",color:"var(--rd)",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Remove</button>
+                  </div>
+                  <div className="fld-row" style={{marginBottom:0}}>
+                    <div className="fld" style={{marginBottom:0}}><label>Full Name</label><input value={ca.name} onChange={e=>setD(p=>({...p,coApplicants:p.coApplicants.map((x,j)=>j===i?{...x,name:e.target.value}:x)}))} placeholder="Full name"/></div>
+                    <div className="fld" style={{marginBottom:0}}><label>Email Address<span className="req">*</span></label><input type="email" value={ca.email} onChange={e=>setD(p=>({...p,coApplicants:p.coApplicants.map((x,j)=>j===i?{...x,email:e.target.value}:x)}))} className={errors["coApp_"+i+"_email"]?"err":""} placeholder="they@email.com"/>{errors["coApp_"+i+"_email"]&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors["coApp_"+i+"_email"]}</div>}</div>
+                  </div>
+                </div>
+              ))}
+              <div className="add-card" style={{marginBottom:0}} onClick={()=>setD(p=>({...p,coApplicants:[...p.coApplicants,{id:Math.random().toString(36).slice(2),name:"",email:""}]}))}>
+                <div className="plus">+</div>
+                <div className="lbl">Add Adult Occupant</div>
+              </div>
+            </div>);
+          } else {
+            // Per-bedroom: one-person acknowledgment
+            return(<div style={{marginBottom:20,background:errors.occupancyAck?"rgba(196,92,74,.04)":"rgba(212,168,83,.03)",border:`2px solid ${errors.occupancyAck?"rgba(196,92,74,.35)":"rgba(212,168,83,.2)"}`,borderRadius:12,padding:16,animation:errors.occupancyAck?"shake .4s ease":"none"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:6}}>One person per room</div>
+              <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:14}}>This rental is per bedroom. Only one person per room is allowed on each lease. Each additional adult (18+) must submit their own separate application.</div>
+              <div style={{fontSize:12,fontWeight:600,color:"#3d3529",marginBottom:10}}>I understand and agree to the one-person-per-room policy.</div>
+              <div style={{display:"flex",gap:8}}>
+                <button className={"yn-btn "+(d.occupancyAck?"yes":"")} onClick={()=>{upd("occupancyAck",true);setErrors(p=>({...p,occupancyAck:undefined}));}}>Yes, I agree</button>
+                <button className={"yn-btn "+(d.occupancyAck===false&&errors.occupancyAck?"no":"")} onClick={()=>{upd("occupancyAck",false);setErrors(p=>({...p,occupancyAck:"You must agree to continue — only one person per room"}));shake();}}>No</button>
+              </div>
+              {errors.occupancyAck&&<div className="err-msg" style={{marginTop:8,animation:"shake .4s ease"}}>{errors.occupancyAck}</div>}
+            </div>);
+          }
+        })()}
 
+        {/* ── ABOUT YOU ── */}
         <div className="fld-row">
           <div className="fld">
             <label>Gender<span className="req">*</span></label>
@@ -500,10 +544,11 @@ export default function ApplyPage(){
               <option value="Non-binary">Non-binary</option>
               <option value="Prefer not to say">Prefer not to say</option>
             </select>
+            <div className="help">Used for housemate matching only — does not affect your application.</div>
             {errors.gender&&<div className="err-msg" style={{animation:"shake .4s ease"}}>Please select a gender option</div>}
           </div>
           <div className="fld">
-            <label>What brings you to Huntsville?<span className="req">*</span></label>
+            <label>What best describes you?<span className="req">*</span></label>
             <select value={d.occupationType} onChange={e=>upd("occupationType",e.target.value)} className={errors.occupationType?"err":""}>
               <option value="">Select...</option>
               <option value="Intern">Intern</option>
@@ -511,39 +556,33 @@ export default function ApplyPage(){
               <option value="Contractor">Contractor</option>
               <option value="Remote Worker">Remote Worker</option>
               <option value="Student">Student</option>
+              <option value="Professional">Professional</option>
               <option value="Other">Other</option>
             </select>
             {errors.occupationType&&<div className="err-msg" style={{animation:"shake .4s ease"}}>Please select what best describes you</div>}
           </div>
         </div>
 
-        {/* Door Code — driven by hq-app-fields */}
-        {fieldActive("doorCode")&&<div style={{marginTop:24,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>🔑 {fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
-          {fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once your deposit and first month's rent are received. You can update it when signing your lease.")&&<div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once your deposit and first month's rent are received. You can update it when signing your lease.")}</div>}
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={4}
-              value={d.doorCode}
-              onChange={e=>{
-                const val=e.target.value.replace(/\D/g,"").slice(0,4);
-                upd("doorCode",val);
-                if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));
-              }}
-              placeholder="_ _ _ _"
-              style={{
-                width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,
-                fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,
-                borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",
-                color:"#1a1714"
-              }}
-            />
-            {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Code set</div>}
-            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
-          </div>
-        </div>}
+        {/* ── DOOR CODE — per-bedroom only ── */}
+        {(()=>{
+          const dcPropName=invite?.property||d.preferredProperty;
+          const dcProp=dcPropName?props_.find(p=>p.name===dcPropName):null;
+          const dcWholeUnit=dcProp?((dcProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||dcProp.rentalMode==="wholeHouse"):false;
+          if(dcWholeUnit||!fieldActive("doorCode"))return null;
+          return(<div style={{marginBottom:20,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>{fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
+            <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once payment is received.")}</div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+              <input type="text" inputMode="numeric" maxLength={4} value={d.doorCode}
+                onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);upd("doorCode",val);if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));}}
+                placeholder="_ _ _ _"
+                style={{width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",color:"#1a1714"}}
+              />
+              {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>Code set</div>}
+              {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
+            </div>
+          </div>);
+        })()}
 
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
@@ -934,6 +973,36 @@ export default function ApplyPage(){
             msg:`🎉 ${fullName} submitted their application${invite?.invitePropName?" for "+invite.invitePropName:""}`,
             date:now,read:false,urgent:true
           },...notifs]);
+
+          // Co-applicant auto-invites (whole-unit only)
+          if(d.coApplicants&&d.coApplicants.length>0){
+            const propName=invite?.property||d.preferredProperty||"";
+            for(const ca of d.coApplicants){
+              if(ca.email&&ca.email.includes("@")){
+                try{
+                  const coAppId=Math.random().toString(36).slice(2);
+                  const coAppRecord={
+                    id:coAppId,name:ca.name||ca.email.split("@")[0],email:ca.email,phone:"",
+                    property:propName,room:"",moveIn:d.moveIn||"",income:"",
+                    status:"invited",submitted:now,lastContact:now,
+                    bgCheck:"not-started",creditScore:"—",refs:"not-started",
+                    source:"Co-applicant invite",
+                    inviteLink:(window.location.origin)+"/apply?invite="+coAppId,
+                    inviteRoomMode:"none",
+                    coApplicantOf:fullName,
+                    history:[{from:"new",to:"invited",date:now,note:"Auto-invited as co-applicant of "+fullName}]
+                  };
+                  const curApps=await loadKey("hq-apps",[]);
+                  await saveKey("hq-apps",[...curApps,coAppRecord]);
+                  await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+                    to:ca.email,
+                    subject:"You're invited to apply — "+propName,
+                    html:`<p>Hi${ca.name?" "+ca.name:""},</p><p>${fullName} listed you as a co-applicant for <strong>${propName||"a rental property"}</strong>.</p><p>Please complete your own application here:</p><p><a href="${coAppRecord.inviteLink}" style="display:inline-block;background:#d4a853;color:#1a1714;padding:12px 24px;border-radius:8px;font-weight:700;text-decoration:none;">Start My Application →</a></p><p>Questions? Reply to this email.</p>`
+                  })});
+                }catch(e){console.error("Co-applicant invite failed",e);}
+              }
+            }
+          }
 
           // Admin notification email
           try{await fetch("/api/apply-notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
