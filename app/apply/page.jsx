@@ -357,10 +357,7 @@ export default function ApplyPage(){
       if(d.dob&&!d.dob.includes(" ")&&!ageOk(d.dob))e.dob="Applicant must be at least 18 years old to apply";
     }
     if(s==="appinfo"){
-      const validationProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
-      const validationRoom=invite?.termRoomId?allRooms(validationProp||{}).find(r=>r.id===invite.termRoomId):null;
-      const validationIsWhole=validationRoom?.isWholeUnit||(validationProp?((validationProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||validationProp.rentalMode==="wholeHouse"):false);
-      if(!validationIsWhole&&fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
+
       if(req("moveIn")&&(!d.moveIn||d.moveIn.includes(" ")))e.moveIn="Please select your desired move-in date";
       if(d.moveIn&&!d.moveIn.includes(" ")){const mi=new Date(d.moveIn+"T00:00:00");const tod=new Date();tod.setHours(0,0,0,0);if(mi<tod)e.moveIn="Move-in date cannot be in the past — please select today or a future date";}
       if(!invite&&req("preferredProperty")&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
@@ -398,6 +395,7 @@ export default function ApplyPage(){
     }
     if(s==="room"){
       if(invite?.inviteRoomMode==="choice"&&!d.selectedRoom)e.selectedRoom="Please select a room";
+      if(fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
     }
     setErrors(e);if(Object.keys(e).length>0)shake();return Object.keys(e).length===0;
   };
@@ -599,26 +597,6 @@ export default function ApplyPage(){
           </div>
         </div>
 
-        {/* ── DOOR CODE — per-bedroom only ── */}
-        {(()=>{
-          const dcProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
-          const dcInvitedRoom=invite?.termRoomId?allRooms(dcProp||{}).find(r=>r.id===invite.termRoomId):null;
-          const dcWholeUnit=dcInvitedRoom?.isWholeUnit||(dcProp?((dcProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||dcProp.rentalMode==="wholeHouse"):false);
-          if(dcWholeUnit||!fieldActive("doorCode"))return null;
-          return(<div style={{marginBottom:20,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>{fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
-            <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once payment is received.")}</div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-              <input type="text" inputMode="numeric" maxLength={4} value={d.doorCode}
-                onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);upd("doorCode",val);if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));}}
-                placeholder="_ _ _ _"
-                style={{width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",color:"#1a1714"}}
-              />
-              {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>Code set</div>}
-              {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
-            </div>
-          </div>);
-        })()}
 
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
@@ -824,6 +802,21 @@ export default function ApplyPage(){
             </div></div>);
           });})()}
         {errors.selectedRoom&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.selectedRoom}</div>}
+
+        {/* ── DOOR CODE — shown in room step for all rental types ── */}
+        {fieldActive("doorCode")&&<div style={{marginTop:20,marginBottom:20,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>{fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
+          <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once payment is received.")}</div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <input type="text" inputMode="numeric" maxLength={4} value={d.doorCode}
+              onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);upd("doorCode",val);if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));}}
+              placeholder="_ _ _ _"
+              style={{width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",color:"#1a1714"}}
+            />
+            {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Code set</div>}
+            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
+          </div>
+        </div>}
 
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
