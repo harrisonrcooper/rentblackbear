@@ -9980,7 +9980,7 @@ export default function Page(){
       </div>
       {/* Room / Move-in summary — read-only, pulled from app modal */}
       {(()=>{
-        const appProp=props.find(p=>p.name===a.property);
+        const appProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
         const appRoom=a.termRoomId?allRooms(appProp||{units:[]}).find(r=>r.id===a.termRoomId):null;
         const modeLabel=a.skipRoomAssign?"Assign at lease":a.termRoomId?"Room locked":"Not yet assigned";
         const moveInDisplay=a.moveInTbd?"TBD":(fmtD(a.termMoveIn||a.moveIn)||"Not set");
@@ -10363,7 +10363,7 @@ export default function Page(){
     const saveApp=(id,key,val)=>{setApps(p=>p.map(x=>x.id===id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
     const days=ds2(a.lastContact||a.submitted);
     const allVacant=props.flatMap(p=>allRooms(p).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
-    const targetProp=props.find(p=>p.name===a.property);
+    const targetProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
     const targetRoom=targetProp?allRooms(targetProp).find(r=>r.name===a.room&&r.st==="vacant"):null;
     const mf=[];var nm3=(a.name||"").toLowerCase();
     archive.forEach(t=>{
@@ -10540,7 +10540,7 @@ export default function Page(){
         const hasConflict=caseA||(caseB&&!overrideConfirmed);
 
         // Property-level availability warning — switches to selected room once one is picked
-        const warnProp=a.property?props.find(p=>p.name===a.property):null;
+        const warnProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
         const warnItems=warnProp?leaseableItems(warnProp):[];
         const warnVacant=warnItems.filter(i=>i.st==="vacant");
         const warnOccWithLe=warnItems.filter(i=>i.st!=="vacant"&&i.le);
@@ -10898,7 +10898,7 @@ export default function Page(){
           }
           return null;
         })();
-        const tlPropFromName=a.property?props.find(p=>p.name===a.property):null;
+        const tlPropFromName=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
         const tlProp=tlResolvedFromId?.prop||tlPropFromName||null;
         const tlSelectedUnitId=tlResolvedFromId?.unitId||null;
         const tlIsWholeUnit=!!tlResolvedFromId?.isWhole;
