@@ -24,6 +24,22 @@ const MONTHS=["January","February","March","April","May","June","July","August",
 const YEARS=Array.from({length:50},(_,i)=>2026-i);
 const STATES=["AL","AK","AZ","AR","CA","CO","CT","DC","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY"];
 
+// Normalize any stored date string into YYYY-MM-DD for DateDrop.
+// Returns "" if the value is blank, "Flexible", or unparseable.
+function toISODate(str){
+  if(!str||str.toLowerCase()==="flexible")return"";
+  if(/^\d{4}-\d{2}-\d{2}$/.test(str)){
+    const d=new Date(str+"T00:00:00");
+    return isNaN(d)?"":str;
+  }
+  const d=new Date(str);
+  if(isNaN(d))return"";
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const dy=String(d.getDate()).padStart(2,"0");
+  return`${y}-${m}-${dy}`;
+}
+
 // Three-dropdown date picker — returns value as "YYYY-MM-DD"
 // mode="dob": years 1924–2008 (must be 18+)
 // mode="movein": current year + 2 future years
@@ -258,7 +274,7 @@ export default function ApplyPage(){
   const[step,setStep]=useState("welcome");
   const[appType,setAppType]=useState("tenant");
   const[d,setD]=useState({
-    firstName:"",lastName:"",email:"",phone:"",dob:"",gender:"",occupationType:"",
+    firstName:"",lastName:"",email:"",phone:"",dob:"",gender:"",occupationType:"",occupationTypeOther:"",
     moveIn:"",occupants:1,occupancyAck:false,coApplicants:[],
     // Personal
     ssn:"",idFile:null,idFileName:"",
@@ -315,7 +331,7 @@ export default function ApplyPage(){
         lastName:lastN,
         email:inv.email||"",
         phone:inv.phone||"",
-        moveIn:inv.termMoveIn||inv.moveIn||"",
+        moveIn:toISODate(inv.termMoveIn||inv.moveIn||""),
         preferredProperty:inv.property||"",
         selectedRoom:inv.termRoomId||"",
         income:inv.income||"",
@@ -347,6 +363,7 @@ export default function ApplyPage(){
       if(!invite&&req("preferredProperty")&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
       if(!d.gender)e.gender="Please select a gender option";
       if(!d.occupationType)e.occupationType="Please select what best describes you";
+      if(d.occupationType==="Other"&&!d.occupationTypeOther.trim())e.occupationTypeOther="Please describe what best describes you";
       // Occupancy validation — dynamic based on rental mode
       const appInfoPropName=invite?.property||d.preferredProperty;
       const appInfoProp=appInfoPropName?props_.find(p=>p.name===appInfoPropName):null;
@@ -496,15 +513,17 @@ export default function ApplyPage(){
           const aPropName=invite?.property||d.preferredProperty;
           const aProp=aPropName?props_.find(p=>p.name===aPropName):null;
           const isWhole=aProp?((aProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||aProp.rentalMode==="wholeHouse"):false;
+          // Don't render occupancy block until we know what mode we're in
+          if(!aProp&&!invite?.property)return null;
           if(isWhole){
-            // Whole-unit: co-applicant roster
+            // Whole-unit: list all adults who will be staying
             return(<div style={{marginBottom:20}}>
               <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Who else will be living here?</div>
-              <div style={{fontSize:11,color:"#5c4a3a",marginBottom:12,lineHeight:1.5}}>List all adults (18 or older) who will live in this property. Each person will automatically receive their own application link.</div>
+              <div style={{fontSize:11,color:"#5c4a3a",marginBottom:12,lineHeight:1.5}}>List all adults (18 or older) who will live at this property. Each person will automatically receive their own application link and must complete a separate screening.</div>
               {d.coApplicants.map((ca,i)=>(
                 <div key={i} style={{border:"2px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:8,background:"rgba(74,124,89,.02)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                    <span style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>Occupant {i+2}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>Adult Occupant {i+2}</span>
                     <button onClick={()=>setD(p=>({...p,coApplicants:p.coApplicants.filter((_,j)=>j!==i)}))} style={{background:"none",border:"none",color:"var(--rd)",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Remove</button>
                   </div>
                   <div className="fld-row" style={{marginBottom:0}}>
@@ -519,16 +538,17 @@ export default function ApplyPage(){
               </div>
             </div>);
           } else {
-            // Per-bedroom: one-person acknowledgment
-            return(<div style={{marginBottom:20,background:errors.occupancyAck?"rgba(196,92,74,.04)":"rgba(212,168,83,.03)",border:`2px solid ${errors.occupancyAck?"rgba(196,92,74,.35)":"rgba(212,168,83,.2)"}`,borderRadius:12,padding:16,animation:errors.occupancyAck?"shake .4s ease":"none"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:6}}>One person per room</div>
-              <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:14}}>This rental is per bedroom. Only one person per room is allowed on each lease. Each additional adult (18+) must submit their own separate application.</div>
-              <div style={{fontSize:12,fontWeight:600,color:"#3d3529",marginBottom:10}}>I understand and agree to the one-person-per-room policy.</div>
+            // Per-bedroom: one-adult-per-room acknowledgment
+            const hasErr=!!errors.occupancyAck;
+            return(<div style={{marginBottom:20,background:hasErr?"rgba(196,92,74,.04)":"rgba(212,168,83,.03)",border:`2px solid ${hasErr?"rgba(196,92,74,.35)":"rgba(212,168,83,.2)"}`,borderRadius:12,padding:16,animation:hasErr?"shake .4s ease":"none"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:6}}>Occupancy Policy</div>
+              <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:14}}>You are renting by the bedroom. Only <strong>1 adult person per lease per bedroom</strong> is permitted to occupy the room. Any additional adult intending to reside at the property must submit their own separate application and be approved under their own lease.</div>
+              <div style={{fontSize:12,fontWeight:600,color:"#3d3529",marginBottom:10}}>Do you agree to the one-adult-per-bedroom occupancy policy?</div>
               <div style={{display:"flex",gap:8}}>
-                <button className={"yn-btn "+(d.occupancyAck?"yes":"")} onClick={()=>{upd("occupancyAck",true);setErrors(p=>({...p,occupancyAck:undefined}));}}>Yes, I agree</button>
-                <button className={"yn-btn "+(d.occupancyAck===false&&errors.occupancyAck?"no":"")} onClick={()=>{upd("occupancyAck",false);setErrors(p=>({...p,occupancyAck:"You must agree to continue — only one person per room"}));shake();}}>No</button>
+                <button className={"yn-btn "+(d.occupancyAck===true?"yes":"")} onClick={()=>{upd("occupancyAck",true);setErrors(p=>({...p,occupancyAck:undefined}));}}>Yes, I agree</button>
+                <button className={"yn-btn "+(d.occupancyAck===false?"no":"")} onClick={()=>{upd("occupancyAck",false);setErrors(p=>({...p,occupancyAck:"You must agree to the occupancy policy to continue"}));shake();}}>No</button>
               </div>
-              {errors.occupancyAck&&<div className="err-msg" style={{marginTop:8,animation:"shake .4s ease"}}>{errors.occupancyAck}</div>}
+              {hasErr&&<div className="err-msg" style={{marginTop:8,animation:"shake .4s ease"}}>{errors.occupancyAck}</div>}
             </div>);
           }
         })()}
@@ -541,15 +561,13 @@ export default function ApplyPage(){
               <option value="">Select...</option>
               <option value="Male">Male</option>
               <option value="Female">Female</option>
-              <option value="Non-binary">Non-binary</option>
-              <option value="Prefer not to say">Prefer not to say</option>
             </select>
             <div className="help">Used for housemate matching only — does not affect your application.</div>
             {errors.gender&&<div className="err-msg" style={{animation:"shake .4s ease"}}>Please select a gender option</div>}
           </div>
           <div className="fld">
             <label>What best describes you?<span className="req">*</span></label>
-            <select value={d.occupationType} onChange={e=>upd("occupationType",e.target.value)} className={errors.occupationType?"err":""}>
+            <select value={d.occupationType} onChange={e=>{upd("occupationType",e.target.value);if(e.target.value!=="Other")upd("occupationTypeOther","");}} className={errors.occupationType?"err":""}>
               <option value="">Select...</option>
               <option value="Intern">Intern</option>
               <option value="Military">Military</option>
@@ -559,7 +577,9 @@ export default function ApplyPage(){
               <option value="Professional">Professional</option>
               <option value="Other">Other</option>
             </select>
+            {d.occupationType==="Other"&&<input value={d.occupationTypeOther} onChange={e=>upd("occupationTypeOther",e.target.value)} className={errors.occupationTypeOther?"err":""} placeholder="Please describe..." style={{marginTop:8}}/>}
             {errors.occupationType&&<div className="err-msg" style={{animation:"shake .4s ease"}}>Please select what best describes you</div>}
+            {errors.occupationTypeOther&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.occupationTypeOther}</div>}
           </div>
         </div>
 
