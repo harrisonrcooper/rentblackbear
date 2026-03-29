@@ -4654,12 +4654,10 @@ export default function Page(){
                     <div className="pipe-sub">{(()=>{const p=props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";return(a.property||"—")+(addr?" · "+addr:"")+(a.room?" · "+a.room:"");})()}</div>
 
                     {/* Invited — "Awaiting Reply" badge + re-invite button */}
-                    {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:5}}>
-                      <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 6px",borderRadius:99}}>Awaiting Reply</span>
-                      <button style={{fontSize:8,padding:"2px 7px",background:"none",border:"1px solid rgba(59,130,246,.25)",borderRadius:4,color:"#3b82f6",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
-                        onClick={e=>{e.stopPropagation();
-                          setModal({type:"inviteApp",data:a});
-                        }}>Re-invite</button>
+                    {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
+                      <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 7px",borderRadius:99,flexShrink:0}}>Awaiting Reply</span>
+                      <button style={{fontSize:9,padding:"3px 10px",background:"#d4a853",border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
+                        onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Re-invite</button>
                     </div>}
 
                     {/* Onboarding progress bar */}
@@ -11150,26 +11148,30 @@ export default function Page(){
       </div>}
       {/* Roommate Compatibility */}
       {(()=>{
-        // Resolve which prop and which unit the applicant is interested in
-        const hmProp=a.property?props.find(p=>p.name===a.property)
+        // Resolve prop: prefer termPropId (ID-based, most reliable) → property name → termRoomId room lookup
+        const hmProp=a.termPropId?props.find(p=>p.id===a.termPropId)
+          :a.property?props.find(p=>p.name===a.property)
           :a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)||(p.units||[]).some(u=>u.id===a.termRoomId))
           :null;
         if(!hmProp)return null;
         const allItems=leaseableItems(hmProp);
-        // Find the specific item — termRoomId may be a room ID or a whole-unit ID
+        // Find the specific assigned item — for whole units termRoomId === u.id === i.id
         const assignedItem=a.termRoomId
-          ?allItems.find(i=>i.id===a.termRoomId||i.unitId===a.termRoomId)
+          ?allItems.find(i=>i.id===a.termRoomId)||(allItems.find(i=>i.unitId===a.termRoomId))
           :a.room?allItems.find(i=>i.name===a.room):null;
-        const targetUnitId=assignedItem?.unitId||null;
-        const isWholeUnitRental=assignedItem?.isWholeUnit||false;
-        // Whole-unit rental: no housemates to show
+        const isWholeUnitRental=!!(assignedItem?.isWholeUnit);
+        // Whole-unit rental: applicant IS the unit — no housemates
         if(isWholeUnitRental)return null;
-        // Unit-specific address for header
+        const targetUnitId=assignedItem?.unitId||null;
+        // Unit-specific address for header — use unit.addr if present, else prop.addr
         const targetUnit=targetUnitId?(hmProp.units||[]).find(u=>u.id===targetUnitId):null;
-        const hmAddr=targetUnit?.addr||hmProp.addr||"";
+        const hmAddr=targetUnit?.addr||(hmProp.units||[]).length===1?hmProp.addr:null;
         const hmDisplayName=hmAddr||getPropDisplayName(hmProp);
-        // Only show housemates from the same unit
-        const items=targetUnitId?allItems.filter(i=>i.unitId===targetUnitId):allItems;
+        // Only show housemates from the same unit, excluding the applicant's own room
+        const items=targetUnitId
+          ?allItems.filter(i=>i.unitId===targetUnitId&&i.id!==a.termRoomId)
+          :allItems.filter(i=>i.id!==a.termRoomId);
+        if(items.length===0)return null;
         return(<div className="tp-card"><h3>Housemates at {hmDisplayName}</h3>
         {(function(){
           const calcAge=(dob)=>{if(!dob)return null;const b=new Date(dob+"T00:00:00");if(isNaN(b))return null;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=10&&age<120?age:null;};
@@ -11377,7 +11379,13 @@ export default function Page(){
         
         <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,data:a,reason:""})}>Deny</button>
       </div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
+      <div className="mft">
+        {a.status==="invited"&&<button className="btn btn-gold" style={{flex:1,fontWeight:800}} onClick={()=>setModal({type:"inviteApp",data:a})}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:6,verticalAlign:"middle"}}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Re-send Invite
+        </button>}
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Close</button>
+      </div>
     </div></div>);})()}
 
   {modal&&modal.type==="archived"&&(()=>{const a=modal.data;const payMonths=Object.keys(a.payments||{});const totalPaid=Object.values(a.payments||{}).reduce((s,v)=>s+(typeof v==="object"?Object.values(v).reduce((ss,vv)=>ss+vv,0):v),0);
