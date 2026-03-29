@@ -4656,7 +4656,7 @@ export default function Page(){
                     {/* Invited — "Awaiting Reply" badge + re-invite button */}
                     {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
                       <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 7px",borderRadius:99,flexShrink:0}}>Awaiting Reply</span>
-                      <button style={{fontSize:9,padding:"3px 10px",background:"#d4a853",border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
+                      <button onMouseEnter={e=>{e.currentTarget.style.background="rgba(196,92,74,.3)";e.currentTarget.style.color="#922e20";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(196,92,74,.12)";e.currentTarget.style.color="#c45c4a";}} style={{fontSize:9,padding:"3px 10px",background:"rgba(196,92,74,.12)",color:"#c45c4a",border:"1px solid rgba(196,92,74,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",transition:"all .15s"}}
                         onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Re-invite</button>
                     </div>}
 
@@ -9839,7 +9839,7 @@ export default function Page(){
     const incomeLabel={"none":"None","income-only":"Income Verify (+$10)","income-employment":"Income + Employer (+$15)"};
     const inviteStep=modal.inviteStep||"configure";
     // Source of truth: everything comes from app modal data, not Configure Invite dropdowns
-    const invProp=a.property?props.find(p=>p.name===a.property):null;
+    const invProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
     const invRoomObj=a.termRoomId&&invProp?allRooms(invProp).find(r=>r.id===a.termRoomId):null;
     const invRent=a.termRent||(invRoomObj?invRoomObj.rent:0);
     const invMoveIn=a.moveInTbd?"TBD":(a.termMoveIn||a.moveIn||"");
