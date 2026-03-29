@@ -4653,15 +4653,13 @@ export default function Page(){
 
                     <div className="pipe-sub">{(()=>{const p=props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";return(a.property||"—")+(addr?" · "+addr:"")+(a.room?" · "+a.room:"");})()}</div>
 
-                    {/* Invited — "Awaiting Reply" badge + reinvite button */}
-                    {false&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:5}}>
+                    {/* Invited — "Awaiting Reply" badge + re-invite button */}
+                    {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:5}}>
                       <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 6px",borderRadius:99}}>Awaiting Reply</span>
                       <button style={{fontSize:8,padding:"2px 7px",background:"none",border:"1px solid rgba(59,130,246,.25)",borderRadius:4,color:"#3b82f6",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                         onClick={e=>{e.stopPropagation();
-                          const now=TODAY.toISOString().split("T")[0];
-                          setApps(p=>p.map(x=>x.id===a.id?{...x,lastContact:now,history:[...(x.history||[]),{from:"invited",to:"invited",date:now,note:"Reinvited — resent application link"}]}:x));
-                          if(a.inviteLink){navigator.clipboard.writeText(a.inviteLink);showAlert({title:"Link Copied",body:"Invite link copied to clipboard. Re-send to "+a.name+"."});}
-                        }}>Reinvite</button>
+                          setModal({type:"app",data:a,inviteStep:"configure"});
+                        }}>Re-invite</button>
                     </div>}
 
                     {/* Onboarding progress bar */}
@@ -9875,10 +9873,11 @@ export default function Page(){
         room:invRoomLabel,
         inviteRent:invRent,inviteRoomId:a.termRoomId||null,
         inviteRoomMode:a.skipRoomAssign?"none":"locked",inviteLink:link,
+        lastContact:TODAY.toISOString().split("T")[0],
         sentVia:(a.sentVia?a.sentVia+", ":"")+method,
         history:[...(a.history||[]),{from:a.status,to:"invited",
           date:TODAY.toISOString().split("T")[0],
-          note:"Invited via "+method+" - "+pkgLabel[pkg]+" - $"+totalFee+(modal.waiverReason?" - "+modal.waiverReason:"")
+          note:(a.status==="invited"?"Re-invited":"Invited")+" via "+method+" - "+pkgLabel[pkg]+" - $"+totalFee+(modal.waiverReason?" - "+modal.waiverReason:"")
         }]
       });
       const sendEmail=async()=>{
@@ -9913,7 +9912,7 @@ export default function Page(){
       return(
       <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:520}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-          <h2 style={{margin:0,flex:1}}>Review and Send Invite</h2>
+          <h2 style={{margin:0,flex:1}}>{a.status==="invited"?"Review and Re-send Invite":"Review and Send Invite"}</h2>
         </div>
         <div style={{background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.2)",borderRadius:10,padding:16,marginBottom:12}}>
           <div style={{fontSize:10,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Invite Summary</div>
@@ -10888,12 +10887,45 @@ export default function Page(){
         const tlOpen=modal._appTlOpen!==false;
         const tlView=modal._appTlView||"gantt";
         const tlMonthOff=modal._tlMonthOffset||0;
-        // Resolve prop from: explicit property name → termRoomId lookup → null (show all)
-        const tlPropFromRoom=a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)):null;
+        // Resolve prop from: termRoomId (checks rooms AND whole units) → property name → null (show all)
+        const tlResolvedFromId=(()=>{
+          if(!a.termRoomId)return null;
+          for(const p of props){
+            // Check room IDs first
+            const rm=allRooms(p).find(r=>r.id===a.termRoomId);
+            if(rm)return{prop:p,unitId:rm.unitId||null,isWhole:false};
+            // Check unit IDs (whole-house selections store unit ID as termRoomId)
+            const u=(p.units||[]).find(u=>u.id===a.termRoomId);
+            if(u)return{prop:p,unitId:u.id,isWhole:(u.rentalMode||"byRoom")==="wholeHouse",unitName:u.name,unitAddr:u.addr||""};
+          }
+          return null;
+        })();
         const tlPropFromName=a.property?props.find(p=>p.name===a.property):null;
-        const tlProp=tlPropFromName||tlPropFromRoom||null;
+        const tlProp=tlResolvedFromId?.prop||tlPropFromName||null;
+        const tlSelectedUnitId=tlResolvedFromId?.unitId||null;
+        const tlIsWholeUnit=!!tlResolvedFromId?.isWhole;
+        // Label: for whole-unit multi-unit properties, show the specific unit name/addr
+        const tlUnitLabel=(()=>{
+          if(!tlIsWholeUnit||!tlProp)return null;
+          const u=(tlProp.units||[]).find(u=>u.id===tlSelectedUnitId);
+          if(!u)return null;
+          // Prefer addr if set on unit, else use unit name, else null
+          return u.addr||u.name||null;
+        })();
+        const tlHeaderLabel=tlProp
+          ?(tlUnitLabel&&(tlProp.units||[]).length>1
+            ?tlUnitLabel
+            :getPropDisplayName(tlProp))
+          :null;
         const tlRooms=tlProp
-          ?allRooms(tlProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(tlProp),propId:tlProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlProp.turnoverDays||0)}))
+          ?(tlIsWholeUnit&&tlSelectedUnitId
+            // Whole unit selected — only show rooms from that specific unit
+            ?((tlProp.units||[]).find(u=>u.id===tlSelectedUnitId)?.rooms||[])
+                .filter(r=>!r.ownerOccupied)
+                .map(r=>({...r,propName:tlHeaderLabel||getPropDisplayName(tlProp),propId:tlProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlProp.turnoverDays||0)}))
+            // Room or no selection — all non-owner-occupied rooms in the property
+            :allRooms(tlProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(tlProp),propId:tlProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlProp.turnoverDays||0)}))
+          )
           :props.flatMap(p=>allRooms(p).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(p),propId:p.id,buf:r.turnoverDays!=null?r.turnoverDays:(p.turnoverDays||0)})));
         const TODAY_STR2=TODAY.toISOString().split("T")[0];
         const tlGetReady=(r)=>{if(!r.le)return null;const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));return d.toISOString().split("T")[0];};
@@ -10922,7 +10954,7 @@ export default function Page(){
         <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none"}}>
             <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-              <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>{tlProp?`Availability — ${getPropDisplayName(tlProp)}`:"Availability — All Properties"}</span>
+              <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>{tlProp?`Availability — ${tlHeaderLabel||getPropDisplayName(tlProp)}`:"Availability — All Properties"}</span>
               {tlOpen&&<div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,overflow:"hidden",background:"rgba(0,0,0,.02)"}}>
                 {tlViews.map(v=>(
                   <button key={v.id}
