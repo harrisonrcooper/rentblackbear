@@ -4279,7 +4279,7 @@ export default function Page(){
             const app=apps.find(a=>a.id===id);
             if(app?.email){
               fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:app.property,roomName:app.room,rent:app.negotiatedRent||app.rent,moveIn:app.termMoveIn||app.moveIn})
+                body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:app.property,roomName:app.room,termPropId:app.termPropId||null,termRoomId:app.termRoomId||null,isWholeUnit:app.isWholeUnit||false,rent:app.negotiatedRent||app.termRent||app.rent,moveIn:app.termMoveIn||app.moveIn})
               }).then(r=>r.json()).then(d=>{if(d.ok)console.log("Portal invite auto-sent to",app.email);}).catch(console.error);
             }
           }
@@ -4379,12 +4379,17 @@ export default function Page(){
           {id:uid(),label:"Desired Move-in Date",key:"moveIn",type:"date-movein",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Month / Day / Year dropdowns.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Property Interest",key:"preferredProperty",type:"property-select",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Required for walk-in applicants. Pre-filled from invite if applicable.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Preferred Room",key:"selectedRoom",type:"room-select",section:"Move-In & Property",required:false,active:true,placeholder:"",helpText:"Optional — shown based on selected property.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"passcode",section:"Move-In & Property",required:true,active:true,placeholder:"Choose a 4-digit code",helpText:"This code will be programmed into your smart lock and written into your lease. Activates at 12:00am on move-in day once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
-          {id:uid(),label:"Number of Occupants",key:"occupants",type:"counter",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Only 1 person per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
+          {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"passcode",section:"Room & Unit",required:true,active:true,placeholder:"Choose a 4-digit code",helpText:"Shown in the Room step. Programmed into smart lock via Sifely API on move-in day. Activates at 12:00am once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
+          {id:uid(),label:"Minor Children",key:"minorChildren",type:"counter",section:"Move-In & Property",required:false,active:true,placeholder:"",helpText:"Number of minor children (under 18) who will live at the property. Minors do not apply separately.",options:[],followUpYes:"",followUpNo:"",min:0,max:10},
+          {id:uid(),label:"Number of Occupants",key:"occupants",type:"counter",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Only 1 adult per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
           // ── Section 3: Personal Information ──
           {id:uid(),label:"Photo ID Upload",key:"idFile",type:"file",section:"Personal Information",required:true,active:true,placeholder:"Upload driver's license, passport, or state ID",helpText:"JPG, PNG, or PDF. Can be uploaded later — application will be marked incomplete until received.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           // ── Section 4: Rental History ──
-          {id:uid(),label:"Current / Previous Address",key:"addresses",type:"address-block",section:"Rental History",required:true,active:true,placeholder:"",helpText:"Include landlord name and contact info to strengthen your application.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Current / Previous Address",key:"addresses",type:"address-block",section:"Rental History",required:true,active:true,placeholder:"",helpText:"Minimum 2 years of rental history required. System will prompt for additional addresses if coverage is insufficient.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Landlord First Name",key:"landlordFirstName",type:"text",section:"Rental History",required:true,active:true,placeholder:"First name",helpText:"Required for each address. Used for reference verification.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Landlord Last Name",key:"landlordLastName",type:"text",section:"Rental History",required:true,active:true,placeholder:"Last name",helpText:"Required for each address.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Landlord Email",key:"landlordEmail",type:"email",section:"Rental History",required:true,active:true,placeholder:"landlord@email.com",helpText:"Required for reference checks.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Landlord Phone",key:"landlordPhone",type:"phone",section:"Rental History",required:true,active:true,placeholder:"(256) 555-0000",helpText:"Required for reference checks.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Have you ever been evicted?",key:"evicted",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain the circumstances.",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Do you have any felony convictions?",key:"felony",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain.",followUpNo:"",min:null,max:null},
           // ── Section 5: Employment & Income ──
@@ -4651,7 +4656,7 @@ export default function Page(){
                       </div>}
                     </div>
 
-                    <div className="pipe-sub">{(()=>{const p=props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";return(a.property||"—")+(addr?" · "+addr:"")+(a.room?" · "+a.room:"");})()}</div>
+                    <div className="pipe-sub">{(()=>{const p=a.termPropId?props.find(x=>x.id===a.termPropId):props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";return(a.property||"—")+(addr?" · "+addr:"")+(a.room?" · "+a.room:"");})()}</div>
 
                     {/* Invited — "Awaiting Reply" badge + re-invite button */}
                     {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
@@ -9871,6 +9876,7 @@ export default function Page(){
         room:invRoomLabel,
         inviteRent:invRent,inviteRoomId:a.termRoomId||null,
         inviteRoomMode:a.skipRoomAssign?"none":"locked",inviteLink:link,
+        isWholeUnit:invRoomObj?!!invRoomObj.isWholeUnit:false,
         lastContact:TODAY.toISOString().split("T")[0],
         sentVia:(a.sentVia?a.sentVia+", ":"")+method,
         history:[...(a.history||[]),{from:a.status,to:"invited",

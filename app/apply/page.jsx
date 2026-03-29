@@ -376,6 +376,7 @@ export default function ApplyPage(){
     }
     if(s==="rental"){
       if(req("addresses")&&d.addresses.length===0)e.addresses="Please add at least one address";
+      if(req("addresses")&&d.addresses.length>0&&calcMonthsCovered(d.addresses)<24)e.addresses="Please add addresses covering at least 2 years of rental history";
       if(fieldActive("evicted")&&d.evicted==="")e.evicted="Please answer this question";
       if(fieldActive("felony")&&d.felony==="")e.felony="Please answer this question";
     }
@@ -414,10 +415,13 @@ export default function ApplyPage(){
   const baseFee=invite?.inviteFee||59;
 
   // Address form helpers
-  const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",landlordName:"",landlordEmail:"",landlordPhone:""};
-  const saveAddr=()=>{const f=d.curAddressForm;if(!f)return;if(!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn||!f.reason){upd("curAddressForm",{...f,_saved:true});shake();return;}
+  const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",landlordFirstName:"",landlordLastName:"",landlordEmail:"",landlordPhone:""};
+  const calcMonthsCovered=(addrs)=>{const MNAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];const now=new Date();return addrs.reduce((tot,a)=>{const mi=MNAMES.indexOf(a.monthIn);if(mi<0||!a.yearIn)return tot;const start=new Date(parseInt(a.yearIn),mi,1);return tot+Math.max(0,(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth()));},0);};
+  const saveAddr=()=>{const f=d.curAddressForm;if(!f)return;
+    const missing=!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn||!f.reason||!f.landlordFirstName||!f.landlordLastName||!f.landlordEmail||!f.landlordPhone;
+    if(missing){upd("curAddressForm",{...f,_saved:true});shake();return;}
     if(f._editIdx!==undefined){setD(p=>({...p,addresses:p.addresses.map((a,i)=>i===f._editIdx?f:a),curAddressForm:null}));}
-    else{setD(p=>({...p,addresses:[...p.addresses,f],curAddressForm:null}));}};
+    else{setD(p=>{const newAddrs=[...p.addresses,f];const months=calcMonthsCovered(newAddrs);const needMore=months<24;return{...p,addresses:newAddrs,curAddressForm:needMore?{...blankAddr,_needMore:true}:null};});}};
   const blankEmp={employer:"",position:"",monthStarted:"",yearStarted:"",monthlyIncome:"",refName:"",refPhone:""};
   const saveEmp=()=>{const f=d.curEmployerForm;if(!f)return;if(!f.employer||!f.monthlyIncome){shake();return;}
     if(f._editIdx!==undefined){setD(p=>({...p,employers:p.employers.map((e,i)=>i===f._editIdx?f:e),curEmployerForm:null}));}
@@ -610,7 +614,7 @@ export default function ApplyPage(){
         {/* Added addresses */}
         {d.addresses.map((a,i)=><div key={i} className="item-card">
           <div className="item-hd"><div><div className="item-nm">{a.street}, {a.city}, {a.state} {a.zip}</div><div className="item-sub">{a.resType} · Since {a.monthIn} {a.yearIn}{a.rent?` · $${a.rent}/mo`:""}</div></div><div><button className="item-edit" onClick={()=>upd("curAddressForm",{...a,_editIdx:i})}>Edit</button><button className="item-del" onClick={()=>setD(p=>({...p,addresses:p.addresses.filter((_,j)=>j!==i)}))}>Remove</button></div></div>
-          {a.landlordName&&<div style={{fontSize:10,color:"#999"}}>Landlord: {a.landlordName}{a.landlordPhone?` · ${a.landlordPhone}`:""}</div>}
+          {(a.landlordFirstName||a.landlordName)&&<div style={{fontSize:10,color:"#999"}}>Landlord: {a.landlordFirstName&&a.landlordLastName?`${a.landlordFirstName} ${a.landlordLastName}`:a.landlordName||""}{a.landlordPhone?` · ${a.landlordPhone}`:""}{a.landlordEmail?` · ${a.landlordEmail}`:""}</div>}
         </div>)}
 
         {/* Add address form */}
@@ -634,16 +638,23 @@ export default function ApplyPage(){
             <div className="fld"><label>Monthly Rent</label><input type="number" value={d.curAddressForm.rent} onChange={e=>upd("curAddressForm",{...d.curAddressForm,rent:e.target.value})} placeholder="1100"/></div>
           </div>
           <div className="fld"><label>Why are you moving?<span className="req">*</span></label><textarea value={d.curAddressForm.reason} onChange={e=>upd("curAddressForm",{...d.curAddressForm,reason:e.target.value})} className={!d.curAddressForm.reason&&d.curAddressForm._saved?"err":""} placeholder="e.g. Moving for work, end of lease, upgrading, etc."/></div>
-          <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact Info</div>
-          <div className="fld"><label>Full Name</label><input value={d.curAddressForm.landlordName} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordName:e.target.value})} placeholder="Landlord's full name"/></div>
+          <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact <span style={{color:"#c45c4a",fontWeight:400,fontSize:11}}>* All fields required</span></div>
           <div className="fld-row">
-            <div className="fld"><label>Email</label><input type="email" value={d.curAddressForm.landlordEmail} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value})} placeholder="landlord@email.com"/></div>
-            <div className="fld"><label>Phone</label><input type="tel" value={d.curAddressForm.landlordPhone} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value)})} placeholder="(555) 555-5555"/></div>
+            <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.curAddressForm.landlordFirstName||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordFirstName:e.target.value})} className={!d.curAddressForm.landlordFirstName&&d.curAddressForm._saved?"err":""} placeholder="First name"/></div>
+            <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.curAddressForm.landlordLastName||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordLastName:e.target.value})} className={!d.curAddressForm.landlordLastName&&d.curAddressForm._saved?"err":""} placeholder="Last name"/></div>
           </div>
-          <div className="strength-tip">💡 <strong>Strengthen your application</strong> — Applicants who provide contact information for previous landlords are more likely to be accepted.</div>
+          <div className="fld-row">
+            <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.curAddressForm.landlordEmail||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value})} className={!d.curAddressForm.landlordEmail&&d.curAddressForm._saved?"err":""} placeholder="landlord@email.com"/></div>
+            <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.curAddressForm.landlordPhone||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value)})} className={!d.curAddressForm.landlordPhone&&d.curAddressForm._saved?"err":""} placeholder="(555) 555-5555"/></div>
+          </div>
+          {d.curAddressForm?._needMore&&<div style={{padding:"10px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:8,marginBottom:12,fontSize:12,color:"#7a5a10",fontWeight:600}}>📋 We need at least <strong>2 years</strong> of rental history — please add another address.</div>}
           <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveAddr}>Save Address</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curAddressForm",null)}>Cancel</button></div>
         </div>
         :<div className="add-card" onClick={()=>upd("curAddressForm",{...blankAddr})}><div className="plus">+</div><div className="lbl">Add {d.addresses.length===0?"Current":"Another"} Address</div></div>}
+        {d.addresses.length>0&&(()=>{const months=calcMonthsCovered(d.addresses);const pct=Math.min(100,Math.round(months/24*100));const ok=months>=24;return(<div style={{marginBottom:10,padding:"8px 12px",borderRadius:8,background:ok?"rgba(74,124,89,.06)":"rgba(212,168,83,.06)",border:`1px solid ${ok?"rgba(74,124,89,.2)":"rgba(212,168,83,.25)"}`,fontSize:11,color:ok?"#2d6a3f":"#7a5a10",display:"flex",alignItems:"center",gap:10}}>
+          <div style={{flex:1}}>{ok?"✓ 2-year history requirement met":`${months} of 24 months covered — please add more addresses`}</div>
+          <div style={{width:80,height:6,borderRadius:3,background:"rgba(0,0,0,.08)",overflow:"hidden"}}><div style={{width:pct+"%",height:"100%",background:ok?"#4a7c59":"#d4a853",borderRadius:3,transition:"width .3s"}}/></div>
+        </div>);})()}
         {errors.addresses&&<div className="err-msg" style={{marginBottom:12,fontSize:13,fontWeight:700,padding:"10px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,animation:"shake .4s ease"}}>⚠ {errors.addresses}</div>}
 
         {/* Eviction / Felony */}
