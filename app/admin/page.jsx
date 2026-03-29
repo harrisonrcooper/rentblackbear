@@ -4658,7 +4658,7 @@ export default function Page(){
                       <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 6px",borderRadius:99}}>Awaiting Reply</span>
                       <button style={{fontSize:8,padding:"2px 7px",background:"none",border:"1px solid rgba(59,130,246,.25)",borderRadius:4,color:"#3b82f6",cursor:"pointer",fontWeight:700,fontFamily:"inherit"}}
                         onClick={e=>{e.stopPropagation();
-                          setModal({type:"app",data:a,inviteStep:"configure"});
+                          setModal({type:"inviteApp",data:a});
                         }}>Re-invite</button>
                     </div>}
 
@@ -10919,10 +10919,9 @@ export default function Page(){
           :null;
         const tlRooms=tlProp
           ?(tlIsWholeUnit&&tlSelectedUnitId
-            // Whole unit selected — only show rooms from that specific unit
-            ?((tlProp.units||[]).find(u=>u.id===tlSelectedUnitId)?.rooms||[])
-                .filter(r=>!r.ownerOccupied)
-                .map(r=>({...r,propName:tlHeaderLabel||getPropDisplayName(tlProp),propId:tlProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlProp.turnoverDays||0)}))
+            // Whole unit selected — show the unit as a single leaseable item (not individual bedrooms)
+            ?leaseableItems(tlProp).filter(i=>i.unitId===tlSelectedUnitId&&i.isWholeUnit)
+                .map(i=>({...i,propName:tlHeaderLabel||getPropDisplayName(tlProp),propId:tlProp.id,buf:i.itemTurnoverDays||0}))
             // Room or no selection — all non-owner-occupied rooms in the property
             :allRooms(tlProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(tlProp),propId:tlProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlProp.turnoverDays||0)}))
           )
@@ -11030,7 +11029,8 @@ export default function Page(){
                   const rdX=readyStr?tlToX(readyStr):null;
                   const todayX=tlToX(TODAY_STR2);
                   const moveInX=r.tenant&&r.tenant.moveIn?tlToX(r.tenant.moveIn):null;
-                  const isAssigned=a.termRoomId===r.id||a.room===r.name;
+                  // For whole-unit items, termRoomId is the unit ID; for rooms, it's the room ID
+                  const isAssigned=a.termRoomId===r.id||(r.isWholeUnit&&a.termRoomId===r.unitId)||a.room===r.name;
                   return(
                   <div key={r.id} style={{display:"flex",alignItems:"center",borderBottom:"1px solid rgba(0,0,0,.03)",minHeight:26,background:isAssigned?"rgba(212,168,83,.05)":"transparent"}}>
                     <div style={{width:110,flexShrink:0,padding:"2px 10px"}}>
@@ -11150,25 +11150,31 @@ export default function Page(){
       </div>}
       {/* Roommate Compatibility */}
       {(()=>{
-        const hmProp=a.property?props.find(p=>p.name===a.property):a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)):null;
+        // Resolve which prop and which unit the applicant is interested in
+        const hmProp=a.property?props.find(p=>p.name===a.property)
+          :a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)||(p.units||[]).some(u=>u.id===a.termRoomId))
+          :null;
         if(!hmProp)return null;
-        const hmPropName=getPropDisplayName(hmProp);
-        return(<div className="tp-card"><h3>Housemates at {hmPropName}</h3>
+        const allItems=leaseableItems(hmProp);
+        // Find the specific item — termRoomId may be a room ID or a whole-unit ID
+        const assignedItem=a.termRoomId
+          ?allItems.find(i=>i.id===a.termRoomId||i.unitId===a.termRoomId)
+          :a.room?allItems.find(i=>i.name===a.room):null;
+        const targetUnitId=assignedItem?.unitId||null;
+        const isWholeUnitRental=assignedItem?.isWholeUnit||false;
+        // Whole-unit rental: no housemates to show
+        if(isWholeUnitRental)return null;
+        // Unit-specific address for header
+        const targetUnit=targetUnitId?(hmProp.units||[]).find(u=>u.id===targetUnitId):null;
+        const hmAddr=targetUnit?.addr||hmProp.addr||"";
+        const hmDisplayName=hmAddr||getPropDisplayName(hmProp);
+        // Only show housemates from the same unit
+        const items=targetUnitId?allItems.filter(i=>i.unitId===targetUnitId):allItems;
+        return(<div className="tp-card"><h3>Housemates at {hmDisplayName}</h3>
         {(function(){
-          var pr=hmProp;
-          if(!pr)return null;
           const calcAge=(dob)=>{if(!dob)return null;const b=new Date(dob+"T00:00:00");if(isNaN(b))return null;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=10&&age<120?age:null;};
-          // Find which unit the applicant is interested in — use termRoomId, then room name, then fall back to all units
-          const allItems=leaseableItems(pr);
-          const assignedItem=a.termRoomId?allItems.find(i=>i.id===a.termRoomId||i.unitId===a.termRoomId)
-            :a.room?allItems.find(i=>i.name===a.room||i.unitId===(pr.units||[]).find(u=>(u.rooms||[]).some(r=>r.name===a.room))?.id)
-            :null;
-          const targetUnitId=assignedItem?.unitId||null;
-          // If we know the unit, only show housemates from that unit; otherwise show all
-          const items=targetUnitId?allItems.filter(i=>i.unitId===targetUnitId):allItems;
-          const unitLabel=targetUnitId?(pr.units||[]).find(u=>u.id===targetUnitId)?.name:null;
+          // items/targetUnitId already resolved in outer scope
           return(<>
-            {unitLabel&&(pr.units||[]).length>1&&<div style={{fontSize:9,color:"#d4a853",fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:8}}>{unitLabel}</div>}
             {items.map(function(item){
               if(item.isWholeUnit){
                 const occ=item.st==="occupied";
