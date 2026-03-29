@@ -275,7 +275,7 @@ export default function ApplyPage(){
   const[appType,setAppType]=useState("tenant");
   const[d,setD]=useState({
     firstName:"",lastName:"",email:"",phone:"",dob:"",gender:"",occupationType:"",occupationTypeOther:"",
-    moveIn:"",occupants:1,occupancyAck:false,coApplicants:[],
+    moveIn:"",occupants:1,occupancyAck:false,coApplicants:[],minorChildren:0,
     // Personal
     ssn:"",idFile:null,idFileName:"",
     // Rental
@@ -357,7 +357,10 @@ export default function ApplyPage(){
       if(d.dob&&!d.dob.includes(" ")&&!ageOk(d.dob))e.dob="Applicant must be at least 18 years old to apply";
     }
     if(s==="appinfo"){
-      if(fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
+      const validationProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
+      const validationRoom=invite?.termRoomId?allRooms(validationProp||{}).find(r=>r.id===invite.termRoomId):null;
+      const validationIsWhole=validationRoom?.isWholeUnit||(validationProp?((validationProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||validationProp.rentalMode==="wholeHouse"):false);
+      if(!validationIsWhole&&fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
       if(req("moveIn")&&(!d.moveIn||d.moveIn.includes(" ")))e.moveIn="Please select your desired move-in date";
       if(d.moveIn&&!d.moveIn.includes(" ")){const mi=new Date(d.moveIn+"T00:00:00");const tod=new Date();tod.setHours(0,0,0,0);if(mi<tod)e.moveIn="Move-in date cannot be in the past — please select today or a future date";}
       if(!invite&&req("preferredProperty")&&!d.preferredProperty)e.preferredProperty="Please select which property you are interested in";
@@ -517,9 +520,14 @@ export default function ApplyPage(){
           if(!aProp&&!invite?.property)return null;
           if(isWhole){
             // Whole-unit: list all adults who will be staying
+            const soloConfirmed=d.coApplicants.length===0;
             return(<div style={{marginBottom:20}}>
               <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Who else will be living here?</div>
-              <div style={{fontSize:11,color:"#5c4a3a",marginBottom:12,lineHeight:1.5}}>List all adults (18 or older) who will live at this property. Each person will automatically receive their own application link and must complete a separate screening.</div>
+              <div style={{fontSize:11,color:"#5c4a3a",marginBottom:12,lineHeight:1.5}}>List all adults (18 or older) who will live at this property. Each person must complete a separate application and screening. Minor children do not need to apply.</div>
+              {soloConfirmed&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,marginBottom:12,fontSize:12,color:"#2d6a3f",fontWeight:600}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Only me — I'll be the sole adult occupant
+              </div>}
               {d.coApplicants.map((ca,i)=>(
                 <div key={i} style={{border:"2px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:8,background:"rgba(74,124,89,.02)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -535,6 +543,14 @@ export default function ApplyPage(){
               <div className="add-card" style={{marginBottom:0}} onClick={()=>setD(p=>({...p,coApplicants:[...p.coApplicants,{id:Math.random().toString(36).slice(2),name:"",email:""}]}))}>
                 <div className="plus">+</div>
                 <div className="lbl">Add Adult Occupant</div>
+              </div>
+              <div style={{marginTop:14,display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.15)",borderRadius:8}}>
+                <span style={{fontSize:12,color:"#5c4a3a",flex:1}}>Minor children (under 18) living here?</span>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <button onClick={()=>setD(p=>({...p,minorChildren:Math.max(0,(p.minorChildren||0)-1)}))} style={{width:26,height:26,borderRadius:"50%",border:"1px solid rgba(0,0,0,.12)",background:"#fff",cursor:"pointer",fontSize:16,fontWeight:700,color:"#1a1714",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+                  <span style={{fontSize:16,fontWeight:800,minWidth:24,textAlign:"center",color:"#1a1714"}}>{d.minorChildren||0}</span>
+                  <button onClick={()=>setD(p=>({...p,minorChildren:(p.minorChildren||0)+1}))} style={{width:26,height:26,borderRadius:"50%",border:"1px solid rgba(0,0,0,.12)",background:"#fff",cursor:"pointer",fontSize:16,fontWeight:700,color:"#1a1714",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+                </div>
               </div>
             </div>);
           } else {
@@ -924,13 +940,16 @@ export default function ApplyPage(){
             const pickedRoom2=d.selectedRoom?allProps2.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,unitLabel:u.label})))).find(r=>r.id===d.selectedRoom):null;
             // If tenant had a locked/pre-assigned room, resolve termRoomId from the room name
             const invitedApp=apps.find(a=>a.id===invite.id);
-            const roomNameFromInvite=invitedApp?.room||"";
-            const lockedRoomObj=!pickedRoom2&&roomNameFromInvite
-              ?allProps2.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,unitLabel:u.label})))).find(r=>r.name===roomNameFromInvite)
-              :null;
+            // Prefer termRoomId (ID-based, set at invite time) over name-based fallback
+            const lockedRoomObj=!pickedRoom2&&invitedApp?.termRoomId
+              ?allProps2.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,unitLabel:u.label})))).find(r=>r.id===invitedApp.termRoomId)
+              :(!pickedRoom2&&(invitedApp?.room||"")
+                ?allProps2.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,unitLabel:u.label})))).find(r=>r.name===(invitedApp?.room||""))
+                :null);
             const resolvedRoomData=pickedRoom2||lockedRoomObj;
             const updated=apps.map(a=>a.id===invite.id?{...a,
               status:"applied",lastContact:now,
+              minorChildren:d.minorChildren||0,
               applicationData:d,
               passcode:d.doorCode||null,
               name:fullName,email:d.email,phone:d.phone,
@@ -946,6 +965,7 @@ export default function ApplyPage(){
                 termUnitName:resolvedRoomData.unitName||"",
                 termRent:resolvedRoomData.rent,
                 termSD:resolvedRoomData.rent,
+                isWholeUnit:resolvedRoomData.isWholeUnit||invitedApp?.isWholeUnit||false,
               }:{
                 // Fall back to inviteRent if no room object found
                 termRent:invitedApp?.inviteRent||invitedApp?.termRent||undefined,
