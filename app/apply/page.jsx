@@ -365,9 +365,9 @@ export default function ApplyPage(){
       if(!d.occupationType)e.occupationType="Please select what best describes you";
       if(d.occupationType==="Other"&&!d.occupationTypeOther.trim())e.occupationTypeOther="Please describe what best describes you";
       // Occupancy validation — dynamic based on rental mode
-      const appInfoPropName=invite?.property||d.preferredProperty;
-      const appInfoProp=appInfoPropName?props_.find(p=>p.name===appInfoPropName):null;
-      const appInfoWholeUnit=appInfoProp?(appInfoProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||appInfoProp.rentalMode==="wholeHouse":false;
+      const appInfoProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
+      const appInfoInvitedRoom=invite?.termRoomId?allRooms(appInfoProp||{}).find(r=>r.id===invite.termRoomId):null;
+      const appInfoWholeUnit=appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||appInfoProp.rentalMode==="wholeHouse":false);
       if(!appInfoWholeUnit&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
       d.coApplicants.forEach((ca,i)=>{if(ca.email&&!ca.email.includes("@"))e["coApp_"+i+"_email"]="Valid email address required";});
     }
@@ -510,9 +510,9 @@ export default function ApplyPage(){
 
         {/* ── OCCUPANCY — dynamic per rental mode ── */}
         {(()=>{
-          const aPropName=invite?.property||d.preferredProperty;
-          const aProp=aPropName?props_.find(p=>p.name===aPropName):null;
-          const isWhole=aProp?((aProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||aProp.rentalMode==="wholeHouse"):false;
+          const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
+          const aInvitedRoom=invite?.termRoomId?allRooms(aProp||{}).find(r=>r.id===invite.termRoomId):null;
+          const isWhole=aInvitedRoom?.isWholeUnit||(aProp?((aProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||aProp.rentalMode==="wholeHouse"):false);
           // Don't render occupancy block until we know what mode we're in
           if(!aProp&&!invite?.property)return null;
           if(isWhole){
@@ -585,9 +585,9 @@ export default function ApplyPage(){
 
         {/* ── DOOR CODE — per-bedroom only ── */}
         {(()=>{
-          const dcPropName=invite?.property||d.preferredProperty;
-          const dcProp=dcPropName?props_.find(p=>p.name===dcPropName):null;
-          const dcWholeUnit=dcProp?((dcProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||dcProp.rentalMode==="wholeHouse"):false;
+          const dcProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
+          const dcInvitedRoom=invite?.termRoomId?allRooms(dcProp||{}).find(r=>r.id===invite.termRoomId):null;
+          const dcWholeUnit=dcInvitedRoom?.isWholeUnit||(dcProp?((dcProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||dcProp.rentalMode==="wholeHouse"):false);
           if(dcWholeUnit||!fieldActive("doorCode"))return null;
           return(<div style={{marginBottom:20,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
             <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>{fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
