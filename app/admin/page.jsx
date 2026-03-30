@@ -4279,7 +4279,7 @@ export default function Page(){
             const app=apps.find(a=>a.id===id);
             if(app?.email){
               fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:app.property,roomName:app.room,termPropId:app.termPropId||null,termRoomId:app.termRoomId||null,isWholeUnit:app.isWholeUnit||false,rent:app.negotiatedRent||app.termRent||app.rent,moveIn:app.termMoveIn||app.moveIn})
+                body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:app.property,roomName:app.room,rent:app.negotiatedRent||app.rent,moveIn:app.termMoveIn||app.moveIn})
               }).then(r=>r.json()).then(d=>{if(d.ok)console.log("Portal invite auto-sent to",app.email);}).catch(console.error);
             }
           }
@@ -4379,17 +4379,12 @@ export default function Page(){
           {id:uid(),label:"Desired Move-in Date",key:"moveIn",type:"date-movein",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Month / Day / Year dropdowns.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Property Interest",key:"preferredProperty",type:"property-select",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Required for walk-in applicants. Pre-filled from invite if applicable.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Preferred Room",key:"selectedRoom",type:"room-select",section:"Move-In & Property",required:false,active:true,placeholder:"",helpText:"Optional — shown based on selected property.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"passcode",section:"Room & Unit",required:true,active:true,placeholder:"Choose a 4-digit code",helpText:"Shown in the Room step. Programmed into smart lock via Sifely API on move-in day. Activates at 12:00am once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
-          {id:uid(),label:"Minor Children",key:"minorChildren",type:"counter",section:"Move-In & Property",required:false,active:true,placeholder:"",helpText:"Number of minor children (under 18) who will live at the property. Minors do not apply separately.",options:[],followUpYes:"",followUpNo:"",min:0,max:10},
-          {id:uid(),label:"Number of Occupants",key:"occupants",type:"counter",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Only 1 adult per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
+          {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"passcode",section:"Move-In & Property",required:true,active:true,placeholder:"Choose a 4-digit code",helpText:"This code will be programmed into your smart lock and written into your lease. Activates at 12:00am on move-in day once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
+          {id:uid(),label:"Number of Occupants",key:"occupants",type:"counter",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Only 1 person per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
           // ── Section 3: Personal Information ──
           {id:uid(),label:"Photo ID Upload",key:"idFile",type:"file",section:"Personal Information",required:true,active:true,placeholder:"Upload driver's license, passport, or state ID",helpText:"JPG, PNG, or PDF. Can be uploaded later — application will be marked incomplete until received.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           // ── Section 4: Rental History ──
-          {id:uid(),label:"Current / Previous Address",key:"addresses",type:"address-block",section:"Rental History",required:true,active:true,placeholder:"",helpText:"Minimum 2 years of rental history required. System will prompt for additional addresses if coverage is insufficient.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Landlord First Name",key:"landlordFirstName",type:"text",section:"Rental History",required:true,active:true,placeholder:"First name",helpText:"Required for each address. Used for reference verification.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Landlord Last Name",key:"landlordLastName",type:"text",section:"Rental History",required:true,active:true,placeholder:"Last name",helpText:"Required for each address.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Landlord Email",key:"landlordEmail",type:"email",section:"Rental History",required:true,active:true,placeholder:"landlord@email.com",helpText:"Required for reference checks.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Landlord Phone",key:"landlordPhone",type:"phone",section:"Rental History",required:true,active:true,placeholder:"(256) 555-0000",helpText:"Required for reference checks.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Current / Previous Address",key:"addresses",type:"address-block",section:"Rental History",required:true,active:true,placeholder:"",helpText:"Include landlord name and contact info to strengthen your application.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Have you ever been evicted?",key:"evicted",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain the circumstances.",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Do you have any felony convictions?",key:"felony",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain.",followUpNo:"",min:null,max:null},
           // ── Section 5: Employment & Income ──
@@ -4656,12 +4651,12 @@ export default function Page(){
                       </div>}
                     </div>
 
-                    <div className="pipe-sub">{(()=>{const p=a.termPropId?props.find(x=>x.id===a.termPropId):props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";return(a.property||"—")+(addr?" · "+addr:"")+(a.room?" · "+a.room:"");})()}</div>
+                    <div className="pipe-sub">{(()=>{const p=props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";return(a.property||"—")+(addr?" · "+addr:"")+(a.room?" · "+a.room:"");})()}</div>
 
                     {/* Invited — "Awaiting Reply" badge + re-invite button */}
                     {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
                       <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 7px",borderRadius:99,flexShrink:0}}>Awaiting Reply</span>
-                      <button onMouseEnter={e=>{e.currentTarget.style.background="rgba(196,92,74,.3)";e.currentTarget.style.color="#922e20";}} onMouseLeave={e=>{e.currentTarget.style.background="rgba(196,92,74,.12)";e.currentTarget.style.color="#c45c4a";}} style={{fontSize:9,padding:"3px 10px",background:"rgba(196,92,74,.12)",color:"#c45c4a",border:"1px solid rgba(196,92,74,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",whiteSpace:"nowrap",transition:"all .15s"}}
+                      <button style={{fontSize:9,padding:"3px 10px",background:"#d4a853",border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
                         onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Re-invite</button>
                     </div>}
 
@@ -7899,26 +7894,29 @@ export default function Page(){
     <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
 
       {/* ── Sticky top bar ── */}
-      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"0 32px",position:"sticky",top:0,zIndex:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:16,height:56}}>
+      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"12px 32px 0",position:"sticky",top:0,zIndex:10}}>
+        {/* Row 1: Back + Terminate */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <button onClick={()=>{setModal(null);setPortalInviteState("idle");}}
             onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"}
             onMouseLeave={e=>e.currentTarget.style.background="transparent"}
-            style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,color:"#5c4a3a",padding:"6px 10px",borderRadius:6,transition:"background .15s"}}>
+            style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,color:"#5c4a3a",padding:"5px 10px",borderRadius:6,transition:"background .15s"}}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             Back to Tenants
           </button>
-          <div style={{width:1,height:20,background:"rgba(0,0,0,.1)"}}/>
-          <div style={{width:38,height:38,borderRadius:"50%",background:`rgba(${settings.adminAccentRgb||"74,124,89"},.15)`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:15,color:settings.adminAccent||"#4a7c59",flexShrink:0}}>
-            {(r.tenant.name||"?").split(" ").map(n=>n[0]).slice(0,2).join("")}
-          </div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:16,fontWeight:800,color:"#1a1714"}}>{r.tenant.name}</div>
-            <div style={{fontSize:11,color:"#6b5e52"}}>{prop?getPropDisplayName(prop):r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
-          </div>
           <div style={{display:"flex",gap:8}}>
             {!pd&&<button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Record Payment</button>}
             <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{}}))}>Terminate</button>
+          </div>
+        </div>
+        {/* Row 2: Avatar + Name + Address */}
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
+          <div style={{width:42,height:42,borderRadius:"50%",background:`rgba(${settings.adminAccentRgb||"74,124,89"},.15)`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:settings.adminAccent||"#4a7c59",flexShrink:0}}>
+            {(r.tenant.name||"?").split(" ").map(n=>n[0]).slice(0,2).join("")}
+          </div>
+          <div>
+            <div style={{fontSize:18,fontWeight:800,color:"#1a1714",lineHeight:1.2}}>{r.tenant.name}</div>
+            <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>{prop?getPropDisplayName(prop):r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
           </div>
         </div>
 
@@ -8073,92 +8071,158 @@ export default function Page(){
         </div>}
 
         {/* ── PAYMENTS TAB ── */}
-        {tenantProfileTab==="payments"&&<div>
-          {/* Unpaid amount hero */}
-          {pastDueC>0&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:10,padding:"14px 20px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div><div style={{fontSize:12,color:"#c45c4a",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Unpaid charges</div><div style={{fontSize:28,fontWeight:800,color:"#c45c4a"}}>{fmtS(tenantCharges.filter(c=>chargeStatus(c)==="pastdue"||chargeStatus(c)==="unpaid").reduce((s,c)=>s+(c.amount-c.amountPaid),0))}</div></div>
+        {tenantProfileTab==="payments"&&(()=>{
+          const totalUnpaid=tenantCharges.filter(c=>["pastdue","unpaid","partial"].includes(chargeStatus(c))).reduce((s,c)=>s+(c.amount-c.amountPaid),0);
+          const expandedId=modal._expandedChargeId||null;
+          const stLabel={paid:"Paid",pastdue:"Past Due",unpaid:"Unpaid",partial:"Partial",waived:"Waived",voided:"Voided"};
+          const stBg={paid:"rgba(74,124,89,.08)",pastdue:"rgba(196,92,74,.08)",unpaid:"rgba(212,168,83,.1)",partial:"rgba(212,168,83,.1)",waived:"rgba(0,0,0,.04)",voided:"rgba(0,0,0,.04)"};
+          const stTx={paid:"#4a7c59",pastdue:"#c45c4a",unpaid:"#9a7422",partial:"#9a7422",waived:"#7a7067",voided:"#7a7067"};
+          return(<div>
+          {/* Unpaid charges hero — always shown if balance > 0 */}
+          {totalUnpaid>0&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:10,padding:"14px 20px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontSize:11,color:"#c45c4a",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Unpaid Charges</div>
+              <div style={{fontSize:28,fontWeight:800,color:"#c45c4a"}}>{fmtS(totalUnpaid)}</div>
+            </div>
             <button className="btn btn-green" onClick={()=>openPayForm(r.id)}>Record Payment</button>
           </div>}
 
           {/* Monthly recurring charges */}
           <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",marginBottom:20,overflow:"hidden"}}>
-            <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{padding:"14px 20px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:14,fontWeight:700}}>Monthly Charges</span>
-              <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name})}>+ Add Charge</button>
+              <div style={{display:"flex",gap:8}}>
+                <div style={{position:"relative"}}>
+                  <button className="btn btn-out btn-sm"
+                    onClick={e=>{const el=e.currentTarget.nextSibling;el.style.display=el.style.display==="block"?"none":"block";}}
+                    style={{display:"flex",alignItems:"center",gap:5}}>
+                    Actions
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div style={{display:"none",position:"absolute",top:"calc(100% + 4px)",right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,.1)",zIndex:20,minWidth:160,overflow:"hidden"}}>
+                    {[["View in Ledger",()=>{setModal(null);goTab("payments");setPayFilters({...payFilters,tenant:r.tenant.name});}],
+                      ["Send Reminder",()=>setModal({type:"sendReminder",charge:tenantCharges.find(c=>["unpaid","pastdue"].includes(chargeStatus(c)))||tenantCharges[0],tenantName:r.tenant.name,rem:totalUnpaid,method:null})],
+                      ["Export CSV",()=>{const rows=[["Due Date","Category","Description","Status","Amount","Amount Paid","Method","Paid Date"],...tenantCharges.map(c=>{const p=c.payments?.[0];return[c.dueDate,c.category,c.desc||"",chargeStatus(c),c.amount,c.amountPaid,p?.method||"",p?.date||""];})];const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`charges-${r.tenant.name.replace(/\s/g,"-")}.csv`;a.click();}]
+                    ].map(([label,fn])=>(
+                      <button key={label} onClick={fn} style={{display:"block",width:"100%",padding:"9px 14px",background:"none",border:"none",textAlign:"left",fontSize:12,fontWeight:500,color:"#3d3529",cursor:"pointer",fontFamily:"inherit",transition:"background .1s"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
+                        onMouseLeave={e=>e.currentTarget.style.background="none"}>{label}</button>
+                    ))}
+                  </div>
+                </div>
+                <button className="btn btn-green btn-sm"
+                  onClick={()=>setModal({type:"addCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name})}
+                  style={{fontWeight:700,letterSpacing:.1}}>
+                  + Create Charge
+                </button>
+              </div>
             </div>
-            {/* Rent — recurring */}
-            <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+            {/* Rent — recurring row */}
+            <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"rgba(59,130,246,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,fontWeight:700}}>Rent <span style={{fontSize:9,background:"rgba(59,130,246,.08)",color:"#3b82f6",padding:"1px 6px",borderRadius:3,fontWeight:600,marginLeft:4}}>RECURRING</span></div>
-                <div style={{fontSize:11,color:"#6b5e52"}}>Due on the 1st · Auto-generated monthly</div>
+                <div style={{fontSize:11,color:"#6b5e52"}}>Due on the 1st &middot; Auto-generated monthly</div>
               </div>
               <div style={{textAlign:"right"}}>
                 <div style={{fontSize:16,fontWeight:800}}>{fmtS(r.rent)}/mo</div>
-                <div style={{fontSize:10,color:"#6b5e52"}}>Move-in {fmtD(r.tenant.moveIn)} – {r.le?fmtD(r.le):"M2M"}</div>
+                <div style={{fontSize:10,color:"#6b5e52"}}>Move-in {fmtD(r.tenant.moveIn)} {r.le?"– "+fmtD(r.le):"M2M"}</div>
               </div>
             </div>
           </div>
 
-          {/* All charges ledger */}
+          {/* Sent charges ledger */}
           <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",overflow:"hidden"}}>
-            <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{padding:"14px 20px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:14,fontWeight:700}}>Sent Charges</span>
-              <div style={{display:"flex",gap:10,fontSize:12,color:"#6b5e52"}}>
+              <div style={{display:"flex",gap:12,fontSize:12,color:"#6b5e52",alignItems:"center"}}>
                 <span>Total Paid: <strong style={{color:"#4a7c59"}}>{fmtS(totalPaid)}</strong></span>
                 {pastDueC>0&&<span style={{color:"#c45c4a",fontWeight:700}}>{pastDueC} overdue</span>}
               </div>
             </div>
             {/* Column headers */}
-            <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 140px 80px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-              {["Due Date","Category / Description","Status","Amount","Deposit",""].map((h,i)=><div key={i} style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</div>)}
+            <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 150px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+              {["Due Date","Category / Description","Status","Amount","Deposit"].map((h,i)=><div key={i} style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</div>)}
             </div>
             {tenantCharges.length===0&&<div style={{textAlign:"center",padding:32,color:"#6b5e52",fontSize:13}}>No charges yet.</div>}
             {tenantCharges.map(c=>{
               const st=chargeStatus(c);const rem=c.amount-c.amountPaid;
               const ci=catIcons[c.category]||{d:"M9 11l3 3L22 4",color:"#6b5e52"};
-              const stBg={paid:"rgba(74,124,89,.08)",pastdue:"rgba(196,92,74,.08)",unpaid:"rgba(212,168,83,.08)",partial:"rgba(212,168,83,.08)",waived:"rgba(0,0,0,.04)",voided:"rgba(0,0,0,.04)"};
-              const stTx={paid:"#4a7c59",pastdue:"#c45c4a",unpaid:"#9a7422",partial:"#9a7422",waived:"#7a7067",voided:"#7a7067"};
+              const isExpanded=expandedId===c.id;
               return(
-              <div key={c.id} style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 140px 80px",padding:"12px 20px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center",background:st==="pastdue"?"rgba(196,92,74,.02)":"#fff"}}>
-                <div style={{fontSize:12,color:"#5c4a3a"}}>{fmtD(c.dueDate)}</div>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <div style={{width:28,height:28,borderRadius:6,background:`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.1)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ci.color} strokeWidth="1.75"><path d={ci.d}/>{ci.d2&&<path d={ci.d2}/>}</svg>
-                  </div>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:600}}>{c.desc||c.category}</div>
-                    {c.amountPaid>0&&c.amountPaid<c.amount&&<div style={{fontSize:10,color:"#6b5e52"}}>{fmtS(c.amountPaid)} paid · {fmtS(rem)} remaining</div>}
-                    {c.reminderActive&&<div style={{fontSize:9,color:"#d4a853",fontWeight:700}}>Reminding daily</div>}
-                  </div>
-                </div>
-                <div><span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:stBg[st]||"rgba(0,0,0,.04)",color:stTx[st]||"#6b5e52"}}>{st==="pastdue"?"Late":st}</span></div>
-                <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714"}}>{fmtS(c.amount)}</div>
-                {/* Deposit info */}
-                <div style={{fontSize:10,color:"#5c4a3a"}}>
-                  {(c.payments||[]).length>0?(
-                    <div>
-                      {(c.payments||[]).slice(0,1).map((p,i)=>(
-                        <div key={i}>
-                          <div style={{fontWeight:600}}>{p.date?fmtD(p.date):""}</div>
-                          <div style={{color:"#7a7067"}}>{p.method||""}</div>
-                          <div style={{color:"#4a7c59",fontSize:9}}>Due: $0.00</div>
-                        </div>
-                      ))}
+              <div key={c.id} style={{borderBottom:"1px solid rgba(0,0,0,.04)",background:isExpanded?"rgba(0,0,0,.015)":st==="pastdue"?"rgba(196,92,74,.02)":"#fff"}}>
+                {/* Main row — clickable to expand */}
+                <div
+                  onClick={()=>setModal(prev=>({...prev,_expandedChargeId:prev._expandedChargeId===c.id?null:c.id}))}
+                  style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 150px",padding:"12px 20px",alignItems:"center",cursor:"pointer",transition:"background .15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.02)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <div style={{fontSize:12,color:"#5c4a3a"}}>{fmtD(c.dueDate)}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:28,height:28,borderRadius:6,background:`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.1)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ci.color} strokeWidth="1.75"><path d={ci.d}/>{ci.d2&&<path d={ci.d2}/>}</svg>
                     </div>
-                  ):<span style={{color:"#8a7d74"}}>—</span>}
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600}}>{c.desc||c.category}</div>
+                      {c.amountPaid>0&&c.amountPaid<c.amount&&<div style={{fontSize:10,color:"#6b5e52"}}>{fmtS(c.amountPaid)} paid &middot; {fmtS(rem)} remaining</div>}
+                      {c.reminderActive&&<div style={{fontSize:9,color:"#d4a853",fontWeight:700}}>Reminding daily</div>}
+                    </div>
+                  </div>
+                  <div><span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:stBg[st]||"rgba(0,0,0,.04)",color:stTx[st]||"#6b5e52"}}>{stLabel[st]||st}</span></div>
+                  <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714"}}>{fmtS(c.amount)}</div>
+                  <div style={{fontSize:10,color:"#5c4a3a"}}>
+                    {(c.payments||[]).length>0?(
+                      <div>
+                        {(c.payments||[]).slice(0,1).map((p,i)=>(
+                          <div key={i}>
+                            <div style={{fontWeight:600}}>{p.date?fmtD(p.date):""}</div>
+                            <div style={{color:"#7a7067"}}>{p.method||""}</div>
+                            <div style={{color:"#7a7067",fontSize:9}}>Due: $0.00</div>
+                          </div>
+                        ))}
+                      </div>
+                    ):<span style={{color:"#8a7d74"}}>—</span>}
+                  </div>
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:3}}>
-                  {st!=="paid"&&st!=="waived"&&st!=="voided"&&<button className="btn btn-green btn-sm" style={{fontSize:9,padding:"3px 8px"}} onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Pay</button>}
-                  {st==="pastdue"&&!c.reminderActive&&<button style={{fontSize:9,padding:"2px 6px",borderRadius:3,border:"1px solid rgba(196,92,74,.2)",background:"transparent",color:"#c45c4a",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null})}>Remind</button>}
-                </div>
+                {/* Expanded row */}
+                {isExpanded&&<div style={{padding:"12px 20px 16px",borderTop:"1px solid rgba(0,0,0,.05)",background:"rgba(0,0,0,.01)"}}>
+                  {/* Full payment details */}
+                  {(c.payments||[]).length>0&&<div style={{marginBottom:12}}>
+                    {c.payments.map((p,i)=>(
+                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,marginBottom:6,fontSize:12}}>
+                        <div>
+                          <div style={{fontWeight:700,color:"#1a1714"}}>{p.method||"Payment"}</div>
+                          <div style={{fontSize:10,color:"#6b5e52"}}>Paid {fmtD(p.date)}{p.depositDate?" &middot; Deposited "+fmtD(p.depositDate):""}</div>
+                          {p.notes&&<div style={{fontSize:10,color:"#7a7067",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
+                        </div>
+                        <div style={{fontSize:14,fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</div>
+                      </div>
+                    ))}
+                  </div>}
+                  {/* Action buttons */}
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {st!=="paid"&&st!=="waived"&&st!=="voided"&&(
+                      <button className="btn btn-green btn-sm" onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Record Payment</button>
+                    )}
+                    {(st==="pastdue"||st==="unpaid")&&(
+                      <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null})}>Send Reminder</button>
+                    )}
+                    <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"editCharge",charge:{...c}})}>Edit</button>
+                    {st!=="voided"&&st!=="waived"&&(
+                      <button className="btn btn-out btn-sm" style={{color:"#9a7422"}} onClick={()=>setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""})}>Void</button>
+                    )}
+                    {(st==="unpaid"||st==="pastdue")&&c.payments.length===0&&(
+                      <button className="btn btn-out btn-sm" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc})}>Delete</button>
+                    )}
+                  </div>
+                </div>}
               </div>);
             })}
           </div>
 
-          {/* View in Tenant Ledger link */}
+          {/* View in Tenant Ledger */}
           <div style={{display:"flex",justifyContent:"flex-end",marginTop:12}}>
             <button className="btn btn-out btn-sm" onClick={()=>{setModal(null);goTab("payments");setPayFilters({...payFilters,tenant:r.tenant.name});}}>
               View in Tenant Ledger →
@@ -8177,7 +8241,7 @@ export default function Page(){
               <div style={{background:"rgba(0,0,0,.02)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:20,fontWeight:800,color:pastDueC?"#c45c4a":"#4a7c59"}}>{pastDueC}</div><div style={{fontSize:10,color:"#6b5e52"}}>Overdue</div></div>
             </div>
           </div>}
-        </div>}
+        </div>);})()}
 
         {/* ── CONDITION REPORT TAB ── */}
         {tenantProfileTab==="condition"&&<div>
@@ -9844,7 +9908,7 @@ export default function Page(){
     const incomeLabel={"none":"None","income-only":"Income Verify (+$10)","income-employment":"Income + Employer (+$15)"};
     const inviteStep=modal.inviteStep||"configure";
     // Source of truth: everything comes from app modal data, not Configure Invite dropdowns
-    const invProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
+    const invProp=a.property?props.find(p=>p.name===a.property):null;
     const invRoomObj=a.termRoomId&&invProp?allRooms(invProp).find(r=>r.id===a.termRoomId):null;
     const invRent=a.termRent||(invRoomObj?invRoomObj.rent:0);
     const invMoveIn=a.moveInTbd?"TBD":(a.termMoveIn||a.moveIn||"");
@@ -9876,7 +9940,6 @@ export default function Page(){
         room:invRoomLabel,
         inviteRent:invRent,inviteRoomId:a.termRoomId||null,
         inviteRoomMode:a.skipRoomAssign?"none":"locked",inviteLink:link,
-        isWholeUnit:invRoomObj?!!invRoomObj.isWholeUnit:false,
         lastContact:TODAY.toISOString().split("T")[0],
         sentVia:(a.sentVia?a.sentVia+", ":"")+method,
         history:[...(a.history||[]),{from:a.status,to:"invited",
@@ -9986,7 +10049,7 @@ export default function Page(){
       </div>
       {/* Room / Move-in summary — read-only, pulled from app modal */}
       {(()=>{
-        const appProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
+        const appProp=props.find(p=>p.name===a.property);
         const appRoom=a.termRoomId?allRooms(appProp||{units:[]}).find(r=>r.id===a.termRoomId):null;
         const modeLabel=a.skipRoomAssign?"Assign at lease":a.termRoomId?"Room locked":"Not yet assigned";
         const moveInDisplay=a.moveInTbd?"TBD":(fmtD(a.termMoveIn||a.moveIn)||"Not set");
@@ -10369,7 +10432,7 @@ export default function Page(){
     const saveApp=(id,key,val)=>{setApps(p=>p.map(x=>x.id===id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
     const days=ds2(a.lastContact||a.submitted);
     const allVacant=props.flatMap(p=>allRooms(p).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
-    const targetProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
+    const targetProp=props.find(p=>p.name===a.property);
     const targetRoom=targetProp?allRooms(targetProp).find(r=>r.name===a.room&&r.st==="vacant"):null;
     const mf=[];var nm3=(a.name||"").toLowerCase();
     archive.forEach(t=>{
@@ -10546,7 +10609,7 @@ export default function Page(){
         const hasConflict=caseA||(caseB&&!overrideConfirmed);
 
         // Property-level availability warning — switches to selected room once one is picked
-        const warnProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
+        const warnProp=a.property?props.find(p=>p.name===a.property):null;
         const warnItems=warnProp?leaseableItems(warnProp):[];
         const warnVacant=warnItems.filter(i=>i.st==="vacant");
         const warnOccWithLe=warnItems.filter(i=>i.st!=="vacant"&&i.le);
@@ -10904,7 +10967,7 @@ export default function Page(){
           }
           return null;
         })();
-        const tlPropFromName=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
+        const tlPropFromName=a.property?props.find(p=>p.name===a.property):null;
         const tlProp=tlResolvedFromId?.prop||tlPropFromName||null;
         const tlSelectedUnitId=tlResolvedFromId?.unitId||null;
         const tlIsWholeUnit=!!tlResolvedFromId?.isWhole;
