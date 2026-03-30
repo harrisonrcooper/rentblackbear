@@ -7898,43 +7898,59 @@ export default function Page(){
     <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
 
       {/* ── Sticky top bar ── */}
-      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"12px 32px 0",position:"sticky",top:0,zIndex:10}}>
-        {/* Row 1: Back + Terminate */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"16px 32px 0",position:"sticky",top:0,zIndex:10}}>
+        {/* Row 1: Back */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           <button onClick={()=>{setModal(null);setPortalInviteState("idle");}}
-            onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"}
-            onMouseLeave={e=>e.currentTarget.style.background="transparent"}
-            style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,color:"#5c4a3a",padding:"5px 10px",borderRadius:6,transition:"background .15s"}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            Back to Tenants
+            onMouseEnter={e=>e.currentTarget.style.color="#1a1714"}
+            onMouseLeave={e=>e.currentTarget.style.color="#5c4a3a"}
+            style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:"#5c4a3a",padding:0,transition:"color .15s"}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
           </button>
           <div style={{display:"flex",gap:8}}>
-            {!pd&&<button className="btn btn-green btn-sm" onClick={()=>openPayForm(r.id)}>Record Payment</button>}
             <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{}}))}>Terminate</button>
           </div>
         </div>
-        {/* Row 2: Avatar + Name + Address + Move-in */}
-        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
-          <div style={{width:42,height:42,borderRadius:"50%",background:`rgba(${settings.adminAccentRgb||"74,124,89"},.15)`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:settings.adminAccent||"#4a7c59",flexShrink:0}}>
-            {(r.tenant.name||"?").split(" ").map(n=>n[0]).slice(0,2).join("")}
-          </div>
+
+        {/* Row 2: Current Lease label + Edit button */}
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:4}}>
           <div>
-            <div style={{fontSize:18,fontWeight:800,color:"#1a1714",lineHeight:1.2}}>{r.tenant.name}</div>
-            {(()=>{
-              const dispName=prop?getPropDisplayName(prop):r.propName;
-              const addr=prop?.addr||"";
-              // Only append addr if getPropDisplayName didn't already return it
-              const addrSuffix=(addr&&addr!==dispName)?" · "+addr:"";
-              return <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>{dispName}{addrSuffix} · {r.name}</div>;
-            })()}
-            <div style={{fontSize:11,color:"#7a7067",marginTop:2}}>
-              Move-in {fmtD(r.tenant.moveIn)}{r.le?" – "+fmtD(r.le):isM2M?" · Month-to-Month":""}
+            <div style={{fontSize:10,fontWeight:800,color:settings.adminAccent||"#4a7c59",textTransform:"uppercase",letterSpacing:1.5,marginBottom:6}}>Current Lease</div>
+            {/* Title: address — tenant name */}
+            <div style={{fontSize:22,fontWeight:800,color:"#1a1714",lineHeight:1.2,marginBottom:6}}>
+              {(()=>{
+                const dispName=prop?getPropDisplayName(prop):r.propName;
+                const addr=prop?.addr||"";
+                const addrSuffix=(addr&&addr!==dispName)?" · "+addr:"";
+                return `${dispName}${addrSuffix}, ${r.name} — ${r.tenant.name}`;
+              })()}
+            </div>
+            {/* Address line */}
+            <div style={{fontSize:12,color:"#6b5e52",marginBottom:3}}>
+              {(()=>{
+                const dispName=prop?getPropDisplayName(prop):r.propName;
+                const addr=prop?.addr||"";
+                const addrSuffix=(addr&&addr!==dispName)?" · "+addr:"";
+                return `${dispName}${addrSuffix} | ${r.name}`;
+              })()}
+            </div>
+            {/* Date range */}
+            <div style={{fontSize:12,color:"#6b5e52",marginBottom:14}}>
+              {r.tenant.moveIn?fmtD(r.tenant.moveIn):""}{r.le?" – "+fmtD(r.le):isM2M?" (Month-to-Month)":""}
             </div>
           </div>
+          {/* Edit button */}
+          <button className="btn btn-out btn-sm"
+            onClick={()=>setModal(prev=>({...prev,_leaseSettingsOpen:true}))}
+            style={{display:"flex",alignItems:"center",gap:5,flexShrink:0,marginTop:20}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
         </div>
 
         {/* ── Browser Tabs ── */}
-        <div style={{display:"flex",gap:0,marginTop:0}}>
+        <div style={{display:"flex",gap:0}}>
           {TABS.map(t=>{
             const active=tenantProfileTab===t.id;
             return(
@@ -8202,11 +8218,22 @@ export default function Page(){
           {/* Sent charges ledger */}
           <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",overflow:"hidden"}}>
             <div style={{padding:"14px 20px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:14,fontWeight:700}}>Sent Charges</span>
-              <div style={{display:"flex",gap:12,fontSize:12,color:"#6b5e52",alignItems:"center"}}>
-                <span>Total Paid: <strong style={{color:"#4a7c59"}}>{fmtS(totalPaid)}</strong></span>
-                {pastDueC>0&&<span style={{color:"#c45c4a",fontWeight:700}}>{pastDueC} overdue</span>}
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:14,fontWeight:700}}>Sent Charges</span>
+                {pastDueC>0&&<span style={{fontSize:11,color:"#c45c4a",fontWeight:700,background:"rgba(196,92,74,.08)",padding:"2px 8px",borderRadius:100}}>{pastDueC} past due</span>}
               </div>
+              <button
+                onClick={()=>{
+                  const rows=[["Due Date","Category","Description","Status","Amount","Amount Paid","Method","Paid Date"],...tenantCharges.map(c=>{const p=c.payments?.[0];return[c.dueDate,c.category,c.desc||"",chargeStatus(c),c.amount,c.amountPaid,p?.method||"",p?.date||""];})];
+                  const csv=rows.map(row=>row.map(v=>`"${v}"`).join(",")).join("\n");
+                  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`charges-${r.tenant.name.replace(/\s/g,"-")}.csv`;a.click();
+                }}
+                style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,color:"#5c4a3a",fontFamily:"inherit",padding:"4px 8px",borderRadius:6,transition:"background .15s"}}
+                onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
+                onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+              </button>
             </div>
             {/* Column headers — 5 cols: Date | Category | Status | Amount+Due | Chevron */}
             <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 110px 28px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
@@ -8393,7 +8420,176 @@ export default function Page(){
         </div>}
 
       </div>
-    </div>);
+
+      {/* ── Lease Settings overlay — shown when Edit clicked ── */}
+      {modal._leaseSettingsOpen&&(()=>{
+        const ls=modal._leaseSettings||{
+          nickname:`${(()=>{const dn=prop?getPropDisplayName(prop):r.propName;const addr=prop?.addr||"";const sfx=(addr&&addr!==dn)?" · "+addr:"";return dn+sfx;})()}, ${r.name} — ${r.tenant.name}`,
+          requireInsurance: r.requireInsurance||false,
+          allowPartial: r.allowPartial!==false,
+          settleOldFirst: r.settleOldFirst!==false,
+          editingTerm: false,
+          newLeStart: r.tenant.moveIn||"",
+          newLeEnd: r.le||"",
+        };
+        const updLs=(k,v)=>setModal(p=>({...p,_leaseSettings:{...ls,[k]:v}}));
+        const saveLs=()=>{
+          setProps(prev=>prev.map(p=>{
+            if(!prop||p.id!==prop.id)return p;
+            return{...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>{
+              if(rm.id!==r.id)return rm;
+              const updated={...rm,requireInsurance:ls.requireInsurance,allowPartial:ls.allowPartial,settleOldFirst:ls.settleOldFirst};
+              if(ls.editingTerm&&ls.newLeEnd)updated.le=ls.newLeEnd;
+              if(ls.editingTerm&&ls.newLeStart&&updated.tenant)updated.tenant={...updated.tenant,moveIn:ls.newLeStart};
+              return updated;
+            })}))};\n          }));
+          setModal(p=>({...p,_leaseSettingsOpen:false,_leaseSettings:undefined}));
+        };
+        const radioStyle=(active)=>({width:16,height:16,borderRadius:"50%",border:`2px solid ${active?settings.adminAccent||"#4a7c59":"rgba(0,0,0,.25)"}`,background:active?settings.adminAccent||"#4a7c59":"#fff",display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,transition:"all .15s"});
+        const radioDot=<div style={{width:6,height:6,borderRadius:"50%",background:"#fff"}}/>;
+        const sec=(title,icon)=>(
+          <div style={{display:"flex",alignItems:"center",gap:10,fontSize:16,fontWeight:700,color:"#1a1714",marginBottom:18,paddingBottom:10,borderBottom:"1px solid rgba(0,0,0,.07)"}}>
+            {icon}<span>{title}</span>
+          </div>
+        );
+        return(
+        <div style={{position:"absolute",inset:0,background:"#f5f4f1",zIndex:5,overflowY:"auto"}}>
+          {/* Header */}
+          <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+            <button onClick={()=>setModal(p=>({...p,_leaseSettingsOpen:false,_leaseSettings:undefined}))}
+              style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:600,color:"#5c4a3a",padding:0}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              Back
+            </button>
+          </div>
+
+          {/* Body */}
+          <div style={{maxWidth:600,margin:"0 auto",padding:"32px 24px 80px"}}>
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"28px 32px",marginBottom:16}}>
+              <h2 style={{fontSize:22,fontWeight:800,marginBottom:24}}>Lease Settings</h2>
+
+              {/* Lease Details */}
+              {sec("Lease Details",<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>)}
+
+              {/* Lease Term */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:12,fontWeight:600,color:"#5c4a3a",marginBottom:4}}>Lease Term</div>
+                {!ls.editingTerm
+                  ?<div style={{fontSize:14,color:"#1a1714",marginBottom:8}}>
+                    {r.tenant.moveIn?fmtD(r.tenant.moveIn):""} {r.le?" – "+fmtD(r.le):"(no end date)"}
+                  </div>
+                  :<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
+                    <div><label style={{fontSize:11,fontWeight:700,color:"#5c4a3a",display:"block",marginBottom:4}}>Start Date</label><input type="date" value={ls.newLeStart||""} onChange={e=>updLs("newLeStart",e.target.value)} style={{width:"100%",padding:"9px 12px",border:"2px solid rgba(0,0,0,.1)",borderRadius:8,fontSize:13,fontFamily:"inherit",outline:"none"}}/></div>
+                    <div><label style={{fontSize:11,fontWeight:700,color:"#5c4a3a",display:"block",marginBottom:4}}>End Date</label><input type="date" value={ls.newLeEnd||""} onChange={e=>updLs("newLeEnd",e.target.value)} style={{width:"100%",padding:"9px 12px",border:"2px solid rgba(0,0,0,.1)",borderRadius:8,fontSize:13,fontFamily:"inherit",outline:"none"}}/></div>
+                  </div>
+                }
+                <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                  <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5}} onClick={()=>updLs("editingTerm",!ls.editingTerm)}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    {ls.editingTerm?"Cancel Edit":"Edit Term"}
+                  </button>
+                  <button onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{},_leaseSettingsOpen:false}))}
+                    style={{background:"none",border:"none",fontSize:12,color:"#c45c4a",cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:0}}>
+                    End or delete this lease
+                  </button>
+                </div>
+              </div>
+
+              {/* Lease Nickname */}
+              <div style={{marginBottom:20}}>
+                <label style={{fontSize:12,fontWeight:600,color:"#5c4a3a",display:"block",marginBottom:6}}>Lease Nickname</label>
+                <input value={ls.nickname||""} onChange={e=>updLs("nickname",e.target.value)}
+                  style={{width:"100%",padding:"10px 14px",border:"2px solid rgba(0,0,0,.08)",borderRadius:9,fontSize:13,fontFamily:"inherit",outline:"none",background:"#fff",color:"#1a1714"}}/>
+                <div style={{fontSize:11,color:"#7a7067",marginTop:4}}>Most landlords use a combination of the property address and tenant name.</div>
+              </div>
+
+              {/* Property + Room (read-only display) */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:10,marginBottom:8}}>
+                <div>
+                  <label style={{fontSize:12,fontWeight:600,color:"#5c4a3a",display:"block",marginBottom:6}}>Property</label>
+                  <div style={{padding:"10px 14px",border:"1px solid rgba(0,0,0,.1)",borderRadius:9,fontSize:13,color:"#1a1714",background:"rgba(0,0,0,.02)"}}>{prop?getPropDisplayName(prop):r.propName}</div>
+                </div>
+                <div>
+                  <label style={{fontSize:12,fontWeight:600,color:"#5c4a3a",display:"block",marginBottom:6}}>Room</label>
+                  <div style={{padding:"10px 14px",border:"1px solid rgba(0,0,0,.1)",borderRadius:9,fontSize:13,color:"#1a1714",background:"rgba(0,0,0,.02)",minWidth:80}}>{r.name}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Renters Insurance */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"28px 32px",marginBottom:16}}>
+              {sec("Renters Insurance",<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="1.75"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>)}
+              <div style={{fontWeight:600,fontSize:14,color:"#1a1714",marginBottom:6}}>Do you require renter&apos;s insurance?</div>
+              <div style={{fontSize:12,color:"#6b5e52",marginBottom:14}}>Requiring renters insurance could protect both you and your tenant from unexpected losses.</div>
+              {[["Yes",true],["No",false]].map(([label,val])=>(
+                <label key={label} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer"}}>
+                  <div style={radioStyle(ls.requireInsurance===val)} onClick={()=>updLs("requireInsurance",val)}>
+                    {ls.requireInsurance===val&&radioDot}
+                  </div>
+                  <span style={{fontSize:14,color:"#1a1714"}}>{label}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Payments */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"28px 32px",marginBottom:16}}>
+              {sec("Payments",<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="1.75"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>)}
+
+              <div style={{marginBottom:20}}>
+                <div style={{fontWeight:600,fontSize:14,color:"#1a1714",marginBottom:4}}>Allow partial payments on this lease?</div>
+                <div style={{fontSize:12,color:"#6b5e52",marginBottom:12}}>This allows roommates to easily split rent.</div>
+                {[["Yes",true],["No",false]].map(([label,val])=>(
+                  <label key={label} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer"}}>
+                    <div style={radioStyle(ls.allowPartial===val)} onClick={()=>updLs("allowPartial",val)}>
+                      {ls.allowPartial===val&&radioDot}
+                    </div>
+                    <span style={{fontSize:14,color:"#1a1714"}}>{label}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div style={{marginBottom:20}}>
+                <div style={{fontWeight:600,fontSize:14,color:"#1a1714",marginBottom:4}}>Require tenants to settle older past due charges before paying newer charges?</div>
+                {[["Yes",true],["No",false]].map(([label,val])=>(
+                  <label key={label} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer"}}>
+                    <div style={radioStyle(ls.settleOldFirst===val)} onClick={()=>updLs("settleOldFirst",val)}>
+                      {ls.settleOldFirst===val&&radioDot}
+                    </div>
+                    <span style={{fontSize:14,color:"#1a1714"}}>{label}</span>
+                  </label>
+                ))}
+              </div>
+
+              <button className="btn btn-dk" onClick={saveLs} style={{background:"#1a1714",color:"#f5f0e8",fontWeight:700,width:"100%"}}>Save Changes</button>
+            </div>
+
+            {/* End Lease */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"28px 32px",marginBottom:16}}>
+              <div style={{fontSize:16,fontWeight:700,color:"#c45c4a",marginBottom:8}}>End Lease</div>
+              <div style={{fontSize:13,color:"#6b5e52",marginBottom:16}}>Best for active leases that are ending because the tenant moved out. You will be able to set the lease end date.</div>
+              <button className="btn btn-dk btn-sm" style={{background:"#1a1714",color:"#f5f0e8",fontWeight:700}}
+                onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{},_leaseSettingsOpen:false}))}>
+                Convert to Past Lease
+              </button>
+            </div>
+
+            {/* Delete Lease */}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(196,92,74,.15)",padding:"28px 32px"}}>
+              <div style={{fontSize:16,fontWeight:700,color:"#c45c4a",marginBottom:8}}>Delete Lease</div>
+              <div style={{fontSize:13,color:"#6b5e52",marginBottom:16}}>Best for leases where the tenant never moved in or was created by mistake.</div>
+              <button className="btn btn-red btn-sm"
+                onClick={()=>setModal({type:"confirmAction",title:"Delete Lease",body:`This will permanently remove ${r.tenant.name}'s lease record. This cannot be undone.`,confirmLabel:"Delete Lease",confirmStyle:"btn-red",onConfirm:()=>{
+                  setProps(prev=>prev.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id!==r.id?rm:{...rm,st:"vacant",le:null,tenant:null,m2m:false})}))}))));
+                  setModal(null);
+                }})}>
+                Delete Lease
+              </button>
+            </div>
+          </div>
+        </div>);
+      })()}
+    </div>
+    );
   })()}
 
   {/* Record Payment Modal */}
