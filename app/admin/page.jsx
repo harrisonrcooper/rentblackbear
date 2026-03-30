@@ -2484,10 +2484,11 @@ export default function Page(){
 
   const openRecordPay=()=>setModal({type:"recordPay",step:1,selRoom:"",selCharge:"",payAmount:0,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});
   const openCreateCharge=()=>setModal({type:"createCharge",roomId:"",category:"Rent",desc:"",amount:0,dueDate:TODAY.toISOString().split("T")[0],notes:""});
-  // Backwards compat: openPayForm still works from existing buttons
-  const openPayForm=(rid)=>{const unpaidCh=charges.filter(c=>c.roomId===rid&&chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
-    if(unpaidCh.length)setModal({type:"recordPay",step:2,selRoom:rid,selCharge:unpaidCh[0].id,payAmount:unpaidCh[0].amount-unpaidCh[0].amountPaid,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});
-    else{const r=props.flatMap(p=>allRooms(p)).find(x=>x.id===rid);setModal({type:"createCharge",roomId:rid,category:"Rent",desc:`${MO} Rent`,amount:(r&&r.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:"No existing charge — creating new"});}};
+  // openPayForm: pass tenantRoom when called from tenant profile so modal can return there
+  const openPayForm=(rid,tenantRoom=null)=>{const unpaidCh=charges.filter(c=>c.roomId===rid&&chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
+    const ft=!!tenantRoom;const base=ft?{_fromTenant:true,_tenantRoom:tenantRoom}:{};
+    if(unpaidCh.length)setModal({type:"recordPay",step:2,selRoom:rid,selCharge:unpaidCh[0].id,payAmount:unpaidCh[0].amount-unpaidCh[0].amountPaid,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:"",...base});
+    else{const r=props.flatMap(p=>allRooms(p)).find(x=>x.id===rid);setModal({type:"createCharge",roomId:rid,category:"Rent",desc:`${MO} Rent`,amount:(r&&r.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:"No existing charge — creating new",...base});}};
 
   const cycleRock=id=>setRocks(p=>p.map(r=>{if(r.id!==id)return r;const o=["on-track","off-track","not-started","done"];return{...r,status:o[(o.indexOf(r.status)+1)%o.length]};}));
   const saveProp=async(p)=>{
@@ -8127,9 +8128,9 @@ export default function Page(){
                 </button>
                 {modal._actionsOpen&&<div style={{position:"absolute",top:"calc(100% + 4px)",right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,.12)",zIndex:20,minWidth:210,overflow:"hidden"}}>
                   {[
-                    ["Record payment",()=>{setModal(p=>({...p,_actionsOpen:false}));openPayForm(r.id);}],
-                    ["Add credit",()=>setModal({type:"addCredit",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,amount:0,reason:""})],
-                    ["Return security deposit",()=>setModal({type:"returnSD",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,deductions:[],returnAmount:r.rent})],
+                    ["Record payment",()=>{setModal(p=>({...p,_actionsOpen:false}));openPayForm(r.id,r);}],
+                    ["Add credit",()=>setModal({type:"addCredit",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,amount:0,reason:"",_fromTenant:true,_tenantRoom:r})],
+                    ["Return security deposit",()=>setModal({type:"returnSD",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,deductions:[],returnAmount:r.rent,_fromTenant:true,_tenantRoom:r})],
                     null,
                     ["Export CSV",()=>{
                       setModal(p=>({...p,_actionsOpen:false}));
@@ -8303,33 +8304,33 @@ export default function Page(){
                   <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
                     {st!=="paid"&&st!=="waived"&&st!=="voided"&&(
                       <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600}}
-                        onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>
+                        onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:"",_fromTenant:true,_tenantRoom:r})}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                         Record Payment
                       </button>
                     )}
                     {(st==="pastdue"||st==="unpaid")&&(
                       <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600}}
-                        onClick={()=>setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null})}>
+                        onClick={()=>setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null,_fromTenant:true,_tenantRoom:r})}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         Send Reminder
                       </button>
                     )}
                     <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600}}
-                      onClick={()=>setModal({type:"editCharge",charge:{...c},isPaid:st==="paid"})}>
+                      onClick={()=>setModal({type:"editCharge",charge:{...c},isPaid:st==="paid",_fromTenant:true,_tenantRoom:r})}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       Edit
                     </button>
                     {st!=="voided"&&st!=="waived"&&(
                       <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600,color:"#9a7422"}}
-                        onClick={()=>setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""})}>
+                        onClick={()=>setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:"",_fromTenant:true,_tenantRoom:r})}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                         Void
                       </button>
                     )}
                     {(st==="unpaid"||st==="pastdue")&&c.payments.length===0&&(
                       <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600,color:"#c45c4a"}}
-                        onClick={()=>setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc})}>
+                        onClick={()=>setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,_fromTenant:true,_tenantRoom:r})}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                         Delete
                       </button>
@@ -8690,6 +8691,7 @@ export default function Page(){
 
   {/* Waive Charge Modal */}
   {modal&&modal.type==="sendReminder"&&(()=>{
+    const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     const c=modal.charge;
     const tenantRoom=props.flatMap(p=>allRooms(p)).find(r=>r.id===c.roomId);
     const tenant=tenantRoom&&tenantRoom.tenant;
@@ -8720,13 +8722,13 @@ export default function Page(){
       // Set reminderActive so cron sends daily until paid
       setCharges(p=>p.map(x=>x.id===c.id?{...x,reminderActive:true,reminders:[...(x.reminders||[]),{method,date:TODAY.toISOString().split("T")[0]}]}:x));
       setNotifs(p=>[{id:uid(),type:"payment",msg:`Reminder sent to ${c.tenantName} via ${method}: ${c.category} ${fmtS(modal.rem)} due ${fmtD(c.dueDate)}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
-      setModal(null);
+      backToTenant();
     };
     const reminderMsg=modal.reminderMsg!==undefined?modal.reminderMsg:defaultMsg;
     const isEdited=reminderMsg!==defaultMsg;
     const editingDefault=modal.editingDefault||false;
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
+    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
       <h2>Send Reminder</h2>
       <div style={{background:"rgba(196,92,74,.04)",border:"1px solid rgba(196,92,74,.1)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700,marginBottom:2}}>{c.tenantName}</div>
@@ -8778,7 +8780,7 @@ export default function Page(){
             <div style={{fontSize:9,color:"#4a7c59",opacity:.7,marginTop:2}}>{phone||"No phone on file"}</div>
           </button>
         </div>
-        <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button></div>
+        <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button></div>
       </>}
     </div></div>);
   })()}
@@ -9331,8 +9333,10 @@ export default function Page(){
     </div></div>
   )}
 
-  {modal&&modal.type==="deleteCharge"&&(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
+  {modal&&modal.type==="deleteCharge"&&(()=>{
+    const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
+    return(
+    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
       <h2>🗑 Delete Charge?</h2>
       <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700,marginBottom:2}}>{modal.tenantName}</div>
@@ -9340,14 +9344,16 @@ export default function Page(){
       </div>
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:16}}>This will permanently delete the charge and all associated payment records. This cannot be undone.</p>
       <div className="mft">
-        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-red" onClick={()=>{setCharges(p=>p.filter(c=>c.id!==modal.chargeId));setExpCharge(null);setModal(null);}}>Yes, Delete</button>
+        <button className="btn btn-out" onClick={backToTenant}>Cancel</button>
+        <button className="btn btn-red" onClick={()=>{setCharges(p=>p.filter(c=>c.id!==modal.chargeId));setExpCharge(null);backToTenant();}}>Yes, Delete</button>
       </div>
-    </div></div>
-  )}
+    </div></div>);
+  })()}
 
-  {modal&&modal.type==="waiveCharge"&&(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
+  {modal&&modal.type==="waiveCharge"&&(()=>{
+    const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
+    return(
+    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
       <h2>Stop Late Fees</h2>
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:12}}>This will stop late fees and mark the charge as waived. This cannot be undone.</p>
       <div className={`fld ${modal.reasonErr?"field-err":""}`}>
@@ -9355,13 +9361,13 @@ export default function Page(){
         <textarea value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value,reasonErr:false}))} placeholder="e.g. Tenant hardship, billing error, goodwill gesture..." rows={2} autoFocus/>
         {modal.reasonErr&&<div className="err-msg">Please enter a reason</div>}
       </div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+      <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button>
         <button className="btn btn-red" onClick={()=>{
           if(!(modal.reason||"").trim()){setModal(prev=>({...prev,reasonErr:true}));shakeModal();return;}
-          waiveCharge(modal.chargeId,modal.reason);setExpCharge(null);setModal(null);
+          waiveCharge(modal.chargeId,modal.reason);setExpCharge(null);backToTenant();
         }}>Waive Charge</button></div>
-    </div></div>
-  )}
+    </div></div>);
+  })()}
 
   {/* ── Edit Recurring Charge ── */}
   {/* Edits room recurring charge config + lateConfig going forward. Does NOT touch existing charge records. */}
@@ -9727,6 +9733,7 @@ export default function Page(){
 
   {/* Edit Charge */}
   {modal&&modal.type==="editCharge"&&(()=>{
+    const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     const c=modal.charge;const isPaid=modal.isPaid;const shake=modal.shake||false;const errs=modal.errs||{};
     const upd=(k,v)=>setModal(p=>({...p,charge:{...p.charge,[k]:v},errs:{...(p.errs||{}),[k]:null}}));
     const save=()=>{
@@ -9738,10 +9745,10 @@ export default function Page(){
       if(Object.keys(e).length){setModal(p=>({...p,errs:e,shake:true}));setTimeout(()=>setModal(p=>({...p,shake:false})),500);return;}
       const auditNote=isPaid?{editedAt:TODAY.toISOString().split("T")[0],editedReason:modal.editReason,editNote:modal.editNote||"",origAmount:modal.charge.amount}:null;
       setCharges(p=>p.map(x=>x.id===c.id?{...x,amount:Number(c.amount),dueDate:c.dueDate,desc:c.desc,category:c.category,editAudit:auditNote||x.editAudit}:x));
-      setModal(null);
+      backToTenant();
     };
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460,animation:shake?"shake .4s ease":undefined}}>
+    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460,animation:shake?"shake .4s ease":undefined}}>
       <h2 style={{marginBottom:4}}>Edit Charge</h2>
       <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>{c.tenantName} · {c.propName}</div>
       {isPaid&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9a7422",fontWeight:600}}>This charge has been paid. A reason and audit note are required.</div>}
@@ -9755,13 +9762,15 @@ export default function Page(){
         <div className="fld"><label style={{color:errs.editReason?"#c45c4a":undefined}}>Reason for Edit * {errs.editReason&&<span style={{fontWeight:400,fontSize:9,color:"#c45c4a"}}>{errs.editReason}</span>}</label><input value={modal.editReason||""} onChange={e=>setModal(p=>({...p,editReason:e.target.value,errs:{...(p.errs||{}),editReason:null}}))} placeholder="e.g. Billing error, wrong amount entered..." style={{borderColor:errs.editReason?"#c45c4a":undefined}}/></div>
         <div className="fld"><label>Additional Notes (optional)</label><input value={modal.editNote||""} onChange={e=>setModal(p=>({...p,editNote:e.target.value}))} placeholder="Any additional context..."/></div>
       </>}
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-gold" onClick={save}>Save Changes</button></div>
+      <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button><button className="btn btn-gold" onClick={save}>Save Changes</button></div>
     </div></div>);
   })()}
 
   {/* Void Charge */}
-  {modal&&modal.type==="voidCharge"&&(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,animation:modal.shake?"shake .4s ease":undefined}}>
+  {modal&&modal.type==="voidCharge"&&(()=>{
+    const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
+    return(
+    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,animation:modal.shake?"shake .4s ease":undefined}}>
       <h2>Void Charge</h2>
       <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700}}>{modal.tenantName}</div>
@@ -9773,15 +9782,15 @@ export default function Page(){
         <textarea value={modal.voidReason||""} onChange={e=>setModal(p=>({...p,voidReason:e.target.value,voidReasonErr:false}))} placeholder="e.g. Charge created in error, tenant moved out before billing period..." rows={2} autoFocus/>
         {modal.voidReasonErr&&<div className="err-msg">Reason is required</div>}
       </div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+      <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button>
         <button className="btn btn-red" onClick={()=>{
           if(!(modal.voidReason||"").trim()){setModal(p=>({...p,voidReasonErr:true}));shakeModal();return;}
           setCharges(p=>p.map(c=>c.id===modal.chargeId?{...c,voided:true,voidedDate:TODAY.toISOString().split("T")[0],voidedReason:modal.voidReason,amountPaid:0,payments:[]}:c));
-          setExpCharge(null);setModal(null);
+          setExpCharge(null);backToTenant();
         }}>Confirm Void</button>
       </div>
-    </div></div>
-  )}
+    </div></div>);
+  })()}
 
   {/* Clear Tenant Ledger */}
   {modal&&modal.type==="clearLedger"&&(()=>{
@@ -9900,8 +9909,9 @@ export default function Page(){
     const selRoom=occRooms.find(r=>r.id===modal.selRoom);
     const roomCharges=charges.filter(c=>c.roomId===modal.selRoom&&chargeStatus(c)!=="paid"&&chargeStatus(c)!=="waived");
     const selCh=charges.find(c=>c.id===modal.selCharge);
+    const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
       <h2>Record Payment</h2>
       {modal.step===1&&<>
         <div className="fld"><label>Select Tenant</label><select value={modal.selRoom} onChange={e=>setModal(prev=>({...prev,selRoom:e.target.value,selCharge:""}))}><option value="">Choose...</option>{occRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} - {r.propName} {r.name}</option>)}</select></div>
@@ -9911,7 +9921,7 @@ export default function Page(){
             <div style={{fontSize:10,color:"#6b5e52"}}>Due {fmtD(c.dueDate)} - {fmtS(c.amount-c.amountPaid)} remaining</div>
           </div>);})}</div>}
         {modal.selRoom&&roomCharges.length===0&&<div style={{background:"rgba(212,168,83,.06)",borderRadius:8,padding:12,fontSize:12,color:"#9a7422",marginBottom:10}}>No unpaid charges. <button className="btn btn-gold btn-sm" style={{marginLeft:6}} onClick={()=>setModal({type:"createCharge",roomId:modal.selRoom,category:"Rent",desc:"",amount:(selRoom&&selRoom.rent)||0,dueDate:TODAY.toISOString().split("T")[0],notes:""})}>Create Charge</button></div>}
-        <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button>
           <button className="btn btn-dk" onClick={()=>{
             if(!modal.selRoom){shakeModal();return;}
             if(!modal.selCharge){shakeModal();return;}
@@ -9924,7 +9934,7 @@ export default function Page(){
         <div className={`fld ${modal.payErrs&&modal.payErrs.method?"field-err":""}`}><label className={modal.payErrs&&modal.payErrs.method?"field-err-label":""}>Payment Method</label><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{PAY_METHODS.map(pm=>(<button key={pm} className={`btn ${modal.payMethod===pm?"btn-dk":"btn-out"} btn-sm`} style={{border:modal.payErrs&&modal.payErrs.method&&!modal.payMethod?"1px solid #c45c4a":""}} onClick={()=>setModal(prev=>({...prev,payMethod:pm,payErrs:{...(prev.payErrs||{}),method:null}}))}>  {pm}</button>))}</div>{modal.payErrs&&modal.payErrs.method&&<div className="err-msg">{modal.payErrs.method}</div>}</div>
         <div className={`fld ${modal.payErrs&&modal.payErrs.date?"field-err":""}`}><label className={modal.payErrs&&modal.payErrs.date?"field-err-label":""}>Payment Date</label><input type="date" value={modal.payDate} onChange={e=>setModal(prev=>({...prev,payDate:e.target.value,payErrs:{...(prev.payErrs||{}),date:null}}))}/>{modal.payErrs&&modal.payErrs.date&&<div className="err-msg">{modal.payErrs.date}</div>}</div>
         <div className="fld"><label>Notes</label><input value={modal.payNotes||""} onChange={e=>setModal(prev=>({...prev,payNotes:e.target.value}))} placeholder="Optional notes..."/></div>
-        <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button><button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,step:1}))}>Back</button>
+        <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button><button className="btn btn-out" onClick={()=>setModal(prev=>({...prev,step:1}))}>Back</button>
           <button className="btn btn-green" onClick={()=>{
             const errs={};
             if(!modal.payAmount||modal.payAmount<=0)errs.amount="Enter a valid amount";
@@ -9987,7 +9997,7 @@ export default function Page(){
             📧 Receipt automatically emailed to {tenant?tenant.email:"tenant"} · Also visible in their tenant portal
           </div>
           <div className="mft">
-            <button className="btn btn-out" onClick={()=>setModal(null)}>Done</button>
+            <button className="btn btn-out" onClick={backToTenant}>Done</button>
             <button className="btn btn-gold" onClick={printReceipt}>🖨 Print / Save PDF</button>
           </div>
         </>);
@@ -10113,20 +10123,22 @@ export default function Page(){
 
   {/* Add Credit */}
   {modal&&modal.type==="addCredit"&&(()=>{
+    const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     const occRooms=occLeases;
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
+    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
       <h2>Add Credit</h2>
       <p style={{fontSize:11,color:"#5c4a3a",marginBottom:12}}>Credits auto-apply to next month's rent.</p>
       <div className="fld"><label>Tenant</label><select value={modal.roomId} onChange={e=>setModal(prev=>({...prev,roomId:e.target.value}))}><option value="">Select...</option>{occRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} - {r.propName} {r.name}</option>)}</select></div>
       <div className="fld"><label>Amount</label><input type="number" step=".01" value={modal.amount} onChange={e=>setModal(prev=>({...prev,amount:Number(e.target.value)}))}/></div>
       <div className="fld"><label>Reason</label><input value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value}))} placeholder="e.g. Overpayment, SD credit..."/></div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-green" disabled={!modal.roomId||!modal.amount} onClick={()=>{const rm=occRooms.find(r=>r.id===modal.roomId);setCredits(p=>[{id:uid(),roomId:modal.roomId,tenantName:(rm&&rm.tenant&&rm.tenant.name)||"",amount:modal.amount,reason:modal.reason,date:TODAY.toISOString().split("T")[0],applied:false},...p]);setModal(null);}}>Add Credit</button></div>
+      <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button>
+        <button className="btn btn-green" disabled={!modal.roomId||!modal.amount} onClick={()=>{const rm=occRooms.find(r=>r.id===modal.roomId);setCredits(p=>[{id:uid(),roomId:modal.roomId,tenantName:(rm&&rm.tenant&&rm.tenant.name)||"",amount:modal.amount,reason:modal.reason,date:TODAY.toISOString().split("T")[0],applied:false},...p]);backToTenant();}}>Add Credit</button></div>
     </div></div>);})()}
 
   {/* Return SD */}
   {modal&&modal.type==="returnSD"&&(()=>{
+    const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     const tenantList=[...archive.map(a=>({id:a.id,name:a.name,roomName:a.roomName,propName:a.propName,rent:a.rent,type:"past"})),...occLeases.map(r=>({id:r.id,name:r.tenant.name,roomName:r.name,propName:r.propName,rent:r.rent,type:"current"}))];
     const sel=tenantList.find(t=>t.id===modal.roomId);
     const sdHeld=(sel&&sel.rent)||0;
@@ -10134,7 +10146,7 @@ export default function Page(){
     const totalDed=deductions.reduce((s,d)=>s+d.amount,0);
     const returnAmt=Math.max(0,sdHeld-totalDed);
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
       <h2>Return Security Deposit</h2>
       <div className="fld"><label>Tenant</label><select value={modal.roomId} onChange={e=>setModal(prev=>({...prev,roomId:e.target.value,deductions:[]}))}><option value="">Select...</option>{tenantList.map(t=><option key={t.id} value={t.id}>{t.name} - {t.propName} {t.roomName} ({t.type})</option>)}</select></div>
       {sel&&<>
@@ -10152,8 +10164,8 @@ export default function Page(){
           <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:"2px solid rgba(0,0,0,.06)",marginTop:6,fontWeight:800,fontSize:15}}><span>Return</span><span style={{color:"#4a7c59"}}>{fmtS(returnAmt)}</span></div>
         </div>
       </>}
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-green" disabled={!sel} onClick={()=>{setSdLedger(p=>[{id:uid(),roomId:modal.roomId,tenantName:sel.name,propName:sel.propName,roomName:sel.roomName,amountHeld:sdHeld,deductions,returned:returnAmt,returnDate:TODAY.toISOString().split("T")[0]},...p]);setModal(null);}}>Confirm Return {fmtS(returnAmt)}</button></div>
+      <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button>
+        <button className="btn btn-green" disabled={!sel} onClick={()=>{setSdLedger(p=>[{id:uid(),roomId:modal.roomId,tenantName:sel.name,propName:sel.propName,roomName:sel.roomName,amountHeld:sdHeld,deductions,returned:returnAmt,returnDate:TODAY.toISOString().split("T")[0]},...p]);backToTenant();}}>Confirm Return {fmtS(returnAmt)}</button></div>
     </div></div>);})()}
   {/* Invite to Apply Modal */}
   {/* ── Add Lead Manually Modal ── */}
