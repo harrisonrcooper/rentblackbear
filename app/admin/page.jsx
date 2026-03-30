@@ -8208,58 +8208,48 @@ export default function Page(){
                 {pastDueC>0&&<span style={{color:"#c45c4a",fontWeight:700}}>{pastDueC} overdue</span>}
               </div>
             </div>
-            {/* Column headers */}
-            <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 160px 90px 28px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-              {["Due Date","Category / Description","Status","Deposit","Amount",""].map((h,i)=><div key={i} style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,textAlign:i===4?"right":"left"}}>{h}</div>)}
+            {/* Column headers — 5 cols: Date | Category | Status | Amount+Due | Chevron */}
+            <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 110px 28px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+              {["Due Date","Category / Description","Status","",""].map((h,i)=><div key={i} style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,textAlign:i===3?"right":"left"}}>{h}</div>)}
             </div>
             {tenantCharges.length===0&&<div style={{textAlign:"center",padding:32,color:"#6b5e52",fontSize:13}}>No charges yet.</div>}
             {tenantCharges.map(c=>{
               const st=chargeStatus(c);const rem=c.amount-c.amountPaid;
-              // Recurring icon for Rent, otherwise use catIcons
               const isRecurring=c.category==="Rent";
               const ci=catIcons[c.category]||{d:"M9 11l3 3L22 4",color:"#6b5e52"};
               const isExpanded=expandedId===c.id;
+              const firstPay=(c.payments||[])[0]||null;
               return(
-              <div key={c.id} style={{borderBottom:"1px solid rgba(0,0,0,.04)",background:isExpanded?"rgba(0,0,0,.015)":st==="pastdue"?"rgba(196,92,74,.02)":"#fff"}}>
-                {/* Main row — clickable to expand */}
+              <div key={c.id} style={{borderBottom:"1px solid rgba(0,0,0,.05)",background:isExpanded?"rgba(0,0,0,.012)":st==="pastdue"?"rgba(196,92,74,.02)":"#fff"}}>
+                {/* Main row */}
                 <div
                   onClick={()=>setModal(prev=>({...prev,_expandedChargeId:prev._expandedChargeId===c.id?null:c.id}))}
-                  style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 160px 90px 28px",padding:"12px 20px",alignItems:"center",cursor:"pointer",transition:"background .15s"}}
-                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.02)"}
+                  style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 110px 28px",padding:"12px 20px",alignItems:"center",cursor:"pointer",transition:"background .15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.018)"}
                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   {/* Due Date */}
                   <div style={{fontSize:12,color:"#5c4a3a"}}>{fmtD(c.dueDate)}</div>
                   {/* Category / Description */}
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{width:28,height:28,borderRadius:6,background:isRecurring?"rgba(59,130,246,.08)":`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.1)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <div style={{width:26,height:26,borderRadius:6,background:isRecurring?"rgba(59,130,246,.08)":`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.1)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                       {isRecurring
-                        ?<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                        :<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ci.color} strokeWidth="1.75"><path d={ci.d}/>{ci.d2&&<path d={ci.d2}/>}</svg>
+                        ?<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={ci.color} strokeWidth="1.75"><path d={ci.d}/>{ci.d2&&<path d={ci.d2}/>}</svg>
                       }
                     </div>
                     <div>
-                      <div style={{fontSize:12,fontWeight:600}}>{c.desc||c.category}</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{c.category}</div>
                       {c.amountPaid>0&&c.amountPaid<c.amount&&<div style={{fontSize:10,color:"#6b5e52"}}>{fmtS(c.amountPaid)} paid &middot; {fmtS(rem)} remaining</div>}
-                      {c.reminderActive&&<div style={{fontSize:9,color:"#d4a853",fontWeight:700}}>Reminding daily</div>}
                     </div>
                   </div>
                   {/* Status */}
-                  <div><span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:stBg[st]||"rgba(0,0,0,.04)",color:stTx[st]||"#6b5e52"}}>{stLabel[st]||st}</span></div>
-                  {/* Deposit info */}
-                  <div style={{fontSize:10,color:"#5c4a3a"}}>
-                    {(c.payments||[]).length>0?(
-                      (c.payments||[]).slice(0,1).map((p,i)=>(
-                        <div key={i}>
-                          <div style={{fontWeight:600}}>{p.date?fmtD(p.date):""}</div>
-                          <div style={{color:"#7a7067"}}>{p.method||""}</div>
-                          <div style={{color:"#7a7067",fontSize:9}}>Due: $0.00</div>
-                        </div>
-                      ))
-                    ):<span style={{color:"#8a7d74"}}>—</span>}
+                  <div><span style={{fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:4,background:stBg[st]||"rgba(0,0,0,.04)",color:stTx[st]||"#6b5e52",border:`1px solid ${st==="paid"?"rgba(74,124,89,.2)":st==="pastdue"?"rgba(196,92,74,.2)":st==="unpaid"?"rgba(212,168,83,.2)":"rgba(0,0,0,.07)"}`}}>{stLabel[st]||st}</span></div>
+                  {/* Amount + Due stacked — TurboTenant style */}
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714"}}>{fmtS(c.amount)}</div>
+                    <div style={{fontSize:10,color:"#7a7067",marginTop:1}}>Due: {fmtS(rem)}</div>
                   </div>
-                  {/* Amount — right-aligned */}
-                  <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714",textAlign:"right"}}>{fmtS(c.amount)}</div>
-                  {/* Expand chevron */}
+                  {/* Chevron */}
                   <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9a7067" strokeWidth="2.5" strokeLinecap="round"
                       style={{transform:isExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}>
@@ -8267,35 +8257,55 @@ export default function Page(){
                     </svg>
                   </div>
                 </div>
-                {/* Expanded row */}
-                {isExpanded&&<div style={{padding:"12px 20px 16px",borderTop:"1px solid rgba(0,0,0,.05)",background:"rgba(0,0,0,.01)"}}>
-                  {/* Full payment details */}
-                  {(c.payments||[]).length>0&&<div style={{marginBottom:12}}>
-                    {c.payments.map((p,i)=>(
-                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,marginBottom:6,fontSize:12}}>
-                        <div>
-                          <div style={{fontWeight:700,color:"#1a1714"}}>{p.method||"Payment"}</div>
-                          <div style={{fontSize:10,color:"#6b5e52"}}>Paid {fmtD(p.date)}{p.depositDate?" &middot; Deposited "+fmtD(p.depositDate):""}</div>
-                          {p.notes&&<div style={{fontSize:10,color:"#7a7067",marginTop:2,fontStyle:"italic"}}>{p.notes}</div>}
-                        </div>
-                        <div style={{fontSize:14,fontWeight:800,color:"#4a7c59"}}>{fmtS(p.amount)}</div>
-                      </div>
-                    ))}
+
+                {/* Expanded row — TurboTenant style */}
+                {isExpanded&&<div style={{padding:"0 20px 16px",borderTop:"1px solid rgba(0,0,0,.05)"}}>
+                  {/* Description */}
+                  {(c.desc&&c.desc!==c.category)&&<div style={{fontSize:11,color:"#3d3529",marginTop:12,marginBottom:8}}>
+                    <span style={{fontWeight:800,textTransform:"uppercase",letterSpacing:.5,fontSize:10,color:"#7a7067"}}>Description: </span>{c.desc}
                   </div>}
-                  {/* Action buttons */}
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {/* Notification / deposit info */}
+                  {firstPay&&<div style={{fontSize:11,color:"#6b5e52",marginBottom:12,fontStyle:"italic",lineHeight:1.5}}>
+                    Payment of <strong style={{fontStyle:"normal"}}>{fmtS(firstPay.amount)}</strong> recorded via <strong style={{fontStyle:"normal"}}>{firstPay.method||"—"}</strong> on {fmtD(firstPay.date)}.{firstPay.depositDate?` Deposited ${fmtD(firstPay.depositDate)}.`:""}{firstPay.notes?<> &ldquo;{firstPay.notes}&rdquo;</>:null}
+                  </div>}
+                  {!firstPay&&(st==="unpaid"||st==="pastdue")&&<div style={{fontSize:11,color:"#6b5e52",marginBottom:12,fontStyle:"italic",lineHeight:1.5}}>
+                    No payment recorded yet. A notification email will be sent to your tenant.
+                  </div>}
+                  {c.reminderActive&&<div style={{fontSize:11,color:"#9a7422",marginBottom:10,fontStyle:"italic"}}>Daily payment reminders are active for this charge.</div>}
+                  {/* Action buttons with icons — TurboTenant style */}
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
                     {st!=="paid"&&st!=="waived"&&st!=="voided"&&(
-                      <button className="btn btn-green btn-sm" onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>Record Payment</button>
+                      <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600}}
+                        onClick={()=>setModal({type:"recordPay",step:2,selRoom:c.roomId,selCharge:c.id,payAmount:rem,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""})}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Record Payment
+                      </button>
                     )}
                     {(st==="pastdue"||st==="unpaid")&&(
-                      <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null})}>Send Reminder</button>
+                      <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600}}
+                        onClick={()=>setModal({type:"sendReminder",charge:c,tenantName:c.tenantName,rem,method:null})}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Send Reminder
+                      </button>
                     )}
-                    <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"editCharge",charge:{...c}})}>Edit</button>
+                    <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600}}
+                      onClick={()=>setModal({type:"editCharge",charge:{...c},isPaid:st==="paid"})}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      Edit
+                    </button>
                     {st!=="voided"&&st!=="waived"&&(
-                      <button className="btn btn-out btn-sm" style={{color:"#9a7422"}} onClick={()=>setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""})}>Void</button>
+                      <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600,color:"#9a7422"}}
+                        onClick={()=>setModal({type:"voidCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc,amount:c.amount,voidReason:""})}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                        Void
+                      </button>
                     )}
                     {(st==="unpaid"||st==="pastdue")&&c.payments.length===0&&(
-                      <button className="btn btn-out btn-sm" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc})}>Delete</button>
+                      <button className="btn btn-out btn-sm" style={{display:"flex",alignItems:"center",gap:5,fontWeight:600,color:"#c45c4a"}}
+                        onClick={()=>setModal({type:"deleteCharge",chargeId:c.id,tenantName:c.tenantName,category:c.category,desc:c.desc})}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                        Delete
+                      </button>
                     )}
                   </div>
                 </div>}
