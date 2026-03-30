@@ -7909,14 +7909,23 @@ export default function Page(){
             <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{}}))}>Terminate</button>
           </div>
         </div>
-        {/* Row 2: Avatar + Name + Address */}
+        {/* Row 2: Avatar + Name + Address + Move-in */}
         <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
           <div style={{width:42,height:42,borderRadius:"50%",background:`rgba(${settings.adminAccentRgb||"74,124,89"},.15)`,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:settings.adminAccent||"#4a7c59",flexShrink:0}}>
             {(r.tenant.name||"?").split(" ").map(n=>n[0]).slice(0,2).join("")}
           </div>
           <div>
             <div style={{fontSize:18,fontWeight:800,color:"#1a1714",lineHeight:1.2}}>{r.tenant.name}</div>
-            <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>{prop?getPropDisplayName(prop):r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
+            {(()=>{
+              const dispName=prop?getPropDisplayName(prop):r.propName;
+              const addr=prop?.addr||"";
+              // Only append addr if getPropDisplayName didn't already return it
+              const addrSuffix=(addr&&addr!==dispName)?" · "+addr:"";
+              return <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>{dispName}{addrSuffix} · {r.name}</div>;
+            })()}
+            <div style={{fontSize:11,color:"#7a7067",marginTop:2}}>
+              Move-in {fmtD(r.tenant.moveIn)}{r.le?" – "+fmtD(r.le):isM2M?" · Month-to-Month":""}
+            </div>
           </div>
         </div>
 
@@ -8051,7 +8060,7 @@ export default function Page(){
             {/* Room & Lease */}
             <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}><TI d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" d2="M9 22V12h6v10"/><span style={{fontSize:14,fontWeight:700}}>Room & Lease</span></div>
-              {[["Property",(prop?getPropDisplayName(prop):r.propName)+(prop?.addr?" · "+prop.addr:"")],["Room",r.name],["Bath",r.pb?"Private":"Shared"],["Rent",fmtS(r.rent)+"/mo"],["Utilities",tUtils==="allIncluded"?"All Included":"Tenant pays (split)"],["Move-in",fmtD(r.tenant.moveIn)],["Lease End",r.le?fmtD(r.le):isM2M?"Month-to-Month":"—"],["Annual Value",fmtS((r.rent||0)*12)+"/yr"]].filter(([,v])=>v).map(([k,v])=>(
+              {[["Property",(()=>{const dn=prop?getPropDisplayName(prop):r.propName;const addr=prop?.addr||"";const suffix=(addr&&addr!==dn)?" · "+addr:"";return dn+suffix;})()],["Room",r.name],["Bath",r.pb?"Private":"Shared"],["Rent",fmtS(r.rent)+"/mo"],["Utilities",tUtils==="allIncluded"?"All Included":"Tenant pays (split)"],["Move-in",fmtD(r.tenant.moveIn)],["Lease End",r.le?fmtD(r.le):isM2M?"Month-to-Month":"—"],["Annual Value",fmtS((r.rent||0)*12)+"/yr"]].filter(([,v])=>v).map(([k,v])=>(
                 <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:12}}><span style={{color:"#6b5e52"}}>{k}</span><span style={{fontWeight:600,textAlign:"right",maxWidth:"60%"}}>{v}</span></div>
               ))}
               {r.le&&dl!==null&&<div style={{marginTop:10}}>
@@ -8092,23 +8101,36 @@ export default function Page(){
             <div style={{padding:"14px 20px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:14,fontWeight:700}}>Monthly Charges</span>
               <div style={{display:"flex",gap:8}}>
+                {/* Actions dropdown — click-outside via fixed backdrop */}
                 <div style={{position:"relative"}}>
+                  {modal._actionsOpen&&<div style={{position:"fixed",inset:0,zIndex:19}} onClick={()=>setModal(p=>({...p,_actionsOpen:false}))}/>}
                   <button className="btn btn-out btn-sm"
-                    onClick={e=>{const el=e.currentTarget.nextSibling;el.style.display=el.style.display==="block"?"none":"block";}}
+                    onClick={()=>setModal(p=>({...p,_actionsOpen:!p._actionsOpen}))}
                     style={{display:"flex",alignItems:"center",gap:5}}>
                     Actions
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
-                  <div style={{display:"none",position:"absolute",top:"calc(100% + 4px)",right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,.1)",zIndex:20,minWidth:160,overflow:"hidden"}}>
-                    {[["View in Ledger",()=>{setModal(null);goTab("payments");setPayFilters({...payFilters,tenant:r.tenant.name});}],
-                      ["Send Reminder",()=>setModal({type:"sendReminder",charge:tenantCharges.find(c=>["unpaid","pastdue"].includes(chargeStatus(c)))||tenantCharges[0],tenantName:r.tenant.name,rem:totalUnpaid,method:null})],
-                      ["Export CSV",()=>{const rows=[["Due Date","Category","Description","Status","Amount","Amount Paid","Method","Paid Date"],...tenantCharges.map(c=>{const p=c.payments?.[0];return[c.dueDate,c.category,c.desc||"",chargeStatus(c),c.amount,c.amountPaid,p?.method||"",p?.date||""];})];const csv=rows.map(r=>r.map(v=>`"${v}"`).join(",")).join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`charges-${r.tenant.name.replace(/\s/g,"-")}.csv`;a.click();}]
-                    ].map(([label,fn])=>(
-                      <button key={label} onClick={fn} style={{display:"block",width:"100%",padding:"9px 14px",background:"none",border:"none",textAlign:"left",fontSize:12,fontWeight:500,color:"#3d3529",cursor:"pointer",fontFamily:"inherit",transition:"background .1s"}}
+                  {modal._actionsOpen&&<div style={{position:"absolute",top:"calc(100% + 4px)",right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,.12)",zIndex:20,minWidth:200,overflow:"hidden"}}>
+                    {[
+                      ["Record Payment",()=>{setModal(p=>({...p,_actionsOpen:false}));openPayForm(r.id);}],
+                      ["Add Credit",()=>setModal({type:"addCredit",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,amount:0,reason:""})],
+                      ["Return Security Deposit",()=>setModal({type:"returnSD",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,deductions:[],returnAmount:r.rent})],
+                      null,// divider
+                      ["View in Tenant Ledger",()=>{setModal(null);goTab("payments");setPayFilters({...payFilters,tenant:r.tenant.name});}],
+                      ["Export CSV",()=>{
+                        setModal(p=>({...p,_actionsOpen:false}));
+                        const rows=[["Due Date","Category","Description","Status","Amount","Amount Paid","Method","Paid Date"],...tenantCharges.map(c=>{const p=c.payments?.[0];return[c.dueDate,c.category,c.desc||"",chargeStatus(c),c.amount,c.amountPaid,p?.method||"",p?.date||""];})];
+                        const csv=rows.map(row=>row.map(v=>`"${v}"`).join(",")).join("\n");
+                        const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`charges-${r.tenant.name.replace(/\s/g,"-")}.csv`;a.click();
+                      }],
+                    ].map((item,i)=>item===null
+                      ?<div key={i} style={{height:1,background:"rgba(0,0,0,.06)",margin:"3px 0"}}/>
+                      :<button key={item[0]} onClick={item[1]}
+                        style={{display:"block",width:"100%",padding:"9px 14px",background:"none",border:"none",textAlign:"left",fontSize:12,fontWeight:500,color:"#3d3529",cursor:"pointer",fontFamily:"inherit",transition:"background .1s"}}
                         onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
-                        onMouseLeave={e=>e.currentTarget.style.background="none"}>{label}</button>
-                    ))}
-                  </div>
+                        onMouseLeave={e=>e.currentTarget.style.background="none"}>{item[0]}</button>
+                    )}
+                  </div>}
                 </div>
                 <button className="btn btn-green btn-sm"
                   onClick={()=>setModal({type:"addCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name})}
@@ -8117,7 +8139,7 @@ export default function Page(){
                 </button>
               </div>
             </div>
-            {/* Rent — recurring row */}
+            {/* Rent — recurring row — editable */}
             <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px"}}>
               <div style={{width:32,height:32,borderRadius:8,background:"rgba(59,130,246,.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
@@ -8126,9 +8148,24 @@ export default function Page(){
                 <div style={{fontSize:13,fontWeight:700}}>Rent <span style={{fontSize:9,background:"rgba(59,130,246,.08)",color:"#3b82f6",padding:"1px 6px",borderRadius:3,fontWeight:600,marginLeft:4}}>RECURRING</span></div>
                 <div style={{fontSize:11,color:"#6b5e52"}}>Due on the 1st &middot; Auto-generated monthly</div>
               </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:16,fontWeight:800}}>{fmtS(r.rent)}/mo</div>
-                <div style={{fontSize:10,color:"#6b5e52"}}>Move-in {fmtD(r.tenant.moveIn)} {r.le?"– "+fmtD(r.le):"M2M"}</div>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:16,fontWeight:800}}>{fmtS(r.rent)}/mo</div>
+                  <div style={{fontSize:10,color:"#6b5e52"}}>{fmtD(r.tenant.moveIn)} {r.le?"– "+fmtD(r.le):"M2M"}</div>
+                </div>
+                {/* Edit pencil — opens editCharge on the most recent unpaid rent charge, or a rent-specific edit modal */}
+                <button
+                  onClick={()=>{
+                    const latestRent=tenantCharges.find(c=>c.category==="Rent"&&chargeStatus(c)!=="paid");
+                    const chargeToEdit=latestRent||tenantCharges.find(c=>c.category==="Rent");
+                    if(chargeToEdit)setModal({type:"editCharge",charge:{...chargeToEdit},isPaid:chargeStatus(chargeToEdit)==="paid"});
+                    else setModal({type:"addCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name});
+                  }}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.07)"}
+                  onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
+                  style={{width:28,height:28,borderRadius:6,background:"rgba(0,0,0,.04)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5c4a3a" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
               </div>
             </div>
           </div>
