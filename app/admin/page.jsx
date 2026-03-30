@@ -9359,7 +9359,7 @@ export default function Page(){
       {/* Starting */}
       <div style={{marginBottom:4}}>
         {lbl("Starting",true)}
-        <div style={{display:"flex",gap:8"}}>
+        <div style={{display:"flex",gap:8}}>
           <select value={startMonth} disabled={isPast}
             onChange={e=>setModal(p=>({...p,_rcStartYM:`${startYear}-${String(e.target.value).padStart(2,"0")}`}))}
             style={{...ss,flex:1,opacity:isPast?.6:1}}>
