@@ -112,8 +112,12 @@ export async function GET(req) {
           updatedCharges.push({
             id: uid(), roomId: room.id, unitId: room.unitId,
             tenantName: room.tenant.name, propName: room.propName, roomName: room.name,
-            category: "Rent", desc: `${moLabel} Rent`, amount: room.rent,
-            amountPaid: 0, dueDate: `${mk}-01`, createdDate: todayStr,
+            category: room.recurringCategory || "Rent",
+            desc: room.recurringDesc || `${moLabel} ${room.recurringCategory || "Rent"}`,
+            amount: room.rent,
+            amountPaid: 0,
+            dueDate: `${mk}-${String(room.recurringDueDay || 1).padStart(2, "0")}`,
+            createdDate: todayStr,
             payments: [], waived: false, noLateFee: false,
           });
           chargesChanged = true;
@@ -138,7 +142,9 @@ export async function GET(req) {
         dailyFee:        lc.dailyFee        ?? (s.lateFeeDaily       ?? 5),
         dailyStartDays:  lc.dailyStartDays  ?? 6,         // days after due date
         limitEnabled:    !!lc.limitEnabled,
-        limitAmt:        lc.limitAmt        ?? null,
+        limitStopAfterDays: lc.limitStopAfterDays ?? null,
+        limitMaxAmt:     lc.limitMaxAmt       ?? null,
+        limitMaxType:    lc.limitMaxType       ?? "flat",
       };
     }
 
@@ -171,14 +177,21 @@ export async function GET(req) {
       // Calculate daily accrual
       let dailyAmt = 0;
       if (lc.dailyEnabled && daysOverdue >= lc.dailyStartDays) {
-        const dailyDays = daysOverdue - lc.dailyStartDays + 1;
+        let dailyDays = daysOverdue - lc.dailyStartDays + 1;
+        // Stop daily fees after X days if limit set
+        if (lc.limitEnabled && lc.limitStopAfterDays) dailyDays = Math.min(dailyDays, lc.limitStopAfterDays);
         dailyAmt = lc.dailyFee * Math.max(0, dailyDays);
       }
 
       let amt = initialAmt + dailyAmt;
 
-      // Apply limit
-      if (lc.limitEnabled && lc.limitAmt !== null && amt > lc.limitAmt) amt = lc.limitAmt;
+      // Apply total cap — flat $ or % of rent
+      if (lc.limitEnabled && lc.limitMaxAmt) {
+        const cap = lc.limitMaxType === "pctRent"
+          ? Math.round((charge.amount * lc.limitMaxAmt) / 100 * 100) / 100
+          : lc.limitMaxAmt;
+        if (amt > cap) amt = cap;
+      }
 
       amt = Math.round(amt * 100) / 100;
       if (amt <= 0) continue;

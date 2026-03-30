@@ -8164,7 +8164,14 @@ export default function Page(){
                       type:"editRecurringCharge",
                       _rcRoom:r,
                       _rcProp:prop,
+                      _rcCategory:r.recurringCategory||"Rent",
                       _rcRent:r.rent||0,
+                      _rcDesc:r.recurringDesc||"",
+                      _rcShowDesc:!!(r.recurringDesc),
+                      _rcDueDay:r.recurringDueDay||1,
+                      _rcStartYM:r.recurringStartYM||TODAY.toISOString().slice(0,7),
+                      _rcUntilLeaseEnds:r.recurringUntilLeaseEnds!==false,
+                      _rcBankAccount:r.recurringBankAccount||settings.bankAccount||"",
                       _rcLateConfig:{
                         enabled:    r.lateConfig?.enabled !== false,
                         graceDays:  r.lateConfig?.graceDays     ?? (settings.lateFeeGraceDays   ?? 3),
@@ -8176,7 +8183,9 @@ export default function Page(){
                         dailyFee:   r.lateConfig?.dailyFee      ?? (settings.lateFeeDaily       ?? 5),
                         dailyStartDays: r.lateConfig?.dailyStartDays ?? 6,
                         limitEnabled: !!r.lateConfig?.limitEnabled,
-                        limitAmt:   r.lateConfig?.limitAmt      ?? null,
+                        limitStopAfterDays: r.lateConfig?.limitStopAfterDays ?? null,
+                        limitMaxAmt: r.lateConfig?.limitMaxAmt ?? null,
+                        limitMaxType: r.lateConfig?.limitMaxType ?? "flat",
                       },
                       _rcErrs:{},
                     }));
@@ -9149,28 +9158,54 @@ export default function Page(){
   )}
 
   {/* ── Edit Recurring Charge ── */}
-  {/* Edits room.rent + room.lateConfig going forward. Does NOT touch existing charge records. */}
+  {/* Edits room recurring charge config + lateConfig going forward. Does NOT touch existing charge records. */}
   {modal&&modal.type==="editRecurringCharge"&&(()=>{
     const rcRoom=modal._rcRoom;
     const rcProp=modal._rcProp;
     const rent=modal._rcRent;
+    const cat=modal._rcCategory||"Rent";
     const lc=modal._rcLateConfig||{};
     const errs=modal._rcErrs||{};
     const shake=modal._rcShake||false;
+    const showDesc=!!modal._rcShowDesc;
+    const dueDay=modal._rcDueDay||1;
+    const startYM=modal._rcStartYM||TODAY.toISOString().slice(0,7);
+    const untilLeaseEnds=modal._rcUntilLeaseEnds!==false;
+    const bankAccount=modal._rcBankAccount||"";
     const updLc=(k,v)=>setModal(p=>({...p,_rcLateConfig:{...p._rcLateConfig,[k]:v},_rcErrs:{...(p._rcErrs||{}),[k]:null}}));
-    const now=new Date();
-    const nextMonth=new Date(now.getFullYear(),now.getMonth()+1,1);
-    const nextMonthLabel=nextMonth.toLocaleString("default",{month:"long",year:"numeric"});
+    const upd=(k,v)=>setModal(p=>({...p,[k]:v,_rcErrs:{...(p._rcErrs||{}),[k]:null}}));
+
+    // Parse startYM for dropdowns
+    const startParts=startYM.split("-");
+    const startYear=Number(startParts[0])||TODAY.getFullYear();
+    const startMonth=Number(startParts[1])||TODAY.getMonth()+1;
+    const nowYM=TODAY.toISOString().slice(0,7);
+    const isPast=startYM<nowYM;
+
+    // Next charge preview
+    const nextChargeDate=`${startYear}-${String(startMonth).padStart(2,"0")}-${String(dueDay).padStart(2,"0")}`;
+    const nextChargeDateFmt=new Date(nextChargeDate+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+
+    // Bank accounts from settings
+    const bankAccounts=settings.bankAccounts||[];
+
+    const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const YEARS=Array.from({length:5},(_,i)=>TODAY.getFullYear()+i);
     const INITIAL_APPLY_OPTS=[3,4,5,6,7,10,14];
     const DAILY_START_OPTS=[4,5,6,7,8,10,14];
+    const STOP_AFTER_OPTS=[7,10,14,21,30,45,60,90];
+
+    const CATS=["Rent","Utility Overage","Other"];
 
     const save=()=>{
       const e={};
-      if(!rent||Number(rent)<=0)e.rent="Monthly rent must be greater than $0";
+      if(!rent||Number(rent)<=0)e.rent="Monthly amount must be greater than $0";
+      if(!dueDay||Number(dueDay)<1||Number(dueDay)>28)e.dueDay="Due day must be between 1 and 28";
       if(lc.enabled&&lc.initialEnabled&&(!lc.initialFee||Number(lc.initialFee)<=0))e.initialFee="Enter a valid initial fee amount";
       if(lc.enabled&&lc.dailyEnabled&&(!lc.dailyFee||Number(lc.dailyFee)<=0))e.dailyFee="Enter a valid daily fee amount";
-      if(lc.enabled&&lc.limitEnabled&&(!lc.limitAmt||Number(lc.limitAmt)<=0))e.limitAmt="Enter a valid late fee limit amount";
+      if(lc.enabled&&lc.limitEnabled&&lc.limitMaxAmt&&Number(lc.limitMaxAmt)<=0)e.limitMaxAmt="Enter a valid maximum amount";
       if(Object.keys(e).length){setModal(p=>({...p,_rcErrs:e,_rcShake:true}));setTimeout(()=>setModal(p=>({...p,_rcShake:false})),500);return;}
+
       const newLateConfig={
         enabled:lc.enabled,
         graceDays:Number(lc.graceDays)||3,
@@ -9182,178 +9217,288 @@ export default function Page(){
         dailyFee:lc.dailyEnabled?Number(lc.dailyFee):0,
         dailyStartDays:Number(lc.dailyStartDays)||6,
         limitEnabled:lc.limitEnabled,
-        limitAmt:lc.limitEnabled?Number(lc.limitAmt):null,
+        limitStopAfterDays:lc.limitEnabled&&lc.limitStopAfterDays?Number(lc.limitStopAfterDays):null,
+        limitMaxAmt:lc.limitEnabled&&lc.limitMaxAmt?Number(lc.limitMaxAmt):null,
+        limitMaxType:lc.limitMaxType||"flat",
       };
+
       setProps(prev=>prev.map(p=>{
         if(!rcProp||p.id!==rcProp.id)return p;
-        return{...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id===rcRoom.id?{...rm,rent:Number(rent),lateConfig:newLateConfig}:rm)}))};
+        return{...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id!==rcRoom.id?rm:{
+          ...rm,
+          rent:Number(rent),
+          recurringCategory:cat,
+          recurringDesc:modal._rcDesc||"",
+          recurringDueDay:Number(dueDay)||1,
+          recurringStartYM:startYM,
+          recurringUntilLeaseEnds:untilLeaseEnds,
+          recurringBankAccount:bankAccount,
+          lateConfig:newLateConfig,
+        })}))};
       }));
+
       setNotifs(prev=>[{id:uid(),type:"payment",
-        msg:`Recurring charge updated: ${rcRoom?.tenant?.name||""} — ${fmtS(Number(rent))}/mo${Number(rent)!==(rcRoom?.rent||0)?" (rent changed)":""}`,
+        msg:`Recurring charge updated: ${rcRoom?.tenant?.name||""} — ${fmtS(Number(rent))}/mo (${cat})`,
         date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...prev]);
       setModal(null);
     };
 
-    const selectStyle={width:"100%",padding:"10px 12px",border:"2px solid rgba(0,0,0,.08)",borderRadius:9,fontSize:13,fontFamily:"inherit",outline:"none",background:"#fff",color:"#1a1714"};
-    const dollarInput=(key,errKey,placeholder="0")=>(
+    const ss={width:"100%",padding:"10px 12px",border:"2px solid rgba(0,0,0,.08)",borderRadius:9,fontSize:13,fontFamily:"inherit",outline:"none",background:"#fff",color:"#1a1714"};
+    const dollarWrap=(key,errKey,ph="0",isLc=true)=>{
+      const val=isLc?lc[key]:modal[key];
+      const onChange=isLc?(e=>updLc(key,e.target.value)):(e=>upd(key,e.target.value));
+      return(
       <div style={{display:"flex",alignItems:"center",border:`2px solid ${errs[errKey]?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:9,overflow:"hidden",background:"#fff"}}>
         <span style={{padding:"10px 12px",fontSize:14,fontWeight:700,color:"#6b5e52",borderRight:"1px solid rgba(0,0,0,.08)",background:"rgba(0,0,0,.02)"}}>$</span>
-        <input type="number" step="0.01" min="0" value={lc[key]??""} placeholder={placeholder}
-          onChange={e=>updLc(key,e.target.value)}
+        <input type="number" step="0.01" min="0" value={val??""} placeholder={ph} onChange={onChange}
           style={{flex:1,padding:"10px 12px",border:"none",outline:"none",fontSize:14,fontFamily:"inherit",background:"transparent",color:"#1a1714"}}/>
+      </div>);
+    };
+    const pctWrap=(key,errKey,ph="10")=>(
+      <div style={{display:"flex",alignItems:"center",border:`2px solid ${errs[errKey]?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:9,overflow:"hidden",background:"#fff"}}>
+        <input type="number" step="0.1" min="0" max="100" value={lc[key]??""} placeholder={ph}
+          onChange={e=>updLc(key,e.target.value)}
+          style={{flex:1,padding:"10px 10px",border:"none",outline:"none",fontSize:14,fontFamily:"inherit",background:"transparent",color:"#1a1714"}}/>
+        <span style={{padding:"10px 12px",fontSize:14,color:"#6b5e52",borderLeft:"1px solid rgba(0,0,0,.08)",background:"rgba(0,0,0,.02)"}}>%</span>
       </div>
     );
-    const feeTypeBtn=(val,label)=>{const active=lc.initialFeeType===val;return(
-      <button key={val} onClick={()=>updLc("initialFeeType",val)}
-        style={{padding:"5px 12px",borderRadius:5,border:`2px solid ${active?"#1a1714":"rgba(0,0,0,.1)"}`,background:active?"#1a1714":"#fff",color:active?"#f5f0e8":"#5c4a3a",fontSize:11,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
-        {label}</button>);};
+    const pillBtn=(active,onClick,label)=>(
+      <button onClick={onClick} style={{padding:"6px 14px",borderRadius:6,border:`2px solid ${active?"#1a1714":"rgba(0,0,0,.1)"}`,background:active?"#1a1714":"#fff",color:active?"#f5f0e8":"#5c4a3a",fontSize:12,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+        {label}
+      </button>
+    );
+    const checkbox=(checked,onClick,label,sub)=>(
+      <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={onClick}>
+        <div style={{width:16,height:16,borderRadius:3,border:`2px solid ${checked?"#4a7c59":"rgba(0,0,0,.2)"}`,background:checked?"#4a7c59":"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
+          {checked&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+        </div>
+        <div>
+          <span style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>{label}</span>
+          {sub&&<div style={{fontSize:11,color:"#7a7067",marginTop:1}}>{sub}</div>}
+        </div>
+      </div>
+    );
+    const lbl=(text,req,err)=>(
+      <label style={{display:"block",fontSize:11,fontWeight:700,color:err?"#c45c4a":"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>
+        {text}{req&&<span style={{color:"#c45c4a"}}> *</span>}
+        {err&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease",textTransform:"none",letterSpacing:0}}>{err}</div>}
+      </label>
+    );
 
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480,animation:shake?"shake .4s ease":undefined}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500,animation:shake?"shake .4s ease":undefined}}>
+
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
         <h2 style={{margin:0}}>Edit Recurring Charge</h2>
         <button onClick={()=>setModal(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#7a7067",padding:4,display:"flex"}}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <div style={{fontSize:12,color:"#1d4ed8",marginBottom:20,padding:"10px 12px",background:"rgba(59,130,246,.05)",border:"1px solid rgba(59,130,246,.15)",borderRadius:8}}>
-        Changes only affect <strong>future monthly charges</strong>. Charges already sent to tenants are not affected.
+        Your changes only affect <strong>future monthly charges</strong>. Charges already sent to tenants will not be affected.
       </div>
 
-      {/* Monthly Rent */}
+      {/* Category */}
       <div style={{marginBottom:16}}>
-        <label style={{display:"block",fontSize:11,fontWeight:700,color:errs.rent?"#c45c4a":"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>
-          Monthly Rent <span style={{color:"#c45c4a"}}>*</span>
-          {errs.rent&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease"}}>{errs.rent}</div>}
-        </label>
+        {lbl("Category",true)}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {CATS.map(c=>pillBtn(cat===c,()=>upd("_rcCategory",c),c))}
+        </div>
+      </div>
+
+      {/* Amount */}
+      <div style={{marginBottom:16}}>
+        {lbl("Amount",true,errs.rent)}
         <div style={{display:"flex",alignItems:"center",border:`2px solid ${errs.rent?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:9,overflow:"hidden",background:"#fff"}}>
           <span style={{padding:"11px 14px",fontSize:15,fontWeight:700,color:"#6b5e52",borderRight:"1px solid rgba(0,0,0,.08)",background:"rgba(0,0,0,.02)"}}>$</span>
           <input type="number" step="0.01" min="0" value={rent??""} placeholder={String(rcRoom?.rent||0)}
             onChange={e=>setModal(p=>({...p,_rcRent:e.target.value,_rcErrs:{...(p._rcErrs||{}),rent:null}}))}
             style={{flex:1,padding:"11px 14px",border:"none",outline:"none",fontSize:15,fontFamily:"inherit",background:"transparent",color:"#1a1714",fontWeight:700}}/>
-          <span style={{padding:"11px 14px",fontSize:12,color:"#7a7067",borderLeft:"1px solid rgba(0,0,0,.06)"}}>/mo</span>
         </div>
       </div>
 
-      {/* Due date — always 1st */}
+      {/* Description — collapsible */}
+      {!showDesc
+        ?<button onClick={()=>setModal(p=>({...p,_rcShowDesc:true}))}
+          style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:"#9a7422",fontSize:13,fontWeight:600,fontFamily:"inherit",padding:"2px 0",marginBottom:16}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Description
+        </button>
+        :<div style={{marginBottom:16}}>
+          {lbl("Description")}
+          <input value={modal._rcDesc||""} onChange={e=>setModal(p=>({...p,_rcDesc:e.target.value}))} autoFocus
+            placeholder={`e.g. ${cat} — monthly`}
+            style={{width:"100%",padding:"11px 14px",border:"2px solid rgba(0,0,0,.08)",borderRadius:9,fontSize:14,fontFamily:"inherit",outline:"none",background:"#fff",color:"#1a1714"}}/>
+        </div>
+      }
+
+      {/* Due Date */}
       <div style={{marginBottom:16}}>
-        <label style={{display:"block",fontSize:11,fontWeight:700,color:"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Due Date</label>
-        <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.07)",borderRadius:9,fontSize:13,color:"#5c4a3a"}}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          1st of each month (auto-generated)
+        {lbl("Due Date",true,errs.dueDay)}
+        <div style={{display:"flex",alignItems:"center",gap:4,border:`2px solid ${errs.dueDay?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:9,overflow:"hidden",background:"#fff",padding:"2px"}}>
+          <div style={{padding:"8px 12px",display:"flex",alignItems:"center",gap:6,color:"#6b5e52"}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <input type="number" min="1" max="28" value={dueDay} onChange={e=>setModal(p=>({...p,_rcDueDay:e.target.value,_rcErrs:{...(p._rcErrs||{}),dueDay:null}}))}
+            style={{flex:1,padding:"10px 4px",border:"none",outline:"none",fontSize:15,fontFamily:"inherit",background:"transparent",color:"#1a1714",fontWeight:700,maxWidth:60}}/>
+          <span style={{padding:"10px 14px 10px 4px",fontSize:13,color:"#7a7067"}}>of each month</span>
         </div>
       </div>
 
-      {/* Next charge notice */}
+      {/* Starting */}
+      <div style={{marginBottom:4}}>
+        {lbl("Starting",true)}
+        <div style={{display:"flex",gap:8"}}>
+          <select value={startMonth} disabled={isPast}
+            onChange={e=>setModal(p=>({...p,_rcStartYM:`${startYear}-${String(e.target.value).padStart(2,"0")}`}))}
+            style={{...ss,flex:1,opacity:isPast?.6:1}}>
+            {MONTHS.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+          </select>
+          <select value={startYear} disabled={isPast}
+            onChange={e=>setModal(p=>({...p,_rcStartYM:`${e.target.value}-${String(startMonth).padStart(2,"0")}`}))}
+            style={{...ss,width:100,opacity:isPast?.6:1}}>
+            {YEARS.map(y=><option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+        {isPast&&<div style={{fontSize:11,color:"#7a7067",marginTop:4}}>You can not edit the start date since it is in the past.</div>}
+      </div>
+
+      {/* Until lease ends checkbox */}
+      <div style={{marginBottom:20,marginTop:12}}>
+        {checkbox(untilLeaseEnds,()=>setModal(p=>({...p,_rcUntilLeaseEnds:!p._rcUntilLeaseEnds})),
+          "Create charges until lease ends")}
+      </div>
+
+      {/* Info box */}
       <div style={{background:"rgba(59,130,246,.05)",border:"1px solid rgba(59,130,246,.15)",borderRadius:9,padding:"10px 14px",marginBottom:20,fontSize:12,color:"#1d4ed8",display:"flex",gap:8,alignItems:"flex-start"}}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span>The next charge of <strong>{fmtS(Number(rent)||rcRoom?.rent||0)}</strong> will be generated for <strong>{nextMonthLabel}</strong>. Existing charges are not affected.</span>
+        <span>The first monthly charge will be due on <strong>{nextChargeDateFmt}</strong> and sent to your tenant every month until {untilLeaseEnds?"the lease ends":"you delete this charge"}.</span>
       </div>
 
-      {/* Late Fees */}
+      {/* Bank Account */}
+      <div style={{marginBottom:20}}>
+        {lbl("Bank Account",true)}
+        {bankAccounts.length>0
+          ?<select value={bankAccount} onChange={e=>setModal(p=>({...p,_rcBankAccount:e.target.value}))} style={ss}>
+            <option value="">Select bank account...</option>
+            {bankAccounts.map(b=><option key={b.id||b.name} value={b.name}>{b.name}{b.last4?" — "+b.last4:""}</option>)}
+          </select>
+          :<input value={bankAccount} onChange={e=>setModal(p=>({...p,_rcBankAccount:e.target.value}))}
+            placeholder={settings.companyName||"Bank account name"}
+            style={{width:"100%",padding:"10px 14px",border:"2px solid rgba(0,0,0,.08)",borderRadius:9,fontSize:13,fontFamily:"inherit",outline:"none",background:"#fff",color:"#1a1714"}}/>
+        }
+        {bankAccounts.length===0&&<div style={{fontSize:11,color:"#7a7067",marginTop:4}}>
+          To add bank accounts, go to <button onClick={()=>{setModal(null);goTab("settings");}} style={{background:"none",border:"none",color:"#3b82f6",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:600,padding:0}}>Settings</button>.
+        </div>}
+      </div>
+
+      {/* ── Late Fees ── */}
       <div style={{borderTop:"1px solid rgba(0,0,0,.07)",paddingTop:16}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-          <div style={{fontSize:14,fontWeight:800,color:"#1a1714"}}>Automatic Late Fees</div>
-          <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none"}} onClick={()=>updLc("enabled",!lc.enabled)}>
-            <div style={{width:34,height:18,borderRadius:9,background:lc.enabled?"rgba(74,124,89,.25)":"rgba(0,0,0,.1)",position:"relative",transition:"background .15s",flexShrink:0}}>
-              <div style={{position:"absolute",top:2,left:lc.enabled?16:2,width:14,height:14,borderRadius:"50%",background:lc.enabled?"#4a7c59":"#aaa",transition:"all .15s"}}/>
-            </div>
-            <span style={{fontSize:11,fontWeight:600,color:lc.enabled?"#4a7c59":"#7a7067"}}>{lc.enabled?"On":"Off"}</span>
-          </label>
-        </div>
-        <div style={{fontSize:11,color:"#7a7067",marginBottom:lc.enabled?16:0}}>Per-room override for {rcRoom?.name||"this room"} at {rcProp?getPropDisplayName(rcProp):"this property"}.</div>
+        <div style={{fontSize:14,fontWeight:800,color:"#1a1714",marginBottom:4}}>Would you like to set automatic late fees?</div>
+        <div style={{fontSize:11,color:"#7a7067",marginBottom:14}}>Per-room override for {rcRoom?.name||"this room"} at {rcProp?getPropDisplayName(rcProp):"this property"}.</div>
 
-        {lc.enabled&&<>
-          {/* Grace period */}
-          <div style={{marginBottom:14}}>
-            <label style={{display:"block",fontSize:11,fontWeight:700,color:"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Grace Period</label>
-            <select value={lc.graceDays??3} onChange={e=>updLc("graceDays",Number(e.target.value))} style={selectStyle}>
-              {[1,2,3,4,5,7,10].map(d=><option key={d} value={d}>{d} day{d!==1?"s":""} after rent is due</option>)}
-            </select>
+        {/* Initial fee */}
+        <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:14,marginBottom:10}}>
+          <div style={{marginBottom:lc.initialEnabled?14:0}}>
+            {checkbox(lc.initialEnabled,()=>updLc("initialEnabled",!lc.initialEnabled),"One-time initial fee")}
           </div>
-
-          {/* One-time initial fee */}
-          <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:14,marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:lc.initialEnabled?14:0}} onClick={()=>updLc("initialEnabled",!lc.initialEnabled)}>
-              <div style={{width:16,height:16,borderRadius:3,border:`2px solid ${lc.initialEnabled?"#4a7c59":"rgba(0,0,0,.2)"}`,background:lc.initialEnabled?"#4a7c59":"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
-                {lc.initialEnabled&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+          {lc.initialEnabled&&<>
+            <div style={{marginBottom:10}}>
+              {lbl("Fee type")}
+              <div style={{display:"flex",gap:4}}>
+                {pillBtn(lc.initialFeeType==="flat",()=>updLc("initialFeeType","flat"),"Flat")}
+                {pillBtn(lc.initialFeeType==="pctRent",()=>updLc("initialFeeType","pctRent"),"% Rent")}
+                {pillBtn(lc.initialFeeType==="pctUnpaid",()=>updLc("initialFeeType","pctUnpaid"),"% Unpaid")}
               </div>
-              <span style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>One-time initial fee</span>
             </div>
-            {lc.initialEnabled&&<>
-              <div style={{marginBottom:10}}>
-                <label style={{display:"block",fontSize:10,fontWeight:700,color:"#5c4a3a",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Fee Type</label>
-                <div style={{display:"flex",gap:4}}>{feeTypeBtn("flat","Flat")}{feeTypeBtn("pctRent","% of Rent")}{feeTypeBtn("pctUnpaid","% of Unpaid")}</div>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                <div>
-                  <label style={{display:"block",fontSize:10,fontWeight:700,color:errs.initialFee?"#c45c4a":"#5c4a3a",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Amount <span style={{color:"#c45c4a"}}>*</span></label>
-                  {lc.initialFeeType==="flat"
-                    ?dollarInput("initialFee","initialFee","50")
-                    :<div style={{display:"flex",alignItems:"center",border:`2px solid ${errs.initialFee?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:9,overflow:"hidden",background:"#fff"}}>
-                      <input type="number" step="0.1" min="0" max="100" value={lc.initialFee??""} placeholder="10"
-                        onChange={e=>updLc("initialFee",e.target.value)}
-                        style={{flex:1,padding:"10px 8px",border:"none",outline:"none",fontSize:14,fontFamily:"inherit",background:"transparent",color:"#1a1714"}}/>
-                      <span style={{padding:"10px 12px",fontSize:14,color:"#6b5e52",borderLeft:"1px solid rgba(0,0,0,.08)",background:"rgba(0,0,0,.02)"}}>%</span>
-                    </div>}
-                  {errs.initialFee&&<div style={{fontSize:10,color:"#c45c4a",marginTop:3,animation:"shake .4s ease"}}>{errs.initialFee}</div>}
-                </div>
-                <div>
-                  <label style={{display:"block",fontSize:10,fontWeight:700,color:"#5c4a3a",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Applied</label>
-                  <select value={lc.initialApplyDays??3} onChange={e=>updLc("initialApplyDays",Number(e.target.value))} style={{...selectStyle,padding:"10px 12px",fontSize:12}}>
-                    {INITIAL_APPLY_OPTS.map(d=><option key={d} value={d}>{d} days after due</option>)}
-                  </select>
-                </div>
-              </div>
-            </>}
-          </div>
-
-          {/* Daily late fees */}
-          <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:14,marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:lc.dailyEnabled?14:0}} onClick={()=>updLc("dailyEnabled",!lc.dailyEnabled)}>
-              <div style={{width:16,height:16,borderRadius:3,border:`2px solid ${lc.dailyEnabled?"#4a7c59":"rgba(0,0,0,.2)"}`,background:lc.dailyEnabled?"#4a7c59":"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
-                {lc.dailyEnabled&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
-              </div>
-              <span style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>Daily late fees</span>
-            </div>
-            {lc.dailyEnabled&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
               <div>
-                <label style={{display:"block",fontSize:10,fontWeight:700,color:errs.dailyFee?"#c45c4a":"#5c4a3a",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Amount / day <span style={{color:"#c45c4a"}}>*</span></label>
-                {dollarInput("dailyFee","dailyFee","5")}
-                {errs.dailyFee&&<div style={{fontSize:10,color:"#c45c4a",marginTop:3,animation:"shake .4s ease"}}>{errs.dailyFee}</div>}
+                {lbl("Amount",true,errs.initialFee)}
+                {lc.initialFeeType==="flat"?dollarWrap("initialFee","initialFee","50"):pctWrap("initialFee","initialFee","10")}
               </div>
               <div>
-                <label style={{display:"block",fontSize:10,fontWeight:700,color:"#5c4a3a",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Starting</label>
-                <select value={lc.dailyStartDays??6} onChange={e=>updLc("dailyStartDays",Number(e.target.value))} style={{...selectStyle,padding:"10px 12px",fontSize:12}}>
-                  {DAILY_START_OPTS.map(d=><option key={d} value={d}>{d} days after due</option>)}
+                {lbl("Applied",true)}
+                <select value={lc.initialApplyDays??3} onChange={e=>updLc("initialApplyDays",Number(e.target.value))} style={{...ss,fontSize:12}}>
+                  {INITIAL_APPLY_OPTS.map(d=><option key={d} value={d}>{d} days after rent is due</option>)}
                 </select>
               </div>
-            </div>}
-          </div>
-
-          {/* Late fee limit */}
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:"#1a1714",marginBottom:8}}>Set a late fee limit?</div>
-            <div style={{display:"flex",gap:6,marginBottom:lc.limitEnabled?12:0}}>
-              {[["Yes",true],["No",false]].map(([label,val])=>(
-                <button key={label} onClick={()=>updLc("limitEnabled",val)}
-                  style={{padding:"7px 20px",borderRadius:7,border:`2px solid ${lc.limitEnabled===val?"#1a1714":"rgba(0,0,0,.1)"}`,background:lc.limitEnabled===val?"#1a1714":"#fff",color:lc.limitEnabled===val?"#f5f0e8":"#5c4a3a",fontSize:12,fontWeight:lc.limitEnabled===val?700:500,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
-                  {label}
-                </button>
-              ))}
             </div>
-            {lc.limitEnabled&&<>
-              <label style={{display:"block",fontSize:10,fontWeight:700,color:errs.limitAmt?"#c45c4a":"#5c4a3a",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Maximum Late Fee <span style={{color:"#c45c4a"}}>*</span></label>
-              {dollarInput("limitAmt","limitAmt","200")}
-              {errs.limitAmt&&<div style={{fontSize:10,color:"#c45c4a",marginTop:3,animation:"shake .4s ease"}}>{errs.limitAmt}</div>}
-            </>}
+          </>}
+        </div>
+
+        {/* Daily fees */}
+        <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:14,marginBottom:10}}>
+          <div style={{marginBottom:lc.dailyEnabled?14:0}}>
+            {checkbox(lc.dailyEnabled,()=>updLc("dailyEnabled",!lc.dailyEnabled),"Daily late fees")}
           </div>
-        </>}
+          {lc.dailyEnabled&&<>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              <div>
+                {lbl("Amount",true,errs.dailyFee)}
+                {dollarWrap("dailyFee","dailyFee","5")}
+              </div>
+              <div>
+                {lbl("Starting",true)}
+                <select value={lc.dailyStartDays??6} onChange={e=>updLc("dailyStartDays",Number(e.target.value))} style={{...ss,fontSize:12}}>
+                  {DAILY_START_OPTS.map(d=><option key={d} value={d}>{d} days after rent is due</option>)}
+                </select>
+              </div>
+            </div>
+          </>}
+        </div>
+
+        {/* Late fee limit */}
+        <div style={{marginBottom:4}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:10}}>Would you like to set a late fee limit?</div>
+          <div style={{marginBottom:lc.limitEnabled?14:0}}>
+            {checkbox(lc.limitEnabled,()=>updLc("limitEnabled",!lc.limitEnabled),"Enable late fee limit")}
+          </div>
+          {lc.limitEnabled&&<div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.07)",borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:14}}>
+            {/* Stop daily fees after X days */}
+            <div>
+              {lbl("Stop daily fees after")}
+              <select value={lc.limitStopAfterDays??""} onChange={e=>updLc("limitStopAfterDays",e.target.value?Number(e.target.value):null)} style={ss}>
+                <option value="">No limit on days</option>
+                {STOP_AFTER_OPTS.map(d=><option key={d} value={d}>{d} days</option>)}
+              </select>
+            </div>
+            {/* Total will not exceed */}
+            <div>
+              {lbl("Total late fees will not exceed",false,errs.limitMaxAmt)}
+              <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                <div style={{flex:1}}>
+                  {lc.limitMaxType==="flat"
+                    ?dollarWrap("limitMaxAmt","limitMaxAmt","200")
+                    :pctWrap("limitMaxAmt","limitMaxAmt","50")
+                  }
+                </div>
+                <div style={{display:"flex",gap:4,flexShrink:0,paddingTop:1}}>
+                  {pillBtn(lc.limitMaxType==="flat",()=>updLc("limitMaxType","flat"),"Flat")}
+                  {pillBtn(lc.limitMaxType==="pctRent",()=>updLc("limitMaxType","pctRent"),"% Rent")}
+                </div>
+              </div>
+              {errs.limitMaxAmt&&<div style={{fontSize:10,color:"#c45c4a",marginTop:3,animation:"shake .4s ease"}}>{errs.limitMaxAmt}</div>}
+            </div>
+          </div>}
+        </div>
       </div>
 
-      <div className="mft" style={{marginTop:20}}>
-        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-dk" onClick={save} style={{background:"#1a1714",color:"#f5f0e8",fontWeight:700}}>Save Changes</button>
+      <div className="mft" style={{marginTop:20,flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",gap:8,width:"100%"}}>
+          <button className="btn btn-out" onClick={()=>setModal(null)} style={{flex:1}}>Cancel</button>
+          <button className="btn btn-dk" onClick={save} style={{flex:2,background:"#1a1714",color:"#f5f0e8",fontWeight:700}}>Save</button>
+        </div>
+        <button onClick={()=>setModal({type:"confirmAction",title:"Delete Recurring Charge",body:`This will stop auto-generating ${cat} charges for ${rcRoom?.tenant?.name||"this tenant"} going forward. Existing charges are not affected.`,confirmLabel:"Delete Charge",confirmStyle:"btn-red",onConfirm:()=>{
+          setProps(prev=>prev.map(p=>{
+            if(!rcProp||p.id!==rcProp.id)return p;
+            return{...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id!==rcRoom.id?rm:{...rm,recurringDisabled:true})}))};
+          }));
+          setModal(null);
+        }})}
+          style={{background:"none",border:"none",cursor:"pointer",color:"#c45c4a",fontSize:12,fontWeight:700,fontFamily:"inherit",padding:"4px 0",textAlign:"center",width:"100%"}}>
+          Delete Charge
+        </button>
       </div>
     </div></div>);
   })()}
@@ -9375,9 +9520,9 @@ export default function Page(){
     };
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460,animation:shake?"shake .4s ease":undefined}}>
-      <h2 style={{marginBottom:4}}>✏️ Edit Charge</h2>
+      <h2 style={{marginBottom:4}}>Edit Charge</h2>
       <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>{c.tenantName} · {c.propName}</div>
-      {isPaid&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9a7422",fontWeight:600}}>⚠ This charge has been paid. A reason and audit note are required.</div>}
+      {isPaid&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9a7422",fontWeight:600}}>This charge has been paid. A reason and audit note are required.</div>}
       <div className="fr3">
         <div className="fld"><label style={{color:errs.amount?"#c45c4a":undefined}}>Amount ($){errs.amount&&<span style={{fontWeight:400,fontSize:9,marginLeft:6,color:"#c45c4a"}}>{errs.amount}</span>}</label><input type="number" value={c.amount||""} onChange={e=>upd("amount",e.target.value)} style={{borderColor:errs.amount?"#c45c4a":undefined}}/></div>
         <div className="fld"><label style={{color:errs.dueDate?"#c45c4a":undefined}}>Due Date</label><input type="date" value={c.dueDate||""} onChange={e=>upd("dueDate",e.target.value)}/></div>
