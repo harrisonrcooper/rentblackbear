@@ -8444,7 +8444,7 @@ export default function Page(){
               if(ls.editingTerm&&ls.newLeStart&&updated.tenant)updated.tenant={...updated.tenant,moveIn:ls.newLeStart};
               return updated;
             })}))}
-          ));
+          }));
           setModal(p=>({...p,_leaseSettingsOpen:false,_leaseSettings:undefined}));
         };
         const radioStyle=(active)=>({width:16,height:16,borderRadius:"50%",border:`2px solid ${active?settings.adminAccent||"#4a7c59":"rgba(0,0,0,.25)"}`,background:active?settings.adminAccent||"#4a7c59":"#fff",display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,transition:"all .15s"});
