@@ -8086,62 +8086,62 @@ export default function Page(){
         {/* ── PAYMENTS TAB ── */}
         {tenantProfileTab==="payments"&&(()=>{
           const totalUnpaid=tenantCharges.filter(c=>["pastdue","unpaid","partial"].includes(chargeStatus(c))).reduce((s,c)=>s+(c.amount-c.amountPaid),0);
+          const totalPastDue=tenantCharges.filter(c=>chargeStatus(c)==="pastdue").reduce((s,c)=>s+(c.amount-c.amountPaid),0);
+          const isLate=totalPastDue>0;
           const expandedId=modal._expandedChargeId||null;
           const stLabel={paid:"Paid",pastdue:"Past Due",unpaid:"Unpaid",partial:"Partial",waived:"Waived",voided:"Voided"};
           const stBg={paid:"rgba(74,124,89,.08)",pastdue:"rgba(196,92,74,.08)",unpaid:"rgba(212,168,83,.1)",partial:"rgba(212,168,83,.1)",waived:"rgba(0,0,0,.04)",voided:"rgba(0,0,0,.04)"};
           const stTx={paid:"#4a7c59",pastdue:"#c45c4a",unpaid:"#9a7422",partial:"#9a7422",waived:"#7a7067",voided:"#7a7067"};
           return(<div>
-          {/* Unpaid charges hero — always shown if balance > 0 */}
-          {totalUnpaid>0&&<div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:10,padding:"14px 20px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          {/* Unpaid charges banner — red only if late, amber if just unpaid */}
+          {totalUnpaid>0&&<div style={{marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
-              <div style={{fontSize:11,color:"#c45c4a",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Unpaid Charges</div>
-              <div style={{fontSize:28,fontWeight:800,color:"#c45c4a"}}>{fmtS(totalUnpaid)}</div>
+              <div style={{fontSize:11,color:isLate?"#c45c4a":"#9a7422",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Unpaid charges</div>
+              <div style={{fontSize:28,fontWeight:800,color:isLate?"#c45c4a":"#9a7422"}}>{fmtS(totalUnpaid)}</div>
             </div>
-            <button className="btn btn-green" onClick={()=>openPayForm(r.id)}>Record Payment</button>
+            {/* Actions + Create Charge — TurboTenant style */}
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <div style={{position:"relative"}}>
+                {modal._actionsOpen&&<div style={{position:"fixed",inset:0,zIndex:19}} onClick={()=>setModal(p=>({...p,_actionsOpen:false}))}/>}
+                <button className="btn btn-out btn-sm"
+                  onClick={()=>setModal(p=>({...p,_actionsOpen:!p._actionsOpen}))}
+                  style={{display:"flex",alignItems:"center",gap:5,fontWeight:600}}>
+                  Actions
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {modal._actionsOpen&&<div style={{position:"absolute",top:"calc(100% + 4px)",right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,.12)",zIndex:20,minWidth:210,overflow:"hidden"}}>
+                  {[
+                    ["Record payment",()=>{setModal(p=>({...p,_actionsOpen:false}));openPayForm(r.id);}],
+                    ["Add credit",()=>setModal({type:"addCredit",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,amount:0,reason:""})],
+                    ["Return security deposit",()=>setModal({type:"returnSD",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,deductions:[],returnAmount:r.rent})],
+                    null,
+                    ["Export CSV",()=>{
+                      setModal(p=>({...p,_actionsOpen:false}));
+                      const rows=[["Due Date","Category","Description","Status","Amount","Amount Paid","Method","Paid Date"],...tenantCharges.map(c=>{const p=c.payments?.[0];return[c.dueDate,c.category,c.desc||"",chargeStatus(c),c.amount,c.amountPaid,p?.method||"",p?.date||""];})];
+                      const csv=rows.map(row=>row.map(v=>`"${v}"`).join(",")).join("\n");
+                      const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`charges-${r.tenant.name.replace(/\s/g,"-")}.csv`;a.click();
+                    }],
+                  ].map((item,i)=>item===null
+                    ?<div key={i} style={{height:1,background:"rgba(0,0,0,.06)",margin:"3px 0"}}/>
+                    :<button key={item[0]} onClick={item[1]}
+                      style={{display:"block",width:"100%",padding:"9px 16px",background:"none",border:"none",textAlign:"left",fontSize:13,fontWeight:400,color:"#3d3529",cursor:"pointer",fontFamily:"inherit",transition:"background .1s"}}
+                      onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
+                      onMouseLeave={e=>e.currentTarget.style.background="none"}>{item[0]}</button>
+                  )}
+                </div>}
+              </div>
+              <button className="btn btn-dk btn-sm"
+                onClick={()=>setModal({type:"createCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,category:"Rent",desc:"",amount:0,dueDate:TODAY.toISOString().split("T")[0],notes:"",_fromTenant:true,_tenantRoom:r})}
+                style={{background:"#1a1714",color:"#f5f0e8",fontWeight:700,letterSpacing:.1}}>
+                Create Charge
+              </button>
+            </div>
           </div>}
 
           {/* Monthly recurring charges */}
           <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",marginBottom:20,overflow:"hidden"}}>
-            <div style={{padding:"14px 20px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{padding:"14px 20px",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
               <span style={{fontSize:14,fontWeight:700}}>Monthly Charges</span>
-              <div style={{display:"flex",gap:8}}>
-                {/* Actions dropdown — click-outside via fixed backdrop */}
-                <div style={{position:"relative"}}>
-                  {modal._actionsOpen&&<div style={{position:"fixed",inset:0,zIndex:19}} onClick={()=>setModal(p=>({...p,_actionsOpen:false}))}/>}
-                  <button className="btn btn-out btn-sm"
-                    onClick={()=>setModal(p=>({...p,_actionsOpen:!p._actionsOpen}))}
-                    style={{display:"flex",alignItems:"center",gap:5}}>
-                    Actions
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                  </button>
-                  {modal._actionsOpen&&<div style={{position:"absolute",top:"calc(100% + 4px)",right:0,background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,.12)",zIndex:20,minWidth:200,overflow:"hidden"}}>
-                    {[
-                      ["Record Payment",()=>{setModal(p=>({...p,_actionsOpen:false}));openPayForm(r.id);}],
-                      ["Add Credit",()=>setModal({type:"addCredit",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,amount:0,reason:""})],
-                      ["Return Security Deposit",()=>setModal({type:"returnSD",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,deductions:[],returnAmount:r.rent})],
-                      null,// divider
-                      ["View in Tenant Ledger",()=>{setModal(null);goTab("payments");setPayFilters({...payFilters,tenant:r.tenant.name});}],
-                      ["Export CSV",()=>{
-                        setModal(p=>({...p,_actionsOpen:false}));
-                        const rows=[["Due Date","Category","Description","Status","Amount","Amount Paid","Method","Paid Date"],...tenantCharges.map(c=>{const p=c.payments?.[0];return[c.dueDate,c.category,c.desc||"",chargeStatus(c),c.amount,c.amountPaid,p?.method||"",p?.date||""];})];
-                        const csv=rows.map(row=>row.map(v=>`"${v}"`).join(",")).join("\n");
-                        const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`charges-${r.tenant.name.replace(/\s/g,"-")}.csv`;a.click();
-                      }],
-                    ].map((item,i)=>item===null
-                      ?<div key={i} style={{height:1,background:"rgba(0,0,0,.06)",margin:"3px 0"}}/>
-                      :<button key={item[0]} onClick={item[1]}
-                        style={{display:"block",width:"100%",padding:"9px 14px",background:"none",border:"none",textAlign:"left",fontSize:12,fontWeight:500,color:"#3d3529",cursor:"pointer",fontFamily:"inherit",transition:"background .1s"}}
-                        onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
-                        onMouseLeave={e=>e.currentTarget.style.background="none"}>{item[0]}</button>
-                    )}
-                  </div>}
-                </div>
-                <button className="btn btn-green btn-sm"
-                  onClick={()=>setModal({type:"createCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,category:"Rent",desc:"",amount:0,dueDate:TODAY.toISOString().split("T")[0],notes:"",_fromTenant:true})}
-                  style={{fontWeight:700,letterSpacing:.1}}>
-                  + Create Charge
-                </button>
-              </div>
             </div>
             {/* Rent — recurring row — editable */}
             <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px"}}>
@@ -9296,18 +9296,36 @@ export default function Page(){
     );
 
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500,animation:shake?"shake .4s ease":undefined}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:201,overflowY:"auto"}}>
 
-      {/* Header */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-        <h2 style={{margin:0}}>Edit Recurring Charge</h2>
-        <button onClick={()=>setModal(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#7a7067",padding:4,display:"flex"}}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+      {/* Sticky header */}
+      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"12px 32px 0",position:"sticky",top:0,zIndex:10}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <button onClick={()=>setModal(prev=>({...prev,type:"tenant",_rcRoom:undefined,_rcProp:undefined,_rcRent:undefined,_rcLateConfig:undefined,_rcErrs:undefined}))}
+            onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"}
+            onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+            style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,color:"#5c4a3a",padding:"5px 10px",borderRadius:6,transition:"background .15s"}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back to Payments
+          </button>
+          <div style={{display:"flex",gap:8}}>
+            <button className="btn btn-out btn-sm" onClick={()=>setModal(prev=>({...prev,type:"tenant",_rcRoom:undefined,_rcProp:undefined}))}>Cancel</button>
+            <button className="btn btn-dk btn-sm" onClick={save} style={{background:"#1a1714",color:"#f5f0e8",fontWeight:700}}>Save Changes</button>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:12,paddingBottom:14}}>
+          <div>
+            <div style={{fontSize:18,fontWeight:800,color:"#1a1714"}}>Edit Recurring Charge</div>
+            <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>{rcRoom?.tenant?.name} &middot; {rcRoom?.name} &middot; {rcProp?getPropDisplayName(rcProp):""}</div>
+          </div>
+        </div>
       </div>
-      <div style={{fontSize:12,color:"#1d4ed8",marginBottom:20,padding:"10px 12px",background:"rgba(59,130,246,.05)",border:"1px solid rgba(59,130,246,.15)",borderRadius:8}}>
-        Your changes only affect <strong>future monthly charges</strong>. Charges already sent to tenants will not be affected.
-      </div>
+
+      {/* Body */}
+      <div style={{maxWidth:560,margin:"0 auto",padding:"28px 32px 80px",animation:shake?"shake .4s ease":undefined}}>
+        <div style={{fontSize:12,color:"#1d4ed8",marginBottom:24,padding:"10px 14px",background:"rgba(59,130,246,.05)",border:"1px solid rgba(59,130,246,.15)",borderRadius:8}}>
+          Your changes only affect <strong>future monthly charges</strong>. Charges already sent to tenants will not be affected.
+        </div>
 
       {/* Category */}
       <div style={{marginBottom:16}}>
@@ -9362,7 +9380,7 @@ export default function Page(){
         <div style={{display:"flex",gap:8}}>
           <select value={startMonth} disabled={isPast}
             onChange={e=>setModal(p=>({...p,_rcStartYM:`${startYear}-${String(e.target.value).padStart(2,"0")}`}))}
-            style={{...ss,flex:1,opacity:isPast?.6:1}}>
+            style={{...ss,width:150,opacity:isPast?.6:1}}>
             {MONTHS.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
           </select>
           <select value={startYear} disabled={isPast}
@@ -9494,11 +9512,8 @@ export default function Page(){
         </div>
       </div>
 
-      <div className="mft" style={{marginTop:20,flexDirection:"column",gap:8}}>
-        <div style={{display:"flex",gap:8,width:"100%"}}>
-          <button className="btn btn-out" onClick={()=>setModal(null)} style={{flex:1}}>Cancel</button>
-          <button className="btn btn-dk" onClick={save} style={{flex:2,background:"#1a1714",color:"#f5f0e8",fontWeight:700}}>Save</button>
-        </div>
+      {/* Delete at bottom */}
+      <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid rgba(0,0,0,.07)",textAlign:"center"}}>
         <button onClick={()=>setModal({type:"confirmAction",title:"Delete Recurring Charge",body:`This will stop auto-generating ${cat} charges for ${rcRoom?.tenant?.name||"this tenant"} going forward. Existing charges are not affected.`,confirmLabel:"Delete Charge",confirmStyle:"btn-red",onConfirm:()=>{
           setProps(prev=>prev.map(p=>{
             if(!rcProp||p.id!==rcProp.id)return p;
@@ -9506,11 +9521,12 @@ export default function Page(){
           }));
           setModal(null);
         }})}
-          style={{background:"none",border:"none",cursor:"pointer",color:"#c45c4a",fontSize:12,fontWeight:700,fontFamily:"inherit",padding:"4px 0",textAlign:"center",width:"100%"}}>
+          style={{background:"none",border:"none",cursor:"pointer",color:"#c45c4a",fontSize:12,fontWeight:700,fontFamily:"inherit",padding:"4px 0"}}>
           Delete Charge
         </button>
       </div>
-    </div></div>);
+    </div>
+    </div>);
   })()}
 
   {/* Edit Charge */}
@@ -9809,13 +9825,27 @@ export default function Page(){
           setSdLedger(p=>[...p,{id:uid(),roomId,tenantName,propName,roomName,amountHeld:Number(modal.amount),deposits:[{id:uid(),amount:Number(modal.amount),date:TODAY.toISOString().split("T")[0],desc:modal.desc||"Security Deposit"}],deductions:[],returned:null,returnDate:null}]);
         }
       }
-      setModal(null);
+      // If opened from tenant profile, return to it instead of clearing modal entirely
+      if(fromTenant&&modal._tenantRoom){
+        setTenantProfileTab("payments");
+        setModal({type:"tenant",data:modal._tenantRoom});
+      } else {
+        setModal(null);
+      }
+    };
+    const closeModal=()=>{
+      if(fromTenant&&modal._tenantRoom){
+        setTenantProfileTab("payments");
+        setModal({type:"tenant",data:modal._tenantRoom});
+      } else {
+        setModal(null);
+      }
     };
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
+    <div className="mbg" onClick={closeModal}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
         <h2 style={{margin:0}}>Create Charge</h2>
-        <button onClick={()=>setModal(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#7a7067",padding:4,borderRadius:4,display:"flex"}}>
+        <button onClick={closeModal} style={{background:"none",border:"none",cursor:"pointer",color:"#7a7067",padding:4,borderRadius:4,display:"flex"}}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -9879,7 +9909,7 @@ export default function Page(){
         </div>
       }
       <div className="mft" style={{marginTop:8}}>
-        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-out" onClick={closeModal}>Cancel</button>
         <button className="btn btn-dk" onClick={submit} style={{background:"#1a1714",color:"#f5f0e8",fontWeight:700}}>Create</button>
       </div>
     </div></div>);})()}
