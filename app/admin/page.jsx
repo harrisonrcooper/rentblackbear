@@ -8133,7 +8133,7 @@ export default function Page(){
                   </div>}
                 </div>
                 <button className="btn btn-green btn-sm"
-                  onClick={()=>setModal({type:"addCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name})}
+                  onClick={()=>setModal({type:"createCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,category:"Rent",desc:"",amount:0,dueDate:TODAY.toISOString().split("T")[0],notes:"",_fromTenant:true})}
                   style={{fontWeight:700,letterSpacing:.1}}>
                   + Create Charge
                 </button>
@@ -8159,7 +8159,7 @@ export default function Page(){
                     const latestRent=tenantCharges.find(c=>c.category==="Rent"&&chargeStatus(c)!=="paid");
                     const chargeToEdit=latestRent||tenantCharges.find(c=>c.category==="Rent");
                     if(chargeToEdit)setModal({type:"editCharge",charge:{...chargeToEdit},isPaid:chargeStatus(chargeToEdit)==="paid"});
-                    else setModal({type:"addCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name});
+                    else setModal({type:"createCharge",roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,category:"Rent",desc:"",amount:r.rent||0,dueDate:TODAY.toISOString().split("T")[0],notes:"",_fromTenant:true});
                   }}
                   onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.07)"}
                   onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
@@ -9402,42 +9402,101 @@ export default function Page(){
     const occRooms=occLeases;
     const selRoom=occRooms.find(r=>r.id===modal.roomId);
     const errs=modal.chErrs||{};
+    const fromTenant=!!modal._fromTenant;
+    const showDesc=!!modal._showDesc;
+    const cats=["Rent","Security Deposit","Utility Overage","Late Fee","Damage Charge","Cleaning Fee","Other"];
     const submit=()=>{
       const e={};
       if(!modal.roomId)e.roomId="Select a tenant";
-      if(!modal.amount||modal.amount<=0)e.amount="Enter a valid amount";
+      if(!modal.amount||Number(modal.amount)<=0)e.amount="Enter a valid amount";
       if(!modal.dueDate)e.dueDate="Select a due date";
       if(Object.keys(e).length){setModal(prev=>({...prev,chErrs:e}));shakeModal();return;}
-      const tenantName=(selRoom&&selRoom.tenant&&selRoom.tenant.name)||"";
-      const propName=(selRoom&&selRoom.propName)||"";
-      const roomName=(selRoom&&selRoom.name)||"";
-      createCharge({roomId:modal.roomId,tenantName,propName,roomName,category:modal.category,desc:modal.desc||modal.category,amount:modal.amount,dueDate:modal.dueDate});
-      // If Security Deposit, also log to sdLedger
-      if(modal.category==="Security Deposit"){
-        const existing=sdLedger.find(s=>s.roomId===modal.roomId&&!s.returned);
+      const tenantName=(selRoom&&selRoom.tenant&&selRoom.tenant.name)||modal.tenantName||"";
+      const propName=(selRoom&&selRoom.propName)||modal.propName||"";
+      const roomName=(selRoom&&selRoom.name)||modal.roomName||"";
+      const roomId=modal.roomId;
+      createCharge({roomId,tenantName,propName,roomName,category:modal.category||"Rent",desc:modal.desc||(modal.category||"Rent"),amount:Number(modal.amount),dueDate:modal.dueDate});
+      if((modal.category||"Rent")==="Security Deposit"){
+        const existing=sdLedger.find(s=>s.roomId===roomId&&!s.returned);
         if(existing){
-          // Add to existing held amount
-          setSdLedger(p=>p.map(s=>s.id===existing.id?{...s,amountHeld:s.amountHeld+modal.amount,deposits:[...(s.deposits||[]),{id:uid(),amount:modal.amount,date:TODAY.toISOString().split("T")[0],desc:modal.desc||"Security Deposit",chargeId:uid()}]}:s));
+          setSdLedger(p=>p.map(s=>s.id===existing.id?{...s,amountHeld:s.amountHeld+Number(modal.amount),deposits:[...(s.deposits||[]),{id:uid(),amount:Number(modal.amount),date:TODAY.toISOString().split("T")[0],desc:modal.desc||"Security Deposit",chargeId:uid()}]}:s));
         } else {
-          // Create new sd ledger entry
-          setSdLedger(p=>[...p,{id:uid(),roomId:modal.roomId,tenantName,propName,roomName,amountHeld:modal.amount,deposits:[{id:uid(),amount:modal.amount,date:TODAY.toISOString().split("T")[0],desc:modal.desc||"Security Deposit"}],deductions:[],returned:null,returnDate:null}]);
+          setSdLedger(p=>[...p,{id:uid(),roomId,tenantName,propName,roomName,amountHeld:Number(modal.amount),deposits:[{id:uid(),amount:Number(modal.amount),date:TODAY.toISOString().split("T")[0],desc:modal.desc||"Security Deposit"}],deductions:[],returned:null,returnDate:null}]);
         }
       }
       setModal(null);
     };
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
-      <h2>Create Charge</h2>
-      <div className={`fld ${errs.roomId?"field-err":""}`}><label className={errs.roomId?"field-err-label":""}>Tenant</label><select value={modal.roomId} onChange={e=>setModal(prev=>({...prev,roomId:e.target.value,chErrs:{...(prev.chErrs||{}),roomId:null}}))}><option value="">Select...</option>{occRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} - {r.propName} {r.name}</option>)}</select>{errs.roomId&&<div className="err-msg">{errs.roomId}</div>}</div>
-      <div className="fld"><label>Category</label><select value={modal.category} onChange={e=>setModal(prev=>({...prev,category:e.target.value}))}>{CHARGE_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
-      <div className="fld"><label>Description</label><input value={modal.desc||""} onChange={e=>setModal(prev=>({...prev,desc:e.target.value}))} placeholder={`${modal.category} charge...`}/></div>
-      <div className="fr">
-        <div className={`fld ${errs.amount?"field-err":""}`}><label className={errs.amount?"field-err-label":""}>Amount</label><input type="number" step=".01" value={modal.amount} onChange={e=>setModal(prev=>({...prev,amount:Number(e.target.value),chErrs:{...(prev.chErrs||{}),amount:null}}))}/>{errs.amount&&<div className="err-msg">{errs.amount}</div>}</div>
-        <div className={`fld ${errs.dueDate?"field-err":""}`}><label className={errs.dueDate?"field-err-label":""}>Due Date</label><input type="date" value={modal.dueDate} onChange={e=>setModal(prev=>({...prev,dueDate:e.target.value,chErrs:{...(prev.chErrs||{}),dueDate:null}}))}/>{errs.dueDate&&<div className="err-msg">{errs.dueDate}</div>}</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+        <h2 style={{margin:0}}>Create Charge</h2>
+        <button onClick={()=>setModal(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#7a7067",padding:4,borderRadius:4,display:"flex"}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-      <div className="fld"><label>Notes</label><input value={modal.notes||""} onChange={e=>setModal(prev=>({...prev,notes:e.target.value}))}/></div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-gold" onClick={submit}>Create Charge</button></div>
+      {/* Tenant — hidden when opened from tenant profile */}
+      {!fromTenant&&<div className="fld" style={{marginBottom:16}}>
+        <label style={{color:errs.roomId?"#c45c4a":undefined}}>Tenant{errs.roomId&&<span style={{fontWeight:400,fontSize:10,marginLeft:6,color:"#c45c4a"}}>{errs.roomId}</span>}</label>
+        <select value={modal.roomId||""} onChange={e=>setModal(prev=>({...prev,roomId:e.target.value,chErrs:{...(prev.chErrs||{}),roomId:null}}))} style={{borderColor:errs.roomId?"#c45c4a":undefined}}>
+          <option value="">Select tenant...</option>
+          {occRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} — {r.propName} {r.name}</option>)}
+        </select>
+      </div>}
+      {/* Category — pill buttons */}
+      <div style={{marginBottom:16}}>
+        <label style={{display:"block",fontSize:11,fontWeight:700,color:"#5c4a3a",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Category <span style={{color:"#c45c4a"}}>*</span></label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {cats.map(cat=>{
+            const active=(modal.category||"Rent")===cat;
+            return(
+            <button key={cat} onClick={()=>setModal(p=>({...p,category:cat}))}
+              style={{padding:"6px 13px",borderRadius:6,border:`2px solid ${active?"#1a1714":"rgba(0,0,0,.1)"}`,background:active?"#1a1714":"#fff",color:active?"#f5f0e8":"#5c4a3a",fontSize:12,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+              {cat}
+            </button>);
+          })}
+        </div>
+      </div>
+      {/* Amount */}
+      <div style={{marginBottom:16}}>
+        <label style={{display:"block",fontSize:11,fontWeight:700,color:errs.amount?"#c45c4a":"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>
+          Amount <span style={{color:"#c45c4a"}}>*</span>
+          {errs.amount&&<span style={{fontWeight:400,fontSize:10,marginLeft:6,color:"#c45c4a"}}>{errs.amount}</span>}
+        </label>
+        <div style={{display:"flex",alignItems:"center",border:`2px solid ${errs.amount?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:10,overflow:"hidden",background:"#fff"}}>
+          <span style={{padding:"12px 14px",fontSize:16,fontWeight:700,color:"#6b5e52",borderRight:"1px solid rgba(0,0,0,.08)",background:"rgba(0,0,0,.02)"}}>$</span>
+          <input type="number" step="0.01" min="0" value={modal.amount||""} placeholder="0.00"
+            onChange={e=>setModal(prev=>({...prev,amount:e.target.value,chErrs:{...(prev.chErrs||{}),amount:null}}))}
+            style={{flex:1,padding:"12px 14px",border:"none",outline:"none",fontSize:15,fontFamily:"inherit",background:"transparent",color:"#1a1714"}}/>
+        </div>
+      </div>
+      {/* Due Date */}
+      <div style={{marginBottom:16}}>
+        <label style={{display:"block",fontSize:11,fontWeight:700,color:errs.dueDate?"#c45c4a":"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>
+          Due Date <span style={{color:"#c45c4a"}}>*</span>
+          {errs.dueDate&&<span style={{fontWeight:400,fontSize:10,marginLeft:6,color:"#c45c4a"}}>{errs.dueDate}</span>}
+        </label>
+        <input type="date" value={modal.dueDate||""} onChange={e=>setModal(prev=>({...prev,dueDate:e.target.value,chErrs:{...(prev.chErrs||{}),dueDate:null}}))}
+          style={{width:"100%",padding:"12px 14px",border:`2px solid ${errs.dueDate?"#c45c4a":"rgba(0,0,0,.08)"}`,borderRadius:10,fontSize:14,fontFamily:"inherit",outline:"none",background:"#fff",color:"#1a1714"}}/>
+      </div>
+      {/* Description — collapsible */}
+      {!showDesc
+        ?<button onClick={()=>setModal(p=>({...p,_showDesc:true}))}
+          style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:"#9a7422",fontSize:13,fontWeight:600,fontFamily:"inherit",padding:"2px 0",marginBottom:16}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Description
+        </button>
+        :<div style={{marginBottom:16}}>
+          <label style={{display:"block",fontSize:11,fontWeight:700,color:"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Description</label>
+          <input value={modal.desc||""} onChange={e=>setModal(p=>({...p,desc:e.target.value}))}
+            placeholder={`e.g. ${modal.category||"Rent"} — ${new Date().toLocaleString("default",{month:"long",year:"numeric"})}`}
+            autoFocus
+            style={{width:"100%",padding:"12px 14px",border:"2px solid rgba(0,0,0,.08)",borderRadius:10,fontSize:14,fontFamily:"inherit",outline:"none",background:"#fff",color:"#1a1714"}}/>
+        </div>
+      }
+      <div className="mft" style={{marginTop:8}}>
+        <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
+        <button className="btn btn-dk" onClick={submit} style={{background:"#1a1714",color:"#f5f0e8",fontWeight:700}}>Create</button>
+      </div>
     </div></div>);})()}
 
 
