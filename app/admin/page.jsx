@@ -8180,12 +8180,14 @@ export default function Page(){
               </div>
             </div>
             {/* Column headers */}
-            <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 150px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-              {["Due Date","Category / Description","Status","Amount","Deposit"].map((h,i)=><div key={i} style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>{h}</div>)}
+            <div style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 160px 90px 28px",padding:"8px 20px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
+              {["Due Date","Category / Description","Status","Deposit","Amount",""].map((h,i)=><div key={i} style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,textAlign:i===4?"right":"left"}}>{h}</div>)}
             </div>
             {tenantCharges.length===0&&<div style={{textAlign:"center",padding:32,color:"#6b5e52",fontSize:13}}>No charges yet.</div>}
             {tenantCharges.map(c=>{
               const st=chargeStatus(c);const rem=c.amount-c.amountPaid;
+              // Recurring icon for Rent, otherwise use catIcons
+              const isRecurring=c.category==="Rent";
               const ci=catIcons[c.category]||{d:"M9 11l3 3L22 4",color:"#6b5e52"};
               const isExpanded=expandedId===c.id;
               return(
@@ -8193,13 +8195,18 @@ export default function Page(){
                 {/* Main row — clickable to expand */}
                 <div
                   onClick={()=>setModal(prev=>({...prev,_expandedChargeId:prev._expandedChargeId===c.id?null:c.id}))}
-                  style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 90px 150px",padding:"12px 20px",alignItems:"center",cursor:"pointer",transition:"background .15s"}}
+                  style={{display:"grid",gridTemplateColumns:"100px 1fr 90px 160px 90px 28px",padding:"12px 20px",alignItems:"center",cursor:"pointer",transition:"background .15s"}}
                   onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.02)"}
                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  {/* Due Date */}
                   <div style={{fontSize:12,color:"#5c4a3a"}}>{fmtD(c.dueDate)}</div>
+                  {/* Category / Description */}
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{width:28,height:28,borderRadius:6,background:`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.1)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ci.color} strokeWidth="1.75"><path d={ci.d}/>{ci.d2&&<path d={ci.d2}/>}</svg>
+                    <div style={{width:28,height:28,borderRadius:6,background:isRecurring?"rgba(59,130,246,.08)":`rgba(${ci.color.replace(/[^0-9,]/g,"").slice(0,11)},.1)`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      {isRecurring
+                        ?<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        :<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ci.color} strokeWidth="1.75"><path d={ci.d}/>{ci.d2&&<path d={ci.d2}/>}</svg>
+                      }
                     </div>
                     <div>
                       <div style={{fontSize:12,fontWeight:600}}>{c.desc||c.category}</div>
@@ -8207,20 +8214,28 @@ export default function Page(){
                       {c.reminderActive&&<div style={{fontSize:9,color:"#d4a853",fontWeight:700}}>Reminding daily</div>}
                     </div>
                   </div>
+                  {/* Status */}
                   <div><span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:stBg[st]||"rgba(0,0,0,.04)",color:stTx[st]||"#6b5e52"}}>{stLabel[st]||st}</span></div>
-                  <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714"}}>{fmtS(c.amount)}</div>
+                  {/* Deposit info */}
                   <div style={{fontSize:10,color:"#5c4a3a"}}>
                     {(c.payments||[]).length>0?(
-                      <div>
-                        {(c.payments||[]).slice(0,1).map((p,i)=>(
-                          <div key={i}>
-                            <div style={{fontWeight:600}}>{p.date?fmtD(p.date):""}</div>
-                            <div style={{color:"#7a7067"}}>{p.method||""}</div>
-                            <div style={{color:"#7a7067",fontSize:9}}>Due: $0.00</div>
-                          </div>
-                        ))}
-                      </div>
+                      (c.payments||[]).slice(0,1).map((p,i)=>(
+                        <div key={i}>
+                          <div style={{fontWeight:600}}>{p.date?fmtD(p.date):""}</div>
+                          <div style={{color:"#7a7067"}}>{p.method||""}</div>
+                          <div style={{color:"#7a7067",fontSize:9}}>Due: $0.00</div>
+                        </div>
+                      ))
                     ):<span style={{color:"#8a7d74"}}>—</span>}
+                  </div>
+                  {/* Amount — right-aligned */}
+                  <div style={{fontSize:13,fontWeight:800,color:st==="pastdue"?"#c45c4a":st==="unpaid"?"#9a7422":"#1a1714",textAlign:"right"}}>{fmtS(c.amount)}</div>
+                  {/* Expand chevron */}
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9a7067" strokeWidth="2.5" strokeLinecap="round"
+                      style={{transform:isExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
                   </div>
                 </div>
                 {/* Expanded row */}
