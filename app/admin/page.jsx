@@ -4720,7 +4720,7 @@ export default function Page(){
                       </div>}
                     </div>
 
-                    <div className="pipe-sub">{(()=>{const p=props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";return(a.property||"—")+(addr?" · "+addr:"")+(a.room?" · "+a.room:"");})()}</div>
+                    <div className="pipe-sub">{(()=>{const p=a.termPropId?props.find(x=>x.id===a.termPropId):props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";const dispName=p?getPropDisplayName(p):(a.property||"—");return dispName+(addr&&!dispName.includes(addr)?" · "+addr:"")+(a.room&&!p?.units?.some(u=>(u.rentalMode||"byRoom")==="wholeHouse")?" · "+a.room:"");})()}</div>
 
                     {/* Invited — "Awaiting Reply" badge + re-invite button */}
                     {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
