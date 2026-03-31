@@ -340,7 +340,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","accounting"],
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","accounting"],couplesDefault:false,
   // Portfolio-wide late fee defaults — per-room lateConfig inherits these if fields are null
   lateFeeGraceDays:3,    // days after due before any fee applies
   lateFeeInitial:50,     // default one-time initial fee (flat $)
@@ -7375,6 +7375,21 @@ export default function Page(){
         </div></div>
 
         <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Occupancy Policy Default</h3>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Sets the default answer to "Allow a couple in this bedroom?" when reviewing new applicants. Can be overridden per-property or per-application.</p>
+          <div style={{display:"flex",gap:8}}>
+            {[{val:false,label:"No — 1 adult per bedroom",sub:"Default for most co-living setups"},{val:true,label:"Yes — couples OK by default",sub:"Can still deny per-applicant"}].map(({val,label,sub})=>(
+              <button key={String(val)} style={{flex:1,padding:"10px 12px",borderRadius:8,border:"2px solid "+((settings.couplesDefault||false)===val?(val?"rgba(74,124,89,.7)":"rgba(196,92,74,.5)"):"rgba(0,0,0,.08)"),background:(settings.couplesDefault||false)===val?(val?"rgba(74,124,89,.06)":"rgba(196,92,74,.04)"):"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}
+                onClick={()=>{const u={...settings,couplesDefault:val};setSettings(u);save("hq-settings",u);}}>
+                <div style={{fontSize:12,fontWeight:700,color:(settings.couplesDefault||false)===val?(val?"#2d6a3f":"#c45c4a"):"#1a1714",marginBottom:2}}>{label}</div>
+                <div style={{fontSize:10,color:"#6b5e52"}}>{sub}</div>
+              </button>
+            ))}
+          </div>
+          <div style={{fontSize:10,color:"#6b5e52",marginTop:8}}>Current portfolio default: <strong>{(settings.couplesDefault||false)?"Couples allowed":"1 adult per bedroom"}</strong></div>
+        </div></div>
+
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Payment Reminder Template</h3>
           <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
           <div className="fld">
@@ -11411,7 +11426,7 @@ export default function Page(){
                   <div style={{fontSize:10,color:"#6b5e52"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
                   {addr.reason&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
                   {addr.resType==="Other"&&addr.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>{addr.otherSituation}</div>}
-                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",gap:12}}>
+                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",gap:12"}}>
                     <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
                     <span>{addr.landlordEmail}</span>
                     <span>{addr.landlordPhone}</span>
@@ -11492,8 +11507,81 @@ export default function Page(){
         {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
       </div>}
 
+      {/* ── Couples Policy — own card, required before room assignment ── */}
+      {(()=>{
+        // Resolve default: app-level → property-level → global setting
+        const couplesTermProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
+        const resolvedDefault=a.allowCouples!==undefined?a.allowCouples:(couplesTermProp?.couplesDefault!==undefined?couplesTermProp.couplesDefault:(settings.couplesDefault||false));
+        const answered=a.allowCouples!==undefined;
+        const saveCouples=(val)=>{
+          setApps(prev=>prev.map(x=>x.id===a.id?{...x,allowCouples:val}:x));
+          setModal(prev=>({...prev,data:{...prev.data,allowCouples:val},_couplesScope:null}));
+        };
+        const saveScope=(val,scope)=>{
+          saveCouples(val);
+          if(scope==="property"&&couplesTermProp){
+            const updatedProps=props.map(p=>p.id===couplesTermProp.id?{...p,couplesDefault:val}:p);
+            setProps(updatedProps);save("hq-props",updatedProps);
+          } else if(scope==="portfolio"){
+            const updatedSettings={...settings,couplesDefault:val};
+            setSettings(updatedSettings);save("hq-settings",updatedSettings);
+          }
+          setModal(prev=>({...prev,_couplesScope:null,_couplesSaved:scope}));
+        };
+        const scope=modal._couplesScope;
+        const saved=modal._couplesSaved;
+        return(<div className="tp-card" style={{border:!answered?"2px solid rgba(212,168,83,.4)":"1px solid rgba(0,0,0,.03)",background:!answered?"rgba(212,168,83,.02)":"#fff"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+            <div>
+              <h3 style={{margin:0,fontSize:13}}>Occupancy Policy for This Bedroom</h3>
+              <div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>Required before sending invite. Controls what the applicant sees on the application form.</div>
+            </div>
+            {!answered&&<span style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"rgba(212,168,83,.15)",color:"#9a7422",flexShrink:0,marginLeft:8}}>Required</span>}
+            {answered&&<span style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#2d6a3f",flexShrink:0,marginLeft:8}}>&#10003; Set</span>}
+          </div>
+          <div style={{fontSize:11,fontWeight:600,color:"#3d3529",marginBottom:8}}>Allow a couple (2 adults) in this bedroom?</div>
+          <div style={{display:"flex",gap:8,marginBottom:answered?12:0}}>
+            {[{val:false,label:"No — 1 adult only"},{val:true,label:"Yes — couples welcome"}].map(({val,label})=>(
+              <button key={String(val)}
+                style={{flex:1,padding:"10px 8px",borderRadius:8,border:"2px solid "+(a.allowCouples===val?(val?"rgba(74,124,89,.8)":"rgba(196,92,74,.6)"):"rgba(0,0,0,.1)"),background:a.allowCouples===val?(val?"rgba(74,124,89,.08)":"rgba(196,92,74,.05)"):"#fff",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}
+                onClick={()=>saveCouples(val)}>
+                <div style={{fontSize:11,fontWeight:700,color:a.allowCouples===val?(val?"#2d6a3f":"#c45c4a"):"#3d3529"}}>{label}</div>
+              </button>
+            ))}
+          </div>
+          {answered&&!saved&&<>
+            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Save this as default?</div>
+            <div style={{display:"flex",flexDirection:"column",gap:4}}>
+              {[
+                {key:"once",label:"Just this application",sub:"One-off — don't change any defaults"},
+                {key:"property",label:"This property",sub:couplesTermProp?couplesTermProp.name:"Selected property"},
+                {key:"portfolio",label:"All properties (portfolio default)",sub:"Applies globally unless overridden per-property"},
+              ].map(opt=>(
+                <label key={opt.key} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:7,border:"1px solid "+(scope===opt.key?"rgba(212,168,83,.4)":"rgba(0,0,0,.06)"),background:scope===opt.key?"rgba(212,168,83,.04)":"transparent",cursor:"pointer"}}>
+                  <input type="radio" name={"couplesScope_"+a.id} checked={scope===opt.key} onChange={()=>setModal(prev=>({...prev,_couplesScope:opt.key}))} style={{accentColor:"#d4a853",flexShrink:0}}/>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{opt.label}</div>
+                    <div style={{fontSize:9,color:"#6b5e52"}}>{opt.sub}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            {scope&&<button className="btn btn-sm" style={{width:"100%",marginTop:8,background:"#d4a853",color:"#1a1714",border:"none",fontWeight:700}} onClick={()=>saveScope(a.allowCouples,scope)}>
+              Save {scope==="once"?"for this application only":scope==="property"?"to "+( couplesTermProp?.name||"property"):"as portfolio default"}
+            </button>}
+          </>}
+          {saved&&<div style={{fontSize:10,color:"#4a7c59",padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:6,marginTop:4}}>
+            &#10003; {saved==="once"?"Applied to this application only":saved==="property"?"Saved to "+(couplesTermProp?.name||"property"):saved==="portfolio"?"Saved as portfolio default":"Saved"}
+          </div>}
+          {!answered&&<div style={{fontSize:10,color:"#9a7422",marginTop:10,padding:"6px 10px",background:"rgba(212,168,83,.06)",borderRadius:6,border:"1px solid rgba(212,168,83,.15)"}}>
+            Answer this before assigning a room — it determines what the tenant sees on their application.
+          </div>}
+        </div>);
+      })()}
+
       {/* ── Room Assignment (all stages) ── */}
       {(()=>{
+        const couplesAnswered=a.allowCouples!==undefined;
         const moveInDate=a.termMoveIn||a.moveIn||"";
 
         // Helper: buffer-aware ready date using custom one-time buffer if set
@@ -11507,6 +11595,12 @@ export default function Page(){
         };
 
         const termProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
+        if(!couplesAnswered){
+          return(<div className="tp-card" style={{opacity:.5,pointerEvents:"none",userSelect:"none",position:"relative"}}>
+            <h3 style={{color:"#9a7422"}}>Room / Unit Assignment</h3>
+            <div style={{fontSize:11,color:"#9a7422"}}>Answer the occupancy policy question above to unlock room assignment.</div>
+          </div>);
+        }
         const allItems=termProp?leaseableItems(termProp):[];
         const termItem=a.termRoomId?allItems.find(i=>i.id===a.termRoomId):allItems.find(i=>i.name===a.room);
         const termRent=a.termRent!==undefined?a.termRent:(termItem?termItem.rent:0);
@@ -11857,21 +11951,6 @@ export default function Page(){
             </div>}
           </div>
           </>}
-
-          {/* Couples toggle — only for bedroom assignments */}
-          {selectedItem&&!selectedItem.isWholeUnit&&(!hasConflict||overrideConfirmed)&&<div style={{marginTop:8,padding:"10px 12px",background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.15)",borderRadius:8,marginBottom:8}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#1a1714",marginBottom:4}}>Allow a couple (2 adults) in this bedroom?</div>
-            <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>By default, 1 adult per bedroom. Enabling this changes the application form accordingly.</div>
-            <div style={{display:"flex",gap:6}}>
-              {[{val:false,label:"No — 1 adult only"},{val:true,label:"Yes — couple OK"}].map(({val,label})=>(
-                <button key={String(val)} className="btn btn-sm"
-                  style={{flex:1,background:a.allowCouples===val?"#1a1714":"transparent",color:a.allowCouples===val?"#f5f0e8":"#5c4a3a",border:"1px solid "+(a.allowCouples===val?"#1a1714":"rgba(0,0,0,.12)"),fontWeight:a.allowCouples===val?700:500}}
-                  onClick={()=>{setApps(prev=>prev.map(x=>x.id===a.id?{...x,allowCouples:val}:x));setModal(prev=>({...prev,data:{...prev.data,allowCouples:val}}));}}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>}
 
           {/* Rent / SD — only show when no unresolved conflict */}
           {(a.termRoomId||termItem?.id)&&(!hasConflict||overrideConfirmed)&&<div className="fr" style={{gap:8,marginBottom:0}}>
