@@ -10735,7 +10735,7 @@ export default function Page(){
     const inviteStep=modal.inviteStep||"configure";
     // Source of truth: prefer termPropId (ID-based) over a.property (name-based, may be stale)
     const invProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
-    const invRoomObj=a.termRoomId?(invProp?allRooms(invProp).find(r=>r.id===a.termRoomId):null)||props.flatMap(p=>allRooms(p)).find(r=>r.id===a.termRoomId):null;
+    const invRoomObj=a.termRoomId?(invProp?[...allRooms(invProp),...leaseableItems(invProp)].find(r=>r.id===a.termRoomId):null)||props.flatMap(p=>[...allRooms(p),...leaseableItems(p)]).find(r=>r.id===a.termRoomId):null;
     const invRoomProp=invRoomObj?props.find(p=>allRooms(p).some(r=>r.id===invRoomObj.id))||invProp:invProp;
     const invRent=a.termRent||(invRoomObj?invRoomObj.rent:0);
     const invMoveIn=a.moveInTbd?"TBD":(a.termMoveIn||a.moveIn||"");
@@ -11738,7 +11738,7 @@ export default function Page(){
         const allItems=termProp?leaseableItems(termProp):[];
         const termItem=a.termRoomId?allItems.find(i=>i.id===a.termRoomId):allItems.find(i=>i.name===a.room);
         const termRent=a.termRent!==undefined?a.termRent:(termItem?termItem.rent:0);
-        const saveTerm=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
+        const saveTerm=(key,val)=>{setApps(p=>{const u=p.map(x=>x.id===a.id?{...x,[key]:val}:x);save("hq-apps",u);return u;});setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
 
         // All rooms across ALL properties sorted by earliest availability — cross-property view
         const propRooms=props.flatMap(p=>leaseableItems(p).filter(i=>!i.ownerOccupied).map(i=>({
@@ -11868,7 +11868,7 @@ export default function Page(){
               if(item){
                 saveTerm("termRoomId",item.id);saveTerm("termPropId",item.propId);saveTerm("termRent",item.rent);saveTerm("termSD",item.rent);
                 // Auto-set property from the selected room
-                if(item.propName&&item.propObj){setApps(prev=>prev.map(x=>x.id===a.id?{...x,property:item.propObj.name}:x));setModal(prev=>({...prev,data:{...prev.data,property:item.propObj.name}}));}
+                if(item.propName&&item.propObj){setApps(prev=>{const u=prev.map(x=>x.id===a.id?{...x,property:item.propObj.name,termPropId:item.propId}:x);save("hq-apps",u);return u;});setModal(prev=>({...prev,data:{...prev.data,property:item.propObj.name,termPropId:item.propId}}));}
                 // Auto-fill move-in to this room's earliest ready date if not already set
                 const rdy=getReadyDate(item);
                 const curMoveIn=a.termMoveIn||a.moveIn||"";
