@@ -11412,7 +11412,7 @@ export default function Page(){
         const topPick=allCandidates[0]||null;
         const reqRoomItem=allCandidates.find(i=>i.isReqProp&&i.name===reqRoomName)||null;
         const betterExists=topPick&&reqRoomItem&&topPick.id!==reqRoomItem?.id&&topPick.totalScore>( reqRoomItem?.totalScore||0)+10;
-        const placementOpen=modal._placementOpen!==false;
+        const placementOpen=modal._placementOpen===true;
         const [sortBy,setSortBy]=[modal._placementSort||"score",(v)=>setModal(p=>({...p,_placementSort:v}))];
         const filterProp=modal._placementPropFilter||"all";
         const setFilterProp=(v)=>setModal(p=>({...p,_placementPropFilter:v}));
@@ -11444,18 +11444,26 @@ export default function Page(){
 
         return(<div className="tp-card" style={{padding:0,overflow:"hidden",border:"1px solid rgba(74,124,89,.15)"}}>
           {/* Header */}
-          <div style={{padding:"12px 16px",background:"rgba(74,124,89,.04)",borderBottom:"1px solid rgba(74,124,89,.1)",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}} onClick={()=>setModal(p=>({...p,_placementOpen:!placementOpen}))}>
-            <div>
-              <div style={{fontSize:13,fontWeight:800,color:"#1a1714"}}>Room Placement</div>
-              <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>
-                {currentAssigned?"Assigned: "+currentAssigned.name+" — "+currentAssigned.propLabel:topPick?"Best fit: "+topPick.name+" — "+topPick.propLabel:"No rooms available"}
+          <div style={{padding:"14px 16px",background:"rgba(74,124,89,.04)",borderBottom:placementOpen?"1px solid rgba(74,124,89,.1)":"none"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:placementOpen?0:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:7}}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                <span style={{fontSize:13,fontWeight:800,color:"#1a1714"}}>AI Room Placement</span>
+                {currentAssigned&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#2d6a3f"}}>&#10003; Assigned</span>}
+                {betterExists&&!currentAssigned&&!placementOpen&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.15)",color:"#9a7422"}}>Better room available</span>}
               </div>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:placementOpen?"rotate(180deg)":"none",transition:"transform .2s",cursor:"pointer",marginTop:3}} onClick={()=>setModal(p=>({...p,_placementOpen:!placementOpen}))}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              {betterExists&&!currentAssigned&&<span style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"rgba(212,168,83,.15)",color:"#9a7422"}}>Better room available</span>}
-              {currentAssigned&&<span style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#2d6a3f"}}>&#10003; Assigned</span>}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:placementOpen?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
+            {!placementOpen&&<>
+              <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.5,marginBottom:10}}>
+                Scores every available room across your portfolio against this applicant — vacancy gap, move-in timing, and room type — and surfaces the best fit.
+                {currentAssigned&&<span style={{color:"#4a7c59",fontWeight:600}}> Currently assigned: {currentAssigned.name} at {currentAssigned.propLabel}.</span>}
+              </div>
+              <button onClick={()=>setModal(p=>({...p,_placementOpen:true}))}
+                style={{fontSize:10,fontWeight:700,padding:"6px 14px",borderRadius:7,border:"1px solid rgba(74,124,89,.4)",background:"rgba(74,124,89,.08)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+                Use AI Placement
+              </button>
+            </>}
           </div>
 
           {placementOpen&&<div style={{padding:"12px 16px"}}>
@@ -11781,7 +11789,7 @@ export default function Page(){
         // Lock room card if a bedroom is selected but couples policy not yet answered
         if(selectedItem&&!selectedItem.isWholeUnit&&a.allowCouples===undefined){
           return(<div className="tp-card" style={{opacity:.45,pointerEvents:"none",userSelect:"none"}}>
-            <h3 style={{color:"#9a7422"}}>Room / Unit Assignment</h3>
+            <h3 style={{color:"#9a7422"}}>Manual Room / Unit Assignment</h3>
             <div style={{fontSize:11,color:"#9a7422",marginTop:4}}>Answer the occupancy policy question above to continue.</div>
           </div>);
         }
@@ -11838,7 +11846,7 @@ export default function Page(){
         return(
         <div className="tp-card" style={{border:"2px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:skipRoom?0:12}}>
-            <h3 style={{margin:0,color:"#9a7422"}}>Room / Unit Assignment</h3>
+            <h3 style={{margin:0,color:"#9a7422"}}>Manual Room / Unit Assignment</h3>
             <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",userSelect:"none"}}
               onClick={()=>{
                 const next=!skipRoom;
