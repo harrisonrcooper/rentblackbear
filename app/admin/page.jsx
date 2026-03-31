@@ -11265,20 +11265,20 @@ export default function Page(){
     const targetProp=props.find(p=>p.name===a.property);
     const targetRoom=targetProp?allRooms(targetProp).find(r=>r.name===a.room&&r.st==="vacant"):null;
     const mf=[];var nm3=(a.name||"").toLowerCase();
+    const _mfSeen=new Set();
     archive.forEach(t=>{
       if(((t.name||"").toLowerCase()===nm3)||((t.email||"").toLowerCase()===(a.email||"").toLowerCase())){
         const isEviction=t.reason&&(t.reason.toLowerCase().includes("evict")||t.reason.toLowerCase().includes("forcibly"));
         const isEarly=t.reason&&(t.reason.toLowerCase().includes("early")||t.reason.toLowerCase().includes("broke"));
-        mf.push({
-          type:isEviction?"evicted":isEarly?"early":"past",
-          label:(isEviction?"Previously evicted":isEarly?"Broke lease early":"Returning tenant")+" — "+(t.propName||"unknown")+(t.reason?" ("+t.reason+")":"")
-        });
+        const _type=isEviction?"evicted":isEarly?"early":"past";
+        const _key=_type+"|"+(t.propName||"unknown");
+        if(!_mfSeen.has(_key)){_mfSeen.add(_key);mf.push({type:_type,label:(isEviction?"Previously evicted":isEarly?"Broke lease early":"Returning tenant")+" — "+(t.propName||"unknown")});}
       }
     });
     apps.filter(x=>x.id!==a.id&&x.status==="denied").forEach(x=>{
       const nameMatch=(x.name||"").toLowerCase()===nm3&&nm3.length>0;
       const emailMatch=(x.email||"").toLowerCase()===(a.email||"").toLowerCase()&&(a.email||"").length>0;
-      if(emailMatch||(nameMatch&&emailMatch))mf.push({type:"denied",label:"Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});
+      if((emailMatch||(nameMatch&&emailMatch))&&!_mfSeen.has("denied")){{_mfSeen.add("denied");mf.push({type:"denied",label:"Previously denied"+(x.deniedReason?" — "+x.deniedReason:"")});}}
     });
     const reqs=[{key:"bgCheck",label:"Background Check"},{key:"creditScore",label:"Credit Check"},{key:"incomeVerified",label:"Income Verification"},{key:"refs",label:"References"},{key:"idVerified",label:"ID Verified"}];
     const waived=a.waived||[];
