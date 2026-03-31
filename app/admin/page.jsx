@@ -11489,7 +11489,8 @@ export default function Page(){
             const propBonus=isReqProp?20:0;
             const totalScore=gapScore+moveInScore+typeScore+propBonus;
             const propAddr=p.addr||"";
-            const propLabel=getPropDisplayName(p)+(propAddr?" — "+propAddr:"");
+            const _dispName=getPropDisplayName(p);
+            const propLabel=_dispName+(propAddr&&!_dispName.includes(propAddr)?" — "+propAddr:"");
             return{...i,propId:p.id,propName:p.name,propLabel,propAddr,isReqProp,readyDate,gapScore,moveInScore,typeScore,propBonus,totalScore,buf};
           });
         }).filter(i=>i.readyDate||i.st==="vacant").sort((a,b)=>b.totalScore-a.totalScore);
@@ -12915,10 +12916,15 @@ export default function Page(){
       </div>
       </div>{/* end footer */}
       <div className="mft">
-        {a.status==="invited"&&<button className="btn btn-gold" style={{flex:1,fontWeight:800}} onClick={()=>setModal({type:"inviteApp",data:a})}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:6,verticalAlign:"middle"}}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        {a.status==="invited"&&<button
+          style={{flex:1,padding:"10px 20px",borderRadius:9,border:"none",background:"#1a1714",color:"#d4a853",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",letterSpacing:.3,transition:"all .18s",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}
+          onMouseEnter={e=>{e.currentTarget.style.background="#d4a853";e.currentTarget.style.color="#1a1714";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 6px 18px rgba(212,168,83,.35)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="#1a1714";e.currentTarget.style.color="#d4a853";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}
+          onClick={()=>setModal({type:"inviteApp",data:a})}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           Re-send Invite
         </button>}
+        <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,data:a,reason:""})}>Deny</button>
         <button className="btn btn-out" onClick={()=>setModal(null)}>Close</button>
       </div>
     </div>);})()}</div>);})()}
