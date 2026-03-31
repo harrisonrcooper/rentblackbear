@@ -10657,12 +10657,17 @@ export default function Page(){
     const incomeLabel={"none":"None","income-only":"Income Verify (+$10)","income-employment":"Income + Employer (+$15)"};
     const inviteStep=modal.inviteStep||"configure";
     // Source of truth: everything comes from app modal data, not Configure Invite dropdowns
-    const invProp=a.property?props.find(p=>p.name===a.property):null;
-    const invRoomObj=a.termRoomId&&invProp?allRooms(invProp).find(r=>r.id===a.termRoomId):null;
+    // Always prefer termPropId (ID-based, set at room assignment) over a.property (name-based, may be stale from pre-screen)
+    const invProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
+    // Search invProp first, then fall back to searching all props in case of property mismatch
+    const invRoomObj=a.termRoomId?(invProp?allRooms(invProp).find(r=>r.id===a.termRoomId):null)||props.flatMap(p=>allRooms(p)).find(r=>r.id===a.termRoomId):null;
+    // Resolve the correct property from the room if invProp was wrong
+    const invRoomProp=invRoomObj?props.find(p=>allRooms(p).some(r=>r.id===invRoomObj.id))||invProp:invProp;
     const invRent=a.termRent||(invRoomObj?invRoomObj.rent:0);
     const invMoveIn=a.moveInTbd?"TBD":(a.termMoveIn||a.moveIn||"");
     const invRoomLabel=a.skipRoomAssign?"Assign at lease":(invRoomObj?invRoomObj.name:(a.room||"Not specified"));
     const invModeLabel=a.skipRoomAssign?"Assign at lease":invRoomObj?"Room locked":"Not specified";
+    const invPropName=invRoomProp?(getPropDisplayName?getPropDisplayName(invRoomProp):invRoomProp.name):(a.property||"");
     const link=(settings.siteUrl||"https://rentblackbear.com")+"/apply?invite="+a.id;
     const doShake=shakeModal;
 
@@ -10685,9 +10690,13 @@ export default function Page(){
         status:"invited",lastContact:TODAY.toISOString().split("T")[0],
         screenPkg:pkg,incomeAdd,appFee:totalFee,
         waiverReason:modal.waiverReason||"",
-        property:a.property||"",
+        // Use resolved prop name from actual assigned room — never the stale a.property
+        property:invPropName||a.property||"",
         room:invRoomLabel,
         inviteRent:invRent,inviteRoomId:a.termRoomId||null,
+        // These are the canonical fields read by the apply page for room/property display
+        inviteRoomName:a.skipRoomAssign?"":invRoomLabel,
+        invitePropName:invPropName,
         inviteRoomMode:a.skipRoomAssign?"none":"locked",inviteLink:link,
         allowCouples:a.allowCouples||false,
         lastContact:TODAY.toISOString().split("T")[0],

@@ -334,7 +334,7 @@ export default function ApplyPage(){
         email:inv.email||"",
         phone:inv.phone||"",
         moveIn:toISODate(inv.termMoveIn||inv.moveIn||""),
-        preferredProperty:inv.property||"",
+        preferredProperty:inv.invitePropName||inv.property||"",
         selectedRoom:inv.termRoomId||"",
         income:inv.income||"",
         source:inv.source||"",
@@ -898,7 +898,7 @@ export default function ApplyPage(){
         {/* Lease Terms Preview */}
         {(()=>{
           const roomName=invite?.inviteRoomName||(d.selectedRoom&&props_.flatMap(p=>allRooms(p)).find(r=>r.id===d.selectedRoom)?.name)||null;
-          const propName=invite?.invitePropName||d.preferredProperty||null;
+          const propName=invite?.invitePropName||(d.selectedRoom&&props_.find(p=>allRooms(p).some(r=>r.id===d.selectedRoom))?.name)||d.preferredProperty||null;
           const rent=invite?.inviteRent||(d.selectedRoom&&props_.flatMap(p=>allRooms(p)).find(r=>r.id===d.selectedRoom)?.rent)||null;
           const moveIn=d.moveIn;
           if(!rent||!moveIn)return null;
