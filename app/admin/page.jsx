@@ -3462,14 +3462,22 @@ export default function Page(){
                   };
                   return(<div className="tp-card"><h3>Your Documents</h3>
                     {tDocs.filter(x=>x.url).length===0&&!pendingId&&!pendingIncome&&<div style={{color:"#6b5e52",fontSize:12,padding:"8px 0"}}>No documents uploaded yet.</div>}
-                    {tDocs.filter(x=>x.url).map((doc,i)=>{
+                    {tDocs.filter(x=>x.url&&!x.tenantHidden).map((doc,i)=>{
                       const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
-                      return(<div key={doc.id||i} className="tp-row" style={{alignItems:"center"}}>
-                        <span className="tp-label">{doc.label}</span>
+                      const removeDoc=()=>{
+                        const updatedApp={...tApp,appDocs:(tApp.appDocs||[]).map(x=>x.id===doc.id?{...x,tenantHidden:true}:x)};
+                        const updatedApps=apps.map(x=>x.id===tApp.id?updatedApp:x);
+                        setApps(updatedApps);save("hq-apps",updatedApps);
+                      };
+                      return(<div key={doc.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           {!isPdf&&<img src={doc.url} alt={doc.label} style={{width:40,height:30,objectFit:"cover",borderRadius:4,border:"1px solid rgba(0,0,0,.1)"}}/>}
-                          <a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:700}}>View</a>
+                          <div>
+                            <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{doc.label}</div>
+                            <a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:700}}>View</a>
+                          </div>
                         </div>
+                        <button onClick={removeDoc} style={{background:"none",border:"none",color:"#c45c4a",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(196,92,74,.2)"}}>Remove</button>
                       </div>);
                     })}
                     {(pendingId||pendingIncome)&&<>
@@ -12270,20 +12278,54 @@ export default function Page(){
         const flag=a.docsFlag||{};
         const hasAny=docs.length>0||flag.idUploadLater||flag.incomeUploadLater;
         if(!hasAny)return null;
+        const deleteDocFromStorage=async(doc)=>{
+          // Extract path from public URL: .../public/applicant-docs/{path}
+          const marker="/public/applicant-docs/";
+          const idx=doc.url.indexOf(marker);
+          if(idx===-1)return false;
+          const path=doc.url.slice(idx+marker.length);
+          const r=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
+            method:"DELETE",
+            headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY},
+          });
+          return r.ok||r.status===404;
+        };
         const DocCard=({doc})=>{
           const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
           const isUploaded=!!doc?.url;
-          return(<div style={{marginBottom:10,borderRadius:9,overflow:"hidden",border:"1px solid rgba(0,0,0,.07)"}}>
-            <div style={{padding:"8px 10px",background:"rgba(0,0,0,.02)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          const handleDelete=()=>{
+            showConfirm({
+              title:"Delete Document Permanently?",
+              body:"This will permanently delete "+doc.label+" from Supabase Storage. This cannot be undone. The tenant will not be able to recover it.",
+              confirmLabel:"Delete Permanently",
+              danger:true,
+              onConfirm:async()=>{
+                const ok=await deleteDocFromStorage(doc);
+                if(ok){
+                  const updatedDocs=(a.appDocs||[]).filter(x=>x.id!==doc.id);
+                  const updatedApp={...a,appDocs:updatedDocs};
+                  const updatedApps=apps.map(x=>x.id===a.id?updatedApp:x);
+                  setApps(updatedApps);save("hq-apps",updatedApps);
+                  setModal(prev=>({...prev,data:{...prev.data,appDocs:updatedDocs}}));
+                } else {
+                  showAlert({title:"Delete Failed",body:"Could not delete the file from storage. Check your Supabase permissions and try again."});
+                }
+              }
+            });
+          };
+          return(<div style={{marginBottom:10,borderRadius:9,overflow:"hidden",border:doc.tenantHidden?"1px dashed rgba(196,92,74,.3)":"1px solid rgba(0,0,0,.07)"}}>
+            <div style={{padding:"8px 10px",background:doc.tenantHidden?"rgba(196,92,74,.03)":"rgba(0,0,0,.02)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{doc.label}</div>
                 {isUploaded&&<div style={{fontSize:9,color:"#6b5e52"}}>{doc.name}</div>}
+                {doc.tenantHidden&&<div style={{fontSize:9,color:"#c45c4a",fontWeight:600,marginTop:1}}>Hidden by tenant</div>}
               </div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 {isUploaded
                   ?<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#2d6a3f"}}>Uploaded</span>
                   :<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Pending</span>}
                 {isUploaded&&<a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-out btn-sm" style={{fontSize:9,padding:"3px 8px",textDecoration:"none"}}>View</a>}
+                {isUploaded&&<button onClick={handleDelete} style={{background:"none",border:"1px solid rgba(196,92,74,.25)",borderRadius:5,color:"#c45c4a",fontSize:9,cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"3px 7px"}}>Delete</button>}
               </div>
             </div>
             {isUploaded&&!isPdf&&<img src={doc.url} alt={doc.label} style={{width:"100%",maxHeight:180,objectFit:"cover",display:"block",borderTop:"1px solid rgba(0,0,0,.05)"}}/>}

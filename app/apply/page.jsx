@@ -321,6 +321,18 @@ export default function ApplyPage(){
     const ext=(file.name.split(".").pop()||"pdf").toLowerCase();
     return date+"_"+name+"_"+docType+appId+"."+ext;
   };
+  const deleteDoc=async(doc)=>{
+    if(doc.url){
+      const path=doc.url.split("/applicant-docs/")[1];
+      if(path){
+        await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
+          method:"DELETE",
+          headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY},
+        }).catch(()=>{});
+      }
+    }
+    setD(p=>({...p,appDocs:p.appDocs.filter(x=>x.id!==doc.id)}));
+  };
   const uploadDoc=async(file,type,label)=>{
     const tempId=Math.random().toString(36).slice(2);
     // Replace existing doc of same type for ID (only one front, one back), stack for PayStub
@@ -764,7 +776,7 @@ export default function ApplyPage(){
                         <span style={{fontSize:9,color:"rgba(74,124,89,.9)",fontWeight:700}}>Uploaded</span>
                       </div>
                     </div>}
-                  <button style={{position:"absolute",top:-8,right:-8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>setD(p=>({...p,appDocs:p.appDocs.filter(x=>x.id!==doc.id)}))}>x</button>
+                  <button style={{position:"absolute",top:-8,right:-8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
                 </div>}
                 {!doc?.uploading&&!doc?.url&&<div className="upload" onClick={()=>ref_?.current?.click()} style={{marginBottom:6}}>
                   <div className="upload-ic">📷</div>
@@ -858,7 +870,7 @@ export default function ApplyPage(){
                     {doc.url&&<a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:600}}>View</a>}
                   </div>
                 </>}
-                <button style={{background:"none",border:"none",color:"#c45c4a",fontSize:16,cursor:"pointer",fontFamily:"inherit",padding:"0 4px",lineHeight:1}} onClick={()=>setD(p=>({...p,appDocs:p.appDocs.filter(x=>x.id!==doc.id)}))}>x</button>
+                <button style={{background:"none",border:"none",color:"#c45c4a",fontSize:16,cursor:"pointer",fontFamily:"inherit",padding:"0 4px",lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
               </div>);
             })}
             <div className="upload" onClick={()=>payRef.current?.click()}>
