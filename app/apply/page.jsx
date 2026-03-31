@@ -104,9 +104,9 @@ function DateDrop({value,onChange,hasErr,mode="movein"}){
 // ─── Styles ──────────────────────────────────────────────────────
 const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-:root{--dk:#1a1714;--cr:#f5f0e8;--ac:#d4a853;--mt:#c4a882;--gn:#4a7c59;--rd:#c45c4a;--bg:#faf9f7}
+:root{--dk:#1a1714;--cr:#f5f0e8;--ac:#d4a853;--mt:#c4a882;--gn:#4a7c59;--rd:#c45c4a;--bg:#faf9f7;color-scheme:light}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d3529;-webkit-font-smoothing:antialiased}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d3529;-webkit-font-smoothing:antialiased;color-scheme:light}
 .app-wrap{min-height:100vh;display:flex;flex-direction:column}
 .app-header{background:var(--dk);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
 .app-logo{color:var(--cr);font-family:'DM Serif Display',serif;font-size:16px;display:flex;align-items:center;gap:8px}
