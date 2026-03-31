@@ -10094,7 +10094,7 @@ export default function Page(){
           </div>
         </>);
       })()}
-    </div>);})()}
+    </div></div>);})()}
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
@@ -12770,7 +12770,8 @@ export default function Page(){
           {docs.length===0&&!flag.idUploadLater&&!flag.incomeUploadLater&&<div style={{fontSize:11,color:"#aaa",fontStyle:"italic"}}>No documents uploaded yet.</div>}
         </div>);
       })()}
-
+        </div>}
+      </div>);})()}
 
       </div>{/* end right column */}
       </div>{/* end two-column body */}
