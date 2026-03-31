@@ -10735,8 +10735,9 @@ export default function Page(){
     const inviteStep=modal.inviteStep||"configure";
     // Source of truth: prefer termPropId (ID-based) over a.property (name-based, may be stale)
     const invProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
-    const invRoomObj=a.termRoomId?(invProp?[...allRooms(invProp),...leaseableItems(invProp)].find(r=>r.id===a.termRoomId):null)||props.flatMap(p=>[...allRooms(p),...leaseableItems(p)]).find(r=>r.id===a.termRoomId):null;
-    const invRoomProp=invRoomObj?props.find(p=>allRooms(p).some(r=>r.id===invRoomObj.id))||invProp:invProp;
+    const _searchProps=invProp?[invProp]:props;
+    const invRoomObj=a.termRoomId?_searchProps.flatMap(p=>[...allRooms(p),...leaseableItems(p)]).find(r=>r.id===a.termRoomId)||null:null;
+    const invRoomProp=invRoomObj?(invRoomObj.propId?props.find(p=>p.id===invRoomObj.propId):null)||props.find(p=>allRooms(p).some(r=>r.id===invRoomObj.id))||invProp:invProp;
     const invRent=a.termRent||(invRoomObj?invRoomObj.rent:0);
     const invMoveIn=a.moveInTbd?"TBD":(a.termMoveIn||a.moveIn||"");
     const invRoomLabel=a.skipRoomAssign?"Assign at lease":(invRoomObj?invRoomObj.name:(a.room||"Not specified"));
@@ -11490,7 +11491,7 @@ export default function Page(){
             const totalScore=gapScore+moveInScore+typeScore+propBonus;
             const propAddr=p.addr||"";
             const _dispName=getPropDisplayName(p);
-            const propLabel=_dispName+(propAddr&&!_dispName.includes(propAddr)?" — "+propAddr:"");
+            const propLabel=_dispName;
             return{...i,propId:p.id,propName:p.name,propLabel,propAddr,isReqProp,readyDate,gapScore,moveInScore,typeScore,propBonus,totalScore,buf};
           });
         }).filter(i=>i.readyDate||i.st==="vacant").sort((a,b)=>b.totalScore-a.totalScore);
@@ -11794,7 +11795,7 @@ export default function Page(){
           const ready=getReadyDate(item);
           const buf=item.itemTurnoverDays||0;
           const propPart=item.propName?" — "+item.propName:"";
-          let label=(item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":"")+item.name+(item.isWholeUnit?" (Whole Unit)":"")+propPart+" — "+fmtS(item.id===(a.termRoomId||termItem?.id)?termRent:item.rent)+"/mo";
+          let label=(item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":"")+item.name+(item.isWholeUnit&&item.name!=="Whole Unit"?" (Whole Unit)":"")+propPart+" — "+fmtS(item.id===(a.termRoomId||termItem?.id)?termRent:item.rent)+"/mo";
           if(!ready)label+=" · Available now";
           else if(buf>0)label+=" · Ready "+fmtD(ready)+" (lease ends "+fmtD(item.le)+" + "+buf+"d buffer)";
           else label+=" · Ready "+fmtD(ready)+" (lease ends "+fmtD(item.le)+")";
