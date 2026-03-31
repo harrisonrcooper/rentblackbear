@@ -285,6 +285,8 @@ export default function ApplyPage(){
     employers:[],curEmployerForm:null,unemployed:false,
     // References
     empRefName:"",empRefPhone:"",empRefRelation:"",persRefName:"",persRefPhone:"",persRefRelation:"",
+    // Partner (couples-allowed bedrooms)
+    partnerName:"",partnerEmail:"",
     // Emergency
     emergName:"",emergPhone:"",emergRelation:"",
     // Room
@@ -368,7 +370,7 @@ export default function ApplyPage(){
       const appInfoProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
       const appInfoInvitedRoom=invite?.termRoomId?allRooms(appInfoProp||{}).find(r=>r.id===invite.termRoomId):null;
       const appInfoWholeUnit=appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||appInfoProp.rentalMode==="wholeHouse":false);
-      if(!appInfoWholeUnit&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
+      if(!appInfoWholeUnit&&!invite?.allowCouples&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
       d.coApplicants.forEach((ca,i)=>{if(ca.email&&!ca.email.includes("@"))e["coApp_"+i+"_email"]="Valid email address required";});
     }
     if(s==="personal"){
@@ -519,7 +521,8 @@ export default function ApplyPage(){
         {(()=>{
           const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
           const aInvitedRoom=invite?.termRoomId?allRooms(aProp||{}).find(r=>r.id===invite.termRoomId):null;
-          const isWhole=aInvitedRoom?.isWholeUnit||(aProp?((aProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||aProp.rentalMode==="wholeHouse"):false);
+          const isWhole=aInvitedRoom?.isWholeUnit===true;
+          const allowCouples=!isWhole&&(invite?.allowCouples===true);
           // Whole-unit gets co-applicant list; per-bedroom always gets acknowledgment
           if(isWhole){
             // Whole-unit: list all adults who will be staying
@@ -557,6 +560,27 @@ export default function ApplyPage(){
               </div>
             </div>);
           }
+          // Couples allowed — show partner info section
+          if(allowCouples){
+            return(<div style={{marginBottom:20,background:"rgba(74,124,89,.03)",border:"2px solid rgba(74,124,89,.2)",borderRadius:12,padding:16}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>Couples Welcome</div>
+              <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:14}}>
+                This bedroom is approved for <strong>2 adults</strong>. Please provide your partner's info below so we can include them on the lease. Both adults will share the same lease &#8212; your partner does not need a separate application.
+              </div>
+              <div style={{background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.07)",padding:12,marginBottom:12}}>
+                <div style={{fontSize:10,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Partner / Co-Occupant</div>
+                <div className="fld-row">
+                  <div className="fld"><label>First Name</label><input value={d.partnerName.split(" ")[0]||""} onChange={e=>upd("partnerName",e.target.value+" "+(d.partnerName.split(" ").slice(1).join(" ")||"").trim())} placeholder="First name"/></div>
+                  <div className="fld"><label>Last Name</label><input value={d.partnerName.split(" ").slice(1).join(" ")||""} onChange={e=>upd("partnerName",(d.partnerName.split(" ")[0]||"")+" "+e.target.value)} placeholder="Last name"/></div>
+                </div>
+                <div className="fld" style={{marginBottom:0}}><label>Email Address</label><input type="email" value={d.partnerEmail} onChange={e=>upd("partnerEmail",e.target.value)} placeholder="partner@email.com"/></div>
+              </div>
+              <div style={{fontSize:11,color:"#5c4a3a",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:6,padding:"8px 10px"}}>
+                Max 2 adults permitted in this bedroom under this lease.
+              </div>
+            </div>);
+          }
+
           // Per-bedroom (default for all by-room rentals and walk-ins) — always show acknowledgment
           const hasErr=!!errors.occupancyAck;
           return(<div style={{marginBottom:20,background:hasErr?"rgba(196,92,74,.04)":"rgba(212,168,83,.03)",border:"2px solid "+(hasErr?"rgba(196,92,74,.35)":"rgba(212,168,83,.2)"),borderRadius:12,padding:16,animation:hasErr?"shake .4s ease":"none"}}>
@@ -843,6 +867,7 @@ export default function ApplyPage(){
           <div className="rev-row"><span className="rev-label">Phone</span><span className="rev-val">{d.phone}</span></div>
           <div className="rev-row"><span className="rev-label">DOB</span><span className="rev-val">{d.dob}</span></div>
           <div className="rev-row"><span className="rev-label">Move-in</span><span className="rev-val">{d.moveIn||"—"}</span></div>
+          {invite?.allowCouples&&d.partnerName.trim()&&<div className="rev-row"><span className="rev-label">Partner</span><span className="rev-val">{d.partnerName}{d.partnerEmail?" · "+d.partnerEmail:""}</span></div>}
         </div>
         {appType==="tenant"&&<>
           <div className="rev-sec"><h3>🏠 Rental History <span className="rev-edit" onClick={()=>setStep("rental")}>Edit</span></h3>
@@ -1003,6 +1028,7 @@ export default function ApplyPage(){
               passcode:d.doorCode||null,
               status:"applied",submitted:now,lastContact:now,
               bgCheck:"not-started",creditScore:"—",refs:"not-started",
+              partner:d.partnerName.trim()?{name:d.partnerName.trim(),email:d.partnerEmail.trim()}:null,
               source:"Online Application",applicationData:d,
               screenPkg:"credit-bg",appFee:baseFee,
               history:[{from:"new",to:"applied",date:now,note:"Walk-in application via apply page"}]
