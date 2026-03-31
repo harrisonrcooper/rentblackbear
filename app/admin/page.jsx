@@ -11403,7 +11403,11 @@ export default function Page(){
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
           Score breakdown
         </div>
-        {[["Income",a.income?Math.min(95,Math.round((parseInt((a.income+"").replace(/[^0-9]/g,""))||0)/55)):50],["Credit",a.creditScore&&a.creditScore!=="—"?Math.min(100,Math.round((parseInt(a.creditScore)||0)/7.5)):0],["Background",a.bgCheck==="passed"?100:a.bgCheck==="failed"?0:20],["References",a.refs==="verified"?100:a.refs==="pending"?50:10],["Rental hist.",80]].map(([lbl,val])=>(
+        {["new-lead","pre-screened","called","invited"].includes(a.status)
+          ?<div style={{padding:"8px 10px",borderRadius:6,background:"#f0ede8",border:"1px solid #e4dfd8"}}>
+            <div style={{fontSize:11,color:"#9a8878",fontStyle:"italic"}}>N/A — score populated after application is submitted and screened.</div>
+          </div>
+          :[["Income",a.income?Math.min(95,Math.round((parseInt((a.income+"").replace(/[^0-9]/g,""))||0)/55)):50],["Credit",a.creditScore&&a.creditScore!=="—"?Math.min(100,Math.round((parseInt(a.creditScore)||0)/7.5)):0],["Background",a.bgCheck==="passed"?100:a.bgCheck==="failed"?0:20],["References",a.refs==="verified"?100:a.refs==="pending"?50:10],["Rental hist.",80]].map(([lbl,val])=>(
           <div key={lbl} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
             <div style={{fontSize:11,color:"#6b5e52",width:80,flexShrink:0}}>{lbl}</div>
             <div style={{flex:1,height:4,background:"#e4dfd8",borderRadius:2,overflow:"hidden"}}>
