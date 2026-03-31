@@ -11856,7 +11856,7 @@ export default function Page(){
               <div style={{width:30,height:16,borderRadius:8,background:skipRoom?"rgba(74,124,89,.2)":"rgba(0,0,0,.1)",position:"relative",transition:"background .15s",flexShrink:0}}>
                 <div style={{position:"absolute",top:2,left:skipRoom?14:2,width:12,height:12,borderRadius:"50%",background:skipRoom?"#4a7c59":"#aaa",transition:"all .15s"}}/>
               </div>
-              <span style={{fontSize:10,fontWeight:600,color:skipRoom?"#4a7c59":"#6b5e52",transition:"color .15s"}}>Assign at lease</span>
+              <span style={{fontSize:10,fontWeight:600,color:skipRoom?"#4a7c59":"#6b5e52",transition:"color .15s"}}>Assign room at lease signing</span>
             </label>
           </div>
           {skipRoom&&<div style={{fontSize:11,color:"#4a7c59",padding:"7px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
@@ -11876,7 +11876,7 @@ export default function Page(){
                   <div style={{width:26,height:14,borderRadius:7,background:a.moveInTbd?"rgba(212,168,83,.3)":"rgba(0,0,0,.1)",position:"relative",transition:"background .15s",flexShrink:0}}>
                     <div style={{position:"absolute",top:1,left:a.moveInTbd?13:1,width:12,height:12,borderRadius:"50%",background:a.moveInTbd?"#d4a853":"#aaa",transition:"all .15s"}}/>
                   </div>
-                  <span style={{fontSize:9,fontWeight:700,color:a.moveInTbd?"#9a7422":"#6b5e52",textTransform:"uppercase",letterSpacing:.3}}>TBD</span>
+                  <span style={{fontSize:9,fontWeight:700,color:a.moveInTbd?"#9a7422":"#6b5e52",letterSpacing:.1}}>Move-in date is TBD</span>
                 </label>
               </div>
               {a.moveInTbd
@@ -12151,7 +12151,7 @@ export default function Page(){
       })()}
       {/* ── Mini Tenant Timeline ── */}
       {(()=>{
-        const tlOpen=modal._appTlOpen!==false;
+        const tlOpen=modal._appTlOpen===true;
         const tlView=modal._appTlView||"gantt";
         const tlMonthOff=modal._tlMonthOffset||0;
         // Resolve prop from: termRoomId (checks rooms AND whole units) → property name → null (show all)
@@ -12227,17 +12227,18 @@ export default function Page(){
         const tlSortedRooms=tlSortFn(tlFilteredRooms);
         return(
         <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none",cursor:"pointer"}} onClick={()=>setModal(p=>({...p,_appTlOpen:!tlOpen}))}>
             <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-              {/* Property filter pills */}
-              {(()=>{
+              <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>Availability Timeline</span>
+              {/* Property filter pills — only when open */}
+              {tlOpen&&(()=>{
                 const filterOpts=[
                   ...(tlProp?[{id:"assigned",label:tlHeaderLabel||getPropDisplayName(tlProp)}]:[]),
                   ...props.filter(p=>!tlProp||p.id!==tlProp.id).map(p=>({id:p.id,label:p.addr||getPropDisplayName(p)})),
                   {id:"all",label:"All Properties"},
                 ];
                 return filterOpts.length>1?(
-                  <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}} onClick={e=>e.stopPropagation()}>
                     {filterOpts.map(opt=>(
                       <button key={opt.id} onClick={()=>setModal(p=>({...p,_appTlPropFilter:opt.id}))}
                         style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,border:"1px solid "+(tlPropFilter===opt.id?"#1a1714":"rgba(0,0,0,.1)"),background:tlPropFilter===opt.id?"#1a1714":"transparent",color:tlPropFilter===opt.id?"#d4a853":"#5c4a3a",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"all .12s"}}>
@@ -12245,9 +12246,7 @@ export default function Page(){
                       </button>
                     ))}
                   </div>
-                ):(
-                  <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>{`Availability — ${tlHeaderLabel||getPropDisplayName(tlProp)||"All Properties"}`}</span>
-                );
+                ):null;
               })()}
               {tlOpen&&<div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,overflow:"hidden",background:"rgba(0,0,0,.02)"}}>
                 {tlViews.map(v=>(
@@ -12297,7 +12296,8 @@ export default function Page(){
             </div>
             <div style={{display:"flex",gap:4,alignItems:"center"}}>
               <button
-                onClick={()=>{
+                onClick={(e)=>{
+                  e.stopPropagation();
                   if(typeof window!=="undefined"&&window.innerWidth<768){
                     window.open("/admin?tab=tenants&view=timeline","_blank");
                   } else {
@@ -12309,13 +12309,7 @@ export default function Page(){
                 style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,border:"1px solid rgba(212,168,83,.3)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",transition:"all .12s",whiteSpace:"nowrap"}}>
                 Full Timeline &#8599;
               </button>
-              <button
-                onClick={()=>setModal(p=>({...p,_appTlOpen:tlOpen?false:true}))}
-                onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.06)";e.currentTarget.style.color="#1a1714";}}
-                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="#9a7422";}}
-                style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",transition:"all .12s",textTransform:"uppercase",letterSpacing:.4}}>
-                {tlOpen?"Hide":"Show"}
-              </button>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:tlOpen?"rotate(180deg)":"none",transition:"transform .2s",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
 
