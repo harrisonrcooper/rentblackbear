@@ -292,8 +292,8 @@ export default function ApplyPage(){
     evicted:"",evictedExplain:"",felony:"",felonyExplain:"",
     // Employment
     employers:[],curEmployerForm:null,unemployed:false,
-    // References
-    empRefName:"",empRefPhone:"",empRefRelation:"",persRefName:"",persRefPhone:"",persRefRelation:"",
+    // References — arrays of {id, firstName, lastName, email, phone, relationship}
+    empRefs:[],persRefs:[],empRefForm:null,persRefForm:null,
     // Emergency
     emergName:"",emergPhone:"",emergRelation:"",
     // Room
@@ -399,10 +399,16 @@ export default function ApplyPage(){
       if(!d.unemployed&&fieldActive("employers")&&fieldRequired("employers")&&d.employers.length===0&&!d.incomeUploadLater)e.employers="Please add at least one employer, or check the box to upload income proof later";
     }
     if(s==="references"){
-      if(!d.unemployed&&fieldActive("empRefName")&&fieldRequired("empRefName")&&!d.empRefName.trim())e.empRefName=`${fieldLabel("empRefName","Employer reference name")} is required`;
-      if(!d.unemployed&&fieldActive("empRefPhone")&&fieldRequired("empRefPhone")&&!d.empRefPhone.trim())e.empRefPhone=`${fieldLabel("empRefPhone","Employer reference phone")} is required`;
-      if(fieldActive("persRefName")&&fieldRequired("persRefName")&&!d.persRefName.trim())e.persRefName=`${fieldLabel("persRefName","Personal reference name")} is required`;
-      if(fieldActive("persRefPhone")&&fieldRequired("persRefPhone")&&!d.persRefPhone.trim())e.persRefPhone=`${fieldLabel("persRefPhone","Personal reference phone")} is required`;
+      if(!d.unemployed&&d.empRefs.length===0)e.empRefs="Add at least one employer reference";
+      if(d.persRefs.length===0)e.persRefs="Add at least one personal reference";
+      const phoneRe=/^\(\d{3}\) \d{3}-\d{4}$/;
+      const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      [...(d.unemployed?[]:d.empRefs),...d.persRefs].forEach((r,i)=>{
+        if(!r.firstName.trim()||!r.lastName.trim())e["ref_"+r.id+"_name"]="First and last name required";
+        if(!emailRe.test(r.email))e["ref_"+r.id+"_email"]="Valid email address required";
+        if(!phoneRe.test(r.phone))e["ref_"+r.id+"_phone"]="Enter a valid 10-digit phone number";
+        if(!r.relationship.trim())e["ref_"+r.id+"_rel"]="Relationship is required";
+      });
     }
     if(s==="emergency"){
       if(fieldActive("emergName")&&fieldRequired("emergName")&&!d.emergName.trim())e.emergName=`${fieldLabel("emergName","Emergency contact name")} is required`;
@@ -870,18 +876,72 @@ export default function ApplyPage(){
       {/* ═══ REFERENCES ═══ */}
       {step==="references"&&<div className="sec">
         <div className="sec-num">Section 4</div>
-        <div className="sec-hd"><h2>References</h2><p>Provide {d.unemployed?"a personal reference":"one employer and one personal reference"}.</p></div>
-        {!d.unemployed&&<>
-          <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer Reference</div>
-          <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.empRefName} onChange={e=>upd("empRefName",e.target.value)} className={errors.empRefName?"err":""} placeholder="Supervisor or HR"/>{errors.empRefName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefName}</div>}</div>
-          <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div></div>
-          <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:20}}>Personal Reference</div>
-        </>}
-        {d.unemployed&&<div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Personal Reference</div>}
-        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.persRefName} onChange={e=>upd("persRefName",e.target.value)} className={errors.persRefName?"err":""} placeholder="Someone who knows you well"/>{errors.persRefName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefName}</div>}</div>
-        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>upd("persRefPhone",fmtPhone(e.target.value))} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.persRefRelation} onChange={e=>upd("persRefRelation",e.target.value)} placeholder="e.g. Friend"/></div></div>
-        <button className="btn-next" onClick={next}>Continue →</button>
-        <button className="btn-back" onClick={back}>← Back</button>
+        <div className="sec-hd"><h2>References</h2><p>Provide {d.unemployed?"at least one personal reference":"at least one employer and one personal reference"}. All info must be accurate &#8212; we contact them directly.</p></div>
+
+        {(()=>{
+          const uid2=()=>Math.random().toString(36).slice(2);
+          const blankRef=()=>({id:uid2(),firstName:"",lastName:"",email:"",phone:"",relationship:""});
+          const phoneRe=/^\(\d{3}\) \d{3}-\d{4}$/;
+          const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+          function RefCard({r,refArr,setRefArr,typeLabel}){
+            const[editing,setEditing]=React.useState(!r.firstName);
+            const[form,setForm]=React.useState({...r});
+            const fErr=(k)=>errors["ref_"+r.id+"_"+k];
+            if(!editing)return(
+              <div className="item-card">
+                <div className="item-hd">
+                  <div>
+                    <div className="item-nm">{r.firstName} {r.lastName}</div>
+                    <div className="item-sub">{r.relationship} &#183; {r.phone} &#183; {r.email}</div>
+                  </div>
+                  <div>
+                    <button className="item-edit" onClick={()=>{setForm({...r});setEditing(true);}}>Edit</button>
+                    <button className="item-del" onClick={()=>setRefArr(prev=>prev.filter(x=>x.id!==r.id))}>Remove</button>
+                  </div>
+                </div>
+              </div>
+            );
+            return(
+              <div className="expand-form">
+                <h3>{r.firstName?"Edit":"Add"} {typeLabel} Reference</h3>
+                <div className="fld-row">
+                  <div className="fld"><label>First Name<span className="req">*</span></label><input value={form.firstName} onChange={e=>setForm(f=>({...f,firstName:e.target.value}))} placeholder="First" className={fErr("name")?"err":""}/></div>
+                  <div className="fld"><label>Last Name<span className="req">*</span></label><input value={form.lastName} onChange={e=>setForm(f=>({...f,lastName:e.target.value}))} placeholder="Last" className={fErr("name")?"err":""}/></div>
+                </div>
+                {fErr("name")&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:-8,marginBottom:8}}>{fErr("name")}</div>}
+                <div className="fld"><label>Email Address<span className="req">*</span></label><input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="their@email.com" className={fErr("email")?"err":""}/>{fErr("email")&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{fErr("email")}</div>}</div>
+                <div className="fld-row">
+                  <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={form.phone} onChange={e=>setForm(f=>({...f,phone:fmtPhone(e.target.value)}))} placeholder="(555) 555-5555" className={fErr("phone")?"err":""}/>{fErr("phone")&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{fErr("phone")}</div>}</div>
+                  <div className="fld"><label>Relationship<span className="req">*</span></label><input value={form.relationship} onChange={e=>setForm(f=>({...f,relationship:e.target.value}))} placeholder="e.g. Supervisor, Friend" className={fErr("rel")?"err":""}/>{fErr("rel")&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{fErr("rel")}</div>}</div>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button className="btn-next" style={{flex:1}} onClick={()=>{setRefArr(prev=>prev.map(x=>x.id===r.id?{...x,...form}:x));setEditing(false);}}>Save Reference</button>
+                  {r.firstName&&<button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>setEditing(false)}>Cancel</button>}
+                </div>
+              </div>
+            );
+          }
+          return(<>
+            {!d.unemployed&&<>
+              <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer References</div>
+              {d.empRefs.map(r=><RefCard key={r.id} r={r} refArr={d.empRefs} setRefArr={arr=>setD(p=>({...p,empRefs:typeof arr==="function"?arr(p.empRefs):arr}))} typeLabel="Employer"/>)}
+              <div className="add-card" onClick={()=>setD(p=>({...p,empRefs:[...p.empRefs,blankRef()]}))}>
+                <div className="plus">+</div><div className="lbl">Add {d.empRefs.length===0?"an":"another"} Employer Reference</div>
+              </div>
+              {errors.empRefs&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:6}}>{errors.empRefs}</div>}
+            </>}
+            <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:d.unemployed?0:24}}>Personal References</div>
+            {d.persRefs.map(r=><RefCard key={r.id} r={r} refArr={d.persRefs} setRefArr={arr=>setD(p=>({...p,persRefs:typeof arr==="function"?arr(p.persRefs):arr}))} typeLabel="Personal"/>)}
+            <div className="add-card" onClick={()=>setD(p=>({...p,persRefs:[...p.persRefs,blankRef()]}))}>
+              <div className="plus">+</div><div className="lbl">Add {d.persRefs.length===0?"a":"another"} Personal Reference</div>
+            </div>
+            {errors.persRefs&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:6}}>{errors.persRefs}</div>}
+          </>);
+        })()}
+
+        <button className="btn-next" onClick={next} style={{marginTop:20}}>Continue &#8594;</button>
+        <button className="btn-back" onClick={back}>&#8592; Back</button>
       </div>}
 
       {/* ═══ EMERGENCY ═══ */}
@@ -969,8 +1029,8 @@ export default function ApplyPage(){
         </div>
         {appType==="tenant"&&<>
           <div className="rev-sec"><h3>📋 References <span className="rev-edit" onClick={()=>setStep("references")}>Edit</span></h3>
-            <div className="rev-row"><span className="rev-label">Employer</span><span className="rev-val">{d.empRefName} · {d.empRefPhone}</span></div>
-            <div className="rev-row"><span className="rev-label">Personal</span><span className="rev-val">{d.persRefName} · {d.persRefPhone}</span></div>
+            {d.empRefs.map(r=><div key={r.id} className="rev-row"><span className="rev-label">Employer</span><span className="rev-val">{r.firstName} {r.lastName} &#183; {r.relationship} &#183; {r.email}</span></div>)}
+            {d.persRefs.map(r=><div key={r.id} className="rev-row"><span className="rev-label">Personal</span><span className="rev-val">{r.firstName} {r.lastName} &#183; {r.relationship} &#183; {r.email}</span></div>)}
           </div>
           <div className="rev-sec"><h3>🚨 Emergency <span className="rev-edit" onClick={()=>setStep("emergency")}>Edit</span></h3>
             <div className="rev-row"><span className="rev-label">Contact</span><span className="rev-val">{d.emergName} · {d.emergPhone} · {d.emergRelation}</span></div>
@@ -1067,6 +1127,7 @@ export default function ApplyPage(){
               status:"applied",lastContact:now,
               minorChildren:d.minorChildren||0,
               applicationData:d,
+              refsList:[...((d.unemployed?[]:d.empRefs)||[]).map(r=>({...r,type:"employer",emailStatus:"not_sent",token:null,sentAt:null,replyContent:null,repliedAt:null,verifiedAt:null})),...((d.persRefs)||[]).map(r=>({...r,type:"personal",emailStatus:"not_sent",token:null,sentAt:null,replyContent:null,repliedAt:null,verifiedAt:null}))],
               passcode:d.doorCode||null,
               name:fullName,email:d.email,phone:d.phone,
               dob:d.dob||null,gender:d.gender||"",occupationType:d.occupationType||"",
@@ -1115,6 +1176,7 @@ export default function ApplyPage(){
               passcode:d.doorCode||null,
               status:"applied",submitted:now,lastContact:now,
               bgCheck:"not-started",creditScore:"—",refs:"not-started",
+              refsList:[...((d.unemployed?[]:d.empRefs)||[]).map(r=>({...r,type:"employer",emailStatus:"not_sent",token:null,sentAt:null,replyContent:null,repliedAt:null,verifiedAt:null})),...((d.persRefs)||[]).map(r=>({...r,type:"personal",emailStatus:"not_sent",token:null,sentAt:null,replyContent:null,repliedAt:null,verifiedAt:null}))],
               source:"Online Application",applicationData:d,
               screenPkg:"credit-bg",appFee:baseFee,
               history:[{from:"new",to:"applied",date:now,note:"Walk-in application via apply page"}]

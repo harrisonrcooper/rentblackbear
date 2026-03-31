@@ -356,6 +356,8 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
     leaseSignedBody:"{name} has signed their lease for {property}. Log in to admin to review.",
     paymentSubject:"💰 Payment Received — {name}",
     paymentBody:"{name} submitted a payment of {amount} for {property}.",
+    refCheckSubject:"Reference Check — {applicantName}",
+    refCheckBody:"Dear {refFirstName},\n\nMy name is {pmName}, and I am reaching out regarding {applicantName}, who has applied to rent a room at one of my properties. They listed you as a reference.\n\nAs part of my standard screening process, I would appreciate your insight on the following:\n\n- In what capacity do you know {applicantName}?\n- Based on your experience, would you consider them to be dependable and trustworthy?\n\nYou can reply directly to this email or submit your response via the link below. Even a brief reply is greatly appreciated.\n\nThank you for your time.\n\nBest regards,\n{pmName}\n{companyName}",
   },
   screenForm:{
     heading:"Almost There",
@@ -7256,6 +7258,7 @@ export default function Page(){
             {key:"application",label:"Full Application Received",icon:"📝",desc:"Sent when an invited applicant submits their full application"},
             {key:"leaseSigned",label:"Lease Signed",icon:"✍️",desc:"Sent when a tenant e-signs their lease"},
             {key:"payment",label:"Payment Received",icon:"💰",desc:"Sent when a payment is recorded"},
+            {key:"refCheck",label:"Reference Check (to reference)",icon:"📬",desc:"Sent to a reference when you click Send Reference Email from an application card. Use {applicantName}, {refFirstName}, {refLastName}, {refRelationship}, {propertyName}, {pmName}, {companyName}, {pmPhone} as placeholders."},
           ].map(({key,label,icon,desc})=>{
             const tpl=settings.emailTemplates||DEF_SETTINGS.emailTemplates;
             const subjKey=key+"Subject";const bodyKey=key+"Body";
@@ -8576,29 +8579,17 @@ export default function Page(){
             </div>
 
             {/* Delete Lease */}
-            {(()=>{
-              const doDeleteLease = () => {
-                const delId = r.id;
-                setProps(prev => prev.map(p => ({
-                  ...p,
-                  units: (p.units||[]).map(u => ({
-                    ...u,
-                    rooms: (u.rooms||[]).map(rm => rm.id !== delId ? rm : {...rm, st:"vacant", le:null, tenant:null, m2m:false})
-                  }))
-                })));
-                setModal(null);
-              };
-              return (
-                <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(196,92,74,.15)",padding:"28px 32px"}}>
-                  <div style={{fontSize:16,fontWeight:700,color:"#c45c4a",marginBottom:8}}>Delete Lease</div>
-                  <div style={{fontSize:13,color:"#6b5e52",marginBottom:16}}>Best for leases where the tenant never moved in or was created by mistake.</div>
-                  <button className="btn btn-red btn-sm"
-                    onClick={()=>setModal({type:"confirmAction",title:"Delete Lease",body:"This will permanently remove "+r.tenant.name+"'s lease record. This cannot be undone.",confirmLabel:"Delete Lease",confirmStyle:"btn-red",onConfirm:doDeleteLease})}>
-                    Delete Lease
-                  </button>
-                </div>
-              );
-            })()}
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(196,92,74,.15)",padding:"28px 32px"}}>
+              <div style={{fontSize:16,fontWeight:700,color:"#c45c4a",marginBottom:8}}>Delete Lease</div>
+              <div style={{fontSize:13,color:"#6b5e52",marginBottom:16}}>Best for leases where the tenant never moved in or was created by mistake.</div>
+              <button className="btn btn-red btn-sm"
+                onClick={()=>setModal({type:"confirmAction",title:"Delete Lease",body:"This will permanently remove "+r.tenant.name+"'s lease record. This cannot be undone.",confirmLabel:"Delete Lease",confirmStyle:"btn-red",onConfirm:()=>{
+                  setProps(prev=>prev.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id!==r.id?rm:{...rm,st:"vacant",le:null,tenant:null,m2m:false})})}))));
+                  setModal(null);
+                }})}>
+                Delete Lease
+              </button>
+            </div>
           </div>
         </div>);
       })()}
@@ -11300,6 +11291,69 @@ export default function Page(){
         <div style={{fontSize:9,color:"#6b5e52",marginTop:8}}>These are the terms the applicant agreed to when they clicked Lease Now. Use as reference when assigning room and setting rent.</div>
       </div>}
 
+
+      {/* ── References Panel ── */}
+      {(()=>{
+        const refsList=a.refsList||[];
+        if(!refsList.length)return null;
+        const statusColors={"not_sent":{bg:"rgba(0,0,0,.04)",tx:"#999",label:"Not Sent"},"sent":{bg:"rgba(212,168,83,.1)",tx:"#9a7422",label:"Email Sent"},"pending_review":{bg:"rgba(59,130,246,.1)",tx:"#1d4ed8",label:"Responded"},"verified":{bg:"rgba(74,124,89,.1)",tx:"#2d6a3f",label:"Verified"}};
+        const allVerified=refsList.length>0&&refsList.every(r=>r.emailStatus==="verified");
+        const sendRefEmail=async(refId)=>{
+          try{
+            const res=await fetch("/api/reference-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({appId:a.id,refId})});
+            const data=await res.json();
+            if(data.ok){
+              setApps(p=>p.map(x=>x.id===a.id?{...x,refsList:(x.refsList||[]).map(r=>r.id===refId?{...r,emailStatus:"sent",sentAt:new Date().toISOString()}:r)}:x));
+              setModal(prev=>({...prev,data:{...prev.data,refsList:(prev.data.refsList||[]).map(r=>r.id===refId?{...r,emailStatus:"sent"}:r)}}));
+            }else{alert("Failed to send: "+(data.error||"Unknown error"));}
+          }catch(e){alert("Error: "+String(e));}
+        };
+        const verifyRef=(refId)=>{
+          const updatedRefsList=(a.refsList||[]).map(r=>r.id===refId?{...r,emailStatus:"verified",verifiedAt:new Date().toISOString()}:r);
+          const allNowVerified=updatedRefsList.every(r=>r.emailStatus==="verified");
+          setApps(p=>p.map(x=>x.id===a.id?{...x,refsList:updatedRefsList,...(allNowVerified?{refs:"verified"}:{})}:x));
+          setModal(prev=>({...prev,data:{...prev.data,refsList:updatedRefsList,...(allNowVerified?{refs:"verified"}:{})}}));
+          if(allNowVerified){
+            setNotifs(prev=>[{id:uid(),type:"ref",msg:"All references verified for "+a.name,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...prev]);
+          }
+        };
+        const empRefs=refsList.filter(r=>r.type==="employer");
+        const persRefs=refsList.filter(r=>r.type==="personal");
+        const RefRow=({r})=>{
+          const sc=statusColors[r.emailStatus||"not_sent"]||statusColors.not_sent;
+          const isSending=r.emailStatus==="not_sent"||r.emailStatus==="sent";
+          return(
+            <div style={{padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{r.firstName} {r.lastName}</div>
+                  <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>{r.relationship} &#183; {r.email} &#183; {r.phone}</div>
+                </div>
+                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:sc.bg,color:sc.tx,flexShrink:0,whiteSpace:"nowrap"}}>{sc.label}</span>
+              </div>
+              {r.replyContent&&<div style={{fontSize:11,color:"#5c4a3a",background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:7,padding:"8px 10px",marginBottom:6,lineHeight:1.6}}>
+                <div style={{fontSize:9,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Response</div>
+                {r.replyContent}
+              </div>}
+              <div style={{display:"flex",gap:6,marginTop:4}}>
+                {(r.emailStatus==="not_sent"||r.emailStatus==="sent")&&<button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={()=>sendRefEmail(r.id)}>{r.emailStatus==="sent"?"Resend Email":"Send Reference Email"}</button>}
+                {r.emailStatus==="pending_review"&&<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>verifyRef(r.id)}>Verify Reference</button>}
+                {r.emailStatus==="verified"&&<span style={{fontSize:10,color:"#4a7c59",fontWeight:700}}>&#10003; Verified {r.verifiedAt?new Date(r.verifiedAt).toLocaleDateString():""}</span>}
+              </div>
+            </div>
+          );
+        };
+        return(
+          <div className="tp-card">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <h3 style={{margin:0}}>References</h3>
+              {allVerified&&<span style={{fontSize:9,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.1)",padding:"2px 8px",borderRadius:10}}>All Verified</span>}
+            </div>
+            {empRefs.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#9a7422",textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>Employer</div>{empRefs.map(r=><RefRow key={r.id} r={r}/>)}</>}
+            {persRefs.length>0&&<><div style={{fontSize:9,fontWeight:700,color:"#3b82f6",textTransform:"uppercase",letterSpacing:.8,marginBottom:4,marginTop:empRefs.length?12:0}}>Personal</div>{persRefs.map(r=><RefRow key={r.id} r={r}/>)}</>}
+          </div>
+        );
+      })()}
 
       {a.status==="reviewing"&&<div className="tp-card"><h3>Review Checklist</h3>
         {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"not-started";return(
