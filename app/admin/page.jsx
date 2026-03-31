@@ -12564,129 +12564,6 @@ export default function Page(){
         </div>);
       })()}
 
-      {/* Draggable Full Timeline Float Modal */}
-      {modal._tlFloatOpen&&(()=>{
-        const pos=modal._tlFloatPos||{x:80,y:60};
-        const startDrag=(e)=>{
-          if(e.target.closest("button")||e.target.closest("select"))return;
-          const startX=e.clientX-pos.x;const startY=e.clientY-pos.y;
-          const onMove=(ev)=>setModal(p=>({...p,_tlFloatPos:{x:Math.max(0,Math.min(window.innerWidth-720,ev.clientX-startX)),y:Math.max(0,Math.min(window.innerHeight-200,ev.clientY-startY))}}));
-          const onUp=()=>{document.removeEventListener("mousemove",onMove);document.removeEventListener("mouseup",onUp);};
-          document.addEventListener("mousemove",onMove);document.addEventListener("mouseup",onUp);
-        };
-        // Render the full tenant timeline inside the float
-        const ftView=modal._ftView||"gantt";
-        const ftMonthOff=modal._ftMonthOffset||0;
-        const ftSort=modal._ftSort||"avail-asc";
-        const ftGrouped=modal._ftGrouped!==false;
-        const ftPropFilter=modal._ftPropFilter||"all";
-        const ftProp=ftPropFilter==="all"?null:props.find(p=>p.id===ftPropFilter)||null;
-        const TODAY_STR3=TODAY.toISOString().split("T")[0];
-        const ftBase=new Date(TODAY.getFullYear(),TODAY.getMonth()+ftMonthOff,1);
-        const ftWinStart=new Date(ftBase);ftWinStart.setMonth(ftWinStart.getMonth()-1);
-        const ftWinEnd=new Date(ftBase);ftWinEnd.setMonth(ftWinEnd.getMonth()+4);
-        const ftTotalDays=Math.ceil((ftWinEnd-ftWinStart)/86400000);
-        const ftToX=(ds)=>{if(!ds)return 0;const d=Math.ceil((new Date(ds+"T00:00:00")-ftWinStart)/86400000);return Math.max(0,Math.min(100,(d/ftTotalDays)*100));};
-        const ftMonths=[];for(let i=0;i<6;i++){const dd=new Date(ftWinStart);dd.setMonth(dd.getMonth()+i);ftMonths.push({label:dd.toLocaleString("default",{month:"short",year:"2-digit"}),x:ftToX(dd.toISOString().split("T")[0])});}
-        const ftRooms=(ftProp
-          ?allRooms(ftProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(ftProp),propId:ftProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(ftProp.turnoverDays||0)}))
-          :props.flatMap(p=>allRooms(p).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(p),propId:p.id,buf:r.turnoverDays!=null?r.turnoverDays:(p.turnoverDays||0)}))));
-        const ftGetReady=(r)=>{if(!r.le)return null;const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));return d.toISOString().split("T")[0];};
-        const ftLeMs=r=>r.le?new Date(r.le+"T00:00:00").getTime():Infinity;
-        const ftRdMs=r=>{const s=ftGetReady(r);return s?new Date(s+"T00:00:00").getTime():r.le?ftLeMs(r):Infinity;};
-        const ftSorted=[...ftRooms].sort((a,b)=>ftSort==="lease-end-asc"?ftLeMs(a)-ftLeMs(b):ftSort==="lease-end-desc"?ftLeMs(b)-ftLeMs(a):ftSort==="avail-desc"?ftRdMs(b)-ftRdMs(a):ftRdMs(a)-ftRdMs(b));
-        const ftGroupedRows=(()=>{if(!ftGrouped||ftProp)return null;const map=new Map();ftSorted.forEach(r=>{if(!map.has(r.propId))map.set(r.propId,[]);map.get(r.propId).push(r);});return map;})();
-        const uniqueFtProps=[...new Map(ftRooms.map(r=>[r.propId,{id:r.propId,name:r.propName}])).values()];
-        const renderFtRow=(r)=>{
-          const buf=r.buf||0;const readyStr=ftGetReady(r);const isOcc=r.st==="occupied"&&r.tenant;
-          const leX=r.le?ftToX(r.le):null;const rdX=readyStr?ftToX(readyStr):null;
-          const todayX=ftToX(TODAY_STR3);
-          const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(86400000)):null;
-          const gap=readyStr&&a.moveIn?Math.ceil((new Date(a.moveIn+"T00:00:00")-new Date(readyStr+"T00:00:00"))/(86400000)):null;
-          return(<div key={r.id} style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.03)",minHeight:32,alignItems:"center"}}>
-            <div style={{width:130,flexShrink:0,padding:"4px 8px",fontSize:10,fontWeight:isOcc?600:700,color:isOcc?"#1a1714":"#4a7c59",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              {r.name}<div style={{fontSize:8,color:"#9a7422",fontWeight:400}}>{isOcc?r.tenant.name:"Vacant"}</div>
-            </div>
-            <div style={{flex:1,position:"relative",height:28}}>
-              <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1,background:"rgba(196,92,74,.4)",zIndex:2}}/>
-              {isOcc&&r.tenant.moveIn&&leX!==null&&<div style={{position:"absolute",left:ftToX(r.tenant.moveIn)+"%",width:Math.max(0,leX-ftToX(r.tenant.moveIn))+"%",top:6,height:16,background:"rgba(74,124,89,.25)",borderRadius:3,border:"1px solid rgba(74,124,89,.4)"}}/>}
-              {readyStr&&rdX!==null&&<div style={{position:"absolute",left:rdX+"%",top:6,height:16,width:"4%",background:"rgba(212,168,83,.5)",borderRadius:2}}/>}
-              {!isOcc&&!r.le&&<div style={{position:"absolute",left:"0%",width:"100%",top:8,height:12,background:"rgba(74,124,89,.12)",borderRadius:2,display:"flex",alignItems:"center",paddingLeft:4}}>
-                <span style={{fontSize:7,color:"#4a7c59",fontWeight:700}}>Available now</span>
-              </div>}
-              {dl!==null&&dl>=0&&dl<=90&&<div style={{position:"absolute",right:2,top:8,fontSize:7,color:dl<=30?"#c45c4a":"#9a7422",fontWeight:700}}>{dl}d</div>}
-            </div>
-            <div style={{width:52,flexShrink:0,textAlign:"right",padding:"0 6px",fontSize:9,color:"#6b5e52",fontWeight:600}}>
-              {r.rent?("$"+(r.rent/1000>=1?(r.rent/1000).toFixed(0)+"k":r.rent)):"—"}
-              {gap!==null&&<div style={{fontSize:7,color:gap===0?"#2d6a3f":gap>0?"#9a7422":"#c45c4a",fontWeight:700}}>{gap===0?"✓ fit":gap>0?gap+"d gap":Math.abs(gap)+"d ovlp"}</div>}
-            </div>
-          </div>);
-        };
-        return(<div style={{position:"fixed",zIndex:9999,left:pos.x,top:pos.y,width:700,maxWidth:"95vw",background:"#fff",borderRadius:14,boxShadow:"0 24px 64px rgba(0,0,0,.25)",border:"1px solid rgba(0,0,0,.1)",display:"flex",flexDirection:"column",maxHeight:"80vh"}}>
-          {/* Drag handle / header */}
-          <div onMouseDown={startDrag} style={{padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"move",userSelect:"none",background:"#1a1714",borderRadius:"14px 14px 0 0",flexShrink:0}}>
-            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              <span style={{fontSize:11,fontWeight:800,color:"#d4a853",letterSpacing:.3}}>Tenant Timeline</span>
-              {/* Property filter pills */}
-              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                {[{id:"all",label:"All"},...uniqueFtProps.map(p=>({id:p.id,label:p.name}))].map(opt=>(
-                  <button key={opt.id} onClick={()=>setModal(p=>({...p,_ftPropFilter:opt.id}))}
-                    style={{fontSize:8,fontWeight:700,padding:"1px 7px",borderRadius:8,border:"1px solid "+(ftPropFilter===opt.id?"#d4a853":"rgba(255,255,255,.2)"),background:ftPropFilter===opt.id?"#d4a853":"transparent",color:ftPropFilter===opt.id?"#1a1714":"rgba(255,255,255,.7)",cursor:"pointer",fontFamily:"inherit"}}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              {/* Sort */}
-              <select value={ftSort} onChange={e=>setModal(p=>({...p,_ftSort:e.target.value}))}
-                style={{fontSize:8,padding:"1px 4px",borderRadius:4,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.7)",fontFamily:"inherit",cursor:"pointer"}}>
-                <option value="avail-asc">Available ↑ soonest</option>
-                <option value="avail-desc">Available ↓ latest</option>
-                <option value="lease-end-asc">Lease end ↑ soonest</option>
-                <option value="lease-end-desc">Lease end ↓ latest</option>
-              </select>
-              {/* Month nav */}
-              <div style={{display:"flex",gap:2,alignItems:"center"}}>
-                <button onClick={()=>setModal(p=>({...p,_ftMonthOffset:(p._ftMonthOffset||0)-1}))} style={{padding:"1px 5px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(255,255,255,.2)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"rgba(255,255,255,.7)"}}>&#8592;</button>
-                <span style={{fontSize:9,color:"#d4a853",fontWeight:600,minWidth:50,textAlign:"center"}}>{ftBase.toLocaleString("default",{month:"short",year:"numeric"})}</span>
-                <button onClick={()=>setModal(p=>({...p,_ftMonthOffset:(p._ftMonthOffset||0)+1}))} style={{padding:"1px 5px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(255,255,255,.2)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"rgba(255,255,255,.7)"}}>&#8594;</button>
-              </div>
-            </div>
-            <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:false}))} style={{background:"none",border:"none",color:"rgba(255,255,255,.6)",fontSize:16,cursor:"pointer",fontFamily:"inherit",lineHeight:1,padding:"2px 6px"}}>&#10005;</button>
-          </div>
-          {/* Month headers */}
-          <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.02)",flexShrink:0}}>
-            <div style={{width:130,flexShrink:0,padding:"3px 8px",fontSize:8,color:"#bbb",textTransform:"uppercase"}}>Room</div>
-            <div style={{flex:1,position:"relative",height:16}}>
-              {ftMonths.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:7,color:"#bbb",transform:"translateX(-50%)",whiteSpace:"nowrap",top:3}}>{m.label}</div>)}
-            </div>
-            <div style={{width:52,flexShrink:0,padding:"3px 6px",fontSize:8,color:"#bbb",textAlign:"right"}}>Rent</div>
-          </div>
-          {/* Rows */}
-          <div style={{overflowY:"auto",flex:1}}>
-            {ftGroupedRows
-              ?[...ftGroupedRows.entries()].map(([propId,rooms])=>{
-                const pName=rooms[0]?.propName||"";
-                return(<div key={propId}>
-                  <div style={{padding:"4px 8px",background:"rgba(0,0,0,.03)",borderBottom:"1px solid rgba(0,0,0,.05)",fontSize:9,fontWeight:800,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>{pName}</div>
-                  {rooms.map(r=>renderFtRow(r))}
-                </div>);
-              })
-              :ftSorted.map(r=>renderFtRow(r))
-            }
-            {ftSorted.length===0&&<div style={{fontSize:11,color:"#aaa",textAlign:"center",padding:24}}>No rooms found.</div>}
-          </div>
-          {/* Legend */}
-          <div style={{padding:"6px 12px",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",gap:12,flexShrink:0,background:"rgba(0,0,0,.01)"}}>
-            {[["rgba(74,124,89,.25)","Occupied"],["rgba(212,168,83,.5)","Ready"],["rgba(196,92,74,.4)","Today"]].map(([c,l])=>(
-              <div key={l} style={{display:"flex",alignItems:"center",gap:4,fontSize:8,color:"#6b5e52"}}>
-                <div style={{width:14,height:8,borderRadius:2,background:c}}/>{l}
-              </div>
-            ))}
-            <div style={{fontSize:8,color:"#6b5e52",marginLeft:"auto"}}>✓ fit / Nd gap / Nd ovlp = vacancy gap vs applicant move-in</div>
-          </div>
-        </div>);
-      })()}
-
       {/* Communication Log */}
       <div className="tp-card"><h3>Comm Log</h3>
         <div style={{display:"flex",gap:4,marginBottom:8}}>
@@ -12944,6 +12821,129 @@ export default function Page(){
     <button onClick={viewNewLead} style={{width:"100%",padding:"12px 20px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:6}}>{leadToast.status==="applied"?"Review Application →":"View New Lead →"}</button>
     <div style={{textAlign:"center"}}><button onClick={dismissToast} style={{background:"none",border:"none",color:"#5c4a3a",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>Dismiss</button></div>
   </div>}
+
+  {/* Draggable Full Timeline Float Modal — root level so position:fixed works */}
+  {modal._tlFloatOpen&&(()=>{
+        const pos=modal._tlFloatPos||{x:80,y:60};
+        const startDrag=(e)=>{
+          if(e.target.closest("button")||e.target.closest("select"))return;
+          const startX=e.clientX-pos.x;const startY=e.clientY-pos.y;
+          const onMove=(ev)=>setModal(p=>({...p,_tlFloatPos:{x:Math.max(0,Math.min(window.innerWidth-720,ev.clientX-startX)),y:Math.max(0,Math.min(window.innerHeight-200,ev.clientY-startY))}}));
+          const onUp=()=>{document.removeEventListener("mousemove",onMove);document.removeEventListener("mouseup",onUp);};
+          document.addEventListener("mousemove",onMove);document.addEventListener("mouseup",onUp);
+        };
+        // Render the full tenant timeline inside the float
+        const ftView=modal._ftView||"gantt";
+        const ftMonthOff=modal._ftMonthOffset||0;
+        const ftSort=modal._ftSort||"avail-asc";
+        const ftGrouped=modal._ftGrouped!==false;
+        const ftPropFilter=modal._ftPropFilter||"all";
+        const ftProp=ftPropFilter==="all"?null:props.find(p=>p.id===ftPropFilter)||null;
+        const TODAY_STR3=TODAY.toISOString().split("T")[0];
+        const ftBase=new Date(TODAY.getFullYear(),TODAY.getMonth()+ftMonthOff,1);
+        const ftWinStart=new Date(ftBase);ftWinStart.setMonth(ftWinStart.getMonth()-1);
+        const ftWinEnd=new Date(ftBase);ftWinEnd.setMonth(ftWinEnd.getMonth()+4);
+        const ftTotalDays=Math.ceil((ftWinEnd-ftWinStart)/86400000);
+        const ftToX=(ds)=>{if(!ds)return 0;const d=Math.ceil((new Date(ds+"T00:00:00")-ftWinStart)/86400000);return Math.max(0,Math.min(100,(d/ftTotalDays)*100));};
+        const ftMonths=[];for(let i=0;i<6;i++){const dd=new Date(ftWinStart);dd.setMonth(dd.getMonth()+i);ftMonths.push({label:dd.toLocaleString("default",{month:"short",year:"2-digit"}),x:ftToX(dd.toISOString().split("T")[0])});}
+        const ftRooms=(ftProp
+          ?allRooms(ftProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(ftProp),propId:ftProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(ftProp.turnoverDays||0)}))
+          :props.flatMap(p=>allRooms(p).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(p),propId:p.id,buf:r.turnoverDays!=null?r.turnoverDays:(p.turnoverDays||0)}))));
+        const ftGetReady=(r)=>{if(!r.le)return null;const d=new Date(r.le+"T00:00:00");d.setDate(d.getDate()+(r.buf||0));return d.toISOString().split("T")[0];};
+        const ftLeMs=r=>r.le?new Date(r.le+"T00:00:00").getTime():Infinity;
+        const ftRdMs=r=>{const s=ftGetReady(r);return s?new Date(s+"T00:00:00").getTime():r.le?ftLeMs(r):Infinity;};
+        const ftSorted=[...ftRooms].sort((a,b)=>ftSort==="lease-end-asc"?ftLeMs(a)-ftLeMs(b):ftSort==="lease-end-desc"?ftLeMs(b)-ftLeMs(a):ftSort==="avail-desc"?ftRdMs(b)-ftRdMs(a):ftRdMs(a)-ftRdMs(b));
+        const ftGroupedRows=(()=>{if(!ftGrouped||ftProp)return null;const map=new Map();ftSorted.forEach(r=>{if(!map.has(r.propId))map.set(r.propId,[]);map.get(r.propId).push(r);});return map;})();
+        const uniqueFtProps=[...new Map(ftRooms.map(r=>[r.propId,{id:r.propId,name:r.propName}])).values()];
+        const renderFtRow=(r)=>{
+          const buf=r.buf||0;const readyStr=ftGetReady(r);const isOcc=r.st==="occupied"&&r.tenant;
+          const leX=r.le?ftToX(r.le):null;const rdX=readyStr?ftToX(readyStr):null;
+          const todayX=ftToX(TODAY_STR3);
+          const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(86400000)):null;
+          const gap=readyStr&&a.moveIn?Math.ceil((new Date(a.moveIn+"T00:00:00")-new Date(readyStr+"T00:00:00"))/(86400000)):null;
+          return(<div key={r.id} style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.03)",minHeight:32,alignItems:"center"}}>
+            <div style={{width:130,flexShrink:0,padding:"4px 8px",fontSize:10,fontWeight:isOcc?600:700,color:isOcc?"#1a1714":"#4a7c59",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {r.name}<div style={{fontSize:8,color:"#9a7422",fontWeight:400}}>{isOcc?r.tenant.name:"Vacant"}</div>
+            </div>
+            <div style={{flex:1,position:"relative",height:28}}>
+              <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1,background:"rgba(196,92,74,.4)",zIndex:2}}/>
+              {isOcc&&r.tenant.moveIn&&leX!==null&&<div style={{position:"absolute",left:ftToX(r.tenant.moveIn)+"%",width:Math.max(0,leX-ftToX(r.tenant.moveIn))+"%",top:6,height:16,background:"rgba(74,124,89,.25)",borderRadius:3,border:"1px solid rgba(74,124,89,.4)"}}/>}
+              {readyStr&&rdX!==null&&<div style={{position:"absolute",left:rdX+"%",top:6,height:16,width:"4%",background:"rgba(212,168,83,.5)",borderRadius:2}}/>}
+              {!isOcc&&!r.le&&<div style={{position:"absolute",left:"0%",width:"100%",top:8,height:12,background:"rgba(74,124,89,.12)",borderRadius:2,display:"flex",alignItems:"center",paddingLeft:4}}>
+                <span style={{fontSize:7,color:"#4a7c59",fontWeight:700}}>Available now</span>
+              </div>}
+              {dl!==null&&dl>=0&&dl<=90&&<div style={{position:"absolute",right:2,top:8,fontSize:7,color:dl<=30?"#c45c4a":"#9a7422",fontWeight:700}}>{dl}d</div>}
+            </div>
+            <div style={{width:52,flexShrink:0,textAlign:"right",padding:"0 6px",fontSize:9,color:"#6b5e52",fontWeight:600}}>
+              {r.rent?("$"+(r.rent/1000>=1?(r.rent/1000).toFixed(0)+"k":r.rent)):"—"}
+              {gap!==null&&<div style={{fontSize:7,color:gap===0?"#2d6a3f":gap>0?"#9a7422":"#c45c4a",fontWeight:700}}>{gap===0?"✓ fit":gap>0?gap+"d gap":Math.abs(gap)+"d ovlp"}</div>}
+            </div>
+          </div>);
+        };
+        return(<div style={{position:"fixed",zIndex:9999,left:pos.x,top:pos.y,width:700,maxWidth:"95vw",background:"#fff",borderRadius:14,boxShadow:"0 24px 64px rgba(0,0,0,.25)",border:"1px solid rgba(0,0,0,.1)",display:"flex",flexDirection:"column",maxHeight:"80vh"}}>
+          {/* Drag handle / header */}
+          <div onMouseDown={startDrag} style={{padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"move",userSelect:"none",background:"#1a1714",borderRadius:"14px 14px 0 0",flexShrink:0}}>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <span style={{fontSize:11,fontWeight:800,color:"#d4a853",letterSpacing:.3}}>Tenant Timeline</span>
+              {/* Property filter pills */}
+              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                {[{id:"all",label:"All"},...uniqueFtProps.map(p=>({id:p.id,label:p.name}))].map(opt=>(
+                  <button key={opt.id} onClick={()=>setModal(p=>({...p,_ftPropFilter:opt.id}))}
+                    style={{fontSize:8,fontWeight:700,padding:"1px 7px",borderRadius:8,border:"1px solid "+(ftPropFilter===opt.id?"#d4a853":"rgba(255,255,255,.2)"),background:ftPropFilter===opt.id?"#d4a853":"transparent",color:ftPropFilter===opt.id?"#1a1714":"rgba(255,255,255,.7)",cursor:"pointer",fontFamily:"inherit"}}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {/* Sort */}
+              <select value={ftSort} onChange={e=>setModal(p=>({...p,_ftSort:e.target.value}))}
+                style={{fontSize:8,padding:"1px 4px",borderRadius:4,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.7)",fontFamily:"inherit",cursor:"pointer"}}>
+                <option value="avail-asc">Available ↑ soonest</option>
+                <option value="avail-desc">Available ↓ latest</option>
+                <option value="lease-end-asc">Lease end ↑ soonest</option>
+                <option value="lease-end-desc">Lease end ↓ latest</option>
+              </select>
+              {/* Month nav */}
+              <div style={{display:"flex",gap:2,alignItems:"center"}}>
+                <button onClick={()=>setModal(p=>({...p,_ftMonthOffset:(p._ftMonthOffset||0)-1}))} style={{padding:"1px 5px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(255,255,255,.2)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"rgba(255,255,255,.7)"}}>&#8592;</button>
+                <span style={{fontSize:9,color:"#d4a853",fontWeight:600,minWidth:50,textAlign:"center"}}>{ftBase.toLocaleString("default",{month:"short",year:"numeric"})}</span>
+                <button onClick={()=>setModal(p=>({...p,_ftMonthOffset:(p._ftMonthOffset||0)+1}))} style={{padding:"1px 5px",fontSize:9,fontWeight:700,borderRadius:3,border:"1px solid rgba(255,255,255,.2)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"rgba(255,255,255,.7)"}}>&#8594;</button>
+              </div>
+            </div>
+            <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:false}))} style={{background:"none",border:"none",color:"rgba(255,255,255,.6)",fontSize:16,cursor:"pointer",fontFamily:"inherit",lineHeight:1,padding:"2px 6px"}}>&#10005;</button>
+          </div>
+          {/* Month headers */}
+          <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.02)",flexShrink:0}}>
+            <div style={{width:130,flexShrink:0,padding:"3px 8px",fontSize:8,color:"#bbb",textTransform:"uppercase"}}>Room</div>
+            <div style={{flex:1,position:"relative",height:16}}>
+              {ftMonths.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:7,color:"#bbb",transform:"translateX(-50%)",whiteSpace:"nowrap",top:3}}>{m.label}</div>)}
+            </div>
+            <div style={{width:52,flexShrink:0,padding:"3px 6px",fontSize:8,color:"#bbb",textAlign:"right"}}>Rent</div>
+          </div>
+          {/* Rows */}
+          <div style={{overflowY:"auto",flex:1}}>
+            {ftGroupedRows
+              ?[...ftGroupedRows.entries()].map(([propId,rooms])=>{
+                const pName=rooms[0]?.propName||"";
+                return(<div key={propId}>
+                  <div style={{padding:"4px 8px",background:"rgba(0,0,0,.03)",borderBottom:"1px solid rgba(0,0,0,.05)",fontSize:9,fontWeight:800,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>{pName}</div>
+                  {rooms.map(r=>renderFtRow(r))}
+                </div>);
+              })
+              :ftSorted.map(r=>renderFtRow(r))
+            }
+            {ftSorted.length===0&&<div style={{fontSize:11,color:"#aaa",textAlign:"center",padding:24}}>No rooms found.</div>}
+          </div>
+          {/* Legend */}
+          <div style={{padding:"6px 12px",borderTop:"1px solid rgba(0,0,0,.06)",display:"flex",gap:12,flexShrink:0,background:"rgba(0,0,0,.01)"}}>
+            {[["rgba(74,124,89,.25)","Occupied"],["rgba(212,168,83,.5)","Ready"],["rgba(196,92,74,.4)","Today"]].map(([c,l])=>(
+              <div key={l} style={{display:"flex",alignItems:"center",gap:4,fontSize:8,color:"#6b5e52"}}>
+                <div style={{width:14,height:8,borderRadius:2,background:c}}/>{l}
+              </div>
+            ))}
+            <div style={{fontSize:8,color:"#6b5e52",marginLeft:"auto"}}>✓ fit / Nd gap / Nd ovlp = vacancy gap vs applicant move-in</div>
+          </div>
+        </div>);
+      })()}
 
   </div>{/* end outside zoom wrapper */}
   </div>);
