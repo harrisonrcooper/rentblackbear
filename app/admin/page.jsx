@@ -11324,29 +11324,15 @@ export default function Page(){
       setModal(null);
     };
     return(
-    <div className="mbg" onClick={()=>setModal(null)} style={modal?._tlFloatOpen?{justifyContent:"flex-start",paddingLeft:16,paddingRight:"50vw"}:{}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:960,padding:0,overflow:"hidden"}}>
-      {/* ── TOP HEADER BAR ── */}
-      <div style={{padding:"13px 20px",borderBottom:"1px solid #f0ede8",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:40,height:40,borderRadius:9,background:"#1a1714",color:"#d4a853",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,letterSpacing:.5}}>
-          {((a.name||"").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase())||"?"}
-        </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-            <span style={{fontSize:15,fontWeight:700,color:"#1a1714"}}>{a.name}</span>
-            {a.status&&<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(74,124,89,.1)",color:"#27500a",border:"1px solid rgba(74,124,89,.2)"}}>{a.status.charAt(0).toUpperCase()+a.status.slice(1)}</span>}
-            {days>0&&<span style={{fontSize:10,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999",fontWeight:600}}>{days}d old</span>}
-          </div>
-          <div style={{display:"flex",gap:0}}>{STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}><div style={{height:3,borderRadius:1,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:2}}/><div style={{fontSize:7,color:i<=si?"#9a7422":"#bbb",fontWeight:i<=si?600:400}}>{SI3[s]}</div></div>)}</div>
-        </div>
-        <div style={{width:48,height:48,borderRadius:"50%",background:"#1a1714",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <div style={{fontSize:17,fontWeight:700,color:"#d4a853",lineHeight:1}}>{score}</div>
-          <div style={{fontSize:8,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a",fontWeight:600,marginTop:1}}>{score>=70?"Strong":score>=50?"OK":"Weak"}</div>
+    <div className="mbg" onClick={()=>setModal(null)} style={modal?._tlFloatOpen?{justifyContent:"flex-start",paddingLeft:16,paddingRight:"50vw"}:{}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <h2>{a.name}</h2>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:700,color:score>=70?"#4a7c59":score>=50?"#d4a853":"#c45c4a",background:score>=70?"rgba(74,124,89,.08)":score>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"3px 8px",borderRadius:5}}>Score: {score}</span>
+          {days>0&&<span style={{fontSize:10,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999"}}>{days}d</span>}
         </div>
       </div>
-      {/* ── TWO-COLUMN BODY ── */}
-      <div style={{display:"flex",maxHeight:"calc(100vh - 200px)",minHeight:480}}>
-      {/* LEFT COLUMN */}
-      <div style={{width:256,flexShrink:0,borderRight:"1px solid #f0ede8",overflowY:"auto",background:"#faf9f7",padding:"14px 15px"}}>
+      <div style={{display:"flex",gap:2,marginBottom:12}}>{STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}><div style={{height:4,borderRadius:2,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:2}}/><div style={{fontSize:7,color:i<=si?"#d4a853":"#999"}}>{SI3[s]}</div></div>)}</div>
       {mf.length>0&&(()=>{const dmf=modal._dismissedFlags||[];const vis=mf.filter((_,i)=>!dmf.includes(i));if(!vis.length)return null;return(<div style={{marginBottom:10}}>{vis.map(f=>{const oi=mf.indexOf(f);const bg=f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)";const col=f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f";return(<div key={oi} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center",background:bg,color:col}}><span>{f.label}</span><button onClick={()=>setModal(p=>({...p,_dismissedFlags:[...(p._dismissedFlags||[]),oi]}))} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".45"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,fontFamily:"inherit",padding:"0 2px",opacity:.45,lineHeight:1,color:"inherit",transition:"opacity .15s",flexShrink:0}}>&#x2715;</button></div>);})}</div>);})()}
       {/* ── Editable Applicant Info ── */}
       <div className="tp-card">
@@ -11384,61 +11370,6 @@ export default function Page(){
         </div>
       </div>
 
-      {/* ── Score breakdown ── */}
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:10,fontWeight:600,color:"#9a8878",textTransform:"uppercase",letterSpacing:.6,marginBottom:7,display:"flex",alignItems:"center",gap:5}}>
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
-          Score breakdown
-        </div>
-        {[["Income",a.income?Math.min(95,Math.round((parseInt((a.income+"").replace(/[^0-9]/g,""))||0)/55)):50],["Credit",a.creditScore&&a.creditScore!=="—"?Math.min(100,Math.round((parseInt(a.creditScore)||0)/7.5)):0],["Background",a.bgCheck==="passed"?100:a.bgCheck==="failed"?0:20],["References",a.refs==="verified"?100:a.refs==="pending"?50:10],["Rental hist.",80]].map(([lbl,val])=>(
-          <div key={lbl} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
-            <div style={{fontSize:11,color:"#6b5e52",width:78,flexShrink:0}}>{lbl}</div>
-            <div style={{flex:1,height:4,background:"#e4dfd8",borderRadius:2,overflow:"hidden"}}>
-              <div style={{width:Math.max(0,val)+"%",height:"100%",borderRadius:2,background:val>=70?"#4a7c59":val>=40?"#d4a853":"#c45c4a"}}/>
-            </div>
-            <span style={{fontSize:10,fontWeight:600,minWidth:24,textAlign:"right",color:val>=70?"#27500a":val>=40?"#633806":"#791f1f"}}>{val}</span>
-          </div>
-        ))}
-      </div>
-
-      <div style={{borderTop:"1px solid #ede9e3",margin:"10px 0"}}/>
-
-      <div style={{marginBottom:0}}>
-        <div style={{fontSize:10,fontWeight:600,color:"#9a8878",textTransform:"uppercase",letterSpacing:.6,marginBottom:7,display:"flex",alignItems:"center",gap:5}}>
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 2h12a1 1 0 0 1 1 1v7H5l-3 3V3a1 1 0 0 1 1-1z"/></svg>
-          Comm log
-        </div>
-        <div style={{display:"flex",gap:4,marginBottom:8}}>
-          {["Call","Text","Email","Note"].map(function(tp){return(
-            <button key={tp} className="btn btn-out btn-sm" style={{flex:1,fontSize:9}} onClick={function(){setModal(function(prev){return Object.assign({},prev,{showCommInput:tp,commText:""});});}}>{tp}</button>);})}
-        </div>
-        {modal.showCommInput&&<div style={{display:"flex",gap:4,marginBottom:8}}>
-          <input value={modal.commText||""} onChange={function(e){setModal(function(prev){return Object.assign({},prev,{commText:e.target.value});});}} placeholder={"Log this "+modal.showCommInput+"..."} style={{flex:1,padding:"6px 10px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}} autoFocus/>
-          <button className="btn btn-green btn-sm" disabled={!(modal.commText||"").trim()} onClick={function(){var log={type:modal.showCommInput,text:modal.commText,date:TODAY.toISOString().split("T")[0],time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})};setApps(function(p){return p.map(function(x){return x.id===a.id?Object.assign({},x,{commLog:[log].concat(x.commLog||[]),lastContact:TODAY.toISOString().split("T")[0]}):x;});});setModal(function(prev){return Object.assign({},prev,{showCommInput:null,commText:"",data:Object.assign({},prev.data,{commLog:[log].concat(prev.data.commLog||[]),lastContact:TODAY.toISOString().split("T")[0]})});});}}>Save</button>
-        </div>}
-        {(a.commLog||[]).length>0?<div style={{maxHeight:120,overflowY:"auto"}}>{(a.commLog||[]).map(function(c,i){return(
-          <div key={i} style={{display:"flex",gap:6,padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.02)",fontSize:10}}>
-            <span style={{width:20,textAlign:"center",fontSize:9,color:"#6b5e52",fontWeight:700}}>{c.type[0]}</span>
-            <div style={{flex:1}}><div style={{color:"#333"}}>{c.text}</div><div style={{color:"#6b5e52",fontSize:9}}>{c.date}{" "}{c.time}</div></div>
-          </div>);})}</div>:<div style={{fontSize:10,color:"#8a7d74",textAlign:"center",padding:8}}>No communication logged</div>}
-
-      </div>{/* end left column */}
-
-      {/* RIGHT COLUMN */}
-      <div style={{flex:1,overflowY:"auto"}}>
-
-      {/* ACC: room — open by default */}
-      {(()=>{const _o=(modal._accOpen||"room")==="room";const _assigned=a.termRoomId?true:false;const _propName=a.invitePropName||a.property||"";return(<div style={{borderBottom:"1px solid #f0ede8"}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="room"?null:"room"}))}>
-          <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M2 13V7l6-4 6 4v6"/><rect x="5" y="9" width="6" height="4"/></svg>
-          </div>
-          <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Room / unit assignment</div>
-          {_assigned&&<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a",border:"1px solid rgba(74,124,89,.2)"}}>{a.room||"Assigned"}</span>}
-          {!_assigned&&<span style={{fontSize:10,color:"#9a8878"}}>Not assigned</span>}
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        {_o&&<div style={{padding:"0 0 4px"}}>
       {/* ── Room Placement Engine ── */}
       {(()=>{
         const appMoveIn=a.termMoveIn||a.moveIn||"";
@@ -11626,20 +11557,6 @@ export default function Page(){
       })()}
 
 
-        </div>}
-      </div>);})()}
-
-      {/* ACC: data */}
-      {(()=>{const _o=(modal._accOpen||"room")==="data";return(<div style={{borderBottom:"1px solid #f0ede8"}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(0,0,0,.02)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="data"?null:"data"}))}>
-          <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M10 2H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5z"/><path d="M10 2v3h3M6 8h4M6 11h3"/></svg>
-          </div>
-          <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Application data</div>
-          {a.submitted&&<span style={{fontSize:10,color:"#9a8878"}}>Submitted {a.submitted}</span>}
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        {_o&&<div style={{padding:"0 0 4px"}}>
       {/* ── Application Submitted Data ── */}
       {a.applicationData&&(()=>{
         const ad=a.applicationData;
@@ -11722,24 +11639,6 @@ export default function Page(){
         </div>);
       })()}
 
-        </div>}
-      </div>);})()}
-
-      {/* ACC: screening */}
-      {(()=>{const _o=(modal._accOpen||"room")==="screening";const _pend=["bgCheck","creditScore","refs","idVerified"].filter(k=>!a[k]||a[k]==="not-started"||a[k]==="—").length;return(<div style={{borderBottom:"1px solid #f0ede8"}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(0,0,0,.02)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="screening"?null:"screening"}))}>
-          <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
-          </div>
-          <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Screening checklist</div>
-          <div style={{display:"flex",gap:4}}>
-            {a.bgCheck==="passed"&&<span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>BG ✓</span>}
-            {a.refs==="verified"&&<span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Refs ✓</span>}
-            {_pend>0&&<span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{_pend} pending</span>}
-          </div>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        {_o&&<div style={{padding:"0 0 4px"}}>
       {/* ── Screening Checklist — show at applied + reviewing ── */}
       {(a.status==="applied"||a.status==="reviewing")&&<div className="tp-card">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -12555,19 +12454,6 @@ export default function Page(){
           </div>);})}
         {a.approvedWithPending&&<div style={{marginTop:6,padding:"5px 8px",background:"rgba(212,168,83,.06)",borderRadius:5,fontSize:10,color:"#9a7422"}}>Approved with pending: {a.approvedWithPending}</div>}
       </div>}
-        </div>}
-      </div>);})()}
-
-      {/* ACC: housemates */}
-      {(()=>{const _o=(modal._accOpen||"room")==="housemates";return(<div style={{borderBottom:"1px solid #f0ede8"}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(0,0,0,.02)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="housemates"?null:"housemates"}))}>
-          <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><circle cx="6" cy="5" r="2.5"/><circle cx="11" cy="5" r="2.5"/><path d="M1 14a5 5 0 0 1 10 0" opacity=".5"/></svg>
-          </div>
-          <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Housemates</div>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        {_o&&<div style={{padding:"0 0 4px"}}>
       {/* Roommate Compatibility */}
       {(()=>{
         // Resolve prop: prefer termPropId (ID-based, most reliable) → property name → termRoomId room lookup
@@ -12675,20 +12561,22 @@ export default function Page(){
       })()}
 
       {/* Communication Log */}
-        </div>}
-      </div>);})()}
-
-      {/* ACC: docs */}
-      {(()=>{const _o=(modal._accOpen||"room")==="docs";const _docs=a.appDocs||(a.applicationData?.appDocs)||[];const _flag=a.docsFlag||{};const _hasAny=_docs.length>0||_flag.idUploadLater||_flag.incomeUploadLater;if(!_hasAny)return null;return(<div style={{borderBottom:"1px solid #f0ede8"}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(0,0,0,.02)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="docs"?null:"docs"}))}>
-          <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 7h12M5 3V1M11 3V1"/></svg>
-          </div>
-          <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Application documents</div>
-          <span style={{fontSize:10,color:_docs.filter(x=>x.url).length>0?"#27500a":"#9a8878",fontWeight:600}}>{_docs.filter(x=>x.url).length} uploaded</span>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
+      <div className="tp-card"><h3>Comm Log</h3>
+        <div style={{display:"flex",gap:4,marginBottom:8}}>
+          {["Call","Text","Email","Note"].map(function(tp){return(
+            <button key={tp} className="btn btn-out btn-sm" style={{flex:1,fontSize:9}} onClick={function(){setModal(function(prev){return Object.assign({},prev,{showCommInput:tp,commText:""});});}}>{tp}</button>);})}
         </div>
-        {_o&&<div style={{padding:"0 0 4px"}}>
+        {modal.showCommInput&&<div style={{display:"flex",gap:4,marginBottom:8}}>
+          <input value={modal.commText||""} onChange={function(e){setModal(function(prev){return Object.assign({},prev,{commText:e.target.value});});}} placeholder={"Log this "+modal.showCommInput+"..."} style={{flex:1,padding:"6px 10px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}} autoFocus/>
+          <button className="btn btn-green btn-sm" disabled={!(modal.commText||"").trim()} onClick={function(){var log={type:modal.showCommInput,text:modal.commText,date:TODAY.toISOString().split("T")[0],time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})};setApps(function(p){return p.map(function(x){return x.id===a.id?Object.assign({},x,{commLog:[log].concat(x.commLog||[]),lastContact:TODAY.toISOString().split("T")[0]}):x;});});setModal(function(prev){return Object.assign({},prev,{showCommInput:null,commText:"",data:Object.assign({},prev.data,{commLog:[log].concat(prev.data.commLog||[]),lastContact:TODAY.toISOString().split("T")[0]})});});}}>Save</button>
+        </div>}
+        {(a.commLog||[]).length>0?<div style={{maxHeight:120,overflowY:"auto"}}>{(a.commLog||[]).map(function(c,i){return(
+          <div key={i} style={{display:"flex",gap:6,padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.02)",fontSize:10}}>
+            <span style={{width:20,textAlign:"center",fontSize:9,color:"#6b5e52",fontWeight:700}}>{c.type[0]}</span>
+            <div style={{flex:1}}><div style={{color:"#333"}}>{c.text}</div><div style={{color:"#6b5e52",fontSize:9}}>{c.date}{" "}{c.time}</div></div>
+          </div>);})}</div>:<div style={{fontSize:10,color:"#8a7d74",textAlign:"center",padding:8}}>No communication logged</div>}
+      </div>
+
       {/* Documents from application */}
       {(()=>{
         const docs=a.appDocs||(a.applicationData?.appDocs)||[];
@@ -12770,13 +12658,8 @@ export default function Page(){
           {docs.length===0&&!flag.idUploadLater&&!flag.incomeUploadLater&&<div style={{fontSize:11,color:"#aaa",fontStyle:"italic"}}>No documents uploaded yet.</div>}
         </div>);
       })()}
-        </div>}
-      </div>);})()}
 
-      </div>{/* end right column */}
-      </div>{/* end two-column body */}
 
-      {/* MOVE-IN CHARGES — shown in footer area */}
       {/* Move-in charges — shown on approved applicants */}
       {(a.status==="approved"||a.status==="onboarding")&&(()=>{
         const lk=a.lockActivation;
@@ -12832,9 +12715,7 @@ export default function Page(){
         </div>);
       })()}
 
-      {/* ── FOOTER: action buttons ── */}
-      <div style={{padding:"12px 20px",borderTop:"1px solid #f0ede8",display:"flex",gap:8,alignItems:"center",background:"#faf9f7",flexWrap:"wrap"}}>
-      <div style={{display:"flex",gap:6,flex:1,flexWrap:"wrap"}}>
+      <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
         {a.status==="new-lead"&&<button className="btn btn-gold" style={{flex:1,transition:"all .2s"}}
           onMouseEnter={e=>{e.currentTarget.style.background="#1a1714";e.currentTarget.style.color="#d4a853";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 14px rgba(0,0,0,.25)";}}
           onMouseLeave={e=>{e.currentTarget.style.background="";e.currentTarget.style.color="";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}
@@ -12875,8 +12756,7 @@ export default function Page(){
         
         <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,data:a,reason:""})}>Deny</button>
       </div>
-      </div>{/* end footer actions */}
-      <div className="mft" style={{borderTop:"1px solid #f0ede8",margin:0,padding:"10px 20px",background:"#faf9f7"}}>
+      <div className="mft">
         {a.status==="invited"&&<button className="btn btn-gold" style={{flex:1,fontWeight:800}} onClick={()=>setModal({type:"inviteApp",data:a})}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:6,verticalAlign:"middle"}}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           Re-send Invite
