@@ -2426,13 +2426,10 @@ export default function Page(){
   // Auto-run on load as fallback only (cron job handles this server-side daily)
   useEffect(()=>{if(loaded&&props.length>0){const t=setTimeout(()=>autoGenRentCharges(),500);return()=>clearTimeout(t);}},[loaded]);
 
-  // Real-time poll — check Supabase for new "applied" apps every 15 seconds
-  // Uses a Map of id->status so we can detect STATUS TRANSITIONS (invited→applied)
-  // not just brand new app IDs
+  // Real-time poll — track status transitions (invited→applied) not just new IDs
   const knownStatusMap=useRef(new Map());
   useEffect(()=>{
     if(!loaded)return;
-    // Seed ALL existing apps with their current status on load
     apps.forEach(a=>knownStatusMap.current.set(a.id,a.status));
   },[loaded]);
 
@@ -2447,28 +2444,23 @@ export default function Page(){
         let fresh=rows[0].value;
         if(typeof fresh==="string")fresh=JSON.parse(fresh);
         if(!Array.isArray(fresh))return;
+        // Find new apps of any status that weren't known before
         const knownMap=knownStatusMap.current;
-        // Brand new apps (never seen before) that are already applied/prescreened
         const newApplied=fresh.filter(a=>a.status==="applied"&&!knownMap.has(a.id));
         const newPrescreened=fresh.filter(a=>a.status==="new-lead"&&!knownMap.has(a.id));
-        // Status transitions: invited (or any other status) → applied
         const transitioned=fresh.filter(a=>a.status==="applied"&&knownMap.has(a.id)&&knownMap.get(a.id)!=="applied");
         const allNewApplications=[...newApplied,...transitioned];
         const hasNew=allNewApplications.length>0||newPrescreened.length>0;
         if(hasNew){
           setApps(fresh);
-          // Update map with current statuses
           fresh.forEach(a=>knownMap.set(a.id,a.status));
-          // Full applications — brand new OR transitioned from invited
           if(allNewApplications.length>0){
             const newest=allNewApplications[0];
-            const isTransition=transitioned.some(a=>a.id===newest.id);
-            setNotifs(p=>[{id:uid(),type:"app",msg:"🎉 "+newest.name+(isTransition?" submitted their full application":" submitted their application")+(newest.property?" for "+newest.property:""),date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
+            setNotifs(p=>[{id:uid(),type:"app",msg:"🎉 "+newest.name+" submitted their full application"+(newest.property?" for "+newest.property:""),date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
             setShowConfetti(true);setLeadToast(newest);setToastDismissing(false);
             setTimeout(()=>setShowConfetti(false),8000);
             setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
           }
-          // Pre-screens
           if(newPrescreened.length>0){
             const newest=newPrescreened[0];
             setNotifs(p=>[{id:uid(),type:"app",msg:"New pre-screen from "+newest.name+(newest.property?" · "+newest.property:""),date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
@@ -2477,7 +2469,6 @@ export default function Page(){
             setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
           }
         } else {
-          // Silently sync map with latest statuses
           fresh.forEach(a=>knownMap.set(a.id,a.status));
         }
       }catch(e){console.error("Poll error:",e);}
@@ -2490,7 +2481,6 @@ export default function Page(){
   const viewNewLead=()=>{
     setTab("applications");
     setShowConfetti(false);
-    // Open the specific application card directly
     if(leadToast){setModal({type:"app",data:leadToast});}
     setToastDismissing(true);
     setTimeout(()=>setLeadToast(null),300);
@@ -8590,17 +8580,29 @@ export default function Page(){
             </div>
 
             {/* Delete Lease */}
-            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(196,92,74,.15)",padding:"28px 32px"}}>
-              <div style={{fontSize:16,fontWeight:700,color:"#c45c4a",marginBottom:8}}>Delete Lease</div>
-              <div style={{fontSize:13,color:"#6b5e52",marginBottom:16}}>Best for leases where the tenant never moved in or was created by mistake.</div>
-              <button className="btn btn-red btn-sm"
-                onClick={()=>setModal({type:"confirmAction",title:"Delete Lease",body:"This will permanently remove "+r.tenant.name+"'s lease record. This cannot be undone.",confirmLabel:"Delete Lease",confirmStyle:"btn-red",onConfirm:()=>{
-                  setProps(prev=>prev.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id!==r.id?rm:{...rm,st:"vacant",le:null,tenant:null,m2m:false})})}))));
-                  setModal(null);
-                }})}>
-                Delete Lease
-              </button>
-            </div>
+            {(()=>{
+              const doDeleteLease = () => {
+                const delId = r.id;
+                setProps(prev => prev.map(p => ({
+                  ...p,
+                  units: (p.units||[]).map(u => ({
+                    ...u,
+                    rooms: (u.rooms||[]).map(rm => rm.id !== delId ? rm : {...rm, st:"vacant", le:null, tenant:null, m2m:false})
+                  }))
+                })));
+                setModal(null);
+              };
+              return (
+                <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(196,92,74,.15)",padding:"28px 32px"}}>
+                  <div style={{fontSize:16,fontWeight:700,color:"#c45c4a",marginBottom:8}}>Delete Lease</div>
+                  <div style={{fontSize:13,color:"#6b5e52",marginBottom:16}}>Best for leases where the tenant never moved in or was created by mistake.</div>
+                  <button className="btn btn-red btn-sm"
+                    onClick={()=>setModal({type:"confirmAction",title:"Delete Lease",body:"This will permanently remove "+r.tenant.name+"'s lease record. This cannot be undone.",confirmLabel:"Delete Lease",confirmStyle:"btn-red",onConfirm:doDeleteLease})}>
+                    Delete Lease
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>);
       })()}
@@ -10656,12 +10658,9 @@ export default function Page(){
     const pkgLabel={"none":"No screening (waived)","credit-only":"Credit Report Only","credit-bg":"Credit + Full BG Check"};
     const incomeLabel={"none":"None","income-only":"Income Verify (+$10)","income-employment":"Income + Employer (+$15)"};
     const inviteStep=modal.inviteStep||"configure";
-    // Source of truth: everything comes from app modal data, not Configure Invite dropdowns
-    // Always prefer termPropId (ID-based, set at room assignment) over a.property (name-based, may be stale from pre-screen)
+    // Source of truth: prefer termPropId (ID-based) over a.property (name-based, may be stale)
     const invProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
-    // Search invProp first, then fall back to searching all props in case of property mismatch
     const invRoomObj=a.termRoomId?(invProp?allRooms(invProp).find(r=>r.id===a.termRoomId):null)||props.flatMap(p=>allRooms(p)).find(r=>r.id===a.termRoomId):null;
-    // Resolve the correct property from the room if invProp was wrong
     const invRoomProp=invRoomObj?props.find(p=>allRooms(p).some(r=>r.id===invRoomObj.id))||invProp:invProp;
     const invRent=a.termRent||(invRoomObj?invRoomObj.rent:0);
     const invMoveIn=a.moveInTbd?"TBD":(a.termMoveIn||a.moveIn||"");
@@ -10690,15 +10689,12 @@ export default function Page(){
         status:"invited",lastContact:TODAY.toISOString().split("T")[0],
         screenPkg:pkg,incomeAdd,appFee:totalFee,
         waiverReason:modal.waiverReason||"",
-        // Use resolved prop name from actual assigned room — never the stale a.property
         property:invPropName||a.property||"",
         room:invRoomLabel,
         inviteRent:invRent,inviteRoomId:a.termRoomId||null,
-        // These are the canonical fields read by the apply page for room/property display
         inviteRoomName:a.skipRoomAssign?"":invRoomLabel,
         invitePropName:invPropName,
         inviteRoomMode:a.skipRoomAssign?"none":"locked",inviteLink:link,
-        allowCouples:a.allowCouples||false,
         lastContact:TODAY.toISOString().split("T")[0],
         sentVia:(a.sentVia?a.sentVia+", ":"")+method,
         history:[...(a.history||[]),{from:a.status,to:"invited",
@@ -11313,12 +11309,126 @@ export default function Page(){
       </div>}
 
 
-      {a.status==="reviewing"&&<div className="tp-card"><h3>Review Checklist</h3>
-        {reqs.map(r=>{const isW=waived.includes(r.label);const val=a[r.key]||"not-started";return(
-          <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1}}>
-            <span style={{fontSize:12,textDecoration:isW?"line-through":"none"}}>{r.label}{isW&&<span style={{fontSize:9,color:"#6b5e52",marginLeft:6}}>Waived</span>}</span>
-            {!isW&&<select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}} style={{padding:"3px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}}><option value="not-started">Not Started</option><option value="pending">In Progress</option><option value="passed">Passed</option><option value="failed">Failed</option></select>}
-          </div>);})}
+      {/* ── Application Submitted Data ── */}
+      {a.applicationData&&(()=>{
+        const ad=a.applicationData;
+        const open=modal._appDataOpen!==false;
+        const Row=({label,val,red,green})=>val?<div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}><span style={{color:"#6b5e52"}}>{label}</span><span style={{fontWeight:600,color:red?"#c45c4a":green?"#2d6a3f":"#1a1714",textAlign:"right",maxWidth:"60%"}}>{val}</span></div>:null;
+        return(
+        <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 18px",cursor:"pointer",background:open?"rgba(74,124,89,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_appDataOpen:!open}))}>
+            <h3 style={{margin:0,fontSize:13}}>Application Data</h3>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:9,color:"#aaa",fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>submitted {a.submitted||""}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          {open&&<div style={{padding:"0 18px 16px"}}>
+
+            {/* Documents */}
+            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6}}>Documents</div>
+            <Row label="Photo ID" val={ad.idFileName||(ad.idUploadLater?"Will upload later":"Not uploaded")} green={!!ad.idFileName} red={!ad.idFileName&&!ad.idUploadLater}/>
+            <Row label="Pay Stubs" val={ad.payStubsName||(ad.incomeUploadLater?"Will upload later":"Not uploaded")} green={!!ad.payStubsName}/>
+            {ad.doorCode&&<Row label="Door Code" val={ad.doorCode}/>}
+
+            {/* Personal */}
+            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Personal</div>
+            <Row label="Date of Birth" val={ad.dob}/>
+            <Row label="Gender" val={ad.gender}/>
+            <Row label="Occupation Type" val={ad.occupationType+(ad.occupationTypeOther?" — "+ad.occupationTypeOther:"")}/>
+            <Row label="Eviction History" val={ad.evicted==="yes"?"YES — "+( ad.evictedExplain||"no detail provided"):"No"} red={ad.evicted==="yes"} green={ad.evicted==="no"}/>
+            <Row label="Felony History" val={ad.felony==="yes"?"YES — "+(ad.felonyExplain||"no detail provided"):"No"} red={ad.felony==="yes"} green={ad.felony==="no"}/>
+
+            {/* Rental History */}
+            {(ad.addresses||[]).length>0&&<>
+              <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Rental History</div>
+              {(ad.addresses||[]).map((addr,i)=>(
+                <div key={i} style={{marginBottom:10,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{addr.street}{addr.unit?" #"+addr.unit:""}, {addr.city} {addr.state}</span>
+                    <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:8,background:addr.resType==="Rent"?"rgba(212,168,83,.1)":"rgba(74,124,89,.1)",color:addr.resType==="Rent"?"#9a7422":"#2d6a3f"}}>{addr.resType}</span>
+                  </div>
+                  <div style={{fontSize:10,color:"#6b5e52"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
+                  {addr.reason&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
+                  {addr.resType==="Other"&&addr.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>{addr.otherSituation}</div>}
+                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",gap:12"}}>
+                    <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
+                    <span>{addr.landlordEmail}</span>
+                    <span>{addr.landlordPhone}</span>
+                  </div>}
+                </div>
+              ))}
+            </>}
+
+            {/* Employment */}
+            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Employment</div>
+            {ad.unemployed?<div style={{fontSize:11,color:"#c45c4a",fontWeight:600,padding:"4px 0"}}>Unemployed</div>
+            :(ad.employers||[]).length===0?<div style={{fontSize:11,color:"#aaa",padding:"4px 0"}}>No employers listed</div>
+            :(ad.employers||[]).map((emp,i)=>(
+              <div key={i} style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{emp.employer}</div>
+                <div style={{fontSize:10,color:"#6b5e52"}}>{emp.position||"—"} · Since {emp.monthStarted} {emp.yearStarted}{emp.monthlyIncome?" · $"+emp.monthlyIncome+"/mo":""}</div>
+                {emp.refName&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>Ref: {emp.refName}{emp.refPhone?" · "+emp.refPhone:""}</div>}
+              </div>
+            ))}
+
+            {/* Emergency Contact */}
+            {(ad.emergName||ad.emergPhone)&&<>
+              <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Emergency Contact</div>
+              <Row label="Name" val={ad.emergName}/>
+              <Row label="Phone" val={ad.emergPhone}/>
+              <Row label="Relationship" val={ad.emergRelation}/>
+            </>}
+
+            {/* Partner */}
+            {ad.partnerName&&ad.partnerName.trim()&&<>
+              <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Partner / Co-Occupant</div>
+              <Row label="Name" val={ad.partnerName}/>
+              <Row label="Email" val={ad.partnerEmail}/>
+            </>}
+
+          </div>}
+        </div>);
+      })()}
+
+      {/* ── Screening Checklist — show at applied + reviewing ── */}
+      {(a.status==="applied"||a.status==="reviewing")&&<div className="tp-card">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <h3 style={{margin:0}}>Screening Checklist</h3>
+          {a.waiverReason&&<span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"2px 7px",borderRadius:8,fontWeight:700}}>Screening waived</span>}
+        </div>
+        {reqs.map(r=>{
+          const isW=waived.includes(r.label);
+          const val=a[r.key]||"not-started";
+          const isCreditScore=r.key==="creditScore";
+          const statusColor=val==="passed"||val==="verified"?"#2d6a3f":val==="failed"?"#c45c4a":val==="pending"?"#9a7422":"#aaa";
+          return(
+            <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1,gap:8}}>
+              <div style={{flex:1}}>
+                <span style={{fontSize:12,fontWeight:500,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
+                {isW&&<span style={{fontSize:9,color:"#6b5e52",marginLeft:6}}>Waived</span>}
+                {!isCreditScore&&!isW&&<div style={{fontSize:9,color:statusColor,fontWeight:700,marginTop:1,textTransform:"uppercase",letterSpacing:.3}}>{val==="not-started"?"Not started":val}</div>}
+              </div>
+              {!isW&&(isCreditScore
+                ?<div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <input type="number" value={a.creditScore&&a.creditScore!=="—"?a.creditScore:""} placeholder="Score"
+                    onChange={e=>{const v=e.target.value||"—";setApps(p=>p.map(x=>x.id===a.id?{...x,creditScore:v}:x));setModal(prev=>({...prev,data:{...prev.data,creditScore:v}}));}}
+                    style={{width:70,padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",textAlign:"center"}}/>
+                  <select value={a.bgCheck==="passed"?"passed":a.bgCheck==="failed"?"failed":"not-started"}
+                    onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,bgCheck:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,bgCheck:e.target.value}}));}}
+                    style={{padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",display:"none"}}/>
+                </div>
+                :<select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}}
+                  style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",background:"#fff",color:statusColor,fontWeight:700}}>
+                  <option value="not-started">Not Started</option>
+                  <option value="pending">In Progress</option>
+                  <option value="passed">Passed</option>
+                  <option value="verified">Verified</option>
+                  <option value="failed">Failed</option>
+                </select>
+              )}
+            </div>);
+        })}
         {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
       </div>}
 
@@ -11691,7 +11801,7 @@ export default function Page(){
           {/* Couples toggle — only for bedroom assignments */}
           {selectedItem&&!selectedItem.isWholeUnit&&(!hasConflict||overrideConfirmed)&&<div style={{marginTop:8,padding:"10px 12px",background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.15)",borderRadius:8,marginBottom:8}}>
             <div style={{fontSize:11,fontWeight:700,color:"#1a1714",marginBottom:4}}>Allow a couple (2 adults) in this bedroom?</div>
-            <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>By default, 1 adult per bedroom. Enabling this lets a couple share the room and changes the application form accordingly.</div>
+            <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>By default, 1 adult per bedroom. Enabling this changes the application form accordingly.</div>
             <div style={{display:"flex",gap:6}}>
               {[{val:false,label:"No — 1 adult only"},{val:true,label:"Yes — couple OK"}].map(({val,label})=>(
                 <button key={String(val)} className="btn btn-sm"
