@@ -202,9 +202,18 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .upload{border:2px dashed rgba(0,0,0,.1);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(0,0,0,.01)}
 .upload:hover{border-color:var(--ac);background:rgba(212,168,83,.03)}
 .upload.has{border-color:var(--gn);border-style:solid;background:rgba(74,124,89,.03)}
+.upload.drag{border-color:var(--ac);border-style:solid;background:rgba(212,168,83,.06);transform:scale(1.01)}
 .upload-ic{font-size:28px;margin-bottom:6px}
 .upload-txt{font-size:12px;color:#5c4a3a}
+.upload-sub{font-size:11px;color:#9a9087;margin-top:4px}
 .upload-file{font-size:12px;color:var(--gn);font-weight:600;margin-top:4px}
+.upload-mob{display:flex;flex-direction:column;gap:8px}
+.upload-mob-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 16px;border-radius:10px;border:2px dashed rgba(0,0,0,.1);background:rgba(0,0,0,.01);cursor:pointer;font-size:13px;font-weight:600;color:#3d3529;font-family:inherit;transition:all .2s;width:100%}
+.upload-mob-btn:hover{border-color:var(--ac);background:rgba(212,168,83,.03)}
+.upload-mob-btn.cam{border-color:var(--ac);border-style:solid;background:rgba(212,168,83,.04)}
+.upload-mob-has{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid var(--gn);background:rgba(74,124,89,.04)}
+.upload-mob-has-name{flex:1;font-size:12px;font-weight:600;color:var(--gn);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upload-mob-change{font-size:11px;font-weight:700;color:var(--ac);cursor:pointer;text-decoration:underline;flex-shrink:0}
 
 /* Yes/No */
 .yn-row{display:flex;gap:8px;margin-bottom:16px}
@@ -307,7 +316,13 @@ export default function ApplyPage(){
   const[submitted,setSubmitted]=useState(false);
   const[props_,setProps]=useState([]);
   const[errors,setErrors]=useState({});
+  const[isMobile,setIsMobile]=useState(false);
+  const[idDrag,setIdDrag]=useState(false);
+  const[payDrag,setPayDrag]=useState(false);
   const fileRef=useRef(null);const payRef=useRef(null);
+  const camRef=useRef(null);const payCamRef=useRef(null);
+
+  useEffect(()=>{setIsMobile("ontouchstart" in window||navigator.maxTouchPoints>0);},[]);
 
   const upd=(k,v)=>{setD(p=>({...p,[k]:v}));setErrors(p=>({...p,[k]:undefined}));};
   const fmtPhone=(v)=>{const x=v.replace(/\D/g,"").slice(0,10);if(x.length<=3)return x;if(x.length<=6)return`(${x.slice(0,3)}) ${x.slice(3)}`;return`(${x.slice(0,3)}) ${x.slice(3,6)}-${x.slice(6)}`;};
@@ -683,7 +698,55 @@ export default function ApplyPage(){
         </div>
         {fieldActive("idFile")&&<div className="fld">
           <label>{fieldLabel("idFile","Photo ID")}{fieldRequired("idFile")&&<span className="req">*</span>}</label>
-          {!d.idUploadLater&&<><div className={`upload ${d.idFileName?"has":""}`} onClick={()=>fileRef.current?.click()}><div className="upload-ic">{d.idFileName?"✅":"📷"}</div><div className="upload-txt">{d.idFileName?"":fieldPlaceholder("idFile","Upload driver's license, passport, or state ID")}</div>{d.idFileName&&<div className="upload-file">{d.idFileName}</div>}</div><input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/>{fieldHelp("idFile","JPG, PNG, or PDF. Max 10MB.")&&<div className="help">{fieldHelp("idFile","JPG, PNG, or PDF. Max 10MB.")}</div>}</>}
+          {!d.idUploadLater&&<>
+            {/* Hidden inputs */}
+            <input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/>
+            <input ref={camRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/>
+
+            {/* Desktop: drag-and-drop zone */}
+            {!isMobile&&(d.idFileName
+              ?<div className="upload has" style={{display:"flex",alignItems:"center",gap:12,padding:16,cursor:"default"}}>
+                  <span style={{fontSize:22}}>&#10003;</span>
+                  <div style={{flex:1,textAlign:"left"}}>
+                    <div className="upload-file" style={{marginTop:0}}>{d.idFileName}</div>
+                    <div className="upload-sub">File selected</div>
+                  </div>
+                  <button onClick={(e)=>{e.stopPropagation();upd("idFileName","");if(fileRef.current)fileRef.current.value="";}} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,color:"#c45c4a",lineHeight:1,padding:"0 4px"}}>x</button>
+                </div>
+              :<div className={`upload ${idDrag?"drag":""}`}
+                  onClick={()=>fileRef.current?.click()}
+                  onDragOver={e=>{e.preventDefault();setIdDrag(true);}}
+                  onDragEnter={e=>{e.preventDefault();setIdDrag(true);}}
+                  onDragLeave={()=>setIdDrag(false)}
+                  onDrop={e=>{e.preventDefault();setIdDrag(false);const f=e.dataTransfer.files[0];if(f)upd("idFileName",f.name);}}>
+                  <div className="upload-ic">
+                    <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{color:idDrag?"var(--ac)":"#9a9087"}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <div className="upload-txt" style={{fontWeight:600,color:idDrag?"var(--ac)":"#3d3529"}}>{idDrag?"Drop it here!":"Drag and drop your ID here"}</div>
+                  <div className="upload-sub">or click to browse &mdash; JPG, PNG, or PDF</div>
+                </div>
+            )}
+
+            {/* Mobile: camera + gallery split */}
+            {isMobile&&(d.idFileName
+              ?<div className="upload-mob-has">
+                  <span style={{fontSize:20}}>&#10003;</span>
+                  <div className="upload-mob-has-name">{d.idFileName}</div>
+                  <span className="upload-mob-change" onClick={()=>{upd("idFileName","");if(fileRef.current)fileRef.current.value="";}}>Remove</span>
+                </div>
+              :<div className="upload-mob">
+                  <button className="upload-mob-btn cam" onClick={()=>camRef.current?.click()}>
+                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Take a Photo
+                  </button>
+                  <button className="upload-mob-btn" onClick={()=>fileRef.current?.click()}>
+                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Choose from Gallery
+                  </button>
+                </div>
+            )}
+            {fieldHelp("idFile","JPG, PNG, or PDF.")&&<div className="help">{fieldHelp("idFile","JPG, PNG, or PDF.")}</div>}
+          </>}
           <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
             <input type="checkbox" checked={d.idUploadLater} onChange={e=>{upd("idUploadLater",e.target.checked);if(e.target.checked)upd("idFileName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
             I'll upload my photo ID later
@@ -746,7 +809,54 @@ export default function ApplyPage(){
 
         <div className="fld" style={{marginTop:12}}>
           <label>Proof of Income</label>
-          {!d.incomeUploadLater&&<><div className={`upload ${d.payStubsName?"has":""}`} onClick={()=>payRef.current?.click()}><div className="upload-ic">{d.payStubsName?"✅":"📄"}</div><div className="upload-txt">{d.payStubsName?"":"Tap to upload pay stubs, offer letter, or bank statements"}</div>{d.payStubsName&&<div className="upload-file">{d.payStubsName}</div>}</div><input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/></>}
+          {!d.incomeUploadLater&&<>
+            {/* Hidden inputs */}
+            <input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/>
+            <input ref={payCamRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/>
+
+            {/* Desktop: drag-and-drop zone */}
+            {!isMobile&&(d.payStubsName
+              ?<div className="upload has" style={{display:"flex",alignItems:"center",gap:12,padding:16,cursor:"default"}}>
+                  <span style={{fontSize:22}}>&#10003;</span>
+                  <div style={{flex:1,textAlign:"left"}}>
+                    <div className="upload-file" style={{marginTop:0}}>{d.payStubsName}</div>
+                    <div className="upload-sub">File selected</div>
+                  </div>
+                  <button onClick={(e)=>{e.stopPropagation();upd("payStubsName","");if(payRef.current)payRef.current.value="";}} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,color:"#c45c4a",lineHeight:1,padding:"0 4px"}}>x</button>
+                </div>
+              :<div className={`upload ${payDrag?"drag":""}`}
+                  onClick={()=>payRef.current?.click()}
+                  onDragOver={e=>{e.preventDefault();setPayDrag(true);}}
+                  onDragEnter={e=>{e.preventDefault();setPayDrag(true);}}
+                  onDragLeave={()=>setPayDrag(false)}
+                  onDrop={e=>{e.preventDefault();setPayDrag(false);const f=e.dataTransfer.files[0];if(f)upd("payStubsName",f.name);}}>
+                  <div className="upload-ic">
+                    <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{color:payDrag?"var(--ac)":"#9a9087"}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <div className="upload-txt" style={{fontWeight:600,color:payDrag?"var(--ac)":"#3d3529"}}>{payDrag?"Drop it here!":"Drag and drop your document here"}</div>
+                  <div className="upload-sub">or click to browse &mdash; pay stubs, offer letter, or bank statements</div>
+                </div>
+            )}
+
+            {/* Mobile: camera + gallery split */}
+            {isMobile&&(d.payStubsName
+              ?<div className="upload-mob-has">
+                  <span style={{fontSize:20}}>&#10003;</span>
+                  <div className="upload-mob-has-name">{d.payStubsName}</div>
+                  <span className="upload-mob-change" onClick={()=>{upd("payStubsName","");if(payRef.current)payRef.current.value="";}}>Remove</span>
+                </div>
+              :<div className="upload-mob">
+                  <button className="upload-mob-btn cam" onClick={()=>payCamRef.current?.click()}>
+                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Take a Photo
+                  </button>
+                  <button className="upload-mob-btn" onClick={()=>payRef.current?.click()}>
+                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Choose from Gallery / Files
+                  </button>
+                </div>
+            )}
+          </>}
           <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
             <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>{upd("incomeUploadLater",e.target.checked);if(e.target.checked)upd("payStubsName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
             I'll upload proof of income later
