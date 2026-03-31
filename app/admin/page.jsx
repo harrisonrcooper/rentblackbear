@@ -11377,15 +11377,13 @@ export default function Page(){
             <input value={(a.name||"").split(" ").slice(1).join(" ")} onChange={e=>{const full=((a.name||"").split(" ")[0]||"")+" "+e.target.value;saveApp(a.id,"name",full.trim());}} style={{width:"100%"}}/>
           </div>
         </div>
-        <div className="fr" style={{marginBottom:6}}>
-          <div className="fld" style={{marginBottom:0}}>
-            <label>Email</label>
-            <input type="email" value={a.email||""} onChange={e=>saveApp(a.id,"email",e.target.value)} style={{width:"100%"}}/>
-          </div>
-          <div className="fld" style={{marginBottom:0}}>
-            <label>Phone</label>
-            <input type="tel" value={a.phone||""} onChange={e=>saveApp(a.id,"phone",e.target.value)} style={{width:"100%"}}/>
-          </div>
+        <div className="fld" style={{marginBottom:6}}>
+          <label>Email</label>
+          <input type="email" value={a.email||""} onChange={e=>saveApp(a.id,"email",e.target.value)} style={{width:"100%"}}/>
+        </div>
+        <div className="fld" style={{marginBottom:6}}>
+          <label>Phone</label>
+          <input type="tel" value={a.phone||""} onChange={e=>saveApp(a.id,"phone",e.target.value)} style={{width:"100%"}}/>
         </div>
         <div className="fld" style={{marginBottom:6}}>
           <label>Source</label>
