@@ -2427,11 +2427,13 @@ export default function Page(){
   useEffect(()=>{if(loaded&&props.length>0){const t=setTimeout(()=>autoGenRentCharges(),500);return()=>clearTimeout(t);}},[loaded]);
 
   // Real-time poll — check Supabase for new "applied" apps every 15 seconds
-  const knownAppliedIds=useRef(new Set());
+  // Uses a Map of id->status so we can detect STATUS TRANSITIONS (invited→applied)
+  // not just brand new app IDs
+  const knownStatusMap=useRef(new Map());
   useEffect(()=>{
     if(!loaded)return;
-    // Seed ALL existing app IDs on load — so we never fire confetti for pre-existing apps
-    apps.forEach(a=>knownAppliedIds.current.add(a.id));
+    // Seed ALL existing apps with their current status on load
+    apps.forEach(a=>knownStatusMap.current.set(a.id,a.status));
   },[loaded]);
 
   useEffect(()=>{
@@ -2445,33 +2447,38 @@ export default function Page(){
         let fresh=rows[0].value;
         if(typeof fresh==="string")fresh=JSON.parse(fresh);
         if(!Array.isArray(fresh))return;
-        // Find new apps of any status that weren't known before
-        const knownIds=knownAppliedIds.current;
-        const newApplied=fresh.filter(a=>a.status==="applied"&&!knownIds.has(a.id));
-        const newPrescreened=fresh.filter(a=>a.status==="new-lead"&&!knownIds.has(a.id));
-        const hasNew=newApplied.length>0||newPrescreened.length>0;
+        const knownMap=knownStatusMap.current;
+        // Brand new apps (never seen before) that are already applied/prescreened
+        const newApplied=fresh.filter(a=>a.status==="applied"&&!knownMap.has(a.id));
+        const newPrescreened=fresh.filter(a=>a.status==="new-lead"&&!knownMap.has(a.id));
+        // Status transitions: invited (or any other status) → applied
+        const transitioned=fresh.filter(a=>a.status==="applied"&&knownMap.has(a.id)&&knownMap.get(a.id)!=="applied");
+        const allNewApplications=[...newApplied,...transitioned];
+        const hasNew=allNewApplications.length>0||newPrescreened.length>0;
         if(hasNew){
           setApps(fresh);
-          fresh.forEach(a=>knownIds.add(a.id));
-          // Notification for full applications
-          if(newApplied.length>0){
-            const newest=newApplied[0];
-            setNotifs(p=>[{id:uid(),type:"app",msg:`🎉 ${newest.name} submitted their application${newest.property?" for "+newest.property:""}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
+          // Update map with current statuses
+          fresh.forEach(a=>knownMap.set(a.id,a.status));
+          // Full applications — brand new OR transitioned from invited
+          if(allNewApplications.length>0){
+            const newest=allNewApplications[0];
+            const isTransition=transitioned.some(a=>a.id===newest.id);
+            setNotifs(p=>[{id:uid(),type:"app",msg:"🎉 "+newest.name+(isTransition?" submitted their full application":" submitted their application")+(newest.property?" for "+newest.property:""),date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
             setShowConfetti(true);setLeadToast(newest);setToastDismissing(false);
             setTimeout(()=>setShowConfetti(false),8000);
             setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
           }
-          // Notification for pre-screens — confetti + toast same as full apps
+          // Pre-screens
           if(newPrescreened.length>0){
             const newest=newPrescreened[0];
-            setNotifs(p=>[{id:uid(),type:"app",msg:`New pre-screen from ${newest.name}${newest.property?" · "+newest.property:""}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
+            setNotifs(p=>[{id:uid(),type:"app",msg:"New pre-screen from "+newest.name+(newest.property?" · "+newest.property:""),date:TODAY.toISOString().split("T")[0],read:false,urgent:true},...p]);
             setShowConfetti(true);setLeadToast(newest);setToastDismissing(false);
             setTimeout(()=>setShowConfetti(false),8000);
             setTimeout(()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);},15000);
           }
         } else {
-          // Silently sync known IDs
-          fresh.forEach(a=>knownIds.add(a.id));
+          // Silently sync map with latest statuses
+          fresh.forEach(a=>knownMap.set(a.id,a.status));
         }
       }catch(e){console.error("Poll error:",e);}
     };
@@ -2480,7 +2487,14 @@ export default function Page(){
   },[loaded]);
 
   const dismissToast=()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);};
-  const viewNewLead=()=>{setTab("applications");setLeadToast(null);setShowConfetti(false);};
+  const viewNewLead=()=>{
+    setTab("applications");
+    setShowConfetti(false);
+    // Open the specific application card directly
+    if(leadToast){setModal({type:"app",data:leadToast});}
+    setToastDismissing(true);
+    setTimeout(()=>setLeadToast(null),300);
+  };
 
   const openRecordPay=()=>setModal({type:"recordPay",step:1,selRoom:"",selCharge:"",payAmount:0,payMethod:"",payDate:TODAY.toISOString().split("T")[0],payNotes:""});
   const openCreateCharge=()=>setModal({type:"createCharge",roomId:"",category:"Rent",desc:"",amount:0,dueDate:TODAY.toISOString().split("T")[0],notes:""});
