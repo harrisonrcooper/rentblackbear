@@ -467,7 +467,10 @@ export default function ApplyPage(){
   const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",landlordFirstName:"",landlordLastName:"",landlordEmail:"",landlordPhone:""};
   const calcMonthsCovered=(addrs)=>{const MNAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];const now=new Date();return addrs.reduce((tot,a)=>{const mi=MNAMES.indexOf(a.monthIn);if(mi<0||!a.yearIn)return tot;const start=new Date(parseInt(a.yearIn),mi,1);return tot+Math.max(0,(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth()));},0);};
   const saveAddr=()=>{const f=d.curAddressForm;if(!f)return;
-    const missing=!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn||!f.reason||!f.landlordFirstName||!f.landlordLastName||!f.landlordEmail||!f.landlordPhone;
+    const needsLandlord=f.resType==="Rent";
+    const landlordRequired=needsLandlord?(!f.landlordFirstName||!f.landlordLastName||!f.landlordEmail||!f.landlordPhone):false;
+    const otherNotes=f.resType==="Other"&&!f.otherNotes;
+    const missing=!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn||!f.reason||landlordRequired||otherNotes;
     const badEmail=f.landlordEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.landlordEmail);
     const badPhone=f.landlordPhone&&f.landlordPhone.replace(/\D/g,"").length!==10;
     if(missing||badEmail||badPhone){upd("curAddressForm",{...f,_saved:true,_badEmail:badEmail,_badPhone:badPhone});shake();return;}
@@ -710,15 +713,30 @@ export default function ApplyPage(){
             <div className="fld"><label>Monthly Rent</label><input type="number" value={d.curAddressForm.rent} onChange={e=>upd("curAddressForm",{...d.curAddressForm,rent:e.target.value})} placeholder="1100"/></div>
           </div>
           <div className="fld"><label>Why are you moving?<span className="req">*</span></label><textarea value={d.curAddressForm.reason} onChange={e=>upd("curAddressForm",{...d.curAddressForm,reason:e.target.value})} className={!d.curAddressForm.reason&&d.curAddressForm._saved?"err":""} placeholder="e.g. Moving for work, end of lease, upgrading, etc."/></div>
-          <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact <span style={{color:"#c45c4a",fontWeight:400,fontSize:11}}>* All fields required</span></div>
-          <div className="fld-row">
-            <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.curAddressForm.landlordFirstName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordFirstName:cap});}} className={!d.curAddressForm.landlordFirstName&&d.curAddressForm._saved?"err":""} placeholder="First name"/></div>
-            <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.curAddressForm.landlordLastName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordLastName:cap});}} className={!d.curAddressForm.landlordLastName&&d.curAddressForm._saved?"err":""} placeholder="Last name"/></div>
-          </div>
-          <div className="fld-row">
-            <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.curAddressForm.landlordEmail||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value,_badEmail:false})} className={((!d.curAddressForm.landlordEmail||d.curAddressForm._badEmail)&&d.curAddressForm._saved)?"err":""} placeholder="landlord@email.com"/>{d.curAddressForm._badEmail&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid email address</div>}</div>
-            <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.curAddressForm.landlordPhone||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value),_badPhone:false})} className={((!d.curAddressForm.landlordPhone||d.curAddressForm._badPhone)&&d.curAddressForm._saved)?"err":""} placeholder="(555) 555-5555"/>{d.curAddressForm._badPhone&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid 10-digit phone number</div>}</div>
-          </div>
+          {d.curAddressForm.resType==="Other"&&<div className="fld" style={{marginTop:16}}>
+            <label>Please describe your living situation<span className="req">*</span></label>
+            <textarea value={d.curAddressForm.otherNotes||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,otherNotes:e.target.value})} className={!d.curAddressForm.otherNotes&&d.curAddressForm._saved?"err":""} placeholder="e.g. Living with family, military housing, corporate housing..." rows={2}/>
+            {!d.curAddressForm.otherNotes&&d.curAddressForm._saved&&<div className="err-msg">Please describe your living situation</div>}
+          </div>}
+          {d.curAddressForm.resType!=="Own"&&<>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>
+              {d.curAddressForm.resType==="Rent"?"Landlord Contact":"Landlord / Contact Info"}
+              {d.curAddressForm.resType==="Rent"
+                ?<span style={{color:"#c45c4a",fontWeight:400,fontSize:11}}> * All fields required</span>
+                :<span style={{color:"#6b5e52",fontWeight:400,fontSize:11}}> — optional</span>}
+            </div>
+            <div className="fld-row">
+              <div className="fld"><label>First Name{d.curAddressForm.resType==="Rent"&&<span className="req">*</span>}</label><input value={d.curAddressForm.landlordFirstName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordFirstName:cap});}} className={d.curAddressForm.resType==="Rent"&&!d.curAddressForm.landlordFirstName&&d.curAddressForm._saved?"err":""} placeholder="First name"/></div>
+              <div className="fld"><label>Last Name{d.curAddressForm.resType==="Rent"&&<span className="req">*</span>}</label><input value={d.curAddressForm.landlordLastName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordLastName:cap});}} className={d.curAddressForm.resType==="Rent"&&!d.curAddressForm.landlordLastName&&d.curAddressForm._saved?"err":""} placeholder="Last name"/></div>
+            </div>
+            <div className="fld-row">
+              <div className="fld"><label>Email{d.curAddressForm.resType==="Rent"&&<span className="req">*</span>}</label><input type="email" value={d.curAddressForm.landlordEmail||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value,_badEmail:false})} className={(d.curAddressForm.resType==="Rent"&&(!d.curAddressForm.landlordEmail||d.curAddressForm._badEmail)&&d.curAddressForm._saved)?"err":""} placeholder="landlord@email.com"/>{d.curAddressForm._badEmail&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid email address</div>}</div>
+              <div className="fld"><label>Phone{d.curAddressForm.resType==="Rent"&&<span className="req">*</span>}</label><input type="tel" value={d.curAddressForm.landlordPhone||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value),_badPhone:false})} className={(d.curAddressForm.resType==="Rent"&&(!d.curAddressForm.landlordPhone||d.curAddressForm._badPhone)&&d.curAddressForm._saved)?"err":""} placeholder="(555) 555-5555"/>{d.curAddressForm._badPhone&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid 10-digit phone number</div>}</div>
+            </div>
+          </>}
+          {d.curAddressForm.resType==="Own"&&<div style={{marginTop:16,padding:"10px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8,fontSize:12,color:"#2d6a3f"}}>
+            No landlord contact needed for owned properties.
+          </div>}
           {d.curAddressForm?._needMore&&<div style={{padding:"10px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:8,marginBottom:12,fontSize:12,color:"#7a5a10",fontWeight:600}}>📋 We need at least <strong>2 years</strong> of rental history — please add another address.</div>}
           <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveAddr}>Save Address</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curAddressForm",null)}>Cancel</button></div>
         </div>
