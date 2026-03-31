@@ -11335,9 +11335,9 @@ export default function Page(){
         const onUp=()=>{document.removeEventListener("mousemove",onMv);document.removeEventListener("mouseup",onUp);};
         document.addEventListener("mousemove",onMv);document.addEventListener("mouseup",onUp);
       };
-      return(<div className="mbox" onClick={e=>e.stopPropagation()} onMouseDown={_startDrag} style={{maxWidth:960,padding:0,overflow:"hidden",...(_mp?{position:"fixed",left:_mp.x,top:_mp.y,margin:0,transform:"none",maxHeight:"92vh"}:{})}}>
+      return(<div className="mbox" onClick={e=>e.stopPropagation()} onMouseDown={_startDrag} style={{maxWidth:820,padding:0,overflow:"hidden",maxHeight:"90vh",display:"flex",flexDirection:"column",...(_mp?{position:"fixed",left:_mp.x,top:_mp.y,margin:0,transform:"none"}:{})}}>
       {/* NEW HEADER BAR */}
-      <div style={{padding:"13px 20px",borderBottom:"1px solid #f0ede8",display:"flex",alignItems:"center",gap:12}}>
+      <div style={{padding:"10px 16px",borderBottom:"1px solid #f0ede8",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
         <div style={{width:40,height:40,borderRadius:9,background:"#1a1714",color:"#d4a853",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,letterSpacing:.5}}>
           {((a.name||"").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase())||"?"}
         </div>
@@ -11355,9 +11355,9 @@ export default function Page(){
         </div>
       </div>
       {/* TWO-COLUMN BODY */}
-      <div style={{display:"flex",maxHeight:"calc(100vh - 200px)",minHeight:480,overflow:"hidden"}}>
+      <div style={{display:"flex",flex:1,minHeight:0,overflow:"hidden"}}>
         {/* LEFT COLUMN */}
-        <div style={{width:320,flexShrink:0,borderRight:"1px solid #f0ede8",overflowY:"auto",background:"#faf9f7",padding:"14px 16px",minWidth:280}}>
+        <div style={{width:290,flexShrink:0,borderRight:"1px solid #f0ede8",overflowY:"auto",background:"#faf9f7",padding:"12px 14px",minWidth:260}}>
 
       {mf.length>0&&(()=>{const dmf=modal._dismissedFlags||[];const vis=mf.filter((_,i)=>!dmf.includes(i));if(!vis.length)return null;return(<div style={{marginBottom:10}}>{vis.map(f=>{const oi=mf.indexOf(f);const bg=f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)";const col=f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f";return(<div key={oi} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center",background:bg,color:col}}><span>{f.label}</span><button onClick={()=>setModal(p=>({...p,_dismissedFlags:[...(p._dismissedFlags||[]),oi]}))} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".45"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,fontFamily:"inherit",padding:"0 2px",opacity:.45,lineHeight:1,color:"inherit",transition:"opacity .15s",flexShrink:0}}>&#x2715;</button></div>);})}</div>);})()}
       {/* ── Editable Applicant Info ── */}
@@ -12812,7 +12812,7 @@ export default function Page(){
         </div>
       </div>
       {/* FOOTER START */}
-      <div style={{borderTop:"1px solid #f0ede8",background:"#faf9f7"}}>
+      <div style={{borderTop:"1px solid #f0ede8",background:"#faf9f7",flexShrink:0}}>
       {/* Move-in charges — shown on approved applicants */}
       {(a.status==="approved"||a.status==="onboarding")&&(()=>{
         const lk=a.lockActivation;
