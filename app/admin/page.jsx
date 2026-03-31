@@ -10094,7 +10094,7 @@ export default function Page(){
           </div>
         </>);
       })()}
-    </div></div>);})()}
+    </div>);})()}
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
@@ -12771,9 +12771,6 @@ export default function Page(){
         </div>);
       })()}
 
-
-        </div>}
-      </div>);})()}
 
       </div>{/* end right column */}
       </div>{/* end two-column body */}
