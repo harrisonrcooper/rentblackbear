@@ -202,18 +202,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .upload{border:2px dashed rgba(0,0,0,.1);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(0,0,0,.01)}
 .upload:hover{border-color:var(--ac);background:rgba(212,168,83,.03)}
 .upload.has{border-color:var(--gn);border-style:solid;background:rgba(74,124,89,.03)}
-.upload.drag{border-color:var(--ac);border-style:solid;background:rgba(212,168,83,.06);transform:scale(1.01)}
 .upload-ic{font-size:28px;margin-bottom:6px}
 .upload-txt{font-size:12px;color:#5c4a3a}
-.upload-sub{font-size:11px;color:#9a9087;margin-top:4px}
 .upload-file{font-size:12px;color:var(--gn);font-weight:600;margin-top:4px}
-.upload-mob{display:flex;flex-direction:column;gap:8px}
-.upload-mob-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 16px;border-radius:10px;border:2px dashed rgba(0,0,0,.1);background:rgba(0,0,0,.01);cursor:pointer;font-size:13px;font-weight:600;color:#3d3529;font-family:inherit;transition:all .2s;width:100%}
-.upload-mob-btn:hover{border-color:var(--ac);background:rgba(212,168,83,.03)}
-.upload-mob-btn.cam{border-color:var(--ac);border-style:solid;background:rgba(212,168,83,.04)}
-.upload-mob-has{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid var(--gn);background:rgba(74,124,89,.04)}
-.upload-mob-has-name{flex:1;font-size:12px;font-weight:600;color:var(--gn);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.upload-mob-change{font-size:11px;font-weight:700;color:var(--ac);cursor:pointer;text-decoration:underline;flex-shrink:0}
 
 /* Yes/No */
 .yn-row{display:flex;gap:8px;margin-bottom:16px}
@@ -292,8 +283,8 @@ export default function ApplyPage(){
     evicted:"",evictedExplain:"",felony:"",felonyExplain:"",
     // Employment
     employers:[],curEmployerForm:null,unemployed:false,
-    // References — arrays of {id, firstName, lastName, email, phone, relationship}
-    empRefs:[],persRefs:[],empRefForm:null,persRefForm:null,
+    // References
+    empRefName:"",empRefPhone:"",empRefRelation:"",persRefName:"",persRefPhone:"",persRefRelation:"",
     // Emergency
     emergName:"",emergPhone:"",emergRelation:"",
     // Room
@@ -316,13 +307,7 @@ export default function ApplyPage(){
   const[submitted,setSubmitted]=useState(false);
   const[props_,setProps]=useState([]);
   const[errors,setErrors]=useState({});
-  const[isMobile,setIsMobile]=useState(false);
-  const[idDrag,setIdDrag]=useState(false);
-  const[payDrag,setPayDrag]=useState(false);
   const fileRef=useRef(null);const payRef=useRef(null);
-  const camRef=useRef(null);const payCamRef=useRef(null);
-
-  useEffect(()=>{setIsMobile("ontouchstart" in window||navigator.maxTouchPoints>0);},[]);
 
   const upd=(k,v)=>{setD(p=>({...p,[k]:v}));setErrors(p=>({...p,[k]:undefined}));};
   const fmtPhone=(v)=>{const x=v.replace(/\D/g,"").slice(0,10);if(x.length<=3)return x;if(x.length<=6)return`(${x.slice(0,3)}) ${x.slice(3)}`;return`(${x.slice(0,3)}) ${x.slice(3,6)}-${x.slice(6)}`;};
@@ -399,16 +384,10 @@ export default function ApplyPage(){
       if(!d.unemployed&&fieldActive("employers")&&fieldRequired("employers")&&d.employers.length===0&&!d.incomeUploadLater)e.employers="Please add at least one employer, or check the box to upload income proof later";
     }
     if(s==="references"){
-      if(!d.unemployed&&d.empRefs.length===0)e.empRefs="Add at least one employer reference";
-      if(d.persRefs.length===0)e.persRefs="Add at least one personal reference";
-      const phoneRe=/^\(\d{3}\) \d{3}-\d{4}$/;
-      const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      [...(d.unemployed?[]:d.empRefs),...d.persRefs].forEach((r,i)=>{
-        if(!r.firstName.trim()||!r.lastName.trim())e["ref_"+r.id+"_name"]="First and last name required";
-        if(!emailRe.test(r.email))e["ref_"+r.id+"_email"]="Valid email address required";
-        if(!phoneRe.test(r.phone))e["ref_"+r.id+"_phone"]="Enter a valid 10-digit phone number";
-        if(!r.relationship.trim())e["ref_"+r.id+"_rel"]="Relationship is required";
-      });
+      if(!d.unemployed&&fieldActive("empRefName")&&fieldRequired("empRefName")&&!d.empRefName.trim())e.empRefName=`${fieldLabel("empRefName","Employer reference name")} is required`;
+      if(!d.unemployed&&fieldActive("empRefPhone")&&fieldRequired("empRefPhone")&&!d.empRefPhone.trim())e.empRefPhone=`${fieldLabel("empRefPhone","Employer reference phone")} is required`;
+      if(fieldActive("persRefName")&&fieldRequired("persRefName")&&!d.persRefName.trim())e.persRefName=`${fieldLabel("persRefName","Personal reference name")} is required`;
+      if(fieldActive("persRefPhone")&&fieldRequired("persRefPhone")&&!d.persRefPhone.trim())e.persRefPhone=`${fieldLabel("persRefPhone","Personal reference phone")} is required`;
     }
     if(s==="emergency"){
       if(fieldActive("emergName")&&fieldRequired("emergName")&&!d.emergName.trim())e.emergName=`${fieldLabel("emergName","Emergency contact name")} is required`;
@@ -436,12 +415,19 @@ export default function ApplyPage(){
   const baseFee=invite?.inviteFee||59;
 
   // Address form helpers
-  const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",landlordFirstName:"",landlordLastName:"",landlordEmail:"",landlordPhone:""};
+  const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",otherSituation:"",landlordFirstName:"",landlordLastName:"",landlordEmail:"",landlordPhone:"",landlordEmailStatus:"not_sent",landlordToken:null,landlordSentAt:null,landlordReplyContent:null,landlordRepliedAt:null,landlordVerifiedAt:null};
   const calcMonthsCovered=(addrs)=>{const MNAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];const now=new Date();return addrs.reduce((tot,a)=>{const mi=MNAMES.indexOf(a.monthIn);if(mi<0||!a.yearIn)return tot;const start=new Date(parseInt(a.yearIn),mi,1);return tot+Math.max(0,(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth()));},0);};
   const saveAddr=()=>{const f=d.curAddressForm;if(!f)return;
-    const missing=!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn||!f.reason||!f.landlordFirstName||!f.landlordLastName||!f.landlordEmail||!f.landlordPhone;
-    const badEmail=f.landlordEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.landlordEmail);
-    const badPhone=f.landlordPhone&&f.landlordPhone.replace(/\D/g,"").length!==10;
+    const isRent=f.resType==="Rent";
+    const isOwn=f.resType==="Own";
+    const isOther=f.resType==="Other";
+    const baseOk=!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn;
+    const reasonOk=!f.reason;
+    const landlordOk=isRent&&(!f.landlordFirstName||!f.landlordLastName||!f.landlordEmail||!f.landlordPhone);
+    const otherOk=isOther&&!f.otherSituation;
+    const missing=baseOk||reasonOk||landlordOk||otherOk;
+    const badEmail=isRent&&f.landlordEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.landlordEmail);
+    const badPhone=isRent&&f.landlordPhone&&f.landlordPhone.replace(/\D/g,"").length!==10;
     if(missing||badEmail||badPhone){upd("curAddressForm",{...f,_saved:true,_badEmail:badEmail,_badPhone:badPhone});shake();return;}
     if(f._editIdx!==undefined){setD(p=>({...p,addresses:p.addresses.map((a,i)=>i===f._editIdx?f:a),curAddressForm:null}));}
     else{setD(p=>{const newAddrs=[...p.addresses,f];const months=calcMonthsCovered(newAddrs);const needMore=months<24;return{...p,addresses:newAddrs,curAddressForm:needMore?{...blankAddr,_needMore:true}:null};});}};
@@ -637,7 +623,8 @@ export default function ApplyPage(){
         {/* Added addresses */}
         {d.addresses.map((a,i)=><div key={i} className="item-card">
           <div className="item-hd"><div><div className="item-nm">{a.street}, {a.city}, {a.state} {a.zip}</div><div className="item-sub">{a.resType} · Since {a.monthIn} {a.yearIn}{a.rent?` · $${a.rent}/mo`:""}</div></div><div><button className="item-edit" onClick={()=>upd("curAddressForm",{...a,_editIdx:i})}>Edit</button><button className="item-del" onClick={()=>setD(p=>({...p,addresses:p.addresses.filter((_,j)=>j!==i)}))}>Remove</button></div></div>
-          {(a.landlordFirstName||a.landlordName)&&<div style={{fontSize:10,color:"#999"}}>Landlord: {a.landlordFirstName&&a.landlordLastName?`${a.landlordFirstName} ${a.landlordLastName}`:a.landlordName||""}{a.landlordPhone?` · ${a.landlordPhone}`:""}{a.landlordEmail?` · ${a.landlordEmail}`:""}</div>}
+          {a.resType==="Rent"&&(a.landlordFirstName||a.landlordName)&&<div style={{fontSize:10,color:"#999"}}>Landlord: {a.landlordFirstName&&a.landlordLastName?a.landlordFirstName+" "+a.landlordLastName:a.landlordName||""}{a.landlordPhone?" · "+a.landlordPhone:""}{a.landlordEmail?" · "+a.landlordEmail:""}</div>}
+          {a.resType==="Other"&&a.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",fontStyle:"italic",marginTop:2}}>{a.otherSituation}</div>}
         </div>)}
 
         {/* Add address form */}
@@ -661,15 +648,27 @@ export default function ApplyPage(){
             <div className="fld"><label>Monthly Rent</label><input type="number" value={d.curAddressForm.rent} onChange={e=>upd("curAddressForm",{...d.curAddressForm,rent:e.target.value})} placeholder="1100"/></div>
           </div>
           <div className="fld"><label>Why are you moving?<span className="req">*</span></label><textarea value={d.curAddressForm.reason} onChange={e=>upd("curAddressForm",{...d.curAddressForm,reason:e.target.value})} className={!d.curAddressForm.reason&&d.curAddressForm._saved?"err":""} placeholder="e.g. Moving for work, end of lease, upgrading, etc."/></div>
-          <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact <span style={{color:"#c45c4a",fontWeight:400,fontSize:11}}>* All fields required</span></div>
-          <div className="fld-row">
-            <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.curAddressForm.landlordFirstName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordFirstName:cap});}} className={!d.curAddressForm.landlordFirstName&&d.curAddressForm._saved?"err":""} placeholder="First name"/></div>
-            <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.curAddressForm.landlordLastName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordLastName:cap});}} className={!d.curAddressForm.landlordLastName&&d.curAddressForm._saved?"err":""} placeholder="Last name"/></div>
-          </div>
-          <div className="fld-row">
-            <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.curAddressForm.landlordEmail||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value,_badEmail:false})} className={((!d.curAddressForm.landlordEmail||d.curAddressForm._badEmail)&&d.curAddressForm._saved)?"err":""} placeholder="landlord@email.com"/>{d.curAddressForm._badEmail&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid email address</div>}</div>
-            <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.curAddressForm.landlordPhone||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value),_badPhone:false})} className={((!d.curAddressForm.landlordPhone||d.curAddressForm._badPhone)&&d.curAddressForm._saved)?"err":""} placeholder="(555) 555-5555"/>{d.curAddressForm._badPhone&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid 10-digit phone number</div>}</div>
-          </div>
+          {/* Landlord contact — Rent only */}
+          {d.curAddressForm.resType==="Rent"&&<>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact <span style={{color:"#c45c4a",fontWeight:400,fontSize:11}}>* All fields required</span></div>
+            <div className="fld-row">
+              <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.curAddressForm.landlordFirstName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordFirstName:cap});}} className={!d.curAddressForm.landlordFirstName&&d.curAddressForm._saved?"err":""} placeholder="First name"/></div>
+              <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.curAddressForm.landlordLastName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordLastName:cap});}} className={!d.curAddressForm.landlordLastName&&d.curAddressForm._saved?"err":""} placeholder="Last name"/></div>
+            </div>
+            <div className="fld-row">
+              <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.curAddressForm.landlordEmail||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value,_badEmail:false})} className={((!d.curAddressForm.landlordEmail||d.curAddressForm._badEmail)&&d.curAddressForm._saved)?"err":""} placeholder="landlord@email.com"/>{d.curAddressForm._badEmail&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid email address</div>}</div>
+              <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.curAddressForm.landlordPhone||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value),_badPhone:false})} className={((!d.curAddressForm.landlordPhone||d.curAddressForm._badPhone)&&d.curAddressForm._saved)?"err":""} placeholder="(555) 555-5555"/>{d.curAddressForm._badPhone&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid 10-digit phone number</div>}</div>
+            </div>
+          </>}
+          {/* Other situation — free text */}
+          {d.curAddressForm.resType==="Other"&&<div className="fld" style={{marginTop:16}}>
+            <label>Please describe your living situation<span className="req">*</span></label>
+            <textarea value={d.curAddressForm.otherSituation||""} rows={3}
+              onChange={e=>upd("curAddressForm",{...d.curAddressForm,otherSituation:e.target.value})}
+              className={!d.curAddressForm.otherSituation&&d.curAddressForm._saved?"err":""}
+              placeholder="e.g. Living with family, shelter, transitional housing, college dorm, etc."/>
+            {!d.curAddressForm.otherSituation&&d.curAddressForm._saved&&<div className="err-msg" style={{animation:"shake .4s ease"}}>Please describe your living situation</div>}
+          </div>}
           {d.curAddressForm?._needMore&&<div style={{padding:"10px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:8,marginBottom:12,fontSize:12,color:"#7a5a10",fontWeight:600}}>📋 We need at least <strong>2 years</strong> of rental history — please add another address.</div>}
           <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveAddr}>Save Address</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curAddressForm",null)}>Cancel</button></div>
         </div>
@@ -704,55 +703,7 @@ export default function ApplyPage(){
         </div>
         {fieldActive("idFile")&&<div className="fld">
           <label>{fieldLabel("idFile","Photo ID")}{fieldRequired("idFile")&&<span className="req">*</span>}</label>
-          {!d.idUploadLater&&<>
-            {/* Hidden inputs */}
-            <input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/>
-            <input ref={camRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/>
-
-            {/* Desktop: drag-and-drop zone */}
-            {!isMobile&&(d.idFileName
-              ?<div className="upload has" style={{display:"flex",alignItems:"center",gap:12,padding:16,cursor:"default"}}>
-                  <span style={{fontSize:22}}>&#10003;</span>
-                  <div style={{flex:1,textAlign:"left"}}>
-                    <div className="upload-file" style={{marginTop:0}}>{d.idFileName}</div>
-                    <div className="upload-sub">File selected</div>
-                  </div>
-                  <button onClick={(e)=>{e.stopPropagation();upd("idFileName","");if(fileRef.current)fileRef.current.value="";}} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,color:"#c45c4a",lineHeight:1,padding:"0 4px"}}>x</button>
-                </div>
-              :<div className={`upload ${idDrag?"drag":""}`}
-                  onClick={()=>fileRef.current?.click()}
-                  onDragOver={e=>{e.preventDefault();setIdDrag(true);}}
-                  onDragEnter={e=>{e.preventDefault();setIdDrag(true);}}
-                  onDragLeave={()=>setIdDrag(false)}
-                  onDrop={e=>{e.preventDefault();setIdDrag(false);const f=e.dataTransfer.files[0];if(f)upd("idFileName",f.name);}}>
-                  <div className="upload-ic">
-                    <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{color:idDrag?"var(--ac)":"#9a9087"}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  </div>
-                  <div className="upload-txt" style={{fontWeight:600,color:idDrag?"var(--ac)":"#3d3529"}}>{idDrag?"Drop it here!":"Drag and drop your ID here"}</div>
-                  <div className="upload-sub">or click to browse &mdash; JPG, PNG, or PDF</div>
-                </div>
-            )}
-
-            {/* Mobile: camera + gallery split */}
-            {isMobile&&(d.idFileName
-              ?<div className="upload-mob-has">
-                  <span style={{fontSize:20}}>&#10003;</span>
-                  <div className="upload-mob-has-name">{d.idFileName}</div>
-                  <span className="upload-mob-change" onClick={()=>{upd("idFileName","");if(fileRef.current)fileRef.current.value="";}}>Remove</span>
-                </div>
-              :<div className="upload-mob">
-                  <button className="upload-mob-btn cam" onClick={()=>camRef.current?.click()}>
-                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    Take a Photo
-                  </button>
-                  <button className="upload-mob-btn" onClick={()=>fileRef.current?.click()}>
-                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    Choose from Gallery
-                  </button>
-                </div>
-            )}
-            {fieldHelp("idFile","JPG, PNG, or PDF.")&&<div className="help">{fieldHelp("idFile","JPG, PNG, or PDF.")}</div>}
-          </>}
+          {!d.idUploadLater&&<><div className={`upload ${d.idFileName?"has":""}`} onClick={()=>fileRef.current?.click()}><div className="upload-ic">{d.idFileName?"✅":"📷"}</div><div className="upload-txt">{d.idFileName?"":fieldPlaceholder("idFile","Upload driver's license, passport, or state ID")}</div>{d.idFileName&&<div className="upload-file">{d.idFileName}</div>}</div><input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/>{fieldHelp("idFile","JPG, PNG, or PDF. Max 10MB.")&&<div className="help">{fieldHelp("idFile","JPG, PNG, or PDF. Max 10MB.")}</div>}</>}
           <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
             <input type="checkbox" checked={d.idUploadLater} onChange={e=>{upd("idUploadLater",e.target.checked);if(e.target.checked)upd("idFileName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
             I'll upload my photo ID later
@@ -815,54 +766,7 @@ export default function ApplyPage(){
 
         <div className="fld" style={{marginTop:12}}>
           <label>Proof of Income</label>
-          {!d.incomeUploadLater&&<>
-            {/* Hidden inputs */}
-            <input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/>
-            <input ref={payCamRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/>
-
-            {/* Desktop: drag-and-drop zone */}
-            {!isMobile&&(d.payStubsName
-              ?<div className="upload has" style={{display:"flex",alignItems:"center",gap:12,padding:16,cursor:"default"}}>
-                  <span style={{fontSize:22}}>&#10003;</span>
-                  <div style={{flex:1,textAlign:"left"}}>
-                    <div className="upload-file" style={{marginTop:0}}>{d.payStubsName}</div>
-                    <div className="upload-sub">File selected</div>
-                  </div>
-                  <button onClick={(e)=>{e.stopPropagation();upd("payStubsName","");if(payRef.current)payRef.current.value="";}} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,color:"#c45c4a",lineHeight:1,padding:"0 4px"}}>x</button>
-                </div>
-              :<div className={`upload ${payDrag?"drag":""}`}
-                  onClick={()=>payRef.current?.click()}
-                  onDragOver={e=>{e.preventDefault();setPayDrag(true);}}
-                  onDragEnter={e=>{e.preventDefault();setPayDrag(true);}}
-                  onDragLeave={()=>setPayDrag(false)}
-                  onDrop={e=>{e.preventDefault();setPayDrag(false);const f=e.dataTransfer.files[0];if(f)upd("payStubsName",f.name);}}>
-                  <div className="upload-ic">
-                    <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{color:payDrag?"var(--ac)":"#9a9087"}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  </div>
-                  <div className="upload-txt" style={{fontWeight:600,color:payDrag?"var(--ac)":"#3d3529"}}>{payDrag?"Drop it here!":"Drag and drop your document here"}</div>
-                  <div className="upload-sub">or click to browse &mdash; pay stubs, offer letter, or bank statements</div>
-                </div>
-            )}
-
-            {/* Mobile: camera + gallery split */}
-            {isMobile&&(d.payStubsName
-              ?<div className="upload-mob-has">
-                  <span style={{fontSize:20}}>&#10003;</span>
-                  <div className="upload-mob-has-name">{d.payStubsName}</div>
-                  <span className="upload-mob-change" onClick={()=>{upd("payStubsName","");if(payRef.current)payRef.current.value="";}}>Remove</span>
-                </div>
-              :<div className="upload-mob">
-                  <button className="upload-mob-btn cam" onClick={()=>payCamRef.current?.click()}>
-                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    Take a Photo
-                  </button>
-                  <button className="upload-mob-btn" onClick={()=>payRef.current?.click()}>
-                    <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    Choose from Gallery / Files
-                  </button>
-                </div>
-            )}
-          </>}
+          {!d.incomeUploadLater&&<><div className={`upload ${d.payStubsName?"has":""}`} onClick={()=>payRef.current?.click()}><div className="upload-ic">{d.payStubsName?"✅":"📄"}</div><div className="upload-txt">{d.payStubsName?"":"Tap to upload pay stubs, offer letter, or bank statements"}</div>{d.payStubsName&&<div className="upload-file">{d.payStubsName}</div>}</div><input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/></>}
           <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
             <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>{upd("incomeUploadLater",e.target.checked);if(e.target.checked)upd("payStubsName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
             I'll upload proof of income later
@@ -876,72 +780,18 @@ export default function ApplyPage(){
       {/* ═══ REFERENCES ═══ */}
       {step==="references"&&<div className="sec">
         <div className="sec-num">Section 4</div>
-        <div className="sec-hd"><h2>References</h2><p>Provide {d.unemployed?"at least one personal reference":"at least one employer and one personal reference"}. All info must be accurate &#8212; we contact them directly.</p></div>
-
-        {(()=>{
-          const uid2=()=>Math.random().toString(36).slice(2);
-          const blankRef=()=>({id:uid2(),firstName:"",lastName:"",email:"",phone:"",relationship:""});
-          const phoneRe=/^\(\d{3}\) \d{3}-\d{4}$/;
-          const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-          function RefCard({r,refArr,setRefArr,typeLabel}){
-            const[editing,setEditing]=React.useState(!r.firstName);
-            const[form,setForm]=React.useState({...r});
-            const fErr=(k)=>errors["ref_"+r.id+"_"+k];
-            if(!editing)return(
-              <div className="item-card">
-                <div className="item-hd">
-                  <div>
-                    <div className="item-nm">{r.firstName} {r.lastName}</div>
-                    <div className="item-sub">{r.relationship} &#183; {r.phone} &#183; {r.email}</div>
-                  </div>
-                  <div>
-                    <button className="item-edit" onClick={()=>{setForm({...r});setEditing(true);}}>Edit</button>
-                    <button className="item-del" onClick={()=>setRefArr(prev=>prev.filter(x=>x.id!==r.id))}>Remove</button>
-                  </div>
-                </div>
-              </div>
-            );
-            return(
-              <div className="expand-form">
-                <h3>{r.firstName?"Edit":"Add"} {typeLabel} Reference</h3>
-                <div className="fld-row">
-                  <div className="fld"><label>First Name<span className="req">*</span></label><input value={form.firstName} onChange={e=>setForm(f=>({...f,firstName:e.target.value}))} placeholder="First" className={fErr("name")?"err":""}/></div>
-                  <div className="fld"><label>Last Name<span className="req">*</span></label><input value={form.lastName} onChange={e=>setForm(f=>({...f,lastName:e.target.value}))} placeholder="Last" className={fErr("name")?"err":""}/></div>
-                </div>
-                {fErr("name")&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:-8,marginBottom:8}}>{fErr("name")}</div>}
-                <div className="fld"><label>Email Address<span className="req">*</span></label><input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} placeholder="their@email.com" className={fErr("email")?"err":""}/>{fErr("email")&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{fErr("email")}</div>}</div>
-                <div className="fld-row">
-                  <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={form.phone} onChange={e=>setForm(f=>({...f,phone:fmtPhone(e.target.value)}))} placeholder="(555) 555-5555" className={fErr("phone")?"err":""}/>{fErr("phone")&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{fErr("phone")}</div>}</div>
-                  <div className="fld"><label>Relationship<span className="req">*</span></label><input value={form.relationship} onChange={e=>setForm(f=>({...f,relationship:e.target.value}))} placeholder="e.g. Supervisor, Friend" className={fErr("rel")?"err":""}/>{fErr("rel")&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{fErr("rel")}</div>}</div>
-                </div>
-                <div style={{display:"flex",gap:8}}>
-                  <button className="btn-next" style={{flex:1}} onClick={()=>{setRefArr(prev=>prev.map(x=>x.id===r.id?{...x,...form}:x));setEditing(false);}}>Save Reference</button>
-                  {r.firstName&&<button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>setEditing(false)}>Cancel</button>}
-                </div>
-              </div>
-            );
-          }
-          return(<>
-            {!d.unemployed&&<>
-              <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer References</div>
-              {d.empRefs.map(r=><RefCard key={r.id} r={r} refArr={d.empRefs} setRefArr={arr=>setD(p=>({...p,empRefs:typeof arr==="function"?arr(p.empRefs):arr}))} typeLabel="Employer"/>)}
-              <div className="add-card" onClick={()=>setD(p=>({...p,empRefs:[...p.empRefs,blankRef()]}))}>
-                <div className="plus">+</div><div className="lbl">Add {d.empRefs.length===0?"an":"another"} Employer Reference</div>
-              </div>
-              {errors.empRefs&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:6}}>{errors.empRefs}</div>}
-            </>}
-            <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:d.unemployed?0:24}}>Personal References</div>
-            {d.persRefs.map(r=><RefCard key={r.id} r={r} refArr={d.persRefs} setRefArr={arr=>setD(p=>({...p,persRefs:typeof arr==="function"?arr(p.persRefs):arr}))} typeLabel="Personal"/>)}
-            <div className="add-card" onClick={()=>setD(p=>({...p,persRefs:[...p.persRefs,blankRef()]}))}>
-              <div className="plus">+</div><div className="lbl">Add {d.persRefs.length===0?"a":"another"} Personal Reference</div>
-            </div>
-            {errors.persRefs&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:6}}>{errors.persRefs}</div>}
-          </>);
-        })()}
-
-        <button className="btn-next" onClick={next} style={{marginTop:20}}>Continue &#8594;</button>
-        <button className="btn-back" onClick={back}>&#8592; Back</button>
+        <div className="sec-hd"><h2>References</h2><p>Provide {d.unemployed?"a personal reference":"one employer and one personal reference"}.</p></div>
+        {!d.unemployed&&<>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer Reference</div>
+          <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.empRefName} onChange={e=>upd("empRefName",e.target.value)} className={errors.empRefName?"err":""} placeholder="Supervisor or HR"/>{errors.empRefName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefName}</div>}</div>
+          <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div></div>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:20}}>Personal Reference</div>
+        </>}
+        {d.unemployed&&<div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Personal Reference</div>}
+        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.persRefName} onChange={e=>upd("persRefName",e.target.value)} className={errors.persRefName?"err":""} placeholder="Someone who knows you well"/>{errors.persRefName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefName}</div>}</div>
+        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>upd("persRefPhone",fmtPhone(e.target.value))} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.persRefRelation} onChange={e=>upd("persRefRelation",e.target.value)} placeholder="e.g. Friend"/></div></div>
+        <button className="btn-next" onClick={next}>Continue →</button>
+        <button className="btn-back" onClick={back}>← Back</button>
       </div>}
 
       {/* ═══ EMERGENCY ═══ */}
@@ -1029,8 +879,8 @@ export default function ApplyPage(){
         </div>
         {appType==="tenant"&&<>
           <div className="rev-sec"><h3>📋 References <span className="rev-edit" onClick={()=>setStep("references")}>Edit</span></h3>
-            {d.empRefs.map(r=><div key={r.id} className="rev-row"><span className="rev-label">Employer</span><span className="rev-val">{r.firstName} {r.lastName} &#183; {r.relationship} &#183; {r.email}</span></div>)}
-            {d.persRefs.map(r=><div key={r.id} className="rev-row"><span className="rev-label">Personal</span><span className="rev-val">{r.firstName} {r.lastName} &#183; {r.relationship} &#183; {r.email}</span></div>)}
+            <div className="rev-row"><span className="rev-label">Employer</span><span className="rev-val">{d.empRefName} · {d.empRefPhone}</span></div>
+            <div className="rev-row"><span className="rev-label">Personal</span><span className="rev-val">{d.persRefName} · {d.persRefPhone}</span></div>
           </div>
           <div className="rev-sec"><h3>🚨 Emergency <span className="rev-edit" onClick={()=>setStep("emergency")}>Edit</span></h3>
             <div className="rev-row"><span className="rev-label">Contact</span><span className="rev-val">{d.emergName} · {d.emergPhone} · {d.emergRelation}</span></div>
@@ -1127,7 +977,6 @@ export default function ApplyPage(){
               status:"applied",lastContact:now,
               minorChildren:d.minorChildren||0,
               applicationData:d,
-              refsList:[...((d.unemployed?[]:d.empRefs)||[]).map(r=>({...r,type:"employer",emailStatus:"not_sent",token:null,sentAt:null,replyContent:null,repliedAt:null,verifiedAt:null})),...((d.persRefs)||[]).map(r=>({...r,type:"personal",emailStatus:"not_sent",token:null,sentAt:null,replyContent:null,repliedAt:null,verifiedAt:null}))],
               passcode:d.doorCode||null,
               name:fullName,email:d.email,phone:d.phone,
               dob:d.dob||null,gender:d.gender||"",occupationType:d.occupationType||"",
@@ -1176,7 +1025,6 @@ export default function ApplyPage(){
               passcode:d.doorCode||null,
               status:"applied",submitted:now,lastContact:now,
               bgCheck:"not-started",creditScore:"—",refs:"not-started",
-              refsList:[...((d.unemployed?[]:d.empRefs)||[]).map(r=>({...r,type:"employer",emailStatus:"not_sent",token:null,sentAt:null,replyContent:null,repliedAt:null,verifiedAt:null})),...((d.persRefs)||[]).map(r=>({...r,type:"personal",emailStatus:"not_sent",token:null,sentAt:null,replyContent:null,repliedAt:null,verifiedAt:null}))],
               source:"Online Application",applicationData:d,
               screenPkg:"credit-bg",appFee:baseFee,
               history:[{from:"new",to:"applied",date:now,note:"Walk-in application via apply page"}]
