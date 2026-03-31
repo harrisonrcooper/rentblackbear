@@ -8579,17 +8579,29 @@ export default function Page(){
             </div>
 
             {/* Delete Lease */}
-            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(196,92,74,.15)",padding:"28px 32px"}}>
-              <div style={{fontSize:16,fontWeight:700,color:"#c45c4a",marginBottom:8}}>Delete Lease</div>
-              <div style={{fontSize:13,color:"#6b5e52",marginBottom:16}}>Best for leases where the tenant never moved in or was created by mistake.</div>
-              <button className="btn btn-red btn-sm"
-                onClick={()=>setModal({type:"confirmAction",title:"Delete Lease",body:"This will permanently remove "+r.tenant.name+"'s lease record. This cannot be undone.",confirmLabel:"Delete Lease",confirmStyle:"btn-red",onConfirm:()=>{
-                  setProps(prev=>prev.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id!==r.id?rm:{...rm,st:"vacant",le:null,tenant:null,m2m:false})})}))));
-                  setModal(null);
-                }})}>
-                Delete Lease
-              </button>
-            </div>
+            {(()=>{
+              const doDeleteLease = () => {
+                const delId = r.id;
+                setProps(prev => prev.map(p => ({
+                  ...p,
+                  units: (p.units||[]).map(u => ({
+                    ...u,
+                    rooms: (u.rooms||[]).map(rm => rm.id !== delId ? rm : {...rm, st:"vacant", le:null, tenant:null, m2m:false})
+                  }))
+                })));
+                setModal(null);
+              };
+              return (
+                <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(196,92,74,.15)",padding:"28px 32px"}}>
+                  <div style={{fontSize:16,fontWeight:700,color:"#c45c4a",marginBottom:8}}>Delete Lease</div>
+                  <div style={{fontSize:13,color:"#6b5e52",marginBottom:16}}>Best for leases where the tenant never moved in or was created by mistake.</div>
+                  <button className="btn btn-red btn-sm"
+                    onClick={()=>setModal({type:"confirmAction",title:"Delete Lease",body:"This will permanently remove "+r.tenant.name+"'s lease record. This cannot be undone.",confirmLabel:"Delete Lease",confirmStyle:"btn-red",onConfirm:doDeleteLease})}>
+                    Delete Lease
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>);
       })()}
