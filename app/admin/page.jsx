@@ -12834,9 +12834,6 @@ export default function Page(){
         </div>);
       })()}
 
-        </div>}
-      </div>);})()}
-
       {/* ── FOOTER: action buttons ── */}
       <div style={{padding:"12px 20px",borderTop:"1px solid #f0ede8",display:"flex",gap:8,alignItems:"center",background:"#faf9f7",flexWrap:"wrap"}}>
       <div style={{display:"flex",gap:6,flex:1,flexWrap:"wrap"}}>
