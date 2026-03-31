@@ -104,9 +104,9 @@ function DateDrop({value,onChange,hasErr,mode="movein"}){
 // ─── Styles ──────────────────────────────────────────────────────
 const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-:root{--dk:#1a1714;--cr:#f5f0e8;--ac:#d4a853;--mt:#c4a882;--gn:#4a7c59;--rd:#c45c4a;--bg:#faf9f7;color-scheme:light}
+:root{--dk:#1a1714;--cr:#f5f0e8;--ac:#d4a853;--mt:#c4a882;--gn:#4a7c59;--rd:#c45c4a;--bg:#faf9f7}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d3529;-webkit-font-smoothing:antialiased;color-scheme:light}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d3529;-webkit-font-smoothing:antialiased}
 .app-wrap{min-height:100vh;display:flex;flex-direction:column}
 .app-header{background:var(--dk);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
 .app-logo{color:var(--cr);font-family:'DM Serif Display',serif;font-size:16px;display:flex;align-items:center;gap:8px}
@@ -415,19 +415,12 @@ export default function ApplyPage(){
   const baseFee=invite?.inviteFee||59;
 
   // Address form helpers
-  const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",otherSituation:"",landlordFirstName:"",landlordLastName:"",landlordEmail:"",landlordPhone:"",landlordEmailStatus:"not_sent",landlordToken:null,landlordSentAt:null,landlordReplyContent:null,landlordRepliedAt:null,landlordVerifiedAt:null};
+  const blankAddr={resType:"Rent",monthIn:"",yearIn:"",street:"",unit:"",city:"",state:"AL",zip:"",rent:"",reason:"",landlordFirstName:"",landlordLastName:"",landlordEmail:"",landlordPhone:""};
   const calcMonthsCovered=(addrs)=>{const MNAMES=["January","February","March","April","May","June","July","August","September","October","November","December"];const now=new Date();return addrs.reduce((tot,a)=>{const mi=MNAMES.indexOf(a.monthIn);if(mi<0||!a.yearIn)return tot;const start=new Date(parseInt(a.yearIn),mi,1);return tot+Math.max(0,(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth()));},0);};
   const saveAddr=()=>{const f=d.curAddressForm;if(!f)return;
-    const isRent=f.resType==="Rent";
-    const isOwn=f.resType==="Own";
-    const isOther=f.resType==="Other";
-    const baseOk=!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn;
-    const reasonOk=!f.reason;
-    const landlordOk=isRent&&(!f.landlordFirstName||!f.landlordLastName||!f.landlordEmail||!f.landlordPhone);
-    const otherOk=isOther&&!f.otherSituation;
-    const missing=baseOk||reasonOk||landlordOk||otherOk;
-    const badEmail=isRent&&f.landlordEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.landlordEmail);
-    const badPhone=isRent&&f.landlordPhone&&f.landlordPhone.replace(/\D/g,"").length!==10;
+    const missing=!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn||!f.reason||!f.landlordFirstName||!f.landlordLastName||!f.landlordEmail||!f.landlordPhone;
+    const badEmail=f.landlordEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.landlordEmail);
+    const badPhone=f.landlordPhone&&f.landlordPhone.replace(/\D/g,"").length!==10;
     if(missing||badEmail||badPhone){upd("curAddressForm",{...f,_saved:true,_badEmail:badEmail,_badPhone:badPhone});shake();return;}
     if(f._editIdx!==undefined){setD(p=>({...p,addresses:p.addresses.map((a,i)=>i===f._editIdx?f:a),curAddressForm:null}));}
     else{setD(p=>{const newAddrs=[...p.addresses,f];const months=calcMonthsCovered(newAddrs);const needMore=months<24;return{...p,addresses:newAddrs,curAddressForm:needMore?{...blankAddr,_needMore:true}:null};});}};
@@ -527,8 +520,7 @@ export default function ApplyPage(){
           const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
           const aInvitedRoom=invite?.termRoomId?allRooms(aProp||{}).find(r=>r.id===invite.termRoomId):null;
           const isWhole=aInvitedRoom?.isWholeUnit||(aProp?((aProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||aProp.rentalMode==="wholeHouse"):false);
-          // Don't render occupancy block until we know what mode we're in
-          if(!aProp&&!invite?.property)return null;
+          // Whole-unit gets co-applicant list; per-bedroom always gets acknowledgment
           if(isWhole){
             // Whole-unit: list all adults who will be staying
             const soloConfirmed=d.coApplicants.length===0;
@@ -537,7 +529,7 @@ export default function ApplyPage(){
               <div style={{fontSize:11,color:"#5c4a3a",marginBottom:12,lineHeight:1.5}}>List all adults (18 or older) who will live at this property. Each person must complete a separate application and screening. Minor children do not need to apply.</div>
               {soloConfirmed&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,marginBottom:12,fontSize:12,color:"#2d6a3f",fontWeight:600}}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Only me — I'll be the sole adult occupant
+                Only me — I’ll be the sole adult occupant
               </div>}
               {d.coApplicants.map((ca,i)=>(
                 <div key={i} style={{border:"2px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:8,background:"rgba(74,124,89,.02)"}}>
@@ -564,20 +556,19 @@ export default function ApplyPage(){
                 </div>
               </div>
             </div>);
-          } else {
-            // Per-bedroom: one-adult-per-room acknowledgment
-            const hasErr=!!errors.occupancyAck;
-            return(<div style={{marginBottom:20,background:hasErr?"rgba(196,92,74,.04)":"rgba(212,168,83,.03)",border:`2px solid ${hasErr?"rgba(196,92,74,.35)":"rgba(212,168,83,.2)"}`,borderRadius:12,padding:16,animation:hasErr?"shake .4s ease":"none"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:6}}>Occupancy Policy</div>
-              <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:14}}>You are renting by the bedroom. Only <strong>1 adult person per lease per bedroom</strong> is permitted to occupy the room. Any additional adult intending to reside at the property must submit their own separate application and be approved under their own lease.</div>
-              <div style={{fontSize:12,fontWeight:600,color:"#3d3529",marginBottom:10}}>Do you agree to the one-adult-per-bedroom occupancy policy?</div>
-              <div style={{display:"flex",gap:8}}>
-                <button className={"yn-btn "+(d.occupancyAck===true?"yes":"")} onClick={()=>{upd("occupancyAck",true);setErrors(p=>({...p,occupancyAck:undefined}));}}>Yes, I agree</button>
-                <button className={"yn-btn "+(d.occupancyAck===false?"no":"")} onClick={()=>{upd("occupancyAck",false);setErrors(p=>({...p,occupancyAck:"You must agree to the occupancy policy to continue"}));shake();}}>No</button>
-              </div>
-              {hasErr&&<div className="err-msg" style={{marginTop:8,animation:"shake .4s ease"}}>{errors.occupancyAck}</div>}
-            </div>);
           }
+          // Per-bedroom (default for all by-room rentals and walk-ins) — always show acknowledgment
+          const hasErr=!!errors.occupancyAck;
+          return(<div style={{marginBottom:20,background:hasErr?"rgba(196,92,74,.04)":"rgba(212,168,83,.03)",border:"2px solid "+(hasErr?"rgba(196,92,74,.35)":"rgba(212,168,83,.2)"),borderRadius:12,padding:16,animation:hasErr?"shake .4s ease":"none"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:6}}>Occupancy Policy</div>
+            <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:14}}>This rental is <strong>by the bedroom</strong>. Only <strong>1 adult per lease per bedroom</strong> is permitted to occupy the room. Any additional adult intending to reside at the property must submit their own separate application and be approved under their own lease.</div>
+            <div style={{fontSize:12,fontWeight:600,color:"#3d3529",marginBottom:10}}>Do you agree to the one-adult-per-bedroom occupancy policy?</div>
+            <div style={{display:"flex",gap:8}}>
+              <button className={"yn-btn "+(d.occupancyAck===true?"yes":"")} onClick={()=>{upd("occupancyAck",true);setErrors(p=>({...p,occupancyAck:undefined}));}}>Yes, I agree</button>
+              <button className={"yn-btn "+(d.occupancyAck===false?"no":"")} onClick={()=>{upd("occupancyAck",false);setErrors(p=>({...p,occupancyAck:"You must agree to the occupancy policy to continue"}));shake();}}>No</button>
+            </div>
+            {hasErr&&<div className="err-msg" style={{marginTop:8,animation:"shake .4s ease"}}>{errors.occupancyAck}</div>}
+          </div>);
         })()}
 
         {/* ── ABOUT YOU ── */}
@@ -623,8 +614,7 @@ export default function ApplyPage(){
         {/* Added addresses */}
         {d.addresses.map((a,i)=><div key={i} className="item-card">
           <div className="item-hd"><div><div className="item-nm">{a.street}, {a.city}, {a.state} {a.zip}</div><div className="item-sub">{a.resType} · Since {a.monthIn} {a.yearIn}{a.rent?` · $${a.rent}/mo`:""}</div></div><div><button className="item-edit" onClick={()=>upd("curAddressForm",{...a,_editIdx:i})}>Edit</button><button className="item-del" onClick={()=>setD(p=>({...p,addresses:p.addresses.filter((_,j)=>j!==i)}))}>Remove</button></div></div>
-          {a.resType==="Rent"&&(a.landlordFirstName||a.landlordName)&&<div style={{fontSize:10,color:"#999"}}>Landlord: {a.landlordFirstName&&a.landlordLastName?a.landlordFirstName+" "+a.landlordLastName:a.landlordName||""}{a.landlordPhone?" · "+a.landlordPhone:""}{a.landlordEmail?" · "+a.landlordEmail:""}</div>}
-          {a.resType==="Other"&&a.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",fontStyle:"italic",marginTop:2}}>{a.otherSituation}</div>}
+          {(a.landlordFirstName||a.landlordName)&&<div style={{fontSize:10,color:"#999"}}>Landlord: {a.landlordFirstName&&a.landlordLastName?`${a.landlordFirstName} ${a.landlordLastName}`:a.landlordName||""}{a.landlordPhone?` · ${a.landlordPhone}`:""}{a.landlordEmail?` · ${a.landlordEmail}`:""}</div>}
         </div>)}
 
         {/* Add address form */}
@@ -648,27 +638,15 @@ export default function ApplyPage(){
             <div className="fld"><label>Monthly Rent</label><input type="number" value={d.curAddressForm.rent} onChange={e=>upd("curAddressForm",{...d.curAddressForm,rent:e.target.value})} placeholder="1100"/></div>
           </div>
           <div className="fld"><label>Why are you moving?<span className="req">*</span></label><textarea value={d.curAddressForm.reason} onChange={e=>upd("curAddressForm",{...d.curAddressForm,reason:e.target.value})} className={!d.curAddressForm.reason&&d.curAddressForm._saved?"err":""} placeholder="e.g. Moving for work, end of lease, upgrading, etc."/></div>
-          {/* Landlord contact — Rent only */}
-          {d.curAddressForm.resType==="Rent"&&<>
-            <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact <span style={{color:"#c45c4a",fontWeight:400,fontSize:11}}>* All fields required</span></div>
-            <div className="fld-row">
-              <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.curAddressForm.landlordFirstName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordFirstName:cap});}} className={!d.curAddressForm.landlordFirstName&&d.curAddressForm._saved?"err":""} placeholder="First name"/></div>
-              <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.curAddressForm.landlordLastName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordLastName:cap});}} className={!d.curAddressForm.landlordLastName&&d.curAddressForm._saved?"err":""} placeholder="Last name"/></div>
-            </div>
-            <div className="fld-row">
-              <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.curAddressForm.landlordEmail||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value,_badEmail:false})} className={((!d.curAddressForm.landlordEmail||d.curAddressForm._badEmail)&&d.curAddressForm._saved)?"err":""} placeholder="landlord@email.com"/>{d.curAddressForm._badEmail&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid email address</div>}</div>
-              <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.curAddressForm.landlordPhone||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value),_badPhone:false})} className={((!d.curAddressForm.landlordPhone||d.curAddressForm._badPhone)&&d.curAddressForm._saved)?"err":""} placeholder="(555) 555-5555"/>{d.curAddressForm._badPhone&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid 10-digit phone number</div>}</div>
-            </div>
-          </>}
-          {/* Other situation — free text */}
-          {d.curAddressForm.resType==="Other"&&<div className="fld" style={{marginTop:16}}>
-            <label>Please describe your living situation<span className="req">*</span></label>
-            <textarea value={d.curAddressForm.otherSituation||""} rows={3}
-              onChange={e=>upd("curAddressForm",{...d.curAddressForm,otherSituation:e.target.value})}
-              className={!d.curAddressForm.otherSituation&&d.curAddressForm._saved?"err":""}
-              placeholder="e.g. Living with family, shelter, transitional housing, college dorm, etc."/>
-            {!d.curAddressForm.otherSituation&&d.curAddressForm._saved&&<div className="err-msg" style={{animation:"shake .4s ease"}}>Please describe your living situation</div>}
-          </div>}
+          <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Landlord Contact <span style={{color:"#c45c4a",fontWeight:400,fontSize:11}}>* All fields required</span></div>
+          <div className="fld-row">
+            <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.curAddressForm.landlordFirstName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordFirstName:cap});}} className={!d.curAddressForm.landlordFirstName&&d.curAddressForm._saved?"err":""} placeholder="First name"/></div>
+            <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.curAddressForm.landlordLastName||""} onChange={e=>{const v=e.target.value;const cap=v.charAt(0).toUpperCase()+v.slice(1);upd("curAddressForm",{...d.curAddressForm,landlordLastName:cap});}} className={!d.curAddressForm.landlordLastName&&d.curAddressForm._saved?"err":""} placeholder="Last name"/></div>
+          </div>
+          <div className="fld-row">
+            <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.curAddressForm.landlordEmail||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordEmail:e.target.value,_badEmail:false})} className={((!d.curAddressForm.landlordEmail||d.curAddressForm._badEmail)&&d.curAddressForm._saved)?"err":""} placeholder="landlord@email.com"/>{d.curAddressForm._badEmail&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid email address</div>}</div>
+            <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.curAddressForm.landlordPhone||""} onChange={e=>upd("curAddressForm",{...d.curAddressForm,landlordPhone:fmtPhone(e.target.value),_badPhone:false})} className={((!d.curAddressForm.landlordPhone||d.curAddressForm._badPhone)&&d.curAddressForm._saved)?"err":""} placeholder="(555) 555-5555"/>{d.curAddressForm._badPhone&&d.curAddressForm._saved&&<div className="err-msg">Please enter a valid 10-digit phone number</div>}</div>
+          </div>
           {d.curAddressForm?._needMore&&<div style={{padding:"10px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:8,marginBottom:12,fontSize:12,color:"#7a5a10",fontWeight:600}}>📋 We need at least <strong>2 years</strong> of rental history — please add another address.</div>}
           <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveAddr}>Save Address</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curAddressForm",null)}>Cancel</button></div>
         </div>
