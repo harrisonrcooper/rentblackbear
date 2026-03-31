@@ -12817,7 +12817,7 @@ export default function Page(){
   </div>}
 
   {/* Draggable Full Timeline Float Modal — root level so position:fixed works */}
-  {modal._tlFloatOpen&&(()=>{
+  {modal?._tlFloatOpen&&(()=>{
         const pos=modal._tlFloatPos||{x:80,y:60};
         const startDrag=(e)=>{
           if(e.target.closest("button")||e.target.closest("select"))return;
