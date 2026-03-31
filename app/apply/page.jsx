@@ -416,7 +416,7 @@ export default function ApplyPage(){
       // Occupancy validation — dynamic based on rental mode
       const appInfoProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
       const appInfoInvitedRoom=invite?.termRoomId?allRooms(appInfoProp||{}).find(r=>r.id===invite.termRoomId):null;
-      const appInfoWholeUnit=appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.rentalMode==="wholeHouse")||appInfoProp.rentalMode==="wholeHouse":false);
+      const appInfoWholeUnit=appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.id===invite?.termRoomId||(u.rentalMode==="wholeHouse"&&(!invite?.termRoomId||(appInfoProp.units||[]).length===1)))||appInfoProp.rentalMode==="wholeHouse":false);
       if(!appInfoWholeUnit&&!invite?.allowCouples&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
       d.coApplicants.forEach((ca,i)=>{if(ca.email&&!ca.email.includes("@"))e["coApp_"+i+"_email"]="Valid email address required";});
     }
@@ -530,7 +530,7 @@ export default function ApplyPage(){
             <label>Which property are you interested in?</label>
             <select value={d.preferredProperty} onChange={e=>{upd("preferredProperty",e.target.value);upd("selectedRoom","");}}>
               <option value="">Select a property...</option>
-              {props_.map(p=><option key={p.id} value={p.name}>{p.name}{p.addr?" — "+p.addr:""}</option>)}
+              {props_.map(p=><option key={p.id} value={p.name}>{p.addr||p.name}</option>)}
               <option value="No preference">No preference — any available room</option>
             </select>
           </div>
@@ -566,9 +566,10 @@ export default function ApplyPage(){
 
         {/* ── OCCUPANCY — dynamic per rental mode ── */}
         {(()=>{
-          const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
+          const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty))||props_.find(p=>p.id===(invite?.property||d.preferredProperty)):null;
           const aInvitedRoom=invite?.termRoomId?allRooms(aProp||{}).find(r=>r.id===invite.termRoomId):null;
-          const isWhole=aInvitedRoom?.isWholeUnit===true;
+          const aInvitedUnit=invite?.termRoomId&&aProp?(aProp.units||[]).find(u=>u.id===invite.termRoomId):null;
+          const isWhole=aInvitedRoom?.isWholeUnit===true||aInvitedUnit?.rentalMode==="wholeHouse"||(aProp&&(aProp.units||[]).some(u=>u.id===invite?.termRoomId&&(u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit")));
           const allowCouples=!isWhole&&(invite?.allowCouples===true);
           // Whole-unit gets co-applicant list; per-bedroom always gets acknowledgment
           if(isWhole){
