@@ -12176,6 +12176,15 @@ export default function Page(){
             ?tlUnitLabel
             :getPropDisplayName(tlProp))
           :null;
+        // Property filter — allows PM to switch between properties or see all
+        const tlPropFilter=modal._appTlPropFilter||"assigned"; // "assigned"|"all"|propId
+        const tlFilteredProp=tlPropFilter==="assigned"?tlProp:tlPropFilter==="all"?null:props.find(p=>p.id===tlPropFilter)||tlProp;
+        const tlFilteredRooms=tlFilteredProp
+          ?(tlIsWholeUnit&&tlSelectedUnitId&&tlPropFilter==="assigned"
+            ?leaseableItems(tlFilteredProp).filter(i=>i.unitId===tlSelectedUnitId&&i.isWholeUnit).map(i=>({...i,propName:tlHeaderLabel||getPropDisplayName(tlFilteredProp),propId:tlFilteredProp.id,buf:i.itemTurnoverDays||0}))
+            :allRooms(tlFilteredProp).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(tlFilteredProp),propId:tlFilteredProp.id,buf:r.turnoverDays!=null?r.turnoverDays:(tlFilteredProp.turnoverDays||0)}))
+          )
+          :props.flatMap(p=>allRooms(p).filter(r=>!r.ownerOccupied).map(r=>({...r,propName:getPropDisplayName(p),propId:p.id,buf:r.turnoverDays!=null?r.turnoverDays:(p.turnoverDays||0)})));
         const tlRooms=tlProp
           ?(tlIsWholeUnit&&tlSelectedUnitId
             // Whole unit selected — show the unit as a single leaseable item (not individual bedrooms)
@@ -12207,12 +12216,31 @@ export default function Page(){
           if(tlSort==="avail-desc")return cp.sort((a,b)=>rdMs(b)-rdMs(a));
           return cp.sort((a,b)=>rdMs(a)-rdMs(b)); // avail-asc default
         };
-        const tlSortedRooms=tlSortFn(tlRooms);
+        const tlSortedRooms=tlSortFn(tlFilteredRooms);
         return(
         <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none"}}>
             <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-              <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>{tlProp?`Availability — ${tlHeaderLabel||getPropDisplayName(tlProp)}`:"Availability — All Properties"}</span>
+              {/* Property filter pills */}
+              {(()=>{
+                const filterOpts=[
+                  ...(tlProp?[{id:"assigned",label:tlHeaderLabel||getPropDisplayName(tlProp)}]:[]),
+                  ...props.filter(p=>!tlProp||p.id!==tlProp.id).map(p=>({id:p.id,label:p.addr||getPropDisplayName(p)})),
+                  {id:"all",label:"All Properties"},
+                ];
+                return filterOpts.length>1?(
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+                    {filterOpts.map(opt=>(
+                      <button key={opt.id} onClick={()=>setModal(p=>({...p,_appTlPropFilter:opt.id}))}
+                        style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,border:"1px solid "+(tlPropFilter===opt.id?"#1a1714":"rgba(0,0,0,.1)"),background:tlPropFilter===opt.id?"#1a1714":"transparent",color:tlPropFilter===opt.id?"#d4a853":"#5c4a3a",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"all .12s"}}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                ):(
+                  <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>{`Availability — ${tlHeaderLabel||getPropDisplayName(tlProp)||"All Properties"}`}</span>
+                );
+              })()}
               {tlOpen&&<div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,overflow:"hidden",background:"rgba(0,0,0,.02)"}}>
                 {tlViews.map(v=>(
                   <button key={v.id}
@@ -12259,13 +12287,22 @@ export default function Page(){
                 </div>
               </>}
             </div>
-            <button
-              onClick={()=>setModal(p=>({...p,_appTlOpen:tlOpen?false:true}))}
-              onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.06)";e.currentTarget.style.color="#1a1714";}}
-              onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="#9a7422";}}
-              style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",transition:"all .12s",textTransform:"uppercase",letterSpacing:.4}}>
-              {tlOpen?"Hide":"Show"}
-            </button>
+            <div style={{display:"flex",gap:4,alignItems:"center"}}>
+              <button
+                onClick={()=>{setModal(null);setTab("tenants");setDrill("timeline");}}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,168,83,.1)";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}
+                style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,border:"1px solid rgba(212,168,83,.3)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",transition:"all .12s",whiteSpace:"nowrap"}}>
+                Full Timeline &#8599;
+              </button>
+              <button
+                onClick={()=>setModal(p=>({...p,_appTlOpen:tlOpen?false:true}))}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(0,0,0,.06)";e.currentTarget.style.color="#1a1714";}}
+                onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="#9a7422";}}
+                style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",background:"transparent",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",transition:"all .12s",textTransform:"uppercase",letterSpacing:.4}}>
+                {tlOpen?"Hide":"Show"}
+              </button>
+            </div>
           </div>
 
           {tlOpen&&<div>
