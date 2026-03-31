@@ -12227,9 +12227,11 @@ export default function Page(){
         const tlSortedRooms=tlSortFn(tlFilteredRooms);
         return(
         <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none",cursor:"pointer"}} onClick={()=>setModal(p=>({...p,_appTlOpen:!tlOpen}))}>
-            <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-              <span style={{fontSize:10,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.4}}>Availability Timeline</span>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderBottom:tlOpen?"1px solid rgba(0,0,0,.06)":"none",cursor:"pointer",background:"rgba(26,23,20,.02)"}} onClick={()=>setModal(p=>({...p,_appTlOpen:!tlOpen}))}>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5c4a3a" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span style={{fontSize:11,fontWeight:700,color:"#3d3529"}}>Availability Timeline</span>
+              {!tlOpen&&<span style={{fontSize:9,color:"#9a7422",fontWeight:600,marginLeft:2}}>click to expand</span>}
               {/* Property filter pills — only when open */}
               {tlOpen&&(()=>{
                 const filterOpts=[
@@ -12854,7 +12856,8 @@ export default function Page(){
           const leX=r.le?ftToX(r.le):null;const rdX=readyStr?ftToX(readyStr):null;
           const todayX=ftToX(TODAY_STR3);
           const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(86400000)):null;
-          const gap=readyStr&&a.moveIn?Math.ceil((new Date(a.moveIn+"T00:00:00")-new Date(readyStr+"T00:00:00"))/(86400000)):null;
+          const ftAppMoveIn=modal?.data?.termMoveIn||modal?.data?.moveIn||"";
+          const gap=readyStr&&ftAppMoveIn?Math.ceil((new Date(ftAppMoveIn+"T00:00:00")-new Date(readyStr+"T00:00:00"))/(86400000)):null;
           return(<div key={r.id} style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.03)",minHeight:32,alignItems:"center"}}>
             <div style={{width:130,flexShrink:0,padding:"4px 8px",fontSize:10,fontWeight:isOcc?600:700,color:isOcc?"#1a1714":"#4a7c59",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
               {r.name}<div style={{fontSize:8,color:"#9a7422",fontWeight:400}}>{isOcc?r.tenant.name:"Vacant"}</div>
