@@ -11507,8 +11507,12 @@ export default function Page(){
         {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
       </div>}
 
-      {/* ── Couples Policy — own card, required before room assignment ── */}
+      {/* ── Couples Policy — only when a bedroom is assigned, not whole unit ── */}
       {(()=>{
+        // Only show if a bedroom (not whole unit) is selected
+        const couplesAllItems=props.flatMap(p=>leaseableItems(p));
+        const couplesSelectedItem=a.termRoomId?couplesAllItems.find(i=>i.id===a.termRoomId):null;
+        if(!couplesSelectedItem||couplesSelectedItem.isWholeUnit)return null;
         // Resolve default: app-level → property-level → global setting
         const couplesTermProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
         const resolvedDefault=a.allowCouples!==undefined?a.allowCouples:(couplesTermProp?.couplesDefault!==undefined?couplesTermProp.couplesDefault:(settings.couplesDefault||false));
@@ -11581,7 +11585,6 @@ export default function Page(){
 
       {/* ── Room Assignment (all stages) ── */}
       {(()=>{
-        const couplesAnswered=a.allowCouples!==undefined;
         const moveInDate=a.termMoveIn||a.moveIn||"";
 
         // Helper: buffer-aware ready date using custom one-time buffer if set
@@ -11595,12 +11598,6 @@ export default function Page(){
         };
 
         const termProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
-        if(!couplesAnswered){
-          return(<div className="tp-card" style={{opacity:.5,pointerEvents:"none",userSelect:"none",position:"relative"}}>
-            <h3 style={{color:"#9a7422"}}>Room / Unit Assignment</h3>
-            <div style={{fontSize:11,color:"#9a7422"}}>Answer the occupancy policy question above to unlock room assignment.</div>
-          </div>);
-        }
         const allItems=termProp?leaseableItems(termProp):[];
         const termItem=a.termRoomId?allItems.find(i=>i.id===a.termRoomId):allItems.find(i=>i.name===a.room);
         const termRent=a.termRent!==undefined?a.termRent:(termItem?termItem.rent:0);
@@ -11616,6 +11613,13 @@ export default function Page(){
         });
 
         const selectedItem=propRooms.find(i=>i.id===(a.termRoomId||termItem?.id));
+        // Lock room card if a bedroom is selected but couples policy not yet answered
+        if(selectedItem&&!selectedItem.isWholeUnit&&a.allowCouples===undefined){
+          return(<div className="tp-card" style={{opacity:.45,pointerEvents:"none",userSelect:"none"}}>
+            <h3 style={{color:"#9a7422"}}>Room / Unit Assignment</h3>
+            <div style={{fontSize:11,color:"#9a7422",marginTop:4}}>Answer the occupancy policy question above to continue.</div>
+          </div>);
+        }
         const customBuf=modal._customBuffer!=null?modal._customBuffer:null; // one-time override, null = use item default
         const effectiveBuf=customBuf!=null?customBuf:(selectedItem?.itemTurnoverDays||0);
         const defaultReadyDate=selectedItem?getReadyDate(selectedItem):null; // using item default buffer
