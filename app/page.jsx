@@ -1291,7 +1291,7 @@ function Screening({properties}){
     touchAll();if(!canSubmit){setSubError("Please complete all required fields.");shakeForm();return;}
     setSubmitting(true);setSubError("");
     try{
-      const submitData={...form,name:`${form.firstName.trim()} ${form.lastName.trim()}`,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source};
+      const submitData={...form,name:`${form.firstName.trim()} ${form.lastName.trim()}`,source:form.source==="Other"?`Other: ${form.sourceOther}`:form.source,termPropId:form.property,property:form.propertyName||form.property};
       const res=await fetch("/api/apply",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(submitData)});
       const d=await res.json();
       if(d.ok){
@@ -1323,11 +1323,13 @@ function Screening({properties}){
           </div>
           <div><input className="sinp" placeholder="Email *" type="email" style={fldStyle("email")} value={form.email} onChange={e=>setForm({...form,email:e.target.value})} onBlur={()=>setTouched({...touched,email:true})}/>{errMsg("email")}</div>
           <div>{(()=>{
-  const names=PROPS.map(p=>p.name);
-  const hasDupe=n=>names.filter(x=>x===n).length>1;
-  return(<select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}>
+  return(<select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{
+    const _p=PROPS.find(x=>x.id===e.target.value);
+    setForm({...form,property:e.target.value,propertyName:_p?(_p.addr||_p.address||_p.name):""});
+    setTouched({...touched,property:true});
+  }} onBlur={()=>setTouched({...touched,property:true})}>
     <option value="">Property interested in? *</option>
-    {PROPS.map(p=><option key={p.id} value={p.name}>{p.address||p.addr||p.name}</option>)}
+    {PROPS.map(p=><option key={p.id} value={p.id}>{p.address||p.addr||p.name}</option>)}
   </select>);
 })()}{errMsg("property")}</div>
           <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
