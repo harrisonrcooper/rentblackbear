@@ -12600,9 +12600,8 @@ export default function Page(){
       {(()=>{
         // Resolve prop: prefer termPropId (ID-based, most reliable) → property name → termRoomId room lookup
         const hmProp=a.termPropId?props.find(p=>p.id===a.termPropId)
-          :a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null)
           :a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)||(p.units||[]).some(u=>u.id===a.termRoomId))
-          :null;
+          :(a.property?props.find(p=>p.name===a.property):null);
         if(!hmProp)return null;
         const allItems=leaseableItems(hmProp);
         // Find the specific assigned item — for whole units termRoomId === u.id === i.id
