@@ -277,7 +277,7 @@ export default function ApplyPage(){
     firstName:"",lastName:"",email:"",phone:"",dob:"",gender:"",occupationType:"",occupationTypeOther:"",
     moveIn:"",occupants:1,occupancyAck:false,coApplicants:[],minorChildren:0,
     // Personal
-    ssn:"",idFile:null,idFileName:"",
+    ssn:"",appDocs:[],
     // Rental
     addresses:[],curAddressForm:null,
     evicted:"",evictedExplain:"",felony:"",felonyExplain:"",
@@ -292,7 +292,7 @@ export default function ApplyPage(){
     // Room
     selectedRoom:"",preferredProperty:"",doorCode:"",
     // Docs
-    idUploadLater:false,incomeUploadLater:false,
+    idUploadLater:false,incomeUploadLater:false,payStubsName:"",
   });
   const[appFields,setAppFields]=useState([]);
 
@@ -309,9 +309,44 @@ export default function ApplyPage(){
   const[submitted,setSubmitted]=useState(false);
   const[props_,setProps]=useState([]);
   const[errors,setErrors]=useState({});
-  const fileRef=useRef(null);const payRef=useRef(null);
+  const idFrontRef=useRef(null);const idBackRef=useRef(null);const payRef=useRef(null);
 
   const upd=(k,v)=>{setD(p=>({...p,[k]:v}));setErrors(p=>({...p,[k]:undefined}));};
+  const fmtFileName=(file,docType)=>{
+    const date=new Date().toISOString().split("T")[0];
+    const first=(d.firstName||"").trim().replace(/[^a-zA-Z]/g,"");
+    const last=(d.lastName||"").trim().replace(/[^a-zA-Z]/g,"");
+    const name=first&&last?first+last:first||last||"Applicant";
+    const appId=invite?.id?"_APP-"+invite.id:"";
+    const ext=(file.name.split(".").pop()||"pdf").toLowerCase();
+    return date+"_"+name+"_"+docType+appId+"."+ext;
+  };
+  const uploadDoc=async(file,type,label)=>{
+    const tempId=Math.random().toString(36).slice(2);
+    // Replace existing doc of same type for ID (only one front, one back), stack for PayStub
+    const isReplace=type!=="PayStub";
+    setD(p=>({...p,appDocs:[...(isReplace?p.appDocs.filter(x=>x.type!==type):p.appDocs),{id:tempId,type,label,url:null,name:file.name,uploading:true,error:null}]}));
+    const date=new Date().toISOString().split("T")[0];
+    const first=(d.firstName||"").trim().replace(/[^a-zA-Z]/g,"");
+    const last=(d.lastName||"").trim().replace(/[^a-zA-Z]/g,"");
+    const nameStr=first&&last?first+last:first||last||"Applicant";
+    const appId=invite?.id||"tmp";
+    const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+    const fileName=date+"_"+nameStr+"_"+type+"_APP-"+appId+"."+ext;
+    const path="applicants/"+appId+"/"+fileName;
+    try{
+      const r=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
+        method:"POST",
+        headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
+        body:file,
+      });
+      if(!r.ok){setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,uploading:false,error:"Upload failed — check connection and try again"}:x)}));return;}
+      const url=SUPA_URL+"/storage/v1/object/public/applicant-docs/"+path;
+      setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,url,name:fileName,uploading:false,uploadedAt:date}:x)}));
+    }catch{
+      setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,uploading:false,error:"Network error — please try again"}:x)}));
+    }
+  };
   const fmtPhone=(v)=>{const x=v.replace(/\D/g,"").slice(0,10);if(x.length<=3)return x;if(x.length<=6)return`(${x.slice(0,3)}) ${x.slice(3)}`;return`(${x.slice(0,3)}) ${x.slice(3,6)}-${x.slice(6)}`;};
   const shake=()=>{const el=document.querySelector('.sec');if(el){el.style.animation="none";el.offsetHeight;el.style.animation="shake .4s ease";}};
 
@@ -374,7 +409,7 @@ export default function ApplyPage(){
       d.coApplicants.forEach((ca,i)=>{if(ca.email&&!ca.email.includes("@"))e["coApp_"+i+"_email"]="Valid email address required";});
     }
     if(s==="personal"){
-      if(fieldActive("idFile")&&fieldRequired("idFile")&&!d.idFileName&&!d.idUploadLater)e.idFile="Please upload your photo ID, or check the box to upload it later";
+      if(fieldActive("idFile")&&fieldRequired("idFile")&&!d.idUploadLater){const hasF=d.appDocs.some(x=>x.type==="PhotoID-Front"&&x.url);const hasB=d.appDocs.some(x=>x.type==="PhotoID-Back"&&x.url);if(!hasF||!hasB)e.idFile=!hasF?"Please upload the front of your photo ID":"Please upload the back of your photo ID";}
     }
     if(s==="rental"){
       if(req("addresses")&&d.addresses.length===0)e.addresses="Please add at least one address";
@@ -703,15 +738,57 @@ export default function ApplyPage(){
         <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
           ⚠ Your application will be considered <strong>incomplete</strong> without all documents uploaded. You may upload them later, but your application may be delayed.
         </div>
-        {fieldActive("idFile")&&<div className="fld">
-          <label>{fieldLabel("idFile","Photo ID")}{fieldRequired("idFile")&&<span className="req">*</span>}</label>
-          {!d.idUploadLater&&<><div className={`upload ${d.idFileName?"has":""}`} onClick={()=>fileRef.current?.click()}><div className="upload-ic">{d.idFileName?"✅":"📷"}</div><div className="upload-txt">{d.idFileName?"":fieldPlaceholder("idFile","Upload driver's license, passport, or state ID")}</div>{d.idFileName&&<div className="upload-file">{d.idFileName}</div>}</div><input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("idFileName",e.target.files[0].name);}}/>{fieldHelp("idFile","JPG, PNG, or PDF. Max 10MB.")&&<div className="help">{fieldHelp("idFile","JPG, PNG, or PDF. Max 10MB.")}</div>}</>}
-          <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
-            <input type="checkbox" checked={d.idUploadLater} onChange={e=>{upd("idUploadLater",e.target.checked);if(e.target.checked)upd("idFileName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
-            I'll upload my photo ID later
-          </label>
-          {errors.idFile&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.idFile}</div>}
-        </div>}
+        {fieldActive("idFile")&&(()=>{
+          const front=d.appDocs.find(x=>x.type==="PhotoID-Front");
+          const back=d.appDocs.find(x=>x.type==="PhotoID-Back");
+          const DocZone=({doc,label,type,ref_})=>{
+            const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
+            return(<div style={{marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#3d3529",marginBottom:6}}>{label}<span style={{color:"var(--rd)",marginLeft:2}}>*</span></div>
+              {!d.idUploadLater&&(<>
+                {doc?.uploading&&<div style={{padding:"16px",background:"rgba(212,168,83,.06)",border:"1px dashed rgba(212,168,83,.4)",borderRadius:10,textAlign:"center",fontSize:12,color:"#9a7422"}}>Uploading...</div>}
+                {doc?.error&&<div style={{padding:"10px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,fontSize:11,color:"#c45c4a",marginBottom:8}}>{doc.error} <button style={{background:"none",border:"none",color:"#c45c4a",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:11,textDecoration:"underline"}} onClick={()=>ref_?.current?.click()}>Retry</button></div>}
+                {!doc?.uploading&&!doc?.error&&doc?.url&&<div style={{position:"relative",marginBottom:8}}>
+                  {isPdf
+                    ?<div style={{padding:"12px 14px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:20}}>📄</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:11,fontWeight:600,color:"#1a1714",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.name}</div>
+                        <a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:600}}>View PDF</a>
+                      </div>
+                    </div>
+                    :<div style={{borderRadius:10,overflow:"hidden",border:"2px solid rgba(74,124,89,.3)",position:"relative"}}>
+                      <img src={doc.url} alt={label} style={{width:"100%",maxHeight:160,objectFit:"cover",display:"block"}}/>
+                      <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(0,0,0,.5)",padding:"4px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span style={{fontSize:9,color:"#fff",fontWeight:600}}>{doc.name}</span>
+                        <span style={{fontSize:9,color:"rgba(74,124,89,.9)",fontWeight:700}}>Uploaded</span>
+                      </div>
+                    </div>}
+                  <button style={{position:"absolute",top:-8,right:-8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>setD(p=>({...p,appDocs:p.appDocs.filter(x=>x.id!==doc.id)}))}>x</button>
+                </div>}
+                {!doc?.uploading&&!doc?.url&&<div className="upload" onClick={()=>ref_?.current?.click()} style={{marginBottom:6}}>
+                  <div className="upload-ic">📷</div>
+                  <div className="upload-txt">Tap to upload {label.toLowerCase()}</div>
+                </div>}
+                {doc?.url&&<button style={{fontSize:10,color:"#5c4a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",padding:0}} onClick={()=>ref_?.current?.click()}>Replace photo</button>}
+                <input ref={ref_} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])uploadDoc(e.target.files[0],type,label);}}/>
+              </>)}
+            </div>);
+          };
+          return(<div className="fld">
+            <label>{fieldLabel("idFile","Photo ID")}{fieldRequired("idFile")&&<span className="req">*</span>}</label>
+            <div style={{fontSize:11,color:"#6b5e52",marginBottom:12,lineHeight:1.5}}>We require both the <strong>front</strong> and <strong>back</strong> of your government-issued ID (driver's license, passport, or state ID).</div>
+            {!d.idUploadLater&&<>
+              <DocZone doc={front} label="Front of ID" type="PhotoID-Front" ref_={idFrontRef}/>
+              <DocZone doc={back} label="Back of ID" type="PhotoID-Back" ref_={idBackRef}/>
+            </>}
+            <label style={{display:"flex",alignItems:"center",gap:8,marginTop:4,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
+              <input type="checkbox" checked={d.idUploadLater} onChange={e=>upd("idUploadLater",e.target.checked)} style={{width:16,height:16,cursor:"pointer"}}/>
+              I'll upload my photo ID later (your application will be marked incomplete)
+            </label>
+            {errors.idFile&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:8}}>{errors.idFile}</div>}
+          </div>);
+        })()}
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
@@ -768,9 +845,31 @@ export default function ApplyPage(){
 
         <div className="fld" style={{marginTop:12}}>
           <label>Proof of Income</label>
-          {!d.incomeUploadLater&&<><div className={`upload ${d.payStubsName?"has":""}`} onClick={()=>payRef.current?.click()}><div className="upload-ic">{d.payStubsName?"✅":"📄"}</div><div className="upload-txt">{d.payStubsName?"":"Tap to upload pay stubs, offer letter, or bank statements"}</div>{d.payStubsName&&<div className="upload-file">{d.payStubsName}</div>}</div><input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])upd("payStubsName",e.target.files[0].name);}}/></>}
+          {!d.incomeUploadLater&&<>
+            {d.appDocs.filter(x=>x.type==="PayStub").map((doc,i)=>{
+              const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
+              return(<div key={doc.id} style={{marginBottom:8,padding:"10px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,display:"flex",alignItems:"center",gap:10,position:"relative"}}>
+                {doc.uploading&&<><span style={{fontSize:14}}>⏳</span><span style={{fontSize:11,color:"#9a7422"}}>Uploading...</span></>}
+                {doc.error&&<><span style={{fontSize:14}}>❌</span><span style={{fontSize:11,color:"#c45c4a"}}>{doc.error}</span></>}
+                {!doc.uploading&&!doc.error&&<>
+                  <span style={{fontSize:16}}>{isPdf?"📄":"🖼"}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.name}</div>
+                    {doc.url&&<a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:600}}>View</a>}
+                  </div>
+                </>}
+                <button style={{background:"none",border:"none",color:"#c45c4a",fontSize:16,cursor:"pointer",fontFamily:"inherit",padding:"0 4px",lineHeight:1}} onClick={()=>setD(p=>({...p,appDocs:p.appDocs.filter(x=>x.id!==doc.id)}))}>x</button>
+              </div>);
+            })}
+            <div className="upload" onClick={()=>payRef.current?.click()}>
+              <div className="upload-ic">📄</div>
+              <div className="upload-txt">{d.appDocs.filter(x=>x.type==="PayStub").length===0?"Tap to upload pay stubs, offer letter, or bank statements":"+ Add another pay stub or document"}</div>
+            </div>
+            <input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])uploadDoc(e.target.files[0],"PayStub","Pay Stub");}}/>
+            <div style={{fontSize:10,color:"#6b5e52",marginTop:6}}>Last 2 pay stubs preferred. You can add multiple files.</div>
+          </>}
           <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
-            <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>{upd("incomeUploadLater",e.target.checked);if(e.target.checked)upd("payStubsName","");}} style={{width:16,height:16,cursor:"pointer"}}/>
+            <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>upd("incomeUploadLater",e.target.checked)} style={{width:16,height:16,cursor:"pointer"}}/>
             I'll upload proof of income later
           </label>
         </div>
@@ -868,6 +967,9 @@ export default function ApplyPage(){
           <div className="rev-row"><span className="rev-label">DOB</span><span className="rev-val">{d.dob}</span></div>
           <div className="rev-row"><span className="rev-label">Move-in</span><span className="rev-val">{d.moveIn||"—"}</span></div>
           {invite?.allowCouples&&d.partnerName.trim()&&<div className="rev-row"><span className="rev-label">Partner</span><span className="rev-val">{d.partnerName}{d.partnerEmail?" · "+d.partnerEmail:""}</span></div>}
+          {d.appDocs.filter(x=>x.url).length>0&&<div className="rev-row"><span className="rev-label">Documents</span><span className="rev-val" style={{color:"#2d6a3f"}}>&#10003; {d.appDocs.filter(x=>x.url).length} file{d.appDocs.filter(x=>x.url).length!==1?"s":""} uploaded</span></div>}
+          {d.idUploadLater&&<div className="rev-row"><span className="rev-label">Photo ID</span><span className="rev-val" style={{color:"#9a7422"}}>Will upload later</span></div>}
+          {d.incomeUploadLater&&<div className="rev-row"><span className="rev-label">Pay Stubs</span><span className="rev-val" style={{color:"#9a7422"}}>Will upload later</span></div>}
         </div>
         {appType==="tenant"&&<>
           <div className="rev-sec"><h3>🏠 Rental History <span className="rev-edit" onClick={()=>setStep("rental")}>Edit</span></h3>
@@ -1030,6 +1132,8 @@ export default function ApplyPage(){
               bgCheck:"not-started",creditScore:"—",refs:"not-started",
               partner:d.partnerName.trim()?{name:d.partnerName.trim(),email:d.partnerEmail.trim()}:null,
               source:"Online Application",applicationData:d,
+              appDocs:d.appDocs,
+              docsFlag:{idUploadLater:d.idUploadLater,incomeUploadLater:d.incomeUploadLater},
               screenPkg:"credit-bg",appFee:baseFee,
               history:[{from:"new",to:"applied",date:now,note:"Walk-in application via apply page"}]
             };

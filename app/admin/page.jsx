@@ -3434,11 +3434,63 @@ export default function Page(){
               </div>}
 
               {portalTab==="docs"&&<div style={{padding:18}}>
-                <div className="tp-card"><h3>Your Documents</h3>
-                  {tRoom.tenant.documents&&tRoom.tenant.documents.length>0
-                    ?tRoom.tenant.documents.map((d,i)=><div key={d.id||i} className="tp-row"><span className="tp-label">{d.label||d.name}</span><span style={{fontSize:11,color:"#6b5e52"}}>{d.uploaded}</span></div>)
-                    :<div style={{color:"#6b5e52",fontSize:12,padding:"8px 0"}}>No documents uploaded yet.</div>}
-                </div>
+                {(()=>{
+                  // Resolve the application record for this tenant to find appDocs
+                  const tApp=apps.find(ap=>ap.email===tRoom.tenant.email&&(ap.status==="applied"||ap.status==="reviewing"||ap.status==="approved"||ap.status==="onboarding"||ap.status==="current"));
+                  const tDocs=(tApp?.appDocs)||[];
+                  const tFlag=tApp?.docsFlag||{};
+                  const pendingId=tFlag.idUploadLater&&!tDocs.some(x=>x.type==="PhotoID-Front"&&x.url);
+                  const pendingIncome=tFlag.incomeUploadLater&&!tDocs.some(x=>x.type==="PayStub"&&x.url);
+                  const portalIdFrontRef=React.createRef();
+                  const portalIdBackRef=React.createRef();
+                  const portalPayRef=React.createRef();
+                  const portalUpload=async(file,type,label)=>{
+                    if(!tApp)return;
+                    const date=new Date().toISOString().split("T")[0];
+                    const nameParts=(tApp.name||"").split(" ");
+                    const nameStr=(nameParts[0]||"").replace(/[^a-zA-Z]/g,"")+(nameParts[1]||"").replace(/[^a-zA-Z]/g,"");
+                    const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+                    const fileName=date+"_"+nameStr+"_"+type+"_APP-"+tApp.id+"."+ext;
+                    const path="applicants/"+tApp.id+"/"+fileName;
+                    const r=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},body:file});
+                    if(!r.ok)return;
+                    const url=SUPA_URL+"/storage/v1/object/public/applicant-docs/"+path;
+                    const newDoc={id:uid(),type,label,url,name:fileName,uploadedAt:date};
+                    const updatedApp={...tApp,appDocs:[...(tApp.appDocs||[]).filter(x=>x.type!==type||type==="PayStub"),newDoc]};
+                    const updatedApps=apps.map(x=>x.id===tApp.id?updatedApp:x);
+                    setApps(updatedApps);save("hq-apps",updatedApps);
+                  };
+                  return(<div className="tp-card"><h3>Your Documents</h3>
+                    {tDocs.filter(x=>x.url).length===0&&!pendingId&&!pendingIncome&&<div style={{color:"#6b5e52",fontSize:12,padding:"8px 0"}}>No documents uploaded yet.</div>}
+                    {tDocs.filter(x=>x.url).map((doc,i)=>{
+                      const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
+                      return(<div key={doc.id||i} className="tp-row" style={{alignItems:"center"}}>
+                        <span className="tp-label">{doc.label}</span>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          {!isPdf&&<img src={doc.url} alt={doc.label} style={{width:40,height:30,objectFit:"cover",borderRadius:4,border:"1px solid rgba(0,0,0,.1)"}}/>}
+                          <a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:700}}>View</a>
+                        </div>
+                      </div>);
+                    })}
+                    {(pendingId||pendingIncome)&&<>
+                      <div style={{fontSize:11,fontWeight:700,color:"#c45c4a",marginTop:10,marginBottom:8}}>Documents still needed:</div>
+                      {pendingId&&<>
+                        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:6}}>Photo ID (front + back)</div>
+                        <div style={{display:"flex",gap:6,marginBottom:8}}>
+                          <button className="btn btn-sm btn-out" style={{flex:1}} onClick={()=>portalIdFrontRef.current?.click()}>Upload Front</button>
+                          <button className="btn btn-sm btn-out" style={{flex:1}} onClick={()=>portalIdBackRef.current?.click()}>Upload Back</button>
+                        </div>
+                        <input ref={portalIdFrontRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])portalUpload(e.target.files[0],"PhotoID-Front","Front of ID");}}/>
+                        <input ref={portalIdBackRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])portalUpload(e.target.files[0],"PhotoID-Back","Back of ID");}}/>
+                      </>}
+                      {pendingIncome&&<>
+                        <div style={{fontSize:11,color:"#5c4a3a",marginBottom:6}}>Proof of Income</div>
+                        <button className="btn btn-sm btn-out" style={{width:"100%"}} onClick={()=>portalPayRef.current?.click()}>Upload Pay Stub / Income Doc</button>
+                        <input ref={portalPayRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])portalUpload(e.target.files[0],"PayStub","Pay Stub");}}/>
+                      </>}
+                    </>}
+                  </div>);
+                })()}
               </div>}
 
               {portalTab==="rules"&&<div style={{padding:18}}>
@@ -11351,7 +11403,7 @@ export default function Page(){
                   <div style={{fontSize:10,color:"#6b5e52"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
                   {addr.reason&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
                   {addr.resType==="Other"&&addr.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>{addr.otherSituation}</div>}
-                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",gap:12}}>
+                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",gap:12"}}>
                     <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
                     <span>{addr.landlordEmail}</span>
                     <span>{addr.landlordPhone}</span>
@@ -12213,27 +12265,52 @@ export default function Page(){
       </div>
 
       {/* Documents from application */}
-      {((a.documents&&a.documents.length>0)||a.docsFlag)&&<div className="tp-card">
-        <h3>Application Documents</h3>
-        {a.docsFlag&&<>
-          {!a.docsFlag.idUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.idUploadLater?"rgba(212,168,83,.06)":"rgba(196,92,74,.06)",color:a.docsFlag.idUploadLater?"#9a7422":"#c45c4a",marginBottom:4}}>
-            {a.docsFlag.idUploadLater?"Photo ID — will upload later":"Photo ID — not submitted"}
-          </div>}
-          {!a.docsFlag.incomeUploaded&&<div style={{fontSize:10,padding:"4px 8px",borderRadius:5,background:a.docsFlag.incomeUploadLater?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)",color:a.docsFlag.incomeUploadLater?"#9a7422":"#4a7c59",marginBottom:4}}>
-            {a.docsFlag.incomeUploadLater?"Proof of Income — will upload later":"Proof of Income — not submitted"}
-          </div>}
-        </>}
-        {(a.documents||[]).map((doc,i)=>(
-          <div key={doc.id||i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-            <div>
-              <div style={{fontSize:12,fontWeight:600}}>{doc.label||doc.name}</div>
-              <div style={{fontSize:9,color:"#6b5e52"}}>{doc.name} · Uploaded {doc.uploaded}</div>
+      {(()=>{
+        const docs=a.appDocs||(a.applicationData?.appDocs)||[];
+        const flag=a.docsFlag||{};
+        const hasAny=docs.length>0||flag.idUploadLater||flag.incomeUploadLater;
+        if(!hasAny)return null;
+        const DocCard=({doc})=>{
+          const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
+          const isUploaded=!!doc?.url;
+          return(<div style={{marginBottom:10,borderRadius:9,overflow:"hidden",border:"1px solid rgba(0,0,0,.07)"}}>
+            <div style={{padding:"8px 10px",background:"rgba(0,0,0,.02)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{doc.label}</div>
+                {isUploaded&&<div style={{fontSize:9,color:"#6b5e52"}}>{doc.name}</div>}
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                {isUploaded
+                  ?<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#2d6a3f"}}>Uploaded</span>
+                  :<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Pending</span>}
+                {isUploaded&&<a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-out btn-sm" style={{fontSize:9,padding:"3px 8px",textDecoration:"none"}}>View</a>}
+              </div>
             </div>
-            {doc.data&&<a href={doc.data} download={doc.name} className="btn btn-out btn-sm" style={{fontSize:9,textDecoration:"none"}}>Download</a>}
-          </div>
-        ))}
-        {(!a.documents||a.documents.length===0)&&<div style={{fontSize:11,color:"#6b5e52",fontStyle:"italic"}}>No files uploaded yet.</div>}
-      </div>}
+            {isUploaded&&!isPdf&&<img src={doc.url} alt={doc.label} style={{width:"100%",maxHeight:180,objectFit:"cover",display:"block",borderTop:"1px solid rgba(0,0,0,.05)"}}/>}
+          </div>);
+        };
+        const idDocs=docs.filter(x=>x.type==="PhotoID-Front"||x.type==="PhotoID-Back");
+        const payDocs=docs.filter(x=>x.type==="PayStub");
+        return(<div className="tp-card">
+          <h3>Application Documents</h3>
+          {idDocs.length>0&&<>
+            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Photo ID</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+              {["PhotoID-Front","PhotoID-Back"].map(t=>{
+                const doc=docs.find(x=>x.type===t)||{type:t,label:t==="PhotoID-Front"?"Front of ID":"Back of ID"};
+                return<DocCard key={t} doc={doc}/>;
+              })}
+            </div>
+          </>}
+          {flag.idUploadLater&&idDocs.length===0&&<div style={{fontSize:11,color:"#9a7422",padding:"7px 10px",background:"rgba(212,168,83,.08)",borderRadius:7,marginBottom:10}}>Photo ID — tenant will upload later</div>}
+          {payDocs.length>0&&<>
+            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Proof of Income</div>
+            {payDocs.map(doc=><DocCard key={doc.id} doc={doc}/>)}
+          </>}
+          {flag.incomeUploadLater&&payDocs.length===0&&<div style={{fontSize:11,color:"#9a7422",padding:"7px 10px",background:"rgba(212,168,83,.08)",borderRadius:7}}>Proof of income — tenant will upload later</div>}
+          {docs.length===0&&!flag.idUploadLater&&!flag.incomeUploadLater&&<div style={{fontSize:11,color:"#aaa",fontStyle:"italic"}}>No documents uploaded yet.</div>}
+        </div>);
+      })()}
 
 
       {/* Move-in charges — shown on approved applicants */}
