@@ -10094,7 +10094,7 @@ export default function Page(){
           </div>
         </>);
       })()}
-    </div></div>);})();})()}
+    </div></div>);})()}
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
