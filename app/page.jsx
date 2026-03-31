@@ -1327,7 +1327,7 @@ function Screening({properties}){
   const hasDupe=n=>names.filter(x=>x===n).length>1;
   return(<select className="ssel" style={fldStyle("property")} value={form.property} onChange={e=>{setForm({...form,property:e.target.value});setTouched({...touched,property:true});}} onBlur={()=>setTouched({...touched,property:true})}>
     <option value="">Property interested in? *</option>
-    {PROPS.map(p=><option key={p.id} value={p.name}>{hasDupe(p.name)&&(p.address||p.addr)?`${p.name} — ${p.address||p.addr}`:p.name}</option>)}
+    {PROPS.map(p=><option key={p.id} value={p.name}>{p.address||p.addr||p.name}</option>)}
   </select>);
 })()}{errMsg("property")}</div>
           <div><label style={{fontSize:11,color:"#5c4a3a",fontWeight:600,marginBottom:4,display:"block"}}>Preferred Move-in Date *</label>
