@@ -12877,7 +12877,7 @@ export default function Page(){
         
         <button className="btn btn-out" style={{color:"#c45c4a"}} onClick={()=>setModal({type:"denyApp",appId:a.id,data:a,reason:""})}>Deny</button>
       </div>
-      </div></div>{/* end footer actions */}
+      </div>{/* end footer actions */}
       <div className="mft" style={{borderTop:"1px solid #f0ede8",margin:0,padding:"10px 20px",background:"#faf9f7"}}>
         {a.status==="invited"&&<button className="btn btn-gold" style={{flex:1,fontWeight:800}} onClick={()=>setModal({type:"inviteApp",data:a})}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:6,verticalAlign:"middle"}}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
