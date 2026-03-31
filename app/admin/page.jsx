@@ -911,7 +911,7 @@ function UtilTemplatesModal({settings,onUpdateSettings,onClose}){
     const t={id:uid(),name:"New Template",key:"custom_"+uid().slice(0,4),desc:"",clause:""};
     setDraftT(t);setEditingId(t.id);
   };
-  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:960,padding:0,overflow:"hidden"}}>
+  return(<div className="mbg" onClick={onClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760}}>
     <h2 style={{marginBottom:4}}>Utility Templates</h2>
     <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>These templates appear in the Utilities dropdown when editing unit settings. Each template has a name, short description, and full lease clause.</p>
     {templates.map(t=>(
@@ -4836,7 +4836,7 @@ export default function Page(){
                           onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,168,83,.3)";e.currentTarget.style.color="#7a5a10";}}
                           onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,168,83,.12)";e.currentTarget.style.color="#9a7422";}}
                           style={{fontSize:7,padding:"3px 7px",background:"rgba(212,168,83,.12)",color:"#9a7422",border:"1px solid rgba(212,168,83,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s"}}
-                          onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Invite to Apply</button>}
+                          onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Continue — Invite to Apply</button>}
                         <button
                           onMouseEnter={e=>{e.currentTarget.style.background="rgba(74,124,89,.25)";e.currentTarget.style.color="#2d6a3f";}}
                           onMouseLeave={e=>{e.currentTarget.style.background="rgba(74,124,89,.1)";e.currentTarget.style.color="#4a7c59";}}
@@ -10094,7 +10094,7 @@ export default function Page(){
           </div>
         </>);
       })()}
-    </div></div>);})()}
+    </div></div>);})();})()}
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
@@ -11324,7 +11324,18 @@ export default function Page(){
       setModal(null);
     };
     return(
-    <div className="mbg" onClick={()=>setModal(null)} style={modal?._tlFloatOpen?{justifyContent:"flex-start",paddingLeft:16,paddingRight:"50vw"}:{}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
+    <div className="mbg" onClick={()=>setModal(null)}>
+    {(()=>{
+      const _mp=modal._mboxPos||null;
+      const _startDrag=(e)=>{
+        if(e.target.closest("button")||e.target.closest("input")||e.target.closest("select")||e.target.closest("textarea")||e.target.closest("svg"))return;
+        const rect=e.currentTarget.getBoundingClientRect();
+        const ox=e.clientX-rect.left,oy=e.clientY-rect.top;
+        const onMv=(ev)=>setModal(p=>({...p,_mboxPos:{x:Math.max(0,Math.min(window.innerWidth-200,ev.clientX-ox)),y:Math.max(0,Math.min(window.innerHeight-100,ev.clientY-oy))}}));
+        const onUp=()=>{document.removeEventListener("mousemove",onMv);document.removeEventListener("mouseup",onUp);};
+        document.addEventListener("mousemove",onMv);document.addEventListener("mouseup",onUp);
+      };
+      return(<div className="mbox" onClick={e=>e.stopPropagation()} onMouseDown={_startDrag} style={{maxWidth:960,padding:0,overflow:"hidden",...(_mp?{position:"fixed",left:_mp.x,top:_mp.y,margin:0,transform:"none",maxHeight:"92vh"}:{})}}>
       {/* NEW HEADER BAR */}
       <div style={{padding:"13px 20px",borderBottom:"1px solid #f0ede8",display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:40,height:40,borderRadius:9,background:"#1a1714",color:"#d4a853",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,letterSpacing:.5}}>
@@ -11346,7 +11357,7 @@ export default function Page(){
       {/* TWO-COLUMN BODY */}
       <div style={{display:"flex",maxHeight:"calc(100vh - 200px)",minHeight:480,overflow:"hidden"}}>
         {/* LEFT COLUMN */}
-        <div style={{width:256,flexShrink:0,borderRight:"1px solid #f0ede8",overflowY:"auto",background:"#faf9f7",padding:"14px 15px"}}>
+        <div style={{width:300,flexShrink:0,borderRight:"1px solid #f0ede8",overflowY:"auto",background:"#faf9f7",padding:"14px 16px"}}>
 
       {mf.length>0&&(()=>{const dmf=modal._dismissedFlags||[];const vis=mf.filter((_,i)=>!dmf.includes(i));if(!vis.length)return null;return(<div style={{marginBottom:10}}>{vis.map(f=>{const oi=mf.indexOf(f);const bg=f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)";const col=f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f";return(<div key={oi} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center",background:bg,color:col}}><span>{f.label}</span><button onClick={()=>setModal(p=>({...p,_dismissedFlags:[...(p._dismissedFlags||[]),oi]}))} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".45"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,fontFamily:"inherit",padding:"0 2px",opacity:.45,lineHeight:1,color:"inherit",transition:"opacity .15s",flexShrink:0}}>&#x2715;</button></div>);})}</div>);})()}
       {/* ── Editable Applicant Info ── */}
@@ -11428,7 +11439,7 @@ export default function Page(){
         {/* RIGHT COLUMN */}
         <div style={{flex:1,overflowY:"auto"}}>
       {(()=>{
-        const _o=(modal._accOpen||"room")==="room";
+        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="room";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
             <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="room"?null:"room"}))}>  
@@ -12253,7 +12264,7 @@ export default function Page(){
                   if(typeof window!=="undefined"&&window.innerWidth<768){
                     window.open("/admin?tab=tenants&view=timeline","_blank");
                   } else {
-                    setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.floor(window.innerWidth/2)+8,y:24}}));
+                    setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(20,Math.floor(window.innerWidth/2)-340),y:40}}));
                   }
                 }}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,168,83,.1)";}}
@@ -12409,8 +12420,8 @@ export default function Page(){
           </div>
         );
       })()}
-      {(()=>{
-        const _o=(modal._accOpen||"room")==="data";
+      {!["new-lead","pre-screened","called","invited"].includes(a.status)&&(()=>{
+        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="data";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
             <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="data"?null:"data"}))}>  
@@ -12509,8 +12520,8 @@ export default function Page(){
           </div>
         );
       })()}
-      {(()=>{
-        const _o=(modal._accOpen||"room")==="screening";
+      {!["new-lead","pre-screened","called","invited"].includes(a.status)&&(()=>{
+        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="screening";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
             <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="screening"?null:"screening"}))}>  
@@ -12569,7 +12580,7 @@ export default function Page(){
         );
       })()}
       {(()=>{
-        const _o=(modal._accOpen||"room")==="housemates";
+        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="housemates";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
             <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="housemates"?null:"housemates"}))}>  
@@ -12693,8 +12704,8 @@ export default function Page(){
           </div>
         );
       })()}
-      {(()=>{
-        const _o=(modal._accOpen||"room")==="docs";
+      {!["new-lead","pre-screened","called","invited"].includes(a.status)&&(()=>{
+        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="docs";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
             <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="docs"?null:"docs"}))}>  
@@ -12902,7 +12913,7 @@ export default function Page(){
         </button>}
         <button className="btn btn-out" onClick={()=>setModal(null)}>Close</button>
       </div>
-    </div></div>);})()}
+    </div>);})()}</div>);})()}
 
   {modal&&modal.type==="archived"&&(()=>{const a=modal.data;const payMonths=Object.keys(a.payments||{});const totalPaid=Object.values(a.payments||{}).reduce((s,v)=>s+(typeof v==="object"?Object.values(v).reduce((ss,vv)=>ss+vv,0):v),0);
     const moveIn=a.moveIn?new Date(a.moveIn+"T00:00:00"):null;const termDate=a.terminatedDate?new Date(a.terminatedDate+"T00:00:00"):null;
@@ -12963,7 +12974,7 @@ export default function Page(){
         const startDrag=(e)=>{
           if(e.target.closest("button")||e.target.closest("select"))return;
           const startX=e.clientX-pos.x;const startY=e.clientY-pos.y;
-          const onMove=(ev)=>setModal(p=>({...p,_tlFloatPos:{x:Math.max(Math.floor(window.innerWidth/2),Math.min(window.innerWidth-ftWidth-8,ev.clientX-startX)),y:Math.max(0,Math.min(window.innerHeight-200,ev.clientY-startY))}}));
+          const onMove=(ev)=>setModal(p=>({...p,_tlFloatPos:{x:Math.max(0,Math.min(window.innerWidth-100,ev.clientX-startX)),y:Math.max(0,Math.min(window.innerHeight-100,ev.clientY-startY))}}));
           const onUp=()=>{document.removeEventListener("mousemove",onMove);document.removeEventListener("mouseup",onUp);};
           document.addEventListener("mousemove",onMove);document.addEventListener("mouseup",onUp);
         };
@@ -13016,7 +13027,7 @@ export default function Page(){
             </div>
           </div>);
         };
-        const ftWidth=typeof window!=="undefined"?Math.floor(window.innerWidth/2)-16:700;
+        const ftWidth=typeof window!=="undefined"?Math.min(720,Math.max(400,Math.floor(window.innerWidth*0.55))):680;
         return(<div style={{position:"fixed",zIndex:9999,left:pos.x,top:pos.y,width:ftWidth,maxWidth:"50vw",background:"#fff",borderRadius:14,boxShadow:"0 24px 64px rgba(0,0,0,.25)",border:"1px solid rgba(0,0,0,.1)",display:"flex",flexDirection:"column",maxHeight:"80vh"}}>
           {/* Drag handle / header */}
           <div onMouseDown={startDrag} style={{padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"move",userSelect:"none",background:"#1a1714",borderRadius:"14px 14px 0 0",flexShrink:0}}>
