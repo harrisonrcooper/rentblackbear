@@ -10094,7 +10094,7 @@ export default function Page(){
           </div>
         </>);
       })()}
-    </div></div>);})()}
+    </div></div>);})();})()}
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
@@ -11654,7 +11654,7 @@ export default function Page(){
         const resolvedDefault=a.allowCouples!==undefined?a.allowCouples:(couplesTermProp?.couplesDefault!==undefined?couplesTermProp.couplesDefault:(settings.couplesDefault||false));
         const answered=a.allowCouples!==undefined;
         const saveCouples=(val)=>{
-          setApps(prev=>prev.map(x=>x.id===a.id?{...x,allowCouples:val}:x));
+          setApps(prev=>{const u=prev.map(x=>x.id===a.id?{...x,allowCouples:val}:x);save("hq-apps",u);return u;});
           setModal(prev=>({...prev,data:{...prev.data,allowCouples:val},_couplesScope:null}));
         };
         const saveScope=(val,scope)=>{
