@@ -105,7 +105,7 @@ const CAT_COLORS = { Fitness: "#3b82f6", Nutrition: "#2d6a4f", Health: "#8b5cf6"
 /* ── CSS ──────────────────────────────────────────────────────────── */
 const S = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-.trk { display: flex; min-height: 100vh; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 13px; color: #1a1714; background: #f2f1ee; }
+.trk { display: flex; min-height: 100vh; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 13px; color: #1a1714; background: #f2f1ee; color-scheme: light !important; }
 .trk-side { width: 216px; min-width: 216px; background: #1a1714; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; flex-shrink: 0; }
 .trk-main { flex: 1; min-width: 0; padding: 32px 32px 60px; }
 .trk-logo { padding: 20px 16px 16px; font-size: 14px; font-weight: 800; color: #f5f0e8; letter-spacing: -.3px; border-bottom: 1px solid rgba(255,255,255,.06); }
