@@ -2008,12 +2008,12 @@ const S=`
 .tbl tr:hover td{background:rgba(212,168,83,.02)}
 
 /* Forms */
-.fld{margin-bottom:10px}
+.fld{margin-bottom:10px;min-width:0}.fld input,.fld select,.fld textarea{min-width:0;box-sizing:border-box}
 .fld label{display:block;font-size:9px;font-weight:700;color:#5c4a3a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
 .fld input,.fld select,.fld textarea{width:100%;padding:8px 12px;border-radius:7px;border:1px solid rgba(0,0,0,.08);font-family:inherit;font-size:12px;outline:none;background:#faf9f7}
 .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:#d4a853}
 .fld textarea{resize:vertical;min-height:60px}
-.fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}.fr>*{min-width:0;overflow:hidden}.fr input,.fr select{width:100%;min-width:0;box-sizing:border-box}
 .fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 
@@ -10094,7 +10094,7 @@ export default function Page(){
           </div>
         </>);
       })()}
-    </div></div>);})()}
+    </div></div>);})();})()}
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
@@ -11357,7 +11357,7 @@ export default function Page(){
       {/* TWO-COLUMN BODY */}
       <div style={{display:"flex",maxHeight:"calc(100vh - 200px)",minHeight:480,overflow:"hidden"}}>
         {/* LEFT COLUMN */}
-        <div style={{width:300,flexShrink:0,borderRight:"1px solid #f0ede8",overflowY:"auto",background:"#faf9f7",padding:"14px 16px"}}>
+        <div style={{width:320,flexShrink:0,borderRight:"1px solid #f0ede8",overflowY:"auto",background:"#faf9f7",padding:"14px 16px",minWidth:280}}>
 
       {mf.length>0&&(()=>{const dmf=modal._dismissedFlags||[];const vis=mf.filter((_,i)=>!dmf.includes(i));if(!vis.length)return null;return(<div style={{marginBottom:10}}>{vis.map(f=>{const oi=mf.indexOf(f);const bg=f.type==="denied"||f.type==="evicted"?"rgba(196,92,74,.06)":f.type==="early"?"rgba(212,168,83,.06)":"rgba(74,124,89,.06)";const col=f.type==="denied"||f.type==="evicted"?"#c45c4a":f.type==="early"?"#9a7422":"#2d6a3f";return(<div key={oi} style={{padding:"6px 10px",borderRadius:6,marginBottom:3,fontSize:11,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center",background:bg,color:col}}><span>{f.label}</span><button onClick={()=>setModal(p=>({...p,_dismissedFlags:[...(p._dismissedFlags||[]),oi]}))} onMouseEnter={e=>e.currentTarget.style.opacity="1"} onMouseLeave={e=>e.currentTarget.style.opacity=".45"} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,fontFamily:"inherit",padding:"0 2px",opacity:.45,lineHeight:1,color:"inherit",transition:"opacity .15s",flexShrink:0}}>&#x2715;</button></div>);})}</div>);})()}
       {/* ── Editable Applicant Info ── */}
@@ -12869,10 +12869,14 @@ export default function Page(){
       })()}
 
       <div style={{display:"flex",gap:6,margin:"0 0 8px",padding:"0 20px",flexWrap:"wrap"}}>
-        {a.status==="new-lead"&&<button className="btn btn-gold" style={{flex:1,transition:"all .2s"}}
-          onMouseEnter={e=>{e.currentTarget.style.background="#1a1714";e.currentTarget.style.color="#d4a853";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 14px rgba(0,0,0,.25)";}}
-          onMouseLeave={e=>{e.currentTarget.style.background="";e.currentTarget.style.color="";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}
-          onClick={()=>setModal({type:"inviteApp",data:a})}>Invite to Apply</button>}
+        {a.status==="new-lead"&&<button
+          style={{flex:1,padding:"11px 20px",borderRadius:9,border:"none",background:"#1a1714",color:"#d4a853",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",letterSpacing:.3,transition:"all .18s",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}
+          onMouseEnter={e=>{e.currentTarget.style.background="#d4a853";e.currentTarget.style.color="#1a1714";e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 6px 18px rgba(212,168,83,.35)";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="#1a1714";e.currentTarget.style.color="#d4a853";e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}
+          onClick={()=>setModal({type:"inviteApp",data:a})}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Continue — Invite to Apply
+        </button>}
         {a.status==="applied"&&<>
           {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
             <div style={{fontWeight:700,marginBottom:4}}>Still pending — review before approving:</div>
