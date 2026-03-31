@@ -11324,7 +11324,7 @@ export default function Page(){
       setModal(null);
     };
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
+    <div className="mbg" onClick={()=>setModal(null)} style={modal?._tlFloatOpen?{justifyContent:"flex-start",paddingLeft:16,paddingRight:"50vw"}:{}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:600}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
         <h2>{a.name}</h2>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -12303,7 +12303,7 @@ export default function Page(){
                   if(typeof window!=="undefined"&&window.innerWidth<768){
                     window.open("/admin?tab=tenants&view=timeline","_blank");
                   } else {
-                    setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(0,window.innerWidth/2-360),y:60}}));
+                    setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.floor(window.innerWidth/2)+8,y:24}}));
                   }
                 }}
                 onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,168,83,.1)";}}
@@ -12824,7 +12824,7 @@ export default function Page(){
         const startDrag=(e)=>{
           if(e.target.closest("button")||e.target.closest("select"))return;
           const startX=e.clientX-pos.x;const startY=e.clientY-pos.y;
-          const onMove=(ev)=>setModal(p=>({...p,_tlFloatPos:{x:Math.max(0,Math.min(window.innerWidth-720,ev.clientX-startX)),y:Math.max(0,Math.min(window.innerHeight-200,ev.clientY-startY))}}));
+          const onMove=(ev)=>setModal(p=>({...p,_tlFloatPos:{x:Math.max(Math.floor(window.innerWidth/2),Math.min(window.innerWidth-ftWidth-8,ev.clientX-startX)),y:Math.max(0,Math.min(window.innerHeight-200,ev.clientY-startY))}}));
           const onUp=()=>{document.removeEventListener("mousemove",onMove);document.removeEventListener("mouseup",onUp);};
           document.addEventListener("mousemove",onMove);document.addEventListener("mouseup",onUp);
         };
@@ -12877,7 +12877,8 @@ export default function Page(){
             </div>
           </div>);
         };
-        return(<div style={{position:"fixed",zIndex:9999,left:pos.x,top:pos.y,width:700,maxWidth:"95vw",background:"#fff",borderRadius:14,boxShadow:"0 24px 64px rgba(0,0,0,.25)",border:"1px solid rgba(0,0,0,.1)",display:"flex",flexDirection:"column",maxHeight:"80vh"}}>
+        const ftWidth=typeof window!=="undefined"?Math.floor(window.innerWidth/2)-16:700;
+        return(<div style={{position:"fixed",zIndex:9999,left:pos.x,top:pos.y,width:ftWidth,maxWidth:"50vw",background:"#fff",borderRadius:14,boxShadow:"0 24px 64px rgba(0,0,0,.25)",border:"1px solid rgba(0,0,0,.1)",display:"flex",flexDirection:"column",maxHeight:"80vh"}}>
           {/* Drag handle / header */}
           <div onMouseDown={startDrag} style={{padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.06)",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"move",userSelect:"none",background:"#1a1714",borderRadius:"14px 14px 0 0",flexShrink:0}}>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
