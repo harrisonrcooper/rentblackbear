@@ -11426,7 +11426,7 @@ export default function Page(){
                   <div style={{fontSize:10,color:"#6b5e52"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
                   {addr.reason&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
                   {addr.resType==="Other"&&addr.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>{addr.otherSituation}</div>}
-                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",gap:12"}}>
+                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",gap:12}}>
                     <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
                     <span>{addr.landlordEmail}</span>
                     <span>{addr.landlordPhone}</span>
