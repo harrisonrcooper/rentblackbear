@@ -3126,7 +3126,7 @@ export default function Page(){
             </div>
             <select value={tenantPropFilter} onChange={e=>setTenantPropFilter(e.target.value)} style={{padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",background:"#fff"}}>
               <option value="all">All Properties</option>
-              {props.map(p=><option key={p.id} value={p.id}>{p.name}{p.addr?" — "+p.addr:""}</option>)}
+              {props.map(p=><option key={p.id} value={p.id}>{p.addr||p.name}</option>)}
             </select>
             {tenantSel.length>0&&<>
               <span style={{fontSize:11,fontWeight:700,color:"#5c4a3a"}}>{tenantSel.length} selected</span>
@@ -10817,7 +10817,7 @@ export default function Page(){
             <tbody>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",width:"38%",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Applicant</td><td style={{padding:"5px 0",fontWeight:700,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.name}</td></tr>
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Contact</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:11,color:"#5c4a3a"}}>{a.email} - {a.phone}</td></tr>
-              {a.property&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{a.property}{invProp?.addr?" — "+invProp.addr:""}</td></tr>}
+              {invPropName&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Property</td><td style={{padding:"5px 0",fontWeight:600,borderBottom:"1px solid rgba(0,0,0,.04)"}}>{invPropName}{invRoomProp?.addr&&invRoomProp.addr!==invPropName?" — "+invRoomProp.addr:""}</td></tr>}
               <tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Room</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",color:a.skipRoomAssign?"#4a7c59":"inherit",fontWeight:a.skipRoomAssign?600:400}}>{invRoomLabel}</td></tr>
               {invRent>0&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Rent</td><td style={{padding:"5px 0",fontWeight:700,color:"#2d6a3f",borderBottom:"1px solid rgba(0,0,0,.04)"}}>${invRent}/mo</td></tr>}
               {(invMoveIn||a.moveInTbd)&&<tr><td style={{padding:"5px 0",color:"#6b5e52",borderBottom:"1px solid rgba(0,0,0,.04)"}}>Move-in</td><td style={{padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontWeight:a.moveInTbd?700:400,color:a.moveInTbd?"#9a7422":"inherit"}}>{a.moveInTbd?"To Be Determined":fmtD(invMoveIn)}</td></tr>}
