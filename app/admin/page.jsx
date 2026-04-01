@@ -12540,13 +12540,15 @@ export default function Page(){
                 const _docs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
                 const _d=_docs.length;
                 const _v=_docs.filter(x=>x.verified==="approved"||x.verified===true).length;
+                const _r=_docs.filter(x=>x.verified==="rejected").length;
                 if(_d===0)return<span style={{fontSize:10,color:"#9a8878"}}>None yet</span>;
                 return<>
                   <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>{_d} uploaded</span>
-                  {_d>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:_v===_d?"rgba(74,124,89,.12)":"rgba(0,0,0,.05)",color:_v===_d?"#2d6a3f":"#7a7067",display:"flex",alignItems:"center",gap:3}}>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:_v===_d?"rgba(74,124,89,.12)":"rgba(0,0,0,.05)",color:_v===_d?"#2d6a3f":"#7a7067",display:"flex",alignItems:"center",gap:3}}>
                     {_v===_d&&<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#2d6a3f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 5 9 10 3"/></svg>}
                     {_v}/{_d} verified
-                  </span>}
+                  </span>
+                  {_r>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(196,92,74,.1)",color:"#c45c4a"}}>{_r} rejected</span>}
                 </>;
               })()}</div>
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
@@ -12589,9 +12591,11 @@ export default function Page(){
             }
           }
         };
-        const requestReupload=async(docLabel)=>{
-          const subject="Action Required: Please Re-Upload Your "+docLabel;
-          const body="Hi "+a.name.split(" ")[0]+",\n\nThank you for submitting your application to Black Bear Rentals. We were unable to verify your "+docLabel+" — the image may be unclear, cropped, or missing.\n\nPlease log in to your application portal and re-upload a clear photo:\n\n"+window.location.origin+"/apply?invite="+a.id+"\n\nIf you have any questions, reply to this email.\n\nThank you,\nBlack Bear Rentals";
+        const requestReupload=(docLabel)=>{
+          const tmpl=settings.emailTemplates||{};
+          const tokens={applicantFirstName:a.name.split(" ")[0],applicantName:a.name,docLabel,portalLink:window.location.origin+"/apply?invite="+a.id,pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+          const subject=resolveEmailTemplate(tmpl.reuploadSubject||DEF_SETTINGS.emailTemplates.reuploadSubject,tokens);
+          const body=resolveEmailTemplate(tmpl.reuploadBody||DEF_SETTINGS.emailTemplates.reuploadBody,tokens);
           setModal(prev=>({...prev,_draftEmail:{to:a.email,subject,body,type:"reupload",docLabel}}));
         };
         const DocCard=({doc})=>{
