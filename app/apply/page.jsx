@@ -344,32 +344,26 @@ export default function ApplyPage(){
     const nameStr=first&&last?first+last:first||last||"Applicant";
     const appId=invite?.id||"tmp";
     const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
-    const fileName=date+"_"+nameStr+"_"+type+"_APP-"+appId+"."+ext;
+    // Stable filename (no date) so re-uploads always hit the same path and upsert works
+    const fileName=nameStr+"_"+type+"_APP-"+appId+"."+ext;
     const path="applicants/"+appId+"/"+fileName;
     try{
+      // Always use PUT with x-upsert:true — works for both new and existing files
       const r=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
-        method:"POST",
+        method:"PUT",
         headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
         body:file,
       });
       if(!r.ok){
-        // Try PUT (upsert) in case POST fails on existing file
-        const r2=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
-          method:"PUT",
-          headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
-          body:file,
-        });
-        if(!r2.ok){
-          const errText=await r2.text().catch(()=>"");
-          console.error("Upload error:",r2.status,errText);
-          setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,uploading:false,error:"Upload failed ("+r2.status+") — please try again"}:x)}));
-          return;
-        }
+        const errText=await r.text().catch(()=>"");
+        console.error("Upload error:",r.status,errText);
+        setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,uploading:false,error:"Upload failed ("+r.status+") — check connection and try again"}:x)}));
+        return;
       }
       const url=SUPA_URL+"/storage/v1/object/public/applicant-docs/"+path;
-      setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,url,name:fileName,uploading:false,uploadedAt:date}:x)}));
+      setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,url,name:date+"_"+fileName,uploading:false,uploadedAt:date}:x)}));
     }catch{
-      setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,uploading:false,error:"Network error — please try again"}:x)}));
+      setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,uploading:false,error:"Network error — check connection and try again"}:x)}));
     }
   };
   const fmtPhone=(v)=>{const x=v.replace(/\D/g,"").slice(0,10);if(x.length<=3)return x;if(x.length<=6)return`(${x.slice(0,3)}) ${x.slice(3)}`;return`(${x.slice(0,3)}) ${x.slice(3,6)}-${x.slice(6)}`;};
@@ -502,10 +496,17 @@ export default function ApplyPage(){
   const saveEmp=()=>{const f=d.curEmployerForm;if(!f)return;
     const empFormErrs={};
     if(!f.employer)empFormErrs.empFormEmployer="Company name is required";
+    if(!f.position)empFormErrs.empFormPosition="Position / title is required";
+    if(!f.monthStarted)empFormErrs.empFormMonthStarted="Month started is required";
+    if(!f.yearStarted)empFormErrs.empFormYearStarted="Year started is required";
     if(!f.monthlyIncome)empFormErrs.empFormIncome="Monthly income is required";
-    if(f.refEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.refEmail))empFormErrs.empFormRefEmail="Please enter a valid email address";
+    if(!f.refFirstName)empFormErrs.empFormRefFirst="Reference first name is required";
+    if(!f.refLastName)empFormErrs.empFormRefLast="Reference last name is required";
+    if(!f.refEmail)empFormErrs.empFormRefEmail="Reference email is required";
+    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.refEmail))empFormErrs.empFormRefEmail="Please enter a valid email address";
+    if(!f.refPhone)empFormErrs.empFormRefPhone="Reference phone is required";
     if(Object.keys(empFormErrs).length){setErrors(p=>({...p,...empFormErrs}));shake();return;}
-    setErrors(p=>({...p,empFormEmployer:undefined,empFormIncome:undefined,empFormRefEmail:undefined}));
+    setErrors(p=>({...p,empFormEmployer:undefined,empFormPosition:undefined,empFormMonthStarted:undefined,empFormYearStarted:undefined,empFormIncome:undefined,empFormRefFirst:undefined,empFormRefLast:undefined,empFormRefEmail:undefined,empFormRefPhone:undefined}));
     if(f._editIdx!==undefined){setD(p=>({...p,employers:p.employers.map((e,i)=>i===f._editIdx?f:e),curEmployerForm:null}));}
     else{setD(p=>({...p,employers:[...p.employers,f],curEmployerForm:null}));}};
 
@@ -869,20 +870,20 @@ export default function ApplyPage(){
           {d.curEmployerForm?<div className="expand-form">
             <h3>{d.curEmployerForm._editIdx!==undefined?"Edit Employer":"Add Current Employer"}</h3>
             <div className="fld"><label>Employer<span className="req">*</span></label><input value={d.curEmployerForm.employer} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,employer:e.target.value});setErrors(p=>({...p,empFormEmployer:undefined}));}} className={errors.empFormEmployer?"err":""} placeholder="Company name"/>{errors.empFormEmployer&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormEmployer}</div>}</div>
-            <div className="fld"><label>Position / Title / Occupation</label><input value={d.curEmployerForm.position} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,position:e.target.value})} placeholder="Your role"/></div>
+            <div className="fld"><label>Position / Title / Occupation<span className="req">*</span></label><input value={d.curEmployerForm.position} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,position:e.target.value});setErrors(p=>({...p,empFormPosition:undefined}));}} className={errors.empFormPosition?"err":""} placeholder="Your role"/>{errors.empFormPosition&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormPosition}</div>}</div>
             <div className="fld-row">
-              <div className="fld"><label>Month Started</label><select value={d.curEmployerForm.monthStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,monthStarted:e.target.value})}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
-              <div className="fld"><label>Year Started</label><select value={d.curEmployerForm.yearStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,yearStarted:e.target.value})}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
+              <div className="fld"><label>Month Started<span className="req">*</span></label><select value={d.curEmployerForm.monthStarted} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,monthStarted:e.target.value});setErrors(p=>({...p,empFormMonthStarted:undefined}));}} className={errors.empFormMonthStarted?"err":""}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
+              <div className="fld"><label>Year Started<span className="req">*</span></label><select value={d.curEmployerForm.yearStarted} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,yearStarted:e.target.value});setErrors(p=>({...p,empFormYearStarted:undefined}));}} className={errors.empFormYearStarted?"err":""}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
             </div>
             <div className="fld"><label>Monthly Income (Gross)<span className="req">*</span></label><input type="number" value={d.curEmployerForm.monthlyIncome} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,monthlyIncome:e.target.value});setErrors(p=>({...p,empFormIncome:undefined}));}} className={errors.empFormIncome?"err":""} placeholder="4200"/>{errors.empFormIncome&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormIncome}</div>}</div>
-            <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Employment Reference <span style={{fontSize:10,fontWeight:400,color:"#6b5e52"}}>(optional)</span></div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Employment Reference <span style={{color:"#c45c4a",fontWeight:400,fontSize:11}}>* All fields required</span></div>
             <div className="fld-row">
-              <div className="fld"><label>First Name</label><input value={d.curEmployerForm.refFirstName||""} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("curEmployerForm",{...d.curEmployerForm,refFirstName:c});}} placeholder="First name"/></div>
-              <div className="fld"><label>Last Name</label><input value={d.curEmployerForm.refLastName||""} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("curEmployerForm",{...d.curEmployerForm,refLastName:c});}} placeholder="Last name"/></div>
+              <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.curEmployerForm.refFirstName||""} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("curEmployerForm",{...d.curEmployerForm,refFirstName:c});setErrors(p=>({...p,empFormRefFirst:undefined}));}} className={errors.empFormRefFirst?"err":""} placeholder="First name"/>{errors.empFormRefFirst&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormRefFirst}</div>}</div>
+              <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.curEmployerForm.refLastName||""} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("curEmployerForm",{...d.curEmployerForm,refLastName:c});setErrors(p=>({...p,empFormRefLast:undefined}));}} className={errors.empFormRefLast?"err":""} placeholder="Last name"/>{errors.empFormRefLast&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormRefLast}</div>}</div>
             </div>
             <div className="fld-row">
-              <div className="fld"><label>Email</label><input type="email" value={d.curEmployerForm.refEmail||""} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,refEmail:e.target.value})} placeholder="supervisor@company.com"/></div>
-              <div className="fld"><label>Phone</label><input type="tel" value={d.curEmployerForm.refPhone||""} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,refPhone:fmtPhone(e.target.value)})} placeholder="(555) 555-5555"/></div>
+              <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.curEmployerForm.refEmail||""} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,refEmail:e.target.value});setErrors(p=>({...p,empFormRefEmail:undefined}));}} className={errors.empFormRefEmail?"err":""} placeholder="supervisor@company.com"/>{errors.empFormRefEmail&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormRefEmail}</div>}</div>
+              <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.curEmployerForm.refPhone||""} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,refPhone:fmtPhone(e.target.value)});setErrors(p=>({...p,empFormRefPhone:undefined}));}} className={errors.empFormRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empFormRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormRefPhone}</div>}</div>
             </div>
             <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveEmp}>Save Employer</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curEmployerForm",null)}>Cancel</button></div>
           </div>
