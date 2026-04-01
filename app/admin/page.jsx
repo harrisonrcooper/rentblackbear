@@ -2230,6 +2230,7 @@ export default function Page(){
   const[leaseTemplate,setLeaseTemplate]=useState(null);
   const[leaseSubTab,setLeaseSubTab]=useState("active");
   const[leaseForm,setLeaseForm]=useState(null);
+  const[_pendingLeaseAppId,_setPendingLeaseAppId]=useState(null);
   const[viewingLease,setViewingLease]=useState(null); // {lease, room}
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
@@ -5364,6 +5365,13 @@ export default function Page(){
 
         const statusColors={draft:{bg:"rgba(0,0,0,.06)",tx:"#666",label:"Draft"},pending_landlord:{bg:"rgba(212,168,83,.1)",tx:"#9a7422",label:"Awaiting Your Signature"},pending_tenant:{bg:"rgba(59,130,246,.1)",tx:"#1d4ed8",label:"Sent to Tenant"},executed:{bg:"rgba(74,124,89,.1)",tx:"#2d6a3f",label:"Executed"},};
 
+        // Auto-open lease form if arriving from Approve & Configure Lease
+        if(_pendingLeaseAppId&&!leaseForm){
+          const pendingApp=apps.find(ap=>ap.id===_pendingLeaseAppId);
+          _setPendingLeaseAppId(null);
+          if(pendingApp)setTimeout(()=>openCreateLease(pendingApp),0);
+        }
+
         const openCreateLease=(app)=>{
           // Auto-fill from application if provided
           // Prefer termRoomId (ID-based) over room name match for reliability
@@ -5382,6 +5390,15 @@ export default function Page(){
           const utilitiesMode=unit?.utils||prop?.utils||"allIncluded";
           const utilTmpl=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===utilitiesMode);
           const utilitiesClause=utilTmpl?.clause||"See lease for utility terms.";
+          const isTbd=app?.moveOutTbd===true;
+          const tbdSentence=mi
+            ? `<p><strong>Note:</strong> The lease end date is to be determined and will be confirmed in writing no later than the move-in date of ${fmtDLong(mi)}.</p>`
+            : `<p><strong>Note:</strong> The lease end date is to be determined and will be confirmed in writing prior to move-in.</p>`;
+          const sections=(template.sections||DEF_LEASE_SECTIONS).map(sec=>
+            sec.id==="s1"&&isTbd
+              ?{...sec,content:(sec.content||"")+tbdSentence}
+              :sec
+          );
           setLeaseForm({
             id:null,
             applicationId:app?.id||null,
@@ -5394,7 +5411,7 @@ export default function Page(){
             propertyAddress:prop?.addr||"",
             rent,sd:app?.termSD||rent,proratedRent,
             moveIn:mi,leaseStart:mi,
-            leaseEnd:leaseEndD.toISOString().split("T")[0],
+            leaseEnd:isTbd?"":leaseEndD.toISOString().split("T")[0],
             leaseType:"fixed",
             utilitiesMode,utilitiesClause,
             parking:room?.parking||"",
@@ -5403,9 +5420,9 @@ export default function Page(){
             company:template.company||"Black Bear Properties",
             landlordEmail:template.landlordEmail||"info@rentblackbear.com",
             agreementDate:TODAY.toISOString().split("T")[0],
-            sections:template.sections,
+            sections,
             addenda:[],
-            notes:"",
+            notes:isTbd?"Lease end date TBD — to be confirmed before move-in":"",
           });
         };
 
@@ -13171,37 +13188,37 @@ export default function Page(){
         </button>}
         {a.status==="applied"&&<>
           {(()=>{
-            // Fully derived — same logic as checklist, reads live from appDocs
-            const _allDocs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
-            const _feePaid=(a.appFee||0)>0;
-            const _hasRentPrep=a.screenPkg&&a.screenPkg!=="none";
-            const _hasIncome=a.incomeAdd&&a.incomeAdd!=="none"&&a.incomeAdd!=="";
-            const _ad=a.applicationData||{};
+            // Read fresh from modal.data to avoid stale closure
+            const _a=modal.data||a;
+            const _allDocs=(_a.appDocs||(_a.applicationData?.appDocs)||[]).filter(x=>x.url);
+            const _hasIncome=_a.incomeAdd&&_a.incomeAdd!=="none"&&_a.incomeAdd!=="";
+            const _ad=_a.applicationData||{};
+            const _rv=_a.refVerified||{};
             const pendingItems=[];
             // Background Check
-            if(a.bgCheck!=="passed"&&!waived.includes("Background Check"))pendingItems.push("Background Check");
+            if(_a.bgCheck!=="passed"&&!waived.includes("Background Check"))pendingItems.push("Background Check");
             // Credit Check
-            const _hasScore=a.creditScore&&a.creditScore!=="—"&&!isNaN(parseInt(a.creditScore));
+            const _hasScore=_a.creditScore&&_a.creditScore!=="—"&&!isNaN(parseInt(_a.creditScore));
             if(!_hasScore&&!waived.includes("Credit Check"))pendingItems.push("Credit Check");
             // Income Verification — only if add-on was requested
-            if(_hasIncome&&a.incomeVerified!=="verified"&&!waived.includes("Income Verification"))pendingItems.push("Income Verification");
+            if(_hasIncome&&_a.incomeVerified!=="verified"&&!waived.includes("Income Verification"))pendingItems.push("Income Verification");
             // References
-            const _rv=a.refVerified||{};
             const _refKeys=[];
             (_ad.addresses||[]).filter(x=>x.resType==="Rent"&&x.landlordEmail).forEach((_,i)=>_refKeys.push(`landlord_${i}`));
             if(_ad.empRefEmail&&!_ad.unemployed)_refKeys.push("employer");
             if(_ad.persRefEmail)_refKeys.push("personal1");
-            const _refsOk=a.refs==="verified"||(_refKeys.length>0&&_refKeys.every(k=>_rv[k]===true));
+            const _refsOk=_a.refs==="verified"||(_refKeys.length>0&&_refKeys.every(k=>_rv[k]===true));
             if(!_refsOk&&!waived.includes("References"))pendingItems.push("References");
-            // ID Verified — check actual doc verification status
+            // ID Verified — read live doc status
             const _idF=_allDocs.find(x=>x.type==="PhotoID-Front");
             const _idB=_allDocs.find(x=>x.type==="PhotoID-Back");
             const _idRejected=_idF?.verified==="rejected"||_idB?.verified==="rejected";
             const _idOk=_idF?.verified==="verified"&&_idB?.verified==="verified";
-            if((!_idOk||_idRejected)&&!waived.includes("ID Verified"))pendingItems.push(_idRejected?"ID Verified (rejected — re-upload needed)":"ID Verified");
-            // Docs with rejected status
+            if(_idRejected)pendingItems.push("ID Verified — rejected, re-upload needed");
+            else if(!_idOk&&!waived.includes("ID Verified"))pendingItems.push("ID Verified");
+            // Any other rejected doc
             _allDocs.filter(x=>x.verified==="rejected"&&x.type!=="PhotoID-Front"&&x.type!=="PhotoID-Back").forEach(d=>{
-              const label=(d.label||d.type)+" (rejected — re-upload needed)";
+              const label=(d.label||d.type)+" — rejected, re-upload needed";
               if(!pendingItems.includes(label))pendingItems.push(label);
             });
             if(pendingItems.length===0)return null;
@@ -13220,9 +13237,21 @@ export default function Page(){
               </div>}
             </div>);
           })()}
-          <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
-            Approve Anyway
-          </button>
+          {(()=>{
+            const hasPending=(()=>{const _a=modal.data||a;const _allDocs=(_a.appDocs||(_a.applicationData?.appDocs)||[]).filter(x=>x.url);const _hasIncome=_a.incomeAdd&&_a.incomeAdd!=="none"&&_a.incomeAdd!=="";const _ad=_a.applicationData||{};const _rv=_a.refVerified||{};const items=[];if(_a.bgCheck!=="passed"&&!waived.includes("Background Check"))items.push(1);const _hs=_a.creditScore&&_a.creditScore!=="—"&&!isNaN(parseInt(_a.creditScore));if(!_hs&&!waived.includes("Credit Check"))items.push(1);if(_hasIncome&&_a.incomeVerified!=="verified"&&!waived.includes("Income Verification"))items.push(1);const _rk=[];(_ad.addresses||[]).filter(x=>x.resType==="Rent"&&x.landlordEmail).forEach((_,i)=>_rk.push(`landlord_${i}`));if(_ad.empRefEmail&&!_ad.unemployed)_rk.push("employer");if(_ad.persRefEmail)_rk.push("personal1");const _ro=_a.refs==="verified"||(_rk.length>0&&_rk.every(k=>_rv[k]===true));if(!_ro&&!waived.includes("References"))items.push(1);const _iF=_allDocs.find(x=>x.type==="PhotoID-Front");const _iB=_allDocs.find(x=>x.type==="PhotoID-Back");if((_iF?.verified==="rejected"||_iB?.verified==="rejected")||(!(_iF?.verified==="verified"&&_iB?.verified==="verified")&&!waived.includes("ID Verified")))items.push(1);return items.length>0;})();
+            const doApprove=()=>{
+              const updatedApps=apps.map(x=>x.id===a.id?{...x,status:"approved",history:[...(x.history||[]),{from:x.status,to:"approved",date:TODAY.toISOString().split("T")[0],note:"Approved — lease configuration started"}]}:x);
+              setApps(updatedApps);save("hq-apps",updatedApps);
+              _setPendingLeaseAppId(a.id);
+              setModal(null);
+              goTab("leases");
+            };
+            return(
+              <button className="btn btn-green" style={{flex:1}} onClick={doApprove}>
+                {hasPending?"Approve Anyway & Configure Lease":"Approve & Configure Lease"}
+              </button>
+            );
+          })()}
         </>}
 
         {(a.status==="approved"||a.status==="onboarding")&&(()=>{
