@@ -431,6 +431,7 @@ export default function ApplyPage(){
     }
     if(s==="employment"){
       if(!d.unemployed&&fieldActive("employers")&&fieldRequired("employers")&&d.employers.length===0&&!d.incomeUploadLater)e.employers="Please add at least one employer, or check the box to upload income proof later";
+      if(!d.unemployed&&!d.incomeUploadLater&&d.appDocs.filter(x=>x.type==="PayStub"&&x.url).length===0)e.incomeProof="Please upload proof of income, or check the box to upload it later";
     }
     if(s==="references"){
       if(!d.unemployed&&fieldActive("empRefName")&&fieldRequired("empRefName")&&!d.empRefName.trim())e.empRefName=`${fieldLabel("empRefName","Employer reference name")} is required`;
@@ -832,7 +833,7 @@ export default function ApplyPage(){
         <div className="sec-num">Section 3</div>
         <div className="sec-hd"><h2>Employment & Income</h2><p>Show the landlord that you can afford this rental.</p></div>
 
-        <button className={`unemployed-btn ${d.unemployed?"on":""}`} onClick={()=>upd("unemployed",!d.unemployed)}><span style={{fontSize:16}}>{d.unemployed?"☑":"☐"}</span> I'm currently unemployed</button>
+        <button className={`unemployed-btn ${d.unemployed?"on":""}`} onClick={()=>{upd("unemployed",!d.unemployed);setErrors(p=>({...p,employers:undefined,incomeProof:undefined}));}}><span style={{fontSize:16}}>{d.unemployed?"☑":"☐"}</span> I'm currently unemployed</button>
 
         {!d.unemployed&&<>
           {d.employers.map((emp,i)=><div key={i} className="item-card">
@@ -899,13 +900,14 @@ export default function ApplyPage(){
               <div className="upload-ic">📄</div>
               <div className="upload-txt">{d.appDocs.filter(x=>x.type==="PayStub").length===0?"Tap to upload pay stubs, offer letter, or bank statements":"+ Add another pay stub or document"}</div>
             </div>
-            <input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0])uploadDoc(e.target.files[0],"PayStub","Pay Stub");}}/>
+            <input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0]){uploadDoc(e.target.files[0],"PayStub","Pay Stub");setErrors(p=>({...p,incomeProof:undefined}));}}}/>
             <div style={{fontSize:10,color:"#6b5e52",marginTop:6}}>Last 2 pay stubs preferred. You can add multiple files.</div>
           </>}
           <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
-            <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>upd("incomeUploadLater",e.target.checked)} style={{width:16,height:16,cursor:"pointer"}}/>
+            <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>{upd("incomeUploadLater",e.target.checked);if(e.target.checked)setErrors(p=>({...p,incomeProof:undefined}));}} style={{width:16,height:16,cursor:"pointer"}}/>
             I'll upload proof of income later
           </label>
+          {errors.incomeProof&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:6}}>{errors.incomeProof}</div>}
         </div>
 
         <button className="btn-next" onClick={next}>Continue →</button>
