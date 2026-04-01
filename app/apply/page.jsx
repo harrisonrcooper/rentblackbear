@@ -638,21 +638,6 @@ export default function ApplyPage(){
           Applying for <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
         </div>}
 
-        {/* ── DOOR CODE PIN — always shown once property is selected or room is locked ── */}
-        {(d.preferredProperty||invite?.inviteRoomName)&&fieldActive("doorCode")&&<div style={{marginBottom:20,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>{fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
-          <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once payment is received.")}</div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-            <input type="text" inputMode="numeric" maxLength={4} value={d.doorCode}
-              onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);upd("doorCode",val);if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));}}
-              placeholder="_ _ _ _"
-              style={{width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",color:"#1a1714"}}
-            />
-            {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>&#10003; Code set</div>}
-            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
-          </div>
-        </div>}
-
         {/* ── OCCUPANCY — dynamic per rental mode ── */}
         {(()=>{
           const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.id===(invite?.property||d.preferredProperty))||props_.find(p=>p.name===(invite?.property||d.preferredProperty))||props_.find(p=>p.id===(invite?.property||d.preferredProperty)):null;
@@ -733,6 +718,21 @@ export default function ApplyPage(){
             {hasErr&&<div className="err-msg" style={{marginTop:8,animation:"shake .4s ease"}}>{errors.occupancyAck}</div>}
           </div>);
         })()}
+
+        {/* ── DOOR CODE PIN — below occupancy policy ── */}
+        {(d.preferredProperty||invite?.inviteRoomName)&&fieldActive("doorCode")&&<div style={{marginBottom:20,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>{fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
+          <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once payment is received.")}</div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <input type="text" inputMode="numeric" maxLength={4} value={d.doorCode}
+              onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);upd("doorCode",val);if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));}}
+              placeholder="_ _ _ _"
+              style={{width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",color:"#1a1714"}}
+            />
+            {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>&#10003; Code set</div>}
+            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
+          </div>
+        </div>}
 
         {/* ── ABOUT YOU ── */}
         <div className="fld-row">
