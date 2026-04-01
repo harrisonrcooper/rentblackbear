@@ -387,6 +387,8 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
   ]
 };
 const DEF_THEME={bg:"#1a1714",card:"#2c2520",accent:"#d4a853",text:"#f5f0e8",muted:"#c4a882",surface:"#fefdfb",surfaceAlt:"#f5f0e8",green:"#4a7c59",dark:"#1a1714",warm:"#5c4a3a"};
+// Pinned field injected via migration if missing from saved hq-app-fields
+const DOOR_CODE_APP_FIELD={id:"pinned-doorcode-field",label:"Door Code (4-digit PIN)",key:"doorCode",type:"text",section:"Move-In & Property",required:true,active:true,placeholder:"Choose a 4-digit code (numbers only)",helpText:"This code will be programmed into your smart lock and written into your lease. Choose any 4 digits. Activates at 12:00am on move-in day once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4};
 const THEME_LABELS={bg:"Background",card:"Card",accent:"Accent",text:"Light Text",muted:"Muted",surface:"Surface",surfaceAlt:"Alt Surface",green:"Green",dark:"Dark",warm:"Warm"};
 const ADMIN_PRESETS=[
   {id:"forest",name:"Forest Green",accent:"#4a7c59",accentRgb:"74,124,89",font:"'Plus Jakarta Sans',system-ui,sans-serif"},
@@ -2267,7 +2269,12 @@ export default function Page(){
         if(!found)console.warn("⚠ Could not geocode:",prop.name,prop.addr);
       }
     }
-    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);setAppFields(af);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setWidgetList(null);setLoaded(true);
+    setProps(propsWithCoords);setPayments(pay);setMaint(mt);setApps(a);setDocs(d);setTxns(t);setNotifs(n);setRocks(rk);setIssues(iss);setScorecard(sc);setSettings(st);setTheme(th);setIdeas(id);setArchive(ar);setCharges(ch);setCredits(cr);setSdLedger(sd);setSavedThemes(svt);setMonthly(mo);setScreenQs(sq);
+    // Migration: inject doorCode field if missing from saved hq-app-fields
+    const hasDoorCode=(af||[]).some(f=>f.key==="doorCode");
+    const migratedAf=(()=>{if(hasDoorCode||(af||[]).length===0)return af||[];const idx=af.findIndex(f=>f.key==="selectedRoom");const insertAt=idx>=0?idx+1:af.findIndex(f=>f.section==="Move-In & Property")+1;const at=insertAt<0?af.length:insertAt;return[...af.slice(0,at),DOOR_CODE_APP_FIELD,...af.slice(at)];})();
+    if(!hasDoorCode&&(af||[]).length>0){save("hq-app-fields",migratedAf);}
+    setAppFields(migratedAf);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setWidgetList(null);setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-lease-template",leaseTemplate),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,leaseTemplate,expenses,mortgages,vendors,improvements,subcats,loaded]);
@@ -4475,7 +4482,7 @@ export default function Page(){
           {id:uid(),label:"Desired Move-in Date",key:"moveIn",type:"date-movein",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Month / Day / Year dropdowns.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Property Interest",key:"preferredProperty",type:"property-select",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Required for walk-in applicants. Pre-filled from invite if applicable.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Preferred Room",key:"selectedRoom",type:"room-select",section:"Move-In & Property",required:false,active:true,placeholder:"",helpText:"Optional — shown based on selected property.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"passcode",section:"Move-In & Property",required:true,active:true,placeholder:"Choose a 4-digit code",helpText:"This code will be programmed into your smart lock and written into your lease. Activates at 12:00am on move-in day once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
+          {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"text",section:"Move-In & Property",required:true,active:true,placeholder:"Choose a 4-digit code (numbers only)",helpText:"This code will be programmed into your smart lock and written into your lease. Choose any 4 digits. Activates at 12:00am on move-in day once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
           {id:uid(),label:"Number of Occupants",key:"occupants",type:"counter",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Only 1 person per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
           // ── Section 3: Personal Information ──
           {id:uid(),label:"Photo ID Upload",key:"idFile",type:"file",section:"Personal Information",required:true,active:true,placeholder:"Upload driver's license, passport, or state ID",helpText:"JPG, PNG, or PDF. Can be uploaded later — application will be marked incomplete until received.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
@@ -5264,7 +5271,7 @@ export default function Page(){
               <div key={f.id} style={{marginBottom:14}}>
                 <div style={{fontSize:10,fontWeight:700,color:"rgba(196,168,130,.8)",textTransform:"uppercase",letterSpacing:.3}}>{f.label}{f.required&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
                 {f.helpText&&<div style={{fontSize:9,color:"rgba(196,168,130,.4)",marginTop:1,marginBottom:2}}>{f.helpText}</div>}
-                {(f.type==="text"||f.type==="email"||f.type==="phone")&&<div style={{...inStyle,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"..."}</div>}
+                {(f.type==="text"||f.type==="email"||f.type==="phone"||f.type==="passcode")&&<div style={{...inStyle,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"..."}</div>}
                 {f.type==="number"&&<div style={{...inStyle,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"0"}</div>}
                 {f.type==="date"&&<div style={{...inStyle,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"MM / DD / YYYY"}</div>}
                 {f.type==="long-text"&&<div style={{...inStyle,minHeight:60,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"..."}</div>}
