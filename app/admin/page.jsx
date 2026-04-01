@@ -12260,7 +12260,7 @@ export default function Page(){
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="data";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="data"?null:"data"}))}>  
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="data"?null:"data",_appDataOpen:true}))}>  
               <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M10 2H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5z"/><path d="M10 2v3h3M6 8h4M6 11h3"/></svg>
               </div>
@@ -12340,10 +12340,21 @@ export default function Page(){
                   <div style={{fontSize:10,color:"#6b5e52"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
                   {addr.reason&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
                   {addr.resType==="Other"&&addr.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>{addr.otherSituation}</div>}
-                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",gap:12}}>
-                    <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
-                    <span>{addr.landlordEmail}</span>
-                    <span>{addr.landlordPhone}</span>
+                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+                    <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                      <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
+                      <span>{addr.landlordEmail}</span>
+                      <span>{addr.landlordPhone}</span>
+                    </div>
+                    <button onClick={()=>{
+                      const refName=addr.landlordFirstName||"there";
+                      const name=ad.firstName||a.name.split(" ")[0];
+                      const subject="Tenant Reference Request — "+a.name+" (Rental Application)";
+                      const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as a previous landlord. We would appreciate a moment of your time to verify a few details:\n\n1. Did ${name} rent from you at ${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}?\n2. Did they pay rent on time and care for the property?\n3. Would you rent to them again?\n\nPlease reply directly to this email.\n\nThank you for your time,\nCarolina Cooper\nBlack Bear Rentals\n(850) 696-8101\ninfo@rentblackbear.com`;
+                      setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject,body,type:"reference",refName,refType:"Previous Landlord"}}));
+                    }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
+                      Draft Email →
+                    </button>
                   </div>}
                 </div>
               ))}
@@ -12899,7 +12910,7 @@ export default function Page(){
         <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_draftEmail:null}))}>Cancel</button>
         <button className="btn btn-gold" style={{flex:1}} onClick={async()=>{
           try{
-            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>")})});
+            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>"),fromName:"Carolina Cooper — Black Bear Rentals",replyTo:settings.email||"info@rentblackbear.com"})});
             const d=await r.json();
             if(d.ok||r.ok){
               // Log to comm log
