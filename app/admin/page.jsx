@@ -5679,10 +5679,9 @@ export default function Page(){
 
           <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
             <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8",marginBottom:8}}>LEASE TERMS · Pre-filled from application · Editable</div>
-            <div className="fr3">
+            <div className="fr">
               <div className="fld"><label>Monthly Rent ($)</label><input type="number" value={leaseForm.rent||""} onChange={e=>{const rent=Number(e.target.value);const mi=leaseForm.moveIn;const day=mi?new Date(mi+"T00:00:00").getDate():1;const daysLeft=mi?new Date(new Date(mi+"T00:00:00").getFullYear(),new Date(mi+"T00:00:00").getMonth()+1,0).getDate()-day+1:0;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);setLeaseForm(p=>({...p,rent,sd:rent,proratedRent:prorated}));}}/></div>
               <div className="fld"><label>Security Deposit ($)</label><input type="number" value={leaseForm.sd||""} onChange={e=>setLeaseForm(p=>({...p,sd:Number(e.target.value)}))}/></div>
-              <div className="fld"><label>Prorated Rent ($)</label><input type="number" value={leaseForm.proratedRent||0} onChange={e=>setLeaseForm(p=>({...p,proratedRent:Number(e.target.value)}))}/></div>
             </div>
             <div className="fr3">
               <div className="fld"><label>Move-in Date</label><input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0]}));}}/></div>
@@ -5769,8 +5768,8 @@ export default function Page(){
                     <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>Proration method</div>
                     <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>
                       {proMode==="std"
-                        ?(isFirstDay?"Move-in on the 1st — full rent applies, no proration":`Tenant pays ${daysLeft} days prorated (${fmtS(proratedAmt)}) at move-in`)
-                        :`Tenant pays full ${nextMonthName} rent upfront — next bill is prorated ${moveInMonthName} (${fmtS(proratedAmt)})`}
+                        ?(isFirstDay?"Move-in on the 1st — full rent applies, no proration":`${fmtS(rent)} ÷ 30 = ${fmtS(dailyRate)}/day × ${daysLeft} days = ${fmtS(proratedAmt)} due at move-in`)
+                        :`Full ${nextMonthName} rent due at move-in — then ${fmtS(proratedAmt)} on ${nextMonthName} 1 (${daysLeft} days in ${moveInMonthName})`}
                     </div>
                   </div>
                   <div style={{display:"flex",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden",flexShrink:0,marginLeft:12}}>
@@ -5831,12 +5830,14 @@ export default function Page(){
                     <div style={{fontSize:12,fontWeight:600}}>
                       {proMode==="full"
                         ?`First month's rent — covers ${nextMonthName}`
-                        :isFirstDay?"First month's rent":`Prorated ${moveInMonthName} — ${daysLeft} days × ${fmtS(dailyRate)}/day`}
+                        :isFirstDay?"First month's rent":`Prorated ${moveInMonthName} — ${daysLeft} days`}
                     </div>
                     <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>
                       {proMode==="full"
                         ?`Paying ${nextMonthName} now — your ${nextMonthName} 1 bill will only be ${fmtS(proratedAmt)}`
-                        :`Due at move-in`}
+                        :isFirstDay
+                          ?`Move-in on the 1st — full rent applies`
+                          :`${fmtS(rent)} ÷ 30 = ${fmtS(dailyRate)}/day × ${daysLeft} days = ${fmtS(proratedAmt)}`}
                     </div>
                   </div>
                   <div style={{fontSize:13,fontWeight:700}}>{fmtS(firstAtMoveIn)}</div>
