@@ -5742,7 +5742,6 @@ export default function Page(){
             <button className="btn btn-out" onClick={saveDraft}>Save Draft</button>
             <button className="btn btn-green" style={{flex:1}} onClick={()=>{
               saveDraft();
-              // Small delay to let setLeases settle before opening sign modal
               setTimeout(()=>{
                 setLeases(prev=>{
                   const saved=prev.find(l=>l.applicationId===leaseForm.applicationId&&l.status==="draft");
@@ -5750,7 +5749,7 @@ export default function Page(){
                   return prev;
                 });
               },100);
-            }}>Continue to Sign &amp; Send</button>
+            }}>{"Continue to Sign & Send"}</button>
           </div>
         </div></div>}
 
@@ -5818,7 +5817,7 @@ export default function Page(){
                 if(newCharges.length>0){setCharges(p=>{const updated=[...p,...newCharges];save("hq-charges",updated);return updated;});}
                 setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease signed and sent to ${modal.lease.tenantEmail} — ${modal.lease.tenantName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
                 setModal({type:"leaseSent",lease:modal.lease,link});
-              }}>Sign &amp; Send to Tenant</button>
+              }}>{"Sign & Send to Tenant"}</button>
             </div>
           </div></div>}
 
