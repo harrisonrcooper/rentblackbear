@@ -12687,7 +12687,7 @@ export default function Page(){
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
               </div>
               <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Screening checklist</div>
-              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{(()=>{const _n=["bgCheck","refs","idVerified"].filter(k=>!a[k]||a[k]==="not-started").length;return _n>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{_n} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;})()}</div>
+              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{(()=>{const _n=["bgCheck","creditScore","incomeVerified","refs","idVerified"].filter(k=>!a[k]||a[k]==="not-started"||a[k]==="pending").length;return _n>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{_n} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;})()}</div>
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             {_o&&<div style={{padding:"0 0 4px"}}>
