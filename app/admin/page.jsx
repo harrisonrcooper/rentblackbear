@@ -12554,11 +12554,7 @@ export default function Page(){
                     const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.persRefFirstName;
                     const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body="Hi "+refName+",
-
-My name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.
-
-"+a.name+" has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.
+                    const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.
 
 1. How long have you known "+name+" and in what capacity?
 2. Would you describe them as responsible and respectful?
