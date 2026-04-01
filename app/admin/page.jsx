@@ -11327,16 +11327,7 @@ export default function Page(){
     return(
     <div className="mbg" onClick={()=>setModal(null)}>
     {(()=>{
-      const _mp=modal._mboxPos||null;
-      const _startDrag=(e)=>{
-        if(e.target.closest("button")||e.target.closest("input")||e.target.closest("select")||e.target.closest("textarea")||e.target.closest("svg"))return;
-        const rect=e.currentTarget.getBoundingClientRect();
-        const ox=e.clientX-rect.left,oy=e.clientY-rect.top;
-        const onMv=(ev)=>setModal(p=>({...p,_mboxPos:{x:Math.max(0,Math.min(window.innerWidth-200,ev.clientX-ox)),y:Math.max(0,Math.min(window.innerHeight-100,ev.clientY-oy))}}));
-        const onUp=()=>{document.removeEventListener("mousemove",onMv);document.removeEventListener("mouseup",onUp);};
-        document.addEventListener("mousemove",onMv);document.addEventListener("mouseup",onUp);
-      };
-      return(<div className="mbox" onClick={e=>e.stopPropagation()} onMouseDown={_startDrag} style={{maxWidth:820,padding:0,overflow:"hidden",maxHeight:"90vh",display:"flex",flexDirection:"column",...(_mp?{position:"fixed",left:_mp.x,top:_mp.y,margin:0,transform:"none"}:{})}}>
+      return(<div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:820,padding:0,overflow:"hidden",maxHeight:"90vh",display:"flex",flexDirection:"column"}}>
       {/* NEW HEADER BAR */}
       <div style={{padding:"10px 16px",borderBottom:"1px solid #f0ede8",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
         <div style={{width:40,height:40,borderRadius:9,background:"#1a1714",color:"#d4a853",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,letterSpacing:.5}}>
@@ -12278,7 +12269,7 @@ export default function Page(){
                   <span style={{color:"#6b5e52"}}>Photo ID</span>
                   <span style={{fontWeight:600,textAlign:"right"}}>
                     {flag.idUploadLater?<span style={{color:"#9a7422"}}>Will upload later</span>
-                    :idUploaded?<span style={{display:"flex",gap:6"}}>
+                    :idUploaded?<span style={{display:"flex",gap:6}}>
                       {idFront&&<a href={idFront.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Front ↗</a>}
                       {idBack&&<a href={idBack.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Back ↗</a>}
                     </span>
