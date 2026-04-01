@@ -12691,57 +12691,106 @@ export default function Page(){
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
               </div>
               <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Screening checklist</div>
-              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{(()=>{const _n=["bgCheck","creditScore","incomeVerified","refs","idVerified"].filter(k=>!a[k]||a[k]==="not-started"||a[k]==="pending").length;return _n>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{_n} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;})()}</div>
+              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{(()=>{
+                const feePaid=(a.appFee||0)>0;
+                const hasRentPrep=a.screenPkg&&a.screenPkg!=="none";
+                const allDocs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
+                const idOk=allDocs.some(x=>(x.type==="PhotoID-Front"||x.type==="PhotoID-Back")&&x.verified==="verified")||a.idVerified==="verified";
+                const bgOk=a.bgCheck==="passed";
+                const creditOk=a.creditScore&&a.creditScore!=="—"&&!isNaN(parseInt(a.creditScore))&&parseInt(a.creditScore)>=580;
+                const incOk=!a.incomeAdd||a.incomeAdd==="none"||a.incomeAdd===""||a.incomeVerified==="verified";
+                const refsOk=a.refs==="verified";
+                const pending=[!bgOk,!creditOk,!incOk,!refsOk,!idOk].filter(Boolean).length;
+                return pending>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{pending} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;
+              })()}</div>
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             {_o&&<div style={{padding:"0 0 4px"}}>
-      {/* ── Screening Checklist — show at applied + reviewing ── */}
-      {(a.status==="applied"||a.status==="reviewing")&&<div className="tp-card">
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <h3 style={{margin:0}}>Screening Checklist</h3>
-          {a.waiverReason&&<span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"2px 7px",borderRadius:8,fontWeight:700}}>Screening waived</span>}
-        </div>
-        {reqs.map(r=>{
-          const isW=waived.includes(r.label);
-          const val=a[r.key]||"not-started";
-          const isCreditScore=r.key==="creditScore";
-          const rentPrepKeys={"bgCheck":a.screenPkg&&a.screenPkg!=="none","creditScore":a.screenPkg&&a.screenPkg!=="none"&&a.screenPkg!=="bg-only","incomeVerified":a.incomeAdd&&a.incomeAdd!=="none"&&a.incomeAdd!==""};
-          const isRentPrep=!!rentPrepKeys[r.key];
-          const feePaid=(a.appFee||0)>0;
-          const isPaidPending=isRentPrep&&feePaid&&(val==="not-started"||val==="—"||!a[r.key]);
-          const statusColor=val==="passed"||val==="verified"?"#2d6a3f":val==="failed"?"#c45c4a":isPaidPending?"#9a7422":val==="pending"?"#9a7422":"#aaa";
-          return(
-            <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1,gap:8}}>
-              <div style={{flex:1}}>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:12,fontWeight:500,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
-                  {isRentPrep&&<span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:4,background:"rgba(59,130,246,.08)",color:"#1d4ed8",letterSpacing:.3}}>RENTPREP</span>}
-                </div>
-                {isW&&<span style={{fontSize:9,color:"#6b5e52"}}>Waived</span>}
-                {!isCreditScore&&!isW&&<div style={{fontSize:9,color:statusColor,fontWeight:700,marginTop:1,textTransform:"uppercase",letterSpacing:.3}}>
-                  {isPaidPending?"Paid — Pending RentPrep":val==="not-started"?"Not started":val}
-                </div>}
-                {isCreditScore&&isPaidPending&&<div style={{fontSize:9,color:"#9a7422",fontWeight:700,marginTop:1,textTransform:"uppercase",letterSpacing:.3}}>Paid — Pending RentPrep</div>}
+      {/* ── Screening Checklist — derived, no manual dropdowns ── */}
+      {(a.status==="applied"||a.status==="reviewing")&&(()=>{
+        const feePaid=(a.appFee||0)>0;
+        const hasRentPrep=a.screenPkg&&a.screenPkg!=="none";
+        const hasIncome=a.incomeAdd&&a.incomeAdd!=="none"&&a.incomeAdd!=="";
+        // Derive each item's status from actual data
+        const allDocs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
+        const idFront=allDocs.find(x=>x.type==="PhotoID-Front");
+        const idBack=allDocs.find(x=>x.type==="PhotoID-Back");
+        const idVerifiedDerived=idFront?.verified==="verified"||idBack?.verified==="verified"?"verified":idFront||idBack?"uploaded":a.idVerified||"not-started";
+        const ad=a.applicationData||{};
+        const totalRefs=(ad.empRefFirstName&&!ad.unemployed?1:0)+(ad.persRefFirstName?1:0);
+        const repliedRefs=(modal._refReplies||[]).filter(r=>r.appId===a.id||true).length;
+        const refsStatus=a.refs==="verified"?"verified":repliedRefs>0?`${Math.min(repliedRefs,totalRefs)}/${totalRefs} replied`:totalRefs>0?"not-started":"not-started";
+
+        const StatusDot=({s})=>{
+          const c=s==="verified"||s==="passed"?"#2d6a3f":s==="failed"||s==="rejected"?"#c45c4a":s==="awaiting"||s==="pending"?"#d4a853":"#d0ccc6";
+          const fill=s==="verified"||s==="passed"?"#2d6a3f":s==="failed"||s==="rejected"?"#c45c4a":s==="awaiting"||s==="pending"?"#d4a853":"#e8e5e0";
+          return s==="verified"||s==="passed"
+            ?<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill={fill} opacity=".15"/><polyline points="4.5 8 7 10.5 11.5 5.5" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            :s==="failed"||s==="rejected"
+            ?<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill={fill} opacity=".12"/><line x1="5" y1="5" x2="11" y2="11" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><line x1="11" y1="5" x2="5" y2="11" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg>
+            :s==="awaiting"||s==="pending"
+            ?<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke={c} strokeWidth="1.5" fill="none"/><line x1="8" y1="4.5" x2="8" y2="8.5" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><line x1="8" y1="9.5" x2="8" y2="10.5" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg>
+            :<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke={c} strokeWidth="1.5" fill="none" strokeDasharray="2 2"/></svg>;
+        };
+        const Badge=({s,label})=>{
+          const cfg={verified:{bg:"rgba(74,124,89,.1)",c:"#2d6a3f"},passed:{bg:"rgba(74,124,89,.1)",c:"#2d6a3f"},failed:{bg:"rgba(196,92,74,.1)",c:"#c45c4a"},rejected:{bg:"rgba(196,92,74,.1)",c:"#c45c4a"},awaiting:{bg:"rgba(212,168,83,.1)",c:"#9a7422"},pending:{bg:"rgba(212,168,83,.1)",c:"#9a7422"}}[s]||{bg:"rgba(0,0,0,.05)",c:"#aaa"};
+          return<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:cfg.bg,color:cfg.c,whiteSpace:"nowrap"}}>{label}</span>;
+        };
+        const Row=({label,st,detail,badge,tag})=>(
+          <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+            <StatusDot s={st}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:5}}>
+                <span style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{label}</span>
+                {tag&&<span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:4,background:"rgba(59,130,246,.08)",color:"#1d4ed8",letterSpacing:.3}}>{tag}</span>}
               </div>
-              {!isW&&(isCreditScore
-                ?<div style={{display:"flex",alignItems:"center",gap:6}}>
-                  {!isPaidPending&&<input type="number" value={a.creditScore&&a.creditScore!=="—"?a.creditScore:""} placeholder="Score"
-                    onChange={e=>{const v=e.target.value||"—";setApps(p=>p.map(x=>x.id===a.id?{...x,creditScore:v}:x));setModal(prev=>({...prev,data:{...prev.data,creditScore:v}}));}}
-                    style={{width:70,padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",textAlign:"center"}}/>}
-                  {isPaidPending&&<span style={{fontSize:9,fontWeight:700,padding:"3px 9px",borderRadius:5,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Awaiting</span>}
-                </div>
-                :<select value={isPaidPending?"paid-pending":val} onChange={e=>{const v=e.target.value==="paid-pending"?"not-started":e.target.value;setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:v}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:v}}));}}
-                  style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",background:"#fff",color:isPaidPending?"#9a7422":statusColor,fontWeight:700}}>
-                  {isPaidPending&&<option value="paid-pending">Paid — Pending RentPrep</option>}
-                  <option value="not-started">Not Started</option>
-                  <option value="pending">In Progress</option>
-                  <option value="passed">Passed</option>
-                  <option value="verified">Verified</option>
-                  <option value="failed">Failed</option>
-                </select>
-              )}
-            </div>);
-        })}
+              {detail&&<div style={{fontSize:10,color:"#7a7067",marginTop:1}}>{detail}</div>}
+            </div>
+            {badge&&<Badge s={st} label={badge}/>}
+          </div>
+        );
+
+        // Background Check
+        const bgSt=a.bgCheck==="passed"?"passed":a.bgCheck==="failed"?"failed":a.bgCheck==="pending"?"pending":hasRentPrep&&feePaid?"awaiting":"not-started";
+        const bgDetail=bgSt==="awaiting"?"Paid — results incoming from RentPrep":bgSt==="passed"?"Cleared":bgSt==="failed"?"Did not pass":bgSt==="pending"?"In progress — RentPrep processing":null;
+        const bgBadge=bgSt==="awaiting"?"Awaiting RentPrep":bgSt==="passed"?"Passed":bgSt==="failed"?"Failed":bgSt==="pending"?"Processing":hasRentPrep?"Not Started":null;
+
+        // Credit Check
+        const hasScore=a.creditScore&&a.creditScore!=="—"&&!isNaN(parseInt(a.creditScore));
+        const score=hasScore?parseInt(a.creditScore):null;
+        const creditSt=hasScore?(score>=650?"passed":score>=580?"pending":"failed"):hasRentPrep&&feePaid?"awaiting":"not-started";
+        const creditDetail=hasScore?`FICO Score: ${score}`:creditSt==="awaiting"?"Paid — results incoming from RentPrep":null;
+        const creditBadge=hasScore?(score>=700?"Strong":score>=650?"Good":score>=580?"Fair":"Poor"):creditSt==="awaiting"?"Awaiting RentPrep":hasRentPrep?"Not Started":null;
+
+        // Income Verification
+        const incSt=a.incomeVerified==="verified"?"verified":hasIncome&&feePaid?"awaiting":hasIncome?"not-started":null;
+        const incDetail=incSt==="awaiting"?"Paid — income report incoming from RentPrep":incSt==="verified"?"Income confirmed":null;
+        const incBadge=incSt==="verified"?"Verified":incSt==="awaiting"?"Awaiting RentPrep":incSt==="not-started"?"Not Started":null;
+
+        // References
+        const refSt=a.refs==="verified"?"verified":repliedRefs>0?"pending":"not-started";
+        const refDetail=refSt==="verified"?"All references verified":totalRefs>0?`${totalRefs} reference${totalRefs>1?"s":""} listed${repliedRefs>0?" · "+repliedRefs+" replied":""}`:null;
+        const refBadge=refSt==="verified"?"Verified":repliedRefs>0?`${repliedRefs}/${totalRefs} Replied`:"Not Started";
+
+        // ID Verified
+        const idSt=idVerifiedDerived==="verified"?"verified":idFront||idBack?"pending":a.idVerified==="verified"?"verified":"not-started";
+        const idDetail=idSt==="verified"?"Photo ID confirmed":idFront||idBack?"Uploaded — awaiting review":null;
+        const idBadge=idSt==="verified"?"Verified":idFront||idBack?"Under Review":"Not Uploaded";
+
+        return(<div className="tp-card">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+            <h3 style={{margin:0}}>Screening Checklist</h3>
+            {a.waiverReason&&<span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"2px 7px",borderRadius:8,fontWeight:700}}>Waived</span>}
+          </div>
+          <div style={{fontSize:10,color:"#9a8878",marginBottom:12}}>Auto-derived from application data · Updates when RentPrep results arrive</div>
+          <Row label="Background Check" st={bgSt} detail={bgDetail} badge={bgBadge} tag={hasRentPrep?"RENTPREP":null}/>
+          <Row label="Credit Check" st={creditSt} detail={creditDetail} badge={creditBadge} tag={hasRentPrep?"RENTPREP":null}/>
+          {incSt!==null&&<Row label="Income Verification" st={incSt} detail={incDetail} badge={incBadge} tag="RENTPREP"/>}
+          <Row label="References" st={refSt} detail={refDetail} badge={refBadge}/>
+          <Row label="ID Verified" st={idSt} detail={idDetail} badge={idBadge}/>
+          {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:8,fontStyle:"italic",paddingTop:8,borderTop:"1px solid rgba(0,0,0,.04)"}}>Waiver: {a.waiverReason}</div>}
+        </div>);
+      })()}
 
 
             </div>}
