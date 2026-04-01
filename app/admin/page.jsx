@@ -51,6 +51,7 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 const fmt=n=>"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtS=n=>"$"+Number(n).toLocaleString();
 const fmtD=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;}
+const fmtDLong=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return dt.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});};
 const fmtDp=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")}/${dt.getFullYear()}`;}
 const numberToWords=(n)=>{const ones=["","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE","TEN","ELEVEN","TWELVE","THIRTEEN","FOURTEEN","FIFTEEN","SIXTEEN","SEVENTEEN","EIGHTEEN","NINETEEN"];const tens=["","","TWENTY","THIRTY","FORTY","FIFTY","SIXTY","SEVENTY","EIGHTY","NINETY"];if(!n||n===0)return"ZERO";if(n<20)return ones[n];if(n<100)return tens[Math.floor(n/10)]+(n%10?" "+ones[n%10]:"");if(n<1000)return ones[Math.floor(n/100)]+" HUNDRED"+(n%100?" "+numberToWords(n%100):"");return numberToWords(Math.floor(n/1000))+" THOUSAND"+(n%1000?" "+numberToWords(n%1000):"");};
 const DEF_LEASE_SECTIONS=[
@@ -1662,7 +1663,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
         <div className="fld">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
             <label style={{marginBottom:0}}>Utilities</label>
-            <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600}}>✏ Edit Templates</button>
+            <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600}}>✏ Draft Email Settings</button>
           </div>
           <select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}>
             {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
@@ -1979,7 +1980,7 @@ const S=`
 .pay-tab{flex:1;padding:14px 16px;fontSize:14px;font-weight:500;background:#fff;color:#5c4a3a;border:none;cursor:pointer;font-family:inherit;transition:all .2s;border-right:1px solid rgba(0,0,0,.04)}
 .pay-tab:hover{background:#f0eeeb;color:#1a1714}.pay-tab.active{background:#1a1714;color:#f5f0e8;font-weight:800}.pay-tab.active:hover{background:#2c2520}
 .btn-out{background:#fff;border:1px solid rgba(0,0,0,.08);color:#1a1714}.btn-out:hover{border-color:#d4a853}
-.btn-green{background:#4a7c59;color:#fff;transition:background .15s,color .15s}.btn-green:hover{background:#1a1714;color:#4a7c59}.btn-red{background:rgba(196,92,74,.08);color:#c45c4a;border:1px solid rgba(196,92,74,.1)}.btn-red:hover{background:rgba(196,92,74,.15)}
+.btn-green{background:#4a7c59;color:#fff;transition:background .15s,color .15s}.btn-green:hover{background:#1a1714;color:#d4a853}.btn-red{background:rgba(196,92,74,.08);color:#c45c4a;border:1px solid rgba(196,92,74,.1)}.btn-red:hover{background:rgba(196,92,74,.15)}
 .btn-sm{padding:5px 10px;font-size:10px;border-radius:5px}
 
 /* KPIs */
@@ -2649,7 +2650,7 @@ export default function Page(){
     return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
   }));
 
-  const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-gold:hover{background:#1a1714!important;color:${acc}!important}.btn-green{background:${acc}!important}.btn-green:hover{background:#1a1714!important;color:${acc}!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
+  const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-gold:hover{background:#1a1714!important;color:#d4a853!important}.btn-green{background:${acc}!important}.btn-green:hover{background:#1a1714!important;color:#d4a853!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
   const _acc=settings.adminAccent||"#4a7c59";const _rgb=settings.adminAccentRgb||"74,124,89";const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";const _zoom=settings.adminZoom||1;
   return(<div style={{fontFamily:_font}}><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app" style={{zoom:_zoom}}>
     {/* Mobile bottom tab bar */}
@@ -7277,8 +7278,7 @@ export default function Page(){
           const curTpl=TEMPLATES.find(t=>t.key===etTab)||TEMPLATES[0];
           const setTmplField=(k,v)=>setSettings(p=>({...p,emailTemplates:{...(p.emailTemplates||{}),emailTemplates:{...(p.emailTemplates||{}),[k]:v},[k]:v}}));
           return(
-          <div className="card" style={{marginTop:12}} ref={el=>{if(el&&etOpen)setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),100);}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",cursor:"pointer",borderBottom:etOpen?"1px solid rgba(0,0,0,.06)":"none"}} onClick={()=>setExpanded(p=>({...p,emailTemplatesOpen:!etOpen}))}>
+          <div className="card" id="email-templates-section" style={{marginTop:12}} ref={el=>{if(el&&etOpen)setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),150)}}>            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",cursor:"pointer",borderBottom:etOpen?"1px solid rgba(0,0,0,.06)":"none"}} onClick={()=>setExpanded(p=>({...p,emailTemplatesOpen:!etOpen}))}>
               <div>
                 <h3 style={{fontSize:13,fontWeight:800,margin:0}}>Email Templates</h3>
                 <p style={{fontSize:11,color:"#5c4a3a",margin:"2px 0 0"}}>Edit the outgoing reference and re-upload email templates. Use tokens to insert dynamic values.</p>
@@ -12331,7 +12331,7 @@ export default function Page(){
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M10 2H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5z"/><path d="M10 2v3h3M6 8h4M6 11h3"/></svg>
               </div>
               <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Application data</div>
-              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{a.submitted&&<span style={{fontSize:10,color:"#9a8878"}}>{fmtD(a.submitted)}</span>}</div>
+              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{a.submitted&&<span style={{fontSize:10,color:"#9a8878"}}>Submitted: {fmtDLong(a.submitted)}</span>}</div>
             </div>
             {_o&&<div style={{padding:"0 0 4px"}}>
       {/* ── Application Submitted Data ── */}
@@ -12344,7 +12344,7 @@ export default function Page(){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 18px",cursor:"pointer",background:open?"rgba(74,124,89,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_appDataOpen:!open}))}>
             <h3 style={{margin:0,fontSize:13}}>Application Data</h3>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:9,color:"#aaa",fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>submitted {a.submitted?fmtD(a.submitted):""}</span>
+              <span style={{fontSize:9,color:"#aaa",fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>submitted {a.submitted?fmtDLong(a.submitted):""}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
@@ -12405,7 +12405,7 @@ export default function Page(){
                   <div style={{fontSize:12,color:"#3d3529"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
                   {addr.reason&&<div style={{fontSize:12,color:"#3d3529",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
                   {addr.resType==="Other"&&addr.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>{addr.otherSituation}</div>}
-                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:12,color:"#3d3529",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:12,color:"#3d3529",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:6}}>
                     <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
                       <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
                       <span>{addr.landlordEmail}</span>
@@ -12430,7 +12430,7 @@ export default function Page(){
             {(ad.empRefFirstName||ad.persRefFirstName)&&<>
               <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>References</div>
               {ad.empRefFirstName&&!ad.unemployed&&<div style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4}}>
                   <div>
                     <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{ad.empRefFirstName} {ad.empRefLastName}</div>
                     <div style={{fontSize:11,color:"#3d3529"}}>{ad.empRefRelation||"Employer Reference"} · {ad.empRefEmail} · {ad.empRefPhone}</div>
@@ -12455,7 +12455,7 @@ export default function Page(){
                 </button>
               </div>}
               {ad.persRefFirstName&&<div style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4}}>
                   <div>
                     <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{ad.persRefFirstName} {ad.persRefLastName}</div>
                     <div style={{fontSize:11,color:"#3d3529"}}>{ad.persRefRelation||"Personal Reference"} · {ad.persRefEmail} · {ad.persRefPhone}</div>
@@ -12973,7 +12973,7 @@ export default function Page(){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <p style={{fontSize:11,color:"#6b5e52",margin:0}}>Review the draft below, edit if needed, then click Send.</p>
         <button onClick={()=>{setModal(null);goTab("site-settings");setExpanded(p=>({...p,emailTemplatesOpen:true,emailTemplatesTab:em.type||"refEmployer"}));}} style={{fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
-          ✏ Edit Template
+          ✏ Draft Email Settings
         </button>
       </div>
       <div style={{padding:"8px 12px",borderRadius:7,background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",fontSize:11,color:"#5c4a3a",marginBottom:16}}>
