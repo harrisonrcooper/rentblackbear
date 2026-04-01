@@ -5414,6 +5414,8 @@ export default function Page(){
             requireLastMonth:false,
             lastMonthInstallments:3,
             lastMonthFrequency:"monthly",
+            _lockedFromApp:!!app,
+            hasAssignedParking:!!(room?.parking||app?.parking),
             moveIn:mi,leaseStart:mi,
             leaseEnd:isTbd?"":leaseEndD.toISOString().split("T")[0],
             leaseType:"fixed",
@@ -5462,6 +5464,11 @@ export default function Page(){
 
         const continueToSignAndSend=()=>{
           if(!leaseForm)return;
+          if(leaseForm.hasAssignedParking&&!leaseForm.parking?.trim()){
+            setLeaseForm(p=>({...p,_parkingErr:true}));
+            setTimeout(()=>setLeaseForm(p=>({...p,_parkingErr:false})),600);
+            return;
+          }
           saveDraft();
           setTimeout(()=>{
             setLeases(prev=>{
@@ -5677,25 +5684,68 @@ export default function Page(){
             }
           </div>
 
-          <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8",marginBottom:8}}>LEASE TERMS · Pre-filled from application · Editable</div>
-            <div className="fr">
-              <div className="fld"><label>Monthly Rent ($)</label><input type="number" value={leaseForm.rent||""} onChange={e=>{const rent=Number(e.target.value);const mi=leaseForm.moveIn;const day=mi?new Date(mi+"T00:00:00").getDate():1;const daysLeft=mi?new Date(new Date(mi+"T00:00:00").getFullYear(),new Date(mi+"T00:00:00").getMonth()+1,0).getDate()-day+1:0;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);setLeaseForm(p=>({...p,rent,sd:rent,proratedRent:prorated}));}}/></div>
-              <div className="fld"><label>Security Deposit ($)</label><input type="number" value={leaseForm.sd||""} onChange={e=>setLeaseForm(p=>({...p,sd:Number(e.target.value)}))}/></div>
-            </div>
-            <div className="fr3">
-              <div className="fld"><label>Move-in Date</label><input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0]}));}}/></div>
-              <div className="fld"><label>Lease Start</label><input type="date" value={leaseForm.leaseStart||""} onChange={e=>setLeaseForm(p=>({...p,leaseStart:e.target.value}))}/></div>
-              <div className="fld"><label>Lease End</label><input type="date" value={leaseForm.leaseEnd||""} onChange={e=>setLeaseForm(p=>({...p,leaseEnd:e.target.value}))}/></div>
-            </div>
-            <div className="fr">
-              <div className="fld"><label>Door Code</label><input value={leaseForm.doorCode||""} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value}))} placeholder="4-digit PIN from application"/></div>
-              <div className="fld"><label>Parking Space</label><input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value}))} placeholder="e.g. Space A1, Street parking"/></div>
-            </div>
-            <div className="fld"><label>Utilities Clause</label>
-              <textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
-            </div>
-          </div>
+          {(()=>{
+            const locked=leaseForm._lockedFromApp&&!leaseForm._leaseEditing;
+            const ro=(val)=><div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:12,color:locked?"#6b5e52":"#1a1714",fontWeight:locked?400:500,minHeight:34,display:"flex",alignItems:"center"}}>{val||<span style={{color:"#aaa"}}>—</span>}</div>;
+            return(
+            <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8"}}>LEASE TERMS · Pre-filled from application · Editable</div>
+                {leaseForm._lockedFromApp&&(
+                  locked
+                    ?<button onClick={()=>setLeaseForm(p=>({...p,_leaseEditing:true}))} style={{fontSize:10,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.1)",border:"0.5px solid rgba(212,168,83,.3)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Edit</button>
+                    :<button onClick={()=>setLeaseForm(p=>({...p,_leaseEditing:false}))} style={{fontSize:10,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.08)",border:"0.5px solid rgba(74,124,89,.2)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Lock</button>
+                )}
+              </div>
+              <div className="fr">
+                <div className="fld"><label>Monthly Rent ($)</label>
+                  {locked?ro(fmtS(leaseForm.rent||0)):<input type="number" value={leaseForm.rent||""} onChange={e=>{const rent=Number(e.target.value);const mi=leaseForm.moveIn;const day=mi?new Date(mi+"T00:00:00").getDate():1;const daysLeft=mi?new Date(new Date(mi+"T00:00:00").getFullYear(),new Date(mi+"T00:00:00").getMonth()+1,0).getDate()-day+1:0;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);setLeaseForm(p=>({...p,rent,sd:rent,proratedRent:prorated}));}}/>}
+                </div>
+                <div className="fld"><label>Security Deposit ($)</label>
+                  {locked?ro(fmtS(leaseForm.sd||0)):<input type="number" value={leaseForm.sd||""} onChange={e=>setLeaseForm(p=>({...p,sd:Number(e.target.value)}))}/>}
+                </div>
+              </div>
+              <div className="fr3">
+                <div className="fld"><label>Move-in Date</label>
+                  {locked?ro(fmtD(leaseForm.moveIn)):<input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0]}));}}/>}
+                </div>
+                <div className="fld"><label>Lease Start</label>
+                  {locked?ro(fmtD(leaseForm.leaseStart)):<input type="date" value={leaseForm.leaseStart||""} onChange={e=>setLeaseForm(p=>({...p,leaseStart:e.target.value}))}/>}
+                </div>
+                <div className="fld"><label>Lease End</label>
+                  {locked?ro(leaseForm.leaseEnd?fmtD(leaseForm.leaseEnd):"TBD"):<input type="date" value={leaseForm.leaseEnd||""} onChange={e=>setLeaseForm(p=>({...p,leaseEnd:e.target.value}))}/>}
+                </div>
+              </div>
+              <div className="fr">
+                <div className="fld"><label>Door Code (4-digit PIN)</label>
+                  {locked?ro(leaseForm.doorCode||<span style={{color:"#c45c4a",fontSize:11}}>Not set — tenant did not choose a PIN</span>):<input value={leaseForm.doorCode||""} maxLength={4} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4)}))} placeholder="4-digit PIN"/>}
+                </div>
+                <div className="fld">
+                  <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span>Parking</span>
+                    <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontWeight:400}}>
+                      <span style={{fontSize:10,color:"#6b5e52"}}>Assigned parking</span>
+                      <button onClick={()=>setLeaseForm(p=>({...p,hasAssignedParking:!p.hasAssignedParking,_parkingErr:false}))} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:leaseForm.hasAssignedParking?"#4a7c59":"#ccc",position:"relative",padding:0,transition:"background .15s",flexShrink:0}}>
+                        <div style={{position:"absolute",width:12,height:12,borderRadius:"50%",background:"#fff",top:2,left:leaseForm.hasAssignedParking?16:2,transition:"left .15s"}}/>
+                      </button>
+                    </label>
+                  </label>
+                  {leaseForm.hasAssignedParking
+                    ?<>
+                      <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_parkingErr:false}))} placeholder="e.g. Space A1, Driveway right side" style={{animation:leaseForm._parkingErr?"wiggle .4s ease":undefined,borderColor:leaseForm._parkingErr?"#c45c4a":undefined}}/>
+                      {leaseForm._parkingErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"wiggle .4s ease"}}>Parking space description is required when assigned parking is on.</div>}
+                    </>
+                    :<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:"#6b5e52",marginTop:4}}>No assigned parking</div>
+                  }
+                </div>
+              </div>
+              <div className="fld"><label>Utilities Clause</label>
+                {locked
+                  ?<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:"#6b5e52",lineHeight:1.5}}>{leaseForm.utilitiesClause||"—"}</div>
+                  :<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
+              </div>
+            </div>);
+          })()}
 
           {/* Move-In Package Configuration */}
           {(()=>{
