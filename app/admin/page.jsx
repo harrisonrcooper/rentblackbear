@@ -12441,8 +12441,11 @@ export default function Page(){
                   {ad.empRefFirstName&&!ad.unemployed&&<>
                     <AccentCard>
                       <CardLeft>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+                          <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(59,130,246,.08)",color:"#1d4ed8",letterSpacing:.2}}>EMPLOYER REFERENCE</span>
+                        </div>
                         <CardName>{ad.empRefFirstName} {ad.empRefLastName}</CardName>
-                        <CardRow label="Type" val={ad.empRefRelation||"Employer Reference"}/>
+                        {ad.empRefRelation&&<CardRow label="Relationship" val={ad.empRefRelation}/>}
                         {ad.empRefEmail&&<CardRow label="Email" val={ad.empRefEmail}/>}
                         {ad.empRefPhone&&<CardRow label="Phone" val={ad.empRefPhone}/>}
                         {(modal._refReplies||[]).filter(r=>r.email===ad.empRefEmail).map((r,i)=><div key={i} style={{marginTop:6,padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,borderLeft:"2px solid #4a7c59"}}><div style={{fontSize:10,fontWeight:600,color:"#2d6a3f",marginBottom:1}}>{r.date} — Reply logged</div><div style={{fontSize:11,color:"#3d3529"}}>{r.notes}</div></div>)}
@@ -12461,8 +12464,11 @@ export default function Page(){
                   {ad.persRefFirstName&&<>
                     <AccentCard>
                       <CardLeft>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+                          <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.08)",color:"#2d6a3f",letterSpacing:.2}}>PERSONAL REFERENCE</span>
+                        </div>
                         <CardName>{ad.persRefFirstName} {ad.persRefLastName}</CardName>
-                        <CardRow label="Type" val={ad.persRefRelation||"Personal Reference"}/>
+                        {ad.persRefRelation&&<CardRow label="Relationship" val={ad.persRefRelation}/>}
                         {ad.persRefEmail&&<CardRow label="Email" val={ad.persRefEmail}/>}
                         {ad.persRefPhone&&<CardRow label="Phone" val={ad.persRefPhone}/>}
                         {(modal._refReplies||[]).filter(r=>r.email===ad.persRefEmail).map((r,i)=><div key={i} style={{marginTop:6,padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,borderLeft:"2px solid #4a7c59"}}><div style={{fontSize:10,fontWeight:600,color:"#2d6a3f",marginBottom:1}}>{r.date} — Reply logged</div><div style={{fontSize:11,color:"#3d3529"}}>{r.notes}</div></div>)}
