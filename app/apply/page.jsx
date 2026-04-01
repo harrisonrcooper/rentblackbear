@@ -450,7 +450,8 @@ export default function ApplyPage(){
       // Occupancy validation — dynamic based on rental mode
       const appInfoProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.id===(invite?.property||d.preferredProperty))||props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
       const appInfoInvitedRoom=invite?.termRoomId?allRooms(appInfoProp||{}).find(r=>r.id===invite.termRoomId):null;
-      const appInfoWholeUnit=appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.id===invite?.termRoomId||(u.rentalMode==="wholeHouse"&&(!invite?.termRoomId||(appInfoProp.units||[]).length===1)))||appInfoProp.rentalMode==="wholeHouse":false);
+      const appInfoWalkInIsWhole=!invite&&d.preferredProperty?(()=>{const wp=props_.find(p=>p.id===d.preferredProperty);return wp&&(wp.rentalMode==="wholeHouse"||wp.rentalMode==="wholeUnit"||(wp.units||[]).some(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit"));})():false;
+      const appInfoWholeUnit=appInfoWalkInIsWhole||appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.id===invite?.termRoomId||(u.rentalMode==="wholeHouse"&&(!invite?.termRoomId||(appInfoProp.units||[]).length===1)))||appInfoProp.rentalMode==="wholeHouse":false);
       if(!appInfoWholeUnit&&!invite?.allowCouples&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
       d.coApplicants.forEach((ca,i)=>{if(ca.email&&!ca.email.includes("@"))e["coApp_"+i+"_email"]="Valid email address required";});
     }
@@ -599,11 +600,15 @@ export default function ApplyPage(){
             const vacant=allRooms(prop).filter(r=>r.st==="vacant")||[];
             if(!prop)return null;
             const isWholeUnit=prop.rentalMode==="wholeHouse"||prop.rentalMode==="wholeUnit"||(prop.units||[]).some(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit");
-            if(isWholeUnit)return(
-              <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
-                <strong>{prop.addr||prop.name}</strong> is available as an entire property rental{prop.wholeHouseRent?` — $${prop.wholeHouseRent.toLocaleString()}/mo`:""}. We'll reach out to discuss details.
-              </div>
-            );
+            if(isWholeUnit){
+              const wholeRent=prop.wholeHouseRent||(prop.units||[]).find(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit")?.rent||null;
+              return(
+                <div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:14,marginBottom:16,fontSize:12,color:"#2d6a3f"}}>
+                  <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>Whole-Unit Rental</div>
+                  <div style={{color:"#3d5c44",lineHeight:1.5}}>You are applying for the entire unit at <strong>{prop.addr||prop.name}</strong>{wholeRent?` — $${wholeRent.toLocaleString()}/mo`:""}. Complete your application below and we will follow up to finalize terms.</div>
+                </div>
+              );
+            }
             if(vacant.length===0)return(
               <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--rd)"}}>
                 No rooms currently available at this property. Your application will be kept on file.
@@ -630,7 +635,9 @@ export default function ApplyPage(){
           const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.id===(invite?.property||d.preferredProperty))||props_.find(p=>p.name===(invite?.property||d.preferredProperty))||props_.find(p=>p.id===(invite?.property||d.preferredProperty)):null;
           const aInvitedRoom=invite?.termRoomId?allRooms(aProp||{}).find(r=>r.id===invite.termRoomId):null;
           const aInvitedUnit=invite?.termRoomId&&aProp?(aProp.units||[]).find(u=>u.id===invite.termRoomId):null;
-          const isWhole=aInvitedRoom?.isWholeUnit===true||aInvitedUnit?.rentalMode==="wholeHouse"||(aProp&&(aProp.units||[]).some(u=>u.id===invite?.termRoomId&&(u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit")));
+          const walkInProp=!invite&&d.preferredProperty?props_.find(p=>p.id===d.preferredProperty):null;
+          const walkInIsWhole=walkInProp&&(walkInProp.rentalMode==="wholeHouse"||walkInProp.rentalMode==="wholeUnit"||(walkInProp.units||[]).some(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit"));
+          const isWhole=walkInIsWhole||aInvitedRoom?.isWholeUnit===true||aInvitedUnit?.rentalMode==="wholeHouse"||(aProp&&(aProp.units||[]).some(u=>u.id===invite?.termRoomId&&(u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit")));
           const allowCouples=!isWhole&&(invite?.allowCouples===true);
           // Whole-unit gets co-applicant list; per-bedroom always gets acknowledgment
           if(isWhole){
