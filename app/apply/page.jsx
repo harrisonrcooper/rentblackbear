@@ -450,7 +450,7 @@ export default function ApplyPage(){
       // Occupancy validation — dynamic based on rental mode
       const appInfoProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.id===(invite?.property||d.preferredProperty))||props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
       const appInfoInvitedRoom=invite?.termRoomId?allRooms(appInfoProp||{}).find(r=>r.id===invite.termRoomId):null;
-      const appInfoWalkInIsWhole=!invite&&d.preferredProperty?(()=>{const wp=props_.find(p=>p.id===d.preferredProperty);return wp&&(wp.rentalMode==="wholeHouse"||wp.rentalMode==="wholeUnit"||(wp.units||[]).some(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit"));})():false;
+      const appInfoWalkInIsWhole=!invite&&d.preferredProperty?(()=>{const wp=props_.find(p=>p.id===d.preferredProperty);return propIsWholeUnit(wp);})():false;
       const appInfoWholeUnit=appInfoWalkInIsWhole||appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.id===invite?.termRoomId||(u.rentalMode==="wholeHouse"&&(!invite?.termRoomId||(appInfoProp.units||[]).length===1)))||appInfoProp.rentalMode==="wholeHouse":false);
       if(!appInfoWholeUnit&&!invite?.allowCouples&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
       d.coApplicants.forEach((ca,i)=>{if(ca.email&&!ca.email.includes("@"))e["coApp_"+i+"_email"]="Valid email address required";});
@@ -496,6 +496,13 @@ export default function ApplyPage(){
 
   const STEPS_TENANT=["welcome","appinfo","rental","personal","employment","references","emergency","room","review","payment","done"];
   const STEPS_COSIGNER=["welcome","appinfo","personal","employment","review","payment","done"];
+  // A property is whole-unit only if ALL non-owner-occupied units have wholeHouse/wholeUnit rentalMode
+  const propIsWholeUnit=(p)=>{
+    if(!p)return false;
+    if(p.rentalMode==="wholeHouse"||p.rentalMode==="wholeUnit")return true;
+    const rentable=(p.units||[]).filter(u=>!u.ownerOccupied);
+    return rentable.length>0&&rentable.every(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit");
+  };
   const getSteps=()=>{
     const s=appType==="cosigner"?STEPS_COSIGNER:STEPS_TENANT;
     return s;
@@ -599,7 +606,7 @@ export default function ApplyPage(){
             const prop=props_.find(p=>p.id===d.preferredProperty)||props_.find(p=>p.name===d.preferredProperty);
             const vacant=allRooms(prop).filter(r=>r.st==="vacant")||[];
             if(!prop)return null;
-            const isWholeUnit=prop.rentalMode==="wholeHouse"||prop.rentalMode==="wholeUnit"||(prop.units||[]).some(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit");
+            const isWholeUnit=propIsWholeUnit(prop);
             if(isWholeUnit){
               const wholeRent=prop.wholeHouseRent||(prop.units||[]).find(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit")?.rent||null;
               return(
@@ -636,7 +643,7 @@ export default function ApplyPage(){
           const aInvitedRoom=invite?.termRoomId?allRooms(aProp||{}).find(r=>r.id===invite.termRoomId):null;
           const aInvitedUnit=invite?.termRoomId&&aProp?(aProp.units||[]).find(u=>u.id===invite.termRoomId):null;
           const walkInProp=!invite&&d.preferredProperty?props_.find(p=>p.id===d.preferredProperty):null;
-          const walkInIsWhole=walkInProp&&(walkInProp.rentalMode==="wholeHouse"||walkInProp.rentalMode==="wholeUnit"||(walkInProp.units||[]).some(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit"));
+          const walkInIsWhole=propIsWholeUnit(walkInProp);
           const isWhole=walkInIsWhole||aInvitedRoom?.isWholeUnit===true||aInvitedUnit?.rentalMode==="wholeHouse"||(aProp&&(aProp.units||[]).some(u=>u.id===invite?.termRoomId&&(u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit")));
           const allowCouples=!isWhole&&(invite?.allowCouples===true);
           // Whole-unit gets co-applicant list; per-bedroom always gets acknowledgment
