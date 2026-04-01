@@ -4745,7 +4745,10 @@ export default function Page(){
                     </div>}
 
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div className="pipe-nm">{a.name}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:5}}>
+                        <div className="pipe-nm">{a.name}</div>
+                        {a._hasUnreadRefReply&&<span style={{fontSize:8,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"rgba(59,130,246,.12)",color:"#1d4ed8",whiteSpace:"nowrap"}}>● Reply</span>}
+                      </div>
                       {!isOnboarding&&<div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
                         <span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
                           onMouseEnter={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="block";}}
@@ -11432,6 +11435,7 @@ export default function Page(){
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
             <span style={{fontSize:15,fontWeight:700,color:"#1a1714"}}>{a.name}</span>
             {a.status&&<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4,background:"rgba(74,124,89,.1)",color:"#27500a",border:"1px solid rgba(74,124,89,.2)"}}>{a.status.charAt(0).toUpperCase()+a.status.slice(1)}</span>}
+            {a._hasUnreadRefReply&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:4,background:"rgba(59,130,246,.12)",color:"#1d4ed8",border:"1px solid rgba(59,130,246,.2)",display:"flex",alignItems:"center",gap:4}}><svg width="7" height="7" viewBox="0 0 7 7"><circle cx="3.5" cy="3.5" r="3.5" fill="#1d4ed8"/></svg>New Reference Reply</span>}
             {days>0&&<span style={{fontSize:10,color:days>=5?"#c45c4a":days>=3?"#d4a853":"#999",fontWeight:600}}>{days}d old</span>}
           </div>
           <div style={{display:"flex",gap:0}}>{STAGES.map((s,i)=><div key={s} style={{flex:1,textAlign:"center"}}><div style={{height:3,borderRadius:1,background:i<=si?"#d4a853":"rgba(0,0,0,.06)",marginBottom:2}}/><div style={{fontSize:7,color:i<=si?"#9a7422":"#bbb",fontWeight:i<=si?600:400}}>{SI3[s]}</div></div>)}</div>
