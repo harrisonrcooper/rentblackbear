@@ -12331,7 +12331,8 @@ export default function Page(){
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M10 2H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5z"/><path d="M10 2v3h3M6 8h4M6 11h3"/></svg>
               </div>
               <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Application data</div>
-              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{a.submitted&&<span style={{fontSize:10,color:"#9a8878"}}>Submitted: {fmtDLong(a.submitted)}</span>}</div>
+              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{a.submitted&&<span style={{fontSize:10,color:"#9a8878",fontWeight:600,textTransform:"uppercase",letterSpacing:.3}}>SUBMITTED: {fmtDLong(a.submitted).toUpperCase()}</span>}</div>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             {_o&&<div style={{padding:"0 0 4px"}}>
       {/* ── Application Submitted Data ── */}
@@ -12341,12 +12342,8 @@ export default function Page(){
         const Row=({label,val,red,green})=>val?<div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}><span style={{color:"#3d3529"}}>{label}</span><span style={{fontWeight:600,color:red?"#c45c4a":green?"#2d6a3f":"#1a1714",textAlign:"right",maxWidth:"60%"}}>{val}</span></div>:null;
         return(
         <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 18px",cursor:"pointer",background:open?"rgba(74,124,89,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_appDataOpen:!open}))}>
+          <div style={{padding:"12px 18px 10px",borderBottom:"1px solid rgba(0,0,0,.05)"}}>
             <h3 style={{margin:0,fontSize:13}}>Application Data</h3>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:9,color:"#aaa",fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>submitted {a.submitted?fmtDLong(a.submitted):""}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
           </div>
           {open&&<div style={{padding:"0 18px 16px"}}>
 
@@ -12539,7 +12536,19 @@ export default function Page(){
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 7h12M5 3V1M11 3V1"/></svg>
               </div>
               <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Application documents</div>
-              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{(()=>{const _d=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url).length;return _d>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>{_d} uploaded</span>:<span style={{fontSize:10,color:"#9a8878"}}>None yet</span>;})()}</div>
+              <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>{(()=>{
+                const _docs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
+                const _d=_docs.length;
+                const _v=_docs.filter(x=>x.verified==="approved"||x.verified===true).length;
+                if(_d===0)return<span style={{fontSize:10,color:"#9a8878"}}>None yet</span>;
+                return<>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>{_d} uploaded</span>
+                  {_d>0&&<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:_v===_d?"rgba(74,124,89,.12)":"rgba(0,0,0,.05)",color:_v===_d?"#2d6a3f":"#7a7067",display:"flex",alignItems:"center",gap:3}}>
+                    {_v===_d&&<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#2d6a3f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 5 9 10 3"/></svg>}
+                    {_v}/{_d} verified
+                  </span>}
+                </>;
+              })()}</div>
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             {_o&&<div style={{padding:"0 0 4px"}}>
