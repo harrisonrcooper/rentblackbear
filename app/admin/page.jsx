@@ -12705,25 +12705,34 @@ export default function Page(){
           const isW=waived.includes(r.label);
           const val=a[r.key]||"not-started";
           const isCreditScore=r.key==="creditScore";
-          const statusColor=val==="passed"||val==="verified"?"#2d6a3f":val==="failed"?"#c45c4a":val==="pending"?"#9a7422":"#aaa";
+          const rentPrepKeys={"bgCheck":a.screenPkg&&a.screenPkg!=="none","creditScore":a.screenPkg&&a.screenPkg!=="none"&&a.screenPkg!=="bg-only","incomeVerified":a.incomeAdd&&a.incomeAdd!=="none"&&a.incomeAdd!==""};
+          const isRentPrep=!!rentPrepKeys[r.key];
+          const feePaid=(a.appFee||0)>0;
+          const isPaidPending=isRentPrep&&feePaid&&(val==="not-started"||val==="—"||!a[r.key]);
+          const statusColor=val==="passed"||val==="verified"?"#2d6a3f":val==="failed"?"#c45c4a":isPaidPending?"#9a7422":val==="pending"?"#9a7422":"#aaa";
           return(
             <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1,gap:8}}>
               <div style={{flex:1}}>
-                <span style={{fontSize:12,fontWeight:500,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
-                {isW&&<span style={{fontSize:9,color:"#6b5e52",marginLeft:6}}>Waived</span>}
-                {!isCreditScore&&!isW&&<div style={{fontSize:9,color:statusColor,fontWeight:700,marginTop:1,textTransform:"uppercase",letterSpacing:.3}}>{val==="not-started"?"Not started":val}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:12,fontWeight:500,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
+                  {isRentPrep&&<span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:4,background:"rgba(59,130,246,.08)",color:"#1d4ed8",letterSpacing:.3}}>RENTPREP</span>}
+                </div>
+                {isW&&<span style={{fontSize:9,color:"#6b5e52"}}>Waived</span>}
+                {!isCreditScore&&!isW&&<div style={{fontSize:9,color:statusColor,fontWeight:700,marginTop:1,textTransform:"uppercase",letterSpacing:.3}}>
+                  {isPaidPending?"Paid — Pending RentPrep":val==="not-started"?"Not started":val}
+                </div>}
+                {isCreditScore&&isPaidPending&&<div style={{fontSize:9,color:"#9a7422",fontWeight:700,marginTop:1,textTransform:"uppercase",letterSpacing:.3}}>Paid — Pending RentPrep</div>}
               </div>
               {!isW&&(isCreditScore
                 ?<div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <input type="number" value={a.creditScore&&a.creditScore!=="—"?a.creditScore:""} placeholder="Score"
+                  {!isPaidPending&&<input type="number" value={a.creditScore&&a.creditScore!=="—"?a.creditScore:""} placeholder="Score"
                     onChange={e=>{const v=e.target.value||"—";setApps(p=>p.map(x=>x.id===a.id?{...x,creditScore:v}:x));setModal(prev=>({...prev,data:{...prev.data,creditScore:v}}));}}
-                    style={{width:70,padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",textAlign:"center"}}/>
-                  <select value={a.bgCheck==="passed"?"passed":a.bgCheck==="failed"?"failed":"not-started"}
-                    onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,bgCheck:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,bgCheck:e.target.value}}));}}
-                    style={{padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",display:"none"}}/>
+                    style={{width:70,padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",textAlign:"center"}}/>}
+                  {isPaidPending&&<span style={{fontSize:9,fontWeight:700,padding:"3px 9px",borderRadius:5,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Awaiting</span>}
                 </div>
-                :<select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}}
-                  style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",background:"#fff",color:statusColor,fontWeight:700}}>
+                :<select value={isPaidPending?"paid-pending":val} onChange={e=>{const v=e.target.value==="paid-pending"?"not-started":e.target.value;setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:v}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:v}}));}}
+                  style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",background:"#fff",color:isPaidPending?"#9a7422":statusColor,fontWeight:700}}>
+                  {isPaidPending&&<option value="paid-pending">Paid — Pending RentPrep</option>}
                   <option value="not-started">Not Started</option>
                   <option value="pending">In Progress</option>
                   <option value="passed">Passed</option>
@@ -12733,8 +12742,6 @@ export default function Page(){
               )}
             </div>);
         })}
-        {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
-      </div>}
 
 
             </div>}
