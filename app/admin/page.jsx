@@ -12016,6 +12016,7 @@ export default function Page(){
         // i.e. if they already saved portfolio default and current value matches, don't show scope again
         const inheritedDefault=couplesTermProp?.couplesDefault!==undefined?couplesTermProp.couplesDefault:(settings.couplesDefault||false);
         const currentMatchesInherited=a.allowCouples===inheritedDefault;
+        const saved=modal._couplesSaved||null;
         const showScopeSelector=answered&&!saved&&!currentMatchesInherited;
         return(<div className="tp-card" style={{border:!answered?"2px solid rgba(212,168,83,.4)":"1px solid rgba(0,0,0,.03)",background:!answered?"rgba(212,168,83,.02)":"#fff"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
