@@ -258,10 +258,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .rev-estimate-note{padding:10px 16px;background:rgba(212,168,83,.06);border-bottom:1px solid rgba(212,168,83,.1);font-size:11px;color:#9a7422;line-height:1.5}
 
 /* Fee */
-.fee-card{background:var(--dk);border-radius:14px;padding:20px;color:var(--cr);margin-bottom:20px}
-.fee-card h3{font-size:14px;margin-bottom:12px}
-.fee-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:var(--mt)}
-.fee-total{display:flex;justify-content:space-between;padding:10px 0 0;border-top:1px solid rgba(255,255,255,.1);font-size:16px;font-weight:700;margin-top:6px}
+.fee-card{border:2px solid rgba(212,168,83,.3);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.fee-card-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#faf9f7;border-bottom:1px solid rgba(212,168,83,.15)}
+.fee-card-hd-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9a7422}
+.fee-card-body{background:#fff;padding:10px 16px}
+.fee-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;border-bottom:1px solid rgba(0,0,0,.04)}
+.fee-row span:first-child{color:#6b5e52}
+.fee-row span:last-child{font-weight:600;color:#1a1714}
+.fee-total{background:#1a1714;padding:13px 16px;display:flex;justify-content:space-between;align-items:center}
+.fee-total span:first-child{font-size:11px;font-weight:700;color:rgba(244,243,240,.6);text-transform:uppercase;letter-spacing:.5px}
+.fee-total span:last-child{font-size:18px;font-weight:800;color:#d4a853}
 
 /* Legal */
 .legal{font-size:10px;color:#5c4a3a;line-height:1.6;text-align:center;margin:16px 0 24px}
@@ -1183,13 +1189,28 @@ export default function ApplyPage(){
       {step==="payment"&&<div className="sec">
         <div className="sec-num">Final Step</div>
         <div className="sec-hd"><h2>Screening Fee</h2><p>Covers your background check, credit report, and application processing. Non-refundable.</p></div>
-        <div className="fee-card"><h3 style={{display:"flex",alignItems:"center",gap:7}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(244,243,240,.7)" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Fee Breakdown</h3>
-          <div className="fee-row"><span>Background Check & Credit Report</span><span>${(invite?.screenPkg==="credit-only"||invite?.screenPkg==="bg-only")?29:49}</span></div>
-          <div className="fee-row"><span>Application Processing</span><span>$10</span></div>
+        <div className="fee-card">
+          <div className="fee-card-hd">
+            <div className="fee-card-hd-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9a7422" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              Fee Breakdown
+            </div>
+          </div>
+          <div className="fee-card-body">
+            <div className="fee-row"><span>Background Check & Credit Report</span><span>${(invite?.screenPkg==="credit-only"||invite?.screenPkg==="bg-only")?29:49}</span></div>
+            <div className="fee-row" style={{borderBottom:"none"}}><span>Application Processing</span><span>$10</span></div>
+          </div>
           <div className="fee-total"><span>Total Due Now</span><span>${baseFee}</span></div>
         </div>
-        <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:20,fontSize:11,color:"var(--gn)"}}><strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Secure Payment</strong> — Processed securely through Stripe. Card info never stored on our servers.</div>
-        <div style={{border:"2px dashed rgba(0,0,0,.1)",borderRadius:12,padding:24,textAlign:"center",marginBottom:20,background:"rgba(0,0,0,.01)"}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" style={{marginBottom:8}}><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><div style={{fontSize:13,fontWeight:600,color:"#999"}}>Stripe Payment Form</div><div style={{fontSize:10,color:"#ccc",marginTop:4}}>Card details will appear here</div></div>
+        <div style={{display:"flex",alignItems:"center",gap:8,background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:"10px 14px",marginBottom:20,fontSize:11,color:"#2d6a3f"}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span><strong>Secure Payment</strong> — Processed through Stripe. Card info is never stored on our servers.</span>
+        </div>
+        <div style={{border:"1px solid rgba(0,0,0,.08)",borderRadius:12,padding:28,textAlign:"center",marginBottom:20,background:"#fff"}}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" style={{marginBottom:10}}><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          <div style={{fontSize:13,fontWeight:600,color:"#aaa"}}>Stripe Payment Form</div>
+          <div style={{fontSize:11,color:"#ccc",marginTop:4}}>Card details will appear here</div>
+        </div>
         <button className="btn-start" onClick={async()=>{
           setSubmitted(true);
           const now=new Date().toISOString().split("T")[0];
@@ -1333,7 +1354,11 @@ export default function ApplyPage(){
             rent:invite?.inviteRent||null,
             fee:baseFee,
           })});}catch{}
-        }}>Pay ${baseFee} & Submit Application</button>
+        }}
+          style={{width:"100%",padding:"16px",borderRadius:12,background:"#1a1714",color:"#d4a853",border:"2px solid #1a1714",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all .2s",marginBottom:8}}
+          onMouseEnter={e=>{e.currentTarget.style.background="#d4a853";e.currentTarget.style.color="#1a1714";e.currentTarget.style.borderColor="#d4a853";}}
+          onMouseLeave={e=>{e.currentTarget.style.background="#1a1714";e.currentTarget.style.color="#d4a853";e.currentTarget.style.borderColor="#1a1714";}}
+        >Pay ${baseFee} & Submit Application</button>
         <div className="legal">By submitting, you authorize Black Bear Rentals and RentPrep to conduct a background check and credit inquiry. This will not impact your credit score. Fee is non-refundable.</div>
         <button className="btn-back" onClick={back}>← Back to Review</button>
       </div>}
