@@ -1982,6 +1982,10 @@ const S=`
 .btn-out{background:#fff;border:1px solid rgba(0,0,0,.08);color:#1a1714}.btn-out:hover{border-color:#d4a853}
 .btn-green{background:#4a7c59;color:#fff;transition:background .15s,color .15s}.btn-green:hover{background:#1a1714;color:#d4a853}.btn-red{background:rgba(196,92,74,.08);color:#c45c4a;border:1px solid rgba(196,92,74,.1)}.btn-red:hover{background:rgba(196,92,74,.15)}
 .btn-sm{padding:5px 10px;font-size:10px;border-radius:5px}
+button:not(.btn){transition:opacity .12s,transform .12s}
+button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
+.hvr-row{transition:background .12s}
+.hvr-row:hover{background:rgba(0,0,0,.03)!important}
 
 /* KPIs */
 .kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
@@ -11502,7 +11506,7 @@ export default function Page(){
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="room";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="room"?null:"room"}))}>  
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} className="hvr-row" onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="room"?null:"room"}))}>  
               <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M2 13V7l6-4 6 4v6"/><rect x="5" y="9" width="6" height="4"/></svg>
               </div>
@@ -12326,7 +12330,7 @@ export default function Page(){
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="data";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="data"?null:"data",_appDataOpen:true}))}>  
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} className="hvr-row" onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="data"?null:"data",_appDataOpen:true}))}>  
               <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M10 2H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5z"/><path d="M10 2v3h3M6 8h4M6 11h3"/></svg>
               </div>
@@ -12531,7 +12535,7 @@ export default function Page(){
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="docs";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="docs"?null:"docs"}))}>  
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} className="hvr-row" onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="docs"?null:"docs"}))}>  
               <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 7h12M5 3V1M11 3V1"/></svg>
               </div>
@@ -12682,7 +12686,7 @@ export default function Page(){
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="screening";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="screening"?null:"screening"}))}>  
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} className="hvr-row" onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="screening"?null:"screening"}))}>  
               <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
               </div>
@@ -12741,7 +12745,7 @@ export default function Page(){
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="housemates";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="housemates"?null:"housemates"}))}>  
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} className="hvr-row" onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="housemates"?null:"housemates"}))}>  
               <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><circle cx="6" cy="5" r="2.5"/><circle cx="11" cy="5" r="2.5"/><path d="M1 14a5 5 0 0 1 10 0" opacity=".5"/></svg>
               </div>
@@ -12942,7 +12946,7 @@ export default function Page(){
           {incompleteReqs.length>0&&(()=>{
             const _pOpen=modal._pendingOpen===true;
             return(<div style={{width:"100%",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,marginBottom:6,overflow:"hidden"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:"rgba(212,168,83,.07)",cursor:"pointer"}} onClick={()=>setModal(p=>({...p,_pendingOpen:!_pOpen}))}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:"rgba(212,168,83,.07)",cursor:"pointer"}} className="hvr-row" onClick={()=>setModal(p=>({...p,_pendingOpen:!_pOpen}))}>
                 <span style={{fontSize:11,fontWeight:700,color:"#9a7422"}}>{incompleteReqs.length} item{incompleteReqs.length!==1?"s":""} still pending</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2" strokeLinecap="round" style={{transform:_pOpen?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
