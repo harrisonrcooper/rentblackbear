@@ -12756,7 +12756,7 @@ export default function Page(){
                 const payDocs=allDocs.filter(x=>x.type==="PayStub");
                 const payOk=true; // optional — never blocks approval
                 const payBad=payDocs.some(x=>x.verified==="rejected");
-                const refsOk=a.refs==="verified";
+                const refsOk=a.refs==="verified"||(()=>{const rv=a.refVerified||{};const ad2=a.applicationData||{};const keys=[];(ad2.addresses||[]).filter(x=>x.resType==="Rent"&&x.landlordEmail).forEach((_,i)=>keys.push(`landlord_${i}`));if(ad2.empRefEmail&&!ad2.unemployed)keys.push("employer");if(ad2.persRefEmail)keys.push("personal1");return keys.length>0&&keys.every(k=>rv[k]===true);})();
                 const issues=[!bgOk,!creditOk,!incOk,!payOk||payBad,!refsOk,!idOk||idBad].filter(Boolean).length;
                 return issues>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{issues} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;
               })()}</div>
@@ -12873,7 +12873,14 @@ export default function Page(){
         const refsOpen=modal._refsExpanded===true;
 
         const setRefVerified=(key,val)=>{
-          const updated={...a,refVerified:{...(a.refVerified||{}),[key]:val}};
+          const newRefVerified={...(a.refVerified||{}),[key]:val};
+          // Count total expected contacts to determine if all are verified
+          const expectedKeys=[];
+          (ad.addresses||[]).filter(addr=>addr.resType==="Rent"&&addr.landlordEmail).forEach((_,i)=>expectedKeys.push(`landlord_${i}`));
+          if(ad.empRefEmail&&!ad.unemployed)expectedKeys.push("employer");
+          if(ad.persRefEmail)expectedKeys.push("personal1");
+          const allVerified=expectedKeys.length>0&&expectedKeys.every(k=>newRefVerified[k]===true);
+          const updated={...a,refVerified:newRefVerified,refs:allVerified?"verified":a.refs==="verified"?"pending":a.refs};
           const ua=apps.map(x=>x.id===a.id?updated:x);
           setApps(ua);save("hq-apps",ua);
           setModal(p=>({...p,data:updated}));
