@@ -5857,7 +5857,6 @@ export default function Page(){
                       const updatedProps=props.map(p=>p.id===lp.id?{...p,units:updatedUnits}:p);
                       setProps(updatedProps);
                       setLeaseForm(p=>({...p,_parkingPresetSaved:true}));
-                      setTimeout(()=>setLeaseForm(p=>p?({...p,_parkingPresetSaved:false}):p),2500);
                     };
                     const btnBase={padding:"7px 14px",fontSize:11,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",border:"1px solid"};
                     return(<>
@@ -5902,7 +5901,6 @@ export default function Page(){
                         const updatedProps=props.map(p=>p.id===lp.id?{...p,units:updatedUnits}:p);
                         setProps(updatedProps);
                         setLeaseForm(p=>({...p,_utilPresetSaved:true}));
-                        setTimeout(()=>setLeaseForm(p=>p?({...p,_utilPresetSaved:false}):p),2500);
                       };
                       return(<button onClick={saveUtilPreset} style={{width:"100%",padding:"6px 10px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s"}}>
                         {leaseForm._utilPresetSaved?"Preset saved for this room":"Save as preset for this room / bedroom"}
