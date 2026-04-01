@@ -5471,7 +5471,7 @@ export default function Page(){
           if(!leaseForm.utilitiesMode||(leaseForm.utilitiesMode==="custom"&&!leaseForm.utilitiesClause?.trim()))errs._utilErr=true;
           if(Object.keys(errs).length>0){
             setLeaseForm(p=>({...p,...errs}));
-            setTimeout(()=>setLeaseForm(p=>({...p,_doorErr:false,_parkingErr:false,_utilErr:false})),700);
+            setTimeout(()=>setLeaseForm(p=>({...p,_doorErr:false,_parkingErr:false,_utilErr:false})),3000);
             return;
           }
           saveDraft();
@@ -5746,9 +5746,9 @@ export default function Page(){
                 <div className="fld"><label>Door Code (4-digit PIN)</label>
                   {locked
                     ?ro(leaseForm.doorCode||<span style={{color:"#c45c4a",fontSize:11}}>Not set — tenant did not choose a PIN</span>)
-                    :<input value={leaseForm.doorCode||""} maxLength={4} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_doorErr:false}))} placeholder="4-digit PIN" style={{animation:leaseForm._doorErr?"wiggle .4s ease":undefined,borderColor:leaseForm._doorErr?"#c45c4a":undefined}}/>
+                    :<input value={leaseForm.doorCode||""} maxLength={4} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_doorErr:false}))} placeholder="4-digit PIN" style={{animation:leaseForm._doorErr?"shake .4s ease":undefined,borderColor:leaseForm._doorErr?"#c45c4a":undefined}}/>
                   }
-                  {leaseForm._doorErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"wiggle .4s ease"}}>A 4-digit door code is required before signing.</div>}
+                  {leaseForm._doorErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>A 4-digit door code is required before signing.</div>}
                 </div>
                 <div className="fld">
                   <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -5762,8 +5762,8 @@ export default function Page(){
                   </label>
                   {leaseForm.hasAssignedParking
                     ?<>
-                      <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_parkingErr:false}))} placeholder="e.g. Space A1, Driveway right side" style={{animation:leaseForm._parkingErr?"wiggle .4s ease":undefined,borderColor:leaseForm._parkingErr?"#c45c4a":undefined}}/>
-                      {leaseForm._parkingErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"wiggle .4s ease"}}>Parking space description is required when assigned parking is on.</div>}
+                      <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_parkingErr:false}))} placeholder="e.g. Space A1, Driveway right side" style={{animation:leaseForm._parkingErr?"shake .4s ease":undefined,borderColor:leaseForm._parkingErr?"#c45c4a":undefined}}/>
+                      {leaseForm._parkingErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>Parking space description is required when assigned parking is on.</div>}
                     </>
                     :<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:"#6b5e52",marginTop:4}}>No assigned parking</div>
                   }
@@ -5777,12 +5777,12 @@ export default function Page(){
                       const mode=e.target.value;
                       const tmpl=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===mode);
                       setLeaseForm(p=>({...p,utilitiesMode:mode,utilitiesClause:mode==="custom"?"":tmpl?.clause||"",_utilErr:false}));
-                    }} style={{width:"100%",marginBottom:leaseForm.utilitiesMode==="custom"||!leaseForm.utilitiesMode?6:0,borderColor:leaseForm._utilErr?"#c45c4a":undefined,animation:leaseForm._utilErr?"wiggle .4s ease":undefined}}>
+                    }} style={{width:"100%",marginBottom:leaseForm.utilitiesMode==="custom"||!leaseForm.utilitiesMode?6:0,borderColor:leaseForm._utilErr?"#c45c4a":undefined,animation:leaseForm._utilErr?"shake .4s ease":undefined}}>
                       <option value="">— Select a utilities clause —</option>
                       {(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
                       <option value="custom">Custom — write your own</option>
                     </select>
-                    {leaseForm._utilErr&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4,animation:"wiggle .4s ease"}}>A utilities clause is required before signing.</div>}
+                    {leaseForm._utilErr&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4}}>A utilities clause is required before signing.</div>}
                     {leaseForm.utilitiesMode==="custom"&&<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} placeholder="Write your custom utilities clause..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
                     {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5}}>{leaseForm.utilitiesClause}</div>}
                   </>}
