@@ -470,7 +470,8 @@ export default function ApplyPage(){
     const needsLandlord=f.resType==="Rent";
     const landlordRequired=needsLandlord?(!f.landlordFirstName||!f.landlordLastName||!f.landlordEmail||!f.landlordPhone):false;
     const otherNotes=f.resType==="Other"&&!f.otherNotes;
-    const missing=!f.street||!f.city||!f.zip||!f.monthIn||!f.yearIn||!f.reason||landlordRequired||otherNotes;
+    const needsAddress=f.resType!=="Other";
+    const missing=(needsAddress&&(!f.street||!f.city||!f.zip))||!f.monthIn||!f.yearIn||!f.reason||landlordRequired||otherNotes;
     const badEmail=f.landlordEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.landlordEmail);
     const badPhone=f.landlordPhone&&f.landlordPhone.replace(/\D/g,"").length!==10;
     if(missing||badEmail||badPhone){upd("curAddressForm",{...f,_saved:true,_badEmail:badEmail,_badPhone:badPhone});shake();return;}
@@ -702,6 +703,7 @@ export default function ApplyPage(){
             <div className="fld"><label>Month Moved In<span className="req">*</span></label><select value={d.curAddressForm.monthIn} onChange={e=>upd("curAddressForm",{...d.curAddressForm,monthIn:e.target.value})}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
             <div className="fld"><label>Year Moved In<span className="req">*</span></label><select value={d.curAddressForm.yearIn} onChange={e=>upd("curAddressForm",{...d.curAddressForm,yearIn:e.target.value})}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
           </div>
+          {d.curAddressForm.resType!=="Other"&&<>
           <div className="fld"><label>Street Address<span className="req">*</span></label><input value={d.curAddressForm.street} onChange={e=>upd("curAddressForm",{...d.curAddressForm,street:e.target.value})} placeholder="123 Main Street"/></div>
           <div className="fld-row">
             <div className="fld"><label>Unit</label><input value={d.curAddressForm.unit} onChange={e=>upd("curAddressForm",{...d.curAddressForm,unit:e.target.value})} placeholder="Apt, Suite, etc."/></div>
@@ -712,6 +714,7 @@ export default function ApplyPage(){
             <div className="fld"><label>Zip Code<span className="req">*</span></label><input value={d.curAddressForm.zip} onChange={e=>upd("curAddressForm",{...d.curAddressForm,zip:e.target.value.replace(/\D/g,"").slice(0,5)})} placeholder="35801"/></div>
             <div className="fld"><label>Monthly Rent</label><input type="number" value={d.curAddressForm.rent} onChange={e=>upd("curAddressForm",{...d.curAddressForm,rent:e.target.value})} placeholder="1100"/></div>
           </div>
+          </>}
           <div className="fld"><label>Why are you moving?<span className="req">*</span></label><textarea value={d.curAddressForm.reason} onChange={e=>upd("curAddressForm",{...d.curAddressForm,reason:e.target.value})} className={!d.curAddressForm.reason&&d.curAddressForm._saved?"err":""} placeholder="e.g. Moving for work, end of lease, upgrading, etc."/></div>
           {d.curAddressForm.resType==="Other"&&<div className="fld" style={{marginTop:16}}>
             <label>Please describe your living situation<span className="req">*</span></label>
