@@ -12393,113 +12393,126 @@ export default function Page(){
             <Row label="Eviction History" val={ad.evicted==="yes"?"YES — "+( ad.evictedExplain||"no detail provided"):"No"} red={ad.evicted==="yes"} green={ad.evicted==="no"}/>
             <Row label="Felony History" val={ad.felony==="yes"?"YES — "+(ad.felonyExplain||"no detail provided"):"No"} red={ad.felony==="yes"} green={ad.felony==="no"}/>
 
-            {/* Rental History */}
-            {(ad.addresses||[]).length>0&&<>
-              <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Rental History</div>
-              {(ad.addresses||[]).map((addr,i)=>(
-                <div key={i} style={{marginBottom:10,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:700,color:"#1a1714"}}>{addr.street}{addr.unit?" #"+addr.unit:""}, {addr.city} {addr.state}</span>
-                    <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:8,background:addr.resType==="Rent"?"rgba(212,168,83,.1)":"rgba(74,124,89,.1)",color:addr.resType==="Rent"?"#9a7422":"#2d6a3f"}}>{addr.resType}</span>
-                  </div>
-                  <div style={{fontSize:12,color:"#3d3529"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
-                  {addr.reason&&<div style={{fontSize:12,color:"#3d3529",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
-                  {addr.resType==="Other"&&addr.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>{addr.otherSituation}</div>}
-                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:12,color:"#3d3529",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:6}}>
-                    <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-                      <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
-                      <span>{addr.landlordEmail}</span>
-                      <span>{addr.landlordPhone}</span>
-                    </div>
-                    <button onClick={()=>{
-                      const refName=addr.landlordFirstName||"there";
-                      const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
-                      const tmpl=settings.emailTemplates||{};
-                      const subject=resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens);
-                      const body=resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens);
-                      setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject,body,type:"refLandlord",refName,refType:"Previous Landlord"}}));
-                    }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
-                      Draft Email →
-                    </button>
-                  </div>}
-                </div>
-              ))}
-            </>}
+            {/* ── Unified left-accent card sections ── */}
+            {(()=>{
+              const SecHd=({label})=><div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"14px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:8,marginTop:4}}>{label}</div>;
+              const AccentCard=({children,style={}})=><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,padding:"10px 12px",borderLeft:"2px solid rgba(74,124,89,.4)",borderRadius:"0 7px 7px 0",background:"rgba(0,0,0,.02)",marginBottom:8,...style}}>{children}</div>;
+              const CardLeft=({children})=><div style={{flex:1,minWidth:0}}>{children}</div>;
+              const CardRight=({children})=><div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>{children}</div>;
+              const CardName=({children})=><div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:5}}>{children}</div>;
+              const CardRow=({label,val})=>val?<div style={{display:"flex",gap:0,padding:"2px 0",fontSize:12}}><span style={{color:"#7a7067",minWidth:80,flexShrink:0}}>{label}</span><span style={{color:"#1a1714",fontWeight:500}}>{val}</span></div>:null;
+              const DraftBtn=({onClick})=><button onClick={onClick} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>Draft Email →</button>;
+              const Badge=({label,type})=><span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:type==="Rent"?"rgba(212,168,83,.1)":"rgba(74,124,89,.1)",color:type==="Rent"?"#9a7422":"#2d6a3f"}}>{label}</span>;
+              const LogBtn=({onClick})=><button onClick={onClick} style={{fontSize:9,color:"#6b5e52",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",padding:0}}>+ Log Reply</button>;
 
-            {/* References */}
-            {(ad.empRefFirstName||ad.persRefFirstName)&&<>
-              <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>References</div>
-              {ad.empRefFirstName&&!ad.unemployed&&<div style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4}}>
-                  <div>
-                    <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{ad.empRefFirstName} {ad.empRefLastName}</div>
-                    <div style={{fontSize:11,color:"#3d3529"}}>{ad.empRefRelation||"Employer Reference"} · {ad.empRefEmail} · {ad.empRefPhone}</div>
-                  </div>
-                  <button onClick={()=>{
-                    const refName=ad.empRefFirstName;
-                    const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
-                    const tmpl=settings.emailTemplates||{};
-                    const subject=resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens);
-                    const body=resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens);
-                    setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject,body,type:"refEmployer",refName,refType:"Employer Reference"}}));
-                  }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
-                    Draft Email →
-                  </button>
-                </div>
-                {(modal._refReplies||[]).filter(r=>r.email===ad.empRefEmail).map((r,i)=><div key={i} style={{marginTop:6,padding:"6px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,fontSize:10,borderLeft:"2px solid #4a7c59"}}>
-                  <div style={{fontWeight:600,color:"#2d6a3f",marginBottom:2}}>{r.date} — Reply logged</div>
-                  <div style={{color:"#3d3529"}}>{r.notes}</div>
-                </div>)}
-                <button onClick={()=>setModal(p=>({...p,_logReply:{email:ad.empRefEmail,name:refName=ad.empRefFirstName+" "+ad.empRefLastName,type:"Employer Reference"}}))} style={{marginTop:4,fontSize:9,color:"#6b5e52",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",padding:0}}>
-                  + Log Reply
-                </button>
-              </div>}
-              {ad.persRefFirstName&&<div style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:4}}>
-                  <div>
-                    <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{ad.persRefFirstName} {ad.persRefLastName}</div>
-                    <div style={{fontSize:11,color:"#3d3529"}}>{ad.persRefRelation||"Personal Reference"} · {ad.persRefEmail} · {ad.persRefPhone}</div>
-                  </div>
-                  <button onClick={()=>{
-                    const refName=ad.persRefFirstName;
-                    const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
-                    const tmpl=settings.emailTemplates||{};
-                    const subject=resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens);
-                    const body=resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens);
-                    setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject,body,type:"refPersonal",refName,refType:"Personal Reference"}}));
-                  }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
-                    Draft Email →
-                  </button>
-                </div>
-                {(modal._refReplies||[]).filter(r=>r.email===ad.persRefEmail).map((r,i)=><div key={i} style={{marginTop:6,padding:"6px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,fontSize:10,borderLeft:"2px solid #4a7c59"}}>
-                  <div style={{fontWeight:600,color:"#2d6a3f",marginBottom:2}}>{r.date} — Reply logged</div>
-                  <div style={{color:"#3d3529"}}>{r.notes}</div>
-                </div>)}
-                <button onClick={()=>setModal(p=>({...p,_logReply:{email:ad.persRefEmail,name:ad.persRefFirstName+" "+ad.persRefLastName,type:"Personal Reference"}}))} style={{marginTop:4,fontSize:9,color:"#6b5e52",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",padding:0}}>
-                  + Log Reply
-                </button>
-              </div>}
-            </>}
+              return(<>
+                {/* Rental History */}
+                {(ad.addresses||[]).length>0&&<>
+                  <SecHd label="Rental History"/>
+                  {(ad.addresses||[]).map((addr,i)=>(
+                    <AccentCard key={i}>
+                      <CardLeft>
+                        <CardName>{addr.street}{addr.unit?" #"+addr.unit:""}, {addr.city} {addr.state}</CardName>
+                        <CardRow label="Since" val={addr.monthIn+" "+addr.yearIn}/>
+                        {addr.rent&&<CardRow label="Rent" val={"$"+addr.rent+"/mo"}/>}
+                        {addr.reason&&<CardRow label="Moving" val={addr.reason}/>}
+                        {addr.resType==="Other"&&addr.otherSituation&&<CardRow label="Situation" val={addr.otherSituation}/>}
+                        {addr.resType==="Rent"&&addr.landlordFirstName&&<CardRow label="Landlord" val={addr.landlordFirstName+" "+addr.landlordLastName}/>}
+                        {addr.resType==="Rent"&&addr.landlordEmail&&<CardRow label="Email" val={addr.landlordEmail}/>}
+                        {addr.resType==="Rent"&&addr.landlordPhone&&<CardRow label="Phone" val={addr.landlordPhone}/>}
+                      </CardLeft>
+                      <CardRight>
+                        <Badge label={addr.resType||"Rent"} type={addr.resType}/>
+                        {addr.resType==="Rent"&&addr.landlordEmail&&<DraftBtn onClick={()=>{
+                          const refName=addr.landlordFirstName||"there";
+                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
+                          const tmpl=settings.emailTemplates||{};
+                          setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject:resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens),body:resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens),type:"refLandlord",refName,refType:"Previous Landlord"}}));
+                        }}/>}
+                      </CardRight>
+                    </AccentCard>
+                  ))}
+                </>}
 
-            {/* Employment */}
-            <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Employment</div>
-            {ad.unemployed?<div style={{fontSize:11,color:"#c45c4a",fontWeight:600,padding:"4px 0"}}>Unemployed</div>
-            :(ad.employers||[]).length===0?<div style={{fontSize:11,color:"#aaa",padding:"4px 0"}}>No employers listed</div>
-            :(ad.employers||[]).map((emp,i)=>(
-              <div key={i} style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{emp.employer}</div>
-                <div style={{fontSize:10,color:"#6b5e52"}}>{emp.position||"—"} · Since {emp.monthStarted} {emp.yearStarted}{emp.monthlyIncome?" · $"+emp.monthlyIncome+"/mo":""}</div>
-                {emp.refName&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>Ref: {emp.refName}{emp.refPhone?" · "+emp.refPhone:""}</div>}
-              </div>
-            ))}
+                {/* References */}
+                {(ad.empRefFirstName||ad.persRefFirstName)&&<>
+                  <SecHd label="References"/>
+                  {ad.empRefFirstName&&!ad.unemployed&&<>
+                    <AccentCard>
+                      <CardLeft>
+                        <CardName>{ad.empRefFirstName} {ad.empRefLastName}</CardName>
+                        <CardRow label="Type" val={ad.empRefRelation||"Employer Reference"}/>
+                        {ad.empRefEmail&&<CardRow label="Email" val={ad.empRefEmail}/>}
+                        {ad.empRefPhone&&<CardRow label="Phone" val={ad.empRefPhone}/>}
+                        {(modal._refReplies||[]).filter(r=>r.email===ad.empRefEmail).map((r,i)=><div key={i} style={{marginTop:6,padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,borderLeft:"2px solid #4a7c59"}}><div style={{fontSize:10,fontWeight:600,color:"#2d6a3f",marginBottom:1}}>{r.date} — Reply logged</div><div style={{fontSize:11,color:"#3d3529"}}>{r.notes}</div></div>)}
+                      </CardLeft>
+                      <CardRight>
+                        {ad.empRefEmail&&<DraftBtn onClick={()=>{
+                          const refName=ad.empRefFirstName;
+                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+                          const tmpl=settings.emailTemplates||{};
+                          setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject:resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens),body:resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens),type:"refEmployer",refName,refType:"Employer Reference"}}));
+                        }}/>}
+                        <LogBtn onClick={()=>setModal(p=>({...p,_logReply:{email:ad.empRefEmail,name:ad.empRefFirstName+" "+ad.empRefLastName,type:"Employer Reference"}}))}/>
+                      </CardRight>
+                    </AccentCard>
+                  </>}
+                  {ad.persRefFirstName&&<>
+                    <AccentCard>
+                      <CardLeft>
+                        <CardName>{ad.persRefFirstName} {ad.persRefLastName}</CardName>
+                        <CardRow label="Type" val={ad.persRefRelation||"Personal Reference"}/>
+                        {ad.persRefEmail&&<CardRow label="Email" val={ad.persRefEmail}/>}
+                        {ad.persRefPhone&&<CardRow label="Phone" val={ad.persRefPhone}/>}
+                        {(modal._refReplies||[]).filter(r=>r.email===ad.persRefEmail).map((r,i)=><div key={i} style={{marginTop:6,padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,borderLeft:"2px solid #4a7c59"}}><div style={{fontSize:10,fontWeight:600,color:"#2d6a3f",marginBottom:1}}>{r.date} — Reply logged</div><div style={{fontSize:11,color:"#3d3529"}}>{r.notes}</div></div>)}
+                      </CardLeft>
+                      <CardRight>
+                        {ad.persRefEmail&&<DraftBtn onClick={()=>{
+                          const refName=ad.persRefFirstName;
+                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+                          const tmpl=settings.emailTemplates||{};
+                          setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject:resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens),body:resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens),type:"refPersonal",refName,refType:"Personal Reference"}}));
+                        }}/>}
+                        <LogBtn onClick={()=>setModal(p=>({...p,_logReply:{email:ad.persRefEmail,name:ad.persRefFirstName+" "+ad.persRefLastName,type:"Personal Reference"}}))}/>
+                      </CardRight>
+                    </AccentCard>
+                  </>}
+                </>}
 
-            {/* Emergency Contact */}
-            {(ad.emergName||ad.emergPhone)&&<>
-              <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Emergency Contact</div>
-              <Row label="Name" val={ad.emergName}/>
-              <Row label="Phone" val={ad.emergPhone}/>
-              <Row label="Relationship" val={ad.emergRelation}/>
-            </>}
+                {/* Employment */}
+                <SecHd label="Employment"/>
+                {ad.unemployed
+                  ?<AccentCard style={{borderLeftColor:"rgba(196,92,74,.4)"}}><CardLeft><CardName>Unemployed</CardName></CardLeft></AccentCard>
+                  :(ad.employers||[]).length===0
+                  ?<div style={{fontSize:12,color:"#aaa",padding:"4px 0 8px"}}>No employers listed</div>
+                  :(ad.employers||[]).map((emp,i)=>(
+                    <AccentCard key={i}>
+                      <CardLeft>
+                        <CardName>{emp.employer}</CardName>
+                        {emp.position&&<CardRow label="Role" val={emp.position}/>}
+                        {(emp.monthStarted||emp.yearStarted)&&<CardRow label="Since" val={[emp.monthStarted,emp.yearStarted].filter(Boolean).join(" ")}/>}
+                        {emp.monthlyIncome&&<CardRow label="Income" val={"$"+emp.monthlyIncome+"/mo"}/>}
+                        {emp.refName&&<CardRow label="Ref" val={emp.refName+(emp.refPhone?" · "+emp.refPhone:"")}/>}
+                      </CardLeft>
+                      <CardRight/>
+                    </AccentCard>
+                  ))
+                }
+
+                {/* Emergency Contact */}
+                {(ad.emergName||ad.emergPhone)&&<>
+                  <SecHd label="Emergency Contact"/>
+                  <AccentCard style={{borderLeftColor:"rgba(196,92,74,.4)"}}>
+                    <CardLeft>
+                      <CardName>{ad.emergName}</CardName>
+                      {ad.emergRelation&&<CardRow label="Relationship" val={ad.emergRelation}/>}
+                      {ad.emergPhone&&<CardRow label="Phone" val={ad.emergPhone}/>}
+                    </CardLeft>
+                    <CardRight/>
+                  </AccentCard>
+                </>}
+              </>);
+            })()}
 
             {/* Partner */}
             {ad.partnerName&&ad.partnerName.trim()&&<>
