@@ -284,7 +284,7 @@ export default function ApplyPage(){
     // Employment
     employers:[],curEmployerForm:null,unemployed:false,
     // References
-    empRefName:"",empRefPhone:"",empRefRelation:"",persRefName:"",persRefPhone:"",persRefRelation:"",
+    empRefFirstName:"",empRefLastName:"",empRefPhone:"",empRefEmail:"",empRefRelation:"",persRefFirstName:"",persRefLastName:"",persRefPhone:"",persRefEmail:"",persRefRelation:"",
     // Partner (couples-allowed bedrooms)
     partnerName:"",partnerEmail:"",
     // Emergency
@@ -434,9 +434,16 @@ export default function ApplyPage(){
       if(!d.unemployed&&!d.incomeUploadLater&&d.appDocs.filter(x=>x.type==="PayStub"&&x.url).length===0)e.incomeProof="Please upload proof of income, or check the box to upload it later";
     }
     if(s==="references"){
-      if(!d.unemployed&&fieldActive("empRefName")&&fieldRequired("empRefName")&&!d.empRefName.trim())e.empRefName=`${fieldLabel("empRefName","Employer reference name")} is required`;
+      if(!d.unemployed&&!d.empRefFirstName.trim())e.empRefFirstName="Employer reference first name is required";
+      if(!d.unemployed&&!d.empRefLastName.trim())e.empRefLastName="Employer reference last name is required";
+      if(!d.unemployed&&!d.empRefEmail.trim())e.empRefEmail="Employer reference email is required";
+      else if(!d.unemployed&&d.empRefEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.empRefEmail))e.empRefEmail="Please enter a valid email address";
       if(!d.unemployed&&fieldActive("empRefPhone")&&fieldRequired("empRefPhone")&&!d.empRefPhone.trim())e.empRefPhone=`${fieldLabel("empRefPhone","Employer reference phone")} is required`;
-      if(fieldActive("persRefName")&&fieldRequired("persRefName")&&!d.persRefName.trim())e.persRefName=`${fieldLabel("persRefName","Personal reference name")} is required`;
+      if(!d.persRefFirstName.trim())e.persRefFirstName="Personal reference first name is required";
+      if(!d.persRefLastName.trim())e.persRefLastName="Personal reference last name is required";
+      if(!d.persRefEmail.trim())e.persRefEmail="Personal reference email is required";
+      else if(d.persRefEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.persRefEmail))e.persRefEmail="Please enter a valid email address";
+      if(fieldActive("persRefFirstName")&&fieldRequired("persRefFirstName")&&!d.persRefName.trim())e.persRefName=`${fieldLabel("persRefFirstName","Personal reference name")} is required`;
       if(fieldActive("persRefPhone")&&fieldRequired("persRefPhone")&&!d.persRefPhone.trim())e.persRefPhone=`${fieldLabel("persRefPhone","Personal reference phone")} is required`;
     }
     if(s==="emergency"){
@@ -478,8 +485,14 @@ export default function ApplyPage(){
     if(missing||badEmail||badPhone){upd("curAddressForm",{...f,_saved:true,_badEmail:badEmail,_badPhone:badPhone});shake();return;}
     if(f._editIdx!==undefined){setD(p=>({...p,addresses:p.addresses.map((a,i)=>i===f._editIdx?f:a),curAddressForm:null}));}
     else{setD(p=>{const newAddrs=[...p.addresses,f];const months=calcMonthsCovered(newAddrs);const needMore=months<24;return{...p,addresses:newAddrs,curAddressForm:needMore?{...blankAddr,_needMore:true}:null};});}};
-  const blankEmp={employer:"",position:"",monthStarted:"",yearStarted:"",monthlyIncome:"",refName:"",refPhone:""};
-  const saveEmp=()=>{const f=d.curEmployerForm;if(!f)return;if(!f.employer||!f.monthlyIncome){shake();return;}
+  const blankEmp={employer:"",position:"",monthStarted:"",yearStarted:"",monthlyIncome:"",refFirstName:"",refLastName:"",refEmail:"",refPhone:""};
+  const saveEmp=()=>{const f=d.curEmployerForm;if(!f)return;
+    const empFormErrs={};
+    if(!f.employer)empFormErrs.empFormEmployer="Company name is required";
+    if(!f.monthlyIncome)empFormErrs.empFormIncome="Monthly income is required";
+    if(f.refEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.refEmail))empFormErrs.empFormRefEmail="Please enter a valid email address";
+    if(Object.keys(empFormErrs).length){setErrors(p=>({...p,...empFormErrs}));shake();return;}
+    setErrors(p=>({...p,empFormEmployer:undefined,empFormIncome:undefined,empFormRefEmail:undefined}));
     if(f._editIdx!==undefined){setD(p=>({...p,employers:p.employers.map((e,i)=>i===f._editIdx?f:e),curEmployerForm:null}));}
     else{setD(p=>({...p,employers:[...p.employers,f],curEmployerForm:null}));}};
 
@@ -842,15 +855,22 @@ export default function ApplyPage(){
 
           {d.curEmployerForm?<div className="expand-form">
             <h3>{d.curEmployerForm._editIdx!==undefined?"Edit Employer":"Add Current Employer"}</h3>
-            <div className="fld"><label>Employer<span className="req">*</span></label><input value={d.curEmployerForm.employer} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,employer:e.target.value})} placeholder="Company name"/></div>
+            <div className="fld"><label>Employer<span className="req">*</span></label><input value={d.curEmployerForm.employer} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,employer:e.target.value});setErrors(p=>({...p,empFormEmployer:undefined}));}} className={errors.empFormEmployer?"err":""} placeholder="Company name"/>{errors.empFormEmployer&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormEmployer}</div>}</div>
             <div className="fld"><label>Position / Title / Occupation</label><input value={d.curEmployerForm.position} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,position:e.target.value})} placeholder="Your role"/></div>
             <div className="fld-row">
               <div className="fld"><label>Month Started</label><select value={d.curEmployerForm.monthStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,monthStarted:e.target.value})}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
               <div className="fld"><label>Year Started</label><select value={d.curEmployerForm.yearStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,yearStarted:e.target.value})}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
             </div>
-            <div className="fld"><label>Monthly Income (Gross)<span className="req">*</span></label><input type="number" value={d.curEmployerForm.monthlyIncome} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,monthlyIncome:e.target.value})} placeholder="4200"/></div>
-            <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Employment Reference</div>
-            <div className="fld-row"><div className="fld"><label>Full Name</label><input value={d.curEmployerForm.refName} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,refName:e.target.value})} placeholder="Supervisor name"/></div><div className="fld"><label>Phone Number</label><input type="tel" value={d.curEmployerForm.refPhone} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,refPhone:fmtPhone(e.target.value)})} placeholder="(555) 555-5555"/></div></div>
+            <div className="fld"><label>Monthly Income (Gross)<span className="req">*</span></label><input type="number" value={d.curEmployerForm.monthlyIncome} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,monthlyIncome:e.target.value});setErrors(p=>({...p,empFormIncome:undefined}));}} className={errors.empFormIncome?"err":""} placeholder="4200"/>{errors.empFormIncome&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormIncome}</div>}</div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--dk)",marginBottom:10,marginTop:16}}>Employment Reference <span style={{fontSize:10,fontWeight:400,color:"#6b5e52"}}>(optional)</span></div>
+            <div className="fld-row">
+              <div className="fld"><label>First Name</label><input value={d.curEmployerForm.refFirstName||""} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("curEmployerForm",{...d.curEmployerForm,refFirstName:c});}} placeholder="First name"/></div>
+              <div className="fld"><label>Last Name</label><input value={d.curEmployerForm.refLastName||""} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("curEmployerForm",{...d.curEmployerForm,refLastName:c});}} placeholder="Last name"/></div>
+            </div>
+            <div className="fld-row">
+              <div className="fld"><label>Email</label><input type="email" value={d.curEmployerForm.refEmail||""} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,refEmail:e.target.value})} placeholder="supervisor@company.com"/></div>
+              <div className="fld"><label>Phone</label><input type="tel" value={d.curEmployerForm.refPhone||""} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,refPhone:fmtPhone(e.target.value)})} placeholder="(555) 555-5555"/></div>
+            </div>
             <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveEmp}>Save Employer</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curEmployerForm",null)}>Cancel</button></div>
           </div>
           :<div className="add-card" onClick={()=>upd("curEmployerForm",{...blankEmp})}><div className="plus">+</div><div className="lbl">Add {d.employers.length===0?"Current":"Past"} Employer</div></div>}
@@ -920,13 +940,27 @@ export default function ApplyPage(){
         <div className="sec-hd"><h2>References</h2><p>Provide {d.unemployed?"a personal reference":"one employer and one personal reference"}.</p></div>
         {!d.unemployed&&<>
           <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Employer Reference</div>
-          <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.empRefName} onChange={e=>upd("empRefName",e.target.value)} className={errors.empRefName?"err":""} placeholder="Supervisor or HR"/>{errors.empRefName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefName}</div>}</div>
-          <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div></div>
+          <div className="fld-row">
+            <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.empRefFirstName} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("empRefFirstName",c);}} className={errors.empRefFirstName?"err":""} placeholder="First name"/>{errors.empRefFirstName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefFirstName}</div>}</div>
+            <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.empRefLastName} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("empRefLastName",c);}} className={errors.empRefLastName?"err":""} placeholder="Last name"/>{errors.empRefLastName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefLastName}</div>}</div>
+          </div>
+          <div className="fld-row">
+            <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>upd("empRefPhone",fmtPhone(e.target.value))} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefPhone}</div>}</div>
+            <div className="fld"><label>Relationship</label><input value={d.empRefRelation} onChange={e=>upd("empRefRelation",e.target.value)} placeholder="e.g. Manager"/></div>
+          </div>
+          <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.empRefEmail} onChange={e=>upd("empRefEmail",e.target.value)} className={errors.empRefEmail?"err":""} placeholder="reference@email.com"/>{errors.empRefEmail&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefEmail}</div>}</div>
           <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:20}}>Personal Reference</div>
         </>}
         {d.unemployed&&<div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Personal Reference</div>}
-        <div className="fld"><label>Full Name<span className="req">*</span></label><input value={d.persRefName} onChange={e=>upd("persRefName",e.target.value)} className={errors.persRefName?"err":""} placeholder="Someone who knows you well"/>{errors.persRefName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefName}</div>}</div>
-        <div className="fld-row"><div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>upd("persRefPhone",fmtPhone(e.target.value))} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefPhone}</div>}</div><div className="fld"><label>Relationship</label><input value={d.persRefRelation} onChange={e=>upd("persRefRelation",e.target.value)} placeholder="e.g. Friend"/></div></div>
+        <div className="fld-row">
+          <div className="fld"><label>First Name<span className="req">*</span></label><input value={d.persRefFirstName} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("persRefFirstName",c);}} className={errors.persRefFirstName?"err":""} placeholder="First name"/>{errors.persRefFirstName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefFirstName}</div>}</div>
+          <div className="fld"><label>Last Name<span className="req">*</span></label><input value={d.persRefLastName} onChange={e=>{const c=e.target.value.charAt(0).toUpperCase()+e.target.value.slice(1);upd("persRefLastName",c);}} className={errors.persRefLastName?"err":""} placeholder="Last name"/>{errors.persRefLastName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefLastName}</div>}</div>
+        </div>
+        <div className="fld-row">
+          <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>upd("persRefPhone",fmtPhone(e.target.value))} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefPhone}</div>}</div>
+          <div className="fld"><label>Relationship</label><input value={d.persRefRelation} onChange={e=>upd("persRefRelation",e.target.value)} placeholder="e.g. Friend"/></div>
+        </div>
+        <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.persRefEmail} onChange={e=>upd("persRefEmail",e.target.value)} className={errors.persRefEmail?"err":""} placeholder="reference@email.com"/>{errors.persRefEmail&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefEmail}</div>}</div>
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
@@ -1020,7 +1054,7 @@ export default function ApplyPage(){
         </div>
         {appType==="tenant"&&<>
           <div className="rev-sec"><h3>📋 References <span className="rev-edit" onClick={()=>setStep("references")}>Edit</span></h3>
-            <div className="rev-row"><span className="rev-label">Employer</span><span className="rev-val">{d.empRefName} · {d.empRefPhone}</span></div>
+            <div className="rev-row"><span className="rev-label">Employer</span><span className="rev-val">{(d.empRefFirstName||"")+" "+(d.empRefLastName||"")} · {d.empRefPhone}</span></div>
             <div className="rev-row"><span className="rev-label">Personal</span><span className="rev-val">{d.persRefName} · {d.persRefPhone}</span></div>
           </div>
           <div className="rev-sec"><h3>🚨 Emergency <span className="rev-edit" onClick={()=>setStep("emergency")}>Edit</span></h3>
