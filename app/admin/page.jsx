@@ -13302,7 +13302,7 @@ export default function Page(){
     settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}} onDelete={id=>{setProps(prev=>prev.filter(x=>x.id!==id));setEditProp(null);}}/>}
 
   {/* Centered Confirm / Alert Dialog — replaces all window.confirm and alert calls */}
-  {confirmDialog&&<div className="mbg" onClick={()=>{if(!confirmDialog.onConfirm)setConfirmDialog(null);}} style={{zIndex:9999}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}}>
+  {confirmDialog&&<div className="mbg" onClick={()=>{if(!confirmDialog.onConfirm)setConfirmDialog(null);}} style={{zIndex:9999,alignItems:"center"}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}}>
     <div style={{width:44,height:44,borderRadius:"50%",background:confirmDialog.danger?"rgba(196,92,74,.1)":"rgba(74,124,89,.08)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
       {confirmDialog.danger
         ?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
