@@ -12595,9 +12595,10 @@ export default function Page(){
             }
           }
         };
-        const requestReupload=(docLabel)=>{
+        const requestReupload=(docLabel,docType)=>{
           const tmpl=settings.emailTemplates||{};
-          const tokens={applicantFirstName:a.name.split(" ")[0],applicantName:a.name,docLabel,portalLink:window.location.origin+"/apply?invite="+a.id,pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+          const portalLink=window.location.origin+"/reupload?app="+a.id+"&doc="+encodeURIComponent(docType||docLabel)+"&label="+encodeURIComponent(docLabel);
+          const tokens={applicantFirstName:a.name.split(" ")[0],applicantName:a.name,docLabel,portalLink,pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
           const subject=resolveEmailTemplate(tmpl.reuploadSubject||DEF_SETTINGS.emailTemplates.reuploadSubject,tokens);
           const body=resolveEmailTemplate(tmpl.reuploadBody||DEF_SETTINGS.emailTemplates.reuploadBody,tokens);
           setModal(prev=>({...prev,_draftEmail:{to:a.email,subject,body,type:"reupload",docLabel}}));
@@ -12644,7 +12645,7 @@ export default function Page(){
                 <button onClick={()=>setDocVerified(doc.id,"verified")} style={{fontSize:9,padding:"3px 9px",borderRadius:5,border:"1px solid rgba(74,124,89,.3)",background:vStatus==="verified"?"#4a7c59":"#fff",color:vStatus==="verified"?"#fff":"#4a7c59",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s"}}>
                   {vStatus==="verified"?"✓ Verified":"Verify"}
                 </button>
-                <button onClick={()=>{setDocVerified(doc.id,"rejected");requestReupload(doc.label);}} style={{fontSize:9,padding:"3px 9px",borderRadius:5,border:"1px solid rgba(196,92,74,.25)",background:vStatus==="rejected"?"#c45c4a":"#fff",color:vStatus==="rejected"?"#fff":"#c45c4a",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s"}}>
+                <button onClick={()=>{setDocVerified(doc.id,"rejected");requestReupload(doc.label,doc.type);}} style={{fontSize:9,padding:"3px 9px",borderRadius:5,border:"1px solid rgba(196,92,74,.25)",background:vStatus==="rejected"?"#c45c4a":"#fff",color:vStatus==="rejected"?"#fff":"#c45c4a",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s"}}>
                   Reject & Request Re-Upload
                 </button>
                 {isUploaded&&<button onClick={handleDelete} style={{fontSize:9,padding:"3px 7px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",background:"none",color:"#9a8878",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>Delete</button>}
