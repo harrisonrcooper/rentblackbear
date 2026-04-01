@@ -5532,7 +5532,6 @@ export default function Page(){
           if(!leaseForm.roomId&&!(leaseForm.room||"").trim()) errs.roomId="Select a room or unit.";
           if(!leaseForm.rent||leaseForm.rent<=0) errs.rent="Monthly rent amount is required.";
           if(!leaseForm.moveIn) errs.moveIn="Move-in date is required.";
-          if(!leaseForm.leaseStart) errs.leaseStart="Lease start date is required.";
           if(!leaseForm.leaseEndTbd&&!leaseForm.leaseEnd) errs.leaseEnd="Lease end date is required, or toggle TBD.";
           if(!leaseForm.doorCode||leaseForm.doorCode.trim().length!==4) errs.doorCode="A 4-digit door code is required before signing.";
           if(leaseForm.parkingChoice===null||leaseForm.parkingChoice===undefined) errs.parkingChoice="Indicate whether this room has assigned parking.";
@@ -5805,14 +5804,10 @@ export default function Page(){
                   {locked?ro(fmtS(leaseForm.sd||0)):<input type="number" value={leaseForm.sd||""} onChange={e=>setLeaseForm(p=>({...p,sd:Number(e.target.value)}))}/>}
                 </div>
               </div>
-              <div className="fr3">
+              <div className="fr">
                 <div className="fld"><label>Move-in Date</label>
-                  {locked?ro(fmtD(leaseForm.moveIn)):<input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null,leaseStart:null}}));}} style={{borderColor:leaseForm._errors?.moveIn?"#c45c4a":undefined}}/>}
+                  {locked?ro(fmtD(leaseForm.moveIn)):<input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));}} style={{borderColor:leaseForm._errors?.moveIn?"#c45c4a":undefined}}/>}
                   {leaseForm._errors?.moveIn&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.moveIn}</div>}
-                </div>
-                <div className="fld"><label>Lease Start</label>
-                  {locked?ro(fmtD(leaseForm.leaseStart)):<input type="date" value={leaseForm.leaseStart||""} onChange={e=>setLeaseForm(p=>({...p,leaseStart:e.target.value,_errors:{...(p._errors||{}),leaseStart:null}}))} style={{borderColor:leaseForm._errors?.leaseStart?"#c45c4a":undefined}}/>}
-                  {leaseForm._errors?.leaseStart&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.leaseStart}</div>}
                 </div>
                 <div className="fld">
                   <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
