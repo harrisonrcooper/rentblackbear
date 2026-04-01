@@ -12539,12 +12539,12 @@ export default function Page(){
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>{(()=>{
                 const _docs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
                 const _d=_docs.length;
-                const _v=_docs.filter(x=>x.verified==="approved"||x.verified===true).length;
+                const _v=_docs.filter(x=>x.verified==="verified"||x.verified==="approved"||x.verified===true).length;
                 const _r=_docs.filter(x=>x.verified==="rejected").length;
                 if(_d===0)return<span style={{fontSize:10,color:"#9a8878"}}>None yet</span>;
                 return<>
                   <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>{_d} uploaded</span>
-                  <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:_v===_d?"rgba(74,124,89,.12)":"rgba(0,0,0,.05)",color:_v===_d?"#2d6a3f":"#7a7067",display:"flex",alignItems:"center",gap:3}}>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:_v===_d?"rgba(74,124,89,.12)":_v>0?"rgba(212,168,83,.12)":"rgba(196,92,74,.1)",color:_v===_d?"#2d6a3f":_v>0?"#9a7422":"#c45c4a",display:"flex",alignItems:"center",gap:3}}>
                     {_v===_d&&<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#2d6a3f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 5 9 10 3"/></svg>}
                     {_v}/{_d} verified
                   </span>
@@ -12631,12 +12631,9 @@ export default function Page(){
                   {isUploaded&&<div style={{fontSize:9,color:"#6b5e52",marginTop:1}}>{doc.name}</div>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
-                  {isUploaded?<>
-                    {vStatus==="verified"&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.12)",color:"#2d6a3f"}}>Verified</span>}
-                    {vStatus==="rejected"&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(196,92,74,.1)",color:"#c45c4a"}}>Rejected</span>}
-                    {vStatus==="unreviewed"&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Unreviewed</span>}
-                    <a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-out btn-sm" style={{fontSize:9,padding:"3px 8px",textDecoration:"none"}}>View</a>
-                  </>:<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Not uploaded</span>}
+                  {isUploaded
+                    ?<a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-out btn-sm" style={{fontSize:9,padding:"3px 8px",textDecoration:"none"}}>View</a>
+                    :<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Not uploaded</span>}
                 </div>
               </div>
               {isUploaded&&<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
