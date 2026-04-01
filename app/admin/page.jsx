@@ -2646,7 +2646,8 @@ export default function Page(){
       const occupiedRoom=(u.rooms||[]).find(r=>r.tenant&&!r.ownerOccupied);
       if(!occupiedRoom)return[];
       return[{...occupiedRoom,name:u.name||(p.addr||p.name)+(" Unit"),propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:true}];
-    }\n    return(u.rooms||[]).filter(r=>r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false}));
+    }
+    return(u.rooms||[]).filter(r=>r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false}));
   }));
   const occLeases=props.flatMap(pr=>(pr.units||[]).flatMap(u=>{
     if(u.ownerOccupied)return[];
