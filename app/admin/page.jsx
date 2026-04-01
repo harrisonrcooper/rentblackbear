@@ -12595,13 +12595,19 @@ export default function Page(){
             }
           }
         };
-        const requestReupload=(docLabel,docType)=>{
+        const requestReupload=(docLabel,docType,customNote)=>{
           const tmpl=settings.emailTemplates||{};
           const portalLink=window.location.origin+"/reupload?app="+a.id+"&doc="+encodeURIComponent(docType||docLabel)+"&label="+encodeURIComponent(docLabel);
           const tokens={applicantFirstName:a.name.split(" ")[0],applicantName:a.name,docLabel,portalLink,pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+          let body=resolveEmailTemplate(tmpl.reuploadBody||DEF_SETTINGS.emailTemplates.reuploadBody,tokens);
+          if(customNote&&customNote.trim()){
+            body=body.replace(
+              "Please log in",
+              "Additional note from your property manager:\n\""+customNote.trim()+"\"\n\nPlease log in"
+            );
+          }
           const subject=resolveEmailTemplate(tmpl.reuploadSubject||DEF_SETTINGS.emailTemplates.reuploadSubject,tokens);
-          const body=resolveEmailTemplate(tmpl.reuploadBody||DEF_SETTINGS.emailTemplates.reuploadBody,tokens);
-          setModal(prev=>({...prev,_draftEmail:{to:a.email,subject,body,type:"reupload",docLabel}}));
+          setModal(prev=>({...prev,_draftEmail:{to:a.email,subject,body,type:"reupload",docLabel},_rejectPrompt:null}));
         };
         const DocCard=({doc})=>{
           const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
@@ -12696,13 +12702,19 @@ export default function Page(){
                 const feePaid=(a.appFee||0)>0;
                 const hasRentPrep=a.screenPkg&&a.screenPkg!=="none";
                 const allDocs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
-                const idOk=allDocs.some(x=>(x.type==="PhotoID-Front"||x.type==="PhotoID-Back")&&x.verified==="verified")||a.idVerified==="verified";
+                const idF=allDocs.find(x=>x.type==="PhotoID-Front");
+                const idB=allDocs.find(x=>x.type==="PhotoID-Back");
+                const idOk=idF?.verified==="verified"&&idB?.verified==="verified";
+                const idBad=idF?.verified==="rejected"||idB?.verified==="rejected";
                 const bgOk=a.bgCheck==="passed";
                 const creditOk=a.creditScore&&a.creditScore!=="—"&&!isNaN(parseInt(a.creditScore))&&parseInt(a.creditScore)>=580;
                 const incOk=!a.incomeAdd||a.incomeAdd==="none"||a.incomeAdd===""||a.incomeVerified==="verified";
+                const payDocs=allDocs.filter(x=>x.type==="PayStub");
+                const payOk=payDocs.length>0&&payDocs.every(x=>x.verified==="verified");
+                const payBad=payDocs.some(x=>x.verified==="rejected");
                 const refsOk=a.refs==="verified";
-                const pending=[!bgOk,!creditOk,!incOk,!refsOk,!idOk].filter(Boolean).length;
-                return pending>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{pending} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;
+                const issues=[!bgOk,!creditOk,!incOk,!payOk||payBad,!refsOk,!idOk||idBad].filter(Boolean).length;
+                return issues>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{issues} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;
               })()}</div>
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
@@ -12716,7 +12728,11 @@ export default function Page(){
         const allDocs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
         const idFront=allDocs.find(x=>x.type==="PhotoID-Front");
         const idBack=allDocs.find(x=>x.type==="PhotoID-Back");
-        const idVerifiedDerived=idFront?.verified==="verified"||idBack?.verified==="verified"?"verified":idFront||idBack?"uploaded":a.idVerified||"not-started";
+        const idAnyRejected=idFront?.verified==="rejected"||idBack?.verified==="rejected";
+        const idBothVerified=(idFront?.verified==="verified")&&(idBack?.verified==="verified");
+        const idAnyVerified=idFront?.verified==="verified"||idBack?.verified==="verified";
+        const idUploaded=!!(idFront||idBack);
+        const idVerifiedDerived=idAnyRejected?"rejected":idBothVerified?"verified":idUploaded?"uploaded":"not-started";
         const ad=a.applicationData||{};
         const totalRefs=(ad.empRefFirstName&&!ad.unemployed?1:0)+(ad.persRefFirstName?1:0);
         const repliedRefs=(modal._refReplies||[]).filter(r=>r.appId===a.id||true).length;
@@ -12773,10 +12789,19 @@ export default function Page(){
         const refDetail=refSt==="verified"?"All references verified":totalRefs>0?`${totalRefs} reference${totalRefs>1?"s":""} listed${repliedRefs>0?" · "+repliedRefs+" replied":""}`:null;
         const refBadge=refSt==="verified"?"Verified":repliedRefs>0?`${repliedRefs}/${totalRefs} Replied`:"Not Started";
 
-        // ID Verified
-        const idSt=idVerifiedDerived==="verified"?"verified":idFront||idBack?"pending":a.idVerified==="verified"?"verified":"not-started";
-        const idDetail=idSt==="verified"?"Photo ID confirmed":idFront||idBack?"Uploaded — awaiting review":null;
-        const idBadge=idSt==="verified"?"Verified":idFront||idBack?"Under Review":"Not Uploaded";
+        // ID Verified — requires BOTH front and back verified, fails if either rejected
+        const idSt=idAnyRejected?"failed":idBothVerified?"verified":idAnyVerified?"pending":idUploaded?"pending":"not-started";
+        const idDetail=idAnyRejected?"One or more documents rejected — tenant notified to re-upload":idBothVerified?"Front & back confirmed":idAnyVerified?"One side verified — waiting on the other":idUploaded?"Uploaded — awaiting review":null;
+        const idBadge=idAnyRejected?"Action Required":idBothVerified?"Verified":idAnyVerified?"Partially Verified":idUploaded?"Under Review":"Not Uploaded";
+
+        // Pay Stubs — derived from appDocs
+        const payStubs=allDocs.filter(x=>x.type==="PayStub");
+        const payAnyRejected=payStubs.some(x=>x.verified==="rejected");
+        const payAllVerified=payStubs.length>0&&payStubs.every(x=>x.verified==="verified");
+        const payAnyVerified=payStubs.some(x=>x.verified==="verified");
+        const paySt=payAnyRejected?"failed":payAllVerified?"verified":payStubs.length>0?"pending":flag.incomeUploadLater?"pending":"not-started";
+        const payDetail=payAnyRejected?"Pay stub rejected — tenant notified to re-upload":payAllVerified?`${payStubs.length} stub${payStubs.length>1?"s":""} verified`:payStubs.length>0?"Uploaded — awaiting review":flag.incomeUploadLater?"Tenant will upload later":null;
+        const payBadge=payAnyRejected?"Action Required":payAllVerified?"Verified":payStubs.length>0?"Under Review":flag.incomeUploadLater?"Upload Pending":"Not Uploaded";
 
         return(<div className="tp-card">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
@@ -12787,6 +12812,7 @@ export default function Page(){
           <Row label="Background Check" st={bgSt} detail={bgDetail} badge={bgBadge} tag={hasRentPrep?"RENTPREP":null}/>
           <Row label="Credit Check" st={creditSt} detail={creditDetail} badge={creditBadge} tag={hasRentPrep?"RENTPREP":null}/>
           {incSt!==null&&<Row label="Income Verification" st={incSt} detail={incDetail} badge={incBadge} tag="RENTPREP"/>}
+          <Row label="Pay Stubs" st={paySt} detail={payDetail} badge={payBadge}/>
           <Row label="References" st={refSt} detail={refDetail} badge={refBadge}/>
           <Row label="ID Verified" st={idSt} detail={idDetail} badge={idBadge}/>
           {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:8,fontStyle:"italic",paddingTop:8,borderTop:"1px solid rgba(0,0,0,.04)"}}>Waiver: {a.waiverReason}</div>}
