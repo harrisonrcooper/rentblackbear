@@ -12530,23 +12530,7 @@ export default function Page(){
                     const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.empRefFirstName;
                     const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body="Hi "+refName+",
-
-My name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.
-
-"+a.name+" has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:
-
-1. Can you confirm "+name+" is/was employed at your organization?
-2. What is/was their role and approximate start date?
-3. Would you recommend them as a tenant?
-
-Please reply directly to this email. This typically takes only 2–3 minutes.
-
-Thank you for your time,
-Carolina Cooper
-Black Bear Rentals
-(850) 696-8101
-info@rentblackbear.com";
+                    const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:\n\n1. Can you confirm ${name} is/was employed at your organization?\n2. What is/was their role and approximate start date?\n3. Would you recommend them as a tenant?\n\nPlease reply directly to this email. This typically takes only 2–3 minutes.\n\nThank you for your time,\nCarolina Cooper\nBlack Bear Rentals\n(850) 696-8101\ninfo@rentblackbear.com`;
                     setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject,body,type:"reference",refName,refType:"Employer Reference"}}));
                   }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                     Draft Email →
