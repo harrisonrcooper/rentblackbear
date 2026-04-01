@@ -11659,6 +11659,36 @@ export default function Page(){
             </div>
           </div>
 
+          {/* Move-out Date */}
+          <div style={{marginBottom:8}}>
+            <div className="fld" style={{marginBottom:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <label style={{margin:0}}>Move-out Date</label>
+                <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",userSelect:"none"}}
+                  onClick={()=>{
+                    const next=!a.moveOutTbd;
+                    setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveOutTbd:next}:x));
+                    setModal(prev=>({...prev,data:{...prev.data,moveOutTbd:next}}));
+                  }}>
+                  <div style={{width:26,height:14,borderRadius:7,background:a.moveOutTbd?"rgba(212,168,83,.3)":"rgba(0,0,0,.1)",position:"relative",transition:"background .15s",flexShrink:0}}>
+                    <div style={{position:"absolute",top:1,left:a.moveOutTbd?13:1,width:12,height:12,borderRadius:"50%",background:a.moveOutTbd?"#d4a853":"#aaa",transition:"all .15s"}}/>
+                  </div>
+                  <span style={{fontSize:9,fontWeight:700,color:a.moveOutTbd?"#9a7422":"#6b5e52",letterSpacing:.1}}>Move-out date is TBD</span>
+                </label>
+              </div>
+              {a.moveOutTbd
+                ?<div style={{padding:"8px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.25)",background:"rgba(212,168,83,.04)",fontSize:11,color:"#9a7422",fontWeight:600}}>
+                  To Be Determined &#8212; move-out date will be confirmed later.
+                </div>
+                :<input type="date" value={a.termMoveOut||a.moveOut||""} onChange={e=>{
+                  const ds=e.target.value;
+                  setApps(prev=>prev.map(x=>x.id===a.id?{...x,moveOut:ds,termMoveOut:ds}:x));
+                  setModal(prev=>({...prev,data:{...prev.data,moveOut:ds,termMoveOut:ds}}));
+                }} style={{width:"100%"}}/>
+              }
+            </div>
+          </div>
+
           {/* Room dropdown */}
           {true&&<>{/* All rooms across properties, sorted by ready date */}
           <div className="fld" style={{marginBottom:selectedItem?8:0}}>
@@ -12467,131 +12497,6 @@ export default function Page(){
           </div>
         );
       })()}
-      {(()=>{
-        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="housemates";
-        return(
-          <div style={{borderBottom:"1px solid #f0ede8"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="housemates"?null:"housemates"}))}>  
-              <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><circle cx="6" cy="5" r="2.5"/><circle cx="11" cy="5" r="2.5"/><path d="M1 14a5 5 0 0 1 10 0" opacity=".5"/></svg>
-              </div>
-              <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Housemates</div>
-              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}></div>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            {_o&&<div style={{padding:"0 0 4px"}}>
-      {/* Roommate Compatibility */}
-      {(()=>{
-        // Resolve prop: prefer termPropId (ID-based, most reliable) → property name → termRoomId room lookup
-        const hmProp=a.termPropId?props.find(p=>p.id===a.termPropId)
-          :a.property?props.find(p=>p.name===a.property)
-          :a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)||(p.units||[]).some(u=>u.id===a.termRoomId))
-          :null;
-        if(!hmProp)return null;
-        const allItems=leaseableItems(hmProp);
-        // Find the specific assigned item — for whole units termRoomId === u.id === i.id
-        const assignedItem=a.termRoomId
-          ?allItems.find(i=>i.id===a.termRoomId)||(allItems.find(i=>i.unitId===a.termRoomId))
-          :a.room?allItems.find(i=>i.name===a.room):null;
-        const isWholeUnitRental=!!(assignedItem?.isWholeUnit);
-        // Whole-unit rental: applicant IS the unit — no housemates
-        if(isWholeUnitRental)return null;
-        const targetUnitId=assignedItem?.unitId||null;
-        // Unit-specific address for header — use unit.addr if present, else prop.addr
-        const targetUnit=targetUnitId?(hmProp.units||[]).find(u=>u.id===targetUnitId):null;
-        const hmAddr=targetUnit?.addr||(hmProp.units||[]).length===1?hmProp.addr:null;
-        const hmDisplayName=hmAddr||getPropDisplayName(hmProp);
-        // Only show housemates from the same unit, excluding the applicant's own room
-        const items=targetUnitId
-          ?allItems.filter(i=>i.unitId===targetUnitId&&i.id!==a.termRoomId)
-          :allItems.filter(i=>i.id!==a.termRoomId);
-        if(items.length===0)return null;
-        const hmOpen=modal._hmOpen===true; // collapsed by default
-        return(<div className="tp-card" style={{padding:0,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 18px",cursor:"pointer",background:hmOpen?"rgba(0,0,0,.01)":"#fff"}} onClick={()=>setModal(p=>({...p,_hmOpen:!hmOpen}))}>
-            <h3 style={{margin:0,fontSize:13}}>Housemates at {hmDisplayName}</h3>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:9,color:"#6b5e52"}}>{items.length} room{items.length!==1?"s":""}</span>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:hmOpen?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-          </div>
-          {hmOpen&&<div style={{padding:"0 18px 12px"}}>
-        {(function(){
-          const calcAge=(dob)=>{if(!dob)return null;const b=new Date(dob+"T00:00:00");if(isNaN(b))return null;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=10&&age<120?age:null;};
-          // items/targetUnitId already resolved in outer scope
-          return(<>
-            {items.map(function(item){
-              if(item.isWholeUnit){
-                const occ=item.st==="occupied";
-                return(
-                  <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                    <div>
-                      <div style={{fontSize:12,fontWeight:600}}>{item.name} <span style={{fontSize:9,color:"#d4a853",fontWeight:500}}>Whole Unit</span></div>
-                      {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>Occupied</div>}
-                      {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
-                    </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#6b5e52"}}>{fmtS(item.rent)}/mo</div>
-                      <div style={{fontSize:8,color:"#7a7067",marginTop:1}}>whole unit</div>
-                    </div>
-                  </div>
-                );
-              }
-              const occ=item.st==="occupied"&&item.tenant;
-              const age=occ?calcAge(item.tenant.dob):null;
-              const genderShort=occ&&item.tenant.gender?item.tenant.gender==="Male"?"M":item.tenant.gender==="Female"?"F":null:null;
-              // Pull employer from applicationData employers array
-              const employers=occ&&item.tenant.applicationData?Object.values(item.tenant.applicationData).find(v=>Array.isArray(v)&&v[0]?.company):null;
-              const primaryEmployer=employers?employers[0]?.company:null;
-              const occupType=occ&&item.tenant.occupationType||null;
-              const leaseEnd=item.le||null;
-              const dl=leaseEnd?Math.ceil((new Date(leaseEnd+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
-              const occupBadgeColor=occupType==="NASA Intern"||occupType==="Intern"?"#3b82f6":occupType==="Student"?"#8b5cf6":occupType==="Military"||occupType==="Contractor"?"#059669":"#6b5e52";
-              const occupBadgeBg=occupType==="NASA Intern"||occupType==="Intern"?"rgba(59,130,246,.1)":occupType==="Student"?"rgba(139,92,246,.1)":occupType==="Military"||occupType==="Contractor"?"rgba(5,150,105,.1)":"rgba(0,0,0,.05)";
-              return(
-                <div key={item.id} style={{padding:"9px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,fontWeight:700,color:occ?"#1a1714":"#4a7c59"}}>{item.name}</div>
-                      {occ&&<>
-                        {/* Name + identity chips */}
-                        <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
-                          {item.tenant.name&&<span style={{fontSize:10,color:"#5c4a3a",fontWeight:600}}>{item.tenant.name}</span>}
-                          {genderShort&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:3,background:"rgba(0,0,0,.05)",color:"#6b5e52",fontWeight:600}}>{genderShort}</span>}
-                          {age&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:3,background:"rgba(0,0,0,.05)",color:"#6b5e52",fontWeight:600}}>{age}y</span>}
-                          {occupType&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:3,background:occupBadgeBg,color:occupBadgeColor,fontWeight:700}}>{occupType}</span>}
-                        </div>
-                        {/* Employer */}
-                        {primaryEmployer&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>
-                          <span style={{color:"#9a7422",fontWeight:600}}>Works at: </span>{primaryEmployer}
-                        </div>}
-                        {/* Lease end */}
-                        {leaseEnd&&<div style={{fontSize:10,color:dl!=null&&dl<=30?"#c45c4a":dl!=null&&dl<=90?"#9a7422":"#6b5e52",marginTop:2}}>
-                          Lease ends {fmtD(leaseEnd)}{dl!=null?<span style={{marginLeft:4,fontWeight:600}}>({dl}d)</span>:null}
-                        </div>}
-                      </>}
-                      {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
-                    </div>
-                    <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#6b5e52"}}>{fmtS(item.rent)}/mo</div>
-                      <div style={{fontSize:8,color:"#7a7067",marginTop:1}}>{leaseEnd?"ends "+fmtD(leaseEnd):"no lease"}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </>);
-        })()}
-          </div>}
-        </div>);
-      })()}
-
-      {/* Communication Log */}
-
-            </div>}
-          </div>
-        );
-      })()}
       {!["new-lead","pre-screened","called","invited"].includes(a.status)&&(()=>{
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="docs";
         return(
@@ -12725,6 +12630,131 @@ export default function Page(){
       })()}
 
 
+
+            </div>}
+          </div>
+        );
+      })()}
+      {(()=>{
+        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="housemates";
+        return(
+          <div style={{borderBottom:"1px solid #f0ede8"}}>
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="housemates"?null:"housemates"}))}>  
+              <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><circle cx="6" cy="5" r="2.5"/><circle cx="11" cy="5" r="2.5"/><path d="M1 14a5 5 0 0 1 10 0" opacity=".5"/></svg>
+              </div>
+              <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Housemates</div>
+              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}></div>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            {_o&&<div style={{padding:"0 0 4px"}}>
+      {/* Roommate Compatibility */}
+      {(()=>{
+        // Resolve prop: prefer termPropId (ID-based, most reliable) → property name → termRoomId room lookup
+        const hmProp=a.termPropId?props.find(p=>p.id===a.termPropId)
+          :a.property?props.find(p=>p.name===a.property)
+          :a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)||(p.units||[]).some(u=>u.id===a.termRoomId))
+          :null;
+        if(!hmProp)return null;
+        const allItems=leaseableItems(hmProp);
+        // Find the specific assigned item — for whole units termRoomId === u.id === i.id
+        const assignedItem=a.termRoomId
+          ?allItems.find(i=>i.id===a.termRoomId)||(allItems.find(i=>i.unitId===a.termRoomId))
+          :a.room?allItems.find(i=>i.name===a.room):null;
+        const isWholeUnitRental=!!(assignedItem?.isWholeUnit);
+        // Whole-unit rental: applicant IS the unit — no housemates
+        if(isWholeUnitRental)return null;
+        const targetUnitId=assignedItem?.unitId||null;
+        // Unit-specific address for header — use unit.addr if present, else prop.addr
+        const targetUnit=targetUnitId?(hmProp.units||[]).find(u=>u.id===targetUnitId):null;
+        const hmAddr=targetUnit?.addr||(hmProp.units||[]).length===1?hmProp.addr:null;
+        const hmDisplayName=hmAddr||getPropDisplayName(hmProp);
+        // Only show housemates from the same unit, excluding the applicant's own room
+        const items=targetUnitId
+          ?allItems.filter(i=>i.unitId===targetUnitId&&i.id!==a.termRoomId)
+          :allItems.filter(i=>i.id!==a.termRoomId);
+        if(items.length===0)return null;
+        const hmOpen=modal._hmOpen===true; // collapsed by default
+        return(<div className="tp-card" style={{padding:0,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 18px",cursor:"pointer",background:hmOpen?"rgba(0,0,0,.01)":"#fff"}} onClick={()=>setModal(p=>({...p,_hmOpen:!hmOpen}))}>
+            <h3 style={{margin:0,fontSize:13}}>Housemates at {hmDisplayName}</h3>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:9,color:"#6b5e52"}}>{items.length} room{items.length!==1?"s":""}</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:hmOpen?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          {hmOpen&&<div style={{padding:"0 18px 12px"}}>
+        {(function(){
+          const calcAge=(dob)=>{if(!dob)return null;const b=new Date(dob+"T00:00:00");if(isNaN(b))return null;const today=new Date();let age=today.getFullYear()-b.getFullYear();const m=today.getMonth()-b.getMonth();if(m<0||(m===0&&today.getDate()<b.getDate()))age--;return age>=10&&age<120?age:null;};
+          // items/targetUnitId already resolved in outer scope
+          return(<>
+            {items.map(function(item){
+              if(item.isWholeUnit){
+                const occ=item.st==="occupied";
+                return(
+                  <div key={item.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                    <div>
+                      <div style={{fontSize:12,fontWeight:600}}>{item.name} <span style={{fontSize:9,color:"#d4a853",fontWeight:500}}>Whole Unit</span></div>
+                      {occ&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>Occupied</div>}
+                      {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#6b5e52"}}>{fmtS(item.rent)}/mo</div>
+                      <div style={{fontSize:8,color:"#7a7067",marginTop:1}}>whole unit</div>
+                    </div>
+                  </div>
+                );
+              }
+              const occ=item.st==="occupied"&&item.tenant;
+              const age=occ?calcAge(item.tenant.dob):null;
+              const genderShort=occ&&item.tenant.gender?item.tenant.gender==="Male"?"M":item.tenant.gender==="Female"?"F":null:null;
+              // Pull employer from applicationData employers array
+              const employers=occ&&item.tenant.applicationData?Object.values(item.tenant.applicationData).find(v=>Array.isArray(v)&&v[0]?.company):null;
+              const primaryEmployer=employers?employers[0]?.company:null;
+              const occupType=occ&&item.tenant.occupationType||null;
+              const leaseEnd=item.le||null;
+              const dl=leaseEnd?Math.ceil((new Date(leaseEnd+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
+              const occupBadgeColor=occupType==="NASA Intern"||occupType==="Intern"?"#3b82f6":occupType==="Student"?"#8b5cf6":occupType==="Military"||occupType==="Contractor"?"#059669":"#6b5e52";
+              const occupBadgeBg=occupType==="NASA Intern"||occupType==="Intern"?"rgba(59,130,246,.1)":occupType==="Student"?"rgba(139,92,246,.1)":occupType==="Military"||occupType==="Contractor"?"rgba(5,150,105,.1)":"rgba(0,0,0,.05)";
+              return(
+                <div key={item.id} style={{padding:"9px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:700,color:occ?"#1a1714":"#4a7c59"}}>{item.name}</div>
+                      {occ&&<>
+                        {/* Name + identity chips */}
+                        <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
+                          {item.tenant.name&&<span style={{fontSize:10,color:"#5c4a3a",fontWeight:600}}>{item.tenant.name}</span>}
+                          {genderShort&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:3,background:"rgba(0,0,0,.05)",color:"#6b5e52",fontWeight:600}}>{genderShort}</span>}
+                          {age&&<span style={{fontSize:9,padding:"1px 5px",borderRadius:3,background:"rgba(0,0,0,.05)",color:"#6b5e52",fontWeight:600}}>{age}y</span>}
+                          {occupType&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:3,background:occupBadgeBg,color:occupBadgeColor,fontWeight:700}}>{occupType}</span>}
+                        </div>
+                        {/* Employer */}
+                        {primaryEmployer&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>
+                          <span style={{color:"#9a7422",fontWeight:600}}>Works at: </span>{primaryEmployer}
+                        </div>}
+                        {/* Lease end */}
+                        {leaseEnd&&<div style={{fontSize:10,color:dl!=null&&dl<=30?"#c45c4a":dl!=null&&dl<=90?"#9a7422":"#6b5e52",marginTop:2}}>
+                          Lease ends {fmtD(leaseEnd)}{dl!=null?<span style={{marginLeft:4,fontWeight:600}}>({dl}d)</span>:null}
+                        </div>}
+                      </>}
+                      {!occ&&<div style={{fontSize:10,color:"#4a7c59",fontWeight:600,marginTop:2}}>Vacant</div>}
+                    </div>
+                    <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#6b5e52"}}>{fmtS(item.rent)}/mo</div>
+                      <div style={{fontSize:8,color:"#7a7067",marginTop:1}}>{leaseEnd?"ends "+fmtD(leaseEnd):"no lease"}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </>);
+        })()}
+          </div>}
+        </div>);
+      })()}
+
+      {/* Communication Log */}
 
             </div>}
           </div>
