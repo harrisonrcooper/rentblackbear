@@ -5432,8 +5432,10 @@ export default function Page(){
         };
 
         const _triggerLeaseWiggle=(errs)=>{
-          setLeaseForm(p=>p?({...p,_errors:errs,_wiggle:true}):p);
-          setTimeout(()=>setLeaseForm(p=>p?({...p,_wiggle:false}):p),500);
+          setLeaseForm(p=>p?({...p,_errors:errs}):p);
+          // Use direct DOM manipulation — no state change = no React re-render = no flicker
+          const mb=document.querySelector(".lease-modal-box");
+          if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease";}
         };
 
         const saveDraft=()=>{
@@ -5687,7 +5689,7 @@ export default function Page(){
         </>}
 
         {/* Lease Form Modal */}
-        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:660,animation:leaseForm._wiggle?"shake .4s ease":undefined}}>
+        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox lease-modal-box" onClick={e=>e.stopPropagation()} style={{maxWidth:660}}>
           <h2>{leaseForm.id?"Edit Lease":"Create New Lease"}</h2>
           <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
 
@@ -5749,7 +5751,7 @@ export default function Page(){
                   return(<>
                   <div className="fr">
                     <div className="fld"><label>Property</label>
-                      <select value={_resolvedPropId} onChange={e=>{const p2=props.find(p=>p.id===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,propertyId:p2?.id||"",property:p2?getPropDisplayName(p2):"",propertyAddress:p2?.addr||"",room:"",roomId:"",utilitiesMode:uKey,utilitiesClause:uClause,_errors:{...(p._errors||{}),propertyId:null,roomId:null}}));}} style={{borderColor:leaseForm._errors?.propertyId?"#c45c4a":undefined}}>
+                      <select value={_resolvedPropId} onChange={e=>{const p2=props.find(p=>p.id===e.target.value);setLeaseForm(p=>({...p,propertyId:p2?.id||"",property:p2?getPropDisplayName(p2):"",propertyAddress:p2?.addr||"",room:"",roomId:"",_errors:{...(p._errors||{}),propertyId:null,roomId:null}}));}} style={{borderColor:leaseForm._errors?.propertyId?"#c45c4a":undefined}}>
                         <option value="">Select...</option>
                         {props.map(p=><option key={p.id} value={p.id}>{getPropDisplayName(p)}</option>)}
                       </select>
@@ -5765,7 +5767,7 @@ export default function Page(){
                         const unit=(lp.units||[]).find(u=>u.id===item.unitId);
                         const uKey=unit?.utils||"allIncluded";
                         const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";
-                        setLeaseForm(p=>({...p,room:item.name,roomId:item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parkingChoice:item.parking?(item.parking==="none"?"no":"yes"):null,parking:item.parking&&item.parking!=="none"?item.parking:"",utilitiesMode:uKey,utilitiesClause:uClause,_errors:{...(p._errors||{}),roomId:null,parkingChoice:null}}));
+                        setLeaseForm(p=>({...p,room:item.name,roomId:item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parkingChoice:item.parking?(item.parking==="none"?"no":"yes"):null,parking:item.parking&&item.parking!=="none"?item.parking:"",_errors:{...(p._errors||{}),roomId:null,parkingChoice:null}}));
                       }} style={{width:"100%",borderColor:leaseForm._errors?.roomId?"#c45c4a":undefined}}>
                         <option value="">Select...</option>
                         {(()=>{const lp=props.find(p=>p.id===_resolvedPropId);if(!lp)return null;
@@ -5881,14 +5883,14 @@ export default function Page(){
                   })()}
                 </div>
               </div>
-              <div className="fld"><label>Utilities Clause</label>
+              <div className="fld"><label>Utilities Clause <span style={{color:"#c45c4a",fontSize:11}}>*</span></label>
                 {locked
                   ?<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:leaseForm.utilitiesClause?"#6b5e52":"#c45c4a",lineHeight:1.5}}>{leaseForm.utilitiesClause||"No utilities clause selected — click Edit to choose one"}</div>
                   :<>
                     <select value={leaseForm.utilitiesMode||""} onChange={e=>{
                       const mode=e.target.value;
                       const tmpl=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===mode);
-                      setLeaseForm(p=>({...p,utilitiesMode:mode,utilitiesClause:mode==="custom"?"":tmpl?.clause||"",_errors:{...(p._errors||{}),utilitiesMode:null}}));
+                      setLeaseForm(p=>({...p,utilitiesMode:mode,utilitiesClause:mode==="custom"?"":tmpl?.clause||"",_errors:{...(p._errors||{}),utilitiesMode:null},_utilPresetSaved:false}));
                     }} style={{width:"100%",marginBottom:leaseForm.utilitiesMode==="custom"||!leaseForm.utilitiesMode?6:0,borderColor:leaseForm._errors?.utilitiesMode?"#c45c4a":undefined,animation:leaseForm._errors?.utilitiesMode?"shake .4s ease":undefined}}>
                       <option value="">— Select a utilities clause —</option>
                       {(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
@@ -5896,7 +5898,21 @@ export default function Page(){
                     </select>
                     {leaseForm._errors?.utilitiesMode&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4}}>{leaseForm._errors.utilitiesMode}</div>}
                     {leaseForm.utilitiesMode==="custom"&&<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} placeholder="Write your custom utilities clause..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
-                    {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5}}>{leaseForm.utilitiesClause}</div>}
+                    {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5,marginBottom:4}}>{leaseForm.utilitiesClause}</div>}
+                    {leaseForm.utilitiesMode&&leaseForm.roomId&&(()=>{
+                      const saveUtilPreset=()=>{
+                        const lp=props.find(p=>p.id===(leaseForm.propertyId||props.find(pp=>getPropDisplayName(pp)===leaseForm.property)?.id));
+                        if(!lp||!leaseForm.roomId)return;
+                        const updatedUnits=(lp.units||[]).map(u=>({...u,utils:u.rooms&&u.rooms.some(r=>r.id===leaseForm.roomId)?leaseForm.utilitiesMode:u.utils,rooms:(u.rooms||[]).map(r=>r.id===leaseForm.roomId?{...r,utils:leaseForm.utilitiesMode}:r)}));
+                        const updatedProps=props.map(p=>p.id===lp.id?{...p,units:updatedUnits}:p);
+                        setProps(updatedProps);
+                        setLeaseForm(p=>({...p,_utilPresetSaved:true}));
+                        setTimeout(()=>setLeaseForm(p=>p?({...p,_utilPresetSaved:false}):p),2500);
+                      };
+                      return(<button onClick={saveUtilPreset} style={{width:"100%",padding:"6px 10px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s"}}>
+                        {leaseForm._utilPresetSaved?"Preset saved for this room":"Save as preset for this room / bedroom"}
+                      </button>);
+                    })()}
                   </>}
               </div>
             </div>);
@@ -6015,7 +6031,7 @@ export default function Page(){
                 </div>
 
                 {/* Section 2: Due before move-in */}
-                <div style={{fontSize:10,fontWeight:700,color:"#185fa5",letterSpacing:.5,marginBottom:7}}>DUE BEFORE MOVE-IN — {fmtDate(miD)}</div>
+                <div style={{fontSize:10,fontWeight:700,color:"#9a7422",letterSpacing:.5,marginBottom:7}}>DUE BEFORE MOVE-IN — {fmtDate(miD)}</div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 11px",background:"rgba(59,130,246,.04)",borderRadius:7,border:"0.5px solid rgba(59,130,246,.2)",marginBottom:5}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>
@@ -6042,9 +6058,9 @@ export default function Page(){
                   </div>
                   <div style={{fontSize:13,fontWeight:700,color:"#1a1714"}}>{fmtS(lastInstallAmt)}</div>
                 </div>}
-                {totalBeforeMoveIn>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 11px",background:"#185fa5",borderRadius:7,marginBottom:0}}>
+                {totalBeforeMoveIn>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 11px",background:"#1a1714",borderRadius:7,marginBottom:0}}>
                   <div style={{fontSize:12,fontWeight:600,color:"#f5f0e8"}}>Total before move-in</div>
-                  <div style={{fontSize:15,fontWeight:800,color:"#fff"}}>{fmtS(totalBeforeMoveIn)}</div>
+                  <div style={{fontSize:15,fontWeight:800,color:"#d4a853"}}>{fmtS(totalBeforeMoveIn)}</div>
                 </div>}
               </div>
 
