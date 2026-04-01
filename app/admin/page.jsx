@@ -75,6 +75,10 @@ const DEF_LEASE_SECTIONS=[
 ];
 
 const TODAY=new Date();const MO=TODAY.toLocaleString("default",{month:"long",year:"numeric"});
+// Resolve email template tokens — all ref/reupload emails go through this
+function resolveEmailTemplate(tmpl,tokens){
+  return Object.entries(tokens).reduce((s,[k,v])=>s.replaceAll("{"+k+"}",v||""),tmpl);
+}
 
 // Signature canvas component — draw only, used in lease signing flow
 function SigCanvas({onSave,height=120}){
@@ -356,6 +360,14 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
     leaseSignedBody:"{name} has signed their lease for {property}. Log in to admin to review.",
     paymentSubject:"💰 Payment Received — {name}",
     paymentBody:"{name} submitted a payment of {amount} for {property}.",
+    refEmployerSubject:"Reference Request — {applicantName} (Rental Application)",
+    refEmployerBody:"Hi {refName},\n\nMy name is {pmName} from {companyName} in {city}.\n\n{applicantName} has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:\n\n1. Can you confirm {applicantFirstName} is/was employed at your organization?\n2. What is/was their role and approximate start date?\n3. Would you recommend them as a tenant?\n\nPlease reply directly to this email. This typically takes only 2–3 minutes.\n\nThank you for your time,\n{pmName}\n{companyName}\n{phone}\n{email}",
+    refPersonalSubject:"Reference Request — {applicantName} (Rental Application)",
+    refPersonalBody:"Hi {refName},\n\nMy name is {pmName} from {companyName} in {city}.\n\n{applicantName} has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.\n\n1. How long have you known {applicantFirstName} and in what capacity?\n2. Would you describe them as responsible and respectful?\n3. Is there anything else you'd like us to know?\n\nPlease reply directly to this email.\n\nThank you for your time,\n{pmName}\n{companyName}\n{phone}\n{email}",
+    refLandlordSubject:"Tenant Reference Request — {applicantName} (Rental Application)",
+    refLandlordBody:"Hi {refName},\n\nMy name is {pmName} from {companyName} in {city}.\n\n{applicantName} has applied to rent one of our properties and listed you as a previous landlord. We would appreciate a moment of your time to verify a few details:\n\n1. Did {applicantFirstName} rent from you at {address}?\n2. Did they pay rent on time and care for the property?\n3. Would you rent to them again?\n\nPlease reply directly to this email.\n\nThank you for your time,\n{pmName}\n{companyName}\n{phone}\n{email}",
+    reuploadSubject:"Action Required — Please Re-Upload Your {docLabel}",
+    reuploadBody:"Hi {applicantFirstName},\n\nThank you for submitting your application to {companyName}. We were unable to verify your {docLabel} — the image may be unclear, cropped, or missing.\n\nPlease log in to your application portal and re-upload a clear photo:\n\n{portalLink}\n\nIf you have any questions, reply to this email.\n\nThank you,\n{pmName}\n{companyName}",
   },
   screenForm:{
     heading:"Almost There",
@@ -1963,11 +1975,11 @@ const S=`
 /* Buttons */
 .btn{padding:7px 14px;border-radius:7px;border:none;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .1s}
 .btn:hover{transform:translateY(-1px)}
-.btn-gold{background:#d4a853;color:#1a1714}.btn-gold:hover{background:#c99a3e}.btn-dk{background:#1a1714;color:#f5f0e8}.btn-dk:hover{background:#2c2520}
+.btn-gold{background:#d4a853;color:#1a1714;transition:background .15s,color .15s}.btn-gold:hover{background:#1a1714;color:#d4a853}.btn-dk{background:#1a1714;color:#f5f0e8}.btn-dk:hover{background:#2c2520}
 .pay-tab{flex:1;padding:14px 16px;fontSize:14px;font-weight:500;background:#fff;color:#5c4a3a;border:none;cursor:pointer;font-family:inherit;transition:all .2s;border-right:1px solid rgba(0,0,0,.04)}
 .pay-tab:hover{background:#f0eeeb;color:#1a1714}.pay-tab.active{background:#1a1714;color:#f5f0e8;font-weight:800}.pay-tab.active:hover{background:#2c2520}
 .btn-out{background:#fff;border:1px solid rgba(0,0,0,.08);color:#1a1714}.btn-out:hover{border-color:#d4a853}
-.btn-green{background:#4a7c59;color:#fff}.btn-green:hover{background:#3a6448}.btn-red{background:rgba(196,92,74,.08);color:#c45c4a;border:1px solid rgba(196,92,74,.1)}.btn-red:hover{background:rgba(196,92,74,.15)}
+.btn-green{background:#4a7c59;color:#fff;transition:background .15s,color .15s}.btn-green:hover{background:#1a1714;color:#4a7c59}.btn-red{background:rgba(196,92,74,.08);color:#c45c4a;border:1px solid rgba(196,92,74,.1)}.btn-red:hover{background:rgba(196,92,74,.15)}
 .btn-sm{padding:5px 10px;font-size:10px;border-radius:5px}
 
 /* KPIs */
@@ -2637,7 +2649,7 @@ export default function Page(){
     return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
   }));
 
-  const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-green{background:${acc}!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
+  const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-gold:hover{background:#1a1714!important;color:${acc}!important}.btn-green{background:${acc}!important}.btn-green:hover{background:#1a1714!important;color:${acc}!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
   const _acc=settings.adminAccent||"#4a7c59";const _rgb=settings.adminAccentRgb||"74,124,89";const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";const _zoom=settings.adminZoom||1;
   return(<div style={{fontFamily:_font}}><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app" style={{zoom:_zoom}}>
     {/* Mobile bottom tab bar */}
@@ -7250,6 +7262,59 @@ export default function Page(){
           <div className="fld"><label>Property Manager Name <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>— used in outgoing reference & applicant emails</span></label><input value={settings.pmName||""} onChange={e=>setSettings({...settings,pmName:e.target.value})} placeholder="Carolina Cooper"/></div>
           <div className="fr3"><div className="fld"><label>Phone</label><input value={settings.phone} onChange={e=>setSettings({...settings,phone:e.target.value})}/></div><div className="fld"><label>Public Email</label><input value={settings.email} onChange={e=>setSettings({...settings,email:e.target.value})} placeholder="info@rentblackbear.com"/></div><div className="fld"><label>City</label><input value={settings.city} onChange={e=>setSettings({...settings,city:e.target.value})}/></div></div><div className="fld"><label>PM Notification Email <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>— where you receive application, lease, and payment alerts</span></label><input type="email" value={settings.pmEmail||""} onChange={e=>setSettings({...settings,pmEmail:e.target.value})} placeholder="blackbearhousing@gmail.com"/></div>
         </div></div>
+        {/* Email Templates */}
+        {(()=>{
+          const etOpen=expanded.emailTemplatesOpen;
+          const tmpl=settings.emailTemplates||{};
+          const def=DEF_SETTINGS.emailTemplates;
+          const TEMPLATES=[
+            {key:"refEmployer",label:"Employer Reference",subjectKey:"refEmployerSubject",bodyKey:"refEmployerBody",tokens:["{refName}","{applicantName}","{applicantFirstName}","{pmName}","{companyName}","{city}","{phone}","{email}"]},
+            {key:"refPersonal",label:"Personal Reference",subjectKey:"refPersonalSubject",bodyKey:"refPersonalBody",tokens:["{refName}","{applicantName}","{applicantFirstName}","{pmName}","{companyName}","{city}","{phone}","{email}"]},
+            {key:"refLandlord",label:"Previous Landlord",subjectKey:"refLandlordSubject",bodyKey:"refLandlordBody",tokens:["{refName}","{applicantName}","{applicantFirstName}","{address}","{pmName}","{companyName}","{city}","{phone}","{email}"]},
+            {key:"reupload",label:"Re-Upload Request",subjectKey:"reuploadSubject",bodyKey:"reuploadBody",tokens:["{applicantFirstName}","{docLabel}","{portalLink}","{pmName}","{companyName}"]},
+          ];
+          const[etTab,setEtTab]=[expanded.emailTemplatesTab||"refEmployer",(v)=>setExpanded(p=>({...p,emailTemplatesTab:v}))];
+          const curTpl=TEMPLATES.find(t=>t.key===etTab)||TEMPLATES[0];
+          const setTmplField=(k,v)=>setSettings(p=>({...p,emailTemplates:{...(p.emailTemplates||{}),emailTemplates:{...(p.emailTemplates||{}),[k]:v},[k]:v}}));
+          return(
+          <div className="card" style={{marginTop:12}} ref={el=>{if(el&&etOpen)setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),100);}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",cursor:"pointer",borderBottom:etOpen?"1px solid rgba(0,0,0,.06)":"none"}} onClick={()=>setExpanded(p=>({...p,emailTemplatesOpen:!etOpen}))}>
+              <div>
+                <h3 style={{fontSize:13,fontWeight:800,margin:0}}>Email Templates</h3>
+                <p style={{fontSize:11,color:"#5c4a3a",margin:"2px 0 0"}}>Edit the outgoing reference and re-upload email templates. Use tokens to insert dynamic values.</p>
+              </div>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:etOpen?"rotate(180deg)":"none",transition:"transform .2s",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            {etOpen&&<div style={{padding:"16px"}}>
+              {/* Tab row */}
+              <div style={{display:"flex",gap:4,marginBottom:16,flexWrap:"wrap"}}>
+                {TEMPLATES.map(t=><button key={t.key} onClick={()=>setEtTab(t.key)} style={{fontSize:10,fontWeight:700,padding:"5px 12px",borderRadius:6,border:"1px solid "+(etTab===t.key?"#1a1714":"rgba(0,0,0,.1)"),background:etTab===t.key?"#1a1714":"#fff",color:etTab===t.key?"#f5f0e8":"#5c4a3a",cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>)}
+              </div>
+              {/* Subject */}
+              <div className="fld">
+                <label>Subject Line</label>
+                <input value={tmpl[curTpl.subjectKey]||def[curTpl.subjectKey]||""} onChange={e=>setTmplField(curTpl.subjectKey,e.target.value)} style={{width:"100%",fontFamily:"inherit"}}/>
+              </div>
+              {/* Body */}
+              <div className="fld">
+                <label>Body</label>
+                <textarea value={tmpl[curTpl.bodyKey]||def[curTpl.bodyKey]||""} onChange={e=>setTmplField(curTpl.bodyKey,e.target.value)} rows={12} style={{width:"100%",fontFamily:"inherit",fontSize:12,padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",resize:"vertical"}}/>
+              </div>
+              {/* Token legend */}
+              <div style={{padding:"10px 12px",background:"rgba(0,0,0,.03)",borderRadius:7,border:"1px solid rgba(0,0,0,.06)",marginBottom:12}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.6,marginBottom:6}}>Available Tokens</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                  {curTpl.tokens.map(t=><code key={t} style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"rgba(74,124,89,.08)",color:"#2d6a3f",fontFamily:"monospace"}}>{t}</code>)}
+                </div>
+              </div>
+              {/* Reset + Save */}
+              <div style={{display:"flex",gap:8}}>
+                <button className="btn btn-out btn-sm" onClick={()=>{setTmplField(curTpl.subjectKey,def[curTpl.subjectKey]);setTmplField(curTpl.bodyKey,def[curTpl.bodyKey]);}}>Reset to Default</button>
+                <button className="btn btn-gold btn-sm" onClick={()=>{}}>✓ Saved Automatically</button>
+              </div>
+            </div>}
+          </div>);
+        })()}
         {/* Signature Settings */}
         <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Property Manager Signature</h3>
@@ -12348,10 +12413,11 @@ export default function Page(){
                     </div>
                     <button onClick={()=>{
                       const refName=addr.landlordFirstName||"there";
-                      const name=ad.firstName||a.name.split(" ")[0];
-                      const subject="Tenant Reference Request — "+a.name+" (Rental Application)";
-                      const body=`Hi ${refName},\n\nMy name is ${settings.pmName||"Carolina Cooper"} from ${settings.companyName||"Black Bear Rentals"} in ${settings.city||"Huntsville, AL"}.\n\n${a.name} has applied to rent one of our properties and listed you as a previous landlord. We would appreciate a moment of your time to verify a few details:\n\n1. Did ${name} rent from you at ${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}?\n2. Did they pay rent on time and care for the property?\n3. Would you rent to them again?\n\nPlease reply directly to this email.\n\nThank you for your time,\n${settings.pmName||"Carolina Cooper"}\n${settings.companyName||"Black Bear Rentals"}\n${settings.phone||"(850) 696-8101"}\n${settings.email||"info@rentblackbear.com"}`;
-                      setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject,body,type:"reference",refName,refType:"Previous Landlord"}}));
+                      const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
+                      const tmpl=settings.emailTemplates||{};
+                      const subject=resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens);
+                      const body=resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens);
+                      setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject,body,type:"refLandlord",refName,refType:"Previous Landlord"}}));
                     }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                       Draft Email →
                     </button>
@@ -12370,11 +12436,12 @@ export default function Page(){
                     <div style={{fontSize:11,color:"#3d3529"}}>{ad.empRefRelation||"Employer Reference"} · {ad.empRefEmail} · {ad.empRefPhone}</div>
                   </div>
                   <button onClick={()=>{
-                    const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.empRefFirstName;
-                    const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body=`Hi ${refName},\n\nMy name is ${settings.pmName||"Carolina Cooper"} from ${settings.companyName||"Black Bear Rentals"} in ${settings.city||"Huntsville, AL"}.\n\n${a.name} has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:\n\n1. Can you confirm ${name} is/was employed at your organization?\n2. What is/was their role and approximate start date?\n3. Would you recommend them as a tenant?\n\nPlease reply directly to this email. This typically takes only 2–3 minutes.\n\nThank you for your time,\n${settings.pmName||"Carolina Cooper"}\n${settings.companyName||"Black Bear Rentals"}\n${settings.phone||"(850) 696-8101"}\n${settings.email||"info@rentblackbear.com"}`;
-                    setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject,body,type:"reference",refName,refType:"Employer Reference"}}));
+                    const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+                    const tmpl=settings.emailTemplates||{};
+                    const subject=resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens);
+                    const body=resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens);
+                    setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject,body,type:"refEmployer",refName,refType:"Employer Reference"}}));
                   }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                     Draft Email →
                   </button>
@@ -12394,11 +12461,12 @@ export default function Page(){
                     <div style={{fontSize:11,color:"#3d3529"}}>{ad.persRefRelation||"Personal Reference"} · {ad.persRefEmail} · {ad.persRefPhone}</div>
                   </div>
                   <button onClick={()=>{
-                    const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.persRefFirstName;
-                    const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body=`Hi ${refName},\n\nMy name is ${settings.pmName||"Carolina Cooper"} from ${settings.companyName||"Black Bear Rentals"} in ${settings.city||"Huntsville, AL"}.\n\n${a.name} has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.\n\n1. How long have you known ${name} and in what capacity?\n2. Would you describe them as responsible and respectful?\n3. Is there anything else you'd like us to know?\n\nPlease reply directly to this email.\n\nThank you for your time,\n${settings.pmName||"Carolina Cooper"}\n${settings.companyName||"Black Bear Rentals"}\n${settings.phone||"(850) 696-8101"}\n${settings.email||"info@rentblackbear.com"}`;
-                    setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject,body,type:"reference",refName,refType:"Personal Reference"}}));
+                    const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+                    const tmpl=settings.emailTemplates||{};
+                    const subject=resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens);
+                    const body=resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens);
+                    setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject,body,type:"refPersonal",refName,refType:"Personal Reference"}}));
                   }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                     Draft Email →
                   </button>
@@ -12904,8 +12972,8 @@ export default function Page(){
       <h2 style={{marginBottom:4}}>{em.type==="reupload"?"Request Re-Upload":"Reference Check Email"}</h2>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <p style={{fontSize:11,color:"#6b5e52",margin:0}}>Review the draft below, edit if needed, then click Send.</p>
-        <button onClick={()=>{setModal(null);goTab("settings");}} style={{fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
-          ⚙ Configure Sender
+        <button onClick={()=>{setModal(null);goTab("site-settings");setExpanded(p=>({...p,emailTemplatesOpen:true,emailTemplatesTab:em.type||"refEmployer"}));}} style={{fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+          ✏ Edit Template
         </button>
       </div>
       <div style={{padding:"8px 12px",borderRadius:7,background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",fontSize:11,color:"#5c4a3a",marginBottom:16}}>
