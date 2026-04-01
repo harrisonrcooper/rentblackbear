@@ -13303,7 +13303,12 @@ export default function Page(){
 
   {/* Centered Confirm / Alert Dialog — replaces all window.confirm and alert calls */}
   {confirmDialog&&<div className="mbg" onClick={()=>{if(!confirmDialog.onConfirm)setConfirmDialog(null);}} style={{zIndex:9999}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}}>
-    <div style={{fontSize:confirmDialog.danger?32:28,marginBottom:12}}>{confirmDialog.danger?"⚠️":"ℹ️"}</div>
+    <div style={{width:44,height:44,borderRadius:"50%",background:confirmDialog.danger?"rgba(196,92,74,.1)":"rgba(74,124,89,.08)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+      {confirmDialog.danger
+        ?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        :<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      }
+    </div>
     <h2 style={{marginBottom:8,color:confirmDialog.danger?"#c45c4a":"#1a1714"}}>{confirmDialog.title}</h2>
     <p style={{fontSize:13,color:"#5c4a3a",lineHeight:1.6,marginBottom:20}}>{confirmDialog.body}</p>
     <div className="mft">
