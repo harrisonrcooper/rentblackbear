@@ -448,7 +448,7 @@ export default function ApplyPage(){
       if(!d.occupationType)e.occupationType="Please select what best describes you";
       if(d.occupationType==="Other"&&!d.occupationTypeOther.trim())e.occupationTypeOther="Please describe what best describes you";
       // Occupancy validation — dynamic based on rental mode
-      const appInfoProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
+      const appInfoProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.id===(invite?.property||d.preferredProperty))||props_.find(p=>p.name===(invite?.property||d.preferredProperty)):null;
       const appInfoInvitedRoom=invite?.termRoomId?allRooms(appInfoProp||{}).find(r=>r.id===invite.termRoomId):null;
       const appInfoWholeUnit=appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.id===invite?.termRoomId||(u.rentalMode==="wholeHouse"&&(!invite?.termRoomId||(appInfoProp.units||[]).length===1)))||appInfoProp.rentalMode==="wholeHouse":false);
       if(!appInfoWholeUnit&&!invite?.allowCouples&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
@@ -590,17 +590,18 @@ export default function ApplyPage(){
             <label>Which property are you interested in?</label>
             <select value={d.preferredProperty} onChange={e=>{upd("preferredProperty",e.target.value);upd("selectedRoom","");}}>
               <option value="">Select a property...</option>
-              {props_.map(p=><option key={p.id} value={p.name}>{p.addr||p.name}</option>)}
+              {props_.map(p=><option key={p.id} value={p.id}>{p.addr||p.name}</option>)}
               <option value="No preference">No preference — any available room</option>
             </select>
           </div>
           {d.preferredProperty&&d.preferredProperty!=="No preference"&&(()=>{
-            const prop=props_.find(p=>p.name===d.preferredProperty);
+            const prop=props_.find(p=>p.id===d.preferredProperty)||props_.find(p=>p.name===d.preferredProperty);
             const vacant=allRooms(prop).filter(r=>r.st==="vacant")||[];
             if(!prop)return null;
-            if(prop.rentalMode==="wholeHouse")return(
+            const isWholeUnit=prop.rentalMode==="wholeHouse"||prop.rentalMode==="wholeUnit"||(prop.units||[]).some(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit");
+            if(isWholeUnit)return(
               <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
-                <strong>{prop.name}</strong> is available as an entire property rental{prop.wholeHouseRent?` — $${prop.wholeHouseRent.toLocaleString()}/mo`:""}. We'll reach out to discuss details.
+                <strong>{prop.addr||prop.name}</strong> is available as an entire property rental{prop.wholeHouseRent?` — $${prop.wholeHouseRent.toLocaleString()}/mo`:""}. We'll reach out to discuss details.
               </div>
             );
             if(vacant.length===0)return(
@@ -626,7 +627,7 @@ export default function ApplyPage(){
 
         {/* ── OCCUPANCY — dynamic per rental mode ── */}
         {(()=>{
-          const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.name===(invite?.property||d.preferredProperty))||props_.find(p=>p.id===(invite?.property||d.preferredProperty)):null;
+          const aProp=invite?.termPropId?props_.find(p=>p.id===invite.termPropId):(invite?.property||d.preferredProperty)?props_.find(p=>p.id===(invite?.property||d.preferredProperty))||props_.find(p=>p.name===(invite?.property||d.preferredProperty))||props_.find(p=>p.id===(invite?.property||d.preferredProperty)):null;
           const aInvitedRoom=invite?.termRoomId?allRooms(aProp||{}).find(r=>r.id===invite.termRoomId):null;
           const aInvitedUnit=invite?.termRoomId&&aProp?(aProp.units||[]).find(u=>u.id===invite.termRoomId):null;
           const isWhole=aInvitedRoom?.isWholeUnit===true||aInvitedUnit?.rentalMode==="wholeHouse"||(aProp&&(aProp.units||[]).some(u=>u.id===invite?.termRoomId&&(u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit")));
@@ -1142,7 +1143,8 @@ export default function ApplyPage(){
 
         {(()=>{
           const roomName=invite?.inviteRoomName||(d.selectedRoom&&props_.flatMap(p=>allRooms(p)).find(r=>r.id===d.selectedRoom)?.name)||null;
-          const propName=invite?.invitePropName||(d.selectedRoom&&props_.find(p=>allRooms(p).some(r=>r.id===d.selectedRoom))?.name)||d.preferredProperty||null;
+          const _prefProp=d.preferredProperty?props_.find(p=>p.id===d.preferredProperty):null;
+          const propName=invite?.invitePropName||(d.selectedRoom&&(props_.find(p=>allRooms(p).some(r=>r.id===d.selectedRoom))?.addr||props_.find(p=>allRooms(p).some(r=>r.id===d.selectedRoom))?.name))||(_prefProp?(_prefProp.addr||_prefProp.name):d.preferredProperty)||null;
           const rent=invite?.inviteRent||(d.selectedRoom&&props_.flatMap(p=>allRooms(p)).find(r=>r.id===d.selectedRoom)?.rent)||null;
           const moveIn=d.moveIn;
           if(!rent||!moveIn)return null;
@@ -1303,7 +1305,8 @@ export default function ApplyPage(){
 
           // Co-applicant auto-invites (whole-unit only)
           if(d.coApplicants&&d.coApplicants.length>0){
-            const propName=invite?.property||d.preferredProperty||"";
+            const _cp=d.preferredProperty?props_.find(p=>p.id===d.preferredProperty):null;
+            const propName=invite?.property||(_cp?(_cp.addr||_cp.name):d.preferredProperty)||"";
             for(const ca of d.coApplicants){
               if(ca.email&&ca.email.includes("@")){
                 try{
