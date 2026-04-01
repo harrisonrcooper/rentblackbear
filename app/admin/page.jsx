@@ -12467,7 +12467,7 @@ export default function Page(){
                   <span style={{color:"#6b5e52"}}>Photo ID</span>
                   <span style={{fontWeight:600,textAlign:"right"}}>
                     {flag.idUploadLater?<span style={{color:"#9a7422"}}>Will upload later</span>
-                    :idUploaded?<span style={{display:"flex",gap:6"}}>
+                    :idUploaded?<span style={{display:"flex",gap:6}}>
                       {idFront&&<a href={idFront.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Front ↗</a>}
                       {idBack&&<a href={idBack.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Back ↗</a>}
                     </span>
