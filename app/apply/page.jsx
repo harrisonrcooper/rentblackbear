@@ -498,7 +498,7 @@ export default function ApplyPage(){
   const STEPS_COSIGNER=["welcome","appinfo","personal","employment","review","payment","done"];
   const getSteps=()=>{
     const s=appType==="cosigner"?STEPS_COSIGNER:STEPS_TENANT;
-    return s.filter(x=>{if(x==="room"&&invite?.inviteRoomMode!=="choice")return false;return true;});
+    return s;
   };
   const steps=getSteps();
   const stepIdx=steps.indexOf(step);
@@ -1040,8 +1040,9 @@ export default function ApplyPage(){
       {/* ═══ ROOM ═══ */}
       {step==="room"&&<div className="sec">
         <div className="sec-num">Section 6</div>
-        <div className="sec-hd"><h2>Choose Your Room</h2><p>Select the room you'd like to apply for.</p></div>
-        {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=>{
+        <div className="sec-hd"><h2>{invite?.inviteRoomMode==="choice"||!invite?"Choose Your Room":"Your Room & Door Code"}</h2><p>{invite?.inviteRoomMode==="choice"||!invite?"Select the room you'd like to apply for.":"Your room has been reserved. Choose a 4-digit door code below."}</p></div>
+        {/* Room selection — walk-ins and choice invites only */}
+        {(!invite||invite?.inviteRoomMode==="choice")&&(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=>{
             const units=p.units&&p.units.length>0?p.units:[{id:"main",name:"Unit A",label:"A",rooms:p.rooms||[]}];
             const hasMultipleUnits=units.length>1;
             return(<div key={p.id} className="prop-card"><div className="prop-info">
@@ -1064,6 +1065,10 @@ export default function ApplyPage(){
               </div>
             </div></div>);
           });})()}
+        {/* Locked room confirmation */}
+        {invite?.inviteRoomName&&invite?.inviteRoomMode!=="choice"&&<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--gn)"}}>
+          Your room: <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
+        </div>}
         {errors.selectedRoom&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.selectedRoom}</div>}
 
         {/* ── DOOR CODE — shown in room step for all rental types ── */}
