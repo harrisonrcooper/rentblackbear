@@ -323,7 +323,7 @@ export default function ApplyPage(){
   const fieldLabel=(key,fallback)=>{const f=getField(key);return (f&&f.label)||fallback;};
   const fieldPlaceholder=(key,fallback)=>{const f=getField(key);return (f&&f.placeholder)||fallback||"";};
   const fieldHelp=(key,fallback)=>{const f=getField(key);return (f&&f.helpText)||fallback||"";};
-  const[invite,setInvite]=useState(null);
+  const cap=(v)=>v?v.charAt(0).toUpperCase()+v.slice(1):v;  const[invite,setInvite]=useState(null);
   const[loading,setLoading]=useState(true);
   const[saving,setSaving]=useState(false);
   const[submitted,setSubmitted]=useState(false);
@@ -575,8 +575,8 @@ export default function ApplyPage(){
             <span>Info pre-filled from your pre-screen &mdash; <span style={{fontWeight:400,opacity:.75}}>incorrect? Edit the fields below.</span></span>
           </div>}
           <div className="fld-row">
-            <div className="fld"><label>{fieldLabel("firstName","First Name")}{fieldRequired("firstName")&&<span className="req">*</span>}</label><input value={d.firstName} onChange={e=>upd("firstName",e.target.value)} className={errors.firstName?"err":""} placeholder={fieldPlaceholder("firstName","First name")}/>{errors.firstName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.firstName}</div>}</div>
-            <div className="fld"><label>{fieldLabel("lastName","Last Name")}{fieldRequired("lastName")&&<span className="req">*</span>}</label><input value={d.lastName} onChange={e=>upd("lastName",e.target.value)} className={errors.lastName?"err":""} placeholder={fieldPlaceholder("lastName","Last name")}/>{errors.lastName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.lastName}</div>}</div>
+            <div className="fld"><label>{fieldLabel("firstName","First Name")}{fieldRequired("firstName")&&<span className="req">*</span>}</label><input value={d.firstName} onChange={e=>upd("firstName",cap(e.target.value))} className={errors.firstName?"err":""} placeholder={fieldPlaceholder("firstName","First name")}/>{errors.firstName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.firstName}</div>}</div>
+            <div className="fld"><label>{fieldLabel("lastName","Last Name")}{fieldRequired("lastName")&&<span className="req">*</span>}</label><input value={d.lastName} onChange={e=>upd("lastName",cap(e.target.value))} className={errors.lastName?"err":""} placeholder={fieldPlaceholder("lastName","Last name")}/>{errors.lastName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.lastName}</div>}</div>
           </div>
           {fieldActive("email")&&<div className="fld"><label>{fieldLabel("email","Email Address")}{fieldRequired("email")&&<span className="req">*</span>}</label><input type="email" value={d.email} onChange={e=>upd("email",e.target.value)} className={errors.email?"err":""} placeholder={fieldPlaceholder("email","you@email.com")}/>{errors.email&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.email}</div>}</div>}
           <div className="fld"><label>{fieldLabel("phone","Phone Number")}{fieldRequired("phone")&&<span className="req">*</span>}</label><input type="tel" value={d.phone} onChange={e=>upd("phone",fmtPhone(e.target.value))} className={errors.phone?"err":""} placeholder={fieldPlaceholder("phone","(256) 555-1234")}/>{errors.phone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.phone}</div>}</div>
@@ -664,7 +664,7 @@ export default function ApplyPage(){
                     <button onClick={()=>setD(p=>({...p,coApplicants:p.coApplicants.filter((_,j)=>j!==i)}))} style={{background:"none",border:"none",color:"var(--rd)",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Remove</button>
                   </div>
                   <div className="fld-row" style={{marginBottom:0}}>
-                    <div className="fld" style={{marginBottom:0}}><label>Full Name</label><input value={ca.name} onChange={e=>setD(p=>({...p,coApplicants:p.coApplicants.map((x,j)=>j===i?{...x,name:e.target.value}:x)}))} placeholder="Full name"/></div>
+                    <div className="fld" style={{marginBottom:0}}><label>Full Name</label><input value={ca.name} onChange={e=>setD(p=>({...p,coApplicants:p.coApplicants.map((x,j)=>j===i?{...x,name:cap(e.target.value)}:x)}))} placeholder="Full name"/></div>
                     <div className="fld" style={{marginBottom:0}}><label>Email Address<span className="req">*</span></label><input type="email" value={ca.email} onChange={e=>setD(p=>({...p,coApplicants:p.coApplicants.map((x,j)=>j===i?{...x,email:e.target.value}:x)}))} className={errors["coApp_"+i+"_email"]?"err":""} placeholder="they@email.com"/>{errors["coApp_"+i+"_email"]&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors["coApp_"+i+"_email"]}</div>}</div>
                   </div>
                 </div>
@@ -693,8 +693,8 @@ export default function ApplyPage(){
               <div style={{background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.07)",padding:12,marginBottom:12}}>
                 <div style={{fontSize:10,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Partner / Co-Occupant</div>
                 <div className="fld-row">
-                  <div className="fld"><label>First Name</label><input value={d.partnerName.split(" ")[0]||""} onChange={e=>upd("partnerName",e.target.value+" "+(d.partnerName.split(" ").slice(1).join(" ")||"").trim())} placeholder="First name"/></div>
-                  <div className="fld"><label>Last Name</label><input value={d.partnerName.split(" ").slice(1).join(" ")||""} onChange={e=>upd("partnerName",(d.partnerName.split(" ")[0]||"")+" "+e.target.value)} placeholder="Last name"/></div>
+                  <div className="fld"><label>First Name</label><input value={d.partnerName.split(" ")[0]||""} onChange={e=>upd("partnerName",cap(e.target.value)+" "+(d.partnerName.split(" ").slice(1).join(" ")||"").trim())} placeholder="First name"/></div>
+                  <div className="fld"><label>Last Name</label><input value={d.partnerName.split(" ").slice(1).join(" ")||""} onChange={e=>upd("partnerName",(d.partnerName.split(" ")[0]||"")+" "+cap(e.target.value))} placeholder="Last name"/></div>
                 </div>
                 <div className="fld" style={{marginBottom:0}}><label>Email Address</label><input type="email" value={d.partnerEmail} onChange={e=>upd("partnerEmail",e.target.value)} placeholder="partner@email.com"/></div>
               </div>
@@ -775,10 +775,10 @@ export default function ApplyPage(){
             <div className="fld"><label>Year Moved In<span className="req">*</span></label><select value={d.curAddressForm.yearIn} onChange={e=>upd("curAddressForm",{...d.curAddressForm,yearIn:e.target.value})}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
           </div>
           {d.curAddressForm.resType!=="Other"&&<>
-          <div className="fld"><label>Street Address<span className="req">*</span></label><input value={d.curAddressForm.street} onChange={e=>upd("curAddressForm",{...d.curAddressForm,street:e.target.value})} placeholder="123 Main Street"/></div>
+          <div className="fld"><label>Street Address<span className="req">*</span></label><input value={d.curAddressForm.street} onChange={e=>upd("curAddressForm",{...d.curAddressForm,street:cap(e.target.value)})} placeholder="123 Main Street"/></div>
           <div className="fld-row">
             <div className="fld"><label>Unit</label><input value={d.curAddressForm.unit} onChange={e=>upd("curAddressForm",{...d.curAddressForm,unit:e.target.value})} placeholder="Apt, Suite, etc."/></div>
-            <div className="fld"><label>City<span className="req">*</span></label><input value={d.curAddressForm.city} onChange={e=>upd("curAddressForm",{...d.curAddressForm,city:e.target.value})} placeholder="City"/></div>
+            <div className="fld"><label>City<span className="req">*</span></label><input value={d.curAddressForm.city} onChange={e=>upd("curAddressForm",{...d.curAddressForm,city:cap(e.target.value)})} placeholder="City"/></div>
           </div>
           <div className="fld-row3">
             <div className="fld"><label>State<span className="req">*</span></label><select value={d.curAddressForm.state} onChange={e=>upd("curAddressForm",{...d.curAddressForm,state:e.target.value})}>{STATES.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
@@ -912,8 +912,8 @@ export default function ApplyPage(){
 
           {d.curEmployerForm?<div className="expand-form">
             <h3>{d.curEmployerForm._editIdx!==undefined?"Edit Employer":"Add Current Employer"}</h3>
-            <div className="fld"><label>Employer<span className="req">*</span></label><input value={d.curEmployerForm.employer} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,employer:e.target.value});setErrors(p=>({...p,empFormEmployer:undefined}));}} className={errors.empFormEmployer?"err":""} placeholder="Company name"/>{errors.empFormEmployer&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormEmployer}</div>}</div>
-            <div className="fld"><label>Position / Title / Occupation<span className="req">*</span></label><input value={d.curEmployerForm.position} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,position:e.target.value});setErrors(p=>({...p,empFormPosition:undefined}));}} className={errors.empFormPosition?"err":""} placeholder="Your role"/>{errors.empFormPosition&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormPosition}</div>}</div>
+            <div className="fld"><label>Employer<span className="req">*</span></label><input value={d.curEmployerForm.employer} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,employer:cap(e.target.value)});setErrors(p=>({...p,empFormEmployer:undefined}));}} className={errors.empFormEmployer?"err":""} placeholder="Company name"/>{errors.empFormEmployer&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormEmployer}</div>}</div>
+            <div className="fld"><label>Position / Title / Occupation<span className="req">*</span></label><input value={d.curEmployerForm.position} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,position:cap(e.target.value)});setErrors(p=>({...p,empFormPosition:undefined}));}} className={errors.empFormPosition?"err":""} placeholder="Your role"/>{errors.empFormPosition&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empFormPosition}</div>}</div>
             <div className="fld-row">
               <div className="fld"><label>Month Started<span className="req">*</span></label><select value={d.curEmployerForm.monthStarted} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,monthStarted:e.target.value});setErrors(p=>({...p,empFormMonthStarted:undefined}));}} className={errors.empFormMonthStarted?"err":""}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
               <div className="fld"><label>Year Started<span className="req">*</span></label><select value={d.curEmployerForm.yearStarted} onChange={e=>{upd("curEmployerForm",{...d.curEmployerForm,yearStarted:e.target.value});setErrors(p=>({...p,empFormYearStarted:undefined}));}} className={errors.empFormYearStarted?"err":""}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
@@ -944,8 +944,8 @@ export default function ApplyPage(){
           </div>)}
           {d.curEmployerForm?<div className="expand-form">
             <h3>Previous Employer</h3>
-            <div className="fld"><label>Employer</label><input value={d.curEmployerForm.employer} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,employer:e.target.value})} placeholder="Company name"/></div>
-            <div className="fld"><label>Position / Title</label><input value={d.curEmployerForm.position} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,position:e.target.value})} placeholder="Your role"/></div>
+            <div className="fld"><label>Employer</label><input value={d.curEmployerForm.employer} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,employer:cap(e.target.value)})} placeholder="Company name"/></div>
+            <div className="fld"><label>Position / Title</label><input value={d.curEmployerForm.position} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,position:cap(e.target.value)})} placeholder="Your role"/></div>
             <div className="fld-row">
               <div className="fld"><label>Month Started</label><select value={d.curEmployerForm.monthStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,monthStarted:e.target.value})}><option value="">Select...</option>{MONTHS.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
               <div className="fld"><label>Year Started</label><select value={d.curEmployerForm.yearStarted} onChange={e=>upd("curEmployerForm",{...d.curEmployerForm,yearStarted:e.target.value})}><option value="">Select...</option>{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
@@ -1012,7 +1012,7 @@ export default function ApplyPage(){
           </div>
           <div className="fld-row">
             <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.empRefPhone} onChange={e=>{upd("empRefPhone",fmtPhone(e.target.value));setErrors(p=>({...p,empRefPhone:undefined}));}} className={errors.empRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.empRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefPhone}</div>}</div>
-            <div className="fld"><label>Relationship<span className="req">*</span></label><input value={d.empRefRelation} onChange={e=>{upd("empRefRelation",e.target.value);setErrors(p=>({...p,empRefRelation:undefined}));}} className={errors.empRefRelation?"err":""} placeholder="e.g. Manager"/>{errors.empRefRelation&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefRelation}</div>}</div>
+            <div className="fld"><label>Relationship<span className="req">*</span></label><input value={d.empRefRelation} onChange={e=>{upd("empRefRelation",cap(e.target.value));setErrors(p=>({...p,empRefRelation:undefined}));}} className={errors.empRefRelation?"err":""} placeholder="e.g. Manager"/>{errors.empRefRelation&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefRelation}</div>}</div>
           </div>
           <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.empRefEmail} onChange={e=>upd("empRefEmail",e.target.value)} className={errors.empRefEmail?"err":""} placeholder="reference@email.com"/>{errors.empRefEmail&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.empRefEmail}</div>}</div>
           <div style={{fontSize:11,fontWeight:700,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:10,marginTop:20}}>Personal Reference</div>
@@ -1024,7 +1024,7 @@ export default function ApplyPage(){
         </div>
         <div className="fld-row">
           <div className="fld"><label>Phone<span className="req">*</span></label><input type="tel" value={d.persRefPhone} onChange={e=>{upd("persRefPhone",fmtPhone(e.target.value));setErrors(p=>({...p,persRefPhone:undefined}));}} className={errors.persRefPhone?"err":""} placeholder="(555) 555-5555"/>{errors.persRefPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefPhone}</div>}</div>
-          <div className="fld"><label>Relationship<span className="req">*</span></label><input value={d.persRefRelation} onChange={e=>{upd("persRefRelation",e.target.value);setErrors(p=>({...p,persRefRelation:undefined}));}} className={errors.persRefRelation?"err":""} placeholder="e.g. Friend"/>{errors.persRefRelation&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefRelation}</div>}</div>
+          <div className="fld"><label>Relationship<span className="req">*</span></label><input value={d.persRefRelation} onChange={e=>{upd("persRefRelation",cap(e.target.value));setErrors(p=>({...p,persRefRelation:undefined}));}} className={errors.persRefRelation?"err":""} placeholder="e.g. Friend"/>{errors.persRefRelation&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefRelation}</div>}</div>
         </div>
         <div className="fld"><label>Email<span className="req">*</span></label><input type="email" value={d.persRefEmail} onChange={e=>upd("persRefEmail",e.target.value)} className={errors.persRefEmail?"err":""} placeholder="reference@email.com"/>{errors.persRefEmail&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.persRefEmail}</div>}</div>
         <button className="btn-next" onClick={next}>Continue →</button>
@@ -1035,10 +1035,10 @@ export default function ApplyPage(){
       {step==="emergency"&&<div className="sec">
         <div className="sec-num">Section 5</div>
         <div className="sec-hd"><h2>Emergency Contact</h2><p>Someone we can reach in case of an emergency.</p></div>
-        {fieldActive("emergName")&&<div className="fld"><label>{fieldLabel("emergName","Full Name")}{fieldRequired("emergName")&&<span className="req">*</span>}</label><input value={d.emergName} onChange={e=>upd("emergName",e.target.value)} className={errors.emergName?"err":""} placeholder={fieldPlaceholder("emergName","Full name")}/>{errors.emergName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergName}</div>}</div>}
+        {fieldActive("emergName")&&<div className="fld"><label>{fieldLabel("emergName","Full Name")}{fieldRequired("emergName")&&<span className="req">*</span>}</label><input value={d.emergName} onChange={e=>upd("emergName",cap(e.target.value))} className={errors.emergName?"err":""} placeholder={fieldPlaceholder("emergName","Full name")}/>{errors.emergName&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergName}</div>}</div>}
         <div className="fld-row">
           {fieldActive("emergPhone")&&<div className="fld"><label>{fieldLabel("emergPhone","Phone")}{fieldRequired("emergPhone")&&<span className="req">*</span>}</label><input type="tel" value={d.emergPhone} onChange={e=>upd("emergPhone",fmtPhone(e.target.value))} className={errors.emergPhone?"err":""} placeholder={fieldPlaceholder("emergPhone","(555) 555-5555")}/>{errors.emergPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergPhone}</div>}</div>}
-          {fieldActive("emergRelation")&&<div className="fld"><label>{fieldLabel("emergRelation","Relationship")}{fieldRequired("emergRelation")&&<span className="req">*</span>}</label><input value={d.emergRelation} onChange={e=>upd("emergRelation",e.target.value)} className={errors.emergRelation?"err":""} placeholder={fieldPlaceholder("emergRelation","e.g. Parent")}/>{errors.emergRelation&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergRelation}</div>}</div>}
+          {fieldActive("emergRelation")&&<div className="fld"><label>{fieldLabel("emergRelation","Relationship")}{fieldRequired("emergRelation")&&<span className="req">*</span>}</label><input value={d.emergRelation} onChange={e=>upd("emergRelation",cap(e.target.value))} className={errors.emergRelation?"err":""} placeholder={fieldPlaceholder("emergRelation","e.g. Parent")}/>{errors.emergRelation&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergRelation}</div>}</div>}
         </div>
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
