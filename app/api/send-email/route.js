@@ -1,52 +1,65 @@
 // app/api/send-email/route.js
-// Generic email sender using Resend.
-// Used by Email Apply Link and Email Portal Invite modals.
+import { NextResponse } from "next/server";
 
-import { getSettings, fromAddress } from "@/lib/getSettings";
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const INBOUND_DOMAIN = "uirkeakaro.resend.app";
 
 export async function POST(request) {
   try {
-    const { to, subject, html } = await request.json();
+    const {
+      to,
+      subject,
+      html,
+      fromName,
+      replyTo,
+      // ref tracking fields — passed when sending reference check emails
+      appId,
+      refKey,
+    } = await request.json();
 
-    if (!to || !subject || !html) {
-      return Response.json({ ok: false, error: "Missing to, subject, or html" }, { status: 400 });
+    if (!RESEND_API_KEY) {
+      return NextResponse.json({ error: "RESEND_API_KEY not set" }, { status: 500 });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
-      return Response.json({ ok: false, error: "Invalid email address" }, { status: 400 });
+    // Build reply-to: if appId + refKey provided, encode them so inbound webhook can route
+    // Format: ref+{appId}+{refKey}@uirkeakaro.resend.app
+    let replyToAddress = replyTo || "info@rentblackbear.com";
+    if (appId && refKey) {
+      const encoded = `ref+${appId}+${refKey}@${INBOUND_DOMAIN}`;
+      // Use array format so reference still sees a clean name
+      replyToAddress = fromName
+        ? `${fromName} <${encoded}>`
+        : encoded;
     }
 
-    const resendKey = process.env.RESEND_API_KEY;
-    if (!resendKey) {
-      return Response.json({ ok: false, error: "RESEND_API_KEY not configured" }, { status: 500 });
-    }
-
-    const s = await getSettings();
+    const body = {
+      from: fromName
+        ? `${fromName} <hello@rentblackbear.com>`
+        : "Black Bear Rentals <hello@rentblackbear.com>",
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+      reply_to: replyToAddress,
+    };
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${resendKey}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: fromAddress(s),
-        to,
-        subject,
-        html,
-      }),
+      body: JSON.stringify(body),
     });
 
+    const data = await res.json();
     if (!res.ok) {
-      const err = await res.text();
-      console.error("[send-email] Resend error:", err);
-      return Response.json({ ok: false, error: "Failed to send email" }, { status: 500 });
+      console.error("Resend error:", data);
+      return NextResponse.json({ ok: false, error: data }, { status: res.status });
     }
 
-    return Response.json({ ok: true });
-  } catch (err) {
-    console.error("[send-email] Error:", err);
-    return Response.json({ ok: false, error: String(err) }, { status: 500 });
+    return NextResponse.json({ ok: true, id: data.id });
+  } catch (e) {
+    console.error("send-email error:", e);
+    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
 }

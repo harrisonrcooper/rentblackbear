@@ -2494,6 +2494,22 @@ export default function Page(){
     return()=>clearInterval(interval);
   },[loaded]);
 
+  // Load auto-received ref replies from Supabase when app modal opens
+  useEffect(()=>{
+    if(modal?.type!=="app"||!modal?.data?.id)return;
+    const appId=modal.data.id;
+    const key=`hq-ref-replies-${appId}`;
+    load(key,[]).then(replies=>{
+      if(replies.length>0){
+        setModal(p=>p?.data?.id===appId?{...p,_refReplies:[...(p._refReplies||[]),...replies.filter(r=>!((p._refReplies||[]).some(x=>x.id===r.id)))]}:p);
+      }
+      // Clear unread flag
+      if(modal.data._hasUnreadRefReply){
+        setApps(prev=>{const ua=prev.map(a=>a.id===appId?{...a,_hasUnreadRefReply:false}:a);save("hq-apps",ua);return ua;});
+      }
+    }).catch(console.error);
+  },[modal?.type,modal?.data?.id]);
+
   const dismissToast=()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);};
   const viewNewLead=()=>{
     setTab("applications");
@@ -12428,7 +12444,7 @@ export default function Page(){
                           const refName=addr.landlordFirstName||"there";
                           const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
                           const tmpl=settings.emailTemplates||{};
-                          setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject:resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens),body:resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens),type:"refLandlord",refName,refType:"Previous Landlord"}}));
+                          setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject:resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens),body:resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens),type:"refLandlord",refName,refType:"Previous Landlord",appId:a.id,refKey:"landlord"}}));
                         }}/>}
                       </CardRight>
                     </AccentCard>
@@ -12455,7 +12471,7 @@ export default function Page(){
                           const refName=ad.empRefFirstName;
                           const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
                           const tmpl=settings.emailTemplates||{};
-                          setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject:resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens),body:resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens),type:"refEmployer",refName,refType:"Employer Reference"}}));
+                          setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject:resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens),body:resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens),type:"refEmployer",refName,refType:"Employer Reference",appId:a.id,refKey:"employer"}}));
                         }}/>}
                         <LogBtn onClick={()=>setModal(p=>({...p,_logReply:{email:ad.empRefEmail,name:ad.empRefFirstName+" "+ad.empRefLastName,type:"Employer Reference"}}))}/>
                       </CardRight>
@@ -12478,7 +12494,7 @@ export default function Page(){
                           const refName=ad.persRefFirstName;
                           const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
                           const tmpl=settings.emailTemplates||{};
-                          setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject:resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens),body:resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens),type:"refPersonal",refName,refType:"Personal Reference"}}));
+                          setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject:resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens),body:resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens),type:"refPersonal",refName,refType:"Personal Reference",appId:a.id,refKey:"personal1"}}));
                         }}/>}
                         <LogBtn onClick={()=>setModal(p=>({...p,_logReply:{email:ad.persRefEmail,name:ad.persRefFirstName+" "+ad.persRefLastName,type:"Personal Reference"}}))}/>
                       </CardRight>
@@ -12808,7 +12824,7 @@ export default function Page(){
           refContacts.push({key:`landlord_${i}`,typeLabel:"Previous Landlord"+(i>0?` ${i+1}`:""),email:addr.landlordEmail,phone:addr.landlordPhone,draftFn:()=>{
             const tokens={refName:addr.landlordFirstName||"there",applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
             const tmpl=settings.emailTemplates||{};
-            setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject:resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens),body:resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens),type:"refLandlord",refType:"Previous Landlord"}}));
+            setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject:resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens),body:resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens),type:"refLandlord",refType:"Previous Landlord",appId:a.id,refKey:"landlord"}}));
           },replies,verified});
         });
         // Employer reference
@@ -12818,7 +12834,7 @@ export default function Page(){
           refContacts.push({key:"employer",typeLabel:"Employer Reference",email:ad.empRefEmail,phone:ad.empRefPhone,draftFn:()=>{
             const tokens={refName:ad.empRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
             const tmpl=settings.emailTemplates||{};
-            setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject:resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens),body:resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens),type:"refEmployer",refType:"Employer Reference"}}));
+            setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject:resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens),body:resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens),type:"refEmployer",refType:"Employer Reference",appId:a.id,refKey:"employer"}}));
           },replies,verified});
         }
         // Personal references
@@ -12828,7 +12844,7 @@ export default function Page(){
           refContacts.push({key:"personal1",typeLabel:"Personal Reference",email:ad.persRefEmail,phone:ad.persRefPhone,draftFn:()=>{
             const tokens={refName:ad.persRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
             const tmpl=settings.emailTemplates||{};
-            setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject:resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens),body:resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens),type:"refPersonal",refType:"Personal Reference"}}));
+            setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject:resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens),body:resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens),type:"refPersonal",refType:"Personal Reference",appId:a.id,refKey:"personal1"}}));
           },replies,verified});
         }
 
@@ -13190,7 +13206,7 @@ export default function Page(){
         <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_draftEmail:null}))}>Cancel</button>
         <button className="btn btn-gold" style={{flex:1}} onClick={async()=>{
           try{
-            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>"),fromName:`${settings.pmName||"Carolina Cooper"} — ${settings.companyName||"Black Bear Rentals"}`,replyTo:settings.email||"info@rentblackbear.com"})});
+            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>"),fromName:`${settings.pmName||"Carolina Cooper"} — ${settings.companyName||"Black Bear Rentals"}`,replyTo:settings.email||"info@rentblackbear.com",...(em.appId&&em.refKey?{appId:em.appId,refKey:em.refKey}:{})})});
             const d=await r.json();
             if(d.ok||r.ok){
               // Log to comm log
