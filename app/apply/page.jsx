@@ -227,21 +227,35 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 .prop-addr{font-size:11px;color:#5c4a3a}
 
 /* Buttons */
-.btn-next{width:100%;padding:16px;background:var(--ac);color:var(--dk);border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
-.btn-next:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(212,168,83,.3)}
-.btn-back{width:100%;padding:14px;background:none;border:2px solid rgba(0,0,0,.08);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#5c4a3a;transition:all .2s;margin-top:8px}
-.btn-back:hover{border-color:#999}
-.btn-start{width:100%;padding:18px;background:var(--dk);color:var(--cr);border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .3s}
-.btn-start:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,23,20,.3)}
+.btn-next{width:100%;padding:16px;background:var(--ac);color:var(--dk);border:2px solid var(--ac);border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-next:hover{background:var(--dk);color:var(--ac);border-color:var(--dk);transform:translateY(-1px)}
+.btn-back{width:100%;padding:14px;background:none;border:2px solid rgba(0,0,0,.12);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#5c4a3a;transition:all .2s;margin-top:8px}
+.btn-back:hover{background:#1a1714;color:#f4f3f0;border-color:#1a1714}
+.btn-start{width:100%;padding:18px;background:var(--dk);color:var(--ac);border:2px solid var(--dk);border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .3s}
+.btn-start:hover{background:var(--ac);color:var(--dk);border-color:var(--ac)}
 
 /* Review */
-.rev-sec{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:12px;padding:14px;margin-bottom:10px}
-.rev-sec h3{font-size:13px;font-weight:700;color:var(--dk);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.rev-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.03);font-size:12px}
+.rev-sec{background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:14px;overflow:hidden;margin-bottom:10px}
+.rev-sec-hd{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;background:#faf9f7;border-bottom:1px solid #f0ede8}
+.rev-sec-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#5c4a3a}
+.rev-sec-body{padding:10px 15px}
+.rev-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.04);font-size:12px}
 .rev-row:last-child{border:none}
-.rev-label{color:#5c4a3a}
-.rev-val{font-weight:600;color:#3d3529;text-align:right;max-width:60%}
-.rev-edit{font-size:10px;color:var(--ac);cursor:pointer;font-weight:600;margin-left:auto}
+.rev-label{color:#9a8878;font-size:11px}
+.rev-val{font-weight:600;color:#1a1714;text-align:right;max-width:65%}
+.rev-edit{font-size:11px;color:var(--ac);cursor:pointer;font-weight:600}
+.rev-money{border:2px solid rgba(212,168,83,.3);border-radius:14px;overflow:hidden;margin-bottom:10px}
+.rev-money-hd{padding:13px 16px;background:#faf9f7;border-bottom:1px solid rgba(212,168,83,.15);display:flex;align-items:center;justify-content:space-between}
+.rev-money-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9a7422}
+.rev-money-body{background:#fff;padding:10px 16px}
+.rev-money-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.04);font-size:12px}
+.rev-money-row:last-child{border:none}
+.rev-money-row span:first-child{color:#6b5e52}
+.rev-money-row span:last-child{font-weight:600}
+.rev-money-footer{background:#1a1714;padding:13px 16px;display:flex;justify-content:space-between;align-items:center}
+.rev-money-footer-label{font-size:11px;font-weight:700;color:rgba(244,243,240,.6);text-transform:uppercase;letter-spacing:.5px}
+.rev-money-footer-val{font-size:18px;font-weight:800;color:#d4a853}
+.rev-estimate-note{padding:10px 16px;background:rgba(212,168,83,.06);border-bottom:1px solid rgba(212,168,83,.1);font-size:11px;color:#9a7422;line-height:1.5}
 
 /* Fee */
 .fee-card{background:var(--dk);border-radius:14px;padding:20px;color:var(--cr);margin-bottom:20px}
@@ -580,7 +594,7 @@ export default function ApplyPage(){
             if(!prop)return null;
             if(prop.rentalMode==="wholeHouse")return(
               <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
-                🏠 <strong>{prop.name}</strong> is available as an entire property rental{prop.wholeHouseRent?` — $${prop.wholeHouseRent.toLocaleString()}/mo`:""}. We'll reach out to discuss details.
+                <strong>{prop.name}</strong> is available as an entire property rental{prop.wholeHouseRent?` — $${prop.wholeHouseRent.toLocaleString()}/mo`:""}. We'll reach out to discuss details.
               </div>
             );
             if(vacant.length===0)return(
@@ -601,7 +615,7 @@ export default function ApplyPage(){
         {errors.preferredProperty&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12,fontSize:12,padding:"10px 12px",background:"rgba(196,92,74,.04)",borderRadius:8,border:"1px solid rgba(196,92,74,.15)"}}>{errors.preferredProperty}</div>}
         {/* If locked room from invite — show confirmation */}
         {invite?.inviteRoomName&&<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--gn)"}}>
-          🏠 Applying for <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
+          Applying for <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
         </div>}
 
         {/* ── OCCUPANCY — dynamic per rental mode ── */}
@@ -776,7 +790,7 @@ export default function ApplyPage(){
           {d.curAddressForm.resType==="Own"&&<div style={{marginTop:16,padding:"10px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8,fontSize:12,color:"#2d6a3f"}}>
             No landlord contact needed for owned properties.
           </div>}
-          {d.curAddressForm?._needMore&&<div style={{padding:"10px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:8,marginBottom:12,fontSize:12,color:"#7a5a10",fontWeight:600}}>📋 We need at least <strong>2 years</strong> of rental history — please add another address.</div>}
+          {d.curAddressForm?._needMore&&<div style={{padding:"10px 12px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.3)",borderRadius:8,marginBottom:12,fontSize:12,color:"#7a5a10",fontWeight:600}}>We need at least <strong>2 years</strong> of rental history — please add another address.</div>}
           <div style={{display:"flex",gap:8}}><button className="btn-next" style={{flex:1}} onClick={saveAddr}>Save Address</button><button className="btn-back" style={{flex:0,marginTop:0,padding:"12px 20px"}} onClick={()=>upd("curAddressForm",null)}>Cancel</button></div>
         </div>
         :<div className="add-card" onClick={()=>upd("curAddressForm",{...blankAddr})}><div className="plus">+</div><div className="lbl">Add {d.addresses.length===0?"Current":"Another"} Address</div></div>}
@@ -1058,47 +1072,68 @@ export default function ApplyPage(){
       </div>}
 
       {/* ═══ REVIEW ═══ */}
-      {step==="review"&&<div className="sec">
+      {step==="review"&&<div className="sec">{(()=>{
+        const fmtMDY=ds=>{if(!ds)return"—";const d=new Date(ds+"T00:00:00");return d.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});};
+        const RevCard=({icon,title,onEdit,children})=>(<div className="rev-sec">
+          <div className="rev-sec-hd">
+            <div className="rev-sec-title">
+              {icon}
+              {title}
+            </div>
+            {onEdit&&<span className="rev-edit" onClick={onEdit}>Edit</span>}
+          </div>
+          <div className="rev-sec-body">{children}</div>
+        </div>);
+        const Row=({label,val,valStyle})=>(<div className="rev-row"><span className="rev-label">{label}</span><span className="rev-val" style={valStyle}>{val}</span></div>);
+        const personIc=<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5c4a3a" strokeWidth="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>;
+        const homeIc=<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5c4a3a" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>;
+        const workIc=<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5c4a3a" strokeWidth="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>;
+        const refIc=<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5c4a3a" strokeWidth="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+        const emergIc=<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5c4a3a" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.61 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 17z"/></svg>;
+        return(<>
         <div className="sec-num">Almost Done!</div>
-        <div className="sec-hd"><h2>Review Your Application</h2><p>Verify everything is correct before submitting.</p></div>
-        <div className="rev-sec"><h3>👤 About You <span className="rev-edit" onClick={()=>setStep("welcome")}>Edit</span></h3>
-          <div className="rev-row"><span className="rev-label">Name</span><span className="rev-val">{d.firstName} {d.lastName}</span></div>
-          <div className="rev-row"><span className="rev-label">Email</span><span className="rev-val">{d.email}</span></div>
-          <div className="rev-row"><span className="rev-label">Phone</span><span className="rev-val">{d.phone}</span></div>
-          <div className="rev-row"><span className="rev-label">DOB</span><span className="rev-val">{d.dob}</span></div>
-          <div className="rev-row"><span className="rev-label">Move-in</span><span className="rev-val">{d.moveIn||"—"}</span></div>
-          {invite?.allowCouples&&d.partnerName.trim()&&<div className="rev-row"><span className="rev-label">Partner</span><span className="rev-val">{d.partnerName}{d.partnerEmail?" · "+d.partnerEmail:""}</span></div>}
-          {d.appDocs.filter(x=>x.url).length>0&&<div className="rev-row"><span className="rev-label">Documents</span><span className="rev-val" style={{color:"#2d6a3f"}}>&#10003; {d.appDocs.filter(x=>x.url).length} file{d.appDocs.filter(x=>x.url).length!==1?"s":""} uploaded</span></div>}
-          {d.idUploadLater&&<div className="rev-row"><span className="rev-label">Photo ID</span><span className="rev-val" style={{color:"#9a7422"}}>Will upload later</span></div>}
-          {d.incomeUploadLater&&<div className="rev-row"><span className="rev-label">Pay Stubs</span><span className="rev-val" style={{color:"#9a7422"}}>Will upload later</span></div>}
-        </div>
-        {appType==="tenant"&&<>
-          <div className="rev-sec"><h3>🏠 Rental History <span className="rev-edit" onClick={()=>setStep("rental")}>Edit</span></h3>
-            {d.addresses.map((a,i)=><div key={i} className="rev-row"><span className="rev-label">{a.resType}</span><span className="rev-val">{a.street}, {a.city} {a.state}</span></div>)}
-            <div className="rev-row"><span className="rev-label">Evicted</span><span className="rev-val" style={{color:d.evicted==="yes"?"var(--rd)":"var(--gn)"}}>{d.evicted==="yes"?"Yes":"No"}</span></div>
-            <div className="rev-row"><span className="rev-label">Felonies</span><span className="rev-val" style={{color:d.felony==="yes"?"var(--rd)":"var(--gn)"}}>{d.felony==="yes"?"Yes":"No"}</span></div>
-          </div>
-        </>}
-        <div className="rev-sec"><h3>💼 Employment <span className="rev-edit" onClick={()=>setStep("employment")}>Edit</span></h3>
-          {d.unemployed?<div className="rev-row"><span className="rev-label">Status</span><span className="rev-val">Unemployed</span></div>
-          :d.employers.map((e,i)=><div key={i}><div className="rev-row"><span className="rev-label">{e.employer}</span><span className="rev-val">{e.position||"—"} · ${e.monthlyIncome}/mo</span></div></div>)}
-        </div>
-        {appType==="tenant"&&<>
-          <div className="rev-sec"><h3>📋 References <span className="rev-edit" onClick={()=>setStep("references")}>Edit</span></h3>
-            <div className="rev-row"><span className="rev-label">Employer</span><span className="rev-val">{(d.empRefFirstName||"")+" "+(d.empRefLastName||"")} · {d.empRefPhone}</span></div>
-            <div className="rev-row"><span className="rev-label">Personal</span><span className="rev-val">{d.persRefName} · {d.persRefPhone}</span></div>
-          </div>
-          <div className="rev-sec"><h3>🚨 Emergency <span className="rev-edit" onClick={()=>setStep("emergency")}>Edit</span></h3>
-            <div className="rev-row"><span className="rev-label">Contact</span><span className="rev-val">{d.emergName} · {d.emergPhone} · {d.emergRelation}</span></div>
-          </div>
-        </>}
-        {invite?.inviteRoomName&&<div className="rev-sec"><h3>🏠 Room</h3>
-          <div className="rev-row"><span className="rev-label">Property</span><span className="rev-val">{invite.invitePropName}</span></div>
-          <div className="rev-row"><span className="rev-label">Room</span><span className="rev-val">{invite.inviteRoomName}</span></div>
-          <div className="rev-row"><span className="rev-label">Rent</span><span className="rev-val" style={{color:"var(--ac)"}}>${invite.inviteRent}/mo</span></div>
-          {d.doorCode&&<div className="rev-row"><span className="rev-label">Door Code</span><span className="rev-val" style={{fontFamily:"monospace",fontWeight:900,letterSpacing:4}}>{d.doorCode}</span></div>}
-        </div>}
-        {/* Lease Terms Preview */}
+        <div className="sec-hd"><h2>Review Your Application</h2><p>Check everything before submitting.</p></div>
+
+        <RevCard icon={personIc} title="About You" onEdit={()=>setStep("welcome")}>
+          <Row label="Name" val={d.firstName+" "+d.lastName}/>
+          <Row label="Email" val={d.email}/>
+          <Row label="Phone" val={d.phone}/>
+          {d.dob&&<Row label="Date of Birth" val={d.dob}/>}
+          <Row label="Desired Move-In" val={fmtMDY(d.moveIn)}/>
+          {invite?.allowCouples&&d.partnerName.trim()&&<Row label="Partner" val={d.partnerName+(d.partnerEmail?" · "+d.partnerEmail:"")}/>}
+          {d.appDocs.filter(x=>x.url).length>0&&<Row label="Documents" val={d.appDocs.filter(x=>x.url).length+" file"+(d.appDocs.filter(x=>x.url).length!==1?"s":"")+" uploaded"} valStyle={{color:"#2d6a3f"}}/>}
+          {d.idUploadLater&&<Row label="Photo ID" val="Will upload later" valStyle={{color:"#9a7422"}}/>}
+          {d.incomeUploadLater&&<Row label="Pay Stubs" val="Will upload later" valStyle={{color:"#9a7422"}}/>}
+        </RevCard>
+
+        {appType==="tenant"&&<RevCard icon={homeIc} title="Rental History" onEdit={()=>setStep("rental")}>
+          {d.addresses.map((a,i)=><Row key={i} label={a.resType+(a.yearIn?" · since "+a.yearIn:"")} val={a.resType==="Other"?(a.otherNotes||"Other"):(a.street+", "+a.city+" "+a.state)}/>)}
+          <Row label="Prior Eviction" val={d.evicted==="yes"?"Yes":"No"} valStyle={{color:d.evicted==="yes"?"#c45c4a":"#4a7c59"}}/>
+          <Row label="Felony Conviction" val={d.felony==="yes"?"Yes":"No"} valStyle={{color:d.felony==="yes"?"#c45c4a":"#4a7c59"}}/>
+        </RevCard>}
+
+        <RevCard icon={workIc} title="Employment" onEdit={()=>setStep("employment")}>
+          {d.unemployed
+            ?<Row label="Status" val="Currently unemployed"/>
+            :d.employers.map((e,i)=><Row key={i} label={e.employer} val={(e.position||"—")+" · $"+Number(e.monthlyIncome).toLocaleString()+"/mo"}/>)}
+        </RevCard>
+
+        {appType==="tenant"&&<RevCard icon={refIc} title="References" onEdit={()=>setStep("references")}>
+          {!d.unemployed&&<Row label="Employer Ref" val={((d.empRefFirstName||"")+" "+(d.empRefLastName||"")).trim()+(d.empRefPhone?" · "+d.empRefPhone:"")}/>}
+          <Row label="Personal Ref" val={((d.persRefFirstName||"")+" "+(d.persRefLastName||"")).trim()+(d.persRefPhone?" · "+d.persRefPhone:"")}/>
+        </RevCard>}
+
+        {appType==="tenant"&&<RevCard icon={emergIc} title="Emergency Contact" onEdit={()=>setStep("emergency")}>
+          <Row label={d.emergRelation||"Contact"} val={d.emergName+(d.emergPhone?" · "+d.emergPhone:"")}/>
+        </RevCard>}
+
+        {invite?.inviteRoomName&&<RevCard icon={homeIc} title="Room Assignment">
+          <Row label="Property" val={invite.invitePropName}/>
+          <Row label="Room" val={invite.inviteRoomName}/>
+          <Row label="Monthly Rent" val={"$"+Number(invite.inviteRent).toLocaleString()+"/mo"} valStyle={{color:"var(--ac)",fontWeight:700}}/>
+          {d.doorCode&&<Row label="Door Code" val={d.doorCode}/>}
+        </RevCard>}
+
         {(()=>{
           const roomName=invite?.inviteRoomName||(d.selectedRoom&&props_.flatMap(p=>allRooms(p)).find(r=>r.id===d.selectedRoom)?.name)||null;
           const propName=invite?.invitePropName||(d.selectedRoom&&props_.find(p=>allRooms(p).some(r=>r.id===d.selectedRoom))?.name)||d.preferredProperty||null;
@@ -1116,49 +1151,45 @@ export default function ApplyPage(){
           const sd=rent;
           const total=sd+firstMonthAmt;
           const fmtS=n=>"$"+n.toLocaleString();
-          return(<div className="rev-sec" style={{borderTop:"2px solid rgba(212,168,83,.2)",paddingTop:16,marginTop:4}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-              <h3 style={{flex:1}}>💼 Estimated Lease Terms</h3>
+          return(<div className="rev-money">
+            <div className="rev-money-hd">
+              <span className="rev-money-title">Estimated Lease Terms</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a7422" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
-            <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#9a7422",lineHeight:1.5}}>
-              This is an <strong>estimate only</strong> — not a lease. No room is reserved and no charges apply until you are approved and sign your lease.
+            <div className="rev-estimate-note">Estimate only — not a lease. No room is reserved and no charges apply until you are approved and sign your lease.</div>
+            <div className="rev-money-body">
+              {propName&&<div className="rev-money-row"><span>Property</span><span>{propName}</span></div>}
+              {roomName&&<div className="rev-money-row"><span>Room</span><span>{roomName}</span></div>}
+              <div className="rev-money-row"><span>Move-In Date</span><span>{fmtMDY(moveIn)}</span></div>
+              <div className="rev-money-row"><span>Monthly Rent</span><span style={{color:"#4a7c59",fontWeight:700}}>{fmtS(rent)}/mo</span></div>
+              <div className="rev-money-row"><span>Security Deposit</span><span>{fmtS(sd)}</span></div>
+              <div className="rev-money-row"><span>{isFirstDay?"First Month's Rent":"Prorated Rent ("+daysLeft+" days)"}</span><span>{fmtS(firstMonthAmt)}</span></div>
+              {!isFirstDay&&<div className="rev-money-row" style={{fontSize:11}}><span style={{color:"#9a8878"}}>Calculation</span><span style={{color:"#9a8878"}}>{daysLeft} days × {fmtS(dailyRate)}/day</span></div>}
             </div>
-            {propName&&<div className="rev-row"><span className="rev-label">Property</span><span className="rev-val">{propName}</span></div>}
-            {roomName&&<div className="rev-row"><span className="rev-label">Room</span><span className="rev-val">{roomName}</span></div>}
-            <div className="rev-row"><span className="rev-label">Monthly Rent</span><span className="rev-val" style={{color:"var(--ac)",fontWeight:700}}>{fmtS(rent)}/mo</span></div>
-            <div className="rev-row"><span className="rev-label">Security Deposit</span><span className="rev-val">{fmtS(sd)}</span></div>
-            <div className="rev-row"><span className="rev-label">Move-in Date</span><span className="rev-val">{moveIn}</span></div>
-            {!isFirstDay&&<div className="rev-row"><span className="rev-label">Proration</span><span className="rev-val" style={{fontSize:11}}>{daysLeft} days × {fmtS(dailyRate)}/day = {fmtS(proratedAmt)}</span></div>}
-            <div style={{marginTop:12,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,padding:12}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>Estimated Move-In Package</div>
-              <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
-                <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Security Deposit</span><strong>{fmtS(sd)}</strong>
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
-                <span>🏠 {isFirstDay?`First Month's Rent`:`Prorated Rent (${daysLeft} days)`}</span><strong>{fmtS(firstMonthAmt)}</strong>
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",padding:"8px 0 0",fontSize:13,fontWeight:800,borderTop:"2px solid rgba(74,124,89,.15)",marginTop:4}}>
-                <span>Estimated Total at Move-In</span><span style={{color:"#4a7c59"}}>{fmtS(total)}</span>
-              </div>
+            <div className="rev-money-footer">
+              <span className="rev-money-footer-label">Due at Move-In</span>
+              <span className="rev-money-footer-val">{fmtS(total)}</span>
             </div>
           </div>);
         })()}
 
-        <button className="btn-next" onClick={next}>Continue to Background Check Payment →</button>
+        <button className="btn-next" style={{marginTop:6}} onClick={next}>Continue to Payment →</button>
         <button className="btn-back" onClick={back}>← Back</button>
+        </>);
+      })()}
       </div>}
 
       {/* ═══ PAYMENT ═══ */}
       {step==="payment"&&<div className="sec">
         <div className="sec-num">Final Step</div>
         <div className="sec-hd"><h2>Screening Fee</h2><p>Covers your background check, credit report, and application processing. Non-refundable.</p></div>
-        <div className="fee-card"><h3>💳 Fee Breakdown</h3>
+        <div className="fee-card"><h3 style={{display:"flex",alignItems:"center",gap:7}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(244,243,240,.7)" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Fee Breakdown</h3>
           <div className="fee-row"><span>Background Check & Credit Report</span><span>${(invite?.screenPkg==="credit-only"||invite?.screenPkg==="bg-only")?29:49}</span></div>
           <div className="fee-row"><span>Application Processing</span><span>$10</span></div>
           <div className="fee-total"><span>Total Due Now</span><span>${baseFee}</span></div>
         </div>
         <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:20,fontSize:11,color:"var(--gn)"}}><strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Secure Payment</strong> — Processed securely through Stripe. Card info never stored on our servers.</div>
-        <div style={{border:"2px dashed rgba(0,0,0,.1)",borderRadius:12,padding:24,textAlign:"center",marginBottom:20,background:"rgba(0,0,0,.01)"}}><div style={{fontSize:24,marginBottom:8}}>💳</div><div style={{fontSize:13,fontWeight:600,color:"#999"}}>Stripe Payment Form</div><div style={{fontSize:10,color:"#ccc",marginTop:4}}>Card details will appear here</div></div>
+        <div style={{border:"2px dashed rgba(0,0,0,.1)",borderRadius:12,padding:24,textAlign:"center",marginBottom:20,background:"rgba(0,0,0,.01)"}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" style={{marginBottom:8}}><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><div style={{fontSize:13,fontWeight:600,color:"#999"}}>Stripe Payment Form</div><div style={{fontSize:10,color:"#ccc",marginTop:4}}>Card details will appear here</div></div>
         <button className="btn-start" onClick={async()=>{
           setSubmitted(true);
           const now=new Date().toISOString().split("T")[0];
