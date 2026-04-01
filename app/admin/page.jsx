@@ -5622,15 +5622,36 @@ export default function Page(){
           <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
 
           <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#9a7422",marginBottom:8}}>PARTIES</div>
-            <div className="fr">
-              <div className="fld"><label>Tenant Name</label><input value={leaseForm.tenantName||""} onChange={e=>setLeaseForm(p=>({...p,tenantName:e.target.value}))}/></div>
-              <div className="fld"><label>Tenant Email</label><input type="email" value={leaseForm.tenantEmail||""} onChange={e=>setLeaseForm(p=>({...p,tenantEmail:e.target.value}))}/></div>
-            </div>
-            <div className="fr">
-              <div className="fld"><label>Tenant Phone</label><input value={leaseForm.tenantPhone||""} onChange={e=>setLeaseForm(p=>({...p,tenantPhone:e.target.value}))}/></div>
-              <div className="fld"><label>Property Manager (on lease)</label><input value={leaseForm.landlordName||"Carolina Cooper"} onChange={e=>setLeaseForm(p=>({...p,landlordName:e.target.value}))}/></div>
-            </div>
+            {(()=>{
+              const locked=leaseForm._lockedFromApp&&!leaseForm._partiesEditing;
+              const ro=(val)=><div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:12,color:"#6b5e52",minHeight:34,display:"flex",alignItems:"center"}}>{val||<span style={{color:"#aaa"}}>—</span>}</div>;
+              return(<>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#9a7422"}}>PARTIES</div>
+                  {leaseForm._lockedFromApp&&(
+                    locked
+                      ?<button onClick={()=>setLeaseForm(p=>({...p,_partiesEditing:true}))} style={{fontSize:10,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.1)",border:"0.5px solid rgba(212,168,83,.3)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Edit</button>
+                      :<button onClick={()=>setLeaseForm(p=>({...p,_partiesEditing:false}))} style={{fontSize:10,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.08)",border:"0.5px solid rgba(74,124,89,.2)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Lock</button>
+                  )}
+                </div>
+                <div className="fr">
+                  <div className="fld"><label>Tenant Name</label>
+                    {locked?ro(leaseForm.tenantName):<input value={leaseForm.tenantName||""} onChange={e=>setLeaseForm(p=>({...p,tenantName:e.target.value}))}/>}
+                  </div>
+                  <div className="fld"><label>Tenant Email</label>
+                    {locked?ro(leaseForm.tenantEmail):<input type="email" value={leaseForm.tenantEmail||""} onChange={e=>setLeaseForm(p=>({...p,tenantEmail:e.target.value}))}/>}
+                  </div>
+                </div>
+                <div className="fr">
+                  <div className="fld"><label>Tenant Phone</label>
+                    {locked?ro(leaseForm.tenantPhone):<input value={leaseForm.tenantPhone||""} onChange={e=>setLeaseForm(p=>({...p,tenantPhone:e.target.value}))}/>}
+                  </div>
+                  <div className="fld"><label>Property Manager (on lease)</label>
+                    {locked?ro(leaseForm.landlordName):<input value={leaseForm.landlordName||""} onChange={e=>setLeaseForm(p=>({...p,landlordName:e.target.value}))}/>}
+                  </div>
+                </div>
+              </>);
+            })()}
           </div>
 
           <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:12,marginBottom:14}}>
@@ -6003,18 +6024,15 @@ export default function Page(){
                 const proratedAmt=day===1?0:Math.ceil((rent/30)*daysLeft);
                 const lastInstallAmt=requireLast?Math.ceil(rent/lastInstalls):0;
                 const newCharges=[];
-                // Security deposit
-                if(sd>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Security Deposit",desc:"Security deposit",amount:sd,dueDate:mi||TODAY.toISOString().split("T")[0],amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
-                // First payment — either full first month or prorated
+                // Security deposit — due today (day PM signs, to secure the room)
+                if(sd>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Security Deposit",desc:"Security deposit — secures the room",amount:sd,dueDate:now.split("T")[0],amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                // First payment — generated now but due on move-in date (tenant must pay before keys)
                 const nextMonthD=miD?new Date(miD.getFullYear(),miD.getMonth()+1,1):null;
                 const nextMonthStr=nextMonthD?nextMonthD.toISOString().split("T")[0]:TODAY.toISOString().split("T")[0];
                 if(proMode==="full"&&!day===1){
-                  // First month upfront: charge full rent due at move-in (covers next month)
                   newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:`First month's rent (covers ${nextMonthD?nextMonthD.toLocaleString("default",{month:"long"}):"next month"})`,amount:rent,dueDate:mi,amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
-                  // Then prorated for move-in month due next month
                   if(proratedAmt>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:`Prorated rent — ${daysLeft} days`,amount:proratedAmt,dueDate:nextMonthStr,amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
                 } else {
-                  // Standard: prorated or full first month at move-in
                   const firstAmt=day===1?rent:proratedAmt;
                   if(firstAmt>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:day===1?"First month's rent":`Prorated rent — ${daysLeft} days`,amount:firstAmt,dueDate:mi,amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
                 }
