@@ -441,20 +441,18 @@ export default function ApplyPage(){
       if(!d.unemployed&&!d.incomeUploadLater&&d.appDocs.filter(x=>x.type==="PayStub"&&x.url).length===0)e.incomeProof="Please upload proof of income, or check the box to upload it later";
     }
     if(s==="references"){
-      if(!d.unemployed&&!d.empRefFirstName.trim())e.empRefFirstName="Employer reference first name is required";
-      if(!d.unemployed&&!d.empRefLastName.trim())e.empRefLastName="Employer reference last name is required";
-      if(!d.unemployed&&!d.empRefRelation.trim())e.empRefRelation="Relationship is required";
-      if(!d.unemployed&&!d.empRefEmail.trim())e.empRefEmail="Employer reference email is required";
+      if(!d.unemployed&&!(d.empRefFirstName||"").trim())e.empRefFirstName="Employer reference first name is required";
+      if(!d.unemployed&&!(d.empRefLastName||"").trim())e.empRefLastName="Employer reference last name is required";
+      if(!d.unemployed&&!(d.empRefPhone||"").trim())e.empRefPhone="Employer reference phone is required";
+      if(!d.unemployed&&!(d.empRefRelation||"").trim())e.empRefRelation="Relationship is required";
+      if(!d.unemployed&&!(d.empRefEmail||"").trim())e.empRefEmail="Employer reference email is required";
       else if(!d.unemployed&&d.empRefEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.empRefEmail))e.empRefEmail="Please enter a valid email address";
-      if(!d.unemployed&&fieldActive("empRefPhone")&&fieldRequired("empRefPhone")&&!d.empRefPhone.trim())e.empRefPhone=`${fieldLabel("empRefPhone","Employer reference phone")} is required`;
-      if(!d.persRefFirstName.trim())e.persRefFirstName="Personal reference first name is required";
-      if(!d.persRefLastName.trim())e.persRefLastName="Personal reference last name is required";
-      if(!d.persRefRelation.trim())e.persRefRelation="Relationship is required";
-      if(!d.persRefPhone.trim())e.persRefPhone="Phone number is required";
-      if(!d.persRefEmail.trim())e.persRefEmail="Personal reference email is required";
+      if(!(d.persRefFirstName||"").trim())e.persRefFirstName="Personal reference first name is required";
+      if(!(d.persRefLastName||"").trim())e.persRefLastName="Personal reference last name is required";
+      if(!(d.persRefPhone||"").trim())e.persRefPhone="Personal reference phone is required";
+      if(!(d.persRefRelation||"").trim())e.persRefRelation="Relationship is required";
+      if(!(d.persRefEmail||"").trim())e.persRefEmail="Personal reference email is required";
       else if(d.persRefEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.persRefEmail))e.persRefEmail="Please enter a valid email address";
-      if(fieldActive("persRefFirstName")&&fieldRequired("persRefFirstName")&&!d.persRefName.trim())e.persRefName=`${fieldLabel("persRefFirstName","Personal reference name")} is required`;
-      if(fieldActive("persRefPhone")&&fieldRequired("persRefPhone")&&!d.persRefPhone.trim())e.persRefPhone=`${fieldLabel("persRefPhone","Personal reference phone")} is required`;
     }
     if(s==="emergency"){
       if(fieldActive("emergName")&&fieldRequired("emergName")&&!d.emergName.trim())e.emergName=`${fieldLabel("emergName","Emergency contact name")} is required`;
