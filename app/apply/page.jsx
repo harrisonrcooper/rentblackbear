@@ -352,7 +352,20 @@ export default function ApplyPage(){
         headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
         body:file,
       });
-      if(!r.ok){setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,uploading:false,error:"Upload failed — check connection and try again"}:x)}));return;}
+      if(!r.ok){
+        // Try PUT (upsert) in case POST fails on existing file
+        const r2=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
+          method:"PUT",
+          headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
+          body:file,
+        });
+        if(!r2.ok){
+          const errText=await r2.text().catch(()=>"");
+          console.error("Upload error:",r2.status,errText);
+          setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,uploading:false,error:"Upload failed ("+r2.status+") — please try again"}:x)}));
+          return;
+        }
+      }
       const url=SUPA_URL+"/storage/v1/object/public/applicant-docs/"+path;
       setD(p=>({...p,appDocs:p.appDocs.map(x=>x.id===tempId?{...x,url,name:fileName,uploading:false,uploadedAt:date}:x)}));
     }catch{
