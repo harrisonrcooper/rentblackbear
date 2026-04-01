@@ -165,7 +165,7 @@ const findUnit=(props,unitId)=>{for(const p of props){const u=(p.units||[]).find
 // Returns flat list of things that can be leased from a prop, respecting rentalMode per unit.
 // Each item: { id, name, rent, st, le, propName, propId, unitId, unitName, unitLabel, isWholeUnit }
 const leaseableItems=(prop,propName)=>{
-  const pn=propName||prop.name||"";
+  const pn=propName||prop.addr||prop.name||"";
   const propTd=prop.turnoverDays||0;
   const mode=prop.turnoverMode||"property"; // "property" | "per-room"
   return(prop.units||[]).flatMap(u=>{
@@ -1487,26 +1487,11 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
   const mode=curUnit?.rentalMode||"byRoom";
   const tryClose=()=>{if(unsaved&&!justSaved)setShowCloseConfirm(true);else onClose();};
   return(<div className="mbg" onClick={tryClose}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:760}}>
-    <h2>{isNew?"Add Property":`Edit: ${p.usePropertyName===false&&p.addr?p.addr:p.name}`}</h2>
+    <h2>{isNew?"Add Property":`Edit: ${p.addr||p.name}`}</h2>
 
     {/* Property-level info */}
     <div className="fr" style={{alignItems:"flex-end"}}>
-      <div className="fld" style={{opacity:p.usePropertyName===false?.35:1}}>
-        <label style={{display:"flex",alignItems:"center",gap:8}}>
-          Property Name
-          <span style={{fontSize:9,fontWeight:500,color:"#6b5e52"}}>{p.usePropertyName===false?"(disabled — address used instead)":""}</span>
-        </label>
-        <input value={p.name} onChange={e=>updP({...p,name:e.target.value})} placeholder="e.g. The Holmes House" disabled={p.usePropertyName===false}/>
-      </div>
-      <div className="fld"><label>Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL"/></div>
-      <div className="fld" style={{flexShrink:0,minWidth:0}}>
-        <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Use Property Name</label>
-        <div onClick={()=>updP({...p,usePropertyName:p.usePropertyName===false?true:false})}
-          style={{width:40,height:22,borderRadius:11,background:p.usePropertyName===false?"rgba(0,0,0,.15)":"#4a7c59",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
-          <div style={{position:"absolute",top:3,left:p.usePropertyName===false?3:19,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
-        </div>
-        <div style={{fontSize:9,color:"#6b5e52",marginTop:3}}>{p.usePropertyName===false?"Shows address":"Shows name"}</div>
-      </div>
+      <div className="fld"><label>Property Address</label><input value={p.addr||""} onChange={e=>updP({...p,addr:e.target.value})} placeholder="123 Main St, Huntsville AL 35816"/></div>
     </div>
     <div style={{background:"rgba(0,0,0,.02)",border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:10,marginBottom:10}}>
       <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Map Pin Location</div>
@@ -1824,7 +1809,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
       const isWhole=addTenantRoom.isWholeUnit;
       const r=isWhole?{id:u?.id,name:u?.name||"Whole Unit",rent:u?.rent||0}:(u?.rooms||[])[addTenantRoom.roomIdx];
       if(!r)return null;
-      return(<AddExistingTenantModal room={r} propName={p.name} onClose={()=>setAddTenantRoom(null)} onSave={data=>{
+      return(<AddExistingTenantModal room={r} propName={p.addr||p.name} onClose={()=>setAddTenantRoom(null)} onSave={data=>{
         const units=(p.units||[]).map((u2,ui)=>{
           if(ui!==addTenantRoom.unitIdx)return u2;
           if(isWhole){
@@ -1859,13 +1844,13 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
     <div className="mft" style={{justifyContent:"space-between"}}>
       <button className="btn btn-red btn-sm" style={{fontSize:11}} onClick={()=>{
         const occ=allRooms(p).filter(r=>r.st==="occupied").length;
-        if(occ>0){showAlert({title:"Cannot Delete Property",body:p.name+" has "+occ+" occupied room"+(occ!==1?"s":"")+" . Remove all tenants before deleting."});}
-        else{showConfirm({title:"Delete "+p.name+"?",body:"This is permanent and cannot be undone. All rooms, photos, and settings for this property will be removed.",confirmLabel:"Delete Property",danger:true,onConfirm:()=>onDelete(p.id)});}
+        if(occ>0){showAlert({title:"Cannot Delete Property",body:(p.addr||p.name)+" has "+occ+" occupied room"+(occ!==1?"s":"")+" . Remove all tenants before deleting."});}
+        else{showConfirm({title:"Delete "+(p.addr||p.name)+"?",body:"This is permanent and cannot be undone. All rooms, photos, and settings for this property will be removed.",confirmLabel:"Delete Property",danger:true,onConfirm:()=>onDelete(p.id)});}
       }}>🗑 Delete Property</button>
       <div style={{display:"flex",gap:6}}>
       <button className="btn btn-out" onClick={onClose}>Cancel</button>
       <button className={`btn ${justSaved?"btn-green":unsaved?"btn-gold":"btn-out"}`} onClick={()=>{
-        if(!p.name.trim()){setWarning("Property name is required.");return;}
+        if(!p.addr?.trim()){setWarning("Property address is required.");return;}
         setWarning(null);
         setUnsaved(false);setJustSaved(true);
         setTimeout(()=>setJustSaved(false),3000);
@@ -1877,12 +1862,12 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
     <div style={{background:"#fff",borderRadius:14,padding:28,maxWidth:360,width:"90%",margin:"auto",position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
       <div style={{fontSize:32,marginBottom:12}}>⚠️</div>
       <div style={{fontSize:16,fontWeight:700,color:"#1a1714",marginBottom:8}}>Unsaved changes</div>
-      <div style={{fontSize:13,color:"#5c4a3a",marginBottom:20,lineHeight:1.5}}>You have unsaved changes to <strong>{p.name||"this property"}</strong>. What would you like to do?</div>
+      <div style={{fontSize:13,color:"#5c4a3a",marginBottom:20,lineHeight:1.5}}>You have unsaved changes to <strong>{p.addr||p.name||"this property"}</strong>. What would you like to do?</div>
       <div style={{display:"flex",gap:10,justifyContent:"center"}}>
         <button className="btn btn-red" style={{minWidth:110}} onClick={()=>{setShowCloseConfirm(false);onClose();}}>Discard & Close</button>
         <button className="btn btn-gold" style={{minWidth:110}} onClick={()=>{
           setShowCloseConfirm(false);
-          if(!p.name.trim()){setWarning("Property name is required.");return;}
+          if(!p.addr?.trim()){setWarning("Property address is required.");return;}
           setUnsaved(false);setJustSaved(true);setTimeout(()=>setJustSaved(false),3000);onSave(p);
         }}>Save & Close</button>
       </div>
@@ -2640,11 +2625,11 @@ export default function Page(){
   })();
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
 
-  const getPropDisplayName=(prop)=>{if(!prop)return"";return prop.usePropertyName===false&&prop.addr?prop.addr:prop.name;};
-  const getPropAddr=(propName)=>{const p=props.find(x=>x.name===propName);return p?.addr||"";};
-  const getPropByName=(propName)=>props.find(p=>p.name===propName);
+  const getPropDisplayName=(prop)=>{if(!prop)return"";return prop.addr||prop.name||"";}; // Always use address
+  const getPropAddr=(propName)=>{const p=props.find(x=>x.name===propName||x.addr===propName);return p?.addr||"";}; 
+  const getPropByName=(propName)=>props.find(p=>p.name===propName||p.addr===propName);
   const propDisplay=(propName)=>{const p=getPropByName(propName);return p?getPropDisplayName(p):propName;};
-  const roomSubLine=(propName,roomName)=>{const dispName=propDisplay(propName);const a=getPropAddr(propName);return a?`${dispName} · ${a} · ${roomName}`:`${dispName} · ${roomName}`;};
+  const roomSubLine=(propName,roomName)=>{const dispName=propDisplay(propName);return `${dispName} · ${roomName}`;};  // No more double address
   const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);};
   const confirmAction=(title,onConfirm,body="This cannot be undone.")=>{setModal({type:"confirmAction",title,body,confirmLabel:"Confirm",confirmStyle:"btn-red",onConfirm:()=>{onConfirm();setModal(null);}});};
   const shakeModal=()=>{const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .5s ease";}};
@@ -2660,9 +2645,8 @@ export default function Page(){
     if(isWhole){
       const occupiedRoom=(u.rooms||[]).find(r=>r.tenant&&!r.ownerOccupied);
       if(!occupiedRoom)return[];
-      return[{...occupiedRoom,name:u.name||(p.name+" Unit"),propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:true}];
-    }
-    return(u.rooms||[]).filter(r=>r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false}));
+      return[{...occupiedRoom,name:u.name||(p.addr||p.name)+(" Unit"),propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:true}];
+    }\n    return(u.rooms||[]).filter(r=>r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false}));
   }));
   const occLeases=props.flatMap(pr=>(pr.units||[]).flatMap(u=>{
     if(u.ownerOccupied)return[];
@@ -3204,7 +3188,7 @@ export default function Page(){
               {/* Tenant col */}
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:2}}>{r.tenant.name}</div>
-                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:5}}>{prop?getPropDisplayName(prop):r.propName}{prop?.addr?" · "+prop.addr:""} · {r.name}</div>
+                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:5}}>{prop?getPropDisplayName(prop):r.propName} · {r.name}</div>
                 <button onClick={e=>{e.stopPropagation();setModal({type:"tenant",data:r});}}
                   onMouseEnter={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.2)`;e.currentTarget.style.transform="scale(1.02)";}}
                   onMouseLeave={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.08)`;e.currentTarget.style.transform="";}}
@@ -3261,7 +3245,7 @@ export default function Page(){
               <div/>
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:2}}>{a.name}</div>
-                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:2}}>{a.propName}{prop?.addr?" · "+prop.addr:""} · {a.roomName}</div>
+                <div style={{fontSize:11,color:"#5c4a3a",marginBottom:2}}>{a.propName} · {a.roomName}</div>
                 {a.reason&&<div style={{fontSize:10,color:"#7a7067",fontStyle:"italic"}}>{a.reason}</div>}
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:3,justifyContent:"center"}}>
@@ -3417,7 +3401,7 @@ export default function Page(){
                   <h3>Your Lease</h3>
                   {[
                     ["Room",`${tUnit&&tUnit.label?"Unit "+tUnit.label+" — ":""}${tRoom.name} · ${tRoom.pb?"Private bathroom":"Shared bathroom"}`],
-                    ["Property",`${tRoom.propName}${tUnit&&tUnit.label?" · Unit "+tUnit.label:""} — ${tProp&&tProp.addr}`],
+                    ["Property",`${tRoom.propName}${tUnit&&tUnit.label?" · Unit "+tUnit.label:""}`],
                     ["Monthly Rent",`$${tRoom.rent.toLocaleString()}/mo`],
                     ["Move-In Date",fmtD(tRoom.tenant.moveIn)],
                     ["Lease Ends",tRoom.le?fmtD(tRoom.le):"Month-to-Month"],
@@ -4462,7 +4446,7 @@ export default function Page(){
           return base;
         })();
         // Duplicate / returning detection
-        const allTenantsList=props.flatMap(p=>allRooms(p).filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.name,roomName:r.name,type:"current"})));
+        const allTenantsList=props.flatMap(p=>allRooms(p).filter(r=>r.tenant).map(r=>({name:(r.tenant&&r.tenant.name)||"",email:(r.tenant&&r.tenant.email)||"",phone:(r.tenant&&r.tenant.phone)||"",propName:p.addr||p.name,roomName:r.name,type:"current"})));
         const archiveList=archive.map(a=>({name:a.name||"",email:a.email||"",phone:a.phone||"",propName:a.propName,roomName:a.roomName,reason:a.reason,type:"past"}));
         const getFlags=(a)=>{
           const flags=[];
@@ -7501,7 +7485,7 @@ export default function Page(){
               borderRadius:12,transition:"opacity .15s,border-color .1s",cursor:"grab"}}>
             <div className="card-hd" onClick={()=>setExpanded(x=>({...x,["prop-"+p.id]:!x["prop-"+p.id]}))}>
               <div>
-                <h3><span style={{color:"#8a7d74",marginRight:4,cursor:"grab",fontSize:14}}>⠿</span>{isExp?"▾":"▸"} {p.name}</h3>
+                <h3><span style={{color:"#8a7d74",marginRight:4,cursor:"grab",fontSize:14}}>⠿</span>{isExp?"▾":"▸"} {p.addr||p.name}</h3>
                 <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>{p.addr} · {(PROP_TYPES[p.type]||PROP_TYPES.SFH).label} · {allWhole?"Whole Unit":anyWhole?"Mixed":allRooms(p).length+"br"} · {(p.units||[]).length>1?(p.units||[]).length+" units":"1 unit"} · {(p.units||[])[0]?.utils==="allIncluded"?"All Utils":"Tenant Pays"}</div>
               </div>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
@@ -7557,13 +7541,13 @@ export default function Page(){
                       <div style={{textAlign:"right",minWidth:60,marginRight:8}}>
                         <div style={{fontSize:14,fontWeight:800}}>{fmtS(u.rent)}</div>
                       </div>
-                      <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{if(uOcc){const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}else if(!u.ownerOccupied){setTab("applications");setBulkSel([])}}}>{uOcc?"👤 View Tenant":u.ownerOccupied?"🏠 Owner":"+ Find Tenant"}</button>
+                      <button className="btn btn-out btn-sm" style={{fontSize:9,color:"#4a7c59",borderColor:"rgba(74,124,89,.2)"}} onClick={()=>{if(uOcc){const rep=(u.rooms||[]).find(r=>r.tenant);if(rep)setModal({type:"tenant",data:{...rep,propName:p.addr||p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label}});}else if(!u.ownerOccupied){setTab("applications");setBulkSel([])}}}>{uOcc?"👤 View Tenant":u.ownerOccupied?"🏠 Owner":"+ Find Tenant"}</button>
                     </div>
                   ):(
                     <>
                     {uRooms.length===0&&<div style={{fontSize:11,color:"#7a7067",padding:"6px 0"}}>No rooms — edit property to add</div>}
                     {uRooms.map(r=>{const occ=r.st==="occupied"&&r.tenant;const pd=(payments[r.id]&&payments[r.id][MO])||0;const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
-                      const tenantData={...r,propName:p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label};
+                      const tenantData={...r,propName:p.addr||p.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,unitName:u.name,unitLabel:u.label};
                       return(<div key={r.id} className="row" style={{padding:"10px 12px",marginBottom:3,cursor:"default",background:occ&&dl&&dl<=30?"rgba(196,92,74,.02)":occ&&dl&&dl<=90?"rgba(212,168,83,.02)":"#fff"}}>
                         <div className="row-dot" style={{background:occ?"#4a7c59":"#c45c4a",flexShrink:0}}/>
                         <div className="row-i">
@@ -11693,7 +11677,7 @@ export default function Page(){
     const ds2=(d)=>{if(!d)return 0;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
     const saveApp=(id,key,val)=>{setApps(p=>p.map(x=>x.id===id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
     const days=ds2(a.lastContact||a.submitted);
-    const allVacant=props.flatMap(p=>allRooms(p).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.name,propId:p.id})));
+    const allVacant=props.flatMap(p=>allRooms(p).filter(r=>r.st==="vacant").map(r=>({...r,propName:p.addr||p.name,propId:p.id})));
     const targetProp=a.termPropId?props.find(p=>p.id===a.termPropId):props.find(p=>p.name===a.property);
     const targetRoom=targetProp?allRooms(targetProp).find(r=>r.name===a.room&&r.st==="vacant"):null;
     const mf=[];var nm3=(a.name||"").toLowerCase();
