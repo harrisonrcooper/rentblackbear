@@ -5684,7 +5684,7 @@ export default function Page(){
                       </select>
                     </div>
                     <div className="fld"><label>Room / Unit</label>
-                      <select value={leaseForm.room||""} onChange={e=>{
+                      <select value={leaseForm.roomId||leaseForm.room||""} onChange={e=>{
                         const lp=props.find(p=>p.name===leaseForm.property);
                         if(!lp)return;
                         const items=leaseableItems(lp);
