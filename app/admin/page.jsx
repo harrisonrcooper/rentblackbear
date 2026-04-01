@@ -12266,8 +12266,7 @@ export default function Page(){
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M10 2H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5z"/><path d="M10 2v3h3M6 8h4M6 11h3"/></svg>
               </div>
               <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Application data</div>
-              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{a.submitted&&<span style={{fontSize:10,color:"#9a8878"}}>{a.submitted}</span>}</div>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
+              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{a.submitted&&<span style={{fontSize:10,color:"#9a8878"}}>{fmtD(a.submitted)}</span>}</div>
             </div>
             {_o&&<div style={{padding:"0 0 4px"}}>
       {/* ── Application Submitted Data ── */}
@@ -12451,65 +12450,6 @@ export default function Page(){
         );
       })()}
       {!["new-lead","pre-screened","called","invited"].includes(a.status)&&(()=>{
-        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="screening";
-        return(
-          <div style={{borderBottom:"1px solid #f0ede8"}}>
-            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="screening"?null:"screening"}))}>  
-              <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
-              </div>
-              <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Screening checklist</div>
-              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{(()=>{const _n=["bgCheck","refs","idVerified"].filter(k=>!a[k]||a[k]==="not-started").length;return _n>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{_n} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;})()}</div>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            {_o&&<div style={{padding:"0 0 4px"}}>
-      {/* ── Screening Checklist — show at applied + reviewing ── */}
-      {(a.status==="applied"||a.status==="reviewing")&&<div className="tp-card">
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <h3 style={{margin:0}}>Screening Checklist</h3>
-          {a.waiverReason&&<span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"2px 7px",borderRadius:8,fontWeight:700}}>Screening waived</span>}
-        </div>
-        {reqs.map(r=>{
-          const isW=waived.includes(r.label);
-          const val=a[r.key]||"not-started";
-          const isCreditScore=r.key==="creditScore";
-          const statusColor=val==="passed"||val==="verified"?"#2d6a3f":val==="failed"?"#c45c4a":val==="pending"?"#9a7422":"#aaa";
-          return(
-            <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1,gap:8}}>
-              <div style={{flex:1}}>
-                <span style={{fontSize:12,fontWeight:500,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
-                {isW&&<span style={{fontSize:9,color:"#6b5e52",marginLeft:6}}>Waived</span>}
-                {!isCreditScore&&!isW&&<div style={{fontSize:9,color:statusColor,fontWeight:700,marginTop:1,textTransform:"uppercase",letterSpacing:.3}}>{val==="not-started"?"Not started":val}</div>}
-              </div>
-              {!isW&&(isCreditScore
-                ?<div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <input type="number" value={a.creditScore&&a.creditScore!=="—"?a.creditScore:""} placeholder="Score"
-                    onChange={e=>{const v=e.target.value||"—";setApps(p=>p.map(x=>x.id===a.id?{...x,creditScore:v}:x));setModal(prev=>({...prev,data:{...prev.data,creditScore:v}}));}}
-                    style={{width:70,padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",textAlign:"center"}}/>
-                  <select value={a.bgCheck==="passed"?"passed":a.bgCheck==="failed"?"failed":"not-started"}
-                    onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,bgCheck:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,bgCheck:e.target.value}}));}}
-                    style={{padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",display:"none"}}/>
-                </div>
-                :<select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}}
-                  style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",background:"#fff",color:statusColor,fontWeight:700}}>
-                  <option value="not-started">Not Started</option>
-                  <option value="pending">In Progress</option>
-                  <option value="passed">Passed</option>
-                  <option value="verified">Verified</option>
-                  <option value="failed">Failed</option>
-                </select>
-              )}
-            </div>);
-        })}
-        {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
-      </div>}
-
-
-            </div>}
-          </div>
-        );
-      })()}
-      {!["new-lead","pre-screened","called","invited"].includes(a.status)&&(()=>{
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="docs";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
@@ -12648,6 +12588,65 @@ export default function Page(){
         );
       })()}
       {(()=>{
+        const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="screening";
+        return(
+          <div style={{borderBottom:"1px solid #f0ede8"}}>
+            <div style={{display:"flex",alignItems:"center",gap:9,padding:"10px 16px",cursor:"pointer",userSelect:"none",background:_o?"rgba(26,23,20,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_accOpen:p._accOpen==="screening"?null:"screening"}))}>  
+              <div style={{width:26,height:26,borderRadius:7,background:_o?"#1a1714":"#f0ede8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s"}}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke={_o?"#d4a853":"#5c4a3a"} strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
+              </div>
+              <div style={{fontSize:12,fontWeight:600,color:"#1a1714",flex:1}}>Screening checklist</div>
+              <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap"}}>{(()=>{const _n=["bgCheck","refs","idVerified"].filter(k=>!a[k]||a[k]==="not-started").length;return _n>0?<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#633806"}}>{_n} pending</span>:<span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>Complete</span>;})()}</div>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            {_o&&<div style={{padding:"0 0 4px"}}>
+      {/* ── Screening Checklist — show at applied + reviewing ── */}
+      {(a.status==="applied"||a.status==="reviewing")&&<div className="tp-card">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <h3 style={{margin:0}}>Screening Checklist</h3>
+          {a.waiverReason&&<span style={{fontSize:9,color:"#9a7422",background:"rgba(212,168,83,.1)",padding:"2px 7px",borderRadius:8,fontWeight:700}}>Screening waived</span>}
+        </div>
+        {reqs.map(r=>{
+          const isW=waived.includes(r.label);
+          const val=a[r.key]||"not-started";
+          const isCreditScore=r.key==="creditScore";
+          const statusColor=val==="passed"||val==="verified"?"#2d6a3f":val==="failed"?"#c45c4a":val==="pending"?"#9a7422":"#aaa";
+          return(
+            <div key={r.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:"1px solid rgba(0,0,0,.03)",opacity:isW?0.4:1,gap:8}}>
+              <div style={{flex:1}}>
+                <span style={{fontSize:12,fontWeight:500,textDecoration:isW?"line-through":"none"}}>{r.label}</span>
+                {isW&&<span style={{fontSize:9,color:"#6b5e52",marginLeft:6}}>Waived</span>}
+                {!isCreditScore&&!isW&&<div style={{fontSize:9,color:statusColor,fontWeight:700,marginTop:1,textTransform:"uppercase",letterSpacing:.3}}>{val==="not-started"?"Not started":val}</div>}
+              </div>
+              {!isW&&(isCreditScore
+                ?<div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <input type="number" value={a.creditScore&&a.creditScore!=="—"?a.creditScore:""} placeholder="Score"
+                    onChange={e=>{const v=e.target.value||"—";setApps(p=>p.map(x=>x.id===a.id?{...x,creditScore:v}:x));setModal(prev=>({...prev,data:{...prev.data,creditScore:v}}));}}
+                    style={{width:70,padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",textAlign:"center"}}/>
+                  <select value={a.bgCheck==="passed"?"passed":a.bgCheck==="failed"?"failed":"not-started"}
+                    onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,bgCheck:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,bgCheck:e.target.value}}));}}
+                    style={{padding:"3px 6px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",display:"none"}}/>
+                </div>
+                :<select value={val} onChange={e=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[r.key]:e.target.value}:x));setModal(prev=>({...prev,data:{...prev.data,[r.key]:e.target.value}}));}}
+                  style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit",background:"#fff",color:statusColor,fontWeight:700}}>
+                  <option value="not-started">Not Started</option>
+                  <option value="pending">In Progress</option>
+                  <option value="passed">Passed</option>
+                  <option value="verified">Verified</option>
+                  <option value="failed">Failed</option>
+                </select>
+              )}
+            </div>);
+        })}
+        {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:6,fontStyle:"italic"}}>Waiver: {a.waiverReason}</div>}
+      </div>}
+
+
+            </div>}
+          </div>
+        );
+      })()}
+      {!["new-lead","pre-screened","called","invited"].includes(a.status)&&(()=>{
         const _o=(modal._accOpen===undefined||modal._accOpen===null?"room":modal._accOpen)==="housemates";
         return(
           <div style={{borderBottom:"1px solid #f0ede8"}}>
