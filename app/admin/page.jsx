@@ -5405,8 +5405,8 @@ export default function Page(){
             lastMonthInstallments:3,
             lastMonthFrequency:"monthly",
             _lockedFromApp:!!app,
-            hasAssignedParking:false,
-            parking:"",
+            parkingChoice:room?.parking?(room.parking==="none"?"no":"yes"):null,
+            parking:room?.parking&&room.parking!=="none"?room.parking:"",
             moveIn:mi,leaseStart:mi,
             leaseEnd:isTbd?"":leaseEndD.toISOString().split("T")[0],
             leaseEndTbd:isTbd,
@@ -5437,6 +5437,8 @@ export default function Page(){
           const _pid=leaseForm.propertyId||props.find(p=>getPropDisplayName(p)===leaseForm.property)?.id||"";
           if(!_pid) errs.propertyId="Select a property before saving.";
           if(!leaseForm.roomId&&!(leaseForm.room||"").trim()) errs.roomId="Select a room or unit before saving.";
+          if(leaseForm.parkingChoice===null||leaseForm.parkingChoice===undefined) errs.parkingChoice="Indicate whether this room has assigned parking.";
+          if(leaseForm.parkingChoice==="yes"&&!(leaseForm.parking||"").trim()) errs.parking="Enter the parking space description.";
           if(Object.keys(errs).length>0){_triggerLeaseWiggle(errs);return;}
           const now=TODAY.toISOString().split("T")[0];
           const rentWords=leaseForm.rent?numberToWords(leaseForm.rent):"";
@@ -5524,7 +5526,8 @@ export default function Page(){
           if(!leaseForm.leaseStart) errs.leaseStart="Lease start date is required.";
           if(!leaseForm.leaseEndTbd&&!leaseForm.leaseEnd) errs.leaseEnd="Lease end date is required, or toggle TBD.";
           if(!leaseForm.doorCode||leaseForm.doorCode.trim().length!==4) errs.doorCode="A 4-digit door code is required before signing.";
-          if(leaseForm.hasAssignedParking&&!leaseForm.parking?.trim()) errs.parking="Parking space description is required when assigned parking is enabled.";
+          if(leaseForm.parkingChoice===null||leaseForm.parkingChoice===undefined) errs.parkingChoice="Indicate whether this room has assigned parking.";
+          if(leaseForm.parkingChoice==="yes"&&!(leaseForm.parking||"").trim()) errs.parking="Enter the parking space description.";
           if(!leaseForm.utilitiesMode||(leaseForm.utilitiesMode==="custom"&&!leaseForm.utilitiesClause?.trim())) errs.utilitiesMode="Select a utilities arrangement before signing.";
           if(Object.keys(errs).length>0){_triggerLeaseWiggle(errs);return;}
           saveDraft();
@@ -5755,7 +5758,7 @@ export default function Page(){
                         const unit=(lp.units||[]).find(u=>u.id===item.unitId);
                         const uKey=unit?.utils||"allIncluded";
                         const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";
-                        setLeaseForm(p=>({...p,room:item.name,roomId:item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parking:item.parking||"",utilitiesMode:uKey,utilitiesClause:uClause,_errors:{...(p._errors||{}),roomId:null}}));
+                        setLeaseForm(p=>({...p,room:item.name,roomId:item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parkingChoice:item.parking?(item.parking==="none"?"no":"yes"):null,parking:item.parking&&item.parking!=="none"?item.parking:"",utilitiesMode:uKey,utilitiesClause:uClause,_errors:{...(p._errors||{}),roomId:null,parkingChoice:null}}));
                       }} style={{width:"100%",borderColor:leaseForm._errors?.roomId?"#c45c4a":undefined}}>
                         <option value="">Select...</option>
                         {(()=>{const lp=props.find(p=>p.id===_resolvedPropId);if(!lp)return null;
@@ -5769,7 +5772,6 @@ export default function Page(){
                     </div>
                   </div>
                 </>);})()}
-            }
           </div>
 
           {(()=>{
@@ -5837,22 +5839,39 @@ export default function Page(){
                   {leaseForm._errors?.doorCode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>{leaseForm._errors.doorCode}</div>}
                 </div>
                 <div className="fld">
-                  <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span>Parking</span>
-                    <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontWeight:400}}>
-                      <span style={{fontSize:10,color:"#6b5e52"}}>Assigned parking</span>
-                      <button onClick={()=>setLeaseForm(p=>({...p,hasAssignedParking:!p.hasAssignedParking,_errors:{...(p._errors||{}),parking:null}}))} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:leaseForm.hasAssignedParking?"#4a7c59":"#ccc",position:"relative",padding:0,transition:"background .15s",flexShrink:0}}>
-                        <div style={{position:"absolute",width:12,height:12,borderRadius:"50%",background:"#fff",top:2,left:leaseForm.hasAssignedParking?16:2,transition:"left .15s"}}/>
-                      </button>
-                    </label>
+                  <label>Parking
+                    <span style={{color:"#c45c4a",marginLeft:3,fontSize:11}}>*</span>
                   </label>
-                  {leaseForm.hasAssignedParking
-                    ?<>
-                      <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_errors:{...(p._errors||{}),parking:null}}))} placeholder="e.g. Space A1, Driveway right side" style={{animation:leaseForm._errors?.parking?"shake .4s ease":undefined,borderColor:leaseForm._errors?.parking?"#c45c4a":undefined}}/>
-                      {leaseForm._errors?.parking&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>{leaseForm._errors.parking}</div>}
-                    </>
-                    :<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:"#6b5e52",marginTop:4}}>No assigned parking</div>
-                  }
+                  {(()=>{
+                    const pc=leaseForm.parkingChoice;
+                    const savePreset=()=>{
+                      const lp=props.find(p=>p.id===(leaseForm.propertyId||props.find(pp=>getPropDisplayName(pp)===leaseForm.property)?.id));
+                      if(!lp||!leaseForm.roomId)return;
+                      const parkVal=pc==="yes"?(leaseForm.parking||"").trim():pc==="no"?"none":"";
+                      if(!parkVal)return;
+                      const updatedUnits=(lp.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(r=>r.id===leaseForm.roomId?{...r,parking:parkVal}:r)}));
+                      const updatedProps=props.map(p=>p.id===lp.id?{...p,units:updatedUnits}:p);
+                      setProps(updatedProps);
+                      setLeaseForm(p=>({...p,_parkingPresetSaved:true}));
+                      setTimeout(()=>setLeaseForm(p=>p?({...p,_parkingPresetSaved:false}):p),2500);
+                    };
+                    const btnBase={padding:"7px 14px",fontSize:11,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",border:"1px solid"};
+                    return(<>
+                      <div style={{display:"flex",gap:8,marginTop:4}}>
+                        <button onClick={()=>setLeaseForm(p=>({...p,parkingChoice:"yes",_errors:{...(p._errors||{}),parkingChoice:null}}))} style={{...btnBase,flex:1,background:pc==="yes"?"#4a7c59":"transparent",color:pc==="yes"?"#fff":"#6b5e52",borderColor:pc==="yes"?"#4a7c59":leaseForm._errors?.parkingChoice?"#c45c4a":"rgba(0,0,0,.15)"}}>Yes — Assigned Parking</button>
+                        <button onClick={()=>setLeaseForm(p=>({...p,parkingChoice:"no",parking:"",_errors:{...(p._errors||{}),parkingChoice:null,parking:null}}))} style={{...btnBase,flex:1,background:pc==="no"?"#6b5e52":"transparent",color:pc==="no"?"#fff":"#6b5e52",borderColor:pc==="no"?"#6b5e52":leaseForm._errors?.parkingChoice?"#c45c4a":"rgba(0,0,0,.15)"}}>No Parking</button>
+                      </div>
+                      {leaseForm._errors?.parkingChoice&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.parkingChoice}</div>}
+                      {pc==="yes"&&<>
+                        <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_errors:{...(p._errors||{}),parking:null},_parkingPresetSaved:false}))} placeholder="e.g. Space A1, right side of driveway" style={{marginTop:8,animation:leaseForm._errors?.parking?"shake .4s ease":undefined,borderColor:leaseForm._errors?.parking?"#c45c4a":undefined}}/>
+                        {leaseForm._errors?.parking&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.parking}</div>}
+                        {(leaseForm.parking||"").trim()&&leaseForm.roomId&&<button onClick={savePreset} style={{marginTop:6,width:"100%",padding:"6px 10px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._parkingPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._parkingPresetSaved?"#fff":"#2d6a3f",transition:"all .3s"}}>
+                          {leaseForm._parkingPresetSaved?"Preset saved for this room":"Save as preset for this room / bedroom"}
+                        </button>}
+                      </>}
+                      {pc==="no"&&<div style={{marginTop:6,padding:"6px 10px",borderRadius:6,background:"rgba(0,0,0,.03)",border:"0.5px solid rgba(0,0,0,.08)",fontSize:11,color:"#6b5e52"}}>No parking assigned — lease will reflect this.</div>}
+                    </>);
+                  })()}
                 </div>
               </div>
               <div className="fld"><label>Utilities Clause</label>
