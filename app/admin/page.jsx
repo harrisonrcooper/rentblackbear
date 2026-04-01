@@ -340,7 +340,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","accounting"],couplesDefault:false,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",pmName:"Carolina Cooper",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","accounting"],couplesDefault:false,
   // Portfolio-wide late fee defaults — per-room lateConfig inherits these if fields are null
   lateFeeGraceDays:3,    // days after due before any fee applies
   lateFeeInitial:50,     // default one-time initial fee (flat $)
@@ -7247,6 +7247,7 @@ export default function Page(){
         <div className="card"><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Company Info</h3>
           <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
+          <div className="fld"><label>Property Manager Name <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>— used in outgoing reference & applicant emails</span></label><input value={settings.pmName||""} onChange={e=>setSettings({...settings,pmName:e.target.value})} placeholder="Carolina Cooper"/></div>
           <div className="fr3"><div className="fld"><label>Phone</label><input value={settings.phone} onChange={e=>setSettings({...settings,phone:e.target.value})}/></div><div className="fld"><label>Public Email</label><input value={settings.email} onChange={e=>setSettings({...settings,email:e.target.value})} placeholder="info@rentblackbear.com"/></div><div className="fld"><label>City</label><input value={settings.city} onChange={e=>setSettings({...settings,city:e.target.value})}/></div></div><div className="fld"><label>PM Notification Email <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>— where you receive application, lease, and payment alerts</span></label><input type="email" value={settings.pmEmail||""} onChange={e=>setSettings({...settings,pmEmail:e.target.value})} placeholder="blackbearhousing@gmail.com"/></div>
         </div></div>
         {/* Signature Settings */}
@@ -12273,7 +12274,7 @@ export default function Page(){
       {a.applicationData&&(()=>{
         const ad=a.applicationData;
         const open=modal._appDataOpen!==false;
-        const Row=({label,val,red,green})=>val?<div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}><span style={{color:"#6b5e52"}}>{label}</span><span style={{fontWeight:600,color:red?"#c45c4a":green?"#2d6a3f":"#1a1714",textAlign:"right",maxWidth:"60%"}}>{val}</span></div>:null;
+        const Row=({label,val,red,green})=>val?<div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}><span style={{color:"#3d3529"}}>{label}</span><span style={{fontWeight:600,color:red?"#c45c4a":green?"#2d6a3f":"#1a1714",textAlign:"right",maxWidth:"60%"}}>{val}</span></div>:null;
         return(
         <div className="tp-card" style={{padding:0,overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 18px",cursor:"pointer",background:open?"rgba(74,124,89,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_appDataOpen:!open}))}>
@@ -12286,7 +12287,7 @@ export default function Page(){
           {open&&<div style={{padding:"0 18px 16px"}}>
 
             {/* Documents */}
-            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6}}>Documents</div>
+            <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6}}>Documents</div>
             {(()=>{
               const docs=ad.appDocs||[];
               const flag=ad.docsFlag||{};
@@ -12295,8 +12296,8 @@ export default function Page(){
               const payStubs=docs.filter(x=>x.type==="PayStub"&&x.url);
               const idUploaded=idFront||idBack;
               return(<>
-                <div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}>
-                  <span style={{color:"#6b5e52"}}>Photo ID</span>
+                <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}>
+                  <span style={{color:"#3d3529"}}>Photo ID</span>
                   <span style={{fontWeight:600,textAlign:"right"}}>
                     {flag.idUploadLater?<span style={{color:"#9a7422"}}>Will upload later</span>
                     :idUploaded?<span style={{display:"flex",gap:6}}>
@@ -12306,8 +12307,8 @@ export default function Page(){
                     :<span style={{color:"#c45c4a"}}>Not uploaded</span>}
                   </span>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}>
-                  <span style={{color:"#6b5e52"}}>Pay Stubs</span>
+                <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:13}}>
+                  <span style={{color:"#3d3529"}}>Pay Stubs</span>
                   <span style={{fontWeight:600,textAlign:"right"}}>
                     {flag.incomeUploadLater?<span style={{color:"#9a7422"}}>Will upload later</span>
                     :payStubs.length>0?<span style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
@@ -12321,7 +12322,7 @@ export default function Page(){
             {ad.doorCode&&<Row label="Door Code" val={ad.doorCode}/>}
 
             {/* Personal */}
-            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Personal</div>
+            <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Personal</div>
             <Row label="Date of Birth" val={ad.dob?fmtD(ad.dob):null}/>
             <Row label="Gender" val={ad.gender}/>
             <Row label="Occupation Type" val={ad.occupationType+(ad.occupationTypeOther?" — "+ad.occupationTypeOther:"")}/>
@@ -12330,17 +12331,17 @@ export default function Page(){
 
             {/* Rental History */}
             {(ad.addresses||[]).length>0&&<>
-              <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Rental History</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Rental History</div>
               {(ad.addresses||[]).map((addr,i)=>(
                 <div key={i} style={{marginBottom:10,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                    <span style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{addr.street}{addr.unit?" #"+addr.unit:""}, {addr.city} {addr.state}</span>
+                    <span style={{fontSize:13,fontWeight:700,color:"#1a1714"}}>{addr.street}{addr.unit?" #"+addr.unit:""}, {addr.city} {addr.state}</span>
                     <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:8,background:addr.resType==="Rent"?"rgba(212,168,83,.1)":"rgba(74,124,89,.1)",color:addr.resType==="Rent"?"#9a7422":"#2d6a3f"}}>{addr.resType}</span>
                   </div>
-                  <div style={{fontSize:10,color:"#6b5e52"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
-                  {addr.reason&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
+                  <div style={{fontSize:12,color:"#3d3529"}}>Since {addr.monthIn} {addr.yearIn}{addr.rent?" · $"+addr.rent+"/mo":""}</div>
+                  {addr.reason&&<div style={{fontSize:12,color:"#3d3529",marginTop:3,fontStyle:"italic"}}>Moving: {addr.reason}</div>}
                   {addr.resType==="Other"&&addr.otherSituation&&<div style={{fontSize:10,color:"#6b5e52",marginTop:3}}>{addr.otherSituation}</div>}
-                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+                  {addr.resType==="Rent"&&addr.landlordEmail&&<div style={{fontSize:12,color:"#3d3529",marginTop:4,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
                     <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
                       <span style={{fontWeight:600}}>Landlord: {addr.landlordFirstName} {addr.landlordLastName}</span>
                       <span>{addr.landlordEmail}</span>
@@ -12350,7 +12351,7 @@ export default function Page(){
                       const refName=addr.landlordFirstName||"there";
                       const name=ad.firstName||a.name.split(" ")[0];
                       const subject="Tenant Reference Request — "+a.name+" (Rental Application)";
-                      const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as a previous landlord. We would appreciate a moment of your time to verify a few details:\n\n1. Did ${name} rent from you at ${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}?\n2. Did they pay rent on time and care for the property?\n3. Would you rent to them again?\n\nPlease reply directly to this email.\n\nThank you for your time,\nCarolina Cooper\nBlack Bear Rentals\n(850) 696-8101\ninfo@rentblackbear.com`;
+                      const body=`Hi ${refName},\n\nMy name is ${settings.pmName||"Carolina Cooper"} from ${settings.companyName||"Black Bear Rentals"} in ${settings.city||"Huntsville, AL"}.\n\n${a.name} has applied to rent one of our properties and listed you as a previous landlord. We would appreciate a moment of your time to verify a few details:\n\n1. Did ${name} rent from you at ${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}?\n2. Did they pay rent on time and care for the property?\n3. Would you rent to them again?\n\nPlease reply directly to this email.\n\nThank you for your time,\n${settings.pmName||"Carolina Cooper"}\n${settings.companyName||"Black Bear Rentals"}\n${settings.phone||"(850) 696-8101"}\n${settings.email||"info@rentblackbear.com"}`;
                       setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject,body,type:"reference",refName,refType:"Previous Landlord"}}));
                     }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                       Draft Email →
@@ -12362,18 +12363,18 @@ export default function Page(){
 
             {/* References */}
             {(ad.empRefFirstName||ad.persRefFirstName)&&<>
-              <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>References</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>References</div>
               {ad.empRefFirstName&&!ad.unemployed&&<div style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                   <div>
                     <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{ad.empRefFirstName} {ad.empRefLastName}</div>
-                    <div style={{fontSize:9,color:"#6b5e52"}}>{ad.empRefRelation||"Employer Reference"} · {ad.empRefEmail} · {ad.empRefPhone}</div>
+                    <div style={{fontSize:11,color:"#3d3529"}}>{ad.empRefRelation||"Employer Reference"} · {ad.empRefEmail} · {ad.empRefPhone}</div>
                   </div>
                   <button onClick={()=>{
                     const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.empRefFirstName;
                     const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:\n\n1. Can you confirm ${name} is/was employed at your organization?\n2. What is/was their role and approximate start date?\n3. Would you recommend them as a tenant?\n\nPlease reply directly to this email. This typically takes only 2–3 minutes.\n\nThank you for your time,\nCarolina Cooper\nBlack Bear Rentals\n(850) 696-8101\ninfo@rentblackbear.com`;
+                    const body=`Hi ${refName},\n\nMy name is ${settings.pmName||"Carolina Cooper"} from ${settings.companyName||"Black Bear Rentals"} in ${settings.city||"Huntsville, AL"}.\n\n${a.name} has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:\n\n1. Can you confirm ${name} is/was employed at your organization?\n2. What is/was their role and approximate start date?\n3. Would you recommend them as a tenant?\n\nPlease reply directly to this email. This typically takes only 2–3 minutes.\n\nThank you for your time,\n${settings.pmName||"Carolina Cooper"}\n${settings.companyName||"Black Bear Rentals"}\n${settings.phone||"(850) 696-8101"}\n${settings.email||"info@rentblackbear.com"}`;
                     setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject,body,type:"reference",refName,refType:"Employer Reference"}}));
                   }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                     Draft Email →
@@ -12391,13 +12392,13 @@ export default function Page(){
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                   <div>
                     <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{ad.persRefFirstName} {ad.persRefLastName}</div>
-                    <div style={{fontSize:9,color:"#6b5e52"}}>{ad.persRefRelation||"Personal Reference"} · {ad.persRefEmail} · {ad.persRefPhone}</div>
+                    <div style={{fontSize:11,color:"#3d3529"}}>{ad.persRefRelation||"Personal Reference"} · {ad.persRefEmail} · {ad.persRefPhone}</div>
                   </div>
                   <button onClick={()=>{
                     const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.persRefFirstName;
                     const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.\n\n1. How long have you known ${name} and in what capacity?\n2. Would you describe them as responsible and respectful?\n3. Is there anything else you'd like us to know?\n\nPlease reply directly to this email.\n\nThank you for your time,\nCarolina Cooper\nBlack Bear Rentals\n(850) 696-8101\ninfo@rentblackbear.com`;
+                    const body=`Hi ${refName},\n\nMy name is ${settings.pmName||"Carolina Cooper"} from ${settings.companyName||"Black Bear Rentals"} in ${settings.city||"Huntsville, AL"}.\n\n${a.name} has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.\n\n1. How long have you known ${name} and in what capacity?\n2. Would you describe them as responsible and respectful?\n3. Is there anything else you'd like us to know?\n\nPlease reply directly to this email.\n\nThank you for your time,\n${settings.pmName||"Carolina Cooper"}\n${settings.companyName||"Black Bear Rentals"}\n${settings.phone||"(850) 696-8101"}\n${settings.email||"info@rentblackbear.com"}`;
                     setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject,body,type:"reference",refName,refType:"Personal Reference"}}));
                   }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                     Draft Email →
@@ -12414,7 +12415,7 @@ export default function Page(){
             </>}
 
             {/* Employment */}
-            <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Employment</div>
+            <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Employment</div>
             {ad.unemployed?<div style={{fontSize:11,color:"#c45c4a",fontWeight:600,padding:"4px 0"}}>Unemployed</div>
             :(ad.employers||[]).length===0?<div style={{fontSize:11,color:"#aaa",padding:"4px 0"}}>No employers listed</div>
             :(ad.employers||[]).map((emp,i)=>(
@@ -12427,7 +12428,7 @@ export default function Page(){
 
             {/* Emergency Contact */}
             {(ad.emergName||ad.emergPhone)&&<>
-              <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Emergency Contact</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Emergency Contact</div>
               <Row label="Name" val={ad.emergName}/>
               <Row label="Phone" val={ad.emergPhone}/>
               <Row label="Relationship" val={ad.emergRelation}/>
@@ -12435,7 +12436,7 @@ export default function Page(){
 
             {/* Partner */}
             {ad.partnerName&&ad.partnerName.trim()&&<>
-              <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Partner / Co-Occupant</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Partner / Co-Occupant</div>
               <Row label="Name" val={ad.partnerName}/>
               <Row label="Email" val={ad.partnerEmail}/>
             </>}
@@ -12902,7 +12903,15 @@ export default function Page(){
     const em=modal._draftEmail;
     return(<div className="mbg" onClick={()=>setModal(p=>({...p,_draftEmail:null}))}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
       <h2 style={{marginBottom:4}}>{em.type==="reupload"?"Request Re-Upload":"Reference Check Email"}</h2>
-      <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>Review the draft below, edit if needed, then click Send.</p>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <p style={{fontSize:11,color:"#6b5e52",margin:0}}>Review the draft below, edit if needed, then click Send.</p>
+        <button onClick={()=>{setModal(null);goTab("settings");}} style={{fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+          ⚙ Configure Sender
+        </button>
+      </div>
+      <div style={{padding:"8px 12px",borderRadius:7,background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",fontSize:11,color:"#5c4a3a",marginBottom:16}}>
+        Sending as: <strong>{settings.pmName||"Carolina Cooper"}</strong> · {settings.companyName||"Black Bear Rentals"} · {settings.email||"info@rentblackbear.com"}
+      </div>
       <div className="fld"><label>To</label><input value={em.to} onChange={e=>setModal(p=>({...p,_draftEmail:{...p._draftEmail,to:e.target.value}}))} style={{width:"100%",fontFamily:"inherit"}}/></div>
       <div className="fld"><label>Subject</label><input value={em.subject} onChange={e=>setModal(p=>({...p,_draftEmail:{...p._draftEmail,subject:e.target.value}}))} style={{width:"100%",fontFamily:"inherit"}}/></div>
       <div className="fld"><label>Message</label><textarea value={em.body} onChange={e=>setModal(p=>({...p,_draftEmail:{...p._draftEmail,body:e.target.value}}))} rows={12} style={{width:"100%",fontFamily:"inherit",fontSize:12,padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",resize:"vertical"}}/></div>
@@ -12910,7 +12919,7 @@ export default function Page(){
         <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_draftEmail:null}))}>Cancel</button>
         <button className="btn btn-gold" style={{flex:1}} onClick={async()=>{
           try{
-            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>"),fromName:"Carolina Cooper — Black Bear Rentals",replyTo:settings.email||"info@rentblackbear.com"})});
+            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>"),fromName:`${settings.pmName||"Carolina Cooper"} — ${settings.companyName||"Black Bear Rentals"}`,replyTo:settings.email||"info@rentblackbear.com"})});
             const d=await r.json();
             if(d.ok||r.ok){
               // Log to comm log
