@@ -4669,7 +4669,7 @@ export default function Page(){
               :stage==="approved"
               ?activeApps.filter(function(a){return a.status==="approved";})
               :stage==="new-lead"
-              ?activeApps.filter(function(a){return["new-lead","pre-screened","called","invited"].includes(a.status);})
+              ?activeApps.filter(function(a){return["new-lead","pre-screened","called","invited","applied","reviewing"].includes(a.status);})
               :stage==="applied"
               ?activeApps.filter(function(a){return["applied","reviewing"].includes(a.status);})
               :activeApps.filter(function(a){return a.status===stage;});
@@ -11402,9 +11402,9 @@ export default function Page(){
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5 6.5 4z"/></svg>
           Score breakdown
         </div>
-        {["new-lead","pre-screened","called","invited"].includes(a.status)
+        {(["new-lead","pre-screened","called","invited"].includes(a.status)||(a.status==="applied"&&(!a.bgCheck||a.bgCheck==="not-started")&&(!a.creditScore||a.creditScore==="—")))
           ?<div style={{padding:"8px 10px",borderRadius:6,background:"#f0ede8",border:"1px solid #e4dfd8"}}>
-            <div style={{fontSize:11,color:"#9a8878",fontStyle:"italic"}}>N/A — score populated after application is submitted and screened.</div>
+            <div style={{fontSize:11,color:"#9a8878",fontStyle:"italic"}}>N/A — score populated after background check and credit screening are complete.</div>
           </div>
           :[["Income",a.income?Math.min(95,Math.round((parseInt((a.income+"").replace(/[^0-9]/g,""))||0)/55)):50],["Credit",a.creditScore&&a.creditScore!=="—"?Math.min(100,Math.round((parseInt(a.creditScore)||0)/7.5)):0],["Background",a.bgCheck==="passed"?100:a.bgCheck==="failed"?0:20],["References",a.refs==="verified"?100:a.refs==="pending"?50:10],["Rental hist.",80]].map(([lbl,val])=>(
           <div key={lbl} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
@@ -12447,7 +12447,7 @@ export default function Page(){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 18px",cursor:"pointer",background:open?"rgba(74,124,89,.03)":"#fff"}} onClick={()=>setModal(p=>({...p,_appDataOpen:!open}))}>
             <h3 style={{margin:0,fontSize:13}}>Application Data</h3>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:9,color:"#aaa",fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>submitted {a.submitted||""}</span>
+              <span style={{fontSize:9,color:"#aaa",fontWeight:600,textTransform:"uppercase",letterSpacing:.5}}>submitted {a.submitted?fmtD(a.submitted):""}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
@@ -12455,13 +12455,42 @@ export default function Page(){
 
             {/* Documents */}
             <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6}}>Documents</div>
-            <Row label="Photo ID" val={ad.idFileName||(ad.idUploadLater?"Will upload later":"Not uploaded")} green={!!ad.idFileName} red={!ad.idFileName&&!ad.idUploadLater}/>
-            <Row label="Pay Stubs" val={ad.payStubsName||(ad.incomeUploadLater?"Will upload later":"Not uploaded")} green={!!ad.payStubsName}/>
+            {(()=>{
+              const docs=ad.appDocs||[];
+              const flag=ad.docsFlag||{};
+              const idFront=docs.find(x=>x.type==="PhotoID-Front"&&x.url);
+              const idBack=docs.find(x=>x.type==="PhotoID-Back"&&x.url);
+              const payStubs=docs.filter(x=>x.type==="PayStub"&&x.url);
+              const idUploaded=idFront||idBack;
+              return(<>
+                <div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}>
+                  <span style={{color:"#6b5e52"}}>Photo ID</span>
+                  <span style={{fontWeight:600,textAlign:"right"}}>
+                    {flag.idUploadLater?<span style={{color:"#9a7422"}}>Will upload later</span>
+                    :idUploaded?<span style={{display:"flex",gap:6"}}>
+                      {idFront&&<a href={idFront.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Front ↗</a>}
+                      {idBack&&<a href={idBack.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Back ↗</a>}
+                    </span>
+                    :<span style={{color:"#c45c4a"}}>Not uploaded</span>}
+                  </span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(0,0,0,.03)",fontSize:11}}>
+                  <span style={{color:"#6b5e52"}}>Pay Stubs</span>
+                  <span style={{fontWeight:600,textAlign:"right"}}>
+                    {flag.incomeUploadLater?<span style={{color:"#9a7422"}}>Will upload later</span>
+                    :payStubs.length>0?<span style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                      {payStubs.map((s,i)=><a key={i} href={s.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Stub {i+1} ↗</a>)}
+                    </span>
+                    :<span style={{color:"#c45c4a"}}>Not uploaded</span>}
+                  </span>
+                </div>
+              </>);
+            })()}
             {ad.doorCode&&<Row label="Door Code" val={ad.doorCode}/>}
 
             {/* Personal */}
             <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>Personal</div>
-            <Row label="Date of Birth" val={ad.dob}/>
+            <Row label="Date of Birth" val={ad.dob?fmtD(ad.dob):null}/>
             <Row label="Gender" val={ad.gender}/>
             <Row label="Occupation Type" val={ad.occupationType+(ad.occupationTypeOther?" — "+ad.occupationTypeOther:"")}/>
             <Row label="Eviction History" val={ad.evicted==="yes"?"YES — "+( ad.evictedExplain||"no detail provided"):"No"} red={ad.evicted==="yes"} green={ad.evicted==="no"}/>
@@ -12486,6 +12515,91 @@ export default function Page(){
                   </div>}
                 </div>
               ))}
+            </>}
+
+            {/* References */}
+            {(ad.empRefFirstName||ad.persRefFirstName)&&<>
+              <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,padding:"12px 0 6px",borderBottom:"1px solid rgba(0,0,0,.05)",marginBottom:6,marginTop:8}}>References</div>
+              {ad.empRefFirstName&&!ad.unemployed&&<div style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{ad.empRefFirstName} {ad.empRefLastName}</div>
+                    <div style={{fontSize:9,color:"#6b5e52"}}>{ad.empRefRelation||"Employer Reference"} · {ad.empRefEmail} · {ad.empRefPhone}</div>
+                  </div>
+                  <button onClick={()=>{
+                    const name=ad.firstName||a.name.split(" ")[0];
+                    const refName=ad.empRefFirstName;
+                    const subject="Reference Request — "+a.name+" (Rental Application)";
+                    const body="Hi "+refName+",
+
+My name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.
+
+"+a.name+" has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:
+
+1. Can you confirm "+name+" is/was employed at your organization?
+2. What is/was their role and approximate start date?
+3. Would you recommend them as a tenant?
+
+Please reply directly to this email. This typically takes only 2–3 minutes.
+
+Thank you for your time,
+Carolina Cooper
+Black Bear Rentals
+(850) 696-8101
+info@rentblackbear.com";
+                    setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject,body,type:"reference",refName,refType:"Employer Reference"}}));
+                  }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
+                    Draft Email →
+                  </button>
+                </div>
+                {(modal._refReplies||[]).filter(r=>r.email===ad.empRefEmail).map((r,i)=><div key={i} style={{marginTop:6,padding:"6px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,fontSize:10,borderLeft:"2px solid #4a7c59"}}>
+                  <div style={{fontWeight:600,color:"#2d6a3f",marginBottom:2}}>{r.date} — Reply logged</div>
+                  <div style={{color:"#3d3529"}}>{r.notes}</div>
+                </div>)}
+                <button onClick={()=>setModal(p=>({...p,_logReply:{email:ad.empRefEmail,name:refName=ad.empRefFirstName+" "+ad.empRefLastName,type:"Employer Reference"}}))} style={{marginTop:4,fontSize:9,color:"#6b5e52",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",padding:0}}>
+                  + Log Reply
+                </button>
+              </div>}
+              {ad.persRefFirstName&&<div style={{marginBottom:8,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:7,border:"1px solid rgba(0,0,0,.05)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <div>
+                    <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{ad.persRefFirstName} {ad.persRefLastName}</div>
+                    <div style={{fontSize:9,color:"#6b5e52"}}>{ad.persRefRelation||"Personal Reference"} · {ad.persRefEmail} · {ad.persRefPhone}</div>
+                  </div>
+                  <button onClick={()=>{
+                    const name=ad.firstName||a.name.split(" ")[0];
+                    const refName=ad.persRefFirstName;
+                    const subject="Reference Request — "+a.name+" (Rental Application)";
+                    const body="Hi "+refName+",
+
+My name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.
+
+"+a.name+" has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.
+
+1. How long have you known "+name+" and in what capacity?
+2. Would you describe them as responsible and respectful?
+3. Is there anything else you'd like us to know?
+
+Please reply directly to this email.
+
+Thank you for your time,
+Carolina Cooper
+Black Bear Rentals
+(850) 696-8101
+info@rentblackbear.com";
+                    setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject,body,type:"reference",refName,refType:"Personal Reference"}}));
+                  }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
+                    Draft Email →
+                  </button>
+                </div>
+                {(modal._refReplies||[]).filter(r=>r.email===ad.persRefEmail).map((r,i)=><div key={i} style={{marginTop:6,padding:"6px 8px",background:"rgba(74,124,89,.06)",borderRadius:5,fontSize:10,borderLeft:"2px solid #4a7c59"}}>
+                  <div style={{fontWeight:600,color:"#2d6a3f",marginBottom:2}}>{r.date} — Reply logged</div>
+                  <div style={{color:"#3d3529"}}>{r.notes}</div>
+                </div>)}
+                <button onClick={()=>setModal(p=>({...p,_logReply:{email:ad.persRefEmail,name:ad.persRefFirstName+" "+ad.persRefLastName,type:"Personal Reference"}}))} style={{marginTop:4,fontSize:9,color:"#6b5e52",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",padding:0}}>
+                  + Log Reply
+                </button>
+              </div>}
             </>}
 
             {/* Employment */}
@@ -12600,8 +12714,9 @@ export default function Page(){
       {(()=>{
         // Resolve prop: prefer termPropId (ID-based, most reliable) → property name → termRoomId room lookup
         const hmProp=a.termPropId?props.find(p=>p.id===a.termPropId)
+          :a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null)
           :a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)||(p.units||[]).some(u=>u.id===a.termRoomId))
-          :(a.property?props.find(p=>p.name===a.property):null);
+          :null;
         if(!hmProp)return null;
         const allItems=leaseableItems(hmProp);
         // Find the specific assigned item — for whole units termRoomId === u.id === i.id
@@ -12722,8 +12837,8 @@ export default function Page(){
             {_o&&<div style={{padding:"0 0 4px"}}>
       {/* Documents from application */}
       {(()=>{
-        const docs=a.appDocs||(a.applicationData?.appDocs)||[];
-        const flag=a.docsFlag||{};
+        const docs=(a.appDocs&&a.appDocs.length>0?a.appDocs:(a.applicationData?.appDocs)||[]).filter(x=>x.url);
+        const flag=a.docsFlag||(a.applicationData?.docsFlag)||{};
         const hasAny=docs.length>0||flag.idUploadLater||flag.incomeUploadLater;
         if(!hasAny)return null;
         const deleteDocFromStorage=async(doc)=>{
@@ -12738,13 +12853,39 @@ export default function Page(){
           });
           return r.ok||r.status===404;
         };
+        const setDocVerified=(docId,status)=>{
+          const updateDocs=d=>d.map(x=>x.id===docId?{...x,verified:status}:x);
+          const newDocs=updateDocs(docs.length>0?docs:(a.applicationData?.appDocs||[]));
+          const updatedApp={...a,appDocs:newDocs,applicationData:a.applicationData?{...a.applicationData,appDocs:newDocs}:a.applicationData};
+          const updatedApps=apps.map(x=>x.id===a.id?updatedApp:x);
+          setApps(updatedApps);save("hq-apps",updatedApps);
+          setModal(prev=>({...prev,data:updatedApp}));
+          // Update idVerified screening field if both ID docs verified
+          if(status==="verified"){
+            const allDocs=newDocs;
+            const frontOk=allDocs.find(x=>x.type==="PhotoID-Front")?.verified==="verified";
+            const backOk=allDocs.find(x=>x.type==="PhotoID-Back")?.verified==="verified";
+            if(frontOk&&backOk){
+              const ua=apps.map(x=>x.id===a.id?{...x,idVerified:"verified",appDocs:newDocs}:x);
+              setApps(ua);save("hq-apps",ua);
+              setModal(prev=>({...prev,data:{...prev.data,idVerified:"verified",appDocs:newDocs}}));
+            }
+          }
+        };
+        const requestReupload=async(docLabel)=>{
+          const subject="Action Required: Please Re-Upload Your "+docLabel;
+          const body="Hi "+a.name.split(" ")[0]+",\n\nThank you for submitting your application to Black Bear Rentals. We were unable to verify your "+docLabel+" — the image may be unclear, cropped, or missing.\n\nPlease log in to your application portal and re-upload a clear photo:\n\n"+window.location.origin+"/apply?invite="+a.id+"\n\nIf you have any questions, reply to this email.\n\nThank you,\nBlack Bear Rentals";
+          setModal(prev=>({...prev,_draftEmail:{to:a.email,subject,body,type:"reupload",docLabel}}));
+        };
         const DocCard=({doc})=>{
           const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
           const isUploaded=!!doc?.url;
+          const vStatus=doc?.verified||"unreviewed";
+          const borderColor=vStatus==="verified"?"rgba(74,124,89,.3)":vStatus==="rejected"?"rgba(196,92,74,.3)":"rgba(0,0,0,.07)";
           const handleDelete=()=>{
             showConfirm({
               title:"Delete Document Permanently?",
-              body:"This will permanently delete "+doc.label+" from Supabase Storage. This cannot be undone. The tenant will not be able to recover it.",
+              body:"This will permanently delete "+doc.label+" from Supabase Storage. This cannot be undone.",
               confirmLabel:"Delete Permanently",
               danger:true,
               onConfirm:async()=>{
@@ -12761,20 +12902,31 @@ export default function Page(){
               }
             });
           };
-          return(<div style={{marginBottom:10,borderRadius:9,overflow:"hidden",border:doc.tenantHidden?"1px dashed rgba(196,92,74,.3)":"1px solid rgba(0,0,0,.07)"}}>
-            <div style={{padding:"8px 10px",background:doc.tenantHidden?"rgba(196,92,74,.03)":"rgba(0,0,0,.02)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div>
-                <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{doc.label}</div>
-                {isUploaded&&<div style={{fontSize:9,color:"#6b5e52"}}>{doc.name}</div>}
-                {doc.tenantHidden&&<div style={{fontSize:9,color:"#c45c4a",fontWeight:600,marginTop:1}}>Hidden by tenant</div>}
+          return(<div style={{marginBottom:10,borderRadius:9,overflow:"hidden",border:"1px solid "+borderColor}}>
+            <div style={{padding:"8px 10px",background:vStatus==="verified"?"rgba(74,124,89,.04)":vStatus==="rejected"?"rgba(196,92,74,.03)":"rgba(0,0,0,.02)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isUploaded?6:0}}>
+                <div>
+                  <div style={{fontSize:11,fontWeight:700,color:"#1a1714"}}>{doc.label}</div>
+                  {isUploaded&&<div style={{fontSize:9,color:"#6b5e52",marginTop:1}}>{doc.name}</div>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                  {isUploaded?<>
+                    {vStatus==="verified"&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.12)",color:"#2d6a3f"}}>Verified</span>}
+                    {vStatus==="rejected"&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(196,92,74,.1)",color:"#c45c4a"}}>Rejected</span>}
+                    {vStatus==="unreviewed"&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Unreviewed</span>}
+                    <a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-out btn-sm" style={{fontSize:9,padding:"3px 8px",textDecoration:"none"}}>View</a>
+                  </>:<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Not uploaded</span>}
+                </div>
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {isUploaded
-                  ?<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#2d6a3f"}}>Uploaded</span>
-                  :<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.1)",color:"#9a7422"}}>Pending</span>}
-                {isUploaded&&<a href={doc.url} target="_blank" rel="noreferrer" className="btn btn-out btn-sm" style={{fontSize:9,padding:"3px 8px",textDecoration:"none"}}>View</a>}
-                {isUploaded&&<button onClick={handleDelete} style={{background:"none",border:"1px solid rgba(196,92,74,.25)",borderRadius:5,color:"#c45c4a",fontSize:9,cursor:"pointer",fontFamily:"inherit",fontWeight:600,padding:"3px 7px"}}>Delete</button>}
-              </div>
+              {isUploaded&&<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                <button onClick={()=>setDocVerified(doc.id,"verified")} style={{fontSize:9,padding:"3px 9px",borderRadius:5,border:"1px solid rgba(74,124,89,.3)",background:vStatus==="verified"?"#4a7c59":"#fff",color:vStatus==="verified"?"#fff":"#4a7c59",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s"}}>
+                  {vStatus==="verified"?"✓ Verified":"Verify"}
+                </button>
+                <button onClick={()=>{setDocVerified(doc.id,"rejected");requestReupload(doc.label);}} style={{fontSize:9,padding:"3px 9px",borderRadius:5,border:"1px solid rgba(196,92,74,.25)",background:vStatus==="rejected"?"#c45c4a":"#fff",color:vStatus==="rejected"?"#fff":"#c45c4a",cursor:"pointer",fontFamily:"inherit",fontWeight:700,transition:"all .15s"}}>
+                  Reject & Request Re-Upload
+                </button>
+                {isUploaded&&<button onClick={handleDelete} style={{fontSize:9,padding:"3px 7px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",background:"none",color:"#9a8878",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>Delete</button>}
+              </div>}
             </div>
             {isUploaded&&!isPdf&&<img src={doc.url} alt={doc.label} style={{width:"100%",maxHeight:180,objectFit:"cover",display:"block",borderTop:"1px solid rgba(0,0,0,.05)"}}/>}
           </div>);
@@ -12885,14 +13037,22 @@ export default function Page(){
           Continue — Invite to Apply
         </button>}
         {a.status==="applied"&&<>
-          {incompleteReqs.length>0&&<div style={{width:"100%",padding:"10px 12px",background:"rgba(212,168,83,.07)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,fontSize:11,color:"#9a7422",marginBottom:6}}>
-            <div style={{fontWeight:700,marginBottom:4}}>Still pending — review before approving:</div>
-            {incompleteReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0"}}>
-              <span style={{width:6,height:6,borderRadius:"50%",background:"#d4a853",flexShrink:0,display:"inline-block"}}/>
-              {r.label}
-            </div>)}
-            <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
-          </div>}
+          {incompleteReqs.length>0&&(()=>{
+            const _pOpen=modal._pendingOpen===true;
+            return(<div style={{width:"100%",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,marginBottom:6,overflow:"hidden"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:"rgba(212,168,83,.07)",cursor:"pointer"}} onClick={()=>setModal(p=>({...p,_pendingOpen:!_pOpen}))}>
+                <span style={{fontSize:11,fontWeight:700,color:"#9a7422"}}>{incompleteReqs.length} item{incompleteReqs.length!==1?"s":""} still pending</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2" strokeLinecap="round" style={{transform:_pOpen?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              {_pOpen&&<div style={{padding:"8px 12px",background:"rgba(212,168,83,.04)"}}>
+                {incompleteReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0",fontSize:11,color:"#9a7422"}}>
+                  <span style={{width:6,height:6,borderRadius:"50%",background:"#d4a853",flexShrink:0,display:"inline-block"}}/>
+                  {r.label}
+                </div>)}
+                <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
+              </div>}
+            </div>);
+          })()}
           <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
             Approve{incompleteReqs.length>0?" Anyway":""}
           </button>
@@ -12925,6 +13085,64 @@ export default function Page(){
         <button className="btn btn-out" onClick={()=>setModal(null)}>Close</button>
       </div>
     </div>);})()}</div>);})()}
+
+  {/* ── Email Draft Preview Modal ── */}
+  {modal?._draftEmail&&(()=>{
+    const em=modal._draftEmail;
+    return(<div className="mbg" onClick={()=>setModal(p=>({...p,_draftEmail:null}))}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>
+      <h2 style={{marginBottom:4}}>{em.type==="reupload"?"Request Re-Upload":"Reference Check Email"}</h2>
+      <p style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>Review the draft below, edit if needed, then click Send.</p>
+      <div className="fld"><label>To</label><input value={em.to} onChange={e=>setModal(p=>({...p,_draftEmail:{...p._draftEmail,to:e.target.value}}))} style={{width:"100%",fontFamily:"inherit"}}/></div>
+      <div className="fld"><label>Subject</label><input value={em.subject} onChange={e=>setModal(p=>({...p,_draftEmail:{...p._draftEmail,subject:e.target.value}}))} style={{width:"100%",fontFamily:"inherit"}}/></div>
+      <div className="fld"><label>Message</label><textarea value={em.body} onChange={e=>setModal(p=>({...p,_draftEmail:{...p._draftEmail,body:e.target.value}}))} rows={12} style={{width:"100%",fontFamily:"inherit",fontSize:12,padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",resize:"vertical"}}/></div>
+      <div className="mft" style={{gap:8,display:"flex"}}>
+        <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_draftEmail:null}))}>Cancel</button>
+        <button className="btn btn-gold" style={{flex:1}} onClick={async()=>{
+          try{
+            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/
+/g,"<br/>")})});
+            const d=await r.json();
+            if(d.ok||r.ok){
+              // Log to comm log
+              const logEntry={id:uid(),type:"Email",note:(em.type==="reupload"?"Re-upload request sent: ":"Reference check sent to ")+em.to,date:TODAY.toISOString().split("T")[0],sentBy:"admin"};
+              const appData=modal.data||{};
+              const updatedHistory=[...(appData.history||[]),{from:appData.status,to:appData.status,date:TODAY.toISOString().split("T")[0],note:logEntry.note}];
+              const ua=apps.map(x=>x.id===appData.id?{...x,history:updatedHistory}:x);
+              setApps(ua);save("hq-apps",ua);
+              setModal(p=>({...p,_draftEmail:null,data:{...p.data,history:updatedHistory}}));
+              showAlert({title:"Email Sent",body:"Email sent to "+em.to+" and logged to the comm log."});
+            } else {
+              showAlert({title:"Send Failed",body:"Email could not be sent. Check your Resend API connection."});
+            }
+          }catch(e){showAlert({title:"Send Failed",body:"Network error: "+e.message});}
+        }}>Send Email</button>
+      </div>
+    </div></div>);
+  })()}
+
+  {/* ── Log Reference Reply Modal ── */}
+  {modal?._logReply&&(()=>{
+    const lr=modal._logReply;
+    const [notes,setNotes]=React.useState("");
+    return(<div className="mbg" onClick={()=>setModal(p=>({...p,_logReply:null}))}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
+      <h2 style={{marginBottom:4}}>Log Reference Reply</h2>
+      <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>{lr.type} — {lr.name} ({lr.email})</p>
+      <div className="fld"><label>Notes from reply</label>
+        <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={5} placeholder="What did they say? Copy key quotes or summarize their response..." style={{width:"100%",fontFamily:"inherit",fontSize:12,padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",resize:"vertical"}}/>
+      </div>
+      <div className="mft" style={{gap:8,display:"flex"}}>
+        <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_logReply:null}))}>Cancel</button>
+        <button className="btn btn-gold" style={{flex:1}} disabled={!notes.trim()} onClick={()=>{
+          const reply={id:uid(),email:lr.email,name:lr.name,type:lr.type,notes:notes.trim(),date:TODAY.toISOString().split("T")[0]};
+          const prev=modal._refReplies||[];
+          // Also mark references as verified if logging a positive reply
+          const ua=apps.map(x=>x.id===(modal.data?.id)?{...x,refs:"verified"}:x);
+          setApps(ua);save("hq-apps",ua);
+          setModal(p=>({...p,_logReply:null,_refReplies:[...prev,reply],data:{...p.data,refs:"verified"}}));
+        }}>Save Reply</button>
+      </div>
+    </div></div>);
+  })()}
 
   {modal&&modal.type==="archived"&&(()=>{const a=modal.data;const payMonths=Object.keys(a.payments||{});const totalPaid=Object.values(a.payments||{}).reduce((s,v)=>s+(typeof v==="object"?Object.values(v).reduce((ss,vv)=>ss+vv,0):v),0);
     const moveIn=a.moveIn?new Date(a.moveIn+"T00:00:00"):null;const termDate=a.terminatedDate?new Date(a.terminatedDate+"T00:00:00"):null;
