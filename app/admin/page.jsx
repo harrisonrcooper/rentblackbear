@@ -5420,8 +5420,20 @@ export default function Page(){
           });
         };
 
+        const _triggerLeaseWiggle=(errs)=>{
+          setLeaseForm(p=>p?({...p,_errors:errs,_wiggle:true}):p);
+          setTimeout(()=>setLeaseForm(p=>p?({...p,_wiggle:false}):p),500);
+        };
+
         const saveDraft=()=>{
           if(!leaseForm)return;
+          const errs={};
+          if(!(leaseForm.tenantName||"").trim()) errs.tenantName="Tenant name is required before saving.";
+          if(!(leaseForm.tenantEmail||"").trim()) errs.tenantEmail="Tenant email is required before saving.";
+          const _pid=leaseForm.propertyId||props.find(p=>getPropDisplayName(p)===leaseForm.property)?.id||"";
+          if(!_pid) errs.propertyId="Select a property before saving.";
+          if(!leaseForm.roomId&&!(leaseForm.room||"").trim()) errs.roomId="Select a room or unit before saving.";
+          if(Object.keys(errs).length>0){_triggerLeaseWiggle(errs);return;}
           const now=TODAY.toISOString().split("T")[0];
           const rentWords=leaseForm.rent?numberToWords(leaseForm.rent):"";
           const vars={
@@ -5453,14 +5465,19 @@ export default function Page(){
         const continueToSignAndSend=()=>{
           if(!leaseForm)return;
           const errs={};
-          if(!leaseForm.doorCode||leaseForm.doorCode.trim().length!==4)errs._doorErr=true;
-          if(leaseForm.hasAssignedParking&&!leaseForm.parking?.trim())errs._parkingErr=true;
-          if(!leaseForm.utilitiesMode||(leaseForm.utilitiesMode==="custom"&&!leaseForm.utilitiesClause?.trim()))errs._utilErr=true;
-          if(Object.keys(errs).length>0){
-            setLeaseForm(p=>({...p,...errs}));
-            setTimeout(()=>setLeaseForm(p=>({...p,_doorErr:false,_parkingErr:false,_utilErr:false})),3000);
-            return;
-          }
+          if(!(leaseForm.tenantName||"").trim()) errs.tenantName="Tenant name is required.";
+          if(!(leaseForm.tenantEmail||"").trim()) errs.tenantEmail="Tenant email is required.";
+          const _pid=leaseForm.propertyId||props.find(p=>getPropDisplayName(p)===leaseForm.property)?.id||"";
+          if(!_pid) errs.propertyId="Select a property.";
+          if(!leaseForm.roomId&&!(leaseForm.room||"").trim()) errs.roomId="Select a room or unit.";
+          if(!leaseForm.rent||leaseForm.rent<=0) errs.rent="Monthly rent amount is required.";
+          if(!leaseForm.moveIn) errs.moveIn="Move-in date is required.";
+          if(!leaseForm.leaseStart) errs.leaseStart="Lease start date is required.";
+          if(!leaseForm.leaseEndTbd&&!leaseForm.leaseEnd) errs.leaseEnd="Lease end date is required, or toggle TBD.";
+          if(!leaseForm.doorCode||leaseForm.doorCode.trim().length!==4) errs.doorCode="A 4-digit door code is required before signing.";
+          if(leaseForm.hasAssignedParking&&!leaseForm.parking?.trim()) errs.parking="Parking space description is required when assigned parking is enabled.";
+          if(!leaseForm.utilitiesMode||(leaseForm.utilitiesMode==="custom"&&!leaseForm.utilitiesClause?.trim())) errs.utilitiesMode="Select a utilities arrangement before signing.";
+          if(Object.keys(errs).length>0){_triggerLeaseWiggle(errs);return;}
           saveDraft();
           setTimeout(()=>{
             setLeases(prev=>{
@@ -5611,7 +5628,7 @@ export default function Page(){
         </>}
 
         {/* Lease Form Modal */}
-        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:660}}>
+        {leaseForm&&<div className="mbg" onClick={()=>setLeaseForm(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:660,animation:leaseForm._wiggle?"shake .4s ease":undefined}}>
           <h2>{leaseForm.id?"Edit Lease":"Create New Lease"}</h2>
           <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>All fields auto-populate from the application or property settings. Edit anything before saving.</div>
 
@@ -5630,10 +5647,12 @@ export default function Page(){
                 </div>
                 <div className="fr">
                   <div className="fld"><label>Tenant Name</label>
-                    {locked?ro(leaseForm.tenantName):<input value={leaseForm.tenantName||""} onChange={e=>setLeaseForm(p=>({...p,tenantName:e.target.value}))}/>}
+                    {locked?ro(leaseForm.tenantName):<input value={leaseForm.tenantName||""} onChange={e=>setLeaseForm(p=>({...p,tenantName:e.target.value,_errors:{...(p._errors||{}),tenantName:null}}))} style={{borderColor:leaseForm._errors?.tenantName?"#c45c4a":undefined}}/>}
+                    {leaseForm._errors?.tenantName&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.tenantName}</div>}
                   </div>
                   <div className="fld"><label>Tenant Email</label>
-                    {locked?ro(leaseForm.tenantEmail):<input type="email" value={leaseForm.tenantEmail||""} onChange={e=>setLeaseForm(p=>({...p,tenantEmail:e.target.value}))}/>}
+                    {locked?ro(leaseForm.tenantEmail):<input type="email" value={leaseForm.tenantEmail||""} onChange={e=>setLeaseForm(p=>({...p,tenantEmail:e.target.value,_errors:{...(p._errors||{}),tenantEmail:null}}))} style={{borderColor:leaseForm._errors?.tenantEmail?"#c45c4a":undefined}}/>}
+                    {leaseForm._errors?.tenantEmail&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.tenantEmail}</div>}
                   </div>
                 </div>
                 <div className="fr">
@@ -5671,10 +5690,11 @@ export default function Page(){
                   return(<>
                   <div className="fr">
                     <div className="fld"><label>Property</label>
-                      <select value={_resolvedPropId} onChange={e=>{const p2=props.find(p=>p.id===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,propertyId:p2?.id||"",property:p2?getPropDisplayName(p2):"",propertyAddress:p2?.addr||"",room:"",roomId:"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
+                      <select value={_resolvedPropId} onChange={e=>{const p2=props.find(p=>p.id===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,propertyId:p2?.id||"",property:p2?getPropDisplayName(p2):"",propertyAddress:p2?.addr||"",room:"",roomId:"",utilitiesMode:uKey,utilitiesClause:uClause,_errors:{...(p._errors||{}),propertyId:null,roomId:null}}));}} style={{borderColor:leaseForm._errors?.propertyId?"#c45c4a":undefined}}>
                         <option value="">Select...</option>
                         {props.map(p=><option key={p.id} value={p.id}>{getPropDisplayName(p)}</option>)}
                       </select>
+                      {leaseForm._errors?.propertyId&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.propertyId}</div>}
                     </div>
                     <div className="fld"><label>Room / Unit</label>
                       <select value={_resolvedRoomVal} onChange={e=>{
@@ -5686,8 +5706,8 @@ export default function Page(){
                         const unit=(lp.units||[]).find(u=>u.id===item.unitId);
                         const uKey=unit?.utils||"allIncluded";
                         const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";
-                        setLeaseForm(p=>({...p,room:item.name,roomId:item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parking:item.parking||"",utilitiesMode:uKey,utilitiesClause:uClause}));
-                      }} style={{width:"100%"}}>
+                        setLeaseForm(p=>({...p,room:item.name,roomId:item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parking:item.parking||"",utilitiesMode:uKey,utilitiesClause:uClause,_errors:{...(p._errors||{}),roomId:null}}));
+                      }} style={{width:"100%",borderColor:leaseForm._errors?.roomId?"#c45c4a":undefined}}>
                         <option value="">Select...</option>
                         {(()=>{const lp=props.find(p=>p.id===_resolvedPropId);if(!lp)return null;
                           return leaseableItems(lp).map(item=>(
@@ -5696,6 +5716,7 @@ export default function Page(){
                             </option>
                           ));})()}
                       </select>
+                      {leaseForm._errors?.roomId&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.roomId}</div>}
                     </div>
                   </div>
                 </>);})()}
@@ -5717,7 +5738,8 @@ export default function Page(){
               </div>
               <div className="fr">
                 <div className="fld"><label>Monthly Rent ($)</label>
-                  {locked?ro(fmtS(leaseForm.rent||0)):<input type="number" value={leaseForm.rent||""} onChange={e=>{const rent=Number(e.target.value);const mi=leaseForm.moveIn;const day=mi?new Date(mi+"T00:00:00").getDate():1;const daysLeft=mi?new Date(new Date(mi+"T00:00:00").getFullYear(),new Date(mi+"T00:00:00").getMonth()+1,0).getDate()-day+1:0;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);setLeaseForm(p=>({...p,rent,sd:rent,proratedRent:prorated}));}}/>}
+                  {locked?ro(fmtS(leaseForm.rent||0)):<input type="number" value={leaseForm.rent||""} onChange={e=>{const rent=Number(e.target.value);const mi=leaseForm.moveIn;const day=mi?new Date(mi+"T00:00:00").getDate():1;const daysLeft=mi?new Date(new Date(mi+"T00:00:00").getFullYear(),new Date(mi+"T00:00:00").getMonth()+1,0).getDate()-day+1:0;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);setLeaseForm(p=>({...p,rent,sd:rent,proratedRent:prorated,_errors:{...(p._errors||{}),rent:null}}));}} style={{borderColor:leaseForm._errors?.rent?"#c45c4a":undefined}}/>}
+                  {leaseForm._errors?.rent&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.rent}</div>}
                 </div>
                 <div className="fld"><label>Security Deposit ($)</label>
                   {locked?ro(fmtS(leaseForm.sd||0)):<input type="number" value={leaseForm.sd||""} onChange={e=>setLeaseForm(p=>({...p,sd:Number(e.target.value)}))}/>}
@@ -5725,10 +5747,12 @@ export default function Page(){
               </div>
               <div className="fr3">
                 <div className="fld"><label>Move-in Date</label>
-                  {locked?ro(fmtD(leaseForm.moveIn)):<input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0]}));}}/>}
+                  {locked?ro(fmtD(leaseForm.moveIn)):<input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null,leaseStart:null}}));}} style={{borderColor:leaseForm._errors?.moveIn?"#c45c4a":undefined}}/>}
+                  {leaseForm._errors?.moveIn&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.moveIn}</div>}
                 </div>
                 <div className="fld"><label>Lease Start</label>
-                  {locked?ro(fmtD(leaseForm.leaseStart)):<input type="date" value={leaseForm.leaseStart||""} onChange={e=>setLeaseForm(p=>({...p,leaseStart:e.target.value}))}/>}
+                  {locked?ro(fmtD(leaseForm.leaseStart)):<input type="date" value={leaseForm.leaseStart||""} onChange={e=>setLeaseForm(p=>({...p,leaseStart:e.target.value,_errors:{...(p._errors||{}),leaseStart:null}}))} style={{borderColor:leaseForm._errors?.leaseStart?"#c45c4a":undefined}}/>}
+                  {leaseForm._errors?.leaseStart&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.leaseStart}</div>}
                 </div>
                 <div className="fld">
                   <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -5750,32 +5774,33 @@ export default function Page(){
                       ? <div style={{padding:"7px 10px",background:"rgba(212,168,83,.06)",borderRadius:6,border:"0.5px solid rgba(212,168,83,.25)",fontSize:11,color:"#9a7422"}}>
                           To be determined — a written confirmation is required before move-in
                         </div>
-                      : <input type="date" value={leaseForm.leaseEnd||""} onChange={e=>setLeaseForm(p=>({...p,leaseEnd:e.target.value}))}/>
+                      : <input type="date" value={leaseForm.leaseEnd||""} onChange={e=>setLeaseForm(p=>({...p,leaseEnd:e.target.value,_errors:{...(p._errors||{}),leaseEnd:null}}))} style={{borderColor:leaseForm._errors?.leaseEnd?"#c45c4a":undefined}}/>
                   }
+                  {leaseForm._errors?.leaseEnd&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.leaseEnd}</div>}
                 </div>
               </div>
               <div className="fr">
                 <div className="fld"><label>Door Code (4-digit PIN)</label>
                   {locked
                     ?ro(leaseForm.doorCode||<span style={{color:"#c45c4a",fontSize:11}}>Not set — tenant did not choose a PIN</span>)
-                    :<input value={leaseForm.doorCode||""} maxLength={4} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_doorErr:false}))} placeholder="4-digit PIN" style={{animation:leaseForm._doorErr?"shake .4s ease":undefined,borderColor:leaseForm._doorErr?"#c45c4a":undefined}}/>
+                    :<input value={leaseForm.doorCode||""} maxLength={4} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_errors:{...(p._errors||{}),doorCode:null}}))} placeholder="4-digit PIN" style={{animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,borderColor:leaseForm._errors?.doorCode?"#c45c4a":undefined}}/>
                   }
-                  {leaseForm._doorErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>A 4-digit door code is required before signing.</div>}
+                  {leaseForm._errors?.doorCode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>{leaseForm._errors.doorCode}</div>}
                 </div>
                 <div className="fld">
                   <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <span>Parking</span>
                     <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontWeight:400}}>
                       <span style={{fontSize:10,color:"#6b5e52"}}>Assigned parking</span>
-                      <button onClick={()=>setLeaseForm(p=>({...p,hasAssignedParking:!p.hasAssignedParking,_parkingErr:false}))} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:leaseForm.hasAssignedParking?"#4a7c59":"#ccc",position:"relative",padding:0,transition:"background .15s",flexShrink:0}}>
+                      <button onClick={()=>setLeaseForm(p=>({...p,hasAssignedParking:!p.hasAssignedParking,_errors:{...(p._errors||{}),parking:null}}))} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:leaseForm.hasAssignedParking?"#4a7c59":"#ccc",position:"relative",padding:0,transition:"background .15s",flexShrink:0}}>
                         <div style={{position:"absolute",width:12,height:12,borderRadius:"50%",background:"#fff",top:2,left:leaseForm.hasAssignedParking?16:2,transition:"left .15s"}}/>
                       </button>
                     </label>
                   </label>
                   {leaseForm.hasAssignedParking
                     ?<>
-                      <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_parkingErr:false}))} placeholder="e.g. Space A1, Driveway right side" style={{animation:leaseForm._parkingErr?"shake .4s ease":undefined,borderColor:leaseForm._parkingErr?"#c45c4a":undefined}}/>
-                      {leaseForm._parkingErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>Parking space description is required when assigned parking is on.</div>}
+                      <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_errors:{...(p._errors||{}),parking:null}}))} placeholder="e.g. Space A1, Driveway right side" style={{animation:leaseForm._errors?.parking?"shake .4s ease":undefined,borderColor:leaseForm._errors?.parking?"#c45c4a":undefined}}/>
+                      {leaseForm._errors?.parking&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>{leaseForm._errors.parking}</div>}
                     </>
                     :<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:"#6b5e52",marginTop:4}}>No assigned parking</div>
                   }
@@ -5788,13 +5813,13 @@ export default function Page(){
                     <select value={leaseForm.utilitiesMode||""} onChange={e=>{
                       const mode=e.target.value;
                       const tmpl=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===mode);
-                      setLeaseForm(p=>({...p,utilitiesMode:mode,utilitiesClause:mode==="custom"?"":tmpl?.clause||"",_utilErr:false}));
-                    }} style={{width:"100%",marginBottom:leaseForm.utilitiesMode==="custom"||!leaseForm.utilitiesMode?6:0,borderColor:leaseForm._utilErr?"#c45c4a":undefined,animation:leaseForm._utilErr?"shake .4s ease":undefined}}>
+                      setLeaseForm(p=>({...p,utilitiesMode:mode,utilitiesClause:mode==="custom"?"":tmpl?.clause||"",_errors:{...(p._errors||{}),utilitiesMode:null}}));
+                    }} style={{width:"100%",marginBottom:leaseForm.utilitiesMode==="custom"||!leaseForm.utilitiesMode?6:0,borderColor:leaseForm._errors?.utilitiesMode?"#c45c4a":undefined,animation:leaseForm._errors?.utilitiesMode?"shake .4s ease":undefined}}>
                       <option value="">— Select a utilities clause —</option>
                       {(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
                       <option value="custom">Custom — write your own</option>
                     </select>
-                    {leaseForm._utilErr&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4}}>A utilities clause is required before signing.</div>}
+                    {leaseForm._errors?.utilitiesMode&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4}}>{leaseForm._errors.utilitiesMode}</div>}
                     {leaseForm.utilitiesMode==="custom"&&<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} placeholder="Write your custom utilities clause..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
                     {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5}}>{leaseForm.utilitiesClause}</div>}
                   </>}
