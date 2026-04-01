@@ -12356,23 +12356,7 @@ export default function Page(){
                     const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.persRefFirstName;
                     const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body="Hi "+refName+",
-
-My name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.
-
-"+a.name+" has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.
-
-1. How long have you known "+name+" and in what capacity?
-2. Would you describe them as responsible and respectful?
-3. Is there anything else you'd like us to know?
-
-Please reply directly to this email.
-
-Thank you for your time,
-Carolina Cooper
-Black Bear Rentals
-(850) 696-8101
-info@rentblackbear.com";
+                    const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.\n\n1. How long have you known ${name} and in what capacity?\n2. Would you describe them as responsible and respectful?\n3. Is there anything else you'd like us to know?\n\nPlease reply directly to this email.\n\nThank you for your time,\nCarolina Cooper\nBlack Bear Rentals\n(850) 696-8101\ninfo@rentblackbear.com`;
                     setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject,body,type:"reference",refName,refType:"Personal Reference"}}));
                   }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                     Draft Email →
