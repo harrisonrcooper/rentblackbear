@@ -78,13 +78,15 @@ export async function POST(request) {
     let bodyText = "";
     if (emailId && RESEND_API_KEY) {
       try {
-        const emailRes = await fetch(`https://api.resend.com/emails/${emailId}`, {
+        const emailRes = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
           headers: { Authorization: `Bearer ${RESEND_API_KEY}` },
         });
         const emailData = await emailRes.json();
-        // Prefer plain text, fall back to stripping HTML
-        bodyText = emailData.text ||
-          (emailData.html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 1000);
+        // Prefer plain text body, strip quoted reply chains, fall back to HTML
+        let raw = emailData.text || (emailData.html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        // Strip quoted reply (lines starting with >, or "On ... wrote:")
+        raw = raw.split("\n").filter(l=>!l.trim().startsWith(">")&&!/^On .+ wrote:/.test(l.trim())).join("\n").trim();
+        bodyText = raw.slice(0, 1500) || "(Empty reply)";
       } catch (e) {
         bodyText = "(Could not retrieve email body)";
       }
