@@ -11454,195 +11454,6 @@ export default function Page(){
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:_o?"rotate(180deg)":"none",transition:"transform .2s",marginLeft:4,flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             {_o&&<div style={{padding:"0 0 4px"}}>
-      {/* ── Room Placement Engine ── */}
-      {(()=>{
-        const appMoveIn=a.termMoveIn||a.moveIn||"";
-        const appMoveInD=appMoveIn&&appMoveIn!=="Flexible"?new Date(appMoveIn+"T00:00:00"):null;
-        // Resolve requested property/room from applicant data
-        const reqProp=a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null);
-        const reqRoomName=a.room||"";
-        const reqRoomType=reqRoomName.toLowerCase().includes("suite")?"suite":reqRoomName.toLowerCase().includes("whole")?"whole":"bedroom";
-        // Build candidate pool — all leaseable rooms that are vacant or will vacate
-        const allCandidates=props.flatMap(p=>{
-          const isReqProp=reqProp&&p.id===reqProp.id;
-          return leaseableItems(p).filter(i=>!i.ownerOccupied&&i.st!=="occupied"||(i.le&&i.le>=(new Date().toISOString().split("T")[0]))).map(i=>{
-            // Ready date
-            const buf=i.itemTurnoverDays||0;
-            let readyDate=null;
-            if(i.st==="vacant"){readyDate=new Date().toISOString().split("T")[0];}
-            else if(i.le){const d=new Date(i.le+"T00:00:00");d.setDate(d.getDate()+buf);readyDate=d.toISOString().split("T")[0];}
-            // Gap score: days between ready date and applicant move-in (0 = perfect)
-            let gapScore=0;
-            if(readyDate&&appMoveInD){
-              const readyD=new Date(readyDate+"T00:00:00");
-              const gapDays=Math.round((appMoveInD-readyD)/(86400000));
-              gapScore=gapDays>=0?Math.max(0,100-gapDays*3):Math.max(0,80+gapDays*5); // penalty for overlap
-            } else {gapScore=50;}
-            // Move-in match score
-            let moveInScore=0;
-            if(readyDate&&appMoveInD){const diff=Math.abs(Math.round((appMoveInD-new Date(readyDate+"T00:00:00"))/(86400000)));moveInScore=Math.max(0,50-diff);}
-            // Room type match
-            const iType=i.isWholeUnit?"whole":i.name.toLowerCase().includes("suite")?"suite":"bedroom";
-            const typeScore=(iType===reqRoomType)?30:0;
-            // Property bonus
-            const propBonus=isReqProp?20:0;
-            const totalScore=gapScore+moveInScore+typeScore+propBonus;
-            const propAddr=p.addr||"";
-            const _dispName=getPropDisplayName(p);
-            const propLabel=_dispName;
-            return{...i,propId:p.id,propName:p.name,propLabel,propAddr,isReqProp,readyDate,gapScore,moveInScore,typeScore,propBonus,totalScore,buf};
-          });
-        }).filter(i=>i.readyDate||i.st==="vacant").sort((a,b)=>b.totalScore-a.totalScore);
-
-        const topPick=allCandidates[0]||null;
-        const reqRoomItem=allCandidates.find(i=>i.isReqProp&&i.name===reqRoomName)||null;
-        const betterExists=topPick&&reqRoomItem&&topPick.id!==reqRoomItem?.id&&topPick.totalScore>( reqRoomItem?.totalScore||0)+10;
-        const placementOpen=modal._placementOpen===true;
-        const [sortBy,setSortBy]=[modal._placementSort||"score",(v)=>setModal(p=>({...p,_placementSort:v}))];
-        const filterProp=modal._placementPropFilter||"all";
-        const setFilterProp=(v)=>setModal(p=>({...p,_placementPropFilter:v}));
-        const assignRoom=(item)=>{
-          const saveTerm2=(key,val)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[key]:val}:x));setModal(prev=>({...prev,data:{...prev.data,[key]:val}}));};
-          saveTerm2("termRoomId",item.id);saveTerm2("termPropId",item.propId);saveTerm2("termRent",item.rent);saveTerm2("termSD",item.rent);
-          const rProp=props.find(p=>p.id===item.propId);
-          if(rProp){setApps(prev=>prev.map(x=>x.id===a.id?{...x,property:getPropDisplayName(rProp)}:x));setModal(prev=>({...prev,data:{...prev.data,property:getPropDisplayName(rProp)}}));}
-          if(item.readyDate&&(!appMoveIn||appMoveIn<item.readyDate)){
-            saveTerm2("moveIn",item.readyDate);saveTerm2("termMoveIn",item.readyDate);
-          }
-          setModal(p=>({...p,_placementOpen:false}));
-        };
-        const sortedCandidates=[...allCandidates].filter(i=>filterProp==="all"||i.propId===filterProp).sort((a,b)=>{
-          if(sortBy==="score")return b.totalScore-a.totalScore;
-          if(sortBy==="ready")return(a.readyDate||"9999")>(b.readyDate||"9999")?1:-1;
-          if(sortBy==="rent")return(b.rent||0)-(a.rent||0);
-          if(sortBy==="gap"){
-            const gapA=a.readyDate&&appMoveInD?Math.abs(Math.round((appMoveInD-new Date(a.readyDate+"T00:00:00"))/(86400000))):999;
-            const gapB=b.readyDate&&appMoveInD?Math.abs(Math.round((appMoveInD-new Date(b.readyDate+"T00:00:00"))/(86400000))):999;
-            return gapA-gapB;
-          }
-          return 0;
-        });
-        const uniqueProps=[...new Map(allCandidates.map(i=>[i.propId,{id:i.propId,name:i.propLabel}])).values()];
-        const currentAssigned=a.termRoomId?allCandidates.find(i=>i.id===a.termRoomId):null;
-
-        if(!a.leaseTerm&&!a.leasePrice&&!a.room&&!topPick)return null;
-
-        return(<div className="tp-card" style={{padding:0,overflow:"hidden",border:"1px solid rgba(74,124,89,.15)"}}>
-          {/* Header */}
-          <div style={{padding:"14px 16px",background:"rgba(74,124,89,.04)",borderBottom:placementOpen?"1px solid rgba(74,124,89,.1)":"none"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:placementOpen?0:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:7}}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                <span style={{fontSize:13,fontWeight:800,color:"#1a1714"}}>AI Room Placement</span>
-                {currentAssigned&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#2d6a3f"}}>&#10003; Assigned</span>}
-                {betterExists&&!currentAssigned&&!placementOpen&&<span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(212,168,83,.15)",color:"#9a7422"}}>Better room available</span>}
-              </div>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" style={{transform:placementOpen?"rotate(180deg)":"none",transition:"transform .2s",cursor:"pointer",marginTop:3}} onClick={()=>setModal(p=>({...p,_placementOpen:!placementOpen}))}><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            {!placementOpen&&<>
-              <div style={{fontSize:11,color:"#5c4a3a",lineHeight:1.5,marginBottom:10}}>
-                Scores every available room across your portfolio against this applicant — vacancy gap, move-in timing, and room type — and surfaces the best fit.
-                {currentAssigned&&<span style={{color:"#4a7c59",fontWeight:600}}> Currently assigned: {currentAssigned.name} at {currentAssigned.propLabel}.</span>}
-              </div>
-              <button onClick={()=>setModal(p=>({...p,_placementOpen:true}))}
-                style={{fontSize:10,fontWeight:700,padding:"6px 14px",borderRadius:7,border:"1px solid rgba(74,124,89,.4)",background:"rgba(74,124,89,.08)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
-                Use AI Placement
-              </button>
-            </>}
-          </div>
-
-          {placementOpen&&<div style={{padding:"12px 16px"}}>
-            {/* Applicant request summary */}
-            {(a.property||a.room||a.moveIn)&&<div style={{marginBottom:12,padding:"8px 10px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"1px solid rgba(0,0,0,.05)"}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.6,marginBottom:6}}>Applicant Requested</div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {reqProp&&<span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"rgba(74,124,89,.08)",color:"#2d6a3f"}}>{reqProp.addr||getPropDisplayName(reqProp)}</span>}
-                {a.room&&<span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"rgba(74,124,89,.08)",color:"#2d6a3f"}}>{a.room}</span>}
-                {appMoveIn&&appMoveIn!=="Flexible"&&<span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"rgba(74,124,89,.08)",color:"#2d6a3f"}}>{fmtD(appMoveIn)}</span>}
-                {a.leaseTerm&&<span style={{fontSize:10,padding:"3px 8px",borderRadius:6,background:"rgba(0,0,0,.04)",color:"#5c4a3a"}}>{a.leaseTerm}</span>}
-              </div>
-            </div>}
-
-            {/* Better room callout */}
-            {betterExists&&!currentAssigned&&<div style={{marginBottom:12,padding:"10px 12px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.25)",borderRadius:8}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#9a7422",marginBottom:4}}>A better-fit room is available</div>
-              <div style={{fontSize:10,color:"#5c4a3a",marginBottom:8}}>{topPick.name} at {topPick.propLabel} has a shorter vacancy gap — {topPick.readyDate?Math.abs(Math.round((appMoveInD-new Date(topPick.readyDate+"T00:00:00"))/(86400000)))+" day gap":""} vs {reqRoomItem?Math.abs(Math.round((appMoveInD-new Date((reqRoomItem.readyDate||"")+"T00:00:00"))/(86400000)))+" day gap":"N/A"}.</div>
-              <div style={{display:"flex",gap:6}}>
-                <button className="btn btn-sm" style={{flex:1,background:"#d4a853",color:"#1a1714",border:"none",fontWeight:700}} onClick={()=>assignRoom(topPick)}>Assign {topPick.name}</button>
-                {reqRoomItem&&<button className="btn btn-sm btn-out" style={{flex:1}} onClick={()=>assignRoom(reqRoomItem)}>Keep {reqRoomItem.name} (requested)</button>}
-              </div>
-            </div>}
-
-            {/* Sort + Filter controls */}
-            <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,alignSelf:"center",marginRight:4}}>Sort:</div>
-              {[{k:"score",l:"Best fit"},{k:"ready",l:"Ready date"},{k:"gap",l:"Vacancy gap"},{k:"rent",l:"Rent"}].map(({k,l})=>(
-                <button key={k} onClick={()=>setSortBy(k)} style={{fontSize:9,fontWeight:700,padding:"3px 9px",borderRadius:12,border:"1px solid "+(sortBy===k?"#1a1714":"rgba(0,0,0,.1)"),background:sortBy===k?"#1a1714":"#fff",color:sortBy===k?"#fff":"#5c4a3a",cursor:"pointer",fontFamily:"inherit"}}>{l}</button>
-              ))}
-              {uniqueProps.length>1&&<>
-                <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,alignSelf:"center",marginLeft:8,marginRight:4}}>Property:</div>
-                <select value={filterProp} onChange={e=>setFilterProp(e.target.value)} style={{fontSize:10,padding:"3px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontFamily:"inherit",background:"#fff"}}>
-                  <option value="all">All properties</option>
-                  {uniqueProps.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </>}
-            </div>
-
-            {/* Room cards */}
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {sortedCandidates.slice(0,8).map((item,idx)=>{
-                const isAssigned=currentAssigned?.id===item.id;
-                const isTopPick=idx===0&&sortBy==="score";
-                const gapDays=item.readyDate&&appMoveInD?Math.round((appMoveInD-new Date(item.readyDate+"T00:00:00"))/(86400000)):null;
-                const gapLabel=gapDays===null?"—":gapDays===0?"Perfect fit":gapDays>0?gapDays+"d vacancy":Math.abs(gapDays)+"d overlap";
-                const gapColor=gapDays===null?"#aaa":gapDays===0?"#2d6a3f":gapDays>0&&gapDays<=7?"#4a7c59":gapDays>7&&gapDays<=30?"#9a7422":"#c45c4a";
-                const scoreBar=Math.round((item.totalScore/180)*100);
-                return(<div key={item.id} style={{borderRadius:8,border:"2px solid "+(isAssigned?"rgba(74,124,89,.5)":isTopPick&&sortBy==="score"?"rgba(212,168,83,.4)":"rgba(0,0,0,.07)"),background:isAssigned?"rgba(74,124,89,.04)":isTopPick&&sortBy==="score"?"rgba(212,168,83,.03)":"#fff",padding:"10px 12px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                    <div>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <span style={{fontSize:12,fontWeight:800,color:"#1a1714"}}>{item.name}</span>
-                        {isTopPick&&sortBy==="score"&&!isAssigned&&<span style={{fontSize:8,fontWeight:700,padding:"2px 6px",borderRadius:8,background:"rgba(212,168,83,.15)",color:"#9a7422"}}>TOP FIT</span>}
-                        {isAssigned&&<span style={{fontSize:8,fontWeight:700,padding:"2px 6px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#2d6a3f"}}>ASSIGNED</span>}
-                        {item.isReqProp&&item.name===reqRoomName&&<span style={{fontSize:8,fontWeight:700,padding:"2px 6px",borderRadius:8,background:"rgba(74,124,89,.08)",color:"#2d6a3f"}}>REQUESTED</span>}
-                      </div>
-                      <div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>{item.propLabel}</div>
-                    </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:12,fontWeight:800,color:"#1a1714"}}>${(item.rent||0).toLocaleString()}/mo</div>
-                      <div style={{fontSize:9,color:gapColor,fontWeight:700,marginTop:1}}>{gapLabel}</div>
-                    </div>
-                  </div>
-                  {/* Score bar */}
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                    <div style={{flex:1,height:4,borderRadius:2,background:"rgba(0,0,0,.06)",overflow:"hidden"}}>
-                      <div style={{width:scoreBar+"%",height:"100%",borderRadius:2,background:scoreBar>70?"#4a7c59":scoreBar>40?"#d4a853":"#c45c4a",transition:"width .3s"}}/>
-                    </div>
-                    <span style={{fontSize:9,color:"#6b5e52",fontWeight:600,minWidth:28}}>{scoreBar}%</span>
-                  </div>
-                  {/* Detail row */}
-                  <div style={{display:"flex",gap:8,fontSize:9,color:"#6b5e52",marginBottom:8}}>
-                    <span>Ready: <strong style={{color:"#1a1714"}}>{item.readyDate?fmtD(item.readyDate):"Now"}</strong></span>
-                    {item.buf>0&&<span>Buffer: <strong style={{color:"#1a1714"}}>{item.buf}d</strong></span>}
-                    <span>Type: <strong style={{color:"#1a1714"}}>{item.isWholeUnit?"Whole unit":item.name.toLowerCase().includes("suite")?"Suite":"Bedroom"}</strong></span>
-                    {item.st!=="vacant"&&item.le&&<span>Lease ends: <strong style={{color:"#c45c4a"}}>{fmtD(item.le)}</strong></span>}
-                  </div>
-                  {!isAssigned&&<button className="btn btn-sm" style={{width:"100%",background:isTopPick&&sortBy==="score"?"#d4a853":"transparent",color:isTopPick&&sortBy==="score"?"#1a1714":"#5c4a3a",border:"1px solid "+(isTopPick&&sortBy==="score"?"#d4a853":"rgba(0,0,0,.1)"),fontWeight:600}} onClick={()=>assignRoom(item)}>
-                    Assign {item.name}
-                  </button>}
-                  {isAssigned&&<button className="btn btn-sm btn-out" style={{width:"100%",color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>{const clr=(k)=>{setApps(p=>p.map(x=>x.id===a.id?{...x,[k]:undefined}:x));setModal(prev=>({...prev,data:{...prev.data,[k]:undefined}}));};clr("termRoomId");clr("termPropId");clr("termRent");clr("termSD");}}>
-                    Unassign
-                  </button>}
-                </div>);
-              })}
-              {sortedCandidates.length===0&&<div style={{fontSize:11,color:"#aaa",textAlign:"center",padding:"16px 0"}}>No available rooms match the current filters.</div>}
-            </div>
-          </div>}
-        </div>);
-      })()}
-
-
-
       {/* ── Couples Policy — only when a bedroom is assigned, not whole unit ── */}
       {(()=>{
         // Only show if a bedroom (not whole unit) is selected
@@ -12467,7 +12278,7 @@ export default function Page(){
                   <span style={{color:"#6b5e52"}}>Photo ID</span>
                   <span style={{fontWeight:600,textAlign:"right"}}>
                     {flag.idUploadLater?<span style={{color:"#9a7422"}}>Will upload later</span>
-                    :idUploaded?<span style={{display:"flex",gap:6}}>
+                    :idUploaded?<span style={{display:"flex",gap:6"}}>
                       {idFront&&<a href={idFront.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Front ↗</a>}
                       {idBack&&<a href={idBack.url} target="_blank" rel="noreferrer" style={{color:"#2d6a3f",fontWeight:700,fontSize:10}}>Back ↗</a>}
                     </span>
@@ -12530,7 +12341,23 @@ export default function Page(){
                     const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.empRefFirstName;
                     const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:\n\n1. Can you confirm ${name} is/was employed at your organization?\n2. What is/was their role and approximate start date?\n3. Would you recommend them as a tenant?\n\nPlease reply directly to this email. This typically takes only 2–3 minutes.\n\nThank you for your time,\nCarolina Cooper\nBlack Bear Rentals\n(850) 696-8101\ninfo@rentblackbear.com`;
+                    const body="Hi "+refName+",
+
+My name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.
+
+"+a.name+" has applied to rent one of our properties and listed you as an employer reference. We would appreciate if you could take a moment to confirm the following:
+
+1. Can you confirm "+name+" is/was employed at your organization?
+2. What is/was their role and approximate start date?
+3. Would you recommend them as a tenant?
+
+Please reply directly to this email. This typically takes only 2–3 minutes.
+
+Thank you for your time,
+Carolina Cooper
+Black Bear Rentals
+(850) 696-8101
+info@rentblackbear.com";
                     setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject,body,type:"reference",refName,refType:"Employer Reference"}}));
                   }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                     Draft Email →
@@ -12554,7 +12381,23 @@ export default function Page(){
                     const name=ad.firstName||a.name.split(" ")[0];
                     const refName=ad.persRefFirstName;
                     const subject="Reference Request — "+a.name+" (Rental Application)";
-                    const body=`Hi ${refName},\n\nMy name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.\n\n${a.name} has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.\n\n1. How long have you known ${name} and in what capacity?\n2. Would you describe them as responsible and respectful?\n3. Is there anything else you'd like us to know?\n\nPlease reply directly to this email.\n\nThank you for your time,\nCarolina Cooper\nBlack Bear Rentals\n(850) 696-8101\ninfo@rentblackbear.com`;
+                    const body="Hi "+refName+",
+
+My name is Carolina Cooper from Black Bear Rentals in Huntsville, AL.
+
+"+a.name+" has applied to rent one of our properties and listed you as a personal reference. We would appreciate a few words about their character and reliability.
+
+1. How long have you known "+name+" and in what capacity?
+2. Would you describe them as responsible and respectful?
+3. Is there anything else you'd like us to know?
+
+Please reply directly to this email.
+
+Thank you for your time,
+Carolina Cooper
+Black Bear Rentals
+(850) 696-8101
+info@rentblackbear.com";
                     setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject,body,type:"reference",refName,refType:"Personal Reference"}}));
                   }} style={{fontSize:9,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"}}>
                     Draft Email →
@@ -12681,7 +12524,10 @@ export default function Page(){
       {/* Roommate Compatibility */}
       {(()=>{
         // Resolve prop: prefer termPropId (ID-based, most reliable) → property name → termRoomId room lookup
-        const hmProp=a.termPropId?props.find(p=>p.id===a.termPropId):a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)||(p.units||[]).some(u=>u.id===a.termRoomId)):(a.property?props.find(p=>p.name===a.property):null);
+        const hmProp=a.termPropId?props.find(p=>p.id===a.termPropId)
+          :a.termPropId?props.find(p=>p.id===a.termPropId):(a.property?props.find(p=>p.name===a.property):null)
+          :a.termRoomId?props.find(p=>allRooms(p).some(r=>r.id===a.termRoomId)||(p.units||[]).some(u=>u.id===a.termRoomId))
+          :null;
         if(!hmProp)return null;
         const allItems=leaseableItems(hmProp);
         // Find the specific assigned item — for whole units termRoomId === u.id === i.id
@@ -13064,7 +12910,8 @@ export default function Page(){
         <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_draftEmail:null}))}>Cancel</button>
         <button className="btn btn-gold" style={{flex:1}} onClick={async()=>{
           try{
-            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>")})});
+            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/
+/g,"<br/>")})});
             const d=await r.json();
             if(d.ok||r.ok){
               // Log to comm log
