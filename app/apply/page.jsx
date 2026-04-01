@@ -1205,7 +1205,7 @@ export default function ApplyPage(){
             const apps=await loadKey("hq-apps",[]);
             // Resolve room from selectedRoom ID if tenant picked one
             const allProps2=await loadKey("hq-props",[]);
-            const pickedRoom2=d.selectedRoom?allProps2.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,unitLabel:u.label})))).find(r=>r.id===d.selectedRoom):null;
+            const pickedRoom2=d.selectedRoom?allProps2.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,unitLabel:u.label})))).find(r=>r.id===d.selectedRoom):null;
             // If tenant had a locked/pre-assigned room, resolve termRoomId from the room name
             const invitedApp=apps.find(a=>a.id===invite.id);
             // Prefer termRoomId (ID-based, set at invite time) over name-based fallback
@@ -1247,13 +1247,15 @@ export default function ApplyPage(){
             const apps=await loadKey("hq-apps",[]);
             // Resolve room name + IDs from selectedRoom (which stores room ID)
             const allProps=await loadKey("hq-props",[]);
-            const pickedRoomObj=d.selectedRoom?allProps.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.name,propId:p.id,unitId:u.id,unitName:u.name,unitLabel:u.label})))).find(r=>r.id===d.selectedRoom):null;
+            const pickedRoomObj=d.selectedRoom?allProps.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).map(r=>({...r,propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,unitLabel:u.label})))).find(r=>r.id===d.selectedRoom):null;
+            // Resolve the selected property object (covers whole-unit walk-ins with no room)
+            const pickedPropObj=d.preferredProperty?allProps.find(p=>p.id===d.preferredProperty):null;
             const roomName=pickedRoomObj?.name||"";
             const roomId=pickedRoomObj?.id||null;
-            const propId=pickedRoomObj?.propId||null;
+            const propId=pickedRoomObj?.propId||pickedPropObj?.id||null;
             const unitId=pickedRoomObj?.unitId||null;
             const unitName=pickedRoomObj?.unitName||"";
-            const propName=pickedRoomObj?.propName||d.preferredProperty||"";
+            const propName=pickedRoomObj?.propName||(pickedPropObj?.addr||pickedPropObj?.name)||"";
             const newApp={
               id:Math.random().toString(36).slice(2),
               name:fullName,email:d.email,phone:d.phone,
