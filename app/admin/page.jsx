@@ -5403,6 +5403,7 @@ export default function Page(){
             parking:"",
             moveIn:mi,leaseStart:mi,
             leaseEnd:isTbd?"":leaseEndD.toISOString().split("T")[0],
+            leaseEndTbd:isTbd,
             leaseType:"fixed",
             utilitiesMode:"",
             utilitiesClause:"",
@@ -5538,8 +5539,10 @@ export default function Page(){
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                     <div style={{fontSize:14,fontWeight:700}}>{l.tenantName||"—"}</div>
                     <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:sc.bg,color:sc.tx,textTransform:"uppercase",letterSpacing:.5}}>{sc.label}</span>
+                    {l.leaseEndTbd&&<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"rgba(212,168,83,.12)",color:"#9a7422",letterSpacing:.3}}>Lease End TBD</span>}
                   </div>
-                  <div style={{fontSize:11,color:"#6b5e52"}}>{(()=>{const lp=props.find(x=>x.name===l.property);return lp?getPropDisplayName(lp):l.property;})() } · {l.room} · {fmtS(l.rent||0)}/mo · Move-in {fmtD(l.moveIn)}</div>
+                  <div style={{fontSize:11,color:"#6b5e52"}}>{(()=>{const lp=props.find(x=>x.name===l.property||x.addr===l.property);return lp?getPropDisplayName(lp):l.property;})() } · {l.room} · {fmtS(l.rent||0)}/mo · Move-in {fmtD(l.moveIn)}{!l.leaseEndTbd&&l.leaseEnd?" · Ends "+fmtD(l.leaseEnd):""}</div>
+                  {l.leaseEndTbd&&<div style={{fontSize:10,color:"#9a7422",marginTop:3,padding:"4px 8px",background:"rgba(212,168,83,.06)",borderRadius:5,display:"inline-block"}}>Lease end must be confirmed in writing before move-in date of {fmtD(l.moveIn)||"TBD"}</div>}
                   {l.signingLink&&<div style={{fontSize:10,color:"#3b82f6",marginTop:4,wordBreak:"break-all",display:"flex",alignItems:"center",gap:4}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>{l.signingLink}</div>}
                 </div>
                 <div style={{display:"flex",gap:6,flexShrink:0,marginLeft:12,flexWrap:"wrap",justifyContent:"flex-end"}}>
@@ -5722,8 +5725,28 @@ export default function Page(){
                 <div className="fld"><label>Lease Start</label>
                   {locked?ro(fmtD(leaseForm.leaseStart)):<input type="date" value={leaseForm.leaseStart||""} onChange={e=>setLeaseForm(p=>({...p,leaseStart:e.target.value}))}/>}
                 </div>
-                <div className="fld"><label>Lease End</label>
-                  {locked?ro(leaseForm.leaseEnd?fmtD(leaseForm.leaseEnd):"TBD"):<input type="date" value={leaseForm.leaseEnd||""} onChange={e=>setLeaseForm(p=>({...p,leaseEnd:e.target.value}))}/>}
+                <div className="fld">
+                  <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span>Lease End</span>
+                    {!locked&&<label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontWeight:400}}>
+                      <span style={{fontSize:10,color:"#6b5e52"}}>TBD</span>
+                      <button onClick={()=>setLeaseForm(p=>({...p,leaseEndTbd:!p.leaseEndTbd,leaseEnd:p.leaseEndTbd?p.leaseEnd:"",_leaseEndTbdChanged:true}))} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:leaseForm.leaseEndTbd?"#d4a853":"#ccc",position:"relative",padding:0,transition:"background .15s",flexShrink:0}}>
+                        <div style={{position:"absolute",width:12,height:12,borderRadius:"50%",background:"#fff",top:2,left:leaseForm.leaseEndTbd?16:2,transition:"left .15s"}}/>
+                      </button>
+                    </label>}
+                  </label>
+                  {locked
+                    ? leaseForm.leaseEndTbd
+                      ? <div style={{padding:"7px 10px",background:"rgba(212,168,83,.08)",borderRadius:6,border:"0.5px solid rgba(212,168,83,.3)",fontSize:11,color:"#9a7422",fontWeight:600}}>
+                          TBD — must be confirmed in writing before move-in
+                        </div>
+                      : ro(leaseForm.leaseEnd?fmtD(leaseForm.leaseEnd):"Not set")
+                    : leaseForm.leaseEndTbd
+                      ? <div style={{padding:"7px 10px",background:"rgba(212,168,83,.06)",borderRadius:6,border:"0.5px solid rgba(212,168,83,.25)",fontSize:11,color:"#9a7422"}}>
+                          To be determined — a written confirmation is required before move-in
+                        </div>
+                      : <input type="date" value={leaseForm.leaseEnd||""} onChange={e=>setLeaseForm(p=>({...p,leaseEnd:e.target.value}))}/>
+                  }
                 </div>
               </div>
               <div className="fr">
