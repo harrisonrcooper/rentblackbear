@@ -13170,24 +13170,58 @@ export default function Page(){
           Continue — Invite to Apply
         </button>}
         {a.status==="applied"&&<>
-          {incompleteReqs.length>0&&(()=>{
+          {(()=>{
+            // Fully derived — same logic as checklist, reads live from appDocs
+            const _allDocs=(a.appDocs||(a.applicationData?.appDocs)||[]).filter(x=>x.url);
+            const _feePaid=(a.appFee||0)>0;
+            const _hasRentPrep=a.screenPkg&&a.screenPkg!=="none";
+            const _hasIncome=a.incomeAdd&&a.incomeAdd!=="none"&&a.incomeAdd!=="";
+            const _ad=a.applicationData||{};
+            const pendingItems=[];
+            // Background Check
+            if(a.bgCheck!=="passed"&&!waived.includes("Background Check"))pendingItems.push("Background Check");
+            // Credit Check
+            const _hasScore=a.creditScore&&a.creditScore!=="—"&&!isNaN(parseInt(a.creditScore));
+            if(!_hasScore&&!waived.includes("Credit Check"))pendingItems.push("Credit Check");
+            // Income Verification — only if add-on was requested
+            if(_hasIncome&&a.incomeVerified!=="verified"&&!waived.includes("Income Verification"))pendingItems.push("Income Verification");
+            // References
+            const _rv=a.refVerified||{};
+            const _refKeys=[];
+            (_ad.addresses||[]).filter(x=>x.resType==="Rent"&&x.landlordEmail).forEach((_,i)=>_refKeys.push(`landlord_${i}`));
+            if(_ad.empRefEmail&&!_ad.unemployed)_refKeys.push("employer");
+            if(_ad.persRefEmail)_refKeys.push("personal1");
+            const _refsOk=a.refs==="verified"||(_refKeys.length>0&&_refKeys.every(k=>_rv[k]===true));
+            if(!_refsOk&&!waived.includes("References"))pendingItems.push("References");
+            // ID Verified — check actual doc verification status
+            const _idF=_allDocs.find(x=>x.type==="PhotoID-Front");
+            const _idB=_allDocs.find(x=>x.type==="PhotoID-Back");
+            const _idRejected=_idF?.verified==="rejected"||_idB?.verified==="rejected";
+            const _idOk=_idF?.verified==="verified"&&_idB?.verified==="verified";
+            if((!_idOk||_idRejected)&&!waived.includes("ID Verified"))pendingItems.push(_idRejected?"ID Verified (rejected — re-upload needed)":"ID Verified");
+            // Docs with rejected status
+            _allDocs.filter(x=>x.verified==="rejected"&&x.type!=="PhotoID-Front"&&x.type!=="PhotoID-Back").forEach(d=>{
+              const label=(d.label||d.type)+" (rejected — re-upload needed)";
+              if(!pendingItems.includes(label))pendingItems.push(label);
+            });
+            if(pendingItems.length===0)return null;
             const _pOpen=modal._pendingOpen===true;
             return(<div style={{width:"100%",border:"1px solid rgba(212,168,83,.25)",borderRadius:8,marginBottom:6,overflow:"hidden"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:"rgba(212,168,83,.07)",cursor:"pointer"}} className="hvr-row" onClick={()=>setModal(p=>({...p,_pendingOpen:!_pOpen}))}>
-                <span style={{fontSize:11,fontWeight:700,color:"#9a7422"}}>{incompleteReqs.length} item{incompleteReqs.length!==1?"s":""} still pending</span>
+                <span style={{fontSize:11,fontWeight:700,color:"#9a7422"}}>{pendingItems.length} item{pendingItems.length!==1?"s":""} still pending</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2" strokeLinecap="round" style={{transform:_pOpen?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
               </div>
               {_pOpen&&<div style={{padding:"8px 12px",background:"rgba(212,168,83,.04)"}}>
-                {incompleteReqs.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0",fontSize:11,color:"#9a7422"}}>
+                {pendingItems.map((label,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0",fontSize:11,color:"#9a7422"}}>
                   <span style={{width:6,height:6,borderRadius:"50%",background:"#d4a853",flexShrink:0,display:"inline-block"}}/>
-                  {r.label}
+                  {label}
                 </div>)}
                 <div style={{marginTop:6,fontSize:10,color:"#9a7422",opacity:.8}}>You can still approve — you'll be asked to confirm again.</div>
               </div>}
             </div>);
           })()}
           <button className="btn btn-green" style={{flex:1}} onClick={()=>setModal({type:"approveConfirm",data:a,incompleteReqs,step:1})}>
-            Approve{incompleteReqs.length>0?" Anyway":""}
+            Approve Anyway
           </button>
         </>}
 
