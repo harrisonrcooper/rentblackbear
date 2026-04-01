@@ -348,12 +348,19 @@ export default function ApplyPage(){
     const fileName=nameStr+"_"+type+"_APP-"+appId+"."+ext;
     const path="applicants/"+appId+"/"+fileName;
     try{
-      // Always use PUT with x-upsert:true — works for both new and existing files
-      const r=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
-        method:"PUT",
+      // Try POST first (new file), then PUT (replace existing)
+      let r=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
+        method:"POST",
         headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
         body:file,
       });
+      if(!r.ok){
+        r=await fetch(SUPA_URL+"/storage/v1/object/applicant-docs/"+path,{
+          method:"PUT",
+          headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":file.type,"x-upsert":"true"},
+          body:file,
+        });
+      }
       if(!r.ok){
         const errText=await r.text().catch(()=>"");
         console.error("Upload error:",r.status,errText);
@@ -777,7 +784,7 @@ export default function ApplyPage(){
           <div style={{flex:1}}>{ok?"✓ 2-year history requirement met":`${months} of 24 months covered — please add more addresses`}</div>
           <div style={{width:80,height:6,borderRadius:3,background:"rgba(0,0,0,.08)",overflow:"hidden"}}><div style={{width:pct+"%",height:"100%",background:ok?"#4a7c59":"#d4a853",borderRadius:3,transition:"width .3s"}}/></div>
         </div>);})()}
-        {errors.addresses&&<div className="err-msg" style={{marginBottom:12,fontSize:13,fontWeight:700,padding:"10px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,animation:"shake .4s ease"}}>⚠ {errors.addresses}</div>}
+        {errors.addresses&&<div className="err-msg" style={{marginBottom:12,fontSize:13,fontWeight:700,padding:"10px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,animation:"shake .4s ease"}}>{errors.addresses}</div>}
 
         {/* Eviction / Felony */}
         <div style={{marginTop:20}}><div className="yn-q">Have you ever been evicted?<span className="req" style={{color:"var(--rd)"}}>*</span></div>
@@ -799,7 +806,7 @@ export default function ApplyPage(){
         <div className="sec-num">Section 2</div>
         <div className="sec-hd"><h2>Personal Information</h2><p>We need to verify your identity for the screening process.</p></div>
         <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"#9a7422"}}>
-          ⚠ Your application will be considered <strong>incomplete</strong> without all documents uploaded. You may upload them later, but your application may be delayed.
+          Your application will be considered <strong>incomplete</strong> without all documents uploaded. You may upload them later, but your application may be delayed.
         </div>
         {fieldActive("idFile")&&(()=>{
           const front=d.appDocs.find(x=>x.type==="PhotoID-Front");
@@ -814,7 +821,7 @@ export default function ApplyPage(){
                 {!doc?.uploading&&!doc?.error&&doc?.url&&<div style={{position:"relative",marginBottom:8}}>
                   {isPdf
                     ?<div style={{padding:"12px 14px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,display:"flex",alignItems:"center",gap:10}}>
-                      <span style={{fontSize:20}}>📄</span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:11,fontWeight:600,color:"#1a1714",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.name}</div>
                         <a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:600}}>View PDF</a>
@@ -830,7 +837,7 @@ export default function ApplyPage(){
                   <button style={{position:"absolute",top:-8,right:-8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
                 </div>}
                 {!doc?.uploading&&!doc?.url&&<div className="upload" onClick={()=>ref_?.current?.click()} style={{marginBottom:6}}>
-                  <div className="upload-ic">📷</div>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9a8878" strokeWidth="1.5" style={{marginBottom:6}}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>
                   <div className="upload-txt">Tap to upload {label.toLowerCase()}</div>
                 </div>}
                 {doc?.url&&<button style={{fontSize:10,color:"#5c4a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",textDecoration:"underline",padding:0}} onClick={()=>ref_?.current?.click()}>Replace photo</button>}
@@ -861,7 +868,7 @@ export default function ApplyPage(){
         <div className="sec-num">Section 3</div>
         <div className="sec-hd"><h2>Employment & Income</h2><p>Show the landlord that you can afford this rental.</p></div>
 
-        <button className={`unemployed-btn ${d.unemployed?"on":""}`} onClick={()=>{upd("unemployed",!d.unemployed);setErrors(p=>({...p,employers:undefined,incomeProof:undefined}));}}><span style={{fontSize:16}}>{d.unemployed?"☑":"☐"}</span> I'm currently unemployed</button>
+        <button className={`unemployed-btn ${d.unemployed?"on":""}`} onClick={()=>{upd("unemployed",!d.unemployed);setErrors(p=>({...p,employers:undefined,incomeProof:undefined}));}}><span style={{fontSize:16}}><span style={{width:14,height:14,border:"2px solid currentColor",borderRadius:2,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{d.unemployed&&<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1.5 5 4 7.5 8.5 2.5"/></svg>}</span></span> I'm currently unemployed</button>
 
         {!d.unemployed&&<>
           {d.employers.map((emp,i)=><div key={i} className="item-card">
@@ -890,7 +897,7 @@ export default function ApplyPage(){
           </div>
           :<div className="add-card" onClick={()=>upd("curEmployerForm",{...blankEmp})}><div className="plus">+</div><div className="lbl">Add {d.employers.length===0?"Current":"Past"} Employer</div></div>}
 
-          {d.employers.length>0&&<div className="strength-tip">💡 Landlords like to see around 5 years of employment history on your application, if applicable.</div>}
+          {d.employers.length>0&&<div className="strength-tip">Landlords like to see around 5 years of employment history on your application, if applicable.</div>}
         </>}
         {errors.employers&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.employers}</div>}
 
@@ -916,24 +923,33 @@ export default function ApplyPage(){
         <div className="fld" style={{marginTop:12}}>
           <label>Proof of Income</label>
           {!d.incomeUploadLater&&<>
-            {d.appDocs.filter(x=>x.type==="PayStub").map((doc,i)=>{
+            {d.appDocs.filter(x=>x.type==="PayStub"&&!x.error).map((doc,i)=>{
               const isPdf=doc?.name?.toLowerCase().endsWith(".pdf");
-              return(<div key={doc.id} style={{marginBottom:8,padding:"10px 12px",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,display:"flex",alignItems:"center",gap:10,position:"relative"}}>
-                {doc.uploading&&<><span style={{fontSize:14}}>⏳</span><span style={{fontSize:11,color:"#9a7422"}}>Uploading...</span></>}
-                {doc.error&&<><span style={{fontSize:14}}>❌</span><span style={{fontSize:11,color:"#c45c4a"}}>{doc.error}</span></>}
-                {!doc.uploading&&!doc.error&&<>
-                  <span style={{fontSize:16}}>{isPdf?"📄":"🖼"}</span>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.name}</div>
-                    {doc.url&&<a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:600}}>View</a>}
-                  </div>
+              return(<div key={doc.id} style={{marginBottom:8,position:"relative"}}>
+                {doc.uploading&&<div style={{padding:"16px",background:"rgba(212,168,83,.06)",border:"1px dashed rgba(212,168,83,.4)",borderRadius:10,textAlign:"center",fontSize:12,color:"#9a7422"}}>Uploading...</div>}
+                {!doc.uploading&&doc.url&&<>
+                  {isPdf
+                    ?<div style={{padding:"12px 14px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,display:"flex",alignItems:"center",gap:10}}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:11,fontWeight:600,color:"#1a1714",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.name}</div>
+                        <a href={doc.url} target="_blank" rel="noreferrer" style={{fontSize:10,color:"var(--ac)",fontWeight:600}}>View PDF</a>
+                      </div>
+                    </div>
+                    :<div style={{borderRadius:10,overflow:"hidden",border:"2px solid rgba(74,124,89,.3)",position:"relative"}}>
+                      <img src={doc.url} alt="Pay stub" style={{width:"100%",maxHeight:160,objectFit:"cover",display:"block"}}/>
+                      <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(0,0,0,.5)",padding:"4px 8px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span style={{fontSize:9,color:"#fff",fontWeight:600}}>{doc.name}</span>
+                        <span style={{fontSize:9,color:"rgba(74,124,89,.9)",fontWeight:700}}>Uploaded</span>
+                      </div>
+                    </div>}
+                  <button style={{position:"absolute",top:-8,right:-8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
                 </>}
-                <button style={{background:"none",border:"none",color:"#c45c4a",fontSize:16,cursor:"pointer",fontFamily:"inherit",padding:"0 4px",lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
               </div>);
             })}
             <div className="upload" onClick={()=>payRef.current?.click()}>
-              <div className="upload-ic">📄</div>
-              <div className="upload-txt">{d.appDocs.filter(x=>x.type==="PayStub").length===0?"Tap to upload pay stubs, offer letter, or bank statements":"+ Add another pay stub or document"}</div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9a8878" strokeWidth="1.5" style={{marginBottom:6}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+              <div className="upload-txt">{d.appDocs.filter(x=>x.type==="PayStub"&&x.url).length===0?"Tap to upload pay stubs, offer letter, or bank statements":"+ Add another pay stub or document"}</div>
             </div>
             <input ref={payRef} type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={e=>{if(e.target.files[0]){uploadDoc(e.target.files[0],"PayStub","Pay Stub");setErrors(p=>({...p,incomeProof:undefined}));}}}/>
             <div style={{fontSize:10,color:"#6b5e52",marginTop:6}}>Last 2 pay stubs preferred. You can add multiple files.</div>
@@ -1000,7 +1016,7 @@ export default function ApplyPage(){
         {(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=>{
             const units=p.units&&p.units.length>0?p.units:[{id:"main",name:"Unit A",label:"A",rooms:p.rooms||[]}];
             const hasMultipleUnits=units.length>1;
-            return(<div key={p.id} className="prop-card"><div className="prop-img">🐻</div><div className="prop-info">
+            return(<div key={p.id} className="prop-card"><div className="prop-info">
               <div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div>
               <div style={{marginTop:10}}>
                 {units.map(u=>{const vacantRooms=(u.rooms||[]).filter(r=>r.st==="vacant");if(!vacantRooms.length)return null;return(
@@ -1105,7 +1121,7 @@ export default function ApplyPage(){
               <h3 style={{flex:1}}>💼 Estimated Lease Terms</h3>
             </div>
             <div style={{background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#9a7422",lineHeight:1.5}}>
-              ⚠ This is an <strong>estimate only</strong> — not a lease. No room is reserved and no charges apply until you are approved and sign your lease.
+              This is an <strong>estimate only</strong> — not a lease. No room is reserved and no charges apply until you are approved and sign your lease.
             </div>
             {propName&&<div className="rev-row"><span className="rev-label">Property</span><span className="rev-val">{propName}</span></div>}
             {roomName&&<div className="rev-row"><span className="rev-label">Room</span><span className="rev-val">{roomName}</span></div>}
@@ -1114,7 +1130,7 @@ export default function ApplyPage(){
             <div className="rev-row"><span className="rev-label">Move-in Date</span><span className="rev-val">{moveIn}</span></div>
             {!isFirstDay&&<div className="rev-row"><span className="rev-label">Proration</span><span className="rev-val" style={{fontSize:11}}>{daysLeft} days × {fmtS(dailyRate)}/day = {fmtS(proratedAmt)}</span></div>}
             <div style={{marginTop:12,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:8,padding:12}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>📄 Estimated Move-In Package</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:8}}>Estimated Move-In Package</div>
               <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.04)",fontSize:12}}>
                 <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Security Deposit</span><strong>{fmtS(sd)}</strong>
               </div>
