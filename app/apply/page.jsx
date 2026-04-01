@@ -454,6 +454,7 @@ export default function ApplyPage(){
       const appInfoWholeUnit=appInfoWalkInIsWhole||appInfoInvitedRoom?.isWholeUnit||(appInfoProp?(appInfoProp.units||[]).some(u=>u.id===invite?.termRoomId||(u.rentalMode==="wholeHouse"&&(!invite?.termRoomId||(appInfoProp.units||[]).length===1)))||appInfoProp.rentalMode==="wholeHouse":false);
       if(!appInfoWholeUnit&&!invite?.allowCouples&&!d.occupancyAck)e.occupancyAck="You must agree to continue — only one person per room";
       d.coApplicants.forEach((ca,i)=>{if(ca.email&&!ca.email.includes("@"))e["coApp_"+i+"_email"]="Valid email address required";});
+      if((d.preferredProperty||invite?.inviteRoomName)&&fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
     }
     if(s==="personal"){
       if(fieldActive("idFile")&&fieldRequired("idFile")&&!d.idUploadLater){const hasF=d.appDocs.some(x=>x.type==="PhotoID-Front"&&x.url);const hasB=d.appDocs.some(x=>x.type==="PhotoID-Back"&&x.url);if(!hasF||!hasB)e.idFile=!hasF?"Please upload the front of your photo ID":"Please upload the back of your photo ID";}
@@ -487,14 +488,10 @@ export default function ApplyPage(){
       if(fieldActive("emergPhone")&&fieldRequired("emergPhone")&&!d.emergPhone.trim())e.emergPhone=`${fieldLabel("emergPhone","Emergency contact phone")} is required`;
       if(fieldActive("emergRelation")&&fieldRequired("emergRelation")&&!d.emergRelation.trim())e.emergRelation=`${fieldLabel("emergRelation","Relationship")} is required`;
     }
-    if(s==="room"){
-      if(invite?.inviteRoomMode==="choice"&&!d.selectedRoom)e.selectedRoom="Please select a room";
-      if(fieldActive("doorCode")&&fieldRequired("doorCode")&&!/^\d{4}$/.test(d.doorCode))e.doorCode=`${fieldLabel("doorCode","Door Code")} must be exactly 4 digits — numbers only`;
-    }
     setErrors(e);if(Object.keys(e).length>0)shake();return Object.keys(e).length===0;
   };
 
-  const STEPS_TENANT=["welcome","appinfo","rental","personal","employment","references","emergency","room","review","payment","done"];
+  const STEPS_TENANT=["welcome","appinfo","rental","personal","employment","references","emergency","review","payment","done"];
   const STEPS_COSIGNER=["welcome","appinfo","personal","employment","review","payment","done"];
   // A property is whole-unit only if ALL non-owner-occupied units have wholeHouse/wholeUnit rentalMode
   const propIsWholeUnit=(p)=>{
@@ -639,6 +636,21 @@ export default function ApplyPage(){
         {/* If locked room from invite — show confirmation */}
         {invite?.inviteRoomName&&<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--gn)"}}>
           Applying for <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
+        </div>}
+
+        {/* ── DOOR CODE PIN — always shown once property is selected or room is locked ── */}
+        {(d.preferredProperty||invite?.inviteRoomName)&&fieldActive("doorCode")&&<div style={{marginBottom:20,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>{fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
+          <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once payment is received.")}</div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <input type="text" inputMode="numeric" maxLength={4} value={d.doorCode}
+              onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);upd("doorCode",val);if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));}}
+              placeholder="_ _ _ _"
+              style={{width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",color:"#1a1714"}}
+            />
+            {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>&#10003; Code set</div>}
+            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
+          </div>
         </div>}
 
         {/* ── OCCUPANCY — dynamic per rental mode ── */}
@@ -1044,59 +1056,6 @@ export default function ApplyPage(){
           {fieldActive("emergPhone")&&<div className="fld"><label>{fieldLabel("emergPhone","Phone")}{fieldRequired("emergPhone")&&<span className="req">*</span>}</label><input type="tel" value={d.emergPhone} onChange={e=>upd("emergPhone",fmtPhone(e.target.value))} className={errors.emergPhone?"err":""} placeholder={fieldPlaceholder("emergPhone","(555) 555-5555")}/>{errors.emergPhone&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergPhone}</div>}</div>}
           {fieldActive("emergRelation")&&<div className="fld"><label>{fieldLabel("emergRelation","Relationship")}{fieldRequired("emergRelation")&&<span className="req">*</span>}</label><input value={d.emergRelation} onChange={e=>upd("emergRelation",cap(e.target.value))} className={errors.emergRelation?"err":""} placeholder={fieldPlaceholder("emergRelation","e.g. Parent")}/>{errors.emergRelation&&<div className="err-msg" style={{animation:"shake .4s ease"}}>{errors.emergRelation}</div>}</div>}
         </div>
-        <button className="btn-next" onClick={next}>Continue →</button>
-        <button className="btn-back" onClick={back}>← Back</button>
-      </div>}
-
-      {/* ═══ ROOM ═══ */}
-      {step==="room"&&<div className="sec">
-        <div className="sec-num">Section 6</div>
-        <div className="sec-hd"><h2>{invite?.inviteRoomMode==="choice"||!invite?"Choose Your Room":"Your Room & Door Code"}</h2><p>{invite?.inviteRoomMode==="choice"||!invite?"Select the room you'd like to apply for.":"Your room has been reserved. Choose a 4-digit door code below."}</p></div>
-        {/* Room selection — walk-ins and choice invites only */}
-        {(!invite||invite?.inviteRoomMode==="choice")&&(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=>{
-            const units=(p.units&&p.units.length>0?p.units:[{id:"main",name:"Unit A",label:"A",rooms:p.rooms||[]}]).filter(u=>!u.ownerOccupied);
-            const hasMultipleUnits=units.length>1;
-            return(<div key={p.id} className="prop-card"><div className="prop-info">
-              <div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div>
-              <div style={{marginTop:10}}>
-                {units.map(u=>{const vacantRooms=(u.rooms||[]).filter(r=>r.st==="vacant"&&!r.ownerOccupied);if(!vacantRooms.length)return null;return(
-                  <div key={u.id}>
-                    {hasMultipleUnits&&<div style={{fontSize:10,fontWeight:800,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,marginTop:8}}>Unit {u.label||u.name}</div>}
-                    {vacantRooms.map(r=><div key={r.id} className={`room-card ${d.selectedRoom===r.id?"sel":""}`} onClick={()=>upd("selectedRoom",r.id)}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                        <div>
-                          <div className="room-name">{r.name}</div>
-                          <div className="room-meta">{r.pb?"Private":"Shared"} bath{r.sqft?" · "+r.sqft+" sqft":""}</div>
-                        </div>
-                        <div className="room-price">${r.rent}<small style={{fontSize:10,color:"#999"}}>/mo</small></div>
-                      </div>
-                    </div>)}
-                  </div>
-                );})}
-              </div>
-            </div></div>);
-          });})()}
-        {/* Locked room confirmation */}
-        {invite?.inviteRoomName&&invite?.inviteRoomMode!=="choice"&&<div style={{background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,padding:12,marginBottom:16,fontSize:12,color:"var(--gn)"}}>
-          Your room: <strong>{invite.inviteRoomName}</strong> at <strong>{invite.invitePropName}</strong>{invite.inviteRent?` — $${invite.inviteRent}/mo`:""}.
-        </div>}
-        {errors.selectedRoom&&<div className="err-msg" style={{animation:"shake .4s ease",marginBottom:12}}>{errors.selectedRoom}</div>}
-
-        {/* ── DOOR CODE — shown in room step for all rental types ── */}
-        {fieldActive("doorCode")&&<div style={{marginTop:20,marginBottom:20,background:"rgba(212,168,83,.05)",border:`1px solid ${errors.doorCode?"#c45c4a":"rgba(212,168,83,.15)"}`,borderRadius:12,padding:20,animation:errors.doorCode?"shake .4s ease":"none"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:4}}>{fieldLabel("doorCode","Choose Your 4-Digit Door Code")}{fieldRequired("doorCode")&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
-          <div style={{fontSize:12,color:"#999",marginBottom:16,lineHeight:1.5}}>{fieldHelp("doorCode","This code will be programmed into your smart lock. It activates at 12:00am on your move-in day once payment is received.")}</div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-            <input type="text" inputMode="numeric" maxLength={4} value={d.doorCode}
-              onChange={e=>{const val=e.target.value.replace(/\D/g,"").slice(0,4);upd("doorCode",val);if(/^\d{4}$/.test(val))setErrors(p=>({...p,doorCode:undefined}));}}
-              placeholder="_ _ _ _"
-              style={{width:130,textAlign:"center",fontSize:22,fontWeight:900,letterSpacing:10,fontFamily:"monospace",border:`2px solid ${errors.doorCode?"#c45c4a":/^\d{4}$/.test(d.doorCode)?"rgba(74,124,89,.5)":"rgba(212,168,83,.4)"}`,borderRadius:10,padding:"10px 8px",outline:"none",background:"#fff",color:"#1a1714"}}
-            />
-            {/^\d{4}$/.test(d.doorCode)&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>✓ Code set</div>}
-            {errors.doorCode&&<div className="err-msg" style={{textAlign:"center",animation:"shake .4s ease"}}>{errors.doorCode}</div>}
-          </div>
-        </div>}
-
         <button className="btn-next" onClick={next}>Continue →</button>
         <button className="btn-back" onClick={back}>← Back</button>
       </div>}
