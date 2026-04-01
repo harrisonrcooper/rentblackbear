@@ -4493,7 +4493,7 @@ export default function Page(){
           {id:uid(),label:"Currently Employed",key:"unemployed",type:"employed-toggle",section:"Employment & Income",required:false,active:true,placeholder:"",helpText:"If unemployed, employer reference and employer fields are skipped. Previous work history is optional.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Current Employer",key:"employers",type:"employer-block",section:"Employment & Income",required:true,active:true,placeholder:"Company name",helpText:"Landlords like to see ~5 years of employment history.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Gross Monthly Income",key:"income",type:"number",section:"Employment & Income",required:true,active:true,placeholder:"4200",helpText:"Before taxes. We look for 3x the monthly rent.",options:[],followUpYes:"",followUpNo:"",min:0,max:null},
-          {id:uid(),label:"Proof of Income",key:"payStubs",type:"file",section:"Employment & Income",required:false,active:true,placeholder:"Upload pay stubs, offer letter, or bank statement",helpText:"Last 2 pay stubs preferred. Can be uploaded later.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+          {id:uid(),label:"Proof of Income (Optional)",key:"payStubs",type:"file",section:"Employment & Income",required:false,active:true,placeholder:"Upload pay stubs, offer letter, or bank statement",helpText:"Optional — skip if you don't have them handy. Your income will be verified through RentPrep.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           // ── Section 6: References ──
           {id:uid(),label:"Employer Reference Name",key:"empRefName",type:"text",section:"References",required:true,active:true,placeholder:"Supervisor or HR contact",helpText:"Skipped if applicant is unemployed.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
           {id:uid(),label:"Employer Reference Phone",key:"empRefPhone",type:"phone",section:"References",required:true,active:true,placeholder:"(256) 555-0000",helpText:"Skipped if applicant is unemployed.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
@@ -11369,7 +11369,12 @@ export default function Page(){
     });
     const reqs=[{key:"bgCheck",label:"Background Check"},{key:"creditScore",label:"Credit Check"},{key:"incomeVerified",label:"Income Verification"},{key:"refs",label:"References"},{key:"idVerified",label:"ID Verified"}];
     const waived=a.waived||[];
-    const incompleteReqs=reqs.filter(r=>!waived.includes(r.label)&&a[r.key]!=="passed"&&a[r.key]!=="verified");
+    // incomeVerified only blocks if RentPrep income add-on was actually requested
+    const incompleteReqs=reqs.filter(r=>{
+      if(waived.includes(r.label))return false;
+      if(r.key==="incomeVerified"&&(!a.incomeAdd||a.incomeAdd==="none"))return false;
+      return a[r.key]!=="passed"&&a[r.key]!=="verified";
+    });
     const convertToTenant=(roomId,propId)=>{
       const mi=a.termMoveIn||a.moveIn||TODAY.toISOString().split("T")[0];
       const le=new Date(mi+"T00:00:00");le.setFullYear(le.getFullYear()+1);
@@ -12741,7 +12746,7 @@ export default function Page(){
                 const creditOk=a.creditScore&&a.creditScore!=="—"&&!isNaN(parseInt(a.creditScore))&&parseInt(a.creditScore)>=580;
                 const incOk=!a.incomeAdd||a.incomeAdd==="none"||a.incomeAdd===""||a.incomeVerified==="verified";
                 const payDocs=allDocs.filter(x=>x.type==="PayStub");
-                const payOk=payDocs.length>0&&payDocs.every(x=>x.verified==="verified");
+                const payOk=true; // optional — never blocks approval
                 const payBad=payDocs.some(x=>x.verified==="rejected");
                 const refsOk=a.refs==="verified";
                 const issues=[!bgOk,!creditOk,!incOk,!payOk||payBad,!refsOk,!idOk||idBad].filter(Boolean).length;
@@ -12770,7 +12775,7 @@ export default function Page(){
         const refsStatus=a.refs==="verified"?"verified":repliedRefs>0?`${Math.min(repliedRefs,totalRefs)}/${totalRefs} replied`:totalRefs>0?"not-started":"not-started";
 
         const StatusDot=({s})=>{
-          const c=s==="verified"||s==="passed"?"#2d6a3f":s==="failed"||s==="rejected"?"#c45c4a":s==="awaiting"||s==="pending"?"#d4a853":"#d0ccc6";
+          const c=s==="verified"||s==="passed"?"#2d6a3f":s==="failed"||s==="rejected"?"#c45c4a":s==="awaiting"||s==="pending"?"#d4a853":s==="optional"?"#b0a898":"#d0ccc6";
           const fill=s==="verified"||s==="passed"?"#2d6a3f":s==="failed"||s==="rejected"?"#c45c4a":s==="awaiting"||s==="pending"?"#d4a853":"#e8e5e0";
           return s==="verified"||s==="passed"
             ?<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill={fill} opacity=".15"/><polyline points="4.5 8 7 10.5 11.5 5.5" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -12778,10 +12783,12 @@ export default function Page(){
             ?<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill={fill} opacity=".12"/><line x1="5" y1="5" x2="11" y2="11" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><line x1="11" y1="5" x2="5" y2="11" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg>
             :s==="awaiting"||s==="pending"
             ?<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke={c} strokeWidth="1.5" fill="none"/><line x1="8" y1="4.5" x2="8" y2="8.5" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><line x1="8" y1="9.5" x2="8" y2="10.5" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg>
+            :s==="optional"
+            ?<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke={c} strokeWidth="1.2" fill="none" strokeDasharray="3 2"/><line x1="5.5" y1="8" x2="10.5" y2="8" stroke={c} strokeWidth="1.4" strokeLinecap="round"/></svg>
             :<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke={c} strokeWidth="1.5" fill="none" strokeDasharray="2 2"/></svg>;
         };
         const Badge=({s,label})=>{
-          const cfg={verified:{bg:"rgba(74,124,89,.1)",c:"#2d6a3f"},passed:{bg:"rgba(74,124,89,.1)",c:"#2d6a3f"},failed:{bg:"rgba(196,92,74,.1)",c:"#c45c4a"},rejected:{bg:"rgba(196,92,74,.1)",c:"#c45c4a"},awaiting:{bg:"rgba(212,168,83,.1)",c:"#9a7422"},pending:{bg:"rgba(212,168,83,.1)",c:"#9a7422"}}[s]||{bg:"rgba(0,0,0,.05)",c:"#aaa"};
+          const cfg={verified:{bg:"rgba(74,124,89,.1)",c:"#2d6a3f"},passed:{bg:"rgba(74,124,89,.1)",c:"#2d6a3f"},failed:{bg:"rgba(196,92,74,.1)",c:"#c45c4a"},rejected:{bg:"rgba(196,92,74,.1)",c:"#c45c4a"},awaiting:{bg:"rgba(212,168,83,.1)",c:"#9a7422"},pending:{bg:"rgba(212,168,83,.1)",c:"#9a7422"},optional:{bg:"rgba(0,0,0,.04)",c:"#9a8878"}}[s]||{bg:"rgba(0,0,0,.05)",c:"#aaa"};
           return<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:cfg.bg,color:cfg.c,whiteSpace:"nowrap"}}>{label}</span>;
         };
         const Row=({label,st,detail,badge,tag})=>(
@@ -12811,9 +12818,10 @@ export default function Page(){
         const creditBadge=hasScore?(score>=700?"Strong":score>=650?"Good":score>=580?"Fair":"Poor"):creditSt==="awaiting"?"Awaiting RentPrep":hasRentPrep?"Not Started":null;
 
         // Income Verification
-        const incSt=a.incomeVerified==="verified"?"verified":hasIncome&&feePaid?"awaiting":hasIncome?"not-started":null;
-        const incDetail=incSt==="awaiting"?"Paid — income report incoming from RentPrep":incSt==="verified"?"Income confirmed":null;
-        const incBadge=incSt==="verified"?"Verified":incSt==="awaiting"?"Awaiting RentPrep":incSt==="not-started"?"Not Started":null;
+        // Income Verification — always show if RentPrep package selected; status depends on whether add-on was purchased
+        const incSt=a.incomeVerified==="verified"?"verified":hasIncome&&feePaid?"awaiting":hasIncome?"not-started":hasRentPrep?"optional":null;
+        const incDetail=incSt==="awaiting"?"Paid — income report incoming from RentPrep":incSt==="verified"?"Income confirmed":incSt==="optional"?"Add-on not selected — skip or add at invite time":null;
+        const incBadge=incSt==="verified"?"Verified":incSt==="awaiting"?"Awaiting RentPrep":incSt==="not-started"?"Not Started":incSt==="optional"?"Not Selected":null;
 
         // Build full reference contact list from all sources
         const refContacts=[];
@@ -12876,9 +12884,9 @@ export default function Page(){
         const payAnyRejected=payStubs.some(x=>x.verified==="rejected");
         const payAllVerified=payStubs.length>0&&payStubs.every(x=>x.verified==="verified");
         const payAnyVerified=payStubs.some(x=>x.verified==="verified");
-        const paySt=payAnyRejected?"failed":payAllVerified?"verified":payStubs.length>0?"pending":flag.incomeUploadLater?"pending":"not-started";
-        const payDetail=payAnyRejected?"Pay stub rejected — tenant notified to re-upload":payAllVerified?`${payStubs.length} stub${payStubs.length>1?"s":""} verified`:payStubs.length>0?"Uploaded — awaiting review":flag.incomeUploadLater?"Tenant will upload later":null;
-        const payBadge=payAnyRejected?"Action Required":payAllVerified?"Verified":payStubs.length>0?"Under Review":flag.incomeUploadLater?"Upload Pending":"Not Uploaded";
+        const paySt=payAnyRejected?"failed":payAllVerified?"verified":payStubs.length>0?"pending":"optional";
+        const payDetail=payAnyRejected?"Pay stub rejected — tenant notified to re-upload":payAllVerified?`${payStubs.length} stub${payStubs.length>1?"s":""} verified`:payStubs.length>0?"Uploaded — awaiting review":"Not required — RentPrep income verification covers this";
+        const payBadge=payAnyRejected?"Action Required":payAllVerified?"Verified":payStubs.length>0?"Under Review":"Optional";
 
         return(<div className="tp-card">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
@@ -12888,7 +12896,7 @@ export default function Page(){
           <div style={{fontSize:10,color:"#9a8878",marginBottom:12}}>Auto-derived from application data · Updates when RentPrep results arrive</div>
           <Row label="Background Check" st={bgSt} detail={bgDetail} badge={bgBadge} tag={hasRentPrep?"RENTPREP":null}/>
           <Row label="Credit Check" st={creditSt} detail={creditDetail} badge={creditBadge} tag={hasRentPrep?"RENTPREP":null}/>
-          {incSt!==null&&<Row label="Income Verification" st={incSt} detail={incDetail} badge={incBadge} tag="RENTPREP"/>}
+          {incSt!==null&&<Row label="Income Verification" st={incSt} detail={incDetail} badge={incBadge} tag={hasRentPrep?"RENTPREP":null}/>}
           <Row label="Pay Stubs" st={paySt} detail={payDetail} badge={payBadge}/>
           {/* References — expandable */}
           <div style={{borderBottom:"1px solid rgba(0,0,0,.04)"}}>
