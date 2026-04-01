@@ -11915,8 +11915,11 @@ export default function Page(){
           }
           setModal(prev=>({...prev,_couplesScope:null,_couplesSaved:scope}));
         };
-        const scope=modal._couplesScope;
-        const saved=modal._couplesSaved;
+        // Scope selector shows only when: answered AND the current value differs from the resolved default (before app-level override)
+        // i.e. if they already saved portfolio default and current value matches, don't show scope again
+        const inheritedDefault=couplesTermProp?.couplesDefault!==undefined?couplesTermProp.couplesDefault:(settings.couplesDefault||false);
+        const currentMatchesInherited=a.allowCouples===inheritedDefault;
+        const showScopeSelector=answered&&!saved&&!currentMatchesInherited;
         return(<div className="tp-card" style={{border:!answered?"2px solid rgba(212,168,83,.4)":"1px solid rgba(0,0,0,.03)",background:!answered?"rgba(212,168,83,.02)":"#fff"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
             <div>
@@ -11936,12 +11939,12 @@ export default function Page(){
               </button>
             ))}
           </div>
-          {answered&&!saved&&<>
+          {showScopeSelector&&<>
             <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Save this as default?</div>
             <div style={{display:"flex",flexDirection:"column",gap:4}}>
               {[
                 {key:"once",label:"Just this application",sub:"One-off — don't change any defaults"},
-                {key:"property",label:"This property",sub:couplesTermProp?couplesTermProp.name:"Selected property"},
+                {key:"property",label:"This property",sub:couplesTermProp?getPropDisplayName(couplesTermProp):"Selected property"},
                 {key:"portfolio",label:"All properties (portfolio default)",sub:"Applies globally unless overridden per-property"},
               ].map(opt=>(
                 <label key={opt.key} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:7,border:"1px solid "+(scope===opt.key?"rgba(212,168,83,.4)":"rgba(0,0,0,.06)"),background:scope===opt.key?"rgba(212,168,83,.04)":"transparent",cursor:"pointer"}}>
@@ -11954,11 +11957,14 @@ export default function Page(){
               ))}
             </div>
             {scope&&<button className="btn btn-sm" style={{width:"100%",marginTop:8,background:"#d4a853",color:"#1a1714",border:"none",fontWeight:700}} onClick={()=>saveScope(a.allowCouples,scope)}>
-              Save {scope==="once"?"for this application only":scope==="property"?"to "+( couplesTermProp?.name||"property"):"as portfolio default"}
+              Save {scope==="once"?"for this application only":scope==="property"?"to "+(getPropDisplayName(couplesTermProp)||"property"):"as portfolio default"}
             </button>}
           </>}
-          {saved&&<div style={{fontSize:10,color:"#4a7c59",padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:6,marginTop:4}}>
-            &#10003; {saved==="once"?"Applied to this application only":saved==="property"?"Saved to "+(couplesTermProp?.name||"property"):saved==="portfolio"?"Saved as portfolio default":"Saved"}
+          {answered&&currentMatchesInherited&&<div style={{fontSize:10,color:"#4a7c59",padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:6,marginTop:4}}>
+            &#10003; Matches {couplesTermProp?.couplesDefault!==undefined?"property":"portfolio"} default — no override needed
+          </div>}
+          {saved&&!currentMatchesInherited&&<div style={{fontSize:10,color:"#4a7c59",padding:"5px 8px",background:"rgba(74,124,89,.06)",borderRadius:6,marginTop:4}}>
+            &#10003; {saved==="once"?"Applied to this application only":saved==="property"?"Saved to "+(getPropDisplayName(couplesTermProp)||"property"):saved==="portfolio"?"Saved as portfolio default":"Saved"}
           </div>}
           {!answered&&<div style={{fontSize:10,color:"#9a7422",marginTop:10,padding:"6px 10px",background:"rgba(212,168,83,.06)",borderRadius:6,border:"1px solid rgba(212,168,83,.15)"}}>
             Answer this before assigning a room — it determines what the tenant sees on their application.
