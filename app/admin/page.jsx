@@ -5410,6 +5410,10 @@ export default function Page(){
             unitName:unit?.name||app?.termUnitName||"",
             propertyAddress:prop?.addr||"",
             rent,sd:app?.termSD||rent,proratedRent,
+            prorationMethod:"std",
+            requireLastMonth:false,
+            lastMonthInstallments:3,
+            lastMonthFrequency:"monthly",
             moveIn:mi,leaseStart:mi,
             leaseEnd:isTbd?"":leaseEndD.toISOString().split("T")[0],
             leaseType:"fixed",
@@ -5694,7 +5698,7 @@ export default function Page(){
             </div>
           </div>
 
-          {/* Move-In Package Preview */}
+          {/* Move-In Package Configuration */}
           {(()=>{
             const rent=leaseForm.rent||0;
             const sd=leaseForm.sd||0;
@@ -5707,43 +5711,173 @@ export default function Page(){
             const dailyRate=Math.ceil(rent/30);
             const isFirstDay=day===1;
             const proratedAmt=isFirstDay?0:Math.ceil(dailyRate*daysLeft);
-            const firstMonthAmt=isFirstDay?rent:proratedAmt;
-            const total=sd+firstMonthAmt;
+            const proMode=leaseForm.prorationMethod||"std";
+            const requireLast=leaseForm.requireLastMonth||false;
+            const installs=leaseForm.lastMonthInstallments||3;
+            const freq=leaseForm.lastMonthFrequency||"monthly";
+            const lastInstallAmt=requireLast?Math.ceil(rent/installs):0;
+            const lastRemaining=requireLast?rent-lastInstallAmt:0;
+            const moveInMonthName=miD.toLocaleString("default",{month:"long"});
+            const nextMonthD=new Date(miD.getFullYear(),miD.getMonth()+1,1);
+            const nextMonthName=nextMonthD.toLocaleString("default",{month:"long"});
+            // What tenant pays at move-in for first payment
+            const firstAtMoveIn=proMode==="full"?rent:proratedAmt;
+            const totalAtMoveIn=sd+firstAtMoveIn+(requireLast?lastInstallAmt:0);
+            // Build timeline entries
+            const timeline=[];
+            const fmtDate=(d)=>`${d.toLocaleString("default",{month:"short"})} ${d.getDate()}`;
+            // Move-in day
+            let moveInDesc=proMode==="full"
+              ?`Security deposit + ${nextMonthName} rent${requireLast?" + last month installment 1 of "+installs:""}`
+              :(isFirstDay
+                ?`Security deposit + first month's rent${requireLast?" + last month installment 1 of "+installs:""}`
+                :`Security deposit + prorated ${moveInMonthName} (${daysLeft} days)${requireLast?" + last month installment 1 of "+installs:""}`);
+            timeline.push({date:fmtDate(miD),label:"Move-in",amt:totalAtMoveIn,desc:moveInDesc,color:"#d4a853"});
+            // Next billing cycle
+            if(proMode==="full"&&!isFirstDay){
+              const nextBillAmt=proratedAmt+(requireLast&&installs>1?lastInstallAmt:0);
+              const nextDesc=`Prorated ${moveInMonthName} (${daysLeft} days × ${fmtS(dailyRate)}/day)${requireLast&&installs>1?" + last month installment 2 of "+installs:""}`;
+              timeline.push({date:fmtDate(nextMonthD),label:nextMonthName+" 1",amt:nextBillAmt,desc:nextDesc,color:"#185fa5"});
+            }
+            // Remaining last month installments
+            if(requireLast&&installs>1){
+              const startInstall=proMode==="full"?2:2;
+              for(let i=startInstall;i<=installs;i++){
+                const freqDays=freq==="weekly"?7:freq==="biweekly"?14:30;
+                const baseD=proMode==="full"&&!isFirstDay?nextMonthD:nextMonthD;
+                const instD=new Date(baseD);
+                if(freq==="monthly"){instD.setMonth(instD.getMonth()+(i-(proMode==="full"?2:2)));instD.setDate(1);}
+                else{instD.setDate(instD.getDate()+freqDays*(i-(proMode==="full"?2:2)));}
+                const isLastInstall=i===installs;
+                const regularRent=i>=(proMode==="full"?3:2)?rent:null;
+                const installDesc=`Last month installment ${i} of ${installs}${regularRent?" + regular rent":""}`;
+                const installAmt=lastInstallAmt+(regularRent&&(proMode==="std"||i>=3)?rent:0);
+                timeline.push({date:fmtDate(instD),label:instD.toLocaleString("default",{month:"short"})+" 1",amt:installAmt,desc:installDesc,color:"#4a7c59"});
+              }
+            }
+            // Ongoing
+            timeline.push({date:"Ongoing",label:"Regular rent",amt:rent,desc:"Monthly rent — no further last month charges",color:"#9a8878"});
+
             return(
-            <div style={{background:"#f9f8f5",border:"2px solid rgba(212,168,83,.25)",borderRadius:12,padding:16,marginBottom:14}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#9a7422",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>Move-In Package Preview</div>
-
-              {/* Proration explainer */}
-              {!isFirstDay&&<div style={{background:"rgba(212,168,83,.08)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#5c4a3a",lineHeight:1.6}}>
-                <strong>Proration:</strong> {daysLeft} days remaining in {miD.toLocaleString("default",{month:"long"})} · {fmtS(rent)} ÷ 30 = {fmtS(dailyRate)}/day · Prorated total: {fmtS(proratedAmt)}
-              </div>}
-              {isFirstDay&&<div style={{background:"rgba(74,124,89,.06)",borderRadius:8,padding:10,marginBottom:12,fontSize:11,color:"#2d6a3f"}}>
-                ✓ Move-in on the 1st — full month's rent applies, no proration needed
-              </div>}
-
-              {/* Package line items */}
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)"}}>
+            <div style={{border:"1px solid rgba(212,168,83,.3)",borderRadius:10,overflow:"hidden",marginBottom:14}}>
+              {/* Config header */}
+              <div style={{background:"rgba(212,168,83,.07)",padding:"10px 14px",borderBottom:"1px solid rgba(212,168,83,.15)"}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#9a7422",letterSpacing:.5,marginBottom:10}}>MOVE-IN PACKAGE CONFIGURATION</div>
+                {/* Proration method */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700}}>Security Deposit</div>
-                    <div style={{fontSize:10,color:"#6b5e52"}}>Due today — secures the room</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>Proration method</div>
+                    <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>
+                      {proMode==="std"
+                        ?(isFirstDay?"Move-in on the 1st — full rent applies, no proration":`Tenant pays ${daysLeft} days prorated (${fmtS(proratedAmt)}) at move-in`)
+                        :`Tenant pays full ${nextMonthName} rent upfront — next bill is prorated ${moveInMonthName} (${fmtS(proratedAmt)})`}
+                    </div>
                   </div>
-                  <div style={{fontSize:15,fontWeight:800,color:"#1a1714"}}>{fmtS(sd)}</div>
+                  <div style={{display:"flex",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden",flexShrink:0,marginLeft:12}}>
+                    {[["std","Prorate move-in"],["full","First month upfront"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setLeaseForm(p=>({...p,prorationMethod:v}))} style={{padding:"5px 10px",fontSize:10,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",background:proMode===v?"#1a1714":"transparent",color:proMode===v?"#d4a853":"#6b5e52",transition:"all .15s"}}>{l}</button>
+                    ))}
+                  </div>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)"}}>
+                {/* Last month toggle */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:10,borderTop:"0.5px solid rgba(0,0,0,.06)"}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700}}>{isFirstDay?"First Month's Rent":`Prorated Rent (${daysLeft} days × ${fmtS(dailyRate)})`}</div>
-                    <div style={{fontSize:10,color:"#6b5e52"}}>Due: {fmtD(mi)}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>Require last month's rent</div>
+                    <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>Optional — use for higher-risk move-ins</div>
                   </div>
-                  <div style={{fontSize:15,fontWeight:800,color:"#1a1714"}}>{fmtS(firstMonthAmt)}</div>
+                  <button onClick={()=>setLeaseForm(p=>({...p,requireLastMonth:!p.requireLastMonth}))} style={{width:36,height:20,borderRadius:10,border:"none",cursor:"pointer",background:requireLast?"#4a7c59":"#ccc",position:"relative",flexShrink:0,transition:"background .2s",padding:0}}>
+                    <div style={{position:"absolute",width:16,height:16,borderRadius:"50%",background:"#fff",top:2,left:requireLast?18:2,transition:"left .2s"}}/>
+                  </button>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px",background:"#1a1714",borderRadius:8}}>
-                  <div style={{fontSize:13,fontWeight:800,color:"#f5f0e8"}}>Total Due at Move-In</div>
-                  <div style={{fontSize:18,fontWeight:800,color:"#d4a853"}}>{fmtS(total)}</div>
+                {/* Payment plan options when last month is on */}
+                {requireLast&&<div style={{marginTop:12,padding:"10px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,border:"0.5px solid rgba(74,124,89,.2)"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#2d6a3f",letterSpacing:.5,marginBottom:8}}>PAYMENT PLAN — LAST MONTH'S RENT ({fmtS(rent)})</div>
+                  <div style={{display:"flex",gap:10,marginBottom:8}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:11,color:"#6b5e52",marginBottom:4}}>Installments</div>
+                      <select value={installs} onChange={e=>setLeaseForm(p=>({...p,lastMonthInstallments:parseInt(e.target.value)}))} style={{width:"100%",padding:"6px 8px",fontSize:11,borderRadius:6,border:"0.5px solid rgba(0,0,0,.1)",fontFamily:"inherit",background:"#fff"}}>
+                        {[1,2,3,4,6].map(n=><option key={n} value={n}>{n===1?"Pay in full at move-in":n+" installments"}</option>)}
+                      </select>
+                    </div>
+                    {installs>1&&<div style={{flex:1}}>
+                      <div style={{fontSize:11,color:"#6b5e52",marginBottom:4}}>Frequency</div>
+                      <select value={freq} onChange={e=>setLeaseForm(p=>({...p,lastMonthFrequency:e.target.value}))} style={{width:"100%",padding:"6px 8px",fontSize:11,borderRadius:6,border:"0.5px solid rgba(0,0,0,.1)",fontFamily:"inherit",background:"#fff"}}>
+                        <option value="monthly">Monthly</option>
+                        <option value="biweekly">Bi-weekly</option>
+                        <option value="weekly">Weekly</option>
+                      </select>
+                    </div>}
+                  </div>
+                  <div style={{fontSize:10,color:"#4a7c59",fontWeight:600}}>
+                    {installs===1?`${fmtS(rent)} due at move-in`:`${fmtS(lastInstallAmt)} per installment · first due at move-in`}
+                  </div>
+                </div>}
+              </div>
+
+              {/* Preview line items */}
+              <div style={{padding:"12px 14px 0",background:"#fff"}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",letterSpacing:.5,marginBottom:8}}>PREVIEW</div>
+                {/* Security deposit */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 11px",background:"#f9f8f5",borderRadius:7,border:"0.5px solid rgba(0,0,0,.07)",marginBottom:5}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:600}}>Security deposit</div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>Due before move-in — secures the room</div>
+                  </div>
+                  <div style={{fontSize:13,fontWeight:700}}>{fmtS(sd)}</div>
+                </div>
+                {/* First payment */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 11px",background:proMode==="full"?"rgba(59,130,246,.06)":"#f9f8f5",borderRadius:7,border:proMode==="full"?"0.5px solid rgba(59,130,246,.2)":"0.5px solid rgba(0,0,0,.07)",marginBottom:5}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:600}}>
+                      {proMode==="full"
+                        ?`First month's rent — covers ${nextMonthName}`
+                        :isFirstDay?"First month's rent":`Prorated ${moveInMonthName} — ${daysLeft} days × ${fmtS(dailyRate)}/day`}
+                    </div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>
+                      {proMode==="full"
+                        ?`Paying ${nextMonthName} now — your ${nextMonthName} 1 bill will only be ${fmtS(proratedAmt)}`
+                        :`Due at move-in`}
+                    </div>
+                  </div>
+                  <div style={{fontSize:13,fontWeight:700}}>{fmtS(firstAtMoveIn)}</div>
+                </div>
+                {/* Last month installment 1 */}
+                {requireLast&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 11px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"0.5px solid rgba(74,124,89,.2)",marginBottom:5}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:600}}>Last month's rent{installs>1?` — installment 1 of ${installs}`:""}</div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>
+                      {installs===1?"Due in full at move-in":`Remaining ${fmtS(lastRemaining)} over next ${installs-1} ${freq==="monthly"?"month"+(installs-1>1?"s":""):freq==="biweekly"?"bi-weekly period"+(installs-1>1?"s":""):"week"+(installs-1>1?"s":"")}`}
+                    </div>
+                  </div>
+                  <div style={{fontSize:13,fontWeight:700}}>{fmtS(lastInstallAmt)}</div>
+                </div>}
+                {/* Total bar */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 11px",background:"#1a1714",borderRadius:7,marginBottom:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:"#f5f0e8"}}>Total due at move-in</div>
+                  <div style={{fontSize:17,fontWeight:700,color:"#d4a853"}}>{fmtS(totalAtMoveIn)}</div>
                 </div>
               </div>
-            </div>);
-          })()}
+
+              {/* Option C — Payment timeline */}
+              <div style={{background:"#f9f8f5",borderTop:"1px solid rgba(0,0,0,.06)",padding:"12px 14px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",letterSpacing:.5,marginBottom:10}}>FULL PAYMENT SCHEDULE</div>
+                {timeline.map((t,i)=>(
+                  <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:i<timeline.length-1?10:0}}>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0}}>
+                      <div style={{width:9,height:9,borderRadius:"50%",background:t.color,marginTop:3}}/>
+                      {i<timeline.length-1&&<div style={{width:1,height:20,background:"rgba(0,0,0,.1)",marginTop:3}}/>}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                        <span style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{t.label==="Regular rent"?"Ongoing":t.date}</span>
+                        <span style={{fontSize:13,fontWeight:700,color:t.label==="Regular rent"?"#6b5e52":"#1a1714"}}>{fmtS(t.amt)}{t.label==="Regular rent"?"/mo":""}</span>
+                      </div>
+                      <div style={{fontSize:11,color:"#6b5e52",marginTop:1,lineHeight:1.4}}>{t.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>);\n          })()}
 
           <div className="fld"><label>Internal Notes</label><textarea value={leaseForm.notes||""} onChange={e=>setLeaseForm(p=>({...p,notes:e.target.value}))} placeholder="Notes for your records only — not on the lease" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
 
@@ -5807,14 +5941,43 @@ export default function Page(){
                 const mi=lease.moveIn||"";
                 const rent=lease.rent||0;
                 const sd=lease.sd||0;
+                const proMode=lease.prorationMethod||"std";
+                const requireLast=lease.requireLastMonth||false;
+                const lastInstalls=lease.lastMonthInstallments||1;
+                const lastFreq=lease.lastMonthFrequency||"monthly";
                 const miD=mi?new Date(mi+"T00:00:00"):null;
                 const day=miD?miD.getDate():1;
                 const daysLeft=miD?new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1:0;
                 const proratedAmt=day===1?0:Math.ceil((rent/30)*daysLeft);
-                const firstMonthAmt=day===1?rent:proratedAmt;
+                const lastInstallAmt=requireLast?Math.ceil(rent/lastInstalls):0;
                 const newCharges=[];
-                if(sd>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Security Deposit",desc:"Security Deposit",amount:sd,dueDate:mi||TODAY.toISOString().split("T")[0],amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
-                if(firstMonthAmt>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:day===1?"First Month Rent":`Prorated Rent (${daysLeft} days)`,amount:firstMonthAmt,dueDate:mi||TODAY.toISOString().split("T")[0],amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                // Security deposit
+                if(sd>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Security Deposit",desc:"Security deposit",amount:sd,dueDate:mi||TODAY.toISOString().split("T")[0],amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                // First payment — either full first month or prorated
+                const nextMonthD=miD?new Date(miD.getFullYear(),miD.getMonth()+1,1):null;
+                const nextMonthStr=nextMonthD?nextMonthD.toISOString().split("T")[0]:TODAY.toISOString().split("T")[0];
+                if(proMode==="full"&&!day===1){
+                  // First month upfront: charge full rent due at move-in (covers next month)
+                  newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:`First month's rent (covers ${nextMonthD?nextMonthD.toLocaleString("default",{month:"long"}):"next month"})`,amount:rent,dueDate:mi,amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                  // Then prorated for move-in month due next month
+                  if(proratedAmt>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:`Prorated rent — ${daysLeft} days`,amount:proratedAmt,dueDate:nextMonthStr,amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                } else {
+                  // Standard: prorated or full first month at move-in
+                  const firstAmt=day===1?rent:proratedAmt;
+                  if(firstAmt>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:day===1?"First month's rent":`Prorated rent — ${daysLeft} days`,amount:firstAmt,dueDate:mi,amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                }
+                // Last month installments
+                if(requireLast&&lastInstallAmt>0){
+                  for(let i=0;i<lastInstalls;i++){
+                    let dueD=miD?new Date(miD):new Date();
+                    if(i>0){
+                      if(lastFreq==="monthly"){dueD=new Date(miD.getFullYear(),miD.getMonth()+i,1);}
+                      else if(lastFreq==="biweekly"){dueD=new Date(miD);dueD.setDate(dueD.getDate()+14*i);}
+                      else{dueD=new Date(miD);dueD.setDate(dueD.getDate()+7*i);}
+                    }
+                    newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:`Last month's rent — installment ${i+1} of ${lastInstalls}`,amount:lastInstallAmt,dueDate:dueD.toISOString().split("T")[0],amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                  }
+                }
                 if(newCharges.length>0){setCharges(p=>{const updated=[...p,...newCharges];save("hq-charges",updated);return updated;});}
                 setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease signed and sent to ${modal.lease.tenantEmail} — ${modal.lease.tenantName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
                 setModal({type:"leaseSent",lease:modal.lease,link});
