@@ -5465,19 +5465,13 @@ export default function Page(){
 
         const continueToSignAndSend=()=>{
           if(!leaseForm)return;
-          if(leaseForm.hasAssignedParking&&!leaseForm.parking?.trim()){
-            setLeaseForm(p=>({...p,_parkingErr:true}));
-            setTimeout(()=>setLeaseForm(p=>({...p,_parkingErr:false})),600);
-            return;
-          }
-          if(!leaseForm.utilitiesMode){
-            setLeaseForm(p=>({...p,_utilErr:true}));
-            setTimeout(()=>setLeaseForm(p=>({...p,_utilErr:false})),600);
-            return;
-          }
-          if(leaseForm.utilitiesMode==="custom"&&!leaseForm.utilitiesClause?.trim()){
-            setLeaseForm(p=>({...p,_utilErr:true}));
-            setTimeout(()=>setLeaseForm(p=>({...p,_utilErr:false})),600);
+          const errs={};
+          if(!leaseForm.doorCode||leaseForm.doorCode.trim().length!==4)errs._doorErr=true;
+          if(leaseForm.hasAssignedParking&&!leaseForm.parking?.trim())errs._parkingErr=true;
+          if(!leaseForm.utilitiesMode||(leaseForm.utilitiesMode==="custom"&&!leaseForm.utilitiesClause?.trim()))errs._utilErr=true;
+          if(Object.keys(errs).length>0){
+            setLeaseForm(p=>({...p,...errs}));
+            setTimeout(()=>setLeaseForm(p=>({...p,_doorErr:false,_parkingErr:false,_utilErr:false})),700);
             return;
           }
           saveDraft();
@@ -5750,7 +5744,11 @@ export default function Page(){
               </div>
               <div className="fr">
                 <div className="fld"><label>Door Code (4-digit PIN)</label>
-                  {locked?ro(leaseForm.doorCode||<span style={{color:"#c45c4a",fontSize:11}}>Not set — tenant did not choose a PIN</span>):<input value={leaseForm.doorCode||""} maxLength={4} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4)}))} placeholder="4-digit PIN"/>}
+                  {locked
+                    ?ro(leaseForm.doorCode||<span style={{color:"#c45c4a",fontSize:11}}>Not set — tenant did not choose a PIN</span>)
+                    :<input value={leaseForm.doorCode||""} maxLength={4} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_doorErr:false}))} placeholder="4-digit PIN" style={{animation:leaseForm._doorErr?"wiggle .4s ease":undefined,borderColor:leaseForm._doorErr?"#c45c4a":undefined}}/>
+                  }
+                  {leaseForm._doorErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"wiggle .4s ease"}}>A 4-digit door code is required before signing.</div>}
                 </div>
                 <div className="fld">
                   <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
