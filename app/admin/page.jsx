@@ -5610,38 +5610,58 @@ export default function Page(){
           </div>
 
           <div style={{background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)",borderRadius:10,padding:12,marginBottom:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#2d6a3f",marginBottom:8}}>PROPERTY</div>
-            <div className="fr">
-              <div className="fld"><label>Property</label>
-                <select value={leaseForm.property||""} onChange={e=>{const p2=props.find(p=>p.name===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,property:e.target.value,propertyAddress:p2?.addr||"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
-                  <option value="">Select...</option>
-                  {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
-                </select>
-              </div>
-              <div className="fld"><label>Room / Unit</label>
-                <select value={leaseForm.room||""} onChange={e=>{
-                  const lp=props.find(p=>p.name===leaseForm.property);
-                  if(!lp)return;
-                  const items=leaseableItems(lp);
-                  const item=items.find(i=>i.name===e.target.value||i.id===e.target.value);
-                  if(!item)return;
-                  const unit=(lp.units||[]).find(u=>u.id===item.unitId);
-                  const uKey=unit?.utils||"allIncluded";
-                  const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";
-                  setLeaseForm(p=>({...p,room:item.name,roomId:item.isWholeUnit?"":item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parking:item.parking||"",utilitiesMode:uKey,utilitiesClause:uClause}));
-                }} style={{width:"100%"}}>
-                  <option value="">Select...</option>
-                  {(()=>{const lp=props.find(p=>p.name===leaseForm.property);if(!lp)return null;
-                    return leaseableItems(lp).map(item=>(
-                      <option key={item.id} value={item.isWholeUnit?item.id:item.name}>
-                        {item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":""}{item.name}{item.isWholeUnit?" (Whole Unit)":""} — {fmtS(item.rent)}/mo
-                      </option>
-                    ));})()}
-                </select>
-              </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#2d6a3f"}}>PROPERTY</div>
+              {leaseForm.applicationId&&!leaseForm._propEditing&&<button onClick={()=>setLeaseForm(p=>({...p,_propEditing:true}))} style={{fontSize:9,fontWeight:700,color:"#9a7422",background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit"}}>Edit</button>}
             </div>
-            <div className="fld"><label>Property Address</label><input value={leaseForm.propertyAddress||""} onChange={e=>setLeaseForm(p=>({...p,propertyAddress:e.target.value}))}/></div>
-          </div>
+            {leaseForm.applicationId&&!leaseForm._propEditing
+              ? <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                  <div style={{flex:1,minWidth:140,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"1px solid rgba(74,124,89,.12)"}}>
+                    <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",marginBottom:2}}>PROPERTY</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{leaseForm.property||"—"}</div>
+                  </div>
+                  <div style={{flex:1,minWidth:140,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"1px solid rgba(74,124,89,.12)"}}>
+                    <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",marginBottom:2}}>ROOM / UNIT</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{leaseForm.room||"—"}</div>
+                  </div>
+                  <div style={{width:"100%",padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"1px solid rgba(74,124,89,.12)"}}>
+                    <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",marginBottom:2}}>ADDRESS</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{leaseForm.propertyAddress||"—"}</div>
+                  </div>
+                </div>
+              : <>
+                  <div className="fr">
+                    <div className="fld"><label>Property</label>
+                      <select value={leaseForm.property||""} onChange={e=>{const p2=props.find(p=>p.name===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,property:e.target.value,propertyAddress:p2?.addr||"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
+                        <option value="">Select...</option>
+                        {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
+                      </select>
+                    </div>
+                    <div className="fld"><label>Room / Unit</label>
+                      <select value={leaseForm.room||""} onChange={e=>{
+                        const lp=props.find(p=>p.name===leaseForm.property);
+                        if(!lp)return;
+                        const items=leaseableItems(lp);
+                        const item=items.find(i=>i.name===e.target.value||i.id===e.target.value);
+                        if(!item)return;
+                        const unit=(lp.units||[]).find(u=>u.id===item.unitId);
+                        const uKey=unit?.utils||"allIncluded";
+                        const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";
+                        setLeaseForm(p=>({...p,room:item.name,roomId:item.isWholeUnit?"":item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parking:item.parking||"",utilitiesMode:uKey,utilitiesClause:uClause}));
+                      }} style={{width:"100%"}}>
+                        <option value="">Select...</option>
+                        {(()=>{const lp=props.find(p=>p.name===leaseForm.property);if(!lp)return null;
+                          return leaseableItems(lp).map(item=>(
+                            <option key={item.id} value={item.isWholeUnit?item.id:item.name}>
+                              {item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":""}{item.name}{item.isWholeUnit?" (Whole Unit)":""} — {fmtS(item.rent)}/mo
+                            </option>
+                          ));})()}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="fld"><label>Property Address</label><input value={leaseForm.propertyAddress||""} onChange={e=>setLeaseForm(p=>({...p,propertyAddress:e.target.value}))}/></div>
+                </>
+            }
 
           <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
             <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8",marginBottom:8}}>LEASE TERMS · Pre-filled from application · Editable</div>
@@ -5702,7 +5722,7 @@ export default function Page(){
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:8,border:"1px solid rgba(0,0,0,.06)"}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700}}>🏠 {isFirstDay?"First Month's Rent":`Prorated Rent (${daysLeft} days × ${fmtS(dailyRate)})`}</div>
+                    <div style={{fontSize:12,fontWeight:700}}>{isFirstDay?"First Month's Rent":`Prorated Rent (${daysLeft} days × ${fmtS(dailyRate)})`}</div>
                     <div style={{fontSize:10,color:"#6b5e52"}}>Due: {fmtD(mi)}</div>
                   </div>
                   <div style={{fontSize:15,fontWeight:800,color:"#1a1714"}}>{fmtS(firstMonthAmt)}</div>
@@ -5719,7 +5739,18 @@ export default function Page(){
 
           <div className="mft">
             <button className="btn btn-out" onClick={()=>setLeaseForm(null)}>Cancel</button>
-            <button className="btn btn-gold" onClick={saveDraft}>Save Draft</button>
+            <button className="btn btn-out" onClick={saveDraft}>Save Draft</button>
+            <button className="btn btn-green" style={{flex:1}} onClick={()=>{
+              saveDraft();
+              // Small delay to let setLeases settle before opening sign modal
+              setTimeout(()=>{
+                setLeases(prev=>{
+                  const saved=prev.find(l=>l.applicationId===leaseForm.applicationId&&l.status==="draft");
+                  if(saved)setModal({type:"signLease",leaseId:saved.id,lease:saved});
+                  return prev;
+                });
+              },100);
+            }}>Continue to Sign &amp; Send</button>
           </div>
         </div></div>}
 
@@ -5760,7 +5791,7 @@ export default function Page(){
               Save this signature for future leases
             </label>}
 
-            {leaseSigErr&&<div style={{color:"#c45c4a",fontSize:12,fontWeight:700,padding:"8px 12px",background:"rgba(196,92,74,.06)",borderRadius:8,marginBottom:12,animation:"shake .4s ease"}}>⚠ Please draw your signature before sending</div>}
+            {leaseSigErr&&<div style={{color:"#c45c4a",fontSize:12,fontWeight:700,padding:"8px 12px",background:"rgba(196,92,74,.06)",borderRadius:8,marginBottom:12,animation:"shake .4s ease"}}>Please draw your signature before sending.</div>}
 
             <div className="mft">
               <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
@@ -5771,15 +5802,29 @@ export default function Page(){
                 const token=uid()+uid();
                 const link=`${settings.siteUrl||"https://rentblackbear.vercel.app"}/lease?token=${token}`;
                 setLeases(p=>{const updated=p.map(l=>l.id===modal.leaseId?{...l,status:"pending_tenant",landlordSignature:modal.landlordSig,landlordSignedAt:now,signingToken:token,signingLink:link}:l);save("hq-leases",updated);return updated;});
-                setNotifs(p=>[{id:uid(),type:"lease",msg:`✍ Lease signed and sent to ${modal.lease.tenantEmail} — ${modal.lease.tenantName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+                // Generate move-in charges now that lease is signed and sent
+                const lease=modal.lease||{};
+                const mi=lease.moveIn||"";
+                const rent=lease.rent||0;
+                const sd=lease.sd||0;
+                const miD=mi?new Date(mi+"T00:00:00"):null;
+                const day=miD?miD.getDate():1;
+                const daysLeft=miD?new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1:0;
+                const proratedAmt=day===1?0:Math.ceil((rent/30)*daysLeft);
+                const firstMonthAmt=day===1?rent:proratedAmt;
+                const newCharges=[];
+                if(sd>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Security Deposit",desc:"Security Deposit",amount:sd,dueDate:mi||TODAY.toISOString().split("T")[0],amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                if(firstMonthAmt>0)newCharges.push({id:uid(),tenantName:lease.tenantName,roomId:lease.roomId||"",category:"Rent",desc:day===1?"First Month Rent":`Prorated Rent (${daysLeft} days)`,amount:firstMonthAmt,dueDate:mi||TODAY.toISOString().split("T")[0],amountPaid:0,status:"unpaid",leaseId:modal.leaseId,createdAt:now});
+                if(newCharges.length>0){setCharges(p=>{const updated=[...p,...newCharges];save("hq-charges",updated);return updated;});}
+                setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease signed and sent to ${modal.lease.tenantEmail} — ${modal.lease.tenantName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
                 setModal({type:"leaseSent",lease:modal.lease,link});
-              }}>✉ Sign & Send to Tenant</button>
+              }}>Sign &amp; Send to Tenant</button>
             </div>
           </div></div>}
 
         {/* Lease sent confirmation */}
         {modal?.type==="leaseSent"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480,textAlign:"center"}}>
-          <div style={{fontSize:48,marginBottom:12}}>🎉</div>
+          <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(74,124,89,.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
           <h2>Lease Sent!</h2>
           <p style={{fontSize:13,color:"#5c4a3a",margin:"12px 0 20px",lineHeight:1.6}}>
             The lease has been signed by you and a unique signing link has been generated for {modal.lease?.tenantEmail||"the tenant"}.
