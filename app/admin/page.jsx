@@ -5456,6 +5456,19 @@ export default function Page(){
           setLeaseSubTab("active");
         };
 
+        const continueToSignAndSend=()=>{
+          if(!leaseForm)return;
+          saveDraft();
+          setTimeout(()=>{
+            setLeases(prev=>{
+              const appId=leaseForm.applicationId;
+              const saved=appId?prev.find(l=>l.applicationId===appId&&l.status==="draft"):prev[prev.length-1];
+              if(saved)setModal({type:"signLease",leaseId:saved.id,lease:saved});
+              return prev;
+            });
+          },150);
+        };
+
         const signAndSend=async(leaseId)=>{
           // You sign first, then send to tenant
           const now=new Date().toISOString();
@@ -5662,6 +5675,7 @@ export default function Page(){
                   <div className="fld"><label>Property Address</label><input value={leaseForm.propertyAddress||""} onChange={e=>setLeaseForm(p=>({...p,propertyAddress:e.target.value}))}/></div>
                 </>
             }
+          </div>
 
           <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
             <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8",marginBottom:8}}>LEASE TERMS · Pre-filled from application · Editable</div>
@@ -5740,16 +5754,7 @@ export default function Page(){
           <div className="mft">
             <button className="btn btn-out" onClick={()=>setLeaseForm(null)}>Cancel</button>
             <button className="btn btn-out" onClick={saveDraft}>Save Draft</button>
-            <button className="btn btn-green" style={{flex:1}} onClick={()=>{
-              saveDraft();
-              setTimeout(()=>{
-                setLeases(prev=>{
-                  const saved=prev.find(l=>l.applicationId===leaseForm.applicationId&&l.status==="draft");
-                  if(saved)setModal({type:"signLease",leaseId:saved.id,lease:saved});
-                  return prev;
-                });
-              },100);
-            }}>{"Continue to Sign & Send"}</button>
+            <button className="btn btn-green" style={{flex:1}} onClick={()=>continueToSignAndSend()}>Continue to Sign &amp; Send</button>
           </div>
         </div></div>}
 
