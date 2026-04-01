@@ -196,7 +196,7 @@ const updateRoomInProp=(prop,roomId,updater)=>({...prop,units:(prop.units||[]).m
 
 
 const DEF_PAYMENTS={};// {roomId: {month: amount}} - quick lookup (computed from charges)
-const CHARGE_CATS=["Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
+const CHARGE_CATS=["Rent","Last Month Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
 const PAY_METHODS=["Zelle","Venmo","Cash","Check","CashApp","Bank Transfer","Stripe/ACH","Credit Card","Other"];
 const ACH_METHODS=["Bank Transfer","Stripe/ACH"]; // locked — no edit on paid charges
 const SCHED_E_CATS=[
@@ -3297,7 +3297,7 @@ export default function Page(){
           })}
           {filteredArchive.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}>
             {tenantView==="archived"
-              ?<><div style={{fontSize:13,fontWeight:600,marginBottom:6}}>No archived tenants</div><div style={{fontSize:12}}>Move past tenants here when they're fully resolved — SD returned, no disputes.</div></>
+              ?<><div style={{fontSize:13,fontWeight:600,marginBottom:6}}>No archived tenants</div><div style={{fontSize:12}}>Move past tenants here when they{"'"}re fully resolved &mdash; SD returned, no disputes.</div></>
               :"No past tenants yet."}
           </div>}
           </>}
@@ -3566,7 +3566,7 @@ export default function Page(){
           {/* Not yet invited — action needed */}
           {unlinked.length>0&&<div className="card" style={{marginBottom:14,border:"1px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.02)"}}><div className="card-bd">
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div><div style={{fontSize:13,fontWeight:800,color:"#9a7422"}}>Not Yet Invited ({unlinked.length})</div><div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>These tenants don't have portal access yet.</div></div>
+              <div><div style={{fontSize:13,fontWeight:800,color:"#9a7422"}}>Not Yet Invited ({unlinked.length})</div><div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>These tenants don{"'"}t have portal access yet.</div></div>
             </div>
             {unlinked.map(t=>(
               <div key={t.id} className="row">
@@ -5980,8 +5980,8 @@ export default function Page(){
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:10,borderTop:"0.5px solid rgba(0,0,0,.06)"}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>Require last month's rent</div>
-                    <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>Optional — use for higher-risk move-ins</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>Require last month{"'"}s rent</div>
+                    <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>Optional &mdash; use for higher-risk move-ins</div>
                   </div>
                   <button onClick={()=>setLeaseForm(p=>({...p,requireLastMonth:!p.requireLastMonth}))} style={{width:36,height:20,borderRadius:10,border:"none",cursor:"pointer",background:requireLast?"#4a7c59":"#ccc",position:"relative",flexShrink:0,transition:"background .2s",padding:0}}>
                     <div style={{position:"absolute",width:16,height:16,borderRadius:"50%",background:"#fff",top:2,left:requireLast?18:2,transition:"left .2s"}}/>
@@ -6014,17 +6014,17 @@ export default function Page(){
               {/* Preview — two sections: at signing, before move-in */}
               <div style={{padding:"12px 14px",background:"#fff"}}>
                 {/* Section 1: Due at signing */}
-                <div style={{fontSize:10,fontWeight:700,color:"#9a7422",letterSpacing:.5,marginBottom:7}}>DUE AT SIGNING — Secures the room</div>
+                <div style={{fontSize:10,fontWeight:700,color:"#9a7422",letterSpacing:.5,marginBottom:7}}>DUE AT SIGNING &mdash; Secures the room</div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 11px",background:"rgba(212,168,83,.06)",borderRadius:7,border:"1px solid rgba(212,168,83,.25)",marginBottom:12}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>Security Deposit</div>
-                    <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>Collected when tenant signs the lease — holds the room</div>
+                    <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>Collected when tenant signs the lease &mdash; holds the room</div>
                   </div>
                   <div style={{fontSize:14,fontWeight:800,color:"#9a7422"}}>{fmtS(sd)}</div>
                 </div>
 
                 {/* Section 2: Due before move-in */}
-                <div style={{fontSize:10,fontWeight:700,color:"#9a7422",letterSpacing:.5,marginBottom:7}}>DUE BEFORE MOVE-IN — {fmtDate(miD)}</div>
+                <div style={{fontSize:10,fontWeight:700,color:"#9a7422",letterSpacing:.5,marginBottom:7}}>DUE BEFORE MOVE-IN &mdash; {fmtDate(miD)}</div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"9px 11px",background:"rgba(59,130,246,.04)",borderRadius:7,border:"0.5px solid rgba(59,130,246,.2)",marginBottom:5}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>
