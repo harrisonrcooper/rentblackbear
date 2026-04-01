@@ -12918,7 +12918,8 @@ export default function Page(){
               {refContacts.map(rc=>{
                 const rst=refStatusFor(rc);
                 const rbadge=refBadgeFor(rc);
-                return(<div key={rc.key} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid rgba(0,0,0,.04)"}}>
+                return(<div key={rc.key}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid rgba(0,0,0,.04)"}}>
                   <StatusDot s={rst}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{rc.typeLabel}</div>
@@ -12932,17 +12933,17 @@ export default function Page(){
                       :<button onClick={()=>setRefVerified(rc.key,false)} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"none",background:"#4a7c59",color:"#fff",cursor:"pointer",fontFamily:"inherit"}}>✓ Verified</button>
                     }
                   </div>
-                </div>
-                {rc.replies.map((r,i)=>(
-                  <div key={r.id||i} style={{marginLeft:24,marginTop:4,padding:"7px 10px",background:r.auto?"rgba(59,130,246,.05)":"rgba(74,124,89,.05)",borderRadius:6,borderLeft:`2px solid ${r.auto?"rgba(59,130,246,.3)":"rgba(74,124,89,.3)"}`}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.body||r.notes?4:0}}>
-                      <span style={{fontSize:9,fontWeight:700,color:r.auto?"#1d4ed8":"#2d6a3f"}}>{r.auto?"● Auto-received":"✓ Logged"} · {r.date}</span>
-                      {r.from&&<span style={{fontSize:9,color:"#7a7067"}}>{r.from.replace(/<[^>]+>/g,"").trim()}</span>}
-                    </div>
-                    {(r.body||r.notes)&&<div style={{fontSize:11,color:"#3d3529",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{(r.body||r.notes).slice(0,400)}{(r.body||r.notes).length>400?"…":""}</div>}
                   </div>
-                ))}
-                }
+                  {rc.replies.map((r,i)=>(
+                    <div key={r.id||i} style={{marginLeft:24,marginTop:4,padding:"7px 10px",background:r.auto?"rgba(59,130,246,.05)":"rgba(74,124,89,.05)",borderRadius:6,borderLeft:`2px solid ${r.auto?"rgba(59,130,246,.3)":"rgba(74,124,89,.3)"}`}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.body||r.notes?4:0}}>
+                        <span style={{fontSize:9,fontWeight:700,color:r.auto?"#1d4ed8":"#2d6a3f"}}>{r.auto?"● Auto-received":"✓ Logged"} · {r.date}</span>
+                        {r.from&&<span style={{fontSize:9,color:"#7a7067"}}>{r.from.replace(/<[^>]+>/g,"").trim()}</span>}
+                      </div>
+                      {(r.body||r.notes)&&<div style={{fontSize:11,color:"#3d3529",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{(r.body||r.notes).slice(0,400)}{(r.body||r.notes).length>400?"…":""}</div>}
+                    </div>
+                  ))}
+                </div>);
               })}
             </div>}
           </div>
