@@ -5731,6 +5731,72 @@ export default function Page(){
                 </>);})()}
           </div>
 
+          {/* ── Room Status / Timeline ── shows when a room is selected */}
+          {leaseForm.roomId&&(()=>{
+            const lrRoom=props.flatMap(p=>allRooms(p)).find(r=>r.id===leaseForm.roomId);
+            const cur=lrRoom?.tenant||null;
+            const curLe=lrRoom?.le||null;
+            const mi=leaseForm.moveIn||null;
+            const newLe=leaseForm.leaseEnd||null;
+            const isOcc=!!cur;
+            const isOverlap=isOcc&&curLe&&mi&&mi<curLe;
+            // 5-month window: prev month → +4
+            const win0=new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1);
+            const win1=new Date(TODAY.getFullYear(),TODAY.getMonth()+4,1);
+            const totalDays=Math.ceil((win1-win0)/86400000);
+            const toX=(ds)=>{if(!ds)return null;const d=Math.ceil((new Date(ds+"T00:00:00")-win0)/86400000);return Math.max(0,Math.min(100,(d/totalDays)*100));};
+            const todayX=toX(TODAY.toISOString().split("T")[0]);
+            const curMiX=cur?.moveIn?toX(cur.moveIn):null;
+            const curLeX=curLe?toX(curLe):null;
+            const newMiX=mi?toX(mi):null;
+            const newLeX=newLe?toX(newLe):null;
+            return(
+            <div style={{marginBottom:14,borderRadius:8,border:`1px solid ${isOverlap?"rgba(196,92,74,.4)":"rgba(0,0,0,.07)"}`,overflow:"hidden"}}>
+              {/* Header */}
+              <div style={{padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",background:isOverlap?"rgba(196,92,74,.06)":isOcc?"rgba(212,168,83,.04)":"rgba(74,124,89,.04)",borderBottom:"1px solid rgba(0,0,0,.05)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:7,height:7,borderRadius:"50%",background:isOverlap?"#c45c4a":isOcc?"#d4a853":"#4a7c59",flexShrink:0}}/>
+                  {isOcc
+                    ?<span style={{fontSize:11,fontWeight:700,color:isOverlap?"#c45c4a":"#9a7422"}}>
+                      {isOverlap?"⚠ Overlap — ":""}<strong>{cur.name}</strong> in this room until <strong>{fmtD(curLe)}</strong>
+                    </span>
+                    :<span style={{fontSize:11,fontWeight:700,color:"#4a7c59"}}>Vacant &mdash; available now</span>
+                  }
+                </div>
+                {isOverlap&&<span style={{fontSize:10,fontWeight:700,color:"#c45c4a",background:"rgba(196,92,74,.1)",padding:"2px 8px",borderRadius:4,flexShrink:0}}>
+                  {Math.ceil((new Date(curLe+"T00:00:00")-new Date(mi+"T00:00:00"))/(86400000))}d conflict
+                </span>}
+              </div>
+              {/* Mini Gantt */}
+              <div style={{padding:"8px 12px 6px",background:"#fff"}}>
+                <div style={{position:"relative",height:38,borderRadius:5,background:"rgba(0,0,0,.02)",overflow:"hidden"}}>
+                  <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"#c45c4a",zIndex:4,opacity:.6}}/>
+                  {/* Current tenant bar */}
+                  {isOcc&&curMiX!==null&&curLeX!==null&&<div style={{position:"absolute",left:Math.max(0,curMiX)+"%",width:Math.max(0,curLeX-Math.max(0,curMiX))+"%",top:3,height:14,background:isOverlap?"rgba(196,92,74,.25)":"rgba(212,168,83,.35)",border:`1px solid ${isOverlap?"rgba(196,92,74,.5)":"rgba(212,168,83,.6)"}`,borderRadius:3,display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
+                    <span style={{fontSize:8,fontWeight:700,color:isOverlap?"#c45c4a":"#9a7422",whiteSpace:"nowrap"}}>{cur.name}</span>
+                  </div>}
+                  {/* Current lease end tick */}
+                  {isOcc&&curLeX!==null&&curLeX>=0&&curLeX<=100&&<div style={{position:"absolute",left:curLeX+"%",top:1,width:1.5,height:18,background:isOverlap?"#c45c4a":"#d4a853",zIndex:3}}/>}
+                  {/* New tenant proposed bar */}
+                  {newMiX!==null&&<div style={{position:"absolute",left:Math.max(0,newMiX)+"%",width:newLeX?Math.max(2,newLeX-Math.max(0,newMiX))+"%":"18%",top:21,height:14,background:isOverlap?"rgba(196,92,74,.15)":"rgba(59,130,246,.2)",border:`1px solid ${isOverlap?"rgba(196,92,74,.35)":"rgba(59,130,246,.4)"}`,borderRadius:3,display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
+                    <span style={{fontSize:8,fontWeight:700,color:isOverlap?"#c45c4a":"#1d4ed8",whiteSpace:"nowrap"}}>{(leaseForm.tenantName||"New tenant")}</span>
+                  </div>}
+                </div>
+                {/* Month labels */}
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:3,paddingLeft:1,paddingRight:1}}>
+                  {Array.from({length:5},(_,i)=>{const d=new Date(TODAY.getFullYear(),TODAY.getMonth()-1+i,1);return(<span key={i} style={{fontSize:8,color:"#9a7067"}}>{d.toLocaleString("default",{month:"short"})}</span>);})}</div>
+              </div>
+              {/* Overlap action bar */}
+              {isOverlap&&mi&&<div style={{padding:"7px 12px",borderTop:"1px solid rgba(196,92,74,.15)",background:"rgba(196,92,74,.03)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                <span style={{fontSize:10,color:"#c45c4a",lineHeight:1.4}}>New move-in {fmtD(mi)} overlaps existing lease ending {fmtD(curLe)}. Adjust dates or coordinate early termination.</span>
+                <button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.4)",whiteSpace:"nowrap",flexShrink:0}}
+                  onClick={()=>{const d=new Date(curLe+"T00:00:00");const le=new Date(d);le.setFullYear(le.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:curLe,leaseStart:curLe,leaseEnd:le.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));}}>
+                  Use {fmtD(curLe)}
+                </button>
+              </div>}
+            </div>);
+          })()}
+
           {(()=>{
             const locked=leaseForm._lockedFromApp&&!leaseForm._leaseEditing;
             const ro=(val)=><div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:12,color:locked?"#6b5e52":"#1a1714",fontWeight:locked?400:500,minHeight:34,display:"flex",alignItems:"center"}}>{val||<span style={{color:"#aaa"}}>—</span>}</div>;
