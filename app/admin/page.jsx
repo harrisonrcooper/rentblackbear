@@ -5629,17 +5629,13 @@ export default function Page(){
             </div>
             {leaseForm.applicationId&&!leaseForm._propEditing
               ? <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                  <div style={{flex:1,minWidth:140,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"1px solid rgba(74,124,89,.12)"}}>
-                    <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",marginBottom:2}}>PROPERTY</div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{leaseForm.property||"—"}</div>
+                  <div style={{flex:1,minWidth:200,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"1px solid rgba(74,124,89,.12)"}}>
+                    <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",marginBottom:2}}>PROPERTY ADDRESS</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{leaseForm.propertyAddress||"—"}</div>
                   </div>
-                  <div style={{flex:1,minWidth:140,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"1px solid rgba(74,124,89,.12)"}}>
+                  <div style={{flex:"0 0 auto",minWidth:140,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"1px solid rgba(74,124,89,.12)"}}>
                     <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",marginBottom:2}}>ROOM / UNIT</div>
                     <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{leaseForm.room||"—"}</div>
-                  </div>
-                  <div style={{width:"100%",padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:7,border:"1px solid rgba(74,124,89,.12)"}}>
-                    <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",marginBottom:2}}>ADDRESS</div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{leaseForm.propertyAddress||"—"}</div>
                   </div>
                 </div>
               : <>
