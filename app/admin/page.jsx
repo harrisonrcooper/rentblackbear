@@ -2494,20 +2494,24 @@ export default function Page(){
     return()=>clearInterval(interval);
   },[loaded]);
 
-  // Load auto-received ref replies from Supabase when app modal opens
+  // Load auto-received ref replies from Supabase when app modal opens, poll every 30s for new ones
   useEffect(()=>{
     if(modal?.type!=="app"||!modal?.data?.id)return;
     const appId=modal.data.id;
     const key=`hq-ref-replies-${appId}`;
-    load(key,[]).then(replies=>{
-      if(replies.length>0){
-        setModal(p=>p?.data?.id===appId?{...p,_refReplies:[...(p._refReplies||[]),...replies.filter(r=>!((p._refReplies||[]).some(x=>x.id===r.id)))]}:p);
-      }
-      // Clear unread flag
-      if(modal.data._hasUnreadRefReply){
-        setApps(prev=>{const ua=prev.map(a=>a.id===appId?{...a,_hasUnreadRefReply:false}:a);save("hq-apps",ua);return ua;});
-      }
-    }).catch(console.error);
+    const fetchReplies=()=>{
+      load(key,[]).then(replies=>{
+        if(replies.length>0){
+          setModal(p=>p?.data?.id===appId?{...p,_refReplies:[...(p._refReplies||[]),...replies.filter(r=>!((p._refReplies||[]).some(x=>x.id===r.id)))]}:p);
+        }
+        if(modal.data._hasUnreadRefReply){
+          setApps(prev=>{const ua=prev.map(a=>a.id===appId?{...a,_hasUnreadRefReply:false}:a);save("hq-apps",ua);return ua;});
+        }
+      }).catch(console.error);
+    };
+    fetchReplies();
+    const interval=setInterval(fetchReplies,30000);
+    return()=>clearInterval(interval);
   },[modal?.type,modal?.data?.id]);
 
   const dismissToast=()=>{setToastDismissing(true);setTimeout(()=>setLeadToast(null),300);};
@@ -12827,7 +12831,7 @@ export default function Page(){
         const refContacts=[];
         // Previous landlords from rental history
         (ad.addresses||[]).filter(addr=>addr.resType==="Rent"&&addr.landlordEmail).forEach((addr,i)=>{
-          const replies=(modal._refReplies||[]).filter(r=>r.email===addr.landlordEmail);
+          const replies=(modal._refReplies||[]).filter(r=>r.refKey===`landlord_${i}`||r.refKey==="landlord"||r.email===addr.landlordEmail);
           const verified=(a.refVerified||{})[`landlord_${i}`];
           refContacts.push({key:`landlord_${i}`,typeLabel:"Previous Landlord"+(i>0?` ${i+1}`:""),email:addr.landlordEmail,phone:addr.landlordPhone,draftFn:()=>{
             const tokens={refName:addr.landlordFirstName||"there",applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
@@ -12837,7 +12841,7 @@ export default function Page(){
         });
         // Employer reference
         if(ad.empRefEmail&&!ad.unemployed){
-          const replies=(modal._refReplies||[]).filter(r=>r.email===ad.empRefEmail);
+          const replies=(modal._refReplies||[]).filter(r=>r.refKey==="employer"||r.email===ad.empRefEmail);
           const verified=(a.refVerified||{}).employer;
           refContacts.push({key:"employer",typeLabel:"Employer Reference",email:ad.empRefEmail,phone:ad.empRefPhone,draftFn:()=>{
             const tokens={refName:ad.empRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
@@ -12847,7 +12851,7 @@ export default function Page(){
         }
         // Personal references
         if(ad.persRefEmail){
-          const replies=(modal._refReplies||[]).filter(r=>r.email===ad.persRefEmail);
+          const replies=(modal._refReplies||[]).filter(r=>r.refKey==="personal1"||r.email===ad.persRefEmail);
           const verified=(a.refVerified||{}).personal1;
           refContacts.push({key:"personal1",typeLabel:"Personal Reference",email:ad.persRefEmail,phone:ad.persRefPhone,draftFn:()=>{
             const tokens={refName:ad.persRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
@@ -12928,7 +12932,17 @@ export default function Page(){
                       :<button onClick={()=>setRefVerified(rc.key,false)} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"none",background:"#4a7c59",color:"#fff",cursor:"pointer",fontFamily:"inherit"}}>✓ Verified</button>
                     }
                   </div>
-                </div>);
+                </div>
+                {rc.replies.map((r,i)=>(
+                  <div key={r.id||i} style={{marginLeft:24,marginTop:4,padding:"7px 10px",background:r.auto?"rgba(59,130,246,.05)":"rgba(74,124,89,.05)",borderRadius:6,borderLeft:`2px solid ${r.auto?"rgba(59,130,246,.3)":"rgba(74,124,89,.3)"}`}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:r.body||r.notes?4:0}}>
+                      <span style={{fontSize:9,fontWeight:700,color:r.auto?"#1d4ed8":"#2d6a3f"}}>{r.auto?"● Auto-received":"✓ Logged"} · {r.date}</span>
+                      {r.from&&<span style={{fontSize:9,color:"#7a7067"}}>{r.from.replace(/<[^>]+>/g,"").trim()}</span>}
+                    </div>
+                    {(r.body||r.notes)&&<div style={{fontSize:11,color:"#3d3529",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{(r.body||r.notes).slice(0,400)}{(r.body||r.notes).length>400?"…":""}</div>}
+                  </div>
+                ))}
+                }
               })}
             </div>}
           </div>

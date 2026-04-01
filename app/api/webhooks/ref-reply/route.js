@@ -101,16 +101,23 @@ export async function POST(request) {
     const app = apps[appIdx];
 
     // Build the new reply log entry
+    // Extract just the email address from "Name <email>" format
+    const fromEmail = fromAddr.includes("<")
+      ? fromAddr.match(/<([^>]+)>/)?.[1] || fromAddr
+      : fromAddr;
+
     const newReply = {
       id: Math.random().toString(36).slice(2, 9),
       appId,
       refKey,
+      email: fromEmail,   // the reference's email address — used for UI matching
       from: fromAddr,
       subject,
       body: bodyText,
+      notes: bodyText,    // alias used by manual log reply display
       date: new Date().toISOString().split("T")[0],
       receivedAt: new Date().toISOString(),
-      auto: true, // marks as auto-received vs manually logged
+      auto: true,
       read: false,
     };
 
