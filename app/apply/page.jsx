@@ -604,8 +604,12 @@ export default function ApplyPage(){
           </div>
           {d.preferredProperty&&d.preferredProperty!=="No preference"&&(()=>{
             const prop=props_.find(p=>p.id===d.preferredProperty)||props_.find(p=>p.name===d.preferredProperty);
-            const vacant=allRooms(prop).filter(r=>r.st==="vacant")||[];
             if(!prop)return null;
+            // Exclude owner-occupied units and rooms from public-facing display
+            const rentableRooms=(prop.units&&prop.units.length>0
+              ?prop.units.filter(u=>!u.ownerOccupied).flatMap(u=>(u.rooms||[]).filter(r=>!r.ownerOccupied))
+              :(prop.rooms||[]).filter(r=>!r.ownerOccupied));
+            const vacant=rentableRooms.filter(r=>r.st==="vacant");
             const isWholeUnit=propIsWholeUnit(prop);
             if(isWholeUnit){
               const wholeRent=prop.wholeHouseRent||(prop.units||[]).find(u=>u.rentalMode==="wholeHouse"||u.rentalMode==="wholeUnit")?.rent||null;
@@ -1050,12 +1054,12 @@ export default function ApplyPage(){
         <div className="sec-hd"><h2>{invite?.inviteRoomMode==="choice"||!invite?"Choose Your Room":"Your Room & Door Code"}</h2><p>{invite?.inviteRoomMode==="choice"||!invite?"Select the room you'd like to apply for.":"Your room has been reserved. Choose a 4-digit door code below."}</p></div>
         {/* Room selection — walk-ins and choice invites only */}
         {(!invite||invite?.inviteRoomMode==="choice")&&(()=>{const prop=invite?.inviteProp?props_.find(p=>p.id===invite.inviteProp):null;return(prop?[prop]:props_).map(p=>{
-            const units=p.units&&p.units.length>0?p.units:[{id:"main",name:"Unit A",label:"A",rooms:p.rooms||[]}];
+            const units=(p.units&&p.units.length>0?p.units:[{id:"main",name:"Unit A",label:"A",rooms:p.rooms||[]}]).filter(u=>!u.ownerOccupied);
             const hasMultipleUnits=units.length>1;
             return(<div key={p.id} className="prop-card"><div className="prop-info">
               <div className="prop-name">{p.name}</div><div className="prop-addr">{p.address}</div>
               <div style={{marginTop:10}}>
-                {units.map(u=>{const vacantRooms=(u.rooms||[]).filter(r=>r.st==="vacant");if(!vacantRooms.length)return null;return(
+                {units.map(u=>{const vacantRooms=(u.rooms||[]).filter(r=>r.st==="vacant"&&!r.ownerOccupied);if(!vacantRooms.length)return null;return(
                   <div key={u.id}>
                     {hasMultipleUnits&&<div style={{fontSize:10,fontWeight:800,color:"var(--ac)",textTransform:"uppercase",letterSpacing:.5,marginBottom:4,marginTop:8}}>Unit {u.label||u.name}</div>}
                     {vacantRooms.map(r=><div key={r.id} className={`room-card ${d.selectedRoom===r.id?"sel":""}`} onClick={()=>upd("selectedRoom",r.id)}>
