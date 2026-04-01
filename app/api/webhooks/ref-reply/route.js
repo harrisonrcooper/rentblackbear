@@ -1,9 +1,10 @@
 // app/api/webhooks/ref-reply/route.js
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
 
 const SUPA_URL = "https://vxysaclhucdjxzcknoar.supabase.co";
 const SUPA_KEY = process.env.SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function supaGet(path) {
   const r = await fetch(SUPA_URL + "/rest/v1/" + path, {
@@ -76,24 +77,22 @@ export async function POST(request) {
 
     // Fetch the email body from Resend API
     let bodyText = "";
-    if (emailId && RESEND_API_KEY) {
+    if (emailId) {
       try {
-        const emailRes = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
-          headers: { Authorization: `Bearer ${RESEND_API_KEY}` },
-        });
-        const emailData = await emailRes.json();
-        console.log("Resend email fetch status:", emailRes.status);
-        console.log("Resend email data keys:", Object.keys(emailData));
-        console.log("text:", emailData.text?.slice(0,200));
-        console.log("html length:", emailData.html?.length);
-        // Prefer plain text body, strip quoted reply chains, fall back to HTML
-        let raw = emailData.text || (emailData.html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-        // Strip quoted reply (lines starting with >, or "On ... wrote:")
-        raw = raw.split("\n").filter(l=>!l.trim().startsWith(">")&&!/^On .+ wrote:/.test(l.trim())).join("\n").trim();
-        bodyText = raw.slice(0, 1500) || `[Status ${emailRes.status} — keys: ${Object.keys(emailData).join(", ")}]`;
+        const { data: email, error } = await resend.emails.receiving.get(emailId);
+        if (error) {
+          console.error("Resend receiving.get error:", error);
+          bodyText = "(Could not fetch reply: " + JSON.stringify(error) + ")";
+        } else {
+          // Prefer plain text, strip quoted reply chains, fall back to HTML
+          let raw = email.text || (email.html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          // Strip quoted lines (starting with >) and "On ... wrote:" lines
+          raw = raw.split("\n").filter(l => !l.trim().startsWith(">") && !/^On .+ wrote:/.test(l.trim())).join("\n").trim();
+          bodyText = raw.slice(0, 1500) || "(Empty reply body)";
+        }
       } catch (e) {
-        console.error("Body fetch error:", e);
-        bodyText = "(Could not retrieve email body: " + e.message + ")";
+        console.error("Body fetch exception:", e);
+        bodyText = "(Exception fetching body: " + e.message + ")";
       }
     }
 
