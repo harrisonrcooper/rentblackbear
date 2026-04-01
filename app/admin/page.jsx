@@ -12545,8 +12545,13 @@ export default function Page(){
                 const _d=_docs.length;
                 const _v=_docs.filter(x=>x.verified==="verified"||x.verified==="approved"||x.verified===true).length;
                 const _r=_docs.filter(x=>x.verified==="rejected").length;
+                const _new=_docs.filter(x=>x.isReupload&&x.verified==="unreviewed").length;
                 if(_d===0)return<span style={{fontSize:10,color:"#9a8878"}}>None yet</span>;
                 return<>
+                  {_new>0&&<span style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(59,130,246,.12)",color:"#1d4ed8",display:"flex",alignItems:"center",gap:3}}>
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="#1d4ed8"><circle cx="4" cy="4" r="4"/></svg>
+                    {_new} new upload{_new>1?"s":""}
+                  </span>}
                   <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:"rgba(74,124,89,.1)",color:"#27500a"}}>{_d} uploaded</span>
                   <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:8,background:_v===_d?"rgba(74,124,89,.12)":_v>0?"rgba(212,168,83,.12)":"rgba(196,92,74,.1)",color:_v===_d?"#2d6a3f":_v>0?"#9a7422":"#c45c4a",display:"flex",alignItems:"center",gap:3}}>
                     {_v===_d&&<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#2d6a3f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 6 5 9 10 3"/></svg>}
@@ -12577,7 +12582,7 @@ export default function Page(){
           return r.ok||r.status===404;
         };
         const setDocVerified=(docId,status)=>{
-          const updateDocs=d=>d.map(x=>x.id===docId?{...x,verified:status}:x);
+          const updateDocs=d=>d.map(x=>x.id===docId?{...x,verified:status,isReupload:false}:x);
           const newDocs=updateDocs(docs.length>0?docs:(a.applicationData?.appDocs||[]));
           const updatedApp={...a,appDocs:newDocs,applicationData:a.applicationData?{...a.applicationData,appDocs:newDocs}:a.applicationData};
           const updatedApps=apps.map(x=>x.id===a.id?updatedApp:x);
@@ -12634,7 +12639,11 @@ export default function Page(){
               }
             });
           };
-          return(<div style={{marginBottom:10,borderRadius:9,overflow:"hidden",border:"1px solid "+borderColor}}>
+          return(<div style={{marginBottom:10,borderRadius:9,overflow:"hidden",border:"1px solid "+(doc.isReupload&&vStatus==="unreviewed"?"rgba(59,130,246,.35)":borderColor)}}>
+            {doc.isReupload&&vStatus==="unreviewed"&&<div style={{padding:"6px 10px",background:"rgba(59,130,246,.08)",borderBottom:"1px solid rgba(59,130,246,.15)",display:"flex",alignItems:"center",gap:6}}>
+              <svg width="10" height="10" viewBox="0 0 8 8" fill="#1d4ed8"><circle cx="4" cy="4" r="4"/></svg>
+              <span style={{fontSize:10,fontWeight:700,color:"#1d4ed8"}}>New re-upload — needs review</span>
+            </div>}
             <div style={{padding:"8px 10px",background:vStatus==="verified"?"rgba(74,124,89,.04)":vStatus==="rejected"?"rgba(196,92,74,.03)":"rgba(0,0,0,.02)"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isUploaded?6:0}}>
                 <div>
@@ -12784,10 +12793,56 @@ export default function Page(){
         const incDetail=incSt==="awaiting"?"Paid — income report incoming from RentPrep":incSt==="verified"?"Income confirmed":null;
         const incBadge=incSt==="verified"?"Verified":incSt==="awaiting"?"Awaiting RentPrep":incSt==="not-started"?"Not Started":null;
 
-        // References
-        const refSt=a.refs==="verified"?"verified":repliedRefs>0?"pending":"not-started";
-        const refDetail=refSt==="verified"?"All references verified":totalRefs>0?`${totalRefs} reference${totalRefs>1?"s":""} listed${repliedRefs>0?" · "+repliedRefs+" replied":""}`:null;
-        const refBadge=refSt==="verified"?"Verified":repliedRefs>0?`${repliedRefs}/${totalRefs} Replied`:"Not Started";
+        // Build full reference contact list from all sources
+        const refContacts=[];
+        // Previous landlords from rental history
+        (ad.addresses||[]).filter(addr=>addr.resType==="Rent"&&addr.landlordEmail).forEach((addr,i)=>{
+          const replies=(modal._refReplies||[]).filter(r=>r.email===addr.landlordEmail);
+          const verified=(a.refVerified||{})[`landlord_${i}`];
+          refContacts.push({key:`landlord_${i}`,typeLabel:"Previous Landlord"+(i>0?` ${i+1}`:""),email:addr.landlordEmail,phone:addr.landlordPhone,draftFn:()=>{
+            const tokens={refName:addr.landlordFirstName||"there",applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
+            const tmpl=settings.emailTemplates||{};
+            setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject:resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens),body:resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens),type:"refLandlord",refType:"Previous Landlord"}}));
+          },replies,verified});
+        });
+        // Employer reference
+        if(ad.empRefEmail&&!ad.unemployed){
+          const replies=(modal._refReplies||[]).filter(r=>r.email===ad.empRefEmail);
+          const verified=(a.refVerified||{}).employer;
+          refContacts.push({key:"employer",typeLabel:"Employer Reference",email:ad.empRefEmail,phone:ad.empRefPhone,draftFn:()=>{
+            const tokens={refName:ad.empRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+            const tmpl=settings.emailTemplates||{};
+            setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject:resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens),body:resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens),type:"refEmployer",refType:"Employer Reference"}}));
+          },replies,verified});
+        }
+        // Personal references
+        if(ad.persRefEmail){
+          const replies=(modal._refReplies||[]).filter(r=>r.email===ad.persRefEmail);
+          const verified=(a.refVerified||{}).personal1;
+          refContacts.push({key:"personal1",typeLabel:"Personal Reference",email:ad.persRefEmail,phone:ad.persRefPhone,draftFn:()=>{
+            const tokens={refName:ad.persRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+            const tmpl=settings.emailTemplates||{};
+            setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject:resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens),body:resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens),type:"refPersonal",refType:"Personal Reference"}}));
+          },replies,verified});
+        }
+
+        const totalRefContacts=refContacts.length;
+        const verifiedRefContacts=refContacts.filter(r=>r.verified).length;
+        const repliedRefContacts=refContacts.filter(r=>r.replies.length>0).length;
+        const refSt=verifiedRefContacts===totalRefContacts&&totalRefContacts>0?"verified":repliedRefContacts>0?"pending":totalRefContacts>0?"not-started":"not-started";
+        const refBadge=verifiedRefContacts===totalRefContacts&&totalRefContacts>0?"All Verified":repliedRefContacts>0?`${repliedRefContacts}/${totalRefContacts} Replied`:totalRefContacts>0?`${totalRefContacts} to contact`:"None listed";
+        const refDetail=`${totalRefContacts} contact${totalRefContacts!==1?"s":""} — ${verifiedRefContacts} verified`;
+        const refsOpen=modal._refsExpanded===true;
+
+        const setRefVerified=(key,val)=>{
+          const updated={...a,refVerified:{...(a.refVerified||{}),[key]:val}};
+          const ua=apps.map(x=>x.id===a.id?updated:x);
+          setApps(ua);save("hq-apps",ua);
+          setModal(p=>({...p,data:updated}));
+        };
+
+        const refStatusFor=(rc)=>rc.verified?"verified":rc.replies.length>0?"pending":"not-started";
+        const refBadgeFor=(rc)=>rc.verified?"Verified":rc.replies.length>0?"Replied":"Not Contacted";
 
         // ID Verified — requires BOTH front and back verified, fails if either rejected
         const idSt=idAnyRejected?"failed":idBothVerified?"verified":idAnyVerified?"pending":idUploaded?"pending":"not-started";
@@ -12813,7 +12868,40 @@ export default function Page(){
           <Row label="Credit Check" st={creditSt} detail={creditDetail} badge={creditBadge} tag={hasRentPrep?"RENTPREP":null}/>
           {incSt!==null&&<Row label="Income Verification" st={incSt} detail={incDetail} badge={incBadge} tag="RENTPREP"/>}
           <Row label="Pay Stubs" st={paySt} detail={payDetail} badge={payBadge}/>
-          <Row label="References" st={refSt} detail={refDetail} badge={refBadge}/>
+          {/* References — expandable */}
+          <div style={{borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",cursor:"pointer",userSelect:"none"}} onClick={()=>setModal(p=>({...p,_refsExpanded:!refsOpen}))}>
+              <StatusDot s={refSt}/>
+              <div style={{flex:1,minWidth:0}}>
+                <span style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>References</span>
+                <div style={{fontSize:10,color:"#7a7067",marginTop:1}}>{refDetail}</div>
+              </div>
+              <Badge s={refSt} label={refBadge}/>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:refsOpen?"rotate(180deg)":"none",transition:"transform .2s",flexShrink:0,marginLeft:2}}><polyline points="4 6 8 10 12 6"/></svg>
+            </div>
+            {refsOpen&&<div style={{paddingBottom:8,paddingLeft:26}}>
+              {refContacts.length===0&&<div style={{fontSize:11,color:"#aaa",padding:"6px 0"}}>No reference contacts found in application data.</div>}
+              {refContacts.map(rc=>{
+                const rst=refStatusFor(rc);
+                const rbadge=refBadgeFor(rc);
+                return(<div key={rc.key} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid rgba(0,0,0,.04)"}}>
+                  <StatusDot s={rst}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{rc.typeLabel}</div>
+                    <div style={{fontSize:10,color:"#7a7067"}}>{rc.email}</div>
+                  </div>
+                  <Badge s={rst} label={rbadge}/>
+                  <div style={{display:"flex",gap:4,flexShrink:0}}>
+                    {rc.email&&<button onClick={rc.draftFn} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Email →</button>}
+                    {!rc.verified
+                      ?<button onClick={()=>setRefVerified(rc.key,true)} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"1px solid rgba(74,124,89,.3)",background:"#fff",color:"#4a7c59",cursor:"pointer",fontFamily:"inherit"}}>Verify</button>
+                      :<button onClick={()=>setRefVerified(rc.key,false)} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"none",background:"#4a7c59",color:"#fff",cursor:"pointer",fontFamily:"inherit"}}>✓ Verified</button>
+                    }
+                  </div>
+                </div>);
+              })}
+            </div>}
+          </div>
           <Row label="ID Verified" st={idSt} detail={idDetail} badge={idBadge}/>
           {a.waiverReason&&<div style={{fontSize:10,color:"#6b5e52",marginTop:8,fontStyle:"italic",paddingTop:8,borderTop:"1px solid rgba(0,0,0,.04)"}}>Waiver: {a.waiverReason}</div>}
         </div>);
