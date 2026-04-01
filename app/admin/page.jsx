@@ -5390,6 +5390,7 @@ export default function Page(){
             status:"draft",
             tenantName:app?.name||"",tenantEmail:app?.email||"",tenantPhone:app?.phone||"",
             property:app?.property||"",room:app?.room||"",
+            propertyId:prop?.id||"",
             roomId:room?.id||app?.termRoomId||"",
             unitId:unit?.id||app?.termUnitId||"",
             unitName:unit?.name||app?.termUnitName||"",
@@ -5663,38 +5664,41 @@ export default function Page(){
                     <div style={{fontSize:12,fontWeight:600,color:"#1a1714"}}>{leaseForm.room||"—"}</div>
                   </div>
                 </div>
-              : <>
+              : (()=>{
+                  // Resolve property ID — prefer stored propertyId, fall back for legacy leases
+                  const _resolvedPropId=leaseForm.propertyId||props.find(p=>p.id===leaseForm.propertyId)?.id||props.find(p=>getPropDisplayName(p)===leaseForm.property)?.id||props.find(p=>p.addr===leaseForm.propertyAddress)?.id||"";
+                  const _resolvedRoomVal=leaseForm.roomId||"";
+                  return(<>
                   <div className="fr">
                     <div className="fld"><label>Property</label>
-                      <select value={leaseForm.property||""} onChange={e=>{const p2=props.find(p=>p.name===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,property:e.target.value,propertyAddress:p2?.addr||"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
+                      <select value={_resolvedPropId} onChange={e=>{const p2=props.find(p=>p.id===e.target.value);const u0=p2?.units?.[0];const uKey=u0?.utils||"allIncluded";const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";setLeaseForm(p=>({...p,propertyId:p2?.id||"",property:p2?getPropDisplayName(p2):"",propertyAddress:p2?.addr||"",room:"",roomId:"",utilitiesMode:uKey,utilitiesClause:uClause}));}}>
                         <option value="">Select...</option>
-                        {props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}
+                        {props.map(p=><option key={p.id} value={p.id}>{getPropDisplayName(p)}</option>)}
                       </select>
                     </div>
                     <div className="fld"><label>Room / Unit</label>
-                      <select value={leaseForm.roomId||leaseForm.room||""} onChange={e=>{
-                        const lp=props.find(p=>p.name===leaseForm.property);
+                      <select value={_resolvedRoomVal} onChange={e=>{
+                        const lp=props.find(p=>p.id===_resolvedPropId);
                         if(!lp)return;
                         const items=leaseableItems(lp);
-                        const item=items.find(i=>i.name===e.target.value||i.id===e.target.value);
+                        const item=items.find(i=>i.id===e.target.value);
                         if(!item)return;
                         const unit=(lp.units||[]).find(u=>u.id===item.unitId);
                         const uKey=unit?.utils||"allIncluded";
                         const uClause=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===uKey)?.clause||"See lease for utility terms.";
-                        setLeaseForm(p=>({...p,room:item.name,roomId:item.isWholeUnit?"":item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parking:item.parking||"",utilitiesMode:uKey,utilitiesClause:uClause}));
+                        setLeaseForm(p=>({...p,room:item.name,roomId:item.id,unitId:item.unitId||"",unitName:item.unitName||"",rent:item.rent||p.rent,sd:item.rent||p.sd,parking:item.parking||"",utilitiesMode:uKey,utilitiesClause:uClause}));
                       }} style={{width:"100%"}}>
                         <option value="">Select...</option>
-                        {(()=>{const lp=props.find(p=>p.name===leaseForm.property);if(!lp)return null;
+                        {(()=>{const lp=props.find(p=>p.id===_resolvedPropId);if(!lp)return null;
                           return leaseableItems(lp).map(item=>(
-                            <option key={item.id} value={item.isWholeUnit?item.id:item.name}>
+                            <option key={item.id} value={item.id}>
                               {item.unitLabel&&!item.isWholeUnit?"Unit "+item.unitLabel+" — ":""}{item.name}{item.isWholeUnit?" (Whole Unit)":""} — {fmtS(item.rent)}/mo
                             </option>
                           ));})()}
                       </select>
                     </div>
                   </div>
-                  <div className="fld"><label>Property Address</label><input value={leaseForm.propertyAddress||""} onChange={e=>setLeaseForm(p=>({...p,propertyAddress:e.target.value}))}/></div>
-                </>
+                </>);})()}
             }
           </div>
 
