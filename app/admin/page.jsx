@@ -5415,12 +5415,13 @@ export default function Page(){
             lastMonthInstallments:3,
             lastMonthFrequency:"monthly",
             _lockedFromApp:!!app,
-            hasAssignedParking:!!(room?.parking||app?.parking),
+            hasAssignedParking:false,
+            parking:"",
             moveIn:mi,leaseStart:mi,
             leaseEnd:isTbd?"":leaseEndD.toISOString().split("T")[0],
             leaseType:"fixed",
-            utilitiesMode,utilitiesClause,
-            parking:room?.parking||"",
+            utilitiesMode:"",
+            utilitiesClause:"",
             doorCode:app?.applicationData?.doorCode||app?.passcode||"",
             landlordName:template.landlordName||"Carolina Cooper",
             company:template.company||"Black Bear Properties",
@@ -5467,6 +5468,16 @@ export default function Page(){
           if(leaseForm.hasAssignedParking&&!leaseForm.parking?.trim()){
             setLeaseForm(p=>({...p,_parkingErr:true}));
             setTimeout(()=>setLeaseForm(p=>({...p,_parkingErr:false})),600);
+            return;
+          }
+          if(!leaseForm.utilitiesMode){
+            setLeaseForm(p=>({...p,_utilErr:true}));
+            setTimeout(()=>setLeaseForm(p=>({...p,_utilErr:false})),600);
+            return;
+          }
+          if(leaseForm.utilitiesMode==="custom"&&!leaseForm.utilitiesClause?.trim()){
+            setLeaseForm(p=>({...p,_utilErr:true}));
+            setTimeout(()=>setLeaseForm(p=>({...p,_utilErr:false})),600);
             return;
           }
           saveDraft();
@@ -5762,8 +5773,21 @@ export default function Page(){
               </div>
               <div className="fld"><label>Utilities Clause</label>
                 {locked
-                  ?<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:"#6b5e52",lineHeight:1.5}}>{leaseForm.utilitiesClause||"—"}</div>
-                  :<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
+                  ?<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:leaseForm.utilitiesClause?"#6b5e52":"#c45c4a",lineHeight:1.5}}>{leaseForm.utilitiesClause||"No utilities clause selected — click Edit to choose one"}</div>
+                  :<>
+                    <select value={leaseForm.utilitiesMode||""} onChange={e=>{
+                      const mode=e.target.value;
+                      const tmpl=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===mode);
+                      setLeaseForm(p=>({...p,utilitiesMode:mode,utilitiesClause:mode==="custom"?"":tmpl?.clause||"",_utilErr:false}));
+                    }} style={{width:"100%",marginBottom:leaseForm.utilitiesMode==="custom"||!leaseForm.utilitiesMode?6:0,borderColor:leaseForm._utilErr?"#c45c4a":undefined,animation:leaseForm._utilErr?"wiggle .4s ease":undefined}}>
+                      <option value="">— Select a utilities clause —</option>
+                      {(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
+                      <option value="custom">Custom — write your own</option>
+                    </select>
+                    {leaseForm._utilErr&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4,animation:"wiggle .4s ease"}}>A utilities clause is required before signing.</div>}
+                    {leaseForm.utilitiesMode==="custom"&&<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} placeholder="Write your custom utilities clause..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
+                    {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5}}>{leaseForm.utilitiesClause}</div>}
+                  </>}
               </div>
             </div>);
           })()}
@@ -7730,6 +7754,27 @@ export default function Page(){
             </div>);
           })}
           <button className="btn btn-gold" style={{width:"100%",marginTop:4}} onClick={()=>save("hq-settings",settings)}>Save Email Templates</button>
+        </div></div>
+
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Utility Clause Templates</h3>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>These clauses auto-populate into leases based on the utility setting of each unit. Edit the clause text here to change what appears in all future leases.</p>
+          {(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map((t,i)=>(
+            <div key={t.id} style={{border:"0.5px solid rgba(0,0,0,.08)",borderRadius:8,padding:12,marginBottom:8,background:"rgba(0,0,0,.01)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{t.name}</div>
+                  <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>{t.desc}</div>
+                </div>
+                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(0,0,0,.05)",color:"#6b5e52",fontFamily:"monospace"}}>{t.key}</span>
+              </div>
+              <div className="fld" style={{marginBottom:0}}>
+                <label>Lease clause text</label>
+                <textarea rows={3} value={t.clause||""} onChange={e=>{const updated=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map((x,j)=>j===i?{...x,clause:e.target.value}:x);setSettings(p=>({...p,utilTemplates:updated}));}} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
+              </div>
+            </div>
+          ))}
+          <button className="btn btn-gold" style={{width:"100%",marginTop:4}} onClick={()=>save("hq-settings",settings)}>Save Utility Clauses</button>
         </div></div>
 
         <div className="card" style={{marginTop:12}}><div className="card-bd">
