@@ -7844,7 +7844,13 @@ export default function Page(){
                 {isDraft&&<button className="btn btn-green" onClick={()=>{setLeaseForm({...l});setViewingLease(null);goTab("leases");}}>Edit Lease</button>}
                 {isDraft&&<button className="btn btn-gold" onClick={()=>{setModal({type:"signLease",leaseId:l.id,lease:l});setViewingLease(null);goTab("leases");}}>Sign & Send to Tenant</button>}
                 {isPending&&<button className="btn btn-out" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied to clipboard."});}}>Copy Signing Link</button>}
-                <button className="btn btn-out" onClick={()=>window.print()}>Download PDF</button>
+                <button className="btn btn-out" onClick={async()=>{
+                  showAlert({title:"Generating PDF",body:"Please wait a moment..."});
+                  const a=document.createElement("a");
+                  a.href="/api/generate-lease-pdf?id="+l.id;
+                  a.download="lease-"+l.id+".pdf";
+                  document.body.appendChild(a);a.click();document.body.removeChild(a);
+                }}>Download PDF</button>
                 <button className="btn btn-out" onClick={()=>{
                   const input=document.createElement("input");input.type="file";input.accept=".pdf,.docx,.doc";
                   input.onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{setLeases(p=>p.map(x=>x.id===l.id?{...x,uploadedLease:{name:file.name,data:ev.target.result,uploadedAt:new Date().toISOString()}}:x));showAlert({title:"Uploaded",body:file.name+" attached to lease."});};reader.readAsDataURL(file);};
