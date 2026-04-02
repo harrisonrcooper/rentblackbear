@@ -330,9 +330,9 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
                         {v.label}{v.unit&&<span style={{fontWeight:400,color:"#9a8878",marginLeft:4}}>({v.unit})</span>}
                       </label>
                       {v.type==="time"
-                        ?<input type="time" value={policy[v.key]||""} onChange={e=>setPolicy(p=>({...p,[v.key]:e.target.value}))}
+                        ?<input type="time" value={policy[v.key]||""} onChange={e=>{setPolicy(p=>({...p,[v.key]:e.target.value}));setDirtySecs(p=>{const n=new Set(p);n.add(sec.id);return n;});}}
                             style={{width:"100%",padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
-                        :<input type="number" value={policy[v.key]??""} onChange={e=>setPolicy(p=>({...p,[v.key]:Number(e.target.value)}))}
+                        :<input type="number" value={policy[v.key]??""} onChange={e=>{setPolicy(p=>({...p,[v.key]:Number(e.target.value)}));setDirtySecs(p=>{const n=new Set(p);n.add(sec.id);return n;});}}
                             style={{width:"100%",padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
                       }
                       {v.hint&&<div style={{fontSize:9,color:"#9a8878",marginTop:3}}>{v.hint}</div>}
