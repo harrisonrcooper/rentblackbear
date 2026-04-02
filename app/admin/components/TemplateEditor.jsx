@@ -415,6 +415,48 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
+        {/* ── Key terms summary table ── */}
+        <div style={{marginBottom:20,border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden"}}>
+          <div style={{padding:"8px 14px",background:"#1a1714"}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:1}}>Summary of Key Terms</div>
+          </div>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+            <tbody>
+              {[
+                ["Property Address",PREVIEW_DATA.PROPERTY_ADDRESS],
+                ["Room / Unit",PREVIEW_DATA.ROOM_NAME],
+                ["Lease Start",PREVIEW_DATA.LEASE_START],
+                ["Lease End",PREVIEW_DATA.LEASE_END],
+                ["Monthly Rent","$"+PREVIEW_DATA.MONTHLY_RENT+".00"],
+                ["Security Deposit","$"+PREVIEW_DATA.SECURITY_DEPOSIT+".00"],
+                ["Prorated First Month","$"+PREVIEW_DATA.PRORATED_RENT+".00"],
+                ["Door Code",PREVIEW_DATA.DOOR_CODE],
+                ["Parking",PREVIEW_DATA.PARKING_SPACE],
+              ].map(([label,value],i)=>(
+                <tr key={label} style={{borderBottom:i<8?"1px solid rgba(0,0,0,.06)":"none",background:i%2===0?"#fff":"rgba(0,0,0,.015)"}}>
+                  <td style={{padding:"7px 14px",fontWeight:700,color:"#6b5e52",width:"40%",fontSize:10,textTransform:"uppercase",letterSpacing:.4}}>{label}</td>
+                  <td style={{padding:"7px 14px",color:"#1a1714",fontWeight:500}}>{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ── Section outline ── */}
+        <div style={{marginBottom:20,border:"1px solid rgba(0,0,0,.08)",borderRadius:8,overflow:"hidden"}}>
+          <div style={{padding:"8px 14px",background:"rgba(0,0,0,.03)",borderBottom:"1px solid rgba(0,0,0,.08)"}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1}}>Table of Contents</div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"8px 0"}}>
+            {sections.filter(s=>s.active!==false).map((sec,i)=>(
+              <div key={sec.id} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 14px"}}>
+                <span style={{fontSize:9,fontWeight:800,color:"#d4a853",minWidth:18,fontFamily:"Georgia,serif"}}>{i+1}.</span>
+                <span style={{fontSize:10,color:"#1a1714",fontWeight:500}}>{sec.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div style={{display:"flex",gap:12,marginBottom:20,fontSize:11}}>
           <div style={{flex:1,padding:"10px 14px",background:"rgba(0,0,0,.03)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
             <div style={{fontWeight:700,fontSize:9,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>Property Manager</div>
@@ -439,6 +481,10 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
               <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:70,borderBottom:"1px solid #1a1714"}}/> Tenant Initials</div>
               <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:70,borderBottom:"1px solid #1a1714"}}/> PM Initials</div>
             </div>}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:16,paddingTop:8,borderTop:"0.5px solid rgba(0,0,0,.08)"}}>
+              <span style={{fontSize:8,color:"#bbb",fontFamily:"Georgia,serif"}}>{template?.company||"Black Bear Properties"} — Alabama Co-Living Lease Agreement</span>
+              <span style={{fontSize:8,color:"#bbb",fontFamily:"Georgia,serif"}}>Page {i+2} of {sections.filter(s=>s.active!==false).length+2}</span>
+            </div>
           </div>
         ))}
         <div style={{marginTop:24,paddingTop:20,borderTop:"2px solid #1a1714"}}>
