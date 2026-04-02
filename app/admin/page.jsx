@@ -6010,7 +6010,7 @@ export default function Page(){
                       {pc==="yes"&&<>
                         <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_errors:{...(p._errors||{}),parking:null},_parkingPresetSaved:false}))} placeholder="e.g. Space A1, right side of driveway" style={{marginTop:8,animation:leaseForm._errors?.parking?"shake .4s ease":undefined,borderColor:leaseForm._errors?.parking?"#c45c4a":undefined}}/>
                         {leaseForm._errors?.parking&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.parking}</div>}
-                        {(leaseForm.parking||"").trim()&&leaseForm.roomId&&<button onClick={savePreset} style={{marginTop:6,padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._parkingPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._parkingPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
+                        {(leaseForm.parking||"").trim()&&leaseForm.roomId&&<button onClick={savePreset} style={{marginTop:6,marginLeft:"auto",padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._parkingPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._parkingPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
                           {leaseForm._parkingPresetSaved?"Preset saved":"Save as preset for this room"}
                         </button>}
                       </>}
@@ -6044,7 +6044,7 @@ export default function Page(){
                         setProps(updatedProps);
                         setLeaseForm(p=>({...p,_utilPresetSaved:true}));
                       };
-                      return(<button onClick={saveUtilPreset} style={{padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
+                      return(<button onClick={saveUtilPreset} style={{marginLeft:"auto",padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
                         {leaseForm._utilPresetSaved?"Preset saved":"Save as preset for this room"}
                       </button>);
                     })()}
