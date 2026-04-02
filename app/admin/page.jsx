@@ -5778,20 +5778,22 @@ export default function Page(){
                             <button key={v} onClick={()=>{
                               if(v==="asap"){const newMi=_computeAsapMi(_tlCurLe,_bufDays);setLeaseForm(p=>({...p,_moveInMode:"asap",..._applyAsapToForm(newMi,p.rent),_errors:{...(p._errors||{}),moveIn:null}}));}
                               else{setLeaseForm(p=>({...p,_moveInMode:"specific"}));}
-                            }} style={{flex:1,padding:"6px 0",fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",background:_miMode===v?"#1a1714":"rgba(0,0,0,.02)",color:_miMode===v?"#d4a853":"#9a8878",transition:"all .15s",borderRight:v==="asap"?"0.5px solid rgba(0,0,0,.08)":"none"}}>{l}</button>
+                            }} style={{flex:1,padding:"6px 0",fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",borderRight:v==="asap"?"0.5px solid rgba(0,0,0,.08)":"none",background:_miMode===v?`rgba(${settings.adminAccentRgb||"74,124,89"},.1)`:"rgba(0,0,0,.02)",color:_miMode===v?_acc:"#9a8878"}}>{l}</button>
                           ))}
                         </div>}
-                        {_miMode==="asap"
-                          ?<div style={{padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(74,124,89,.04)",minHeight:34}}>
-                             <span style={{fontSize:12,fontWeight:600,color:"#2d6a3f"}}>{fmtD(leaseForm.moveIn)||"—"}</span>
-                             <span style={{fontSize:9,color:"#9a8878"}}>auto</span>
-                           </div>
-                          :<input type="date" value={leaseForm.moveIn||""} onChange={e=>{
-                             const mi=e.target.value;
-                             if(!mi||mi.length<10){setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi}));return;}
-                             const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));
-                           }} style={{border:"none",borderRadius:0,width:"100%",padding:"7px 10px",boxSizing:"border-box",fontSize:12,fontFamily:"inherit",background:"transparent",outline:"none"}}/>
-                        }
+                        <div style={{padding:"8px 12px",display:"flex",justifyContent:"center"}}>
+                          {_miMode==="asap"
+                            ?<div style={{background:`rgba(${settings.adminAccentRgb||"74,124,89"},.06)`,border:`1px solid rgba(${settings.adminAccentRgb||"74,124,89"},.2)`,borderRadius:20,padding:"5px 16px",display:"inline-flex",alignItems:"center",gap:8}}>
+                               <span style={{fontSize:12,fontWeight:600,color:_acc}}>{fmtD(leaseForm.moveIn)||"—"}</span>
+                               <span style={{fontSize:9,color:"#9a8878"}}>auto</span>
+                             </div>
+                            :<input type="date" value={leaseForm.moveIn||""} onChange={e=>{
+                               const mi=e.target.value;
+                               if(!mi||mi.length<10){setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi}));return;}
+                               const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));
+                             }} style={{border:`1px solid rgba(${settings.adminAccentRgb||"74,124,89"},.25)`,borderRadius:20,padding:"5px 14px",fontSize:12,fontFamily:"inherit",background:"transparent",outline:"none",width:160,textAlign:"center"}}/>
+                          }
+                        </div>
                       </div>
                   }
                   {leaseForm._errors?.moveIn&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.moveIn}</div>}
