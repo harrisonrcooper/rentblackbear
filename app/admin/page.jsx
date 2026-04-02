@@ -5492,6 +5492,8 @@ export default function Page(){
           if(leaseForm.parkingChoice===null||leaseForm.parkingChoice===undefined) errs.parkingChoice="Indicate whether this room has assigned parking.";
           if(leaseForm.parkingChoice==="yes"&&!(leaseForm.parking||"").trim()) errs.parking="Enter the parking space description.";
           if(!leaseForm.utilitiesMode||(leaseForm.utilitiesMode==="custom"&&!leaseForm.utilitiesClause?.trim())) errs.utilitiesMode="Select a utilities arrangement before signing.";
+          // Always mark as attempted so the error banner becomes visible
+          setLeaseForm(p=>p?({...p,_submitAttempted:true}):p);
           if(Object.keys(errs).length>0){_triggerLeaseWiggle(errs);return;}
           saveDraft();
           setTimeout(()=>{
@@ -6176,12 +6178,12 @@ export default function Page(){
 
           <div className="fld"><label>Internal Notes</label><textarea value={leaseForm.notes||""} onChange={e=>setLeaseForm(p=>({...p,notes:e.target.value}))} placeholder="Notes for your records only — not on the lease" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
 
-          {/* Error summary — appears above Continue button when validation fails */}
-          {leaseForm._errors&&Object.keys(leaseForm._errors).length>0&&(
+          {/* Error summary — only appears after clicking Continue, only shows real error messages */}
+          {leaseForm._submitAttempted&&leaseForm._errors&&Object.values(leaseForm._errors).filter(v=>!!v).length>0&&(
             <div className="lease-err-summary" style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"10px 14px",marginBottom:4,animation:"shake .4s ease"}}>
               <div style={{fontSize:10,fontWeight:800,color:"#c45c4a",letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Fix these before signing</div>
-              {Object.values(leaseForm._errors).map((msg,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:i<Object.values(leaseForm._errors).length-1?4:0}}>
+              {Object.values(leaseForm._errors).filter(v=>!!v).map((msg,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:i<Object.values(leaseForm._errors).filter(v=>!!v).length-1?4:0}}>
                   <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   <span style={{fontSize:11,color:"#c45c4a",lineHeight:1.4}}>{msg}</span>
                 </div>
