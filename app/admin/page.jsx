@@ -5754,6 +5754,7 @@ export default function Page(){
             const _bufEnd=_tlCurLe&&_bufDays>0?(()=>{const d=new Date(_tlCurLe+"T00:00:00");d.setDate(d.getDate()+_bufDays);return d.toISOString().split("T")[0];})():null;
             const _isOverlapMi=!!(_tlCurLe&&leaseForm.moveIn&&leaseForm.moveIn<_tlCurLe);
             const _isBufferViolation=!_isOverlapMi&&!!(_tlCurLe&&_bufEnd&&leaseForm.moveIn&&leaseForm.moveIn>=_tlCurLe&&leaseForm.moveIn<=_bufEnd);
+            return(
             <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                 <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8"}}>LEASE TERMS · Pre-filled from application · Editable</div>
