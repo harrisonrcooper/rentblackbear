@@ -5734,6 +5734,14 @@ export default function Page(){
           {(()=>{
             const locked=leaseForm._lockedFromApp&&!leaseForm._leaseEditing;
             const ro=(val)=><div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:12,color:locked?"#6b5e52":"#1a1714",fontWeight:locked?400:500,minHeight:34,display:"flex",alignItems:"center"}}>{val||<span style={{color:"#aaa"}}>—</span>}</div>;
+            const _tlRoom=leaseForm.roomId?props.flatMap(p=>allRooms(p)).find(r=>r.id===leaseForm.roomId):null;
+            const _tlCurLe=_tlRoom?.le||null;
+            const _miMode=leaseForm._moveInMode||"specific";
+            const _bufDays=leaseForm._bufferDays??7;
+            // Returns YYYY-MM-DD for "day after buffer ends" (or today if vacant)
+            const _computeAsapMi=(curLe,buf)=>{if(!curLe)return TODAY.toISOString().split("T")[0];const d=new Date(curLe+"T00:00:00");d.setDate(d.getDate()+(buf||0)+1);const todayStr=TODAY.toISOString().split("T")[0];return d.toISOString().split("T")[0]>=todayStr?d.toISOString().split("T")[0]:todayStr;};
+            // Returns the leaseForm fields to update when move-in date is set
+            const _applyAsapToForm=(mi,rent)=>{if(!mi)return{};const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil(((rent||0)/30)*daysLeft);const leD=new Date(mi+"T00:00:00");leD.setFullYear(leD.getFullYear()+1);return{moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leD.toISOString().split("T")[0]};};
             return(
             <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -5754,8 +5762,31 @@ export default function Page(){
                 </div>
               </div>
               <div className="fr">
-                <div className="fld"><label>Move-in Date</label>
-                  {locked?ro(fmtD(leaseForm.moveIn)):<input type="date" value={leaseForm.moveIn||""} onChange={e=>{const mi=e.target.value;const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));}} style={{borderColor:leaseForm._errors?.moveIn?"#c45c4a":undefined}}/>}
+                <div className="fld">
+                  <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span>Move-in Date</span>
+                    {!locked&&leaseForm.roomId&&<div style={{display:"flex",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:5,overflow:"hidden",marginLeft:8}}>
+                      {[["asap","ASAP"],["specific","Pick date"]].map(([v,l])=>(
+                        <button key={v} onClick={()=>{
+                          if(v==="asap"){const newMi=_computeAsapMi(_tlCurLe,_bufDays);setLeaseForm(p=>({...p,_moveInMode:"asap",..._applyAsapToForm(newMi,p.rent),_errors:{...(p._errors||{}),moveIn:null}}));}
+                          else{setLeaseForm(p=>({...p,_moveInMode:"specific"}));}
+                        }} style={{padding:"2px 8px",fontSize:9,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",background:_miMode===v?"#1a1714":"transparent",color:_miMode===v?"#d4a853":"#9a8878",transition:"all .15s"}}>{l}</button>
+                      ))}
+                    </div>}
+                  </label>
+                  {locked
+                    ? ro(fmtD(leaseForm.moveIn))
+                    : _miMode==="asap"
+                      ? <div style={{padding:"7px 10px",background:"rgba(74,124,89,.04)",borderRadius:6,border:"0.5px solid rgba(74,124,89,.2)",fontSize:12,fontWeight:600,color:"#2d6a3f",minHeight:34,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                          <span>{fmtD(leaseForm.moveIn)||"—"}</span>
+                          <span style={{fontSize:9,color:"#9a8878",fontWeight:400}}>auto — day after buffer</span>
+                        </div>
+                      : <input type="date" value={leaseForm.moveIn||""} onChange={e=>{
+                          const mi=e.target.value;
+                          if(!mi||mi.length<10){setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi}));return;}
+                          const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));
+                        }} style={{borderColor:leaseForm._errors?.moveIn?"#c45c4a":undefined}}/>
+                  }
                   {leaseForm._errors?.moveIn&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.moveIn}</div>}
                 </div>
                 <div className="fld">
@@ -5830,9 +5861,11 @@ export default function Page(){
                       {/* Buffer control */}
                       <div style={{display:"flex",alignItems:"center",gap:3,background:"rgba(255,255,255,.8)",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:5,padding:"2px 5px"}}>
                         <span style={{fontSize:8,color:"#9a7067",fontWeight:600}}>Buffer</span>
-                        <button onClick={()=>setLeaseForm(p=>({...p,_bufferDays:Math.max(0,(p._bufferDays??7)-1)}))} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
+                        <button onClick={()=>{const newBuf=Math.max(0,(leaseForm._bufferDays??7)-1);const newMi=leaseForm._moveInMode==="asap"?_computeAsapMi(tlCurLe,newBuf):null;setLeaseForm(p=>({...p,_bufferDays:newBuf,...(newMi?_applyAsapToForm(newMi,p.rent):{})
+                        }));}} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
                         <span style={{fontSize:10,fontWeight:800,color:"#1a1714",minWidth:20,textAlign:"center"}}>{bufDays}d</span>
-                        <button onClick={()=>setLeaseForm(p=>({...p,_bufferDays:(p._bufferDays??7)+1}))} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
+                        <button onClick={()=>{const newBuf=(leaseForm._bufferDays??7)+1;const newMi=leaseForm._moveInMode==="asap"?_computeAsapMi(tlCurLe,newBuf):null;setLeaseForm(p=>({...p,_bufferDays:newBuf,...(newMi?_applyAsapToForm(newMi,p.rent):{})
+                        }));}} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
                       </div>
                       {/* Full timeline button */}
                       <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(20,Math.floor(window.innerWidth/2)-340),y:40}}))} style={{fontSize:8,fontWeight:700,color:"#1d4ed8",background:"rgba(59,130,246,.07)",border:"0.5px solid rgba(59,130,246,.25)",borderRadius:5,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,lineHeight:1}}>
