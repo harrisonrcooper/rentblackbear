@@ -5469,6 +5469,20 @@ export default function Page(){
                   {l.status==="draft"&&<button className="btn btn-out btn-sm" onClick={()=>setLeaseForm({...l})}>Edit</button>}
                   {l.status==="draft"&&<button className="btn btn-green btn-sm" onClick={()=>setLeaseForm({...l,_lockedFromApp:!!l.applicationId,_resuming:true})}>Review & Send</button>}
                   {l.status==="pending_tenant"&&<button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied."});}}>Copy Link</button>}
+                  {l.status==="pending_tenant"&&<button className="btn btn-out btn-sm" onClick={async()=>{
+                    if(!l.tenantEmail){showAlert({title:"No Email",body:"This lease has no tenant email on file."});return;}
+                    const emailMoveIn=l.moveIn?new Date(l.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";
+                    const emailRent=l.rent?"$"+Number(l.rent).toLocaleString():"";
+                    const link=l.signingLink||"";
+                    await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+                      to:l.tenantEmail,
+                      subject:"Reminder: Your Lease is Ready to Sign — Black Bear Rentals",
+                      fromName:"Carolina Cooper | Black Bear Rentals",
+                      replyTo:"blackbearhousing@gmail.com",
+                      html:`<div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;max-width:560px;margin:0 auto;background:#f4f3f0;padding:32px 16px"><div style="background:#1a1714;border-radius:12px 12px 0 0;padding:24px 32px;text-align:center"><div style="font-size:20px;font-weight:700;color:#d4a853">Black Bear Rentals</div><div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;text-transform:uppercase;letter-spacing:1px">Lease Signature Reminder</div></div><div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;border:1px solid rgba(0,0,0,.08);border-top:none"><p style="font-size:15px;font-weight:600;color:#1a1714;margin:0 0 16px">Hi ${l.tenantName||"Resident"},</p><p style="font-size:13px;color:#5c4a3a;line-height:1.7;margin:0 0 20px">Just a friendly reminder that your lease is ready and waiting for your signature. Please sign it as soon as possible to secure your room.</p><div style="background:#f4f3f0;border-radius:8px;padding:16px 20px;margin-bottom:24px"><div style="font-size:11px;font-weight:700;color:#6b5e52;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Your Lease</div><div style="font-size:12px;color:#1a1714;line-height:2">${l.property||l.propertyAddress||""} · ${l.room||""}<br/><strong>Move-In:</strong> ${emailMoveIn}<br/><strong>Monthly Rent:</strong> ${emailRent}</div></div><a href="${link}" style="display:block;text-align:center;background:#1a1714;color:#d4a853;text-decoration:none;font-weight:700;font-size:14px;padding:16px 24px;border-radius:8px;margin-bottom:20px">Review &amp; Sign Your Lease →</a><p style="font-size:11px;color:#9a8878;line-height:1.6;margin:0">If the button above doesn't work, copy and paste this link:<br/><span style="color:#1d4ed8;word-break:break-all">${link}</span></p></div><p style="text-align:center;font-size:10px;color:#9a8878;margin-top:16px">Black Bear Rentals · Huntsville, Alabama</p></div>`,
+                    })});
+                    showAlert({title:"Email Sent",body:"Signing link resent to "+l.tenantEmail});
+                  }}>Resend Email</button>}
                   <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>confirmAction(`Delete lease for ${l.tenantName}?`,()=>deleteLease(l.id))}>Delete</button>
                 </div>
               </div>

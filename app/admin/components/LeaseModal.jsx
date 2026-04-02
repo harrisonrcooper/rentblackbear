@@ -863,8 +863,8 @@ export default function LeaseModal({
                 // Send signing link email to tenant
                 const tenantName=modal.lease.tenantName||"Resident";
                 const tenantEmail=modal.lease.tenantEmail;
-                const moveIn=modal.lease.moveIn?new Date(modal.lease.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";
-                const rent=modal.lease.rent?"$"+Number(modal.lease.rent).toLocaleString():"";
+                const emailMoveIn=modal.lease.moveIn?new Date(modal.lease.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";
+                const emailRent=modal.lease.rent?"$"+Number(modal.lease.rent).toLocaleString():"";
                 if(tenantEmail){
                   sendEmail({
                     to:tenantEmail,
@@ -881,7 +881,7 @@ export default function LeaseModal({
                         <p style="font-size:13px;color:#5c4a3a;line-height:1.7;margin:0 0 20px">Your lease has been prepared and signed by your property manager. Please review and sign it at your earliest convenience.</p>
                         <div style="background:#f4f3f0;border-radius:8px;padding:16px 20px;margin-bottom:24px">
                           <div style="font-size:11px;font-weight:700;color:#6b5e52;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Lease Summary</div>
-                          <div style="font-size:12px;color:#1a1714;line-height:2">${modal.lease.property||modal.lease.propertyAddress||""} · ${modal.lease.room||""}<br/><strong>Move-In:</strong> ${moveIn}<br/><strong>Monthly Rent:</strong> ${rent}</div>
+                          <div style="font-size:12px;color:#1a1714;line-height:2">${modal.lease.property||modal.lease.propertyAddress||""} · ${modal.lease.room||""}<br/><strong>Move-In:</strong> ${emailMoveIn}<br/><strong>Monthly Rent:</strong> ${emailRent}</div>
                         </div>
                         <a href="${link}" style="display:block;text-align:center;background:#1a1714;color:#d4a853;text-decoration:none;font-weight:700;font-size:14px;padding:16px 24px;border-radius:8px;margin-bottom:20px">Review &amp; Sign Your Lease →</a>
                         <p style="font-size:11px;color:#9a8878;line-height:1.6;margin:0">If the button above doesn't work, copy and paste this link into your browser:<br/><span style="color:#1d4ed8;word-break:break-all">${link}</span></p>
