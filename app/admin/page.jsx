@@ -1915,7 +1915,7 @@ const S=`
 .bot-tab.act svg{opacity:1}
 
 /* Main */
-.mn{flex:1;overflow-y:auto;background:#f4f3f0;display:flex;flex-direction:column;will-change:transform;transform:translateZ(0);-webkit-overflow-scrolling:touch}
+.mn{flex:1;overflow-y:auto;background:#f4f3f0;display:flex;flex-direction:column;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
 .tbar{background:#fff;padding:14px 24px;border-bottom:1px solid rgba(0,0,0,.04);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
 .tbar h1{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
 .tbar-sub{font-size:10px;color:#5c4a3a;margin-top:1px}
@@ -1978,12 +1978,12 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
 .fld input,.fld select,.fld textarea{width:100%;padding:8px 12px;border-radius:7px;border:1px solid rgba(0,0,0,.08);font-family:inherit;font-size:12px;outline:none;background:#faf9f7}
 .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:#d4a853}
 .fld textarea{resize:vertical;min-height:60px}
-.fr{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}.fr>*{min-width:0;overflow:hidden}.fr input,.fr select{width:100%;min-width:0;box-sizing:border-box}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}.fr>*{min-width:0;overflow:clip}.fr input,.fr select{width:100%;min-width:0;box-sizing:border-box}
 .fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 
 /* Modal */
-.mbg{position:fixed;inset:0;background:rgba(26,23,20,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.mbg{position:fixed;inset:0;background:rgba(26,23,20,.5);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;overscroll-behavior:none}
 .mbox{background:#fff;border-radius:14px;max-width:580px;width:100%;overflow-x:hidden;padding:22px;animation:fadeIn .2s}
 .mbox h2{font-size:16px;font-weight:800;margin-bottom:14px}
 .mft{display:flex;justify-content:flex-end;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.04)}
@@ -5382,9 +5382,16 @@ export default function Page(){
 
         const _triggerLeaseWiggle=(errs)=>{
           setLeaseForm(p=>p?({...p,_errors:errs}):p);
-          // Use direct DOM manipulation — no state change = no React re-render = no flicker
           const mb=document.querySelector(".lease-modal-box");
           if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease";}
+          // Scroll to first error field after state settles
+          setTimeout(()=>{
+            const firstErrKey=Object.keys(errs)[0];
+            const sel=`.lease-modal-box [data-err="${firstErrKey}"], .lease-modal-box input[name="${firstErrKey}"]`;
+            const el=document.querySelector(sel)||document.querySelector(`.lease-modal-box .err-${firstErrKey}`);
+            if(el){el.scrollIntoView({behavior:"smooth",block:"center"});}
+            else{const mbg=document.querySelector(".mbg");if(mbg)mbg.scrollTo({top:0,behavior:"smooth"});}
+          },80);
         };
 
         const saveDraft=()=>{
