@@ -1,6 +1,8 @@
 "use client";
 import { syncTenantToSupabase } from "@/lib/syncTenant";
 import LeaseModal from "./components/LeaseModal";
+import TemplateEditor from "./components/TemplateEditor";
+import TemplateEditor from "./components/TemplateEditor";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
@@ -5469,62 +5471,14 @@ export default function Page(){
         </>}
 
         {/* Template Editor */}
-        {leaseSubTab==="template"&&<>
-          <div className="card" style={{padding:16,marginBottom:14}}>
-            <h3 style={{fontSize:13,fontWeight:700,marginBottom:12}}>Default Lease Template Settings</h3>
-            <div className="fr">
-              <div className="fld"><label>Property Manager Name (on lease)</label>
-                <input value={template.landlordName||""} onChange={e=>setLeaseTemplate(p=>({...(p||template),landlordName:e.target.value}))} placeholder="Carolina Cooper"/>
-              </div>
-              <div className="fld"><label>Company Name</label>
-                <input value={template.company||""} onChange={e=>setLeaseTemplate(p=>({...(p||template),company:e.target.value}))} placeholder="Black Bear Properties"/>
-              </div>
-            </div>
-            <div className="fld"><label>Landlord Email</label>
-              <input type="email" value={template.landlordEmail||""} onChange={e=>setLeaseTemplate(p=>({...(p||template),landlordEmail:e.target.value}))} placeholder="info@rentblackbear.com"/>
-            </div>
-            <div style={{fontSize:10,color:"#6b5e52",marginTop:8}}>These defaults auto-fill every new lease. You can override per-lease in the lease editor.</div>
-          </div>
+        {leaseSubTab==="template"&&<TemplateEditor
+          template={leaseTemplate}
+          setTemplate={setLeaseTemplate}
+          settings={settings}
+          showAlert={showAlert}
+          DEF_LEASE_SECTIONS={DEF_LEASE_SECTIONS}
+        />}
 
-          <div style={{fontSize:12,fontWeight:700,color:"#5c4a3a",marginBottom:10}}>Lease Sections — toggle active, require initials, edit content</div>
-          {(template.sections||DEF_LEASE_SECTIONS).map((sec,si)=>(
-            <div key={sec.id} className="card" style={{marginBottom:8,borderLeft:`3px solid ${sec.active!==false?"#d4a853":"rgba(0,0,0,.1)"}`}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,["lsec_"+sec.id]:!p["lsec_"+sec.id]}))}>
-                <span style={{fontSize:11,color:expanded["lsec_"+sec.id]?"#d4a853":"#999"}}>{expanded["lsec_"+sec.id]?"▾":"▸"}</span>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:12,fontWeight:700,opacity:sec.active===false?.45:1}}>{sec.title}</div>
-                  <div style={{fontSize:9,color:"#6b5e52"}}>{sec.requiresInitials?"Initials required":"No initials"} · {sec.active===false?"Hidden":"Active"}</div>
-                </div>
-                <div style={{display:"flex",gap:6}} onClick={e=>e.stopPropagation()}>
-                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer"}}>
-                    <input type="checkbox" checked={sec.active!==false} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],active:e.target.checked};setLeaseTemplate(p=>({...(p||template),sections:secs}));}}/>Active
-                  </label>
-                  <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer"}}>
-                    <input type="checkbox" checked={!!sec.requiresInitials} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],requiresInitials:e.target.checked};setLeaseTemplate(p=>({...(p||template),sections:secs}));}}/>Initials
-                  </label>
-                </div>
-              </div>
-              {expanded["lsec_"+sec.id]&&<div style={{padding:"0 14px 14px"}}>
-                <div className="fld" style={{marginBottom:8}}><label>Section Title</label>
-                  <input value={sec.title} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],title:e.target.value};setLeaseTemplate(p=>({...(p||template),sections:secs}));}}/>
-                </div>
-                <div className="fld" style={{marginBottom:0}}><label>Content (HTML + {"{{VARIABLES}}"} supported)</label>
-                  <textarea value={sec.content||""} rows={5} onChange={e=>{const secs=[...(template.sections||DEF_LEASE_SECTIONS)];secs[si]={...secs[si],content:e.target.value};setLeaseTemplate(p=>({...(p||template),sections:secs}));}} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"monospace",resize:"vertical"}}/>
-                </div>
-                <div style={{fontSize:9,color:"#7a7067",marginTop:4}}>Variables: {"{{MONTHLY_RENT}} {{SECURITY_DEPOSIT}} {{LEASE_START}} {{LEASE_END}} {{PARKING_SPACE}} {{DOOR_CODE}} {{UTILITIES_CLAUSE}} {{LANDLORD_NAME}}"}</div>
-              </div>}
-            </div>
-          ))}
-          <button className="btn btn-gold" style={{marginTop:8}} onClick={async()=>{
-            if(!template?.id){showAlert({title:"Error",body:"No template ID found. Please refresh and try again."});return;}
-            try{
-              await supa("lease_templates?id=eq."+template.id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({name:template.name||"Black Bear Rentals — Standard Lease",sections:template.sections||[],updated_at:new Date().toISOString()})});
-              showAlert({title:"Template Saved",body:"Lease template saved to database successfully."});
-            }catch(e){showAlert({title:"Error",body:"Failed to save template. Please try again."});}
-          }}>Save Template</button>
-        </>}
-
-        {/* Lease modals — LeaseModal component */}
         <LeaseModal
           leaseForm={leaseForm} setLeaseForm={setLeaseForm}
           leases={leases} setLeases={setLeases}
