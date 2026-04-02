@@ -5933,17 +5933,17 @@ export default function Page(){
                     <span>Door Code (4-digit PIN)<span style={{color:"#c45c4a",marginLeft:3,fontSize:11}}>*</span></span>
                     {leaseForm._lockedFromApp&&leaseForm.doorCode?.length===4&&<span style={{fontSize:9,fontWeight:700,color:"#2d6a3f",background:"rgba(74,124,89,.09)",border:"0.5px solid rgba(74,124,89,.25)",padding:"1px 6px",borderRadius:3}}>from application</span>}
                   </label>
-                  <input value={leaseForm.doorCode||""} maxLength={4}
-                    onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_errors:{...(p._errors||{}),doorCode:null}}))}
-                    placeholder="4-digit PIN"
-                    style={{
-                      fontFamily:"monospace",fontSize:15,fontWeight:700,letterSpacing:5,textAlign:"center",
-                      background:leaseForm._lockedFromApp&&leaseForm.doorCode?"rgba(0,0,0,.03)":"#fff",
-                      color:leaseForm._lockedFromApp&&leaseForm.doorCode?"#6b5e52":"#1a1714",
-                      animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,
-                      borderColor:leaseForm._errors?.doorCode?"#c45c4a":leaseForm.doorCode?.length===4?"rgba(74,124,89,.45)":undefined
-                    }}/>
-                  {leaseForm._errors?.doorCode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.doorCode}</div>}
+                  <div style={{display:"flex",justifyContent:"center",marginTop:2}}>
+                    <input value={leaseForm.doorCode||""} maxLength={4}
+                      onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_errors:{...(p._errors||{}),doorCode:null}}))}
+                      placeholder="––––"
+                      style={{
+                        width:110,textAlign:"center",fontFamily:"monospace",fontSize:18,fontWeight:700,letterSpacing:8,
+                        animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,
+                        borderColor:leaseForm._errors?.doorCode?"#c45c4a":leaseForm.doorCode?.length===4?"rgba(74,124,89,.45)":undefined
+                      }}/>
+                  </div>
+                  {leaseForm._errors?.doorCode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease",textAlign:"center"}}>{leaseForm._errors.doorCode}</div>}
                 </div>
                 <div className="fld">
                   <label>Parking
@@ -5971,8 +5971,8 @@ export default function Page(){
                       {pc==="yes"&&<>
                         <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_errors:{...(p._errors||{}),parking:null},_parkingPresetSaved:false}))} placeholder="e.g. Space A1, right side of driveway" style={{marginTop:8,animation:leaseForm._errors?.parking?"shake .4s ease":undefined,borderColor:leaseForm._errors?.parking?"#c45c4a":undefined}}/>
                         {leaseForm._errors?.parking&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.parking}</div>}
-                        {(leaseForm.parking||"").trim()&&leaseForm.roomId&&<button onClick={savePreset} style={{marginTop:6,width:"100%",padding:"6px 10px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._parkingPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._parkingPresetSaved?"#fff":"#2d6a3f",transition:"all .3s"}}>
-                          {leaseForm._parkingPresetSaved?"Preset saved for this room":"Save as preset for this room / bedroom"}
+                        {(leaseForm.parking||"").trim()&&leaseForm.roomId&&<button onClick={savePreset} style={{marginTop:6,padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._parkingPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._parkingPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
+                          {leaseForm._parkingPresetSaved?"Preset saved":"Save as preset for this room"}
                         </button>}
                       </>}
                       {pc==="no"&&<div style={{marginTop:6,padding:"6px 10px",borderRadius:6,background:"rgba(0,0,0,.03)",border:"0.5px solid rgba(0,0,0,.08)",fontSize:11,color:"#6b5e52"}}>No parking assigned — lease will reflect this.</div>}
@@ -6005,8 +6005,8 @@ export default function Page(){
                         setProps(updatedProps);
                         setLeaseForm(p=>({...p,_utilPresetSaved:true}));
                       };
-                      return(<button onClick={saveUtilPreset} style={{width:"100%",padding:"6px 10px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s"}}>
-                        {leaseForm._utilPresetSaved?"Preset saved for this room":"Save as preset for this room / bedroom"}
+                      return(<button onClick={saveUtilPreset} style={{padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
+                        {leaseForm._utilPresetSaved?"Preset saved":"Save as preset for this room"}
                       </button>);
                     })()}
                   </>}
