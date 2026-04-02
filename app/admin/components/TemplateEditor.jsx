@@ -415,33 +415,6 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
-        {/* ── Key terms summary table ── */}
-        <div style={{marginBottom:20,border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden"}}>
-          <div style={{padding:"8px 14px",background:"#1a1714"}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:1}}>Summary of Key Terms</div>
-          </div>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-            <tbody>
-              {[
-                ["Property Address",PREVIEW_DATA.PROPERTY_ADDRESS],
-                ["Room / Unit",PREVIEW_DATA.ROOM_NAME],
-                ["Lease Start",PREVIEW_DATA.LEASE_START],
-                ["Lease End",PREVIEW_DATA.LEASE_END],
-                ["Monthly Rent","$"+PREVIEW_DATA.MONTHLY_RENT+".00"],
-                ["Security Deposit","$"+PREVIEW_DATA.SECURITY_DEPOSIT+".00"],
-                ["Prorated First Month","$"+PREVIEW_DATA.PRORATED_RENT+".00"],
-                ["Door Code",PREVIEW_DATA.DOOR_CODE],
-                ["Parking",PREVIEW_DATA.PARKING_SPACE],
-              ].map(([label,value],i)=>(
-                <tr key={label} style={{borderBottom:i<8?"1px solid rgba(0,0,0,.06)":"none",background:i%2===0?"#fff":"rgba(0,0,0,.015)"}}>
-                  <td style={{padding:"7px 14px",fontWeight:700,color:"#6b5e52",width:"40%",fontSize:10,textTransform:"uppercase",letterSpacing:.4}}>{label}</td>
-                  <td style={{padding:"7px 14px",color:"#1a1714",fontWeight:500}}>{value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
         {/* ── Section outline ── */}
         <div style={{marginBottom:20,border:"1px solid rgba(0,0,0,.08)",borderRadius:8,overflow:"hidden"}}>
           <div style={{padding:"8px 14px",background:"rgba(0,0,0,.03)",borderBottom:"1px solid rgba(0,0,0,.08)"}}>
