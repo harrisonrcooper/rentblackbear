@@ -1898,7 +1898,7 @@ const S=`
 
 /* Layout */
 .app{display:flex;height:100vh;overflow:hidden}
-.side{width:220px;background:#1a1714;display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;will-change:transform;transform:translateZ(0);-webkit-overflow-scrolling:touch;z-index:50}
+.side{width:220px;background:#1a1714;display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;overscroll-behavior:contain;will-change:transform;transform:translateZ(0);-webkit-overflow-scrolling:touch;z-index:50}
 .s-logo{padding:16px 18px;font-size:15px;font-weight:800;color:#f5f0e8;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:7px}
 .s-logo span{color:#d4a853}
 .s-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.72);padding:14px 16px 4px}

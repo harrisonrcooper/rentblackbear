@@ -218,22 +218,6 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
       </div>
     </div>
 
-    {/* ── Default lease info ── */}
-    <div className="card" style={{padding:16,marginBottom:14}}>
-      <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>Default Lease Info</div>
-      <div className="fr">
-        <div className="fld"><label>Property Manager Name</label>
-          <input value={template?.landlordName||""} onChange={e=>setTemplate(p=>({...(p||{}),landlordName:e.target.value}))} placeholder="Carolina Cooper"/>
-        </div>
-        <div className="fld"><label>Company Name</label>
-          <input value={template?.company||""} onChange={e=>setTemplate(p=>({...(p||{}),company:e.target.value}))} placeholder="Black Bear Properties"/>
-        </div>
-      </div>
-      <div className="fld" style={{marginBottom:0}}><label>Landlord Email</label>
-        <input type="email" value={template?.landlordEmail||""} onChange={e=>setTemplate(p=>({...(p||{}),landlordEmail:e.target.value}))} placeholder="info@rentblackbear.com"/>
-      </div>
-    </div>
-
     {/* ── Section count + Add ── */}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
       <div style={{fontSize:12,fontWeight:700,color:"#5c4a3a"}}>{sections.filter(s=>s.active!==false).length} of {sections.length} sections active</div>
