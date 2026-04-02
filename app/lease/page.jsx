@@ -299,6 +299,37 @@ export default function LeasePage(){
           </div>
         </div>
 
+        {/* Summary table */}
+        <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",marginBottom:20,overflow:"hidden"}}>
+          <div style={{padding:"12px 20px",background:"#1a1714"}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:1}}>Summary of Key Terms</div>
+          </div>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+            <tbody>
+              {[
+                ["Tenant",lease?.tenantName||"—",""],
+                ["Property Address",lease?.propertyAddress||lease?.property||"—","Section 1"],
+                ["Room / Unit",lease?.room||"—","Section 1"],
+                ["Lease Start Date",varData.LEASE_START||"—","Section 2"],
+                ["Lease End Date",varData.LEASE_END||"—","Section 2"],
+                ["Monthly Rent",lease?.rent?"$"+Number(lease.rent).toLocaleString()+".00":"—","Section 3"],
+                ["Security Deposit",lease?.sd?"$"+Number(lease.sd).toLocaleString()+".00":"—","Section 4"],
+                ["Prorated First Month",lease?.proratedRent&&lease.proratedRent>0?"$"+Number(lease.proratedRent).toLocaleString()+".00":"N/A","Section 3"],
+                ["Late Fee","$50 after the 3rd · $5/day thereafter","Section 5"],
+                ["Door Code",lease?.doorCode||"—","Section 13"],
+                ["Parking",lease?.parking||"No assigned parking","Section 9"],
+                ["Utilities",lease?.utilitiesClause?"See Section 6":"—","Section 6"],
+              ].map(([label,value,ref],i)=>(
+                <tr key={label} style={{borderBottom:i<11?"1px solid rgba(0,0,0,.05)":"none",background:i%2===0?"#fff":"rgba(0,0,0,.012)"}}>
+                  <td style={{padding:"9px 20px",fontWeight:700,color:"#5c4a3a",width:"35%",fontSize:11,textTransform:"uppercase",letterSpacing:.4,verticalAlign:"top"}}>{label}</td>
+                  <td style={{padding:"9px 12px",color:"#1a1714",fontWeight:500,verticalAlign:"top"}}>{value}</td>
+                  <td style={{padding:"9px 20px",color:"#9a8878",fontSize:10,textAlign:"right",whiteSpace:"nowrap",verticalAlign:"top"}}>{ref}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
         {/* Instructions */}
         <div style={{padding:"12px 16px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.25)",borderRadius:10,marginBottom:20,fontSize:12,color:"#9a7422",lineHeight:1.6}}>
           <strong>Please read your entire lease before signing.</strong> Your signature at the bottom will serve as your initials for all sections marked with an initials line. Make sure you understand and agree to all terms before proceeding.
