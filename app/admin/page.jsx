@@ -5838,6 +5838,8 @@ export default function Page(){
                 const tlLe=leaseForm.leaseEnd||null;
                 const isOcc=!!tlCur;
                 const isOverlap=isOcc&&tlCurLe&&tlMi&&tlMi<tlCurLe;
+                const bufDays=leaseForm._bufferDays??7;
+                const bufEnd=tlCurLe?(()=>{const d=new Date(tlCurLe+"T00:00:00");d.setDate(d.getDate()+bufDays);return d.toISOString().split("T")[0];})():null;
                 const isBufferViolation=!isOverlap&&isOcc&&tlCurLe&&tlMi&&bufDays>0&&bufEnd&&tlMi>=tlCurLe&&tlMi<=bufEnd;
                 const anchor=tlMi||tlCurLe||TODAY.toISOString().split("T")[0];
                 const anchorD=new Date(anchor+"T00:00:00");
