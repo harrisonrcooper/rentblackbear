@@ -73,15 +73,6 @@ export default function LeaseModal({
 
   const saveDraft=()=>{
     if(!leaseForm)return;
-    const errs={};
-    if(!(leaseForm.tenantName||"").trim()) errs.tenantName="Tenant name is required before saving.";
-    if(!(leaseForm.tenantEmail||"").trim()) errs.tenantEmail="Tenant email is required before saving.";
-    const _pid=leaseForm.propertyId||properties.find(p=>getPropDisplayName(p)===leaseForm.property)?.id||"";
-    if(!_pid) errs.propertyId="Select a property before saving.";
-    if(!leaseForm.roomId&&!(leaseForm.room||"").trim()) errs.roomId="Select a room or unit before saving.";
-    if(leaseForm.parkingChoice===null||leaseForm.parkingChoice===undefined) errs.parkingChoice="Indicate whether this room has assigned parking.";
-    if(leaseForm.parkingChoice==="yes"&&!(leaseForm.parking||"").trim()) errs.parking="Enter the parking space description.";
-    if(Object.keys(errs).length>0){_triggerLeaseWiggle(errs);return;}
     const now=TODAY.toISOString().split("T")[0];
     const rentWords=leaseForm.rent?numberToWords(leaseForm.rent):"";
     const vars={
