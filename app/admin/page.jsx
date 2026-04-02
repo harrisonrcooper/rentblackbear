@@ -5770,29 +5770,30 @@ export default function Page(){
               </div>
               <div className="fr">
                 <div className="fld">
-                  <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span>Move-in Date</span>
-                    {!locked&&leaseForm.roomId&&<div style={{display:"flex",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:5,overflow:"hidden",marginLeft:8}}>
-                      {[["asap","ASAP"],["specific","Pick date"]].map(([v,l])=>(
-                        <button key={v} onClick={()=>{
-                          if(v==="asap"){const newMi=_computeAsapMi(_tlCurLe,_bufDays);setLeaseForm(p=>({...p,_moveInMode:"asap",..._applyAsapToForm(newMi,p.rent),_errors:{...(p._errors||{}),moveIn:null}}));}
-                          else{setLeaseForm(p=>({...p,_moveInMode:"specific"}));}
-                        }} style={{padding:"2px 8px",fontSize:9,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",background:_miMode===v?"#1a1714":"transparent",color:_miMode===v?"#d4a853":"#9a8878",transition:"all .15s"}}>{l}</button>
-                      ))}
-                    </div>}
-                  </label>
+                  <label>Move-in Date</label>
                   {locked
                     ? ro(fmtD(leaseForm.moveIn))
-                    : _miMode==="asap"
-                      ? <div style={{padding:"7px 10px",background:"rgba(74,124,89,.04)",borderRadius:6,border:"0.5px solid rgba(74,124,89,.2)",fontSize:12,fontWeight:600,color:"#2d6a3f",minHeight:34,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                          <span>{fmtD(leaseForm.moveIn)||"—"}</span>
-                          <span style={{fontSize:9,color:"#9a8878",fontWeight:400}}>auto — day after buffer</span>
-                        </div>
-                      : <input type="date" value={leaseForm.moveIn||""} onChange={e=>{
-                          const mi=e.target.value;
-                          if(!mi||mi.length<10){setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi}));return;}
-                          const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));
-                        }} style={{borderColor:leaseForm._errors?.moveIn?"#c45c4a":undefined}}/>
+                    : <div style={{borderRadius:6,border:`1.5px solid ${(_tlCurLe&&leaseForm.moveIn&&leaseForm.moveIn<_tlCurLe)||leaseForm._errors?.moveIn?"#c45c4a":"rgba(0,0,0,.12)"}`,overflow:"hidden",transition:"border-color .2s"}}>
+                        {leaseForm.roomId&&<div style={{display:"flex",borderBottom:"0.5px solid rgba(0,0,0,.08)"}}>
+                          {[["asap","ASAP"],["specific","Pick date"]].map(([v,l])=>(
+                            <button key={v} onClick={()=>{
+                              if(v==="asap"){const newMi=_computeAsapMi(_tlCurLe,_bufDays);setLeaseForm(p=>({...p,_moveInMode:"asap",..._applyAsapToForm(newMi,p.rent),_errors:{...(p._errors||{}),moveIn:null}}));}
+                              else{setLeaseForm(p=>({...p,_moveInMode:"specific"}));}
+                            }} style={{flex:1,padding:"6px 0",fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",background:_miMode===v?"#1a1714":"rgba(0,0,0,.02)",color:_miMode===v?"#d4a853":"#9a8878",transition:"all .15s",borderRight:v==="asap"?"0.5px solid rgba(0,0,0,.08)":"none"}}>{l}</button>
+                          ))}
+                        </div>}
+                        {_miMode==="asap"
+                          ?<div style={{padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(74,124,89,.04)",minHeight:34}}>
+                             <span style={{fontSize:12,fontWeight:600,color:"#2d6a3f"}}>{fmtD(leaseForm.moveIn)||"—"}</span>
+                             <span style={{fontSize:9,color:"#9a8878"}}>auto</span>
+                           </div>
+                          :<input type="date" value={leaseForm.moveIn||""} onChange={e=>{
+                             const mi=e.target.value;
+                             if(!mi||mi.length<10){setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi}));return;}
+                             const rent=leaseForm.rent||0;const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil((rent/30)*daysLeft);const leaseEndD=new Date(mi+"T00:00:00");leaseEndD.setFullYear(leaseEndD.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leaseEndD.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));
+                           }} style={{border:"none",borderRadius:0,width:"100%",padding:"7px 10px",boxSizing:"border-box",fontSize:12,fontFamily:"inherit",background:"transparent",outline:"none"}}/>
+                        }
+                      </div>
                   }
                   {leaseForm._errors?.moveIn&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.moveIn}</div>}
                 </div>
@@ -5882,8 +5883,8 @@ export default function Page(){
                     </div>
                   </div>
                   {/* Gantt */}
-                  <div style={{padding:"8px 10px 7px",background:"#fff"}}>
-                    <div style={{position:"relative",height:13,marginBottom:3}}>
+                  <div style={{padding:"7px 10px 8px",background:"#fff"}}>
+                    <div style={{position:"relative",height:12,marginBottom:2}}>
                       {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:7.5,color:"#bbb",transform:"translateX(-50%)",whiteSpace:"nowrap",pointerEvents:"none"}}>{m.label}</div>)}
                     </div>
                     <div style={{position:"relative",height:twoRows?56:30,background:"rgba(0,0,0,.015)",borderRadius:5,overflow:"hidden",border:"0.5px solid rgba(0,0,0,.06)"}}>
