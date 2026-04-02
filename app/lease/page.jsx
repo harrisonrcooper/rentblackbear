@@ -55,6 +55,8 @@ export default function LeasePage(){
   const [sigError,setSigError]=useState(false);
   const [submitting,setSubmitting]=useState(false);
   const [scrolledToBottom,setScrolledToBottom]=useState(false);
+  const [signingStarted,setSigningStarted]=useState(false);
+  const [initialedSecs,setInitialedSecs]=useState(new Set());
   const docRef=useRef(null);
 
   // ── Load lease by token ─────────────────────────────────────────────
@@ -71,10 +73,12 @@ export default function LeasePage(){
         if(row.status==="executed"){setStatus("already_signed");setLease(row.variable_data||{});return;}
         if(row.status!=="pending_tenant"){setStatus("not_found");return;}
         setLease({...row.variable_data,id:row.id,landlordSig:row.landlord_sig,landlordSignedAt:row.landlord_signed_at});
-        // Load template
-        const tr=await supa("lease_templates?id=eq."+row.template_id+"&select=sections,name,landlordName,company");
-        const td=await tr.json();
-        if(td&&td.length>0)setTemplate(td[0]);
+        // Load template — only select columns that exist in the schema
+        try{
+          const tr=await supa("lease_templates?id=eq."+row.template_id+"&select=sections,name");
+          const td=await tr.json();
+          if(td&&td.length>0)setTemplate(td[0]);
+        }catch(te){console.error("Template load error:",te);}
         setStatus("ready");
       }catch(e){console.error(e);setStatus("error");}
     })();
@@ -94,7 +98,9 @@ export default function LeasePage(){
 
   // ── Submit signing ──────────────────────────────────────────────────
   const submit=async()=>{
-    if(!signature){setSigError(true);return;}
+    const requiredSecs=activeSections.filter(s=>s.requiresInitials);
+    const allInitialed=requiredSecs.every(s=>initialedSecs.has(s.id));
+    if(!signature||!allInitialed){setSigError(true);return;}
     setSigError(false);
     setSubmitting(true);
     try{
@@ -323,6 +329,9 @@ export default function LeasePage(){
           </div>
 
           {/* Sections */}
+          {activeSections.length===0&&<div style={{textAlign:"center",padding:40,color:"#9a8878",fontSize:13}}>
+            Loading lease sections...{template===null?" (template not found)":""}
+          </div>}
           {activeSections.map((sec,i)=>(
             <div key={sec.id} style={{marginBottom:28}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
@@ -332,18 +341,22 @@ export default function LeasePage(){
               <div style={{paddingLeft:34,fontSize:12,lineHeight:1.85,color:"#2c2420",fontFamily:"Georgia,serif"}}
                 dangerouslySetInnerHTML={{__html:fillVars(sec.content,varData)}}/>
               {sec.requiresInitials&&(
-                <div style={{paddingLeft:34,marginTop:14,display:"flex",alignItems:"center",gap:20}}>
-                  {signature
-                    ?<div style={{display:"flex",alignItems:"center",gap:10,padding:"6px 14px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8}}>
-                       <img src={signature} alt="initials" style={{height:28,maxWidth:80,objectFit:"contain"}}/>
-                       <span style={{fontSize:10,color:"#4a7c59",fontWeight:600}}>Initialed</span>
+                <div style={{paddingLeft:34,marginTop:14}}>
+                  {initialedSecs.has(sec.id)
+                    ?<div style={{display:"inline-flex",alignItems:"center",gap:10,padding:"6px 14px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8}}>
+                       <img src={signature} alt="initials" style={{height:28,maxWidth:100,objectFit:"contain"}}/>
+                       <span style={{fontSize:10,color:"#4a7c59",fontWeight:700}}>✓ Initialed</span>
                      </div>
-                    :<div style={{display:"flex",alignItems:"center",gap:8}}>
-                       <div style={{width:80,borderBottom:"1px solid #1a1714",height:24,display:"flex",alignItems:"flex-end",paddingBottom:2}}>
-                         <span style={{fontSize:9,color:"#bbb"}}>Resident</span>
+                    :signingStarted&&signature
+                      ?<button onClick={()=>setInitialedSecs(p=>{const n=new Set(p);n.add(sec.id);return n;})}
+                          style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 16px",background:"#1a1714",color:"#d4a853",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}}>
+                          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                          Click to Initial This Section
+                        </button>
+                      :<div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0"}}>
+                         <div style={{width:80,borderBottom:"1px solid rgba(0,0,0,.2)",height:20}}/>
+                         <span style={{fontSize:10,color:"#bbb"}}>Initials required</span>
                        </div>
-                       <span style={{fontSize:10,color:"#9a8878"}}>— sign below to initial all sections</span>
-                     </div>
                   }
                 </div>
               )}
@@ -384,22 +397,32 @@ export default function LeasePage(){
         <div style={{background:"#fff",borderRadius:12,border:`2px solid ${sigError?"#c45c4a":"rgba(0,0,0,.08)"}`,padding:24,marginBottom:20,transition:"border-color .2s"}}>
           <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>Your Signature</div>
           <div style={{fontSize:11,color:"#9a8878",marginBottom:16,lineHeight:1.5}}>
-            By signing below, you confirm that you have read, understand, and agree to all terms of this lease agreement. Your signature will also serve as your initials on all sections above.
+            Draw your signature below. Once saved, you will click to initial each required section above, then submit.
           </div>
           {signature
             ?<div>
-               <div style={{padding:"10px 14px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8,display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+               <div style={{padding:"10px 14px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8,display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
                  <img src={signature} alt="Your signature" style={{height:50,maxWidth:200,objectFit:"contain"}}/>
                  <div>
                    <div style={{fontSize:11,fontWeight:600,color:"#2d6a3f"}}>{lease?.tenantName||"Resident"}</div>
                    <div style={{fontSize:10,color:"#6b5e52"}}>Signature captured</div>
                  </div>
                </div>
-               <button onClick={()=>setSignature(null)} style={{fontSize:10,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Re-draw Signature</button>
+               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                 <button onClick={()=>{setSignature(null);setSigningStarted(false);setInitialedSecs(new Set());}} style={{fontSize:10,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"4px 12px",cursor:"pointer",fontFamily:"inherit"}}>Re-draw Signature</button>
+                 {!signingStarted&&<button onClick={()=>{setSigningStarted(true);window.scrollTo({top:0,behavior:"smooth"});}}
+                   style={{fontSize:12,fontWeight:700,color:"#fff",background:"#1a1714",border:"none",borderRadius:8,padding:"10px 20px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
+                   <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2.5" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                   Start Signing — Initial Each Section
+                 </button>}
+                 {signingStarted&&<div style={{fontSize:11,color:"#4a7c59",fontWeight:600}}>
+                   {initialedSecs.size} of {activeSections.filter(s=>s.requiresInitials).length} sections initialed
+                 </div>}
+               </div>
              </div>
             :<SigCanvas onSave={setSignature} height={140} label="Draw your full signature here"/>
           }
-          {sigError&&<div style={{marginTop:10,fontSize:11,color:"#c45c4a",fontWeight:600,animation:"shake .4s ease"}}>Please draw your signature before submitting.</div>}
+          {sigError&&<div style={{marginTop:10,fontSize:11,color:"#c45c4a",fontWeight:600,animation:"shake .4s ease"}}>Please draw your signature and initial all required sections before submitting.</div>}
         </div>
 
         {/* Legal acknowledgment */}
