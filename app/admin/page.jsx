@@ -5882,11 +5882,21 @@ export default function Page(){
                       {/* Buffer control */}
                       <div style={{display:"flex",alignItems:"center",gap:3,background:"rgba(255,255,255,.8)",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:5,padding:"2px 5px"}}>
                         <span style={{fontSize:8,color:"#9a7067",fontWeight:600}}>Buffer</span>
-                        <button onClick={()=>{const newBuf=Math.max(0,(leaseForm._bufferDays??7)-1);const newMi=leaseForm._moveInMode==="asap"?_computeAsapMi(tlCurLe,newBuf):null;setLeaseForm(p=>({...p,_bufferDays:newBuf,...(newMi?_applyAsapToForm(newMi,p.rent):{})
-                        }));}} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
+                        <button onClick={()=>{
+                          const newBuf=Math.max(0,(leaseForm._bufferDays??7)-1);
+                          const newBufEnd=tlCurLe?(()=>{const d=new Date(tlCurLe+"T00:00:00");d.setDate(d.getDate()+newBuf);return d.toISOString().split("T")[0];})():null;
+                          const isInvalid=tlCurLe&&leaseForm.moveIn&&(leaseForm.moveIn<tlCurLe||(newBuf>0&&newBufEnd&&leaseForm.moveIn<=newBufEnd));
+                          const newMi=(leaseForm._moveInMode==="asap"||isInvalid)?_computeAsapMi(tlCurLe,newBuf):null;
+                          setLeaseForm(p=>({...p,_bufferDays:newBuf,...(newMi?{..._applyAsapToForm(newMi,p.rent),_errors:{...(p._errors||{}),moveIn:null}}:{})}));
+                        }} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
                         <span style={{fontSize:10,fontWeight:800,color:"#1a1714",minWidth:20,textAlign:"center"}}>{bufDays}d</span>
-                        <button onClick={()=>{const newBuf=(leaseForm._bufferDays??7)+1;const newMi=leaseForm._moveInMode==="asap"?_computeAsapMi(tlCurLe,newBuf):null;setLeaseForm(p=>({...p,_bufferDays:newBuf,...(newMi?_applyAsapToForm(newMi,p.rent):{})
-                        }));}} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
+                        <button onClick={()=>{
+                          const newBuf=(leaseForm._bufferDays??7)+1;
+                          const newBufEnd=tlCurLe?(()=>{const d=new Date(tlCurLe+"T00:00:00");d.setDate(d.getDate()+newBuf);return d.toISOString().split("T")[0];})():null;
+                          const isInvalid=tlCurLe&&leaseForm.moveIn&&(leaseForm.moveIn<tlCurLe||(newBuf>0&&newBufEnd&&leaseForm.moveIn<=newBufEnd));
+                          const newMi=(leaseForm._moveInMode==="asap"||isInvalid)?_computeAsapMi(tlCurLe,newBuf):null;
+                          setLeaseForm(p=>({...p,_bufferDays:newBuf,...(newMi?{..._applyAsapToForm(newMi,p.rent),_errors:{...(p._errors||{}),moveIn:null}}:{})}));
+                        }} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
                       </div>
                       {/* Full timeline button */}
                       <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(20,Math.floor(window.innerWidth/2)-340),y:40}}))} style={{fontSize:8,fontWeight:700,color:"#1d4ed8",background:"rgba(59,130,246,.07)",border:"0.5px solid rgba(59,130,246,.25)",borderRadius:5,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,lineHeight:1}}>
