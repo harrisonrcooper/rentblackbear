@@ -1,819 +1,379 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
+// ── Supabase ─────────────────────────────────────────────────────────
 const SUPA_URL="https://vxysaclhucdjxzcknoar.supabase.co";
 const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
-const supa=(path,opts={})=>fetch(`${SUPA_URL}/rest/v1/${path}`,{...opts,headers:{"apikey":SUPA_KEY,"Authorization":`Bearer ${SUPA_KEY}`,"Content-Type":"application/json","Prefer":opts.prefer||"return=representation",...(opts.headers||{})}});
-async function loadKey(k,fb){try{const r=await supa(`app_data?key=eq.${k}&select=value`);const d=await r.json();return d?.[0]?.value||fb;}catch{return fb;}}
-async function saveKey(k,v){try{await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:k,value:v})});}catch{}}
+const supa=(path,opts={})=>fetch(SUPA_URL+"/rest/v1/"+path,{...opts,headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":opts.prefer||"return=representation",...(opts.headers||{})}});
 
-const CSS=`
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Plus Jakarta Sans',sans-serif;background:#f5f4f1;color:#1a1714;-webkit-font-smoothing:antialiased}
-.wrap{max-width:760px;margin:0 auto;padding:0 16px 80px}
-.header{background:#1a1714;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.logo{font-family:'DM Serif Display',serif;font-size:16px;color:#f5f0e8;display:flex;align-items:center;gap:8px}
-.logo span{color:#d4a853}
-.progress-bar{background:rgba(255,255,255,.1);height:3px;position:absolute;bottom:0;left:0;right:0}
-.progress-fill{height:100%;background:#d4a853;transition:width .4s ease}
-.status-pill{font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
-.status-pending{background:rgba(212,168,83,.15);color:#d4a853}
-.status-done{background:rgba(74,124,89,.15);color:#4a7c59}
+// ── Helpers ───────────────────────────────────────────────────────────
+const fmtD=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;};
+const fmtS=n=>"$"+Number(n).toLocaleString();
 
-.summary-card{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,.06);padding:20px;margin:20px 0;box-shadow:0 2px 12px rgba(0,0,0,.04)}
-.summary-title{font-family:'DM Serif Display',serif;font-size:20px;color:#1a1714;margin-bottom:4px}
-.summary-sub{font-size:11px;color:#999;margin-bottom:16px}
-.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid rgba(0,0,0,.08);border-radius:8px;overflow:hidden}
-.summary-row{display:contents}
-.summary-row>div{padding:9px 12px;font-size:12px;border-bottom:1px solid rgba(0,0,0,.06);border-right:1px solid rgba(0,0,0,.06)}
-.summary-row>div:nth-child(2n){border-right:none}
-.summary-row:last-child>div{border-bottom:none}
-.sum-label{color:#999;font-weight:500}
-.sum-val{font-weight:700;color:#1a1714}
-.sum-highlight{color:#d4a853}
+const fillVars=(html,data)=>{
+  if(!html)return"";
+  let out=html;
+  Object.entries(data).forEach(([k,v])=>{
+    out=out.replaceAll("{{"+k+"}}",`<strong>${v||""}</strong>`);
+  });
+  // Highlight any unfilled variables
+  out=out.replace(/\{\{([A-Z_]+)\}\}/g,'<span style="background:#fee2e2;color:#c45c4a;border-radius:3px;padding:0 3px;font-weight:700">{{$1}}</span>');
+  return out;
+};
 
-.lease-doc{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,.06);box-shadow:0 2px 12px rgba(0,0,0,.04);margin-bottom:20px;overflow:hidden}
-.lease-header{background:#1a1714;padding:28px 32px;text-align:center}
-.lease-header h1{font-family:'DM Serif Display',serif;font-size:26px;color:#f5f0e8;margin-bottom:4px}
-.lease-header p{font-size:12px;color:#c4a882}
-.lease-body{padding:32px}
-.section{margin-bottom:32px;padding-bottom:32px;border-bottom:1px solid rgba(0,0,0,.06)}
-.section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.section-num{font-size:9px;font-weight:800;color:#d4a853;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
-.section-title{font-family:'DM Serif Display',serif;font-size:17px;color:#1a1714;margin-bottom:12px}
-.section-body{font-size:13px;color:#3d3529;line-height:1.8}
-.section-body p{margin-bottom:10px}
-.section-body p:last-child{margin-bottom:0}
-.section-body ul{padding-left:20px;margin:8px 0}
-.section-body li{margin-bottom:6px}
-.section-body strong{color:#1a1714;font-weight:700}
-.var{color:#1a1714;font-weight:700;background:rgba(212,168,83,.1);padding:0 3px;border-radius:3px}
-
-.initials-zone{margin-top:20px;padding:14px 16px;background:rgba(212,168,83,.05);border:2px dashed rgba(212,168,83,.3);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.initials-zone.signed{border-color:rgba(74,124,89,.3);background:rgba(74,124,89,.04)}
-.initials-label{font-size:11px;color:#9a7422;font-weight:600}
-.initials-zone.signed .initials-label{color:#4a7c59}
-.initials-input{border:1.5px solid rgba(212,168,83,.4);border-radius:7px;padding:6px 12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:#1a1714;width:80px;text-align:center;outline:none;background:#fff;text-transform:uppercase}
-.initials-input:focus{border-color:#d4a853}
-.initials-preview{font-family:'DM Serif Display',serif;font-size:18px;color:#1a1714;min-width:80px;text-align:center;padding:4px 0}
-
-.sig-zone{margin-top:24px;border:2px dashed rgba(196,92,74,.3);border-radius:12px;padding:20px;background:rgba(196,92,74,.02)}
-.sig-zone.signed{border-color:rgba(74,124,89,.3);background:rgba(74,124,89,.02)}
-.sig-label{font-size:11px;font-weight:700;color:#c45c4a;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
-.sig-zone.signed .sig-label{color:#4a7c59}
-.sig-canvas{border:1.5px solid rgba(0,0,0,.1);border-radius:8px;cursor:crosshair;display:block;background:#fff;touch-action:none}
-.sig-actions{display:flex;gap:8px;margin-top:8px}
-.sig-preview{max-height:60px;max-width:100%}
-
-.sticky-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid rgba(0,0,0,.08);padding:14px 20px;display:flex;gap:10px;align-items:center;justify-content:center;z-index:40;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
-.remaining-badge{font-size:11px;color:#c45c4a;font-weight:700;padding:5px 10px;background:rgba(196,92,74,.08);border-radius:99px}
-.btn{padding:12px 24px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:none;transition:all .15s}
-.btn-gold{background:#d4a853;color:#1a1714}
-.btn-gold:hover{background:#c09040}
-.btn-gold:disabled{background:#ccc;cursor:not-allowed}
-.btn-out{background:transparent;border:1.5px solid rgba(0,0,0,.12);color:#5c4a3a}
-.btn-sm{padding:7px 14px;font-size:11px}
-
-.error-bar{background:#fcebeb;border:1px solid rgba(196,92,74,.25);border-radius:10px;padding:12px 16px;margin:16px 0;font-size:12px;color:#c45c4a;animation:shake .4s ease}
-@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-4px)}30%{transform:translateX(4px)}45%{transform:translateX(-3px)}60%{transform:translateX(3px)}75%{transform:translateX(-1px)}}
-.error-item{display:flex;align-items:center;gap:8px;padding:3px 0}
-.error-dot{width:5px;height:5px;border-radius:50%;background:#c45c4a;flex-shrink:0}
-
-.done-screen{text-align:center;padding:80px 20px}
-.done-ic{font-size:56px;margin-bottom:20px}
-.done-screen h1{font-family:'DM Serif Display',serif;font-size:28px;color:#1a1714;margin-bottom:8px}
-.done-screen p{font-size:14px;color:#999;line-height:1.6;max-width:400px;margin:0 auto 24px}
-.done-detail{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,.06);padding:16px;max-width:400px;margin:0 auto;font-size:12px}
-.done-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04);color:#5c4a3a}
-.done-row:last-child{border:none}
-
-.loading{display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Plus Jakarta Sans',sans-serif;color:#999}
-.loading-inner{text-align:center}
-.loading-bear{font-size:40px;animation:bounce 1.5s ease infinite;display:block;margin-bottom:12px}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-
-@media(max-width:600px){
-  .summary-grid{grid-template-columns:1fr}
-  .summary-row>div{border-right:none}
-  .lease-body{padding:20px}
-}
-`;
-
-// Signature canvas component - draw only
-function SigCanvas({ onSave, height=120 }) {
-  const canvasRef = useRef(null);
-  const drawing = useRef(false);
-  const lastPos = useRef(null);
-
-  const getPos = (e, canvas) => {
-    const rect = canvas.getBoundingClientRect();
-    const source = e.touches ? e.touches[0] : e;
-    return { x: source.clientX - rect.left, y: source.clientY - rect.top };
-  };
-
-  const start = useCallback((e) => {
-    e.preventDefault();
-    drawing.current = true;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const pos = getPos(e, canvas);
-    lastPos.current = pos;
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 1, 0, Math.PI * 2);
-    ctx.fillStyle = "#1a1714";
-    ctx.fill();
-  }, []);
-
-  const move = useCallback((e) => {
-    if (!drawing.current) return;
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const pos = getPos(e, canvas);
-    ctx.beginPath();
-    ctx.moveTo(lastPos.current.x, lastPos.current.y);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = "#1a1714";
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.stroke();
-    lastPos.current = pos;
-  }, []);
-
-  const end = useCallback(() => { drawing.current = false; }, []);
-
-  const clear = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
-
-  const save = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    const hasContent = Array.from(data).some((v, i) => i % 4 === 3 && v > 0);
-    if (!hasContent) return;
-    onSave(canvas.toDataURL("image/png"));
-  };
-
-  return (
+// ── Signature canvas ──────────────────────────────────────────────────
+function SigCanvas({onSave,height=140,label="Draw your signature"}){
+  const canvasRef=useRef(null);
+  const drawing=useRef(false);
+  const getPos=(e,canvas)=>{const r=canvas.getBoundingClientRect();if(e.touches)return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};return{x:e.clientX-r.left,y:e.clientY-r.top};};
+  const start=(e)=>{e.preventDefault();drawing.current=true;const canvas=canvasRef.current;const ctx=canvas.getContext("2d");const pos=getPos(e,canvas);ctx.beginPath();ctx.moveTo(pos.x,pos.y);};
+  const move=(e)=>{e.preventDefault();if(!drawing.current)return;const canvas=canvasRef.current;const ctx=canvas.getContext("2d");const pos=getPos(e,canvas);ctx.strokeStyle="#1a1714";ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";ctx.lineTo(pos.x,pos.y);ctx.stroke();};
+  const end=(e)=>{e.preventDefault();drawing.current=false;if(onSave)onSave(canvasRef.current.toDataURL());};
+  const clear=()=>{const canvas=canvasRef.current;const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);if(onSave)onSave(null);};
+  return(
     <div>
-      <canvas
-        ref={canvasRef}
-        className="sig-canvas"
-        width={Math.min(window.innerWidth - 80, 680)}
-        height={height}
+      <div style={{fontSize:11,color:"#6b5e52",marginBottom:6,fontWeight:600}}>{label}</div>
+      <canvas ref={canvasRef} width={600} height={height}
+        style={{border:"1.5px solid rgba(0,0,0,.15)",borderRadius:8,cursor:"crosshair",touchAction:"none",width:"100%",height,display:"block",background:"#fafaf8"}}
         onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
-        onTouchStart={start} onTouchMove={move} onTouchEnd={end}
-      />
-      <div className="sig-actions">
-        <button className="btn btn-out btn-sm" onClick={clear}>Clear</button>
-        <button className="btn btn-gold btn-sm" onClick={save}>Apply Signature</button>
-      </div>
+        onTouchStart={start} onTouchMove={move} onTouchEnd={end}/>
+      <button onClick={clear} style={{marginTop:6,fontSize:10,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
     </div>
   );
 }
 
-// Render lease body substituting {{VARIABLE}} with actual values
-function renderContent(text, vars) {
-  if (!text) return "";
-  return text.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
-    const val = vars[key.trim()];
-    return val !== undefined ? `<span class="var">${val}</span>` : `<span style="color:#c45c4a">{{${key}}}</span>`;
-  });
-}
+// ── Main page ─────────────────────────────────────────────────────────
+export default function LeasePage(){
+  const [lease,setLease]=useState(null);
+  const [template,setTemplate]=useState(null);
+  const [status,setStatus]=useState("loading");// loading | ready | already_signed | not_found | error | submitted
+  const [signature,setSignature]=useState(null);
+  const [sigError,setSigError]=useState(false);
+  const [submitting,setSubmitting]=useState(false);
+  const [scrolledToBottom,setScrolledToBottom]=useState(false);
+  const docRef=useRef(null);
 
-export default function LeaseSignPage() {
-  const [lease, setLease] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [done, setDone] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [initials, setInitials] = useState({}); // sectionId -> string
-  const [signature, setSignature] = useState(null); // base64
-  const [showSigCanvas, setShowSigCanvas] = useState(false);
-  const [errors, setErrors] = useState([]);
-  const [shakeKey, setShakeKey] = useState(0); // increments on each submit attempt to re-trigger wiggle
-  const [token, setToken] = useState(null);
-  const [doorCode, setDoorCode] = useState(""); // 4-digit passcode, pre-filled from application
-  const doorCodeRef = useRef(null);
-  const sectionRefs = useRef({});
-
-  useEffect(() => {
-    const t = new URLSearchParams(window.location.search).get("token");
-    if (!t) { setError("No lease token found."); setLoading(false); return; }
-    setToken(t);
-    (async () => {
-      const leases = await loadKey("hq-leases", []);
-      const found = leases.find(l => l.signingToken === t);
-      if (!found) { setError("Lease not found or link expired. Token: "+t+" — "+leases.length+" leases loaded."); setLoading(false); return; }
-      // If sections were stripped from the lease record to save space, load from template
-      if (!found.sections || found.sections.length === 0) {
-        const tmpl = await loadKey("hq-lease-template", null);
-        if (tmpl && tmpl.sections) found.sections = tmpl.sections;
-      }
-      if (found.status === "executed") { setDone(true); setLease(found); setLoading(false); return; }
-      if (found.status !== "pending_tenant") { setError("This lease is not ready for your signature yet."); setLoading(false); return; }
-      // Restore any partial progress
-      if (found.tenantInitials) setInitials(found.tenantInitials);
-      if (found.doorCode) setDoorCode(found.doorCode);
-      setLease(found);
-      setLoading(false);
+  // ── Load lease by token ─────────────────────────────────────────────
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const token=params.get("token");
+    if(!token){setStatus("not_found");return;}
+    (async()=>{
+      try{
+        const r=await supa("lease_instances?signing_token=eq."+token+"&select=*");
+        const rows=await r.json();
+        if(!rows||rows.length===0){setStatus("not_found");return;}
+        const row=rows[0];
+        if(row.status==="executed"){setStatus("already_signed");setLease(row.variable_data||{});return;}
+        if(row.status!=="pending_tenant"){setStatus("not_found");return;}
+        setLease({...row.variable_data,id:row.id,landlordSig:row.landlord_sig,landlordSignedAt:row.landlord_signed_at});
+        // Load template
+        const tr=await supa("lease_templates?id=eq."+row.template_id+"&select=sections,name,landlordName,company");
+        const td=await tr.json();
+        if(td&&td.length>0)setTemplate(td[0]);
+        setStatus("ready");
+      }catch(e){console.error(e);setStatus("error");}
     })();
-  }, []);
+  },[]);
 
-  const totalRequired = lease ? (lease.sections || []).filter(s => s.requiresInitials && s.active !== false).length + 1 : 0;
-  const completedInitials = Object.keys(initials).filter(k => initials[k] && initials[k].trim().length >= 2).length;
-  const completedSig = !!signature;
-  const totalComplete = completedInitials + (completedSig ? 1 : 0);
-  const pct = totalRequired > 0 ? Math.round(totalComplete / totalRequired * 100) : 0;
+  // ── Track scroll to bottom ──────────────────────────────────────────
+  useEffect(()=>{
+    const el=docRef.current;
+    if(!el)return;
+    const handler=()=>{
+      if(el.scrollTop+el.clientHeight>=el.scrollHeight-40)setScrolledToBottom(true);
+    };
+    el.addEventListener("scroll",handler);
+    return()=>el.removeEventListener("scroll",handler);
+  },[status]);
 
-  const scrollToFirst = (missingIds) => {
-    const id = missingIds[0];
-    if (id === "doorCode") {
-      if (doorCodeRef.current) doorCodeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-    const el = sectionRefs.current[id];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-
-  const handleSubmit = async () => {
-    const errs = [];
-    const missing = [];
-    (lease.sections || []).filter(s => s.requiresInitials && s.active !== false).forEach(s => {
-      if (!initials[s.id] || initials[s.id].trim().length < 2) {
-        errs.push(`Initials required — ${s.title}`);
-        missing.push(s.id);
-      }
-    });
-    if (!signature) {
-      errs.push("Final signature is required");
-      missing.push("signature");
-    }
-    if (!/^\d{4}$/.test(doorCode)) {
-      errs.push("Door code must be exactly 4 digits — numbers only");
-      missing.push("doorCode");
-    }
-    if (errs.length > 0) {
-      setErrors(errs);
-      setShakeKey(k => k + 1);
-      scrollToFirst(missing);
-      return;
-    }
-    setErrors([]);
+  // ── Submit signing ──────────────────────────────────────────────────
+  const submit=async()=>{
+    if(!signature){setSigError(true);return;}
+    setSigError(false);
     setSubmitting(true);
-    try {
-      const now = new Date().toISOString();
-      const fullDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-      const leases = await loadKey("hq-leases", []);
-      const updated = leases.map(l => l.id === lease.id ? {
-        ...l,
-        status: "executed",
-        tenantSignature: signature,
-        tenantSignedAt: now,
-        tenantInitials: initials,
-        doorCode: doorCode,
-        executedAt: now,
-      } : l);
-      await saveKey("hq-leases", updated);
-
-      // Generate charges + move to onboarding when tenant signs
-      // Find app by applicationId, or fall back to matching by email/name
-      const apps = await loadKey("hq-apps", []);
-      const signingApp = lease.applicationId
-        ? apps.find(a => a.id === lease.applicationId)
-        : apps.find(a =>
-            (a.email && lease.tenantEmail && a.email.toLowerCase() === lease.tenantEmail.toLowerCase()) ||
-            (a.name && lease.tenantName && a.name.toLowerCase() === lease.tenantName.toLowerCase())
-          );
-      if (signingApp) {
-        const cfg = signingApp?.chargeConfig || null;
-        const todayStr = now.split("T")[0];
-
-        // Auto-generate charges from chargeConfig set during lease send
-        // Use termRoomId (actual room ID) so charges match tenant portal filter
-        const roomId = signingApp?.termRoomId || signingApp?.roomId || lease.room;
-        let generatedCharges = [];
-        if (cfg && cfg.charges && cfg.charges.length > 0) {
-          const uid = () => Math.random().toString(36).slice(2);
-          generatedCharges = cfg.charges.map(c => ({
-            id: uid(),
-            roomId: roomId,
-            tenantName: lease.tenantName,
-            propName: lease.property,
-            roomName: lease.room,
-            category: c.cat,
-            desc: c.desc,
-            amount: c.amount,
-            amountPaid: 0,
-            dueDate: c.due,
-            createdDate: todayStr,
-            payments: [],
-            waived: false,
-            noLateFee: true,
-            notes: "Auto-generated on lease signing — " + fullDate
-          }));
-          const existingCharges = await loadKey("hq-charges", []);
-          await saveKey("hq-charges", [...generatedCharges, ...existingCharges]);
-        }
-
-        // Save executed lease to hq-docs so it appears in tenant portal Documents tab
-        const existingDocs = await loadKey("hq-docs", []);
-        const leaseDoc = {
-          id: Math.random().toString(36).slice(2),
-          tenantRoomId: roomId,
-          tenant: lease.tenantName,
-          label: "Lease Agreement — " + (lease.property || "") + " · " + (lease.room || ""),
-          name: "lease-agreement-" + todayStr + ".pdf",
-          type: "lease",
-          source: "lease-signing",
-          leaseId: lease.id,
-          uploaded: todayStr,
-          executedAt: now,
-          // Store lease data so it can be rendered/downloaded
-          leaseSnapshot: {
-            tenantName: lease.tenantName,
-            property: lease.property,
-            room: lease.room,
-            rent: lease.rent,
-            sd: lease.sd,
-            moveIn: lease.moveIn,
-            leaseStart: lease.leaseStart,
-            leaseEnd: lease.leaseEnd,
-            executedAt: now,
-            landlordSignature: lease.landlordSignature,
-            tenantSignature: signature,
-          }
-        };
-        await saveKey("hq-docs", [leaseDoc, ...existingDocs]);
-
-        const updatedApps = apps.map(a => a.id === signingApp.id ? {
-          ...a,
-          status: "onboarding",
-          leaseSigned: true,
-          leaseSignedAt: now,
-          leaseId: lease.id,
-          passcode: doorCode,
-          lastContact: todayStr,
-          chargeConfig: cfg ? { ...cfg, generatedAt: now } : null,
-          history: [...(a.history || []), {
-            from: a.status,
-            to: "onboarding",
-            date: todayStr,
-            note: `Lease signed on ${fullDate}. ${generatedCharges.length} charge(s) auto-generated. Door code: ${doorCode}`
-          }]
-        } : a);
-        await saveKey("hq-apps", updatedApps);
-
-        // Store generated charges on lease record for done screen
-        const leases2 = await loadKey("hq-leases", []);
-        const withCharges = leases2.map(l => l.id === lease.id ? { ...l, generatedCharges } : l);
-        await saveKey("hq-leases", withCharges);
-        setLease(prev => ({ ...prev, generatedCharges }));
-      }
-
-      // Notify admin bell
-      const notifs = await loadKey("hq-notifs", []);
-      await saveKey("hq-notifs", [{
-        id: Math.random().toString(36).slice(2),
-        type: "lease",
-        msg: `✍️ ${lease.tenantName} signed their lease — ${lease.room} at ${lease.property}`,
-        date: now.split("T")[0],
-        read: false,
-        urgent: true
-      }, ...notifs]);
-
-      // Email PM — lease signed notification
-      try {
-        await fetch("/api/lease-executed", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tenantName: lease.tenantName,
-            tenantEmail: lease.tenantEmail,
-            landlordEmail: lease.landlordEmail || "info@rentblackbear.com",
-            property: lease.property,
-            room: lease.room,
-            rent: lease.rent,
-            moveIn: lease.moveIn,
-            leaseStart: lease.leaseStart,
-            leaseEnd: lease.leaseEnd,
-            sd: lease.sd,
-            proratedRent: lease.proratedRent,
-            executedAt: fullDate,
-            doorCode: doorCode,
-            chargesGenerated: generatedCharges.length,
-            chargeRows: generatedCharges.map(c => `${c.desc}: $${c.amount} — due ${c.dueDate}`).join(", "),
-            totalDue: generatedCharges.reduce((s, c) => s + c.amount, 0),
-          })
-        });
-      } catch (e) {
-        console.error("Email notification failed:", e);
-      }
-
-      // Email tenant — signed copy confirmation
-      try {
-        await fetch("/api/lease-executed", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "tenant_signed_confirmation",
-            tenantName: lease.tenantName,
-            tenantEmail: lease.tenantEmail,
-            property: lease.property,
-            room: lease.room,
-            rent: lease.rent,
-            moveIn: lease.moveIn,
-            leaseEnd: lease.leaseEnd,
-            doorCode: doorCode,
-            executedAt: fullDate,
-            chargeRows: generatedCharges.map(c => `${c.desc}: $${c.amount} — due ${c.dueDate}`).join(", "),
-            totalDue: generatedCharges.reduce((s, c) => s + c.amount, 0),
-          })
-        });
-      } catch (e) {
-        console.error("Tenant confirmation email failed:", e);
-      }
-
-      setDone(true);
-    } catch {
-      setErrors(["Save failed — please try again."]);
+    try{
+      const now=new Date().toISOString();
+      const auditEntry={action:"tenant_signed",timestamp:now,ip:"client",userAgent:navigator.userAgent};
+      await supa("lease_instances?id=eq."+lease.id,{
+        method:"PATCH",
+        prefer:"resolution=merge-duplicates",
+        body:JSON.stringify({
+          status:"executed",
+          tenant_sig:signature,
+          tenant_signed_at:now,
+          audit_trail:[auditEntry],
+          updated_at:now,
+        })
+      });
+      setStatus("submitted");
+    }catch(e){
+      console.error(e);
+      alert("Something went wrong. Please try again or contact your property manager.");
     }
     setSubmitting(false);
   };
 
-  const fmtDate = d => {
-    if (!d) return "—";
-    try { return new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); }
-    catch { return d; }
-  };
+  // ── Build variable data for filling ────────────────────────────────
+  const varData=lease?{
+    TENANT_NAME:lease.tenantName||"",
+    MONTHLY_RENT:lease.rent?Number(lease.rent).toLocaleString():"",
+    RENT_WORDS:lease.rentWords||"",
+    SECURITY_DEPOSIT:lease.sd?Number(lease.sd).toLocaleString():"",
+    LEASE_START:fmtD(lease.leaseStart||lease.moveIn),
+    LEASE_END:fmtD(lease.leaseEnd),
+    MOVE_IN_DATE:fmtD(lease.moveIn),
+    PROPERTY_ADDRESS:lease.propertyAddress||lease.property||"",
+    ROOM_NAME:lease.room||"",
+    DOOR_CODE:lease.doorCode||"",
+    UTILITIES_CLAUSE:lease.utilitiesClause||"",
+    LANDLORD_NAME:lease.landlordName||"Carolina Cooper",
+    PARKING_SPACE:lease.parking||"No assigned parking",
+    DAILY_RATE:lease.rent?Math.ceil(Number(lease.rent)/30):"",
+    PRORATED_RENT:lease.proratedRent?Number(lease.proratedRent).toLocaleString():"",
+  }:{};
 
-  if (loading) return (
-    <><style>{CSS}</style>
-    <div className="loading"><div className="loading-inner">
-      <span className="loading-bear">🐻</span>
-      <div>Loading your lease...</div>
-    </div></div></>
-  );
+  const sections=template?.sections||[];
+  const activeSections=sections.filter(s=>s.active!==false);
 
-  if (error) return (
-    <><style>{CSS}</style>
-    <div className="loading"><div className="loading-inner" style={{ color: "#c45c4a" }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
-      <div style={{ fontWeight: 700, marginBottom: 8 }}>Something went wrong</div>
-      <div style={{ fontSize: 13, color: "#999" }}>{error}</div>
-    </div></div></>
-  );
-
-  if (done && lease) {
-    const signedDateStr = lease.executedAt
-      ? (lease.executedAt.includes("T")
-          ? new Date(lease.executedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-          : lease.executedAt)
-      : new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-    const portalUrl = `https://rentblackbear.com/portal?email=${encodeURIComponent(lease.tenantEmail || "")}&name=${encodeURIComponent(lease.tenantName || "")}`;
-    return (
-    <><style>{CSS}</style>
-    <div style={{ background: "#1a1714", minHeight: "100vh" }}>
-      <div className="header" style={{ position: "relative" }}>
-        <div className="logo">🐻 Black Bear <span>Rentals</span></div>
+  // ── Render states ───────────────────────────────────────────────────
+  if(status==="loading") return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",background:"#f4f3f0"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{width:40,height:40,border:"3px solid #d4a853",borderTopColor:"transparent",borderRadius:"50%",animation:"spin 1s linear infinite",margin:"0 auto 16px"}}/>
+        <div style={{fontSize:13,color:"#6b5e52"}}>Loading your lease...</div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
-      <div className="wrap">
-        <div className="done-screen">
-          <div className="done-ic">🎉</div>
-          <h1 style={{ color: "#f5f0e8" }}>Lease Signed!</h1>
-          <p style={{ color: "#c4a882" }}>
-            Your lease has been fully signed. You'll receive a confirmation at {lease.tenantEmail}. Welcome home!
-          </p>
-          <div className="done-detail" style={{ background: "rgba(255,255,255,.06)", borderColor: "rgba(255,255,255,.08)" }}>
-            <div className="done-row"><span style={{ color: "#d4c4a8" }}>Tenant</span><strong style={{ color: "#fff" }}>{lease.tenantName}</strong></div>
-            <div className="done-row"><span style={{ color: "#d4c4a8" }}>Property</span><strong style={{ color: "#fff" }}>{lease.property}</strong></div>
-            <div className="done-row"><span style={{ color: "#d4c4a8" }}>Room</span><strong style={{ color: "#fff" }}>{lease.room}</strong></div>
-            <div className="done-row"><span style={{ color: "#d4c4a8" }}>Monthly Rent</span><strong style={{ color: "#d4a853" }}>${lease.rent?.toLocaleString()}/mo</strong></div>
-            <div className="done-row"><span style={{ color: "#d4c4a8" }}>Move-in</span><strong style={{ color: "#fff" }}>{fmtDate(lease.moveIn)}</strong></div>
-            <div className="done-row"><span style={{ color: "#d4c4a8" }}>Door Code</span><strong style={{ color: "#d4a853", fontFamily: "monospace", letterSpacing: 4 }}>{lease.doorCode || doorCode || "—"}</strong></div>
-            <div className="done-row"><span style={{ color: "#d4c4a8" }}>Signed</span><strong style={{ color: "#6fcf8a" }}>{signedDateStr}</strong></div>
-          </div>
+    </div>
+  );
 
-          {/* Generated charges */}
-          {lease.generatedCharges && lease.generatedCharges.length > 0 && (
-            <div style={{ maxWidth: 420, margin: "20px auto 0", background: "rgba(74,124,89,.08)", border: "1px solid rgba(74,124,89,.25)", borderRadius: 12, padding: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#5aaa72", marginBottom: 12, textTransform: "uppercase", letterSpacing: .5 }}>✓ Charges Added to Your Account</div>
-              {lease.generatedCharges.map((c, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "9px 0", borderBottom: "1px solid rgba(255,255,255,.07)", fontSize: 13 }}>
-                  <div style={{ textAlign: "left" }}>
-                    <div style={{ fontWeight: 600, color: "#fff", marginBottom: 2 }}>{c.desc}</div>
-                    <div style={{ fontSize: 11, color: "#d4c4a8" }}>Due {c.dueDate}</div>
-                  </div>
-                  <strong style={{ color: "#d4a853", flexShrink: 0, marginLeft: 16 }}>${c.amount?.toLocaleString()}</strong>
-                </div>
-              ))}
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontWeight: 800, fontSize: 15, color: "#f5f0e8", borderTop: "1px solid rgba(255,255,255,.12)", marginTop: 4 }}>
-                <span>Total Due</span>
-                <span style={{ color: "#d4a853" }}>${lease.generatedCharges.reduce((s, c) => s + (Number(c.amount)||0), 0).toLocaleString()}</span>
-              </div>
-            </div>
-          )}
+  if(status==="not_found") return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",background:"#f4f3f0",padding:24}}>
+      <div style={{textAlign:"center",maxWidth:400}}>
+        <div style={{fontSize:32,marginBottom:12}}>🔍</div>
+        <h2 style={{fontSize:18,fontWeight:700,color:"#1a1714",marginBottom:8}}>Lease Not Found</h2>
+        <p style={{fontSize:13,color:"#6b5e52",lineHeight:1.6}}>This signing link is invalid or has expired. Please contact your property manager for a new link.</p>
+      </div>
+    </div>
+  );
 
-          {/* SD reminder */}
-          <div style={{ maxWidth: 420, margin: "16px auto 0", background: "rgba(212,168,83,.08)", border: "1px solid rgba(212,168,83,.25)", borderRadius: 12, padding: 16, textAlign: "left" }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: "#d4a853", marginBottom: 8, textTransform: "uppercase", letterSpacing: .5 }}>⚡ Next Step — Secure Your Room</div>
-            <div style={{ fontSize: 13, color: "#f0e8d8", lineHeight: 1.7 }}>
-              Submit your <strong style={{ color: "#fff" }}>security deposit</strong> to reserve <strong style={{ color: "#fff" }}>{lease.room}</strong> at <strong style={{ color: "#fff" }}>{lease.property}</strong>. Your room is not secured until the deposit is received.
-            </div>
-          </div>
+  if(status==="already_signed") return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",background:"#f4f3f0",padding:24}}>
+      <div style={{textAlign:"center",maxWidth:400}}>
+        <div style={{width:64,height:64,borderRadius:"50%",background:"rgba(74,124,89,.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
+          <svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style={{fontSize:18,fontWeight:700,color:"#1a1714",marginBottom:8}}>Already Signed</h2>
+        <p style={{fontSize:13,color:"#6b5e52",lineHeight:1.6}}>This lease has already been signed. Your executed copy is available in your tenant portal.</p>
+      </div>
+    </div>
+  );
 
-          {/* Portal link */}
-          <div style={{ maxWidth: 420, margin: "16px auto 0", textAlign: "center" }}>
-            <a href={portalUrl} style={{ display: "inline-block", background: "#d4a853", color: "#1a1714", padding: "14px 32px", borderRadius: 10, fontWeight: 800, fontSize: 14, textDecoration: "none", width: "100%", boxSizing: "border-box" }}>
-              Log In to Tenant Portal →
-            </a>
-            <div style={{ fontSize: 11, color: "#8a7a68", marginTop: 8 }}>View charges, make payments, and manage your tenancy</div>
-          </div>
+  if(status==="submitted") return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",background:"#f4f3f0",padding:24}}>
+      <div style={{textAlign:"center",maxWidth:480}}>
+        <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,124,89,.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}>
+          <svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h1 style={{fontSize:24,fontWeight:700,color:"#1a1714",marginBottom:12}}>Lease Signed!</h1>
+        <p style={{fontSize:14,color:"#5c4a3a",lineHeight:1.7,marginBottom:8}}>
+          Welcome to <strong>{template?.company||"Black Bear Rentals"}</strong>. Your lease has been fully executed and a copy has been sent to your email.
+        </p>
+        <p style={{fontSize:13,color:"#6b5e52",lineHeight:1.6}}>
+          You can view your signed lease anytime in your tenant portal at <strong>rentblackbear.com</strong>.
+        </p>
+        <div style={{marginTop:24,padding:"14px 20px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,fontSize:12,color:"#2d6a3f",lineHeight:1.6}}>
+          Your move-in date is <strong>{fmtD(lease?.moveIn)}</strong>. Your door code is <strong>{lease?.doorCode}</strong>.
         </div>
       </div>
-    </div></>
-  );}
+    </div>
+  );
 
-  if (!lease) return null;
+  if(status==="error") return(
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif",background:"#f4f3f0",padding:24}}>
+      <div style={{textAlign:"center",maxWidth:400}}>
+        <h2 style={{fontSize:18,fontWeight:700,color:"#c45c4a",marginBottom:8}}>Something Went Wrong</h2>
+        <p style={{fontSize:13,color:"#6b5e52"}}>Please try refreshing the page or contact your property manager.</p>
+      </div>
+    </div>
+  );
 
-  const vars = lease.variables || {};
+  // ── Main signing view ───────────────────────────────────────────────
+  return(
+    <div style={{minHeight:"100vh",background:"#f4f3f0",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"}}>
 
-  return (
-    <><style>{CSS}</style>
-    <div>
       {/* Header */}
-      <div className="header" style={{ position: "sticky", top: 0 }}>
-        <div className="logo">🐻 Black Bear <span>Rentals</span></div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <span style={{ fontSize: 11, color: "#c4a882" }}>{totalComplete}/{totalRequired} complete</span>
-          <span className={`status-pill ${pct === 100 ? "status-done" : "status-pending"}`}>
-            {pct === 100 ? "Ready to Submit" : "Signing in Progress"}
-          </span>
+      <div style={{background:"#1a1714",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,color:"#d4a853"}}>{template?.company||"Black Bear Rentals"}</div>
+          <div style={{fontSize:10,color:"rgba(255,255,255,.5)",marginTop:2}}>Residential Lease Agreement — Please review and sign</div>
         </div>
-        <div className="progress-bar"><div className="progress-fill" style={{ width: `${pct}%` }}/></div>
+        <div style={{fontSize:10,color:"rgba(255,255,255,.4)",textAlign:"right"}}>
+          <div>Secure signing</div>
+          <div style={{marginTop:2,display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
+            <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            SSL Encrypted
+          </div>
+        </div>
       </div>
 
-      <div className="wrap">
-        {/* Summary table */}
-        <div className="summary-card">
-          <div className="summary-title">Rental Agreement</div>
-          <div className="summary-sub">Review your lease carefully before signing. All fields marked with initials must be acknowledged.</div>
-          <div className="summary-grid">
-            <div className="summary-row">
-              <div><div className="sum-label">Property</div><div className="sum-val">{lease.property}</div></div>
-              <div><div className="sum-label">Room</div><div className="sum-val">{lease.room}</div></div>
-            </div>
-            <div className="summary-row">
-              <div><div className="sum-label">Lease Start</div><div className="sum-val">{fmtDate(lease.leaseStart)}</div></div>
-              <div><div className="sum-label">Lease End</div><div className="sum-val">{fmtDate(lease.leaseEnd)}</div></div>
-            </div>
-            <div className="summary-row">
-              <div><div className="sum-label">Monthly Rent</div><div className="sum-val sum-highlight">${lease.rent?.toLocaleString()}/mo</div></div>
-              <div><div className="sum-label">Security Deposit</div><div className="sum-val">${lease.sd?.toLocaleString()}</div></div>
-            </div>
-            {lease.proratedRent > 0 && <div className="summary-row">
-              <div><div className="sum-label">Prorated Rent</div><div className="sum-val">${lease.proratedRent?.toLocaleString()}</div></div>
-              <div><div className="sum-label">Tenant</div><div className="sum-val">{lease.tenantName}</div></div>
-            </div>}
-            <div className="summary-row">
-              <div><div className="sum-label">Landlord</div><div className="sum-val">{lease.landlordName || "Carolina Cooper"}</div></div>
-              <div><div className="sum-label">Door Code</div><div className="sum-val">{lease.doorCode || "—"}</div></div>
-            </div>
+      <div style={{maxWidth:760,margin:"0 auto",padding:"24px 16px 60px"}}>
+
+        {/* Summary block */}
+        <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",marginBottom:20,overflow:"hidden"}}>
+          <div style={{padding:"12px 20px",background:"#1a1714",display:"flex",alignItems:"center",gap:10}}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span style={{fontSize:11,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:.8}}>Your Lease Summary</span>
           </div>
-        </div>
-
-        {/* Error bar */}
-        {errors.length > 0 && (
-          <div key={shakeKey} className="error-bar">
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>Please complete the following before submitting:</div>
-            {errors.map((e, i) => <div key={i} className="error-item"><div className="error-dot"/>{e}</div>)}
-          </div>
-        )}
-
-        {/* Lease document */}
-        <div className="lease-doc">
-          <div className="lease-header">
-            <h1>Rental Agreement</h1>
-            <p>{lease.property} · {lease.room} · {fmtDate(lease.leaseStart)}</p>
-          </div>
-          <div className="lease-body">
-
-            {/* Parties intro */}
-            <div className="section">
-              <div className="section-body">
-                <p>This Rental Agreement ("Agreement") is entered into as of <strong>{fmtDate(lease.agreementDate || lease.leaseStart)}</strong>, between:</p>
-                <p><strong>Property Manager/Agent:</strong> {lease.landlordName || "Carolina Cooper"}, {lease.company || "Black Bear Properties"} ("PROPERTY MANAGER"), and</p>
-                <p><strong>Resident(s)/Lessee:</strong> <strong>{lease.tenantName}</strong> ("RESIDENT").</p>
-                <p>As consideration for this agreement, PROPERTY MANAGER agrees to rent/lease to RESIDENT and RESIDENT agrees to rent/lease from PROPERTY MANAGER for use solely as a private residence, the premises located at <strong>{vars.PROPERTY_ADDRESS || lease.propertyAddress}</strong>, in the city of Huntsville, Alabama.</p>
-                <p style={{ fontSize: 11, color: "#999", background: "rgba(0,0,0,.03)", padding: "10px 12px", borderRadius: 7 }}>
-                  This lease is for a portion of the rental residence and not the entire dwelling unit. RESIDENT is entitled to shared use of common areas: living room, kitchen, eating area, hallways, and laundry room.
-                </p>
-              </div>
-            </div>
-
-            {/* Render dynamic sections */}
-            {(lease.sections || []).filter(s => s.active !== false).map((section, idx) => (
-              <div
-                key={section.id}
-                className="section"
-                ref={el => sectionRefs.current[section.id] = el}
-              >
-                <div className="section-num">Section {idx + 1}</div>
-                <div className="section-title">{section.title}</div>
-                <div
-                  className="section-body"
-                  dangerouslySetInnerHTML={{ __html: renderContent(section.content, vars) }}
-                />
-
-                {/* Initials zone */}
-                {section.requiresInitials && (
-                  <div
-                    className={`initials-zone ${initials[section.id] ? "signed" : ""}`}
-                    ref={el => { if (!initials[section.id]) sectionRefs.current[section.id] = el; }}
-                  >
-                    <div>
-                      <div className="initials-label">
-                        {initials[section.id] ? "✓ Initialed" : "⚠ Initials required for this section"}
-                      </div>
-                      <div style={{ fontSize: 10, color: "#bbb", marginTop: 2 }}>Type 2–3 letters to acknowledge</div>
-                    </div>
-                    {initials[section.id]?.length >= 2
-                      ? <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div className="initials-preview">{initials[section.id]}</div>
-                          <button
-                            onClick={() => setInitials(p => ({ ...p, [section.id]: "" }))}
-                            style={{fontSize:9,color:"#999",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontFamily:"inherit"}}
-                          >edit</button>
-                        </div>
-                      : <input
-                          className="initials-input"
-                          maxLength={3}
-                          placeholder="—"
-                          value={initials[section.id] || ""}
-                          autoComplete="off"
-                          onChange={e => {
-                            const val = e.target.value.replace(/[^a-zA-Z]/g,"").toUpperCase().slice(0,3);
-                            setInitials(p => ({ ...p, [section.id]: val }));
-                            setErrors(errs => errs.filter(err => !err.includes(section.title)));
-                            // Auto-advance at 2+ chars
-                            if (val.length >= 2) {
-                              const allSections = (lease.sections || []).filter(s => s.requiresInitials && s.active !== false);
-                              const currentIdx = allSections.findIndex(s => s.id === section.id);
-                              const nextMissing = allSections.slice(currentIdx + 1).find(s => !initials[s.id] || initials[s.id].length < 2);
-                              setTimeout(() => {
-                                if (nextMissing) {
-                                  const el = sectionRefs.current[nextMissing.id];
-                                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                                } else if (!signature) {
-                                  const el = sectionRefs.current["signature"];
-                                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                                }
-                              }, 350);
-                            }
-                          }}
-                        />
-                    }
-                  </div>
-                )}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
+            {[
+              ["Tenant",lease?.tenantName||""],
+              ["Property",lease?.propertyAddress||lease?.property||""],
+              ["Room / Unit",lease?.room||""],
+              ["Monthly Rent",lease?.rent?fmtS(lease.rent):""],
+              ["Security Deposit",lease?.sd?fmtS(lease.sd):""],
+              ["Move-In Date",fmtD(lease?.moveIn)],
+              ["Lease End",fmtD(lease?.leaseEnd)],
+              ["Door Code",lease?.doorCode||""],
+            ].map(([label,value],i)=>(
+              <div key={label} style={{padding:"10px 20px",borderBottom:i<6?"1px solid rgba(0,0,0,.05)":"none",borderRight:i%2===0?"1px solid rgba(0,0,0,.05)":"none",background:i%4<2?"#fff":"rgba(0,0,0,.01)"}}>
+                <div style={{fontSize:9,fontWeight:700,color:"#9a8878",textTransform:"uppercase",letterSpacing:.6,marginBottom:3}}>{label}</div>
+                <div style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>{value||"—"}</div>
               </div>
             ))}
-
-            {/* Door code confirmation */}
-            <div
-              className="section"
-              ref={doorCodeRef}
-            >
-              <div className="section-num">Confirm</div>
-              <div className="section-title">Your Door Code</div>
-              <div className="section-body">
-                <p>Your 4-digit door code is written into this lease and will be programmed into your smart lock. It activates at 12:00am on your move-in day once your security deposit and first month's rent have been received.</p>
-                <p style={{ fontSize: 11, color: "#999" }}>You may change it below if you'd like a different code before signing. Once submitted, contact your property manager to request a change.</p>
-              </div>
-              <div style={{ marginTop: 20, padding: 20, background: "rgba(212,168,83,.04)", border: `2px solid ${errors.some(e => e.includes("Door code")) ? "#c45c4a" : "rgba(212,168,83,.25)"}`, borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#9a7422", textTransform: "uppercase", letterSpacing: .5 }}>🔑 {/^\d{4}$/.test(doorCode) ? "✓ Door Code Set" : "Enter Your 4-Digit Code"}</div>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={doorCode}
-                  onChange={e => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 4);
-                    setDoorCode(val);
-                    if (/^\d{4}$/.test(val)) setErrors(errs => errs.filter(e => !e.includes("Door code")));
-                  }}
-                  placeholder="_ _ _ _"
-                  style={{
-                    width: 130, textAlign: "center", fontSize: 30, fontWeight: 900, letterSpacing: 14,
-                    fontFamily: "monospace", border: `2px solid ${errors.some(e => e.includes("Door code")) ? "#c45c4a" : /^\d{4}$/.test(doorCode) ? "rgba(74,124,89,.4)" : "rgba(212,168,83,.4)"}`,
-                    borderRadius: 10, padding: "12px 8px", outline: "none", background: "#fff",
-                    color: "#1a1714", animation: errors.some(e => e.includes("Door code")) ? "shake .4s ease" : "none"
-                  }}
-                />
-                {/^\d{4}$/.test(doorCode)
-                  ? <div style={{ fontSize: 11, color: "#4a7c59", fontWeight: 600 }}>✓ This code will be programmed into your lock on move-in day</div>
-                  : <div style={{ fontSize: 11, color: "#c45c4a", fontWeight: 600 }}>Must be exactly 4 digits</div>
-                }
-                {errors.some(e => e.includes("Door code")) && (
-                  <div style={{ fontSize: 11, color: "#c45c4a", fontWeight: 700, animation: `shake .4s ease` }}>
-                    Door code must be exactly 4 digits — numbers only
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Final signature */}
-            <div
-              className="section"
-              ref={el => sectionRefs.current["signature"] = el}
-            >
-              <div className="section-num">Signatures</div>
-              <div className="section-title">Receipt of Agreement</div>
-              <div className="section-body">
-                <p>THE RESIDENT UNDERSTANDS THAT THE EXECUTION OF THIS AGREEMENT ENTAILS AN IMPORTANT DECISION THAT HAS LEGAL IMPLICATIONS. RESIDENT IS ADVISED TO SEEK THEIR OWN COUNSEL, LEGAL OR OTHERWISE, REGARDING THE EXECUTION OF THIS AGREEMENT. RESIDENT HEREBY ACKNOWLEDGES THAT THEY HAVE READ THIS AGREEMENT, UNDERSTAND IT, AGREE TO IT, AND HAVE BEEN GIVEN A COPY.</p>
-                <p style={{ fontSize: 11, color: "#999" }}>Electronic signatures are legally valid under the E-SIGN Act. By drawing your signature below, you agree to be legally bound by this Agreement.</p>
-              </div>
-
-              {/* Landlord signature (already signed) */}
-              <div style={{ marginTop: 20, padding: 14, background: "rgba(74,124,89,.04)", border: "1px solid rgba(74,124,89,.15)", borderRadius: 10 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#4a7c59", marginBottom: 8, textTransform: "uppercase", letterSpacing: .5 }}>Property Manager (Signed)</div>
-                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                  {lease.landlordSignature
-                    ? <img src={lease.landlordSignature} alt="Landlord signature" className="sig-preview"/>
-                    : <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, color: "#1a1714" }}>{lease.landlordName || "Carolina Cooper"}</div>
-                  }
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 700 }}>{lease.landlordName || "Carolina Cooper"}</div>
-                    <div style={{ fontSize: 10, color: "#999" }}>{lease.company || "Black Bear Properties"}</div>
-                    <div style={{ fontSize: 10, color: "#999" }}>{lease.landlordSignedAt ? new Date(lease.landlordSignedAt).toLocaleDateString() : "—"}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tenant signature */}
-              <div className={`sig-zone ${signature ? "signed" : ""}`} style={{ marginTop: 16 }}>
-                <div className="sig-label">{signature ? "✓ Signature Captured" : "RESIDENT — Draw your signature below"}</div>
-                {signature ? (
-                  <div>
-                    <img src={signature} alt="Your signature" className="sig-preview"/>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 700 }}>{lease.tenantName}</div>
-                        <div style={{ fontSize: 10, color: "#999" }}>RESIDENT · {new Date().toLocaleDateString()}</div>
-                      </div>
-                      <button className="btn btn-out btn-sm" onClick={() => { setSignature(null); setShowSigCanvas(true); }}>Re-sign</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    {!showSigCanvas
-                      ? <button className="btn btn-gold" onClick={() => setShowSigCanvas(true)} style={{ width: "100%" }}>✍ Draw My Signature</button>
-                      : <SigCanvas onSave={(data) => {
-                          setSignature(data);
-                          setShowSigCanvas(false);
-                          setErrors(errs => errs.filter(e => !e.includes("signature")));
-                          // Scroll to submit bar after signing
-                          setTimeout(() => {
-                            const el = document.querySelector(".sticky-bar");
-                            if (el) el.scrollIntoView({ behavior: "smooth", block: "end" });
-                          }, 400);
-                        }} />
-                    }
-                  </div>
-                )}
-              </div>
-            </div>
-
           </div>
         </div>
 
-        {/* Error bar at bottom too */}
-        {errors.length > 0 && (
-          <div key={`bottom-${shakeKey}`} className="error-bar">
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>Still missing:</div>
-            {errors.map((e, i) => <div key={i} className="error-item"><div className="error-dot"/>{e}</div>)}
+        {/* Instructions */}
+        <div style={{padding:"12px 16px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.25)",borderRadius:10,marginBottom:20,fontSize:12,color:"#9a7422",lineHeight:1.6}}>
+          <strong>Please read your entire lease before signing.</strong> Your signature at the bottom will serve as your initials for all sections marked with an initials line. Make sure you understand and agree to all terms before proceeding.
+        </div>
+
+        {/* Lease document */}
+        <div ref={docRef} style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",padding:"32px 40px",marginBottom:20,maxHeight:"70vh",overflowY:"auto"}}>
+
+          {/* Document header */}
+          <div style={{textAlign:"center",marginBottom:32,paddingBottom:24,borderBottom:"2px solid #1a1714"}}>
+            <div style={{fontSize:20,fontWeight:700,color:"#1a1714",fontFamily:"Georgia,serif",marginBottom:4}}>{template?.company||"Black Bear Rentals"}</div>
+            <div style={{fontSize:12,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1}}>Residential Co-Living Lease Agreement</div>
+            <div style={{fontSize:11,color:"#9a8878",marginTop:4}}>Agreement Date: {fmtD(new Date().toISOString().split("T")[0])}</div>
+          </div>
+
+          {/* Parties */}
+          <div style={{display:"flex",gap:16,marginBottom:28}}>
+            <div style={{flex:1,padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Property Manager</div>
+              <div style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>{template?.landlordName||lease?.landlordName||"Carolina Cooper"}</div>
+              <div style={{fontSize:11,color:"#6b5e52"}}>{template?.company||"Black Bear Rentals"}</div>
+            </div>
+            <div style={{flex:1,padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Resident</div>
+              <div style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>{lease?.tenantName||""}</div>
+              <div style={{fontSize:11,color:"#6b5e52"}}>{lease?.propertyAddress||""} · {lease?.room||""}</div>
+            </div>
+          </div>
+
+          {/* Sections */}
+          {activeSections.map((sec,i)=>(
+            <div key={sec.id} style={{marginBottom:28}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                <div style={{width:24,height:24,borderRadius:"50%",background:"#1a1714",color:"#d4a853",fontSize:10,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"Georgia,serif"}}>{i+1}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#1a1714",fontFamily:"Georgia,serif",textTransform:"uppercase",letterSpacing:.3}}>{sec.title}</div>
+              </div>
+              <div style={{paddingLeft:34,fontSize:12,lineHeight:1.85,color:"#2c2420",fontFamily:"Georgia,serif"}}
+                dangerouslySetInnerHTML={{__html:fillVars(sec.content,varData)}}/>
+              {sec.requiresInitials&&(
+                <div style={{paddingLeft:34,marginTop:14,display:"flex",alignItems:"center",gap:20}}>
+                  {signature
+                    ?<div style={{display:"flex",alignItems:"center",gap:10,padding:"6px 14px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8}}>
+                       <img src={signature} alt="initials" style={{height:28,maxWidth:80,objectFit:"contain"}}/>
+                       <span style={{fontSize:10,color:"#4a7c59",fontWeight:600}}>Initialed</span>
+                     </div>
+                    :<div style={{display:"flex",alignItems:"center",gap:8}}>
+                       <div style={{width:80,borderBottom:"1px solid #1a1714",height:24,display:"flex",alignItems:"flex-end",paddingBottom:2}}>
+                         <span style={{fontSize:9,color:"#bbb"}}>Resident</span>
+                       </div>
+                       <span style={{fontSize:10,color:"#9a8878"}}>— sign below to initial all sections</span>
+                     </div>
+                  }
+                </div>
+              )}
+              {i<activeSections.length-1&&<div style={{marginTop:20,borderBottom:"0.5px solid rgba(0,0,0,.07)"}}/>}
+            </div>
+          ))}
+
+          {/* Page footer */}
+          <div style={{marginTop:32,paddingTop:16,borderTop:"1px solid rgba(0,0,0,.08)",textAlign:"center",fontSize:10,color:"#bbb",fontFamily:"Georgia,serif"}}>
+            {template?.company||"Black Bear Rentals"} — Alabama Residential Co-Living Lease Agreement
+          </div>
+        </div>
+
+        {/* Scroll prompt */}
+        {!scrolledToBottom&&(
+          <div style={{textAlign:"center",marginBottom:16,fontSize:11,color:"#9a8878",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            Scroll through the full lease above before signing
           </div>
         )}
+
+        {/* Landlord signature block */}
+        <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",padding:20,marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:12}}>Property Manager Signature</div>
+          {lease?.landlordSig
+            ?<div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8}}>
+               <img src={lease.landlordSig} alt="PM signature" style={{height:40,maxWidth:160,objectFit:"contain"}}/>
+               <div>
+                 <div style={{fontSize:11,fontWeight:600,color:"#2d6a3f"}}>{template?.landlordName||"Carolina Cooper"}</div>
+                 <div style={{fontSize:10,color:"#6b5e52"}}>Signed {fmtD(lease?.landlordSignedAt?.split("T")[0])}</div>
+               </div>
+            </div>
+            :<div style={{fontSize:11,color:"#9a8878",fontStyle:"italic"}}>Property manager signature pending</div>
+          }
+        </div>
+
+        {/* Tenant signature block */}
+        <div style={{background:"#fff",borderRadius:12,border:`2px solid ${sigError?"#c45c4a":"rgba(0,0,0,.08)"}`,padding:24,marginBottom:20,transition:"border-color .2s"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:4}}>Your Signature</div>
+          <div style={{fontSize:11,color:"#9a8878",marginBottom:16,lineHeight:1.5}}>
+            By signing below, you confirm that you have read, understand, and agree to all terms of this lease agreement. Your signature will also serve as your initials on all sections above.
+          </div>
+          {signature
+            ?<div>
+               <div style={{padding:"10px 14px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8,display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+                 <img src={signature} alt="Your signature" style={{height:50,maxWidth:200,objectFit:"contain"}}/>
+                 <div>
+                   <div style={{fontSize:11,fontWeight:600,color:"#2d6a3f"}}>{lease?.tenantName||"Resident"}</div>
+                   <div style={{fontSize:10,color:"#6b5e52"}}>Signature captured</div>
+                 </div>
+               </div>
+               <button onClick={()=>setSignature(null)} style={{fontSize:10,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Re-draw Signature</button>
+             </div>
+            :<SigCanvas onSave={setSignature} height={140} label="Draw your full signature here"/>
+          }
+          {sigError&&<div style={{marginTop:10,fontSize:11,color:"#c45c4a",fontWeight:600,animation:"shake .4s ease"}}>Please draw your signature before submitting.</div>}
+        </div>
+
+        {/* Legal acknowledgment */}
+        <div style={{fontSize:11,color:"#9a8878",lineHeight:1.6,marginBottom:20,padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.06)"}}>
+          By clicking "Sign Lease Agreement" below, you acknowledge that your electronic signature is legally binding and has the same force and effect as a handwritten signature, in accordance with the Electronic Signatures in Global and National Commerce Act (E-SIGN Act).
+        </div>
+
+        {/* Submit button */}
+        <button onClick={submit} disabled={submitting}
+          style={{width:"100%",padding:"16px 24px",fontSize:15,fontWeight:700,background:submitting?"#ccc":"#1a1714",color:submitting?"#999":"#d4a853",border:"none",borderRadius:10,cursor:submitting?"not-allowed":"pointer",fontFamily:"inherit",letterSpacing:.3,transition:"all .2s"}}>
+          {submitting?"Submitting...":"Sign Lease Agreement"}
+        </button>
+
+        <div style={{textAlign:"center",marginTop:12,fontSize:10,color:"#bbb"}}>
+          Having trouble? Contact {lease?.landlordName||"your property manager"} at blackbearhousing@gmail.com
+        </div>
       </div>
 
-      {/* Sticky submit bar */}
-      <div className="sticky-bar">
-        {totalComplete < totalRequired && (
-          <span className="remaining-badge">{totalRequired - totalComplete} remaining</span>
-        )}
-        <button
-          className="btn btn-gold"
-          disabled={submitting}
-          onClick={handleSubmit}
-          style={{ minWidth: 180 }}
-        >
-          {submitting ? "Submitting..." : pct === 100 ? "✓ Submit Signed Lease" : "Submit Lease"}
-        </button>
-      </div>
-    </div></>
+      <style>{`
+        @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+        *{box-sizing:border-box}
+        body{margin:0}
+      `}</style>
+    </div>
   );
 }
