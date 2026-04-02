@@ -2,7 +2,6 @@
 import { syncTenantToSupabase } from "@/lib/syncTenant";
 import LeaseModal from "./components/LeaseModal";
 import TemplateEditor from "./components/TemplateEditor";
-import TemplateEditor from "./components/TemplateEditor";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
