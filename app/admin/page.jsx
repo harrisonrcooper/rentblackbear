@@ -5731,72 +5731,6 @@ export default function Page(){
                 </>);})()}
           </div>
 
-          {/* ── Room Status / Timeline ── shows when a room is selected */}
-          {leaseForm.roomId&&(()=>{
-            const lrRoom=props.flatMap(p=>allRooms(p)).find(r=>r.id===leaseForm.roomId);
-            const cur=lrRoom?.tenant||null;
-            const curLe=lrRoom?.le||null;
-            const mi=leaseForm.moveIn||null;
-            const newLe=leaseForm.leaseEnd||null;
-            const isOcc=!!cur;
-            const isOverlap=isOcc&&curLe&&mi&&mi<curLe;
-            // 5-month window: prev month → +4
-            const win0=new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1);
-            const win1=new Date(TODAY.getFullYear(),TODAY.getMonth()+4,1);
-            const totalDays=Math.ceil((win1-win0)/86400000);
-            const toX=(ds)=>{if(!ds)return null;const d=Math.ceil((new Date(ds+"T00:00:00")-win0)/86400000);return Math.max(0,Math.min(100,(d/totalDays)*100));};
-            const todayX=toX(TODAY.toISOString().split("T")[0]);
-            const curMiX=cur?.moveIn?toX(cur.moveIn):null;
-            const curLeX=curLe?toX(curLe):null;
-            const newMiX=mi?toX(mi):null;
-            const newLeX=newLe?toX(newLe):null;
-            return(
-            <div style={{marginBottom:14,borderRadius:8,border:`1px solid ${isOverlap?"rgba(196,92,74,.4)":"rgba(0,0,0,.07)"}`,overflow:"hidden"}}>
-              {/* Header */}
-              <div style={{padding:"8px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",background:isOverlap?"rgba(196,92,74,.06)":isOcc?"rgba(212,168,83,.04)":"rgba(74,124,89,.04)",borderBottom:"1px solid rgba(0,0,0,.05)"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:7,height:7,borderRadius:"50%",background:isOverlap?"#c45c4a":isOcc?"#d4a853":"#4a7c59",flexShrink:0}}/>
-                  {isOcc
-                    ?<span style={{fontSize:11,fontWeight:700,color:isOverlap?"#c45c4a":"#9a7422"}}>
-                      {isOverlap?"⚠ Overlap — ":""}<strong>{cur.name}</strong> in this room until <strong>{fmtD(curLe)}</strong>
-                    </span>
-                    :<span style={{fontSize:11,fontWeight:700,color:"#4a7c59"}}>Vacant &mdash; available now</span>
-                  }
-                </div>
-                {isOverlap&&<span style={{fontSize:10,fontWeight:700,color:"#c45c4a",background:"rgba(196,92,74,.1)",padding:"2px 8px",borderRadius:4,flexShrink:0}}>
-                  {Math.ceil((new Date(curLe+"T00:00:00")-new Date(mi+"T00:00:00"))/(86400000))}d conflict
-                </span>}
-              </div>
-              {/* Mini Gantt */}
-              <div style={{padding:"8px 12px 6px",background:"#fff"}}>
-                <div style={{position:"relative",height:38,borderRadius:5,background:"rgba(0,0,0,.02)",overflow:"hidden"}}>
-                  <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"#c45c4a",zIndex:4,opacity:.6}}/>
-                  {/* Current tenant bar */}
-                  {isOcc&&curMiX!==null&&curLeX!==null&&<div style={{position:"absolute",left:Math.max(0,curMiX)+"%",width:Math.max(0,curLeX-Math.max(0,curMiX))+"%",top:3,height:14,background:isOverlap?"rgba(196,92,74,.25)":"rgba(212,168,83,.35)",border:`1px solid ${isOverlap?"rgba(196,92,74,.5)":"rgba(212,168,83,.6)"}`,borderRadius:3,display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
-                    <span style={{fontSize:8,fontWeight:700,color:isOverlap?"#c45c4a":"#9a7422",whiteSpace:"nowrap"}}>{cur.name}</span>
-                  </div>}
-                  {/* Current lease end tick */}
-                  {isOcc&&curLeX!==null&&curLeX>=0&&curLeX<=100&&<div style={{position:"absolute",left:curLeX+"%",top:1,width:1.5,height:18,background:isOverlap?"#c45c4a":"#d4a853",zIndex:3}}/>}
-                  {/* New tenant proposed bar */}
-                  {newMiX!==null&&<div style={{position:"absolute",left:Math.max(0,newMiX)+"%",width:newLeX?Math.max(2,newLeX-Math.max(0,newMiX))+"%":"18%",top:21,height:14,background:isOverlap?"rgba(196,92,74,.15)":"rgba(59,130,246,.2)",border:`1px solid ${isOverlap?"rgba(196,92,74,.35)":"rgba(59,130,246,.4)"}`,borderRadius:3,display:"flex",alignItems:"center",paddingLeft:3,overflow:"hidden"}}>
-                    <span style={{fontSize:8,fontWeight:700,color:isOverlap?"#c45c4a":"#1d4ed8",whiteSpace:"nowrap"}}>{(leaseForm.tenantName||"New tenant")}</span>
-                  </div>}
-                </div>
-                {/* Month labels */}
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:3,paddingLeft:1,paddingRight:1}}>
-                  {Array.from({length:5},(_,i)=>{const d=new Date(TODAY.getFullYear(),TODAY.getMonth()-1+i,1);return(<span key={i} style={{fontSize:8,color:"#9a7067"}}>{d.toLocaleString("default",{month:"short"})}</span>);})}</div>
-              </div>
-              {/* Overlap action bar */}
-              {isOverlap&&mi&&<div style={{padding:"7px 12px",borderTop:"1px solid rgba(196,92,74,.15)",background:"rgba(196,92,74,.03)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                <span style={{fontSize:10,color:"#c45c4a",lineHeight:1.4}}>New move-in {fmtD(mi)} overlaps existing lease ending {fmtD(curLe)}. Adjust dates or coordinate early termination.</span>
-                <button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.4)",whiteSpace:"nowrap",flexShrink:0}}
-                  onClick={()=>{const d=new Date(curLe+"T00:00:00");const le=new Date(d);le.setFullYear(le.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:curLe,leaseStart:curLe,leaseEnd:le.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));}}>
-                  Use {fmtD(curLe)}
-                </button>
-              </div>}
-            </div>);
-          })()}
-
           {(()=>{
             const locked=leaseForm._lockedFromApp&&!leaseForm._leaseEditing;
             const ro=(val)=><div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:12,color:locked?"#6b5e52":"#1a1714",fontWeight:locked?400:500,minHeight:34,display:"flex",alignItems:"center"}}>{val||<span style={{color:"#aaa"}}>—</span>}</div>;
@@ -5849,13 +5783,15 @@ export default function Page(){
                   {leaseForm._errors?.leaseEnd&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.leaseEnd}</div>}
                 </div>
               </div>
-              {/* ── Mini Tenant Timeline + Turnover Buffer ── */}
+              {/* ── Tenant Timeline + Turnover Buffer ── always visible when room selected */}
               {leaseForm.roomId&&(()=>{
                 const tlRoom=props.flatMap(p=>allRooms(p)).find(r=>r.id===leaseForm.roomId);
                 const tlCur=tlRoom?.tenant||null;
                 const tlCurLe=tlRoom?.le||null;
                 const tlMi=leaseForm.moveIn||null;
                 const tlLe=leaseForm.leaseEnd||null;
+                const isOcc=!!tlCur;
+                const isOverlap=isOcc&&tlCurLe&&tlMi&&tlMi<tlCurLe;
                 const bufDays=leaseForm._bufferDays??7;
                 const bufEnd=tlCurLe?(()=>{const d=new Date(tlCurLe+"T00:00:00");d.setDate(d.getDate()+bufDays);return d.toISOString().split("T")[0];})():null;
                 const anchor=tlMi||tlCurLe||TODAY.toISOString().split("T")[0];
@@ -5866,61 +5802,87 @@ export default function Page(){
                 const toX=(ds)=>{if(!ds)return null;const d=Math.ceil((new Date(ds+"T00:00:00")-win0)/86400000);return Math.max(0,Math.min(100,(d/totalDays)*100));};
                 const todayX=toX(TODAY.toISOString().split("T")[0]);
                 const months=Array.from({length:6},(_,i)=>{const d=new Date(win0);d.setMonth(d.getMonth()+i);return{label:d.toLocaleString("default",{month:"short"}),x:toX(d.toISOString().split("T")[0])};});
-                const twoRows=!!tlCur;
+                const twoRows=isOcc;
+                const curBarBg=isOverlap?"rgba(196,92,74,.22)":"rgba(212,168,83,.28)";
+                const curBarBorder=isOverlap?"rgba(196,92,74,.5)":"rgba(212,168,83,.55)";
+                const curBarText=isOverlap?"#c45c4a":"#9a7422";
+                const newBarBg=isOverlap?"rgba(196,92,74,.15)":"rgba(59,130,246,.18)";
+                const newBarBorder=isOverlap?"rgba(196,92,74,.4)":"rgba(59,130,246,.42)";
+                const newBarText=isOverlap?"#c45c4a":"#1d4ed8";
                 return(
-                <div style={{marginTop:4,marginBottom:10,background:"rgba(0,0,0,.018)",border:"0.5px solid rgba(0,0,0,.08)",borderRadius:8,padding:"8px 10px"}}>
-                  {/* Header */}
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                    <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",letterSpacing:.3}}>TENANT TIMELINE</div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      {/* Turnover buffer control */}
-                      <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(255,255,255,.7)",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:5,padding:"2px 6px"}}>
-                        <span style={{fontSize:9,color:"#9a7067",fontWeight:600}}>Turnover buffer</span>
-                        <button onClick={()=>setLeaseForm(p=>({...p,_bufferDays:Math.max(0,(p._bufferDays??7)-1)}))} style={{width:16,height:16,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
-                        <span style={{fontSize:11,fontWeight:800,color:"#1a1714",minWidth:22,textAlign:"center"}}>{bufDays}d</span>
-                        <button onClick={()=>setLeaseForm(p=>({...p,_bufferDays:(p._bufferDays??7)+1}))} style={{width:16,height:16,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
+                <div style={{marginTop:4,marginBottom:10,border:`0.5px solid ${isOverlap?"rgba(196,92,74,.35)":"rgba(0,0,0,.08)"}`,borderRadius:8,overflow:"hidden"}}>
+                  {/* Status header */}
+                  <div style={{padding:"7px 10px",display:"flex",justifyContent:"space-between",alignItems:"center",background:isOverlap?"rgba(196,92,74,.06)":isOcc?"rgba(212,168,83,.05)":"rgba(74,124,89,.04)",borderBottom:`1px solid ${isOverlap?"rgba(196,92,74,.12)":"rgba(0,0,0,.05)"}`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0,flex:1}}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:isOverlap?"#c45c4a":isOcc?"#d4a853":"#4a7c59",flexShrink:0}}/>
+                      {isOcc
+                        ?<span style={{fontSize:10,fontWeight:700,color:isOverlap?"#c45c4a":"#9a7422",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {isOverlap&&<svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:3,verticalAlign:"middle",flexShrink:0}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+                          {isOverlap?"Overlap — ":""}<strong>{tlCur.name}</strong> in this room until <strong>{fmtD(tlCurLe)}</strong>
+                        </span>
+                        :<span style={{fontSize:10,fontWeight:700,color:"#4a7c59"}}>Vacant &mdash; available now</span>
+                      }
+                      {isOverlap&&<span style={{fontSize:9,fontWeight:700,color:"#c45c4a",background:"rgba(196,92,74,.1)",padding:"2px 7px",borderRadius:4,flexShrink:0,marginLeft:4}}>
+                        {Math.ceil((new Date(tlCurLe+"T00:00:00")-new Date(tlMi+"T00:00:00"))/(86400000))}d conflict
+                      </span>}
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0,marginLeft:8}}>
+                      {/* Buffer control */}
+                      <div style={{display:"flex",alignItems:"center",gap:3,background:"rgba(255,255,255,.8)",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:5,padding:"2px 5px"}}>
+                        <span style={{fontSize:8,color:"#9a7067",fontWeight:600}}>Buffer</span>
+                        <button onClick={()=>setLeaseForm(p=>({...p,_bufferDays:Math.max(0,(p._bufferDays??7)-1)}))} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
+                        <span style={{fontSize:10,fontWeight:800,color:"#1a1714",minWidth:20,textAlign:"center"}}>{bufDays}d</span>
+                        <button onClick={()=>setLeaseForm(p=>({...p,_bufferDays:(p._bufferDays??7)+1}))} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
                       </div>
-                      {/* Open full timeline */}
-                      <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(20,Math.floor(window.innerWidth/2)-340),y:40}}))} style={{fontSize:9,fontWeight:700,color:"#1d4ed8",background:"rgba(59,130,246,.07)",border:"0.5px solid rgba(59,130,246,.25)",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,lineHeight:1}}>
-                        <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>
+                      {/* Full timeline button */}
+                      <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(20,Math.floor(window.innerWidth/2)-340),y:40}}))} style={{fontSize:8,fontWeight:700,color:"#1d4ed8",background:"rgba(59,130,246,.07)",border:"0.5px solid rgba(59,130,246,.25)",borderRadius:5,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,lineHeight:1}}>
+                        <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>
                         Full Timeline
                       </button>
                     </div>
                   </div>
-                  {/* Month headers */}
-                  <div style={{position:"relative",height:13,marginBottom:2}}>
-                    {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:7.5,color:"#bbb",transform:"translateX(-50%)",whiteSpace:"nowrap",pointerEvents:"none"}}>{m.label}</div>)}
+                  {/* Gantt */}
+                  <div style={{padding:"8px 10px 7px",background:"#fff"}}>
+                    <div style={{position:"relative",height:13,marginBottom:3}}>
+                      {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:7.5,color:"#bbb",transform:"translateX(-50%)",whiteSpace:"nowrap",pointerEvents:"none"}}>{m.label}</div>)}
+                    </div>
+                    <div style={{position:"relative",height:twoRows?56:30,background:"rgba(0,0,0,.015)",borderRadius:5,overflow:"hidden",border:"0.5px solid rgba(0,0,0,.06)"}}>
+                      {todayX!==null&&<div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"rgba(196,92,74,.5)",zIndex:5}}/>}
+                      {/* Current tenant bar — top row */}
+                      {tlCur&&tlCur.moveIn&&tlCurLe&&toX(tlCur.moveIn)!==null&&toX(tlCurLe)!==null&&(
+                        <div style={{position:"absolute",left:Math.max(0,toX(tlCur.moveIn))+"%",width:Math.max(0,toX(tlCurLe)-Math.max(0,toX(tlCur.moveIn)))+"%",top:4,height:18,background:curBarBg,border:`1px solid ${curBarBorder}`,borderRadius:3,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden",boxSizing:"border-box"}}>
+                          <span style={{fontSize:8,fontWeight:700,color:curBarText,whiteSpace:"nowrap"}}>{tlCur.name}</span>
+                        </div>
+                      )}
+                      {/* Turnover buffer bar */}
+                      {tlCurLe&&bufDays>0&&toX(tlCurLe)!==null&&bufEnd&&toX(bufEnd)!==null&&(
+                        <div style={{position:"absolute",left:toX(tlCurLe)+"%",width:Math.max(0,toX(bufEnd)-toX(tlCurLe))+"%",top:4,height:18,background:"repeating-linear-gradient(45deg,rgba(120,100,80,.07),rgba(120,100,80,.07) 3px,transparent 3px,transparent 7px)",border:"1px dashed rgba(150,130,110,.5)",borderLeft:"none",borderRadius:"0 3px 3px 0",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",boxSizing:"border-box"}}>
+                          <span style={{fontSize:7,fontWeight:700,color:"#9a7067",whiteSpace:"nowrap"}}>{bufDays}d</span>
+                        </div>
+                      )}
+                      {/* New tenant bar — bottom row if occupied, only row if vacant */}
+                      {tlMi&&toX(tlMi)!==null&&(
+                        <div style={{position:"absolute",left:Math.max(0,toX(tlMi))+"%",width:tlLe&&toX(tlLe)!==null?Math.max(2,toX(tlLe)-Math.max(0,toX(tlMi)))+"%":"20%",top:twoRows?34:4,height:18,background:newBarBg,border:`1px solid ${newBarBorder}`,borderRadius:3,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden",boxSizing:"border-box"}}>
+                          <span style={{fontSize:8,fontWeight:700,color:newBarText,whiteSpace:"nowrap"}}>{leaseForm.tenantName||"New tenant"}</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Legend */}
+                    <div style={{display:"flex",gap:8,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
+                      {tlCur&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,background:curBarBg,border:`1px solid ${curBarBorder}`}}/>{tlCur.name}</div>}
+                      {tlCurLe&&bufDays>0&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,border:"1px dashed rgba(150,130,110,.5)"}}/>{bufDays}d turnover buffer</div>}
+                      {tlMi&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,background:newBarBg,border:`1px solid ${newBarBorder}`}}/>{leaseForm.tenantName||"New tenant"}</div>}
+                      <div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067",marginLeft:"auto"}}><div style={{width:1.5,height:10,background:"rgba(196,92,74,.5)"}}/> Today</div>
+                    </div>
                   </div>
-                  {/* Gantt bars */}
-                  <div style={{position:"relative",height:twoRows?56:30,background:"rgba(0,0,0,.015)",borderRadius:5,overflow:"hidden",border:"0.5px solid rgba(0,0,0,.06)"}}>
-                    {/* Today line */}
-                    {todayX!==null&&<div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"rgba(196,92,74,.5)",zIndex:5}}/>}
-                    {/* Current tenant bar — top row */}
-                    {tlCur&&tlCur.moveIn&&tlCurLe&&toX(tlCur.moveIn)!==null&&toX(tlCurLe)!==null&&(
-                      <div style={{position:"absolute",left:Math.max(0,toX(tlCur.moveIn))+"%",width:Math.max(0,toX(tlCurLe)-Math.max(0,toX(tlCur.moveIn)))+"%",top:4,height:18,background:"rgba(212,168,83,.28)",border:"1px solid rgba(212,168,83,.55)",borderRadius:3,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden",boxSizing:"border-box"}}>
-                        <span style={{fontSize:8,fontWeight:700,color:"#9a7422",whiteSpace:"nowrap"}}>{tlCur.name}</span>
-                      </div>
-                    )}
-                    {/* Turnover buffer bar — immediately after curLe, top row */}
-                    {tlCurLe&&bufDays>0&&toX(tlCurLe)!==null&&bufEnd&&toX(bufEnd)!==null&&(
-                      <div style={{position:"absolute",left:toX(tlCurLe)+"%",width:Math.max(0,toX(bufEnd)-toX(tlCurLe))+"%",top:4,height:18,background:"repeating-linear-gradient(45deg,rgba(120,100,80,.07),rgba(120,100,80,.07) 3px,transparent 3px,transparent 7px)",border:"1px dashed rgba(150,130,110,.5)",borderLeft:"none",borderRadius:"0 3px 3px 0",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",boxSizing:"border-box"}}>
-                        <span style={{fontSize:7,fontWeight:700,color:"#9a7067",whiteSpace:"nowrap"}}>{bufDays}d</span>
-                      </div>
-                    )}
-                    {/* New tenant proposed bar — bottom row if occupied, only row if vacant */}
-                    {tlMi&&toX(tlMi)!==null&&(
-                      <div style={{position:"absolute",left:Math.max(0,toX(tlMi))+"%",width:tlLe&&toX(tlLe)!==null?Math.max(2,toX(tlLe)-Math.max(0,toX(tlMi)))+"%":"20%",top:twoRows?34:4,height:18,background:"rgba(59,130,246,.18)",border:"1px solid rgba(59,130,246,.42)",borderRadius:3,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden",boxSizing:"border-box"}}>
-                        <span style={{fontSize:8,fontWeight:700,color:"#1d4ed8",whiteSpace:"nowrap"}}>{leaseForm.tenantName||"New tenant"}</span>
-                      </div>
-                    )}
-                  </div>
-                  {/* Legend */}
-                  <div style={{display:"flex",gap:10,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
-                    {tlCur&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,background:"rgba(212,168,83,.28)",border:"1px solid rgba(212,168,83,.55)"}}/>{tlCur.name}</div>}
-                    {tlCurLe&&bufDays>0&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,border:"1px dashed rgba(150,130,110,.5)"}}/>{bufDays}d turnover buffer</div>}
-                    {tlMi&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,background:"rgba(59,130,246,.18)",border:"1px solid rgba(59,130,246,.42)"}}/>{leaseForm.tenantName||"New tenant"}</div>}
-                    <div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067",marginLeft:"auto"}}><div style={{width:1.5,height:10,background:"rgba(196,92,74,.5)"}}/> Today</div>
-                  </div>
+                  {/* Overlap action footer */}
+                  {isOverlap&&tlMi&&<div style={{padding:"7px 12px",borderTop:"1px solid rgba(196,92,74,.15)",background:"rgba(196,92,74,.03)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:10,color:"#c45c4a",lineHeight:1.4}}>New move-in {fmtD(tlMi)} overlaps existing lease ending {fmtD(tlCurLe)}. Adjust dates or coordinate early termination.</span>
+                    <button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.4)",whiteSpace:"nowrap",flexShrink:0}}
+                      onClick={()=>{const d=new Date(tlCurLe+"T00:00:00");const le=new Date(d);le.setFullYear(le.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:tlCurLe,leaseStart:tlCurLe,leaseEnd:le.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));}}>
+                      Use {fmtD(tlCurLe)}
+                    </button>
+                  </div>}
                 </div>);
               })()}
               <div className="fr">
