@@ -7633,12 +7633,33 @@ export default function Page(){
     const isPending=l.status==="pending_tenant";
     const isDraft=l.status==="draft";
 
-    // Variable replacement for lease preview
+    // Variable replacement for lease preview — use real lease data
+    const fmtDLocal=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;};
+    const varMap={
+      TENANT_NAME:l.tenantName||"",
+      MONTHLY_RENT:l.rent?Number(l.rent).toLocaleString():"",
+      RENT_WORDS:l.rentWords||"",
+      SECURITY_DEPOSIT:l.sd?Number(l.sd).toLocaleString():"",
+      LEASE_START:fmtDLocal(l.leaseStart||l.moveIn),
+      LEASE_END:fmtDLocal(l.leaseEnd),
+      MOVE_IN_DATE:fmtDLocal(l.moveIn),
+      PROPERTY_ADDRESS:l.propertyAddress||l.property||"",
+      ROOM_NAME:l.room||"",
+      DOOR_CODE:l.doorCode||"",
+      UTILITIES_CLAUSE:l.utilitiesClause||"",
+      LANDLORD_NAME:l.landlordName||"Carolina Cooper",
+      PARKING_SPACE:l.parking||"No assigned parking",
+      DAILY_RATE:l.rent?Math.ceil(Number(l.rent)/30):"",
+      PRORATED_RENT:l.proratedRent?Number(l.proratedRent).toLocaleString():"",
+    };
     const fillVars=(text)=>{
       if(!text)return"";
-      const v=l.variables||{};
-      return text.replace(/\{\{(\w+)\}\}/g,(_,k)=>v[k]||`{{${k}}}`);
+      let out=text;
+      Object.entries(varMap).forEach(([k,v])=>{out=out.replaceAll("{{"+k+"}}","<strong>"+(v||"")+"</strong>");});
+      return out;
     };
+    // Use current template sections, fall back to l.sections
+    const viewSections=(leaseTemplate?.sections||l.sections||[]).filter(s=>s.active!==false);
 
     return(
     <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
@@ -7694,8 +7715,8 @@ export default function Page(){
               <div style={{padding:"32px 40px",lineHeight:1.8,fontSize:13}}>
                 {/* Header */}
                 <div style={{textAlign:"center",marginBottom:32}}>
-                  <div style={{fontSize:18,fontWeight:800,marginBottom:4}}>{l.company||settings.companyName||"Black Bear Properties"}</div>
-                  <div style={{fontSize:13,color:"#5c4a3a",marginBottom:16}}>ROOM RENTAL AGREEMENT</div>
+                  <div style={{fontSize:18,fontWeight:800,marginBottom:4}}>{leaseTemplate?.company||l.company||settings.companyName||"Black Bear Rentals"}</div>
+                  <div style={{fontSize:13,color:"#5c4a3a",marginBottom:16}}>{leaseTemplate?.name||"Alabama Co-Living Lease Agreement"}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,textAlign:"left",background:"rgba(0,0,0,.02)",borderRadius:8,padding:"14px 18px",marginBottom:8}}>
                     {[["Tenant",l.tenantName],["Property",l.property+(prop?.addr?" — "+prop.addr:"")],["Room",l.room],["Move-in",fmtD(l.moveIn)],["Lease End",fmtD(l.leaseEnd)],["Monthly Rent","$"+(l.rent||0).toLocaleString()],["Security Deposit","$"+(l.sd||0).toLocaleString()],["Landlord",l.landlordName||"Carolina Cooper"]].map(([k,v])=>(
                       <div key={k}><span style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.6}}>{k}</span><div style={{fontWeight:600,fontSize:12,marginTop:2}}>{v||"—"}</div></div>
@@ -7704,7 +7725,7 @@ export default function Page(){
                 </div>
 
                 {/* Sections */}
-                {(l.sections||[]).filter(s=>s.active!==false).map((sec,i)=>(
+                {viewSections.map((sec,i)=>(
                   <div key={sec.id||i} style={{marginBottom:24}}>
                     <div style={{fontSize:13,fontWeight:800,marginBottom:6,paddingBottom:4,borderBottom:"1px solid rgba(0,0,0,.08)"}}>{i+1}. {sec.title}</div>
                     <div style={{fontSize:12,color:"#3c3228",lineHeight:1.8}} dangerouslySetInnerHTML={{__html:fillVars(sec.content||"")}}/>
@@ -7715,16 +7736,24 @@ export default function Page(){
                 {/* Signatures */}
                 <div style={{marginTop:40,display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}>
                   <div>
-                    <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",marginBottom:8}}>LANDLORD / PROPERTY MANAGER</div>
-                    {l.landlordSignedAt
-                      ?<div><div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>Signed {new Date(l.landlordSignedAt).toLocaleDateString()}</div><div style={{fontSize:11,color:"#5c4a3a"}}>{l.landlordName||"Carolina Cooper"}</div></div>
-                      :<div style={{borderBottom:"1px solid #333",paddingBottom:4,marginBottom:4,fontSize:11,color:"#aaa"}}>Signature</div>}
+                    <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",marginBottom:8}}>PROPERTY MANAGER</div>
+                    {l.landlordSig||l.landlordSignature
+                      ?<div>
+                         <img src={l.landlordSig||l.landlordSignature} alt="PM signature" style={{height:48,maxWidth:180,objectFit:"contain",display:"block",marginBottom:4}}/>
+                         <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{l.landlordName||"Carolina Cooper"}</div>
+                         {l.landlordSignedAt&&<div style={{fontSize:10,color:"#6b5e52"}}>Signed {new Date(l.landlordSignedAt).toLocaleDateString()}</div>}
+                       </div>
+                      :<div style={{borderBottom:"1px solid #333",height:40,marginBottom:4}}/>}
                   </div>
                   <div>
                     <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",marginBottom:8}}>TENANT</div>
-                    {l.tenantSignedAt
-                      ?<div><div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>Signed {new Date(l.tenantSignedAt).toLocaleDateString()}</div><div style={{fontSize:11,color:"#5c4a3a"}}>{l.tenantName}</div></div>
-                      :<div style={{borderBottom:"1px solid #333",paddingBottom:4,marginBottom:4,fontSize:11,color:"#aaa"}}>Signature</div>}
+                    {l.tenantSig
+                      ?<div>
+                         <img src={l.tenantSig} alt="Tenant signature" style={{height:48,maxWidth:180,objectFit:"contain",display:"block",marginBottom:4}}/>
+                         <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{l.tenantName}</div>
+                         {l.tenantSignedAt&&<div style={{fontSize:10,color:"#6b5e52"}}>Signed {new Date(l.tenantSignedAt).toLocaleDateString()}</div>}
+                       </div>
+                      :<div style={{borderBottom:"1px solid #333",height:40,marginBottom:4}}/>}
                   </div>
                 </div>
               </div>

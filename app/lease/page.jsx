@@ -105,18 +105,21 @@ export default function LeasePage(){
     setSubmitting(true);
     try{
       const now=new Date().toISOString();
-      const auditEntry={action:"tenant_signed",timestamp:now,ip:"client",userAgent:navigator.userAgent};
-      await supa("lease_instances?id=eq."+lease.id,{
+      const patchRes=await supa("lease_instances?id=eq."+lease.id,{
         method:"PATCH",
         prefer:"resolution=merge-duplicates",
         body:JSON.stringify({
           status:"executed",
           tenant_sig:signature,
           tenant_signed_at:now,
-          audit_trail:[auditEntry],
           updated_at:now,
         })
       });
+      if(!patchRes.ok){
+        const err=await patchRes.text();
+        console.error("PATCH failed:",patchRes.status,err);
+        throw new Error("Failed to save signature: "+err);
+      }
 
       // Send confirmation emails
       const moveInFmt=lease.moveIn?new Date(lease.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";
