@@ -115,43 +115,89 @@ function RichEditor({value,onChange}){
 export default function TemplateEditor({template,setTemplate,settings,showAlert,DEF_LEASE_SECTIONS}){
   const _acc=(settings?.adminAccent)||"#4a7c59";
   const [saving,setSaving]=useState(false);
+  const [savingSec,setSavingSec]=useState({});// {[secId]:true}
   const [previewOpen,setPreviewOpen]=useState(false);
   const [expanded,setExpanded]=useState({});
   const [sectionMode,setSectionMode]=useState({});
   const [policy,setPolicy]=useState(DEFAULT_POLICY);
   const [legalWarned,setLegalWarned]=useState({});
+  const [dirtySecs,setDirtySecs]=useState(new Set());// section IDs with unsaved changes
 
   const sections=template?.sections||DEF_LEASE_SECTIONS||[];
+
+  // ── Unsaved changes warning ──────────────────────────────────────
+  useEffect(()=>{
+    const handler=(e)=>{
+      if(dirtySecs.size===0)return;
+      e.preventDefault();
+      e.returnValue="You have unsaved changes. Leave without saving?";
+      return e.returnValue;
+    };
+    window.addEventListener("beforeunload",handler);
+    return()=>window.removeEventListener("beforeunload",handler);
+  },[dirtySecs]);
 
   const updateSec=(si,patch)=>{
     const secs=[...sections];secs[si]={...secs[si],...patch};
     setTemplate(p=>({...(p||{}),sections:secs}));
+    setDirtySecs(p=>{const n=new Set(p);n.add(sections[si].id);return n;});
   };
   const moveSec=(si,dir)=>{
     if(si+dir<0||si+dir>=sections.length)return;
     const secs=[...sections];[secs[si],secs[si+dir]]=[secs[si+dir],secs[si]];
     setTemplate(p=>({...(p||{}),sections:secs}));
+    setDirtySecs(p=>{const n=new Set(p);n.add(sections[si].id);n.add(sections[si+dir].id);return n;});
   };
   const dupSec=(si)=>{
     const secs=[...sections];
-    secs.splice(si+1,0,{...secs[si],id:"s"+uid(),title:secs[si].title+" (Copy)"});
+    const copy={...secs[si],id:"s"+uid(),title:secs[si].title+" (Copy)"};
+    secs.splice(si+1,0,copy);
     setTemplate(p=>({...(p||{}),sections:secs}));
+    setDirtySecs(p=>{const n=new Set(p);n.add(copy.id);return n;});
   };
   const delSec=(si)=>{
     if(!window.confirm("Delete \""+sections[si].title+"\"? This cannot be undone."))return;
     setTemplate(p=>({...(p||{}),sections:sections.filter((_,i)=>i!==si)}));
+    setDirtySecs(p=>{const n=new Set(p);n.delete(sections[si].id);return n;});
   };
   const addSec=()=>{
-    setTemplate(p=>({...(p||{}),sections:[...sections,{id:"s"+uid(),title:"New Section",content:"<p>Enter section content here.</p>",active:true,requiresInitials:false}]}));
+    const newSec={id:"s"+uid(),title:"New Section",content:"<p>Enter section content here.</p>",active:true,requiresInitials:false};
+    setTemplate(p=>({...(p||{}),sections:[...sections,newSec]}));
+    setDirtySecs(p=>{const n=new Set(p);n.add(newSec.id);return n;});
   };
+
+  // ── Save all ─────────────────────────────────────────────────────
   const save=async()=>{
     if(!template?.id){showAlert({title:"Error",body:"No template ID found. Please refresh."});return;}
     setSaving(true);
     try{
       await supa("lease_templates?id=eq."+template.id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({name:template.name||"Black Bear Rentals — Alabama Co-Living Lease",sections,updated_at:new Date().toISOString()})});
-      showAlert({title:"Template Saved",body:"Your lease template has been saved."});
+      setDirtySecs(new Set());
+      showAlert({title:"Template Saved",body:"All sections saved successfully."});
     }catch(e){showAlert({title:"Error",body:"Failed to save. Please try again."});}
     setSaving(false);
+  };
+
+  // ── Save single section ──────────────────────────────────────────
+  const saveSection=async(secId)=>{
+    if(!template?.id)return;
+    setSavingSec(p=>({...p,[secId]:true}));
+    try{
+      const latestSecs=template?.sections||DEF_LEASE_SECTIONS||[];
+      await supa("lease_templates?id=eq."+template.id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({sections:latestSecs,updated_at:new Date().toISOString()})});
+      setDirtySecs(p=>{const n=new Set(p);n.delete(secId);return n;});
+      showAlert({title:"Section Saved",body:"Section saved successfully."});
+    }catch(e){showAlert({title:"Error",body:"Failed to save section. Please try again."});}
+    setSavingSec(p=>({...p,[secId]:false}));
+  };
+
+  // ── Revert section to default ────────────────────────────────────
+  const revertSection=(si)=>{
+    const sec=sections[si];
+    const defaultSec=(DEF_LEASE_SECTIONS||[]).find(d=>d.id===sec.id);
+    if(!defaultSec){showAlert({title:"No Default",body:"This is a custom section — there is no default to revert to."});return;}
+    if(!window.confirm("Revert \""+sec.title+"\" to its default wording? Any edits you have made will be lost."))return;
+    updateSec(si,{content:defaultSec.content,title:defaultSec.title});
   };
 
   const getMode=(secId,hasVars)=>sectionMode[secId]||(hasVars?"vars":"preview");
@@ -168,7 +214,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           Preview Full Lease
         </button>
-        <button className="btn btn-gold" onClick={save} disabled={saving}>{saving?"Saving...":"Save Template"}</button>
+        <button className="btn btn-gold" onClick={save} disabled={saving}>{saving?"Saving...":dirtySecs.size>0?"Save All ("+dirtySecs.size+" unsaved)":"Save Template"}</button>
       </div>
     </div>
 
@@ -217,6 +263,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
                 <span>·</span>
                 <span>{sec.requiresInitials?"Requires initials":"No initials"}</span>
                 {hasVars&&<><span>·</span><span style={{color:_acc,fontWeight:600}}>Has policy variables</span></>}
+                {dirtySecs.has(sec.id)&&<><span>·</span><span style={{color:"#c45c4a",fontWeight:700}}>Unsaved changes</span></>}
               </div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}} onClick={e=>e.stopPropagation()}>
@@ -309,6 +356,19 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
 
             {/* Actions */}
             <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap",alignItems:"center"}}>
+              {/* Save section */}
+              <button onClick={()=>saveSection(sec.id)} disabled={!dirtySecs.has(sec.id)||savingSec[sec.id]}
+                style={{padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,border:"none",background:dirtySecs.has(sec.id)?_acc:"rgba(0,0,0,.08)",color:dirtySecs.has(sec.id)?"#fff":"#9a8878",cursor:dirtySecs.has(sec.id)?"pointer":"not-allowed",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,transition:"all .2s"}}>
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                {savingSec[sec.id]?"Saving...":"Save Section"}
+              </button>
+              {/* Revert to default */}
+              <button onClick={()=>revertSection(si)}
+                style={{padding:"5px 12px",fontSize:10,fontWeight:700,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",color:"#6b5e52",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                Revert to Default
+              </button>
+              <div style={{width:1,background:"rgba(0,0,0,.1)",height:16,margin:"0 2px"}}/>
               <button onClick={()=>moveSec(si,-1)} disabled={si===0}
                 style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:si===0?"not-allowed":"pointer",opacity:si===0?.4:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
                 <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>Move Up
