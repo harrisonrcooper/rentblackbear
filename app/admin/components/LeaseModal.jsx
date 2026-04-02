@@ -11,6 +11,13 @@ async function upsertLease(lease){try{await supa("lease_instances",{method:"POST
 async function patchLease(id,updates){try{await supa("lease_instances?id=eq."+id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({...updates,updated_at:new Date().toISOString()})});}catch(e){console.error("Patch lease error:",e);}}
 async function deleteLeaseInDB(id){try{await supa("lease_instances?id=eq."+id,{method:"DELETE"});}catch(e){console.error("Delete lease error:",e);}}
 
+async function sendEmail({to,subject,html,fromName="Black Bear Rentals",replyTo}){
+  try{
+    await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({to,subject,html,fromName,replyTo})});
+  }catch(e){console.error("Email error:",e);}
+}
+
 // ── Utilities (re-declared) ──────────────────────────────────────────
 const TODAY=new Date();
 const uid=()=>Math.random().toString(36).slice(2,9);
@@ -853,6 +860,36 @@ export default function LeaseModal({
                 }
                 if(newCharges.length>0){setCharges(p=>{const updated=[...p,...newCharges];save("hq-charges",updated);return updated;});}
                 setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease signed and sent to ${modal.lease.tenantEmail} — ${modal.lease.tenantName}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
+                // Send signing link email to tenant
+                const tenantName=modal.lease.tenantName||"Resident";
+                const tenantEmail=modal.lease.tenantEmail;
+                const moveIn=modal.lease.moveIn?new Date(modal.lease.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";
+                const rent=modal.lease.rent?"$"+Number(modal.lease.rent).toLocaleString():"";
+                if(tenantEmail){
+                  sendEmail({
+                    to:tenantEmail,
+                    subject:"Your Lease is Ready to Sign — Black Bear Rentals",
+                    fromName:"Carolina Cooper | Black Bear Rentals",
+                    replyTo:"blackbearhousing@gmail.com",
+                    html:`<div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;max-width:560px;margin:0 auto;background:#f4f3f0;padding:32px 16px">
+                      <div style="background:#1a1714;border-radius:12px 12px 0 0;padding:24px 32px;text-align:center">
+                        <div style="font-size:20px;font-weight:700;color:#d4a853">Black Bear Rentals</div>
+                        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;text-transform:uppercase;letter-spacing:1px">Lease Agreement — Action Required</div>
+                      </div>
+                      <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;border:1px solid rgba(0,0,0,.08);border-top:none">
+                        <p style="font-size:15px;font-weight:600;color:#1a1714;margin:0 0 16px">Hi ${tenantName},</p>
+                        <p style="font-size:13px;color:#5c4a3a;line-height:1.7;margin:0 0 20px">Your lease has been prepared and signed by your property manager. Please review and sign it at your earliest convenience.</p>
+                        <div style="background:#f4f3f0;border-radius:8px;padding:16px 20px;margin-bottom:24px">
+                          <div style="font-size:11px;font-weight:700;color:#6b5e52;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Lease Summary</div>
+                          <div style="font-size:12px;color:#1a1714;line-height:2">${modal.lease.property||modal.lease.propertyAddress||""} · ${modal.lease.room||""}<br/><strong>Move-In:</strong> ${moveIn}<br/><strong>Monthly Rent:</strong> ${rent}</div>
+                        </div>
+                        <a href="${link}" style="display:block;text-align:center;background:#1a1714;color:#d4a853;text-decoration:none;font-weight:700;font-size:14px;padding:16px 24px;border-radius:8px;margin-bottom:20px">Review &amp; Sign Your Lease →</a>
+                        <p style="font-size:11px;color:#9a8878;line-height:1.6;margin:0">If the button above doesn't work, copy and paste this link into your browser:<br/><span style="color:#1d4ed8;word-break:break-all">${link}</span></p>
+                      </div>
+                      <p style="text-align:center;font-size:10px;color:#9a8878;margin-top:16px">Black Bear Rentals · Huntsville, Alabama · blackbearhousing@gmail.com</p>
+                    </div>`,
+                  });
+                }
                 setModal({type:"leaseSent",lease:modal.lease,link});
               }}>{"Sign & Send to Tenant"}</button>
             </div>

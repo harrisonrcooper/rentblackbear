@@ -106,6 +106,50 @@ export default function LeasePage(){
           updated_at:now,
         })
       });
+
+      // Send confirmation emails
+      const moveInFmt=lease.moveIn?new Date(lease.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";
+      const rentFmt=lease.rent?"$"+Number(lease.rent).toLocaleString():"";
+      const tenantHtml=`<div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;max-width:560px;margin:0 auto;background:#f4f3f0;padding:32px 16px">
+        <div style="background:#1a1714;border-radius:12px 12px 0 0;padding:24px 32px;text-align:center">
+          <div style="font-size:20px;font-weight:700;color:#d4a853">Black Bear Rentals</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;text-transform:uppercase;letter-spacing:1px">Lease Fully Executed</div>
+        </div>
+        <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;border:1px solid rgba(0,0,0,.08);border-top:none">
+          <p style="font-size:15px;font-weight:600;color:#1a1714;margin:0 0 16px">Welcome, ${lease.tenantName||"Resident"}!</p>
+          <p style="font-size:13px;color:#5c4a3a;line-height:1.7;margin:0 0 20px">Your lease has been fully executed. Both parties have signed and your agreement is now in effect.</p>
+          <div style="background:#f4f3f0;border-radius:8px;padding:16px 20px;margin-bottom:24px">
+            <div style="font-size:11px;font-weight:700;color:#6b5e52;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Your Details</div>
+            <div style="font-size:13px;color:#1a1714;line-height:2.2">
+              <strong>Property:</strong> ${lease.propertyAddress||lease.property||""}<br/>
+              <strong>Room:</strong> ${lease.room||""}<br/>
+              <strong>Move-In:</strong> ${moveInFmt}<br/>
+              <strong>Monthly Rent:</strong> ${rentFmt}<br/>
+              <strong>Door Code:</strong> ${lease.doorCode||""}
+            </div>
+          </div>
+          <div style="background:rgba(74,124,89,.06);border:1px solid rgba(74,124,89,.2);border-radius:8px;padding:14px 20px;font-size:12px;color:#2d6a3f;line-height:1.6">
+            You can view your signed lease and manage payments anytime at <strong>rentblackbear.com</strong>.
+          </div>
+        </div>
+        <p style="text-align:center;font-size:10px;color:#9a8878;margin-top:16px">Black Bear Rentals · Huntsville, Alabama · blackbearhousing@gmail.com</p>
+      </div>`;
+
+      // Email tenant
+      if(lease.tenantEmail){
+        await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({to:lease.tenantEmail,subject:"Your Lease is Fully Executed — Black Bear Rentals",fromName:"Carolina Cooper | Black Bear Rentals",replyTo:"blackbearhousing@gmail.com",html:tenantHtml})});
+      }
+      // Email PM
+      await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({to:"blackbearhousing@gmail.com",subject:`Lease Signed — ${lease.tenantName||"Tenant"} · ${lease.room||""}`,fromName:"PropOS Notifications",replyTo:lease.tenantEmail||"info@rentblackbear.com",
+          html:`<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+            <h2 style="color:#1a1714;margin-bottom:8px">Lease Fully Executed</h2>
+            <p style="color:#5c4a3a;font-size:13px;line-height:1.6"><strong>${lease.tenantName||"Tenant"}</strong> has signed their lease for <strong>${lease.room||""}</strong> at <strong>${lease.propertyAddress||lease.property||""}</strong>.</p>
+            <p style="color:#5c4a3a;font-size:13px">Move-in: <strong>${moveInFmt}</strong> · Rent: <strong>${rentFmt}</strong></p>
+            <p style="font-size:12px;color:#9a8878;margin-top:16px">View in PropOS admin at rentblackbear.com/admin</p>
+          </div>`})});
+
       setStatus("submitted");
     }catch(e){
       console.error(e);
