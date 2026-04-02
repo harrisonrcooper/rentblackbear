@@ -573,7 +573,7 @@ export default function LeaseModal({
                     return(<>
                       <div style={{display:"flex",gap:8,marginTop:4}}>
                         <button onClick={()=>setLeaseForm(p=>({...p,parkingChoice:"yes",_errors:{...(p._errors||{}),parkingChoice:null}}))} style={{...btnBase,flex:1,background:pc==="yes"?"#4a7c59":"transparent",color:pc==="yes"?"#fff":"#6b5e52",borderColor:pc==="yes"?"#4a7c59":leaseForm._errors?.parkingChoice?"#c45c4a":"rgba(0,0,0,.15)"}}>Yes — Assigned Parking</button>
-                        <button onClick={()=>setLeaseForm(p=>({...p,parkingChoice:"no",parking:"",_errors:{...(p._errors||{}),parkingChoice:null,parking:null}}))} style={{...btnBase,flex:1,background:pc==="no"?"#6b5e52":"transparent",color:pc==="no"?"#fff":"#6b5e52",borderColor:pc==="no"?"#6b5e52":leaseForm._errors?.parkingChoice?"#c45c4a":"rgba(0,0,0,.15)"}}>No Parking</button>
+                        <button onClick={()=>setLeaseForm(p=>({...p,parkingChoice:"no",parking:"",_errors:{...(p._errors||{}),parkingChoice:null,parking:null}}))} style={{...btnBase,flex:1,background:pc==="no"?"#6b5e52":"transparent",color:pc==="no"?"#fff":"#6b5e52",borderColor:pc==="no"?"#6b5e52":leaseForm._errors?.parkingChoice?"#c45c4a":"rgba(0,0,0,.15)"}}>No Assigned Parking</button>
                       </div>
                       {leaseForm._errors?.parkingChoice&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.parkingChoice}</div>}
                       {pc==="yes"&&<>
