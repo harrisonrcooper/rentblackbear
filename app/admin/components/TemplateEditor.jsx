@@ -123,6 +123,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
   const [legalWarned,setLegalWarned]=useState({});
   const [dirtySecs,setDirtySecs]=useState(new Set());// section IDs with unsaved changes
   const originalSections=useRef(null);// snapshot of sections as loaded from Supabase
+  const [revertConfirm,setRevertConfirm]=useState(null);// {si, title} when confirm modal is open
 
   // Capture original on first load
   useEffect(()=>{
@@ -205,8 +206,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
     const snap=originalSections.current||[];
     const defaultSec=snap.find(d=>d.id===sec.id);
     if(!defaultSec){showAlert({title:"No Default",body:"This is a custom section — there is no saved default to revert to."});return;}
-    if(!window.confirm("Revert \""+sec.title+"\" to its last saved wording? Unsaved edits will be lost."))return;
-    updateSec(si,{content:defaultSec.content,title:defaultSec.title});
+    setRevertConfirm({si,title:sec.title,defaultSec});
   };
 
   const getMode=(secId,hasVars)=>sectionMode[secId]||(hasVars?"vars":"preview");
@@ -465,5 +465,25 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
         </div>
       </div>
     </div>}
+  {/* ── Revert confirm modal ── */}
+  {revertConfirm&&<div className="mbg" onClick={()=>setRevertConfirm(null)}>
+    <div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}}>
+      <div style={{width:48,height:48,borderRadius:"50%",background:"rgba(196,92,74,.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+        <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      </div>
+      <h2 style={{fontSize:15,marginBottom:8}}>Revert Section?</h2>
+      <p style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:6}}>
+        This will reset <strong>"{revertConfirm.title}"</strong> to its last saved wording.
+      </p>
+      <p style={{fontSize:11,color:"#c45c4a",marginBottom:20}}>Any unsaved edits will be permanently lost.</p>
+      <div className="mft">
+        <button className="btn btn-out" onClick={()=>setRevertConfirm(null)}>Cancel — Keep My Edits</button>
+        <button className="btn" style={{background:"#c45c4a",color:"#fff",border:"none"}} onClick={()=>{
+          updateSec(revertConfirm.si,{content:revertConfirm.defaultSec.content,title:revertConfirm.defaultSec.title});
+          setRevertConfirm(null);
+        }}>Yes, Revert</button>
+      </div>
+    </div>
+  </div>}
   </>);
 }
