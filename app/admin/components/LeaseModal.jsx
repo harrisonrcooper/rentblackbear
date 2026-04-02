@@ -284,7 +284,7 @@ export default function LeaseModal({
     <div className="fld" style={{marginBottom:14}}>
       <label>Utilities Clause <span style={{color:"#c45c4a",fontSize:11}}>*</span></label>
       {(()=>{
-        const _locked=leaseForm._lockedFromApp&&!leaseForm._leaseEditing;
+        const _locked=leaseForm._lockedFromApp&&!leaseForm._leaseEditing&&!!(leaseForm.utilitiesClause||"").trim();
         return _locked
           ?<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:leaseForm.utilitiesClause?"#6b5e52":"#c45c4a",lineHeight:1.5}}>{leaseForm.utilitiesClause||"No utilities clause selected — click Edit to choose one"}</div>
           :<>
