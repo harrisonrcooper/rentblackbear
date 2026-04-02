@@ -5949,20 +5949,29 @@ export default function Page(){
               })()}
               <div className="fr">
                 <div className="fld">
-                  <label style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <span>Door Code (4-digit PIN)<span style={{color:"#c45c4a",marginLeft:3,fontSize:11}}>*</span></span>
-                    {leaseForm._lockedFromApp&&leaseForm.doorCode?.length===4&&<span style={{fontSize:9,fontWeight:700,color:"#2d6a3f",background:"rgba(74,124,89,.09)",border:"0.5px solid rgba(74,124,89,.25)",padding:"1px 6px",borderRadius:3}}>from application</span>}
+                  <label style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <span>Door Code (4-digit PIN)<span style={{color:"#c45c4a",marginLeft:3,fontSize:11}}>*</span></span>
+                      {leaseForm._lockedFromApp&&leaseForm.doorCode?.length===4&&!leaseForm._doorCodeEditing&&<span style={{fontSize:9,fontWeight:700,color:"#2d6a3f",background:"rgba(74,124,89,.09)",border:"0.5px solid rgba(74,124,89,.25)",padding:"1px 6px",borderRadius:3}}>from application</span>}
+                    </div>
+                    {leaseForm._doorCodeEditing
+                      ?<button onClick={()=>setLeaseForm(p=>({...p,_doorCodeEditing:false}))} style={{fontSize:9,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.08)",border:"0.5px solid rgba(74,124,89,.2)",borderRadius:4,padding:"2px 8px",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Done</button>
+                      :<button onClick={()=>setLeaseForm(p=>({...p,_doorCodeEditing:true}))} style={{fontSize:9,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.08)",border:"0.5px solid rgba(212,168,83,.3)",borderRadius:4,padding:"2px 8px",cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Edit</button>
+                    }
                   </label>
-                  <div style={{display:"flex",justifyContent:"center",marginTop:2}}>
-                    <input value={leaseForm.doorCode||""} maxLength={4}
-                      onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_errors:{...(p._errors||{}),doorCode:null}}))}
-                      placeholder="––––"
-                      style={{
-                        width:110,textAlign:"center",fontFamily:"monospace",fontSize:18,fontWeight:700,letterSpacing:8,
-                        animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,
-                        borderColor:leaseForm._errors?.doorCode?"#c45c4a":leaseForm.doorCode?.length===4?"rgba(74,124,89,.45)":undefined
-                      }}/>
-                  </div>
+                  {leaseForm._doorCodeEditing
+                    ?<div style={{display:"flex",justifyContent:"center",marginTop:4}}>
+                       <input value={leaseForm.doorCode||""} maxLength={4} autoFocus
+                         onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_errors:{...(p._errors||{}),doorCode:null}}))}
+                         placeholder="––––"
+                         style={{width:110,textAlign:"center",fontFamily:"monospace",fontSize:18,fontWeight:700,letterSpacing:8,animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,borderColor:leaseForm._errors?.doorCode?"#c45c4a":leaseForm.doorCode?.length===4?"rgba(74,124,89,.45)":undefined}}/>
+                     </div>
+                    :<div style={{display:"flex",justifyContent:"center",marginTop:4}}>
+                       <div style={{width:110,textAlign:"center",fontFamily:"monospace",fontSize:18,fontWeight:700,letterSpacing:8,padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:`0.5px solid ${leaseForm._errors?.doorCode?"#c45c4a":leaseForm.doorCode?.length===4?"rgba(74,124,89,.3)":"rgba(0,0,0,.08)"}`,color:leaseForm.doorCode?"#6b5e52":"#bbb",animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined}}>
+                         {leaseForm.doorCode||"––––"}
+                       </div>
+                     </div>
+                  }
                   {leaseForm._errors?.doorCode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease",textAlign:"center"}}>{leaseForm._errors.doorCode}</div>}
                 </div>
                 <div className="fld">
