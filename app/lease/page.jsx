@@ -28,8 +28,9 @@ function SigCanvas({onSave,height=140,label="Draw your signature"}){
   const getPos=(e,canvas)=>{const r=canvas.getBoundingClientRect();if(e.touches)return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};return{x:e.clientX-r.left,y:e.clientY-r.top};};
   const start=(e)=>{e.preventDefault();drawing.current=true;const canvas=canvasRef.current;const ctx=canvas.getContext("2d");const pos=getPos(e,canvas);ctx.beginPath();ctx.moveTo(pos.x,pos.y);};
   const move=(e)=>{e.preventDefault();if(!drawing.current)return;const canvas=canvasRef.current;const ctx=canvas.getContext("2d");const pos=getPos(e,canvas);ctx.strokeStyle="#1a1714";ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";ctx.lineTo(pos.x,pos.y);ctx.stroke();};
-  const end=(e)=>{e.preventDefault();drawing.current=false;if(onSave)onSave(canvasRef.current.toDataURL());};
+  const end=(e)=>{e.preventDefault();drawing.current=false;};
   const clear=()=>{const canvas=canvasRef.current;const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);if(onSave)onSave(null);};
+  const save=()=>{if(onSave)onSave(canvasRef.current.toDataURL());};
   return(
     <div>
       <div style={{fontSize:11,color:"#6b5e52",marginBottom:6,fontWeight:600}}>{label}</div>
@@ -37,7 +38,10 @@ function SigCanvas({onSave,height=140,label="Draw your signature"}){
         style={{border:"1.5px solid rgba(0,0,0,.15)",borderRadius:8,cursor:"crosshair",touchAction:"none",width:"100%",height,display:"block",background:"#fafaf8"}}
         onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
         onTouchStart={start} onTouchMove={move} onTouchEnd={end}/>
-      <button onClick={clear} style={{marginTop:6,fontSize:10,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
+      <div style={{display:"flex",gap:8,marginTop:8}}>
+        <button onClick={clear} style={{fontSize:11,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,padding:"5px 12px",cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
+        <button onClick={save} style={{fontSize:11,fontWeight:700,color:"#fff",background:"#4a7c59",border:"none",borderRadius:6,padding:"5px 16px",cursor:"pointer",fontFamily:"inherit"}}>Save Signature</button>
+      </div>
     </div>
   );
 }
