@@ -6115,9 +6115,9 @@ export default function Page(){
               </div>
 
               {/* 3-column phase breakdown */}
-              <div style={{display:"flex",borderTop:"1px solid rgba(0,0,0,.06)"}}>
+              <div style={{display:"flex",gap:8,padding:"10px 10px 0"}}>
                 {phases.map((ph,i)=>(
-                  <div key={i} style={{flex:1,borderRight:i<phases.length-1?"1px solid rgba(0,0,0,.07)":undefined,background:ph.bg,display:"flex",flexDirection:"column"}}>
+                  <div key={i} style={{flex:1,border:`1px solid ${ph.border}`,borderRadius:8,overflow:"hidden",background:ph.bg,display:"flex",flexDirection:"column"}}>
                     {/* Phase header */}
                     <div style={{padding:"7px 12px",borderBottom:`1px solid ${ph.border}`}}>
                       <div style={{fontSize:9,fontWeight:800,letterSpacing:.9,textTransform:"uppercase",color:ph.color}}>{ph.when}</div>
