@@ -1892,6 +1892,7 @@ const S=`
 @keyframes toastIn{from{opacity:0;transform:translateY(-30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}}
 .confetti-wrap{position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden}
+@media print{.side,.no-print{display:none!important}.mn{margin-left:0!important}body{background:#fff}}
 .confetti-piece{position:absolute;width:10px;height:10px;border-radius:2px;animation:confettiFall linear forwards}
 .lead-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9998;background:#1a1714;border:2px solid #d4a853;border-radius:14px;padding:20px 28px;box-shadow:0 12px 40px rgba(0,0,0,.4);animation:toastIn .4s ease-out;max-width:420px;width:90%}
 .lead-toast.out{animation:toastOut .3s ease-in forwards}
@@ -7760,18 +7761,24 @@ export default function Page(){
                     <div style={{fontSize:12,color:"#3c3228",lineHeight:1.8}} dangerouslySetInnerHTML={{__html:fillVars(sec.content||"")}}/>
                     {sec.requiresInitials&&<div style={{marginTop:10,display:"flex",alignItems:"center",gap:12}}>
                       {l.tenantSig
-                        ?<div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 12px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
-                           <img src={l.tenantSig} alt="initials" style={{height:24,maxWidth:80,objectFit:"contain"}}/>
-                           <span style={{fontSize:9,color:"#4a7c59",fontWeight:700}}>INITIALED</span>
+                        ?<div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:2}}>
+                           <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
+                             <img src={l.tenantSig} alt="initials" style={{height:22,maxWidth:70,objectFit:"contain"}}/>
+                             <span style={{fontSize:8,color:"#4a7c59",fontWeight:700}}>INITIALED</span>
+                           </div>
+                           <div style={{fontSize:8,color:"#9a8878",paddingLeft:2}}>{l.tenantName||"Tenant"}{l.tenantSignedAt?" · "+new Date(l.tenantSignedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}</div>
                          </div>
                         :<div style={{display:"flex",alignItems:"center",gap:8}}>
                            <div style={{width:70,borderBottom:"1px solid rgba(0,0,0,.3)",height:20}}/>
                            <span style={{fontSize:9,color:"#9a8878",fontStyle:"italic"}}>Tenant initials</span>
                          </div>
                       }
-                      {(l.landlordSig||l.landlordSignature)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 12px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
-                        <img src={l.landlordSig||l.landlordSignature} alt="PM initials" style={{height:24,maxWidth:80,objectFit:"contain"}}/>
-                        <span style={{fontSize:9,color:"#4a7c59",fontWeight:700}}>PM INITIALED</span>
+                      {(l.landlordSig||l.landlordSignature)&&<div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:2}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
+                          <img src={l.landlordSig||l.landlordSignature} alt="PM initials" style={{height:22,maxWidth:70,objectFit:"contain"}}/>
+                          <span style={{fontSize:8,color:"#4a7c59",fontWeight:700}}>PM INITIALED</span>
+                        </div>
+                        <div style={{fontSize:8,color:"#9a8878",paddingLeft:2}}>{l.landlordName||"Carolina Cooper"}{l.landlordSignedAt?" · "+new Date(l.landlordSignedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}</div>
                       </div>}
                     </div>}
                   </div>
@@ -7837,6 +7844,7 @@ export default function Page(){
                 {isDraft&&<button className="btn btn-green" onClick={()=>{setLeaseForm({...l});setViewingLease(null);goTab("leases");}}>Edit Lease</button>}
                 {isDraft&&<button className="btn btn-gold" onClick={()=>{setModal({type:"signLease",leaseId:l.id,lease:l});setViewingLease(null);goTab("leases");}}>Sign & Send to Tenant</button>}
                 {isPending&&<button className="btn btn-out" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied to clipboard."});}}>Copy Signing Link</button>}
+                <button className="btn btn-out" onClick={()=>window.print()}>Download PDF</button>
                 <button className="btn btn-out" onClick={()=>{
                   const input=document.createElement("input");input.type="file";input.accept=".pdf,.docx,.doc";
                   input.onchange=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{setLeases(p=>p.map(x=>x.id===l.id?{...x,uploadedLease:{name:file.name,data:ev.target.result,uploadedAt:new Date().toISOString()}}:x));showAlert({title:"Uploaded",body:file.name+" attached to lease."});};reader.readAsDataURL(file);};
