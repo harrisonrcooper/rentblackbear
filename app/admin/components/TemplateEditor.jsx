@@ -218,6 +218,19 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
       </div>
     </div>
 
+    {/* ── Template name ── */}
+    <div className="card" style={{padding:14,marginBottom:14}}>
+      <div className="fld" style={{marginBottom:0}}>
+        <label>Template Name</label>
+        <input
+          value={template?.name||""}
+          onChange={e=>setTemplate(p=>({...(p||{}),name:e.target.value}))}
+          placeholder="e.g. Alabama Co-Living — By Room"
+          style={{fontSize:13,fontWeight:600}}
+        />
+      </div>
+    </div>
+
     {/* ── Section count + Add ── */}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
       <div style={{fontSize:12,fontWeight:700,color:"#5c4a3a"}}>{sections.filter(s=>s.active!==false).length} of {sections.length} sections active</div>
