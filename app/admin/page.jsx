@@ -5384,13 +5384,11 @@ export default function Page(){
           setLeaseForm(p=>p?({...p,_errors:errs}):p);
           const mb=document.querySelector(".lease-modal-box");
           if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease";}
-          // Scroll to first error field after state settles
+          // Scroll to error summary banner near the Continue button
           setTimeout(()=>{
-            const firstErrKey=Object.keys(errs)[0];
-            const sel=`.lease-modal-box [data-err="${firstErrKey}"], .lease-modal-box input[name="${firstErrKey}"]`;
-            const el=document.querySelector(sel)||document.querySelector(`.lease-modal-box .err-${firstErrKey}`);
-            if(el){el.scrollIntoView({behavior:"smooth",block:"center"});}
-            else{const mbg=document.querySelector(".mbg");if(mbg)mbg.scrollTo({top:0,behavior:"smooth"});}
+            const summary=document.querySelector(".lease-err-summary");
+            if(summary){summary.scrollIntoView({behavior:"smooth",block:"nearest"});}
+            else{const mbg=document.querySelector(".mbg");if(mbg)mbg.scrollTo({top:mbg.scrollHeight,behavior:"smooth"});}
           },80);
         };
 
@@ -5935,8 +5933,14 @@ export default function Page(){
                   </label>
                   <input value={leaseForm.doorCode||""} maxLength={4}
                     onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_errors:{...(p._errors||{}),doorCode:null}}))}
-                    placeholder="0000"
-                    style={{fontFamily:"monospace",fontSize:20,fontWeight:800,letterSpacing:8,textAlign:"center",animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,borderColor:leaseForm._errors?.doorCode?"#c45c4a":leaseForm.doorCode?.length===4?"rgba(74,124,89,.45)":undefined,paddingTop:8,paddingBottom:8}}/>
+                    placeholder="4-digit PIN"
+                    style={{
+                      fontFamily:"monospace",fontSize:15,fontWeight:700,letterSpacing:5,textAlign:"center",
+                      background:leaseForm._lockedFromApp&&leaseForm.doorCode?"rgba(0,0,0,.03)":"#fff",
+                      color:leaseForm._lockedFromApp&&leaseForm.doorCode?"#6b5e52":"#1a1714",
+                      animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,
+                      borderColor:leaseForm._errors?.doorCode?"#c45c4a":leaseForm.doorCode?.length===4?"rgba(74,124,89,.45)":undefined
+                    }}/>
                   {leaseForm._errors?.doorCode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.doorCode}</div>}
                 </div>
                 <div className="fld">
@@ -6169,6 +6173,19 @@ export default function Page(){
           })()}
 
           <div className="fld"><label>Internal Notes</label><textarea value={leaseForm.notes||""} onChange={e=>setLeaseForm(p=>({...p,notes:e.target.value}))} placeholder="Notes for your records only — not on the lease" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
+
+          {/* Error summary — appears above Continue button when validation fails */}
+          {leaseForm._errors&&Object.keys(leaseForm._errors).length>0&&(
+            <div className="lease-err-summary" style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"10px 14px",marginBottom:4,animation:"shake .4s ease"}}>
+              <div style={{fontSize:10,fontWeight:800,color:"#c45c4a",letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Fix these before signing</div>
+              {Object.values(leaseForm._errors).map((msg,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:i<Object.values(leaseForm._errors).length-1?4:0}}>
+                  <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span style={{fontSize:11,color:"#c45c4a",lineHeight:1.4}}>{msg}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="mft">
             <button className="btn btn-out" onClick={()=>setLeaseForm(null)}>Cancel</button>
