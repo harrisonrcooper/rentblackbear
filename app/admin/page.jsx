@@ -5487,6 +5487,7 @@ export default function Page(){
           if(!leaseForm.rent||leaseForm.rent<=0) errs.rent="Monthly rent amount is required.";
           if(!leaseForm.moveIn) errs.moveIn="Move-in date is required.";
           if(!errs.moveIn){const _ovRoom=leaseForm.roomId?props.flatMap(p=>allRooms(p)).find(r=>r.id===leaseForm.roomId):null;const _ovCurLe=_ovRoom?.le||null;if(_ovCurLe&&leaseForm.moveIn&&leaseForm.moveIn<_ovCurLe)errs.moveIn="Move-in "+fmtD(leaseForm.moveIn)+" overlaps the current lease ending "+fmtD(_ovCurLe)+". Resolve the conflict or use the 'Use "+fmtD(_ovCurLe)+"' button in the timeline before signing.";}
+          if(!errs.moveIn){const _ovRoom=leaseForm.roomId?props.flatMap(p=>allRooms(p)).find(r=>r.id===leaseForm.roomId):null;const _ovCurLe=_ovRoom?.le||null;const bufD=leaseForm._bufferDays??7;if(_ovCurLe&&leaseForm.moveIn&&bufD>0){const be=new Date(_ovCurLe+"T00:00:00");be.setDate(be.getDate()+bufD);const beStr=be.toISOString().split("T")[0];if(leaseForm.moveIn>=_ovCurLe&&leaseForm.moveIn<=beStr){const nd=new Date(be);nd.setDate(nd.getDate()+1);errs.moveIn="Move-in "+fmtD(leaseForm.moveIn)+" falls within the "+bufD+"-day turnover buffer (ends "+fmtD(beStr)+"). Earliest available: "+fmtD(nd.toISOString().split("T")[0])+".";}}}
           if(!leaseForm.leaseEndTbd&&!leaseForm.leaseEnd) errs.leaseEnd="Lease end date is required, or toggle TBD.";
           if(!leaseForm.doorCode||leaseForm.doorCode.trim().length!==4) errs.doorCode="A 4-digit door code is required before signing.";
           if(leaseForm.parkingChoice===null||leaseForm.parkingChoice===undefined) errs.parkingChoice="Indicate whether this room has assigned parking.";
@@ -5750,7 +5751,9 @@ export default function Page(){
             const _computeAsapMi=(curLe,buf)=>{if(!curLe)return TODAY.toISOString().split("T")[0];const d=new Date(curLe+"T00:00:00");d.setDate(d.getDate()+(buf||0)+1);const todayStr=TODAY.toISOString().split("T")[0];return d.toISOString().split("T")[0]>=todayStr?d.toISOString().split("T")[0]:todayStr;};
             // Returns the leaseForm fields to update when move-in date is set
             const _applyAsapToForm=(mi,rent)=>{if(!mi)return{};const miD=new Date(mi+"T00:00:00");const day=miD.getDate();const daysLeft=new Date(miD.getFullYear(),miD.getMonth()+1,0).getDate()-day+1;const prorated=day===1?0:Math.ceil(((rent||0)/30)*daysLeft);const leD=new Date(mi+"T00:00:00");leD.setFullYear(leD.getFullYear()+1);return{moveIn:mi,leaseStart:mi,proratedRent:prorated,leaseEnd:leD.toISOString().split("T")[0]};};
-            return(
+            const _bufEnd=_tlCurLe&&_bufDays>0?(()=>{const d=new Date(_tlCurLe+"T00:00:00");d.setDate(d.getDate()+_bufDays);return d.toISOString().split("T")[0];})():null;
+            const _isOverlapMi=!!(_tlCurLe&&leaseForm.moveIn&&leaseForm.moveIn<_tlCurLe);
+            const _isBufferViolation=!_isOverlapMi&&!!(_tlCurLe&&_bufEnd&&leaseForm.moveIn&&leaseForm.moveIn>=_tlCurLe&&leaseForm.moveIn<=_bufEnd);
             <div style={{background:"rgba(59,130,246,.04)",border:"1px solid rgba(59,130,246,.12)",borderRadius:10,padding:12,marginBottom:14}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                 <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8"}}>LEASE TERMS · Pre-filled from application · Editable</div>
@@ -5774,7 +5777,7 @@ export default function Page(){
                   <label>Move-in Date</label>
                   {locked
                     ? ro(fmtD(leaseForm.moveIn))
-                    : <div style={{borderRadius:6,border:`1.5px solid ${(_tlCurLe&&leaseForm.moveIn&&leaseForm.moveIn<_tlCurLe)||leaseForm._errors?.moveIn?"#c45c4a":"rgba(0,0,0,.12)"}`,overflow:"hidden",transition:"border-color .2s"}}>
+                    : <div style={{borderRadius:6,border:`1.5px solid ${_isOverlapMi||leaseForm._errors?.moveIn?"#c45c4a":_isBufferViolation?"#d4a853":"rgba(0,0,0,.12)"}`,overflow:"hidden",transition:"border-color .2s"}}>
                         {leaseForm.roomId&&<div style={{display:"flex",borderBottom:"0.5px solid rgba(0,0,0,.08)"}}>
                           {[["asap","ASAP"],["specific","Pick date"]].map(([v,l])=>(
                             <button key={v} onClick={()=>{
@@ -5834,8 +5837,7 @@ export default function Page(){
                 const tlLe=leaseForm.leaseEnd||null;
                 const isOcc=!!tlCur;
                 const isOverlap=isOcc&&tlCurLe&&tlMi&&tlMi<tlCurLe;
-                const bufDays=leaseForm._bufferDays??7;
-                const bufEnd=tlCurLe?(()=>{const d=new Date(tlCurLe+"T00:00:00");d.setDate(d.getDate()+bufDays);return d.toISOString().split("T")[0];})():null;
+                const isBufferViolation=!isOverlap&&isOcc&&tlCurLe&&tlMi&&bufDays>0&&bufEnd&&tlMi>=tlCurLe&&tlMi<=bufEnd;
                 const anchor=tlMi||tlCurLe||TODAY.toISOString().split("T")[0];
                 const anchorD=new Date(anchor+"T00:00:00");
                 const win0=new Date(anchorD.getFullYear(),anchorD.getMonth()-1,1);
@@ -5845,16 +5847,21 @@ export default function Page(){
                 const todayX=toX(TODAY.toISOString().split("T")[0]);
                 const months=Array.from({length:6},(_,i)=>{const d=new Date(win0);d.setMonth(d.getMonth()+i);return{label:d.toLocaleString("default",{month:"short"}),x:toX(d.toISOString().split("T")[0])};});
                 const twoRows=isOcc;
-                const curBarBg=isOverlap?"rgba(196,92,74,.22)":"rgba(212,168,83,.28)";
-                const curBarBorder=isOverlap?"rgba(196,92,74,.5)":"rgba(212,168,83,.55)";
+                const curBarBg=isOverlap?"rgba(196,92,74,.22)":isBufferViolation?"rgba(212,168,83,.28)":"rgba(212,168,83,.28)";
+                const curBarBorder=isOverlap?"rgba(196,92,74,.5)":isBufferViolation?"rgba(212,168,83,.55)":"rgba(212,168,83,.55)";
                 const curBarText=isOverlap?"#c45c4a":"#9a7422";
-                const newBarBg=isOverlap?"rgba(196,92,74,.15)":"rgba(59,130,246,.18)";
-                const newBarBorder=isOverlap?"rgba(196,92,74,.4)":"rgba(59,130,246,.42)";
-                const newBarText=isOverlap?"#c45c4a":"#1d4ed8";
+                const newBarBg=isOverlap?"rgba(196,92,74,.15)":isBufferViolation?"rgba(212,168,83,.15)":"rgba(59,130,246,.18)";
+                const newBarBorder=isOverlap?"rgba(196,92,74,.4)":isBufferViolation?"rgba(212,168,83,.5)":"rgba(59,130,246,.42)";
+                const newBarText=isOverlap?"#c45c4a":isBufferViolation?"#9a7422":"#1d4ed8";
+                const outerBorder=isOverlap?"rgba(196,92,74,.35)":isBufferViolation?"rgba(212,168,83,.4)":"rgba(0,0,0,.08)";
+                const headerBg=isOverlap?"rgba(196,92,74,.06)":isBufferViolation?"rgba(212,168,83,.06)":isOcc?"rgba(212,168,83,.05)":"rgba(74,124,89,.04)";
+                const headerBorderColor=isOverlap?"rgba(196,92,74,.12)":isBufferViolation?"rgba(212,168,83,.15)":"rgba(0,0,0,.05)";
+                // Earliest valid move-in = day after buffer ends
+                const earliestMi=bufEnd?(()=>{const d=new Date(bufEnd+"T00:00:00");d.setDate(d.getDate()+1);return d.toISOString().split("T")[0];})():null;
                 return(
-                <div style={{marginTop:4,marginBottom:10,border:`0.5px solid ${isOverlap?"rgba(196,92,74,.35)":"rgba(0,0,0,.08)"}`,borderRadius:8,overflow:"hidden"}}>
+                <div style={{marginTop:4,marginBottom:10,border:`0.5px solid ${outerBorder}`,borderRadius:8,overflow:"hidden"}}>
                   {/* Status header */}
-                  <div style={{padding:"7px 10px",display:"flex",justifyContent:"space-between",alignItems:"center",background:isOverlap?"rgba(196,92,74,.06)":isOcc?"rgba(212,168,83,.05)":"rgba(74,124,89,.04)",borderBottom:`1px solid ${isOverlap?"rgba(196,92,74,.12)":"rgba(0,0,0,.05)"}`}}>
+                  <div style={{padding:"7px 10px",display:"flex",justifyContent:"space-between",alignItems:"center",background:headerBg,borderBottom:`1px solid ${headerBorderColor}`}}>
                     <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0,flex:1}}>
                       <div style={{width:6,height:6,borderRadius:"50%",background:isOverlap?"#c45c4a":isOcc?"#d4a853":"#4a7c59",flexShrink:0}}/>
                       {isOcc
@@ -5925,6 +5932,14 @@ export default function Page(){
                     <button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.4)",whiteSpace:"nowrap",flexShrink:0}}
                       onClick={()=>{const d=new Date(tlCurLe+"T00:00:00");const le=new Date(d);le.setFullYear(le.getFullYear()+1);setLeaseForm(p=>({...p,moveIn:tlCurLe,leaseStart:tlCurLe,leaseEnd:le.toISOString().split("T")[0],_errors:{...(p._errors||{}),moveIn:null}}));}}>
                       Use {fmtD(tlCurLe)}
+                    </button>
+                  </div>}
+                  {/* Buffer violation footer */}
+                  {isBufferViolation&&tlMi&&earliestMi&&<div style={{padding:"7px 12px",borderTop:"1px solid rgba(212,168,83,.2)",background:"rgba(212,168,83,.04)",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:10,color:"#9a7422",lineHeight:1.4}}>Move-in {fmtD(tlMi)} falls within the {bufDays}-day turnover buffer (ends {fmtD(bufEnd)}). Earliest available: <strong>{fmtD(earliestMi)}</strong>.</span>
+                    <button className="btn btn-out btn-sm" style={{fontSize:10,color:"#9a7422",borderColor:"rgba(212,168,83,.5)",whiteSpace:"nowrap",flexShrink:0}}
+                      onClick={()=>{const le=new Date(earliestMi+"T00:00:00");le.setFullYear(le.getFullYear()+1);setLeaseForm(p=>({...p,..._applyAsapToForm(earliestMi,p.rent),_moveInMode:"specific",_errors:{...(p._errors||{}),moveIn:null}}));}}>
+                      Use {fmtD(earliestMi)}
                     </button>
                   </div>}
                 </div>);
