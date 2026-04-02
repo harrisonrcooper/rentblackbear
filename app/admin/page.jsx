@@ -7750,12 +7750,30 @@ export default function Page(){
                   </div>
                 </div>
 
+                {/* Divider after summary */}
+                <div style={{borderBottom:"1px solid rgba(0,0,0,.08)",marginBottom:28}}/>
+
                 {/* Sections */}
                 {viewSections.map((sec,i)=>(
                   <div key={sec.id||i} style={{marginBottom:24}}>
                     <div style={{fontSize:13,fontWeight:800,marginBottom:6,paddingBottom:4,borderBottom:"1px solid rgba(0,0,0,.08)"}}>{i+1}. {sec.title}</div>
                     <div style={{fontSize:12,color:"#3c3228",lineHeight:1.8}} dangerouslySetInnerHTML={{__html:fillVars(sec.content||"")}}/>
-                    {sec.requiresInitials&&<div style={{marginTop:8,fontSize:10,color:"#6b5e52",fontStyle:"italic"}}>Tenant initials required for this section.</div>}
+                    {sec.requiresInitials&&<div style={{marginTop:10,display:"flex",alignItems:"center",gap:12}}>
+                      {l.tenantSig
+                        ?<div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 12px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
+                           <img src={l.tenantSig} alt="initials" style={{height:24,maxWidth:80,objectFit:"contain"}}/>
+                           <span style={{fontSize:9,color:"#4a7c59",fontWeight:700}}>INITIALED</span>
+                         </div>
+                        :<div style={{display:"flex",alignItems:"center",gap:8}}>
+                           <div style={{width:70,borderBottom:"1px solid rgba(0,0,0,.3)",height:20}}/>
+                           <span style={{fontSize:9,color:"#9a8878",fontStyle:"italic"}}>Tenant initials</span>
+                         </div>
+                      }
+                      {(l.landlordSig||l.landlordSignature)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 12px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
+                        <img src={l.landlordSig||l.landlordSignature} alt="PM initials" style={{height:24,maxWidth:80,objectFit:"contain"}}/>
+                        <span style={{fontSize:9,color:"#4a7c59",fontWeight:700}}>PM INITIALED</span>
+                      </div>}
+                    </div>}
                   </div>
                 ))}
 
