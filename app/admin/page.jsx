@@ -33,6 +33,15 @@ const supa=(path,opts={})=>fetch(SUPA_URL+"/rest/v1/"+path,{...opts,headers:{"ap
 async function load(k,fb){try{const r=await supa("app_data?key=eq."+k+"&select=value");const d=await r.json();return d&&d.length>0&&d[0].value!=null?d[0].value:fb;}catch{return fb;}}
 async function save(k,d){try{await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:k,value:d})});}catch(e){console.error("Save error:",k,e);}}
 
+// ── Lease instance CRUD (lease_instances table) ──────────────────────────────
+const LEASE_TEMPLATE_ID="2d9d0941-2802-468a-a6e8-b2cceacf78d1";
+const leaseRowToObj=(row)=>({...(row.variable_data||{}),id:row.id,status:row.status,landlordSig:row.landlord_sig,landlordSignature:row.landlord_sig,landlordSignedAt:row.landlord_signed_at,tenantSig:row.tenant_sig,tenantSignedAt:row.tenant_signed_at,signingToken:row.signing_token,signingLink:row.signing_link,pdfUrl:row.pdf_url,roomId:row.room_id||(row.variable_data?.roomId)||"",propertyId:row.property_id||(row.variable_data?.propertyId)||"",createdAt:row.created_at,updatedAt:row.updated_at});
+const leaseObjToRow=(lease)=>({id:lease.id,workspace_id:null,template_id:LEASE_TEMPLATE_ID,tenant_id:lease.tenantEmail||null,room_id:lease.roomId||null,property_id:lease.propertyId||null,variable_data:lease,status:lease.status||"draft",landlord_sig:lease.landlordSignature||lease.landlordSig||null,tenant_sig:lease.tenantSig||null,landlord_signed_at:lease.landlordSignedAt||null,tenant_signed_at:lease.tenantSignedAt||null,signing_token:lease.signingToken||null,signing_link:lease.signingLink||null,pdf_url:lease.pdfUrl||null,updated_at:new Date().toISOString()});
+async function loadLeases(){try{const r=await supa("lease_instances?order=created_at.desc");const rows=await r.json();if(!Array.isArray(rows))return[];return rows.map(leaseRowToObj);}catch(e){console.error("Load leases error:",e);return[];}}
+async function upsertLease(lease){try{await supa("lease_instances",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify(leaseObjToRow(lease))});}catch(e){console.error("Upsert lease error:",e);}}
+async function patchLease(id,updates){try{await supa("lease_instances?id=eq."+id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({...updates,updated_at:new Date().toISOString()})});}catch(e){console.error("Patch lease error:",e);}}
+async function deleteLeaseInDB(id){try{await supa("lease_instances?id=eq."+id,{method:"DELETE"});}catch(e){console.error("Delete lease error:",e);}}
+
 // Upload a file to Supabase Storage, return public URL
 async function uploadPhoto(file,propId){
   const ext=file.name.split(".").pop()||"jpg";
@@ -2183,7 +2192,7 @@ export default function Page(){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),load("hq-leases",[]),supa("lease_templates?is_active=eq.true&workspace_id=is.null&type=eq.standard&order=created_at.asc&limit=1").then(r=>r.json()).then(d=>d&&d.length>0?d[0]:null).catch(()=>null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS_BY_CAT),load("hq-dismissed-followups",[])]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),loadLeases(),supa("lease_templates?is_active=eq.true&workspace_id=is.null&type=eq.standard&order=created_at.asc&limit=1").then(r=>r.json()).then(d=>d&&d.length>0?d[0]:null).catch(()=>null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS_BY_CAT),load("hq-dismissed-followups",[])]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
@@ -2234,7 +2243,7 @@ export default function Page(){
     setAppFields(migratedAf);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setWidgetList(null);setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-leases",leases),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,leases,expenses,mortgages,vendors,improvements,subcats,loaded]);
+  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,loaded]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   // ── Load onboarding statuses for approved/onboarding applicants ──────
@@ -5426,7 +5435,7 @@ export default function Page(){
             updatedAt:now,
             createdAt:leaseForm.createdAt||now,
           };
-          setLeases(p=>{const exists=p.find(l=>l.id===newLease.id);const updated=exists?p.map(l=>l.id===newLease.id?newLease:l):[...p,newLease];save("hq-leases",updated);return updated;});
+          setLeases(p=>{const exists=p.find(l=>l.id===newLease.id);const updated=exists?p.map(l=>l.id===newLease.id?newLease:l):[...p,newLease];upsertLease(newLease);return updated;});
           // Generate move-in charges for new leases only (no existing id before save)
           if(!leaseForm.id&&leaseForm.roomId){
             const roomId=leaseForm.roomId;
@@ -5512,12 +5521,12 @@ export default function Page(){
           const now=new Date().toISOString();
           const token=uid()+uid();
           const link=`${settings.siteUrl||"https://rentblackbear.com"}/lease?token=${token}`;
-          setLeases(p=>{const updated=p.map(l=>l.id===leaseId?{...l,status:"pending_tenant",landlordSignedAt:now,signingToken:token,signingLink:link}:l);save("hq-leases",updated);return updated;});
+          setLeases(p=>{const updated=p.map(l=>l.id===leaseId?{...l,status:"pending_tenant",landlordSignedAt:now,signingToken:token,signingLink:link}:l);patchLease(leaseId,{status:"pending_tenant",landlord_signed_at:now,signing_token:token,signing_link:link});return updated;});
           setNotifs(p=>[{id:uid(),type:"lease",msg:`Lease sent to tenant for signing — ${link}`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
           setModal({type:"leaseSent",link});
         };
 
-        const deleteLease=id=>{setLeases(p=>{const updated=p.filter(l=>l.id!==id);save("hq-leases",updated);return updated;});};
+        const deleteLease=id=>{setLeases(p=>{const updated=p.filter(l=>l.id!==id);deleteLeaseInDB(id);return updated;});};
 
         return(<>
         <div className="sec-hd" style={{marginBottom:16}}>
@@ -6287,7 +6296,7 @@ export default function Page(){
                 const now=new Date().toISOString();
                 const token=uid()+uid();
                 const link=`${settings.siteUrl||"https://rentblackbear.vercel.app"}/lease?token=${token}`;
-                setLeases(p=>{const updated=p.map(l=>l.id===modal.leaseId?{...l,status:"pending_tenant",landlordSignature:modal.landlordSig,landlordSignedAt:now,signingToken:token,signingLink:link}:l);save("hq-leases",updated);return updated;});
+                setLeases(p=>{const updated=p.map(l=>l.id===modal.leaseId?{...l,status:"pending_tenant",landlordSignature:modal.landlordSig,landlordSignedAt:now,signingToken:token,signingLink:link}:l);patchLease(modal.leaseId,{status:"pending_tenant",landlord_sig:modal.landlordSig,landlord_signed_at:now,signing_token:token,signing_link:link});return updated;});
                 // Generate move-in charges now that lease is signed and sent
                 const lease=modal.lease||{};
                 const mi=lease.moveIn||"";
