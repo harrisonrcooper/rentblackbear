@@ -1925,7 +1925,7 @@ const S=`
 .bot-tab.act svg{opacity:1}
 
 /* Main */
-.mn{flex:1;overflow-y:auto;background:#f4f3f0;display:flex;flex-direction:column;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
+.mn{flex:1;overflow-y:auto;background:#f4f3f0;display:flex;flex-direction:column;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .tbar{background:#fff;padding:14px 24px;border-bottom:1px solid rgba(0,0,0,.04);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
 .tbar h1{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
 .tbar-sub{font-size:10px;color:#5c4a3a;margin-top:1px}
