@@ -7715,12 +7715,38 @@ export default function Page(){
               <div style={{padding:"32px 40px",lineHeight:1.8,fontSize:13}}>
                 {/* Header */}
                 <div style={{textAlign:"center",marginBottom:32}}>
-                  <div style={{fontSize:18,fontWeight:800,marginBottom:4}}>{leaseTemplate?.company||l.company||settings.companyName||"Black Bear Rentals"}</div>
+                  <div style={{fontSize:18,fontWeight:800,marginBottom:4}}>{settings.companyName||"Black Bear Rentals"}</div>
                   <div style={{fontSize:13,color:"#5c4a3a",marginBottom:16}}>{leaseTemplate?.name||"Alabama Co-Living Lease Agreement"}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,textAlign:"left",background:"rgba(0,0,0,.02)",borderRadius:8,padding:"14px 18px",marginBottom:8}}>
-                    {[["Tenant",l.tenantName],["Property",l.property+(prop?.addr?" — "+prop.addr:"")],["Room",l.room],["Move-in",fmtD(l.moveIn)],["Lease End",fmtD(l.leaseEnd)],["Monthly Rent","$"+(l.rent||0).toLocaleString()],["Security Deposit","$"+(l.sd||0).toLocaleString()],["Landlord",l.landlordName||"Carolina Cooper"]].map(([k,v])=>(
-                      <div key={k}><span style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.6}}>{k}</span><div style={{fontWeight:600,fontSize:12,marginTop:2}}>{v||"—"}</div></div>
-                    ))}
+                  {/* Summary table */}
+                  <div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden",marginBottom:16,textAlign:"left"}}>
+                    <div style={{padding:"8px 14px",background:"#1a1714",display:"flex",alignItems:"center",gap:8}}>
+                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <span style={{fontSize:9,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:1}}>Lease Summary</span>
+                    </div>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                      <tbody>
+                        {[
+                          ["Tenant",l.tenantName||"—",""],
+                          ["Property",l.propertyAddress||l.property||"—","Section 1"],
+                          ["Room / Unit",l.room||"—","Section 1"],
+                          ["Lease Start",fmtD(l.leaseStart||l.moveIn),"Section 2"],
+                          ["Lease End",fmtD(l.leaseEnd),"Section 2"],
+                          ["Monthly Rent",l.rent?"$"+Number(l.rent).toLocaleString()+".00":"—","Section 3"],
+                          ["Security Deposit",l.sd?"$"+Number(l.sd).toLocaleString()+".00":"—","Section 4"],
+                          ["Prorated First Month",l.proratedRent&&l.proratedRent>0?"$"+Number(l.proratedRent).toLocaleString()+".00":"N/A","Section 3"],
+                          ["Late Fee","$50 after the 3rd · $5/day thereafter","Section 5"],
+                          ["Door Code",l.doorCode||"—","Section 13"],
+                          ["Parking",l.parking||"No assigned parking","Section 9"],
+                          ["Landlord",l.landlordName||"Carolina Cooper",""],
+                        ].map(([label,value,ref],i)=>(
+                          <tr key={label} style={{borderBottom:i<11?"1px solid rgba(0,0,0,.05)":"none",background:i%2===0?"#fff":"rgba(0,0,0,.012)"}}>
+                            <td style={{padding:"7px 14px",fontWeight:700,color:"#5c4a3a",width:"35%",fontSize:10,textTransform:"uppercase",letterSpacing:.4,verticalAlign:"top"}}>{label}</td>
+                            <td style={{padding:"7px 8px",color:"#1a1714",fontWeight:500,verticalAlign:"top",fontSize:12}}>{value}</td>
+                            <td style={{padding:"7px 14px 7px 4px",color:"#9a8878",fontSize:9,textAlign:"right",whiteSpace:"nowrap",verticalAlign:"top",width:"70px"}}>{ref}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
