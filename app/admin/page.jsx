@@ -5459,7 +5459,7 @@ export default function Page(){
                   <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"leaseSummary",lease:l})}>View Summary</button>
                   <button className="btn btn-out btn-sm" onClick={()=>setViewingLease({lease:l,room:null})}>View Full Lease</button>
                   {l.status==="draft"&&<button className="btn btn-out btn-sm" onClick={()=>setLeaseForm({...l})}>Edit</button>}
-                  {l.status==="draft"&&<button className="btn btn-green btn-sm" onClick={()=>setModal({type:"signLease",leaseId:l.id,lease:l})}>Sign & Send</button>}
+                  {l.status==="draft"&&<button className="btn btn-green btn-sm" onClick={()=>setLeaseForm({...l,_lockedFromApp:!!l.applicationId,_resuming:true})}>Review & Send</button>}
                   {l.status==="pending_tenant"&&<button className="btn btn-out btn-sm" onClick={()=>{navigator.clipboard.writeText(l.signingLink||"");showAlert({title:"Copied",body:"Signing link copied."});}}>Copy Link</button>}
                   <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>confirmAction(`Delete lease for ${l.tenantName}?`,()=>deleteLease(l.id))}>Delete</button>
                 </div>
