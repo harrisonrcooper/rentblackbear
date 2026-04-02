@@ -82,13 +82,14 @@ export default function LeasePage(){
 
   // ── Track scroll to bottom ──────────────────────────────────────────
   useEffect(()=>{
-    const el=docRef.current;
-    if(!el)return;
+    if(status!=="ready")return;
     const handler=()=>{
-      if(el.scrollTop+el.clientHeight>=el.scrollHeight-40)setScrolledToBottom(true);
+      const scrolled=window.scrollY+window.innerHeight;
+      const docBottom=docRef.current?docRef.current.getBoundingClientRect().bottom+window.scrollY:0;
+      if(scrolled>=docBottom-60)setScrolledToBottom(true);
     };
-    el.addEventListener("scroll",handler);
-    return()=>el.removeEventListener("scroll",handler);
+    window.addEventListener("scroll",handler);
+    return()=>window.removeEventListener("scroll",handler);
   },[status]);
 
   // ── Submit signing ──────────────────────────────────────────────────
@@ -298,7 +299,7 @@ export default function LeasePage(){
         </div>
 
         {/* Lease document */}
-        <div ref={docRef} style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",padding:"32px 40px",marginBottom:20,maxHeight:"70vh",overflowY:"auto"}}>
+        <div ref={docRef} style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",padding:"32px 40px",marginBottom:20}}>
 
           {/* Document header */}
           <div style={{textAlign:"center",marginBottom:32,paddingBottom:24,borderBottom:"2px solid #1a1714"}}>
