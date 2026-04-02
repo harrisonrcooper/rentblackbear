@@ -5740,6 +5740,30 @@ export default function Page(){
                 </>);})()}
           </div>
 
+          {/* Utilities Clause — directly under property/room selection */}
+          <div className="fld" style={{marginBottom:14}}>
+            <label>Utilities Clause <span style={{color:"#c45c4a",fontSize:11}}>*</span></label>
+            {(()=>{
+              const _locked=leaseForm._lockedFromApp&&!leaseForm._leaseEditing;
+              return _locked
+                ?<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:leaseForm.utilitiesClause?"#6b5e52":"#c45c4a",lineHeight:1.5}}>{leaseForm.utilitiesClause||"No utilities clause selected — click Edit to choose one"}</div>
+                :<>
+                  <select value={leaseForm.utilitiesMode||""} onChange={e=>{const mode=e.target.value;const tmpl=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===mode);setLeaseForm(p=>({...p,utilitiesMode:mode,utilitiesClause:mode==="custom"?"":tmpl?.clause||"",_errors:{...(p._errors||{}),utilitiesMode:null},_utilPresetSaved:false}));}} style={{width:"100%",marginBottom:leaseForm.utilitiesMode==="custom"||!leaseForm.utilitiesMode?6:0,borderColor:leaseForm._errors?.utilitiesMode?"#c45c4a":undefined,animation:leaseForm._errors?.utilitiesMode?"shake .4s ease":undefined}}>
+                    <option value="">— Select a utilities clause —</option>
+                    {(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
+                    <option value="custom">Custom — write your own</option>
+                  </select>
+                  {leaseForm._errors?.utilitiesMode&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4}}>{leaseForm._errors.utilitiesMode}</div>}
+                  {leaseForm.utilitiesMode==="custom"&&<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} placeholder="Write your custom utilities clause..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
+                  {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5,marginBottom:4}}>{leaseForm.utilitiesClause}</div>}
+                  {leaseForm.utilitiesMode&&leaseForm.roomId&&(()=>{
+                    const saveUtilPreset=()=>{const lp=props.find(p=>p.id===(leaseForm.propertyId||props.find(pp=>getPropDisplayName(pp)===leaseForm.property)?.id));if(!lp||!leaseForm.roomId)return;const updatedUnits=(lp.units||[]).map(u=>({...u,utils:u.rooms&&u.rooms.some(r=>r.id===leaseForm.roomId)?leaseForm.utilitiesMode:u.utils,rooms:(u.rooms||[]).map(r=>r.id===leaseForm.roomId?{...r,utils:leaseForm.utilitiesMode}:r)}));const updatedProps=props.map(p=>p.id===lp.id?{...p,units:updatedUnits}:p);setProps(updatedProps);setLeaseForm(p=>({...p,_utilPresetSaved:true}));};
+                    return(<button onClick={saveUtilPreset} style={{marginLeft:"auto",padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>{leaseForm._utilPresetSaved?"Preset saved":"Save as preset for this room"}</button>);
+                  })()}
+                </>;
+            })()}
+          </div>
+
           {(()=>{
             const locked=leaseForm._lockedFromApp&&!leaseForm._leaseEditing;
             const ro=(val)=><div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:12,color:locked?"#6b5e52":"#1a1714",fontWeight:locked?400:500,minHeight:34,display:"flex",alignItems:"center"}}>{val||<span style={{color:"#aaa"}}>—</span>}</div>;
@@ -6018,37 +6042,6 @@ export default function Page(){
                     </>);
                   })()}
                 </div>
-              </div>
-              <div className="fld"><label>Utilities Clause <span style={{color:"#c45c4a",fontSize:11}}>*</span></label>
-                {locked
-                  ?<div style={{padding:"7px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,border:"0.5px solid rgba(0,0,0,.06)",fontSize:11,color:leaseForm.utilitiesClause?"#6b5e52":"#c45c4a",lineHeight:1.5}}>{leaseForm.utilitiesClause||"No utilities clause selected — click Edit to choose one"}</div>
-                  :<>
-                    <select value={leaseForm.utilitiesMode||""} onChange={e=>{
-                      const mode=e.target.value;
-                      const tmpl=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).find(t=>t.key===mode);
-                      setLeaseForm(p=>({...p,utilitiesMode:mode,utilitiesClause:mode==="custom"?"":tmpl?.clause||"",_errors:{...(p._errors||{}),utilitiesMode:null},_utilPresetSaved:false}));
-                    }} style={{width:"100%",marginBottom:leaseForm.utilitiesMode==="custom"||!leaseForm.utilitiesMode?6:0,borderColor:leaseForm._errors?.utilitiesMode?"#c45c4a":undefined,animation:leaseForm._errors?.utilitiesMode?"shake .4s ease":undefined}}>
-                      <option value="">— Select a utilities clause —</option>
-                      {(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
-                      <option value="custom">Custom — write your own</option>
-                    </select>
-                    {leaseForm._errors?.utilitiesMode&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4}}>{leaseForm._errors.utilitiesMode}</div>}
-                    {leaseForm.utilitiesMode==="custom"&&<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} placeholder="Write your custom utilities clause..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
-                    {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5,marginBottom:4}}>{leaseForm.utilitiesClause}</div>}
-                    {leaseForm.utilitiesMode&&leaseForm.roomId&&(()=>{
-                      const saveUtilPreset=()=>{
-                        const lp=props.find(p=>p.id===(leaseForm.propertyId||props.find(pp=>getPropDisplayName(pp)===leaseForm.property)?.id));
-                        if(!lp||!leaseForm.roomId)return;
-                        const updatedUnits=(lp.units||[]).map(u=>({...u,utils:u.rooms&&u.rooms.some(r=>r.id===leaseForm.roomId)?leaseForm.utilitiesMode:u.utils,rooms:(u.rooms||[]).map(r=>r.id===leaseForm.roomId?{...r,utils:leaseForm.utilitiesMode}:r)}));
-                        const updatedProps=props.map(p=>p.id===lp.id?{...p,units:updatedUnits}:p);
-                        setProps(updatedProps);
-                        setLeaseForm(p=>({...p,_utilPresetSaved:true}));
-                      };
-                      return(<button onClick={saveUtilPreset} style={{marginLeft:"auto",padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
-                        {leaseForm._utilPresetSaved?"Preset saved":"Save as preset for this room"}
-                      </button>);
-                    })()}
-                  </>}
               </div>
             </div>);
           })()}
