@@ -2188,6 +2188,8 @@ export default function Page(){
   const[leases,setLeases]=useState([]);
   const[leaseTemplate,setLeaseTemplate]=useState(null);
   const[leaseSubTab,setLeaseSubTab]=useState("active");
+  const[templateEditorDirty,setTemplateEditorDirty]=useState(false);
+  const[pendingNavTab,setPendingNavTab]=useState(null);// tab waiting for dirty confirm
   const[leaseForm,setLeaseForm]=useState(null);
   const[_pendingLeaseAppId,_setPendingLeaseAppId]=useState(null);
   const[viewingLease,setViewingLease]=useState(null); // {lease, room}
@@ -2609,7 +2611,12 @@ export default function Page(){
   const getPropByName=(propName)=>props.find(p=>p.name===propName||p.addr===propName);
   const propDisplay=(propName)=>{const p=getPropByName(propName);return p?getPropDisplayName(p):propName;};
   const roomSubLine=(propName,roomName)=>{const dispName=propDisplay(propName);return `${dispName} · ${roomName}`;};  // No more double address
-  const goTab=(t)=>{setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);};
+  const goTab=(t,force=false)=>{
+    if(!force&&templateEditorDirty&&tab==="leases"&&leaseSubTab==="template"&&t!=="leases"){
+      setPendingNavTab(t);return;
+    }
+    setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);
+  };
   const confirmAction=(title,onConfirm,body="This cannot be undone.")=>{setModal({type:"confirmAction",title,body,confirmLabel:"Confirm",confirmStyle:"btn-red",onConfirm:()=>{onConfirm();setModal(null);}});};
   const shakeModal=()=>{const mb=document.querySelector(".mbox");if(mb){mb.style.animation="none";mb.offsetHeight;mb.style.animation="shake .4s ease, redFlash .5s ease";}};
 
@@ -5476,6 +5483,7 @@ export default function Page(){
           settings={settings}
           showAlert={showAlert}
           DEF_LEASE_SECTIONS={DEF_LEASE_SECTIONS}
+          onDirtyChange={setTemplateEditorDirty}
         />}
 
         <LeaseModal
@@ -5489,6 +5497,34 @@ export default function Page(){
           showAlert={showAlert}
           setLeaseSubTab={setLeaseSubTab}
         />
+
+        {/* ── Template editor unsaved changes modal ── */}
+        {pendingNavTab&&<div className="mbg" onClick={()=>setPendingNavTab(null)}>
+          <div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}}>
+            <div style={{width:48,height:48,borderRadius:"50%",background:"rgba(196,92,74,.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+              <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h2 style={{fontSize:15,marginBottom:8}}>Unsaved Changes</h2>
+            <p style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:20}}>
+              You have unsaved changes in the Template Editor. If you leave now your changes will be lost.
+            </p>
+            <div className="mft">
+              <button className="btn btn-out" onClick={()=>setPendingNavTab(null)}>Cancel — Stay Here</button>
+              <button className="btn btn-out" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.3)"}} onClick={()=>{setTemplateEditorDirty(false);goTab(pendingNavTab,true);setPendingNavTab(null);}}>Leave Without Saving</button>
+              <button className="btn btn-gold" onClick={async()=>{
+                // Save template then navigate
+                if(leaseTemplate?.id){
+                  try{
+                    await supa("lease_templates?id=eq."+leaseTemplate.id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({name:leaseTemplate.name,sections:leaseTemplate.sections,updated_at:new Date().toISOString()})});
+                  }catch(e){}
+                }
+                setTemplateEditorDirty(false);
+                goTab(pendingNavTab,true);
+                setPendingNavTab(null);
+              }}>Save & Leave</button>
+            </div>
+          </div>
+        </div>}
 
         {/* View executed lease */}
         {modal?.type==="viewLease"&&<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560}}>

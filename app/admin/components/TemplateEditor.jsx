@@ -112,7 +112,7 @@ function RichEditor({value,onChange}){
 }
 
 // ── Main ─────────────────────────────────────────────────────────────
-export default function TemplateEditor({template,setTemplate,settings,showAlert,DEF_LEASE_SECTIONS}){
+export default function TemplateEditor({template,setTemplate,settings,showAlert,DEF_LEASE_SECTIONS,onDirtyChange}){
   const _acc=(settings?.adminAccent)||"#4a7c59";
   const [saving,setSaving]=useState(false);
   const [savingSec,setSavingSec]=useState({});// {[secId]:true}
@@ -122,8 +122,14 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
   const [policy,setPolicy]=useState(DEFAULT_POLICY);
   const [legalWarned,setLegalWarned]=useState({});
   const [dirtySecs,setDirtySecs]=useState(new Set());// section IDs with unsaved changes
+  const [nameDirty,setNameDirty]=useState(false);
   const originalSections=useRef(null);// snapshot of sections as loaded from Supabase
   const [revertConfirm,setRevertConfirm]=useState(null);// {si, title} when confirm modal is open
+
+  // Notify parent of dirty state changes
+  useEffect(()=>{
+    if(onDirtyChange)onDirtyChange(dirtySecs.size>0||nameDirty);
+  },[dirtySecs,nameDirty]);// eslint-disable-line
 
   // Capture original on first load
   useEffect(()=>{
@@ -182,6 +188,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
     try{
       await supa("lease_templates?id=eq."+template.id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({name:template.name||"Black Bear Rentals — Alabama Co-Living Lease",sections,updated_at:new Date().toISOString()})});
       setDirtySecs(new Set());
+      setNameDirty(false);
       showAlert({title:"Template Saved",body:"All sections saved successfully."});
     }catch(e){showAlert({title:"Error",body:"Failed to save. Please try again."});}
     setSaving(false);
@@ -233,7 +240,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
         <label>Template Name</label>
         <input
           value={template?.name||""}
-          onChange={e=>setTemplate(p=>({...(p||{}),name:e.target.value}))}
+          onChange={e=>{setTemplate(p=>({...(p||{}),name:e.target.value}));setNameDirty(true);}}
           placeholder="e.g. Alabama Co-Living — By Room"
           style={{fontSize:13,fontWeight:600}}
         />
