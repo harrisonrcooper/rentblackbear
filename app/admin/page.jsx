@@ -5488,6 +5488,7 @@ export default function Page(){
           if(!leaseForm.roomId&&!(leaseForm.room||"").trim()) errs.roomId="Select a room or unit.";
           if(!leaseForm.rent||leaseForm.rent<=0) errs.rent="Monthly rent amount is required.";
           if(!leaseForm.moveIn) errs.moveIn="Move-in date is required.";
+          if(!errs.moveIn){const _ovRoom=leaseForm.roomId?props.flatMap(p=>allRooms(p)).find(r=>r.id===leaseForm.roomId):null;const _ovCurLe=_ovRoom?.le||null;if(_ovCurLe&&leaseForm.moveIn&&leaseForm.moveIn<_ovCurLe)errs.moveIn="Move-in "+fmtD(leaseForm.moveIn)+" overlaps the current lease ending "+fmtD(_ovCurLe)+". Resolve the conflict or use the 'Use "+fmtD(_ovCurLe)+"' button in the timeline before signing.";}
           if(!leaseForm.leaseEndTbd&&!leaseForm.leaseEnd) errs.leaseEnd="Lease end date is required, or toggle TBD.";
           if(!leaseForm.doorCode||leaseForm.doorCode.trim().length!==4) errs.doorCode="A 4-digit door code is required before signing.";
           if(leaseForm.parkingChoice===null||leaseForm.parkingChoice===undefined) errs.parkingChoice="Indicate whether this room has assigned parking.";
@@ -5927,12 +5928,16 @@ export default function Page(){
                 </div>);
               })()}
               <div className="fr">
-                <div className="fld"><label>Door Code (4-digit PIN)</label>
-                  {locked
-                    ?ro(leaseForm.doorCode||<span style={{color:"#c45c4a",fontSize:11}}>Not set — tenant did not choose a PIN</span>)
-                    :<input value={leaseForm.doorCode||""} maxLength={4} onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_errors:{...(p._errors||{}),doorCode:null}}))} placeholder="4-digit PIN" style={{animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,borderColor:leaseForm._errors?.doorCode?"#c45c4a":undefined}}/>
-                  }
-                  {leaseForm._errors?.doorCode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4}}>{leaseForm._errors.doorCode}</div>}
+                <div className="fld">
+                  <label style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                    <span>Door Code (4-digit PIN)<span style={{color:"#c45c4a",marginLeft:3,fontSize:11}}>*</span></span>
+                    {leaseForm._lockedFromApp&&leaseForm.doorCode?.length===4&&<span style={{fontSize:9,fontWeight:700,color:"#2d6a3f",background:"rgba(74,124,89,.09)",border:"0.5px solid rgba(74,124,89,.25)",padding:"1px 6px",borderRadius:3}}>from application</span>}
+                  </label>
+                  <input value={leaseForm.doorCode||""} maxLength={4}
+                    onChange={e=>setLeaseForm(p=>({...p,doorCode:e.target.value.replace(/\D/g,"").slice(0,4),_errors:{...(p._errors||{}),doorCode:null}}))}
+                    placeholder="0000"
+                    style={{fontFamily:"monospace",fontSize:20,fontWeight:800,letterSpacing:8,textAlign:"center",animation:leaseForm._errors?.doorCode?"shake .4s ease":undefined,borderColor:leaseForm._errors?.doorCode?"#c45c4a":leaseForm.doorCode?.length===4?"rgba(74,124,89,.45)":undefined,paddingTop:8,paddingBottom:8}}/>
+                  {leaseForm._errors?.doorCode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.doorCode}</div>}
                 </div>
                 <div className="fld">
                   <label>Parking
