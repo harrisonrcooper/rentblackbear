@@ -5906,6 +5906,7 @@ export default function Page(){
                       {/* Buffer control */}
                       <div style={{display:"flex",alignItems:"center",gap:3,background:"rgba(255,255,255,.8)",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:5,padding:"2px 5px"}}>
                         <span style={{fontSize:8,color:"#9a7067",fontWeight:600}}>Buffer</span>
+                        <button onClick={()=>setLeaseForm(p=>({...p,_showBufTip:!p._showBufTip}))} title="What is this?" style={{width:13,height:13,borderRadius:"50%",border:"0.5px solid rgba(0,0,0,.2)",background:"rgba(0,0,0,.06)",cursor:"pointer",fontFamily:"inherit",fontSize:8,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#6b5e52",lineHeight:1}}>?</button>
                         <button onClick={()=>{
                           const newBuf=Math.max(0,(leaseForm._bufferDays??7)-1);
                           const newBufEnd=tlCurLe?(()=>{const d=new Date(tlCurLe+"T00:00:00");d.setDate(d.getDate()+newBuf);return d.toISOString().split("T")[0];})():null;
@@ -5929,6 +5930,11 @@ export default function Page(){
                       </button>
                     </div>
                   </div>
+                  {/* Buffer tooltip strip */}
+                  {leaseForm._showBufTip&&<div style={{padding:"7px 12px",background:"rgba(154,116,34,.06)",borderBottom:"0.5px solid rgba(154,116,34,.15)",display:"flex",alignItems:"flex-start",gap:8}}>
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#9a7422" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span style={{fontSize:10,color:"#9a7422",lineHeight:1.5}}>The <strong>turnover buffer</strong> is the number of days reserved between tenants for cleaning, repairs, and inspections. The new move-in date cannot fall within this window — the system will automatically push it to the first available day after the buffer ends.</span>
+                  </div>}
                   {/* Gantt */}
                   <div style={{padding:"7px 10px 8px",background:"#fff"}}>
                     <div style={{position:"relative",height:12,marginBottom:2}}>
