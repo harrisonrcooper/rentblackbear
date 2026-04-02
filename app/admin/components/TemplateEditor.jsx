@@ -122,6 +122,14 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
   const [policy,setPolicy]=useState(DEFAULT_POLICY);
   const [legalWarned,setLegalWarned]=useState({});
   const [dirtySecs,setDirtySecs]=useState(new Set());// section IDs with unsaved changes
+  const originalSections=useRef(null);// snapshot of sections as loaded from Supabase
+
+  // Capture original on first load
+  useEffect(()=>{
+    if(template?.sections&&!originalSections.current){
+      originalSections.current=JSON.parse(JSON.stringify(template.sections));
+    }
+  },[template?.sections]);
 
   const sections=template?.sections||DEF_LEASE_SECTIONS||[];
 
@@ -194,9 +202,10 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
   // ── Revert section to default ────────────────────────────────────
   const revertSection=(si)=>{
     const sec=sections[si];
-    const defaultSec=(DEF_LEASE_SECTIONS||[]).find(d=>d.id===sec.id);
-    if(!defaultSec){showAlert({title:"No Default",body:"This is a custom section — there is no default to revert to."});return;}
-    if(!window.confirm("Revert \""+sec.title+"\" to its default wording? Any edits you have made will be lost."))return;
+    const snap=originalSections.current||[];
+    const defaultSec=snap.find(d=>d.id===sec.id);
+    if(!defaultSec){showAlert({title:"No Default",body:"This is a custom section — there is no saved default to revert to."});return;}
+    if(!window.confirm("Revert \""+sec.title+"\" to its last saved wording? Unsaved edits will be lost."))return;
     updateSec(si,{content:defaultSec.content,title:defaultSec.title});
   };
 
