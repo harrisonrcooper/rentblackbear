@@ -5413,10 +5413,10 @@ export default function Page(){
         </div>
 
         {/* Sub-tabs */}
-        <div style={{display:"flex",gap:6,marginBottom:16,borderBottom:"1px solid rgba(0,0,0,.06)",paddingBottom:12}}>
+        <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"2px solid rgba(0,0,0,.08)"}}>
           {[["active","Active Leases"],["template","Template Editor"]].map(([id,label])=>(
             <button key={id} onClick={()=>setLeaseSubTab(id)}
-              style={{padding:"6px 14px",borderRadius:7,border:"none",background:leaseSubTab===id?"#1a1714":"transparent",color:leaseSubTab===id?"#f5f0e8":"#999",fontWeight:leaseSubTab===id?700:500,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              style={{padding:"12px 24px",border:"none",borderBottom:leaseSubTab===id?"2px solid "+_acc:"2px solid transparent",marginBottom:-2,background:"transparent",color:leaseSubTab===id?_acc:"#9a8878",fontWeight:leaseSubTab===id?700:500,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",letterSpacing:.1}}>
               {label}
             </button>
           ))}
