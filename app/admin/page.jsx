@@ -5849,6 +5849,80 @@ export default function Page(){
                   {leaseForm._errors?.leaseEnd&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.leaseEnd}</div>}
                 </div>
               </div>
+              {/* ── Mini Tenant Timeline + Turnover Buffer ── */}
+              {leaseForm.roomId&&(()=>{
+                const tlRoom=props.flatMap(p=>allRooms(p)).find(r=>r.id===leaseForm.roomId);
+                const tlCur=tlRoom?.tenant||null;
+                const tlCurLe=tlRoom?.le||null;
+                const tlMi=leaseForm.moveIn||null;
+                const tlLe=leaseForm.leaseEnd||null;
+                const bufDays=leaseForm._bufferDays??7;
+                const bufEnd=tlCurLe?(()=>{const d=new Date(tlCurLe+"T00:00:00");d.setDate(d.getDate()+bufDays);return d.toISOString().split("T")[0];})():null;
+                const anchor=tlMi||tlCurLe||TODAY.toISOString().split("T")[0];
+                const anchorD=new Date(anchor+"T00:00:00");
+                const win0=new Date(anchorD.getFullYear(),anchorD.getMonth()-1,1);
+                const win1=new Date(anchorD.getFullYear(),anchorD.getMonth()+5,1);
+                const totalDays=Math.ceil((win1-win0)/86400000);
+                const toX=(ds)=>{if(!ds)return null;const d=Math.ceil((new Date(ds+"T00:00:00")-win0)/86400000);return Math.max(0,Math.min(100,(d/totalDays)*100));};
+                const todayX=toX(TODAY.toISOString().split("T")[0]);
+                const months=Array.from({length:6},(_,i)=>{const d=new Date(win0);d.setMonth(d.getMonth()+i);return{label:d.toLocaleString("default",{month:"short"}),x:toX(d.toISOString().split("T")[0])};});
+                const twoRows=!!tlCur;
+                return(
+                <div style={{marginTop:4,marginBottom:10,background:"rgba(0,0,0,.018)",border:"0.5px solid rgba(0,0,0,.08)",borderRadius:8,padding:"8px 10px"}}>
+                  {/* Header */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",letterSpacing:.3}}>TENANT TIMELINE</div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      {/* Turnover buffer control */}
+                      <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(255,255,255,.7)",border:"0.5px solid rgba(0,0,0,.1)",borderRadius:5,padding:"2px 6px"}}>
+                        <span style={{fontSize:9,color:"#9a7067",fontWeight:600}}>Turnover buffer</span>
+                        <button onClick={()=>setLeaseForm(p=>({...p,_bufferDays:Math.max(0,(p._bufferDays??7)-1)}))} style={{width:16,height:16,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
+                        <span style={{fontSize:11,fontWeight:800,color:"#1a1714",minWidth:22,textAlign:"center"}}>{bufDays}d</span>
+                        <button onClick={()=>setLeaseForm(p=>({...p,_bufferDays:(p._bufferDays??7)+1}))} style={{width:16,height:16,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
+                      </div>
+                      {/* Open full timeline */}
+                      <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(20,Math.floor(window.innerWidth/2)-340),y:40}}))} style={{fontSize:9,fontWeight:700,color:"#1d4ed8",background:"rgba(59,130,246,.07)",border:"0.5px solid rgba(59,130,246,.25)",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,lineHeight:1}}>
+                        <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>
+                        Full Timeline
+                      </button>
+                    </div>
+                  </div>
+                  {/* Month headers */}
+                  <div style={{position:"relative",height:13,marginBottom:2}}>
+                    {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:7.5,color:"#bbb",transform:"translateX(-50%)",whiteSpace:"nowrap",pointerEvents:"none"}}>{m.label}</div>)}
+                  </div>
+                  {/* Gantt bars */}
+                  <div style={{position:"relative",height:twoRows?56:30,background:"rgba(0,0,0,.015)",borderRadius:5,overflow:"hidden",border:"0.5px solid rgba(0,0,0,.06)"}}>
+                    {/* Today line */}
+                    {todayX!==null&&<div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"rgba(196,92,74,.5)",zIndex:5}}/>}
+                    {/* Current tenant bar — top row */}
+                    {tlCur&&tlCur.moveIn&&tlCurLe&&toX(tlCur.moveIn)!==null&&toX(tlCurLe)!==null&&(
+                      <div style={{position:"absolute",left:Math.max(0,toX(tlCur.moveIn))+"%",width:Math.max(0,toX(tlCurLe)-Math.max(0,toX(tlCur.moveIn)))+"%",top:4,height:18,background:"rgba(212,168,83,.28)",border:"1px solid rgba(212,168,83,.55)",borderRadius:3,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden",boxSizing:"border-box"}}>
+                        <span style={{fontSize:8,fontWeight:700,color:"#9a7422",whiteSpace:"nowrap"}}>{tlCur.name}</span>
+                      </div>
+                    )}
+                    {/* Turnover buffer bar — immediately after curLe, top row */}
+                    {tlCurLe&&bufDays>0&&toX(tlCurLe)!==null&&bufEnd&&toX(bufEnd)!==null&&(
+                      <div style={{position:"absolute",left:toX(tlCurLe)+"%",width:Math.max(0,toX(bufEnd)-toX(tlCurLe))+"%",top:4,height:18,background:"repeating-linear-gradient(45deg,rgba(120,100,80,.07),rgba(120,100,80,.07) 3px,transparent 3px,transparent 7px)",border:"1px dashed rgba(150,130,110,.5)",borderLeft:"none",borderRadius:"0 3px 3px 0",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",boxSizing:"border-box"}}>
+                        <span style={{fontSize:7,fontWeight:700,color:"#9a7067",whiteSpace:"nowrap"}}>{bufDays}d</span>
+                      </div>
+                    )}
+                    {/* New tenant proposed bar — bottom row if occupied, only row if vacant */}
+                    {tlMi&&toX(tlMi)!==null&&(
+                      <div style={{position:"absolute",left:Math.max(0,toX(tlMi))+"%",width:tlLe&&toX(tlLe)!==null?Math.max(2,toX(tlLe)-Math.max(0,toX(tlMi)))+"%":"20%",top:twoRows?34:4,height:18,background:"rgba(59,130,246,.18)",border:"1px solid rgba(59,130,246,.42)",borderRadius:3,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden",boxSizing:"border-box"}}>
+                        <span style={{fontSize:8,fontWeight:700,color:"#1d4ed8",whiteSpace:"nowrap"}}>{leaseForm.tenantName||"New tenant"}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Legend */}
+                  <div style={{display:"flex",gap:10,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
+                    {tlCur&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,background:"rgba(212,168,83,.28)",border:"1px solid rgba(212,168,83,.55)"}}/>{tlCur.name}</div>}
+                    {tlCurLe&&bufDays>0&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,border:"1px dashed rgba(150,130,110,.5)"}}/>{bufDays}d turnover buffer</div>}
+                    {tlMi&&<div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067"}}><div style={{width:12,height:7,borderRadius:2,background:"rgba(59,130,246,.18)",border:"1px solid rgba(59,130,246,.42)"}}/>{leaseForm.tenantName||"New tenant"}</div>}
+                    <div style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:"#9a7067",marginLeft:"auto"}}><div style={{width:1.5,height:10,background:"rgba(196,92,74,.5)"}}/> Today</div>
+                  </div>
+                </div>);
+              })()}
               <div className="fr">
                 <div className="fld"><label>Door Code (4-digit PIN)</label>
                   {locked
