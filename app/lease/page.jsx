@@ -274,6 +274,11 @@ export default function LeasePage(){
 
       <div style={{maxWidth:760,margin:"0 auto",padding:"24px 16px 60px"}}>
 
+        {/* Instructions banner */}
+        <div style={{padding:"14px 20px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.25)",borderRadius:10,marginBottom:16,fontSize:12,color:"#9a7422",lineHeight:1.7}}>
+          <strong>Please read your entire lease before signing.</strong> Your signature at the bottom will serve as your initials for all sections marked with an initials line. Make sure you understand and agree to all terms before proceeding.
+        </div>
+
         {/* Lease document */}
         <div ref={docRef} style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",padding:"32px 40px",marginBottom:20}}>
 
@@ -299,6 +304,39 @@ export default function LeasePage(){
           </div>
 
           {/* Sections */}
+          {/* Summary of Key Terms — Page 1 */}
+          <div style={{marginBottom:32,border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden"}}>
+            <div style={{padding:"10px 16px",background:"#1a1714",display:"flex",alignItems:"center",gap:8}}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span style={{fontSize:10,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:1}}>Your Lease Summary</span>
+            </div>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+              <tbody>
+                {[
+                  ["Tenant",lease?.tenantName||"—",""],
+                  ["Property Address",lease?.propertyAddress||lease?.property||"—","Section 1"],
+                  ["Room / Unit",lease?.room||"—","Section 1"],
+                  ["Lease Start Date",varData.LEASE_START||"—","Section 2"],
+                  ["Lease End Date",varData.LEASE_END||"—","Section 2"],
+                  ["Monthly Rent",lease?.rent?"$"+Number(lease.rent).toLocaleString()+".00":"—","Section 3"],
+                  ["Security Deposit",lease?.sd?"$"+Number(lease.sd).toLocaleString()+".00":"—","Section 4"],
+                  ["Prorated First Month",lease?.proratedRent&&lease.proratedRent>0?"$"+Number(lease.proratedRent).toLocaleString()+".00":"N/A","Section 3"],
+                  ["Late Fee","$50 after the 3rd · $5/day thereafter","Section 5"],
+                  ["Door Code",lease?.doorCode||"—","Section 13"],
+                  ["Parking",lease?.parking||"No assigned parking","Section 9"],
+                  ["Utilities",lease?.utilitiesClause?"See Section 6":"—","Section 6"],
+                ].map(([label,value,ref],i)=>(
+                  <tr key={label} style={{borderBottom:i<11?"1px solid rgba(0,0,0,.05)":"none",background:i%2===0?"#fff":"rgba(0,0,0,.012)"}}>
+                    <td style={{padding:"9px 16px",fontWeight:700,color:"#5c4a3a",width:"35%",fontSize:11,textTransform:"uppercase",letterSpacing:.4,verticalAlign:"top"}}>{label}</td>
+                    <td style={{padding:"9px 8px",color:"#1a1714",fontWeight:500,verticalAlign:"top",fontSize:13}}>{value}</td>
+                    <td style={{padding:"9px 16px 9px 8px",color:"#9a8878",fontSize:10,textAlign:"right",whiteSpace:"nowrap",verticalAlign:"top",width:"80px"}}>{ref}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{marginBottom:28,borderBottom:"0.5px solid rgba(0,0,0,.07)"}}/>
+
           {activeSections.length===0&&<div style={{textAlign:"center",padding:40,color:"#9a8878",fontSize:13}}>
             Loading lease sections...{template===null?" (template not found)":""}
           </div>}
