@@ -1892,7 +1892,7 @@ const S=`
 @keyframes toastIn{from{opacity:0;transform:translateY(-30px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-20px)}}
 .confetti-wrap{position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden}
-@media print{.side,.no-print{display:none!important}.mn{margin-left:0!important}body{background:#fff}}
+@media print{.side,.no-print{display:none!important}.mn{left:0!important;position:static!important}body{background:#fff}}
 .confetti-piece{position:absolute;width:10px;height:10px;border-radius:2px;animation:confettiFall linear forwards}
 .lead-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9998;background:#1a1714;border:2px solid #d4a853;border-radius:14px;padding:20px 28px;box-shadow:0 12px 40px rgba(0,0,0,.4);animation:toastIn .4s ease-out;max-width:420px;width:90%}
 .lead-toast.out{animation:toastOut .3s ease-in forwards}
@@ -1927,7 +1927,7 @@ const S=`
 .bot-tab.act svg{opacity:1}
 
 /* Main */
-.mn{flex:1;overflow-y:auto;background:#f4f3f0;display:flex;flex-direction:column;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin-left:220px;height:100vh}
+.mn{position:fixed;top:0;bottom:0;left:220px;right:0;overflow-y:auto;background:#f4f3f0;display:flex;flex-direction:column;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .tbar{background:#fff;padding:14px 24px;border-bottom:1px solid rgba(0,0,0,.04);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
 .tbar h1{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
 .tbar-sub{font-size:10px;color:#5c4a3a;margin-top:1px}
@@ -2032,7 +2032,7 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
 /* Responsive */
 /* Tablet */
 @media(max-width:1024px){
-  .side{width:200px}.cnt{margin-left:200px}
+  .side{width:200px}.mn{left:200px}
   .kgrid{grid-template-columns:1fr 1fr}
   .pipeline{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));overflow-x:auto}
   .fr3{grid-template-columns:1fr 1fr}
@@ -2043,8 +2043,8 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
   .side.open{left:0}
   .mob-header{display:none}
   .bot-bar{display:flex}
-  .mn{padding-bottom:calc(60px + env(safe-area-inset-bottom))}
-  .cnt{margin-left:0;padding:14px}
+  .mn{left:0;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+  .cnt{padding:14px}
   .tbar{padding:10px 14px;top:0}
   .tbar h1{font-size:18px}
   .kgrid{grid-template-columns:1fr 1fr;gap:8px}
