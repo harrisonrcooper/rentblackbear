@@ -514,6 +514,8 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
         .msg-thread:hover{background:rgba(0,122,255,.04)!important}
         .msg-tapback-bar{animation:tapbackIn .2s cubic-bezier(.23,1,.32,1)}
         .msg-bubble-wrap:hover .msg-time-hover{opacity:1!important}
+        .msg-bubble-wrap:hover .msg-react-trigger{opacity:1!important}
+        .msg-react-trigger:hover{background:rgba(0,0,0,.1)!important;transform:scale(1.1)}
         .msg-reaction-pill:hover{transform:scale(1.1)}
         /* Bubble tails */
         .msg-tail-out::after{content:'';position:absolute;bottom:0;right:-6px;width:12px;height:12px;background:#007AFF;clip-path:polygon(0 0, 0% 100%, 100% 100%);border-bottom-right-radius:4px}
@@ -772,9 +774,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                               ) : <div style={{ width: 28 }} />}
                             </div>
                           )}
-                          {/* Edit/Delete actions for outbound */}
+                          {/* Edit/Delete/React actions for outbound — appear on hover */}
                           {(isOut || isNote) && isHovered && !isEditing && !isDeleted && (
                             <div style={{ display: "flex", gap: 2, alignItems: "center", marginRight: 6, alignSelf: "center" }}>
+                              <button onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .15s" }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                              </button>
                               <button onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .15s" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
@@ -782,6 +787,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               </button>
                             </div>
+                          )}
+                          {/* Reaction trigger button — appears on hover, opposite side of bubble */}
+                          {!isOut && !isNote && isHovered && !isDeleted && (
+                            <button className="msg-react-trigger" onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ position: "absolute", top: "50%", right: isOut ? undefined : -32, transform: "translateY(-50%)", width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "all .15s ease", zIndex: 5 }}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                            </button>
                           )}
                           <div
                             className={isNote ? "msg-tail-note" : showTail ? (isOut ? "msg-tail-out" : "msg-tail-in") : ""}
