@@ -871,33 +871,111 @@ export default function TenantPortal() {
           </div>
         )}
 
-        {/* ── MESSAGES ── */}
-        {onboardingDone && activeTab === "messages" && (
+        {/* ── MESSAGES (iMessage style) ── */}
+        {onboardingDone && activeTab === "messages" && (() => {
+          const PORTAL_REACTIONS = [
+            { emoji: "❤️", label: "heart" }, { emoji: "👍", label: "thumbsup" }, { emoji: "👎", label: "thumbsdown" },
+            { emoji: "😂", label: "laugh" }, { emoji: "‼️", label: "exclaim" }, { emoji: "❓", label: "question" },
+          ];
+          const visibleMsgs = tenantMessages.filter(msg => msg.direction !== "note");
+          const fmtMsgTime = (iso) => { if (!iso) return ""; const d = new Date(iso); return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
+          const fmtMsgDateGroup = (iso) => { if (!iso) return ""; const d = new Date(iso); const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const diff = Math.floor((today - msgDay) / 86400000); if (diff === 0) return "Today"; if (diff === 1) return "Yesterday"; if (diff < 7) return d.toLocaleDateString("en-US", { weekday: "long" }); return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); };
+          const togglePortalReaction = async (msgId, label) => {
+            const msg = tenantMessages.find(m => m.id === msgId); if (!msg) return;
+            const reactions = { ...(msg.reactions || {}) };
+            const reacted = (reactions[label] || []).includes("tenant");
+            if (reacted) { reactions[label] = (reactions[label] || []).filter(r => r !== "tenant"); if (reactions[label].length === 0) delete reactions[label]; }
+            else { reactions[label] = [...(reactions[label] || []), "tenant"]; }
+            await supabase.from("messages").update({ reactions }).eq("id", msgId);
+            setTenantMessages(prev => prev.map(m => m.id === msgId ? { ...m, reactions } : m));
+          };
+          return (
           <div style={{ animation: "fadeIn .2s" }}>
+            <style>{`
+              @keyframes portalMsgIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+              @keyframes portalReactPop{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+              @keyframes portalTapbackIn{from{opacity:0;transform:translateX(-50%) scale(.4)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+              .portal-msg{animation:portalMsgIn .25s cubic-bezier(.23,1,.32,1)}
+              .portal-react-badge{animation:portalReactPop .35s cubic-bezier(.34,1.56,.64,1)}
+              .portal-tapback{animation:portalTapbackIn .2s cubic-bezier(.23,1,.32,1)}
+              .portal-react-btn:hover{transform:scale(1.4)!important;background:rgba(0,0,0,.06)!important}
+              .portal-react-btn:active{transform:scale(1.1)!important}
+              .portal-action-btn:hover{transform:scale(1.25);background:rgba(0,0,0,.12)!important}
+              .portal-msg-scroll::-webkit-scrollbar{width:5px}
+              .portal-msg-scroll::-webkit-scrollbar-track{background:transparent}
+              .portal-msg-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px}
+              .portal-tail-out::after{content:'';position:absolute;bottom:0;right:-6px;width:12px;height:12px;background:#007AFF;clip-path:polygon(0 0, 0% 100%, 100% 100%);border-bottom-right-radius:4px}
+              .portal-tail-in::after{content:'';position:absolute;bottom:0;left:-6px;width:12px;height:12px;background:rgba(255,255,255,.85);clip-path:polygon(100% 0, 0% 100%, 100% 100%);border-bottom-left-radius:4px}
+            `}</style>
             <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Messages</h2>
 
-            {/* Realtime handled in useEffect below */}
-
-            {/* Message thread */}
-            <div style={{ ...sCard, padding: 0, minHeight: 300, display: "flex", flexDirection: "column" }}>
+            <div style={{ borderRadius: 16, overflow: "hidden", background: "linear-gradient(180deg, #f8f8fa 0%, #eeeef2 100%)", boxShadow: "0 2px 12px rgba(0,0,0,.06)", display: "flex", flexDirection: "column" }}>
               {/* Messages list */}
-              <div ref={el => { if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 50); }} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px", maxHeight: 400 }}>
-                {tenantMessages.length === 0 && (
-                  <div style={{ textAlign: "center", padding: 40, color: C.muted }}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" style={{ marginBottom: 8 }}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>No messages yet</div>
-                    <div style={{ fontSize: 11, marginTop: 4 }}>Send a message to your property manager below.</div>
+              <div className="portal-msg-scroll" ref={el => { if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 50); }} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px", maxHeight: 450, minHeight: 300 }}>
+                {visibleMsgs.length === 0 && (
+                  <div style={{ textAlign: "center", padding: 40, color: "#8e8e93" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 24, background: "rgba(0,122,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1714" }}>No messages yet</div>
+                    <div style={{ fontSize: 12, marginTop: 4 }}>Send a message to your property manager below.</div>
                   </div>
                 )}
-                {tenantMessages.filter(msg => msg.direction !== "note").map(msg => {
+                {visibleMsgs.map((msg, i) => {
                   const isMe = msg.direction === "inbound";
+                  const prev = visibleMsgs[i - 1];
+                  const next = visibleMsgs[i + 1];
+                  const showDateGroup = !prev || fmtMsgDateGroup(prev.created_at) !== fmtMsgDateGroup(msg.created_at);
+                  const timeDiff = prev ? (new Date(msg.created_at) - new Date(prev.created_at)) / 60000 : 999;
+                  const showTimeGap = timeDiff > 5 || showDateGroup;
+                  const groupedPrev = prev && prev.direction === msg.direction && !showTimeGap;
+                  const groupedNext = next && next.direction === msg.direction && fmtMsgDateGroup(next?.created_at) === fmtMsgDateGroup(msg.created_at) && (next ? (new Date(next.created_at) - new Date(msg.created_at)) / 60000 <= 5 : false);
+                  const isLast = !groupedNext;
+                  const reactions = msg.reactions || {};
+                  const hasReactions = Object.keys(reactions).length > 0;
                   return (
-                    <div key={msg.id} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginBottom: 10 }}>
-                      <div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 14, background: isMe ? C.bg : "#f4f3f0", color: isMe ? "#f5f0e8" : C.text, borderBottomRightRadius: isMe ? 4 : 14, borderBottomLeftRadius: isMe ? 14 : 4 }}>
-                        {msg.subject && <div style={{ fontSize: 10, fontWeight: 700, opacity: .6, marginBottom: 3 }}>{msg.subject}</div>}
-                        <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.original_body || msg.body}</div>
-                        <div style={{ fontSize: 9, opacity: .5, marginTop: 4, textAlign: "right" }}>
-                          {new Date(msg.created_at).toLocaleDateString()} {new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                    <div key={msg.id}>
+                      {showDateGroup && <div style={{ textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#3a3a3c" }}>{fmtMsgDateGroup(msg.created_at)}</div>}
+                      {!showDateGroup && showTimeGap && <div style={{ textAlign: "center", margin: "12px 0 8px", fontSize: 10, color: "#3a3a3c", fontWeight: 500 }}>{fmtMsgTime(msg.created_at)}</div>}
+                      <div className="portal-msg" style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginTop: hasReactions ? 14 : 0, marginBottom: groupedNext ? 2 : 8, position: "relative" }}>
+                        {/* PM avatar on inbound — only on last in group */}
+                        {!isMe && (
+                          <div style={{ width: 26, minWidth: 26, marginRight: 6, alignSelf: "flex-end" }}>
+                            {isLast ? (
+                              <div style={{ width: 26, height: 26, borderRadius: 13, background: "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700 }}>
+                                {(pm.company_name || "PM")[0].toUpperCase()}
+                              </div>
+                            ) : <div style={{ width: 26 }} />}
+                          </div>
+                        )}
+                        <div
+                          className={isLast ? (isMe ? "portal-tail-out" : "portal-tail-in") : ""}
+                          style={{
+                            maxWidth: "72%", padding: "9px 14px", borderRadius: 18, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere",
+                            background: isMe ? "#007AFF" : "rgba(255,255,255,.85)",
+                            color: isMe ? "#fff" : "#1a1714",
+                            borderBottomRightRadius: isMe ? 4 : 18, borderBottomLeftRadius: isMe ? 18 : 4,
+                            boxShadow: isMe ? "0 1px 3px rgba(0,122,255,.2)" : "0 1px 3px rgba(0,0,0,.06)",
+                            backdropFilter: isMe ? "none" : "blur(12px)",
+                            ...(groupedPrev && isMe ? { borderTopRightRadius: 6 } : {}),
+                            ...(groupedPrev && !isMe ? { borderTopLeftRadius: 6 } : {}),
+                            ...(groupedNext && isMe ? { borderBottomRightRadius: 6 } : {}),
+                            ...(groupedNext && !isMe ? { borderBottomLeftRadius: 6 } : {}),
+                          }}>
+                          {msg.subject && <div style={{ fontSize: 10, fontWeight: 700, opacity: .6, marginBottom: 3 }}>{msg.subject}</div>}
+                          <div style={{ fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{msg.original_body || msg.body}</div>
+                          {/* Timestamp — show on last in group */}
+                          {isLast && <div style={{ fontSize: 9, color: isMe ? "rgba(255,255,255,.7)" : "#3a3a3c", fontWeight: 500, marginTop: 3 }}>{fmtMsgTime(msg.created_at)}</div>}
+                          {/* Reaction badge */}
+                          {hasReactions && (
+                            <div className="portal-react-badge" style={{ position: "absolute", top: -8, [isMe ? "left" : "right"]: -4, background: "#fff", borderRadius: 12, padding: "2px 5px", fontSize: 14, lineHeight: 1, boxShadow: "0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.06)", display: "flex", alignItems: "center", gap: 2, zIndex: 3 }}>
+                              {Object.entries(reactions).map(([key, users]) => {
+                                const r = PORTAL_REACTIONS.find(x => x.label === key);
+                                return r ? <span key={key} style={{ cursor: "pointer" }} onClick={() => togglePortalReaction(msg.id, key)}>{r.emoji}</span> : null;
+                              })}
+                              {Object.values(reactions).reduce((s, u) => s + u.length, 0) > 1 && <span style={{ fontSize: 10, color: "#8e8e93", marginLeft: 1 }}>{Object.values(reactions).reduce((s, u) => s + u.length, 0)}</span>}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -905,28 +983,29 @@ export default function TenantPortal() {
                 })}
               </div>
 
-              {/* Input */}
-              <div style={{ padding: "10px 14px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8 }}>
+              {/* Input — frosted glass */}
+              <div style={{ padding: "10px 14px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)" }}>
                 <input
                   value={msgInput}
                   onChange={e => setMsgInput(e.target.value)}
                   onKeyDown={async e => { if (e.key === "Enter" && !e.shiftKey && msgInput.trim()) { e.preventDefault(); const body = msgInput.trim(); setMsgInput(""); const tenantName = tenant?.name || "Tenant"; await supabase.from("messages").insert({ tenant_id: tenant?.id, tenant_name: tenantName, sender_email: user?.email || "", sender_name: tenantName, direction: "inbound", subject: "", body, property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false }); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Portal Message from " + tenantName, html: "<p>" + esc(body).replace(/\n/g, "<br/>") + "</p>", replyTo: user?.email || "" }) }); } catch (ex) {} const { data: msgs } = await supabase.from("messages").select("*").eq("tenant_name", tenantName).order("created_at", { ascending: true }); setTenantMessages(msgs || []); } }}
                   placeholder="Type a message..."
-                  style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13, fontFamily: "inherit", outline: "none" }}
+                  style={{ flex: 1, padding: "10px 14px", borderRadius: 20, border: "1px solid rgba(0,0,0,.08)", fontSize: 13, fontFamily: "inherit", outline: "none", background: "rgba(0,0,0,.04)" }}
                 />
-                <button onClick={async () => { if (!msgInput.trim()) return; const body = msgInput.trim(); setMsgInput(""); const tenantName = tenant?.name || "Tenant"; await supabase.from("messages").insert({ tenant_id: tenant?.id, tenant_name: tenantName, sender_email: user?.email || "", sender_name: tenantName, direction: "inbound", subject: "", body, property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false }); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Portal Message from " + tenantName, html: "<p>" + esc(body).replace(/\n/g, "<br/>") + "</p>", replyTo: user?.email || "" }) }); } catch (ex) {} const { data: msgs } = await supabase.from("messages").select("*").eq("tenant_name", tenantName).order("created_at", { ascending: true }); setTenantMessages(msgs || []); }} style={{ padding: "10px 16px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <button onClick={async () => { if (!msgInput.trim()) return; const body = msgInput.trim(); setMsgInput(""); const tenantName = tenant?.name || "Tenant"; await supabase.from("messages").insert({ tenant_id: tenant?.id, tenant_name: tenantName, sender_email: user?.email || "", sender_name: tenantName, direction: "inbound", subject: "", body, property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false }); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Portal Message from " + tenantName, html: "<p>" + esc(body).replace(/\n/g, "<br/>") + "</p>", replyTo: user?.email || "" }) }); } catch (ex) {} const { data: msgs } = await supabase.from("messages").select("*").eq("tenant_name", tenantName).order("created_at", { ascending: true }); setTenantMessages(msgs || []); }} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: msgInput.trim() ? "#007AFF" : "rgba(0,0,0,.08)", color: msgInput.trim() ? "#fff" : "#bbb", cursor: msgInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s ease", flexShrink: 0 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
               </div>
             </div>
 
             {/* PM contact info footer */}
-            <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(0,0,0,.03)", borderRadius: 8, fontSize: 11, color: C.muted, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(0,0,0,.03)", borderRadius: 10, fontSize: 11, color: "#8e8e93", display: "flex", alignItems: "center", gap: 8 }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              {pm.company_name}{pm.phone ? " \u00b7 " + pm.phone : ""}{pmSettings?.email ? " \u00b7 " + pmSettings.email : ""}
+              {pm.company_name}{pm.phone ? " · " + pm.phone : ""}{pmSettings?.email ? " · " + pmSettings.email : ""}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ── PAYMENTS ── */}
         {onboardingDone && activeTab === "payments" && (
