@@ -898,7 +898,7 @@ export default function TenantPortal() {
             <style>{`
               @keyframes portalMsgIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
               @keyframes portalReactPop{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
-              @keyframes portalTapbackIn{from{opacity:0;transform:translateX(-50%) scale(.4)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+              @keyframes portalTapbackIn{from{opacity:0;transform:translateX(-50%) scale(.4) translateY(-4px)}to{opacity:1;transform:translateX(-50%) scale(1) translateY(0)}}
               .portal-msg{animation:portalMsgIn .25s cubic-bezier(.23,1,.32,1)}
               .portal-react-badge{animation:portalReactPop .35s cubic-bezier(.34,1.56,.64,1)}
               .portal-tapback{animation:portalTapbackIn .2s cubic-bezier(.23,1,.32,1)}
@@ -941,7 +941,7 @@ export default function TenantPortal() {
                     <div key={msg.id}>
                       {showDateGroup && <div style={{ textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#3a3a3c" }}>{fmtMsgDateGroup(msg.created_at)}</div>}
                       {!showDateGroup && showTimeGap && <div style={{ textAlign: "center", margin: "12px 0 8px", fontSize: 10, color: "#3a3a3c", fontWeight: 500 }}>{fmtMsgTime(msg.created_at)}</div>}
-                      <div className="portal-msg" style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginTop: portalShowReactions === msg.id ? 52 : (hasReactions ? 14 : 0), marginBottom: groupedNext ? 2 : 8, position: "relative" }}
+                      <div className="portal-msg" style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginTop: hasReactions ? 14 : 0, marginBottom: portalShowReactions === msg.id ? 52 : (groupedNext ? 2 : 8), position: "relative" }}
                         onMouseEnter={() => setPortalHoveredMsg(msg.id)} onMouseLeave={() => setPortalHoveredMsg(null)}>
                         {/* Reaction button — left side for tenant's own messages */}
                         {isMe && portalHoveredMsg === msg.id && (
@@ -978,7 +978,7 @@ export default function TenantPortal() {
                           {isLast && <div style={{ fontSize: 9, color: isMe ? "rgba(255,255,255,.7)" : "#3a3a3c", fontWeight: 500, marginTop: 3 }}>{fmtMsgTime(msg.created_at)}</div>}
                           {/* Tapback picker — centered above bubble */}
                           {portalShowReactions === msg.id && (
-                            <div className="portal-tapback" style={{ display: "flex", gap: 4, position: "absolute", top: -48, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,.95)", backdropFilter: "blur(20px) saturate(180%)", borderRadius: 24, boxShadow: "0 4px 20px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.08)", padding: "6px 10px", zIndex: 10 }} onClick={e => e.stopPropagation()}>
+                            <div className="portal-tapback" style={{ display: "flex", gap: 4, position: "absolute", bottom: -48, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,.95)", backdropFilter: "blur(20px) saturate(180%)", borderRadius: 24, boxShadow: "0 4px 20px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.08)", padding: "6px 10px", zIndex: 10 }} onClick={e => e.stopPropagation()}>
                               {PORTAL_REACTIONS.map(r => {
                                 const active = (reactions[r.label] || []).includes("tenant");
                                 return (
