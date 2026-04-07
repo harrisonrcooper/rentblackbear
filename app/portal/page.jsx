@@ -166,6 +166,7 @@ export default function TenantPortal() {
   const [noticeForm, setNoticeForm]       = useState({ moveOutDate: "", reason: "", showForm: false, step: 1, signature: null, submitting: false, submitted: false });
   const [autopay, setAutopay]             = useState({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
   const [showDoorCode, setShowDoorCode]   = useState(false);
+  const [doorCodeChange, setDoorCodeChange] = useState({ open: false, newCode: "", submitting: false, done: false, error: "" });
   const [referralCopied, setReferralCopied] = useState(false);
   const [notifPrefs, setNotifPrefs]       = useState({ payment_reminders: { email: true, text: true }, payment_confirmations: { email: true, text: true }, maintenance_updates: { email: true, text: true }, lease_reminders: { email: true, text: false }, announcements: { email: true, text: false } });
   const [contactForm, setContactForm]     = useState({ subject: "", message: "", sending: false, sent: false, showForm: false });
@@ -771,15 +772,68 @@ export default function TenantPortal() {
                 <div key={label} style={sRow}><span style={{ color: C.muted }}>{label}</span><span style={{ fontWeight: 600 }}>{val}</span></div>
               ))}
               {(tenant?.door_code || tenant?.room?.door_code) && (
-                <div style={sRow}>
-                  <span style={{ color: C.muted }}>{t.home.doorCode}</span>
-                  <button onClick={() => setShowDoorCode(!showDoorCode)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "monospace", fontWeight: 800, letterSpacing: showDoorCode ? 4 : 2, fontSize: 13, color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
-                    {showDoorCode ? (tenant?.door_code || tenant?.room?.door_code) : "\u2022\u2022\u2022\u2022"}
-                    {showDoorCode
-                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    }
-                  </button>
+                <div>
+                  <div style={sRow}>
+                    <span style={{ color: C.muted }}>{t.home.doorCode}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button onClick={() => setShowDoorCode(!showDoorCode)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "monospace", fontWeight: 800, letterSpacing: showDoorCode ? 4 : 2, fontSize: 13, color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
+                        {showDoorCode ? (tenant?.door_code || tenant?.room?.door_code) : "\u2022\u2022\u2022\u2022"}
+                        {showDoorCode
+                          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                          : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        }
+                      </button>
+                      {pmSettings?.allowDoorCodeChange !== false && !doorCodeChange.open && (
+                        <button onClick={() => setDoorCodeChange({ open: true, newCode: "", submitting: false, done: false, error: "" })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: C.accent, fontWeight: 700, padding: 0 }}>Change</button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Door code change flow */}
+                  {doorCodeChange.open && (
+                    <div style={{ padding: "10px 0" }}>
+                      {doorCodeChange.done ? (
+                        <div style={{ background: hexRgba(C.green, .08), border: "1px solid " + hexRgba(C.green, .2), borderRadius: 8, padding: "10px 12px", fontSize: 11, color: C.green, fontWeight: 600 }}>
+                          {pmSettings?.lockType === "smart_api" ? "Door code updated successfully." : pmSettings?.lockType === "smart_manual" ? "Request sent. Your PM will update the lock remotely." : "Maintenance request submitted. Your PM will update the lock."}
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
+                            <input value={doorCodeChange.newCode} onChange={e => { const v = e.target.value.replace(/\D/g, "").slice(0, 4); setDoorCodeChange(p => ({ ...p, newCode: v, error: "" })); }} placeholder="New 4-digit code" maxLength={4} style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: "1.5px solid " + (doorCodeChange.error ? C.red : "rgba(0,0,0,.1)"), fontSize: 14, fontFamily: "monospace", letterSpacing: 6, textAlign: "center" }} />
+                          </div>
+                          {doorCodeChange.error && <div style={{ fontSize: 10, color: C.red, marginBottom: 6 }}>{doorCodeChange.error}</div>}
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button onClick={() => setDoorCodeChange({ open: false, newCode: "", submitting: false, done: false, error: "" })} style={{ flex: 1, padding: "8px", borderRadius: 6, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Cancel</button>
+                            <button disabled={doorCodeChange.submitting} onClick={async () => {
+                              const code = doorCodeChange.newCode;
+                              if (code.length !== 4) { setDoorCodeChange(p => ({ ...p, error: "Must be exactly 4 digits" })); return; }
+                              if (code === (tenant?.door_code || tenant?.room?.door_code)) { setDoorCodeChange(p => ({ ...p, error: "Same as current code" })); return; }
+                              setDoorCodeChange(p => ({ ...p, submitting: true }));
+                              const lockType = pmSettings?.lockType || "dumb";
+                              if (lockType === "smart_api") {
+                                // API-connected smart lock — update directly
+                                await supabase.from("tenants").update({ door_code: code }).eq("id", tenant?.id);
+                                // TODO: Call lock API here (e.g. Sifely, August, Yale)
+                                setDoorCodeChange({ open: true, newCode: "", submitting: false, done: true, error: "" });
+                              } else if (lockType === "smart_manual") {
+                                // Smart lock but no API — notify PM to update remotely
+                                await supabase.from("tenants").update({ door_code: code }).eq("id", tenant?.id);
+                                await supabase.from("messages").insert({ tenant_name: tenant?.name, sender_email: user?.email || "", sender_name: tenant?.name, direction: "inbound", subject: "Door Code Change Request", body: "Please update my door code to: " + code + "\nProperty: " + (tenant?.property?.name || "") + "\nRoom: " + (tenant?.room?.name || ""), property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false });
+                                try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Door Code Change: " + (tenant?.name || "") + " \u2192 " + code, html: "<p><strong>" + esc(tenant?.name) + "</strong> has requested a door code change.</p><p>New code: <strong>" + code + "</strong></p><p>" + esc(tenant?.property?.name) + " \u2014 " + esc(tenant?.room?.name) + "</p><p>Please update the smart lock remotely.</p>" }) }); } catch (e) {}
+                                setDoorCodeChange({ open: true, newCode: "", submitting: false, done: true, error: "" });
+                              } else {
+                                // Dumb lock — create maintenance request
+                                await supabase.from("maintenance_requests").insert({ pm_id: tenant?.pm_id, tenant_id: tenant?.id, property_id: tenant?.property_id, room_id: tenant?.room_id, title: "Door Code Change Request", description: "Tenant requests new door code: " + code, priority: "medium", submitted_by: tenant?.name });
+                                try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Door Code Change Request: " + (tenant?.name || ""), html: "<p><strong>" + esc(tenant?.name) + "</strong> has requested a door code change to <strong>" + code + "</strong>.</p><p>" + esc(tenant?.property?.name) + " \u2014 " + esc(tenant?.room?.name) + "</p><p>A maintenance request has been created.</p>" }) }); } catch (e) {}
+                                setDoorCodeChange({ open: true, newCode: "", submitting: false, done: true, error: "" });
+                              }
+                            }} style={{ flex: 1, padding: "8px", borderRadius: 6, border: "none", background: doorCodeChange.newCode.length === 4 ? C.bg : "rgba(0,0,0,.08)", color: doorCodeChange.newCode.length === 4 ? C.accent : "#bbb", cursor: doorCodeChange.newCode.length === 4 ? "pointer" : "default", fontSize: 11, fontWeight: 800 }}>
+                              {doorCodeChange.submitting ? "Updating..." : "Update Code"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

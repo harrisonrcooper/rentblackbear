@@ -213,6 +213,33 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
         </div></div>
 
         <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Door Lock & Access</h3>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Configure how tenants can change their door codes through the portal.</p>
+          <div className="fr" style={{marginBottom:12}}>
+            <div className="fld" style={{marginBottom:0}}>
+              <label>Lock Type</label>
+              <select value={settings.lockType||"dumb"} onChange={e=>{const u={...settings,lockType:e.target.value};setSettings(u);save("hq-settings",u);}} style={{width:"100%"}}>
+                <option value="dumb">Standard Lock (manual code change)</option>
+                <option value="smart_manual">Smart Lock (PM updates remotely)</option>
+                <option value="smart_api">Smart Lock with API (auto-update)</option>
+              </select>
+            </div>
+            <div className="fld" style={{marginBottom:0}}>
+              <label>Allow Tenants to Change Code</label>
+              <select value={settings.allowDoorCodeChange===false?"no":"yes"} onChange={e=>{const u={...settings,allowDoorCodeChange:e.target.value==="yes"};setSettings(u);save("hq-settings",u);}} style={{width:"100%"}}>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+          </div>
+          <div style={{fontSize:9,color:"#6b5e52"}}>
+            {(settings.lockType||"dumb")==="smart_api"?"Codes update automatically via lock API.":
+             (settings.lockType||"dumb")==="smart_manual"?"You will be notified to update the lock remotely.":
+             "A maintenance request will be created for physical code changes."}
+          </div>
+        </div></div>
+
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Occupancy Policy Default</h3>
           <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Sets the default answer to {"\u201c"}Allow a couple in this bedroom?{"\u201d"} when reviewing new applicants. Can be overridden per-property or per-application.</p>
           <div style={{display:"flex",gap:8}}>
