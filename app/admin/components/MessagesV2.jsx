@@ -569,6 +569,9 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       {starredThreads.has(thread.key) && <svg width="8" height="8" viewBox="0 0 24 24" fill="#d4a853" stroke="#d4a853" strokeWidth="1.5" style={{ marginRight: 2, verticalAlign: "middle" }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
                       {pinnedThreads.has(thread.key) && <svg width="8" height="8" viewBox="0 0 24 24" fill="#d4a853" stroke="#d4a853" strokeWidth="2" style={{ marginRight: 2, verticalAlign: "middle" }}><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>}
                       {assignedThreads[thread.key] && <span style={{ fontSize: 8, color: "#4a7c59", fontWeight: 700, marginRight: 2 }}>{assignedThreads[thread.key]}</span>}
+                      {scheduledMsgs.some(m => m.threadKey === thread.key) && <span style={{ fontSize: 8, color: "#3b82f6", fontWeight: 700, marginRight: 2 }}>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="3" style={{ verticalAlign: "middle" }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      </span>}
                       {isRenewal && <span style={{ fontSize: 9, fontWeight: 700, color: "#9a7422", marginRight: 4 }}>RENEWAL</span>}
                       {lastMsg?.direction === "outbound" ? "You: " : lastMsg?.direction === "note" ? "Note: " : ""}{lastMsg?.body?.slice(0, 50) || lastMsg?.subject || ""}
                     </div>
@@ -886,9 +889,9 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   </div>
                 )}
 
-                {/* Scheduled messages — editable */}
+                {/* Scheduled messages — always visible above input */}
                 {scheduledMsgs.filter(m => m.threadKey === selectedThread).length > 0 && (
-                  <div style={{ padding: "8px 16px", background: "rgba(59,130,246,.04)", borderTop: "1px solid rgba(59,130,246,.1)" }}>
+                  <div style={{ padding: "8px 16px", background: "rgba(59,130,246,.04)", borderTop: "2px solid rgba(59,130,246,.2)", flexShrink: 0 }}>
                     <div style={{ fontSize: 9, fontWeight: 700, color: "#3b82f6", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
                       Scheduled ({scheduledMsgs.filter(m => m.threadKey === selectedThread).length})
                     </div>
