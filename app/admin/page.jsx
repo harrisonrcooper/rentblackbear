@@ -3174,7 +3174,38 @@ export default function Page(){
           ))}
         </div>
 
-        {/* Announcements removed from dashboard — now in Communications sidebar */}
+        {/* ── Pending Actions — renewal requests, notices, unread messages ── */}
+        {(()=>{
+          // Pull pending actions from messages table — check local state if Messages component loaded them,
+          // otherwise this will be empty until Messages tab is visited. For now, show a link.
+          const pendingRenewals=leases.filter(l=>l.status==="executed").length; // placeholder
+          return(
+          <div className="card" style={{marginTop:20}}>
+            <div className="card-bd">
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <div style={{fontSize:14,fontWeight:800}}>Pending Actions</div>
+                <button className="btn btn-out btn-sm" onClick={()=>goTab("messages")}>View Messages</button>
+              </div>
+              <div style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Lease renewal requests, 30-day notices, and tenant messages appear in your <strong>Messages</strong> inbox under Communications.</div>
+              <div style={{display:"flex",gap:8}}>
+                <div onClick={()=>goTab("messages")} style={{flex:1,padding:"14px 16px",background:"rgba(0,0,0,.02)",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.15)"} onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.06)"}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1714" strokeWidth="1.75"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+                    <span style={{fontSize:12,fontWeight:700}}>Messages</span>
+                  </div>
+                  <div style={{fontSize:10,color:"#6b5e52"}}>Renewal requests, notices, tenant questions</div>
+                </div>
+                <div onClick={()=>goTab("announcements")} style={{flex:1,padding:"14px 16px",background:"rgba(0,0,0,.02)",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.15)"} onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.06)"}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1714" strokeWidth="1.75"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+                    <span style={{fontSize:12,fontWeight:700}}>Announcements</span>
+                  </div>
+                  <div style={{fontSize:10,color:"#6b5e52"}}>{(settings.announcements||[]).filter(a=>!a.expiresAt||new Date(a.expiresAt)>new Date()).length} active</div>
+                </div>
+              </div>
+            </div>
+          </div>);
+        })()}
       </>);})()}
 
       {/* ═══ TENANTS ═══ */}
