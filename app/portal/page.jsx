@@ -1332,7 +1332,16 @@ export default function TenantPortal() {
         {/* ── ACCOUNT ── */}
         {onboardingDone && activeTab === "account" && (
           <div style={{ animation: "fadeIn .2s" }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>{t.account.title}</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800 }}>{t.account.title}</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <select value={lang} onChange={e => { const newLang = e.target.value; setPmSettings(p => ({ ...p, language: newLang })); }} style={{ border: "1px solid rgba(0,0,0,.1)", borderRadius: 6, padding: "4px 8px", fontSize: 11, fontFamily: "inherit", background: "#fff", cursor: "pointer", color: C.text }}>
+                  <option value="en">English</option>
+                  <option value="es">Espa{"\u00f1"}ol</option>
+                </select>
+              </div>
+            </div>
 
             {/* Profile — editable phone */}
             <div style={sCard}>

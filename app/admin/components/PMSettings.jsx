@@ -199,6 +199,13 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
             <label>Renewal Term Options <span style={{fontWeight:400,color:"#6b5e52"}}>(comma-separated months, e.g. 6,12)</span></label>
             <input value={(settings.renewalTerms||[12]).join(",")} onChange={e=>{const u={...settings,renewalTerms:e.target.value.split(",").map(v=>Number(v.trim())).filter(v=>v>0)};setSettings(u);save("hq-settings",u);}} placeholder="6,12" style={{width:"100%"}}/>
           </div>
+          <div className="fld" style={{marginBottom:12}}>
+            <label>Tenant Portal Language <span style={{fontWeight:400,color:"#6b5e52"}}>(default language for all tenant portals)</span></label>
+            <select value={settings.portalLanguage||"en"} onChange={e=>{const u={...settings,portalLanguage:e.target.value};setSettings(u);save("hq-settings",u);}} style={{width:"100%"}}>
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+            </select>
+          </div>
           <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,cursor:"pointer"}}>
             <input type="checkbox" checked={settings.autoReminders!==false} onChange={e=>{const u={...settings,autoReminders:e.target.checked};setSettings(u);save("hq-settings",u);}}/>
             <span>Auto-send daily payment reminders for past-due charges (stops when paid)</span>
