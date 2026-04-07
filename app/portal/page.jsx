@@ -499,9 +499,16 @@ export default function TenantPortal() {
   );
 
   // ── PORTAL ────────────────────────────────────────────────────────────
+  const portalTabs = (() => { const unpaidCount = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).length; const openMaintCount = maintenance.filter(m => m.status !== "resolved").length; return [{ id: "home", label: "Home", icon: <IcHome s={16} />, badge: 0 }, { id: "payments", label: "Payments", icon: <IcDollar s={16} />, badge: unpaidCount }, { id: "maintenance", label: "Maintenance", icon: <IcWrench s={16} />, badge: openMaintCount }, { id: "documents", label: "Lease", icon: <IcFile s={16} />, badge: 0 }, { id: "account", label: "Account", icon: <IcUser s={16} />, badge: 0 }]; })();
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", minHeight: "100vh", background: "#f4f3f0", color: C.text }}>
-      <style>{globalStyle}</style>
+      <style>{globalStyle + `
+@media (max-width: 640px) {
+  .portal-top-nav { display: none !important; }
+  .portal-bot-nav { display: flex !important; }
+  .portal-content { padding-bottom: 80px !important; }
+}
+`}</style>
 
       {/* Header */}
       <div style={{ background: C.bg, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.2)" }}>
@@ -518,11 +525,11 @@ export default function TenantPortal() {
         </div>
       </div>
 
-      {/* Nav — only shown after onboarding */}
+      {/* Nav — only shown after onboarding (hidden on mobile via media query) */}
       {onboardingDone && (
-        <div style={{ background: "#fff", borderBottom: "1px solid rgba(0,0,0,.07)", overflowX: "auto" }}>
+        <div className="portal-top-nav" style={{ background: "#fff", borderBottom: "1px solid rgba(0,0,0,.07)", overflowX: "auto" }}>
           <div style={{ display: "flex", maxWidth: 680, margin: "0 auto" }}>
-            {(() => { const unpaidCount = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).length; const openMaintCount = maintenance.filter(m => m.status !== "resolved").length; return [{ id: "home", label: "Home", icon: <IcHome s={16} />, badge: 0 }, { id: "payments", label: "Payments", icon: <IcDollar s={16} />, badge: unpaidCount }, { id: "maintenance", label: "Maintenance", icon: <IcWrench s={16} />, badge: openMaintCount }, { id: "documents", label: "Lease", icon: <IcFile s={16} />, badge: 0 }, { id: "account", label: "Account", icon: <IcUser s={16} />, badge: 0 }]; })().map(t => (
+            {portalTabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, padding: "13px 8px", border: "none", background: "transparent", borderBottom: activeTab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", cursor: "pointer", fontSize: 11, fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? C.text : "#999", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all .15s", position: "relative" }}>
                 <span style={{ color: activeTab === t.id ? C.accent : "#bbb" }}>{t.icon}</span>{t.label}
                 {t.badge > 0 && <span style={{ position: "absolute", top: 4, right: "calc(50% - 18px)", minWidth: 16, height: 16, borderRadius: 8, background: "#c45c4a", color: "#fff", fontSize: 8, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", border: "2px solid #fff" }}>{t.badge}</span>}
