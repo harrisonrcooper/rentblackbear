@@ -643,17 +643,21 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
               <>
                 {/* Header */}
                 <div style={S.chatHeader}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 38, height: 38, minWidth: 38, minHeight: 38, borderRadius: "50%", background: "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, position: "relative", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,122,255,.25)" }}>
-                      {(activeThread.tenantName || "?")[0].toUpperCase()}
-                      {/* Online indicator */}
-                      {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 60000 : 999; return minAgo < 5 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, background: "#34C759", border: "2.5px solid #fff" }} /> : minAgo < 60 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, background: "#FF9500", border: "2.5px solid #fff" }} /> : null; })()}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThread.tenantName}</div>
-                      <div style={{ fontSize: 11, color: "#6b5e52" }}>
-                        {activeThread.propertyName}{activeThread.roomName ? " \u00b7 " + activeThread.roomName : ""}
-                        {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? Math.floor((Date.now() - new Date(lastInbound.created_at).getTime()) / 60000) : null; return minAgo !== null ? <span style={{ marginLeft: 6, fontSize: 9, color: minAgo < 5 ? "#34C759" : "#8e8e93" }}>{minAgo < 5 ? "Active now" : "Last active " + fmtTime(lastInbound.created_at)}</span> : null; })()}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 34, height: 34, minWidth: 34, minHeight: 34, borderRadius: "50%", background: "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, position: "relative", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,122,255,.2)" }}>
+                        {(activeThread.tenantName || "?")[0].toUpperCase()}
+                        {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 60000 : 999; return minAgo < 5 ? <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: 5, background: "#34C759", border: "2px solid #fff" }} /> : minAgo < 60 ? <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: 5, background: "#FF9500", border: "2px solid #fff" }} /> : null; })()}
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700 }}>{activeThread.tenantName}</span>
+                          <button onClick={() => { if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 9, color: "#007AFF", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}>View Profile</button>
+                        </div>
+                        <div style={{ fontSize: 10, color: "#8e8e93" }}>
+                          {activeThread.propertyName}{activeThread.roomName ? " · " + activeThread.roomName : ""}
+                          {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? Math.floor((Date.now() - new Date(lastInbound.created_at).getTime()) / 60000) : null; return minAgo !== null ? <span style={{ marginLeft: 6, fontSize: 9, color: minAgo < 5 ? "#34C759" : "#8e8e93" }}>{minAgo < 5 ? "Active now" : "Last active " + fmtTime(lastInbound.created_at)}</span> : null; })()}
+                        </div>
                       </div>
                     </div>
                   </div>
