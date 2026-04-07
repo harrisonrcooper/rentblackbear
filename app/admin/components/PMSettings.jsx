@@ -195,6 +195,10 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
               <input type="number" min={7} max={180} value={settings.m2mNoticeDays||90} onChange={e=>{const u={...settings,m2mNoticeDays:Number(e.target.value)};setSettings(u);save("hq-settings",u);}} style={{width:"100%"}}/>
             </div>
           </div>
+          <div className="fld" style={{marginBottom:12}}>
+            <label>Renewal Term Options <span style={{fontWeight:400,color:"#6b5e52"}}>(comma-separated months, e.g. 6,12)</span></label>
+            <input value={(settings.renewalTerms||[12]).join(",")} onChange={e=>{const u={...settings,renewalTerms:e.target.value.split(",").map(v=>Number(v.trim())).filter(v=>v>0)};setSettings(u);save("hq-settings",u);}} placeholder="6,12" style={{width:"100%"}}/>
+          </div>
           <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,cursor:"pointer"}}>
             <input type="checkbox" checked={settings.autoReminders!==false} onChange={e=>{const u={...settings,autoReminders:e.target.checked};setSettings(u);save("hq-settings",u);}}/>
             <span>Auto-send daily payment reminders for past-due charges (stops when paid)</span>

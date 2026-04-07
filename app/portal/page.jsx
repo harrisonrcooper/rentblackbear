@@ -169,6 +169,7 @@ export default function TenantPortal() {
   const [referralCopied, setReferralCopied] = useState(false);
   const [notifPrefs, setNotifPrefs]       = useState({ payment_reminders: { email: true, text: true }, payment_confirmations: { email: true, text: true }, maintenance_updates: { email: true, text: true }, lease_reminders: { email: true, text: false }, announcements: { email: true, text: false } });
   const [contactForm, setContactForm]     = useState({ subject: "", message: "", sending: false, sent: false, showForm: false });
+  const [renewalModal, setRenewalModal]   = useState({ open: false, choice: null, submitting: false, submitted: false });
   const CREDIT_FEE = 0.029;
 
   const referralLink = typeof window !== "undefined" ? window.location.origin + "/apply?ref=" + (tenant?.id || "") : "";
@@ -674,7 +675,7 @@ export default function TenantPortal() {
             })()}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
               <div style={sCard}><span style={sLabel}>{t.home.monthlyRent}</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st{pmSettings?.lateFeeGraceDays ? ` \u2014 late after day ${pmSettings.lateFeeGraceDays}` : ""}</div>{(() => { const now = new Date(); const y = now.getFullYear(); const mo = now.getMonth(); const firstNextMonth = new Date(y, mo + 1, 1); const firstThisMonth = new Date(y, mo, 1); const nextDue = now.getDate() > 1 ? firstNextMonth : firstThisMonth; const diffDays = Math.ceil((nextDue - now) / (1e3 * 60 * 60 * 24)); const nearestUnpaid = charges.find(c => !c.waived && !c.voided && c.amount_paid < c.amount && (c.type === "rent" || (c.label || "").toLowerCase().includes("rent"))); const isPastDue = nearestUnpaid && nearestUnpaid.due_date && new Date(nearestUnpaid.due_date + "T00:00:00") < now; if (isPastDue) { const overdueDays = Math.floor((now - new Date(nearestUnpaid.due_date + "T00:00:00")) / (1e3 * 60 * 60 * 24)); return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{t.home.pastDue + " -- " + overdueDays + " " + t.home.daysOverdue}</div>; } if (diffDays === 0) return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{t.home.dueToday}</div>; if (diffDays <= 3) return <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginTop: 4 }}>{t.home.dueIn + " " + diffDays + " " + t.home.days}</div>; if (diffDays <= 7) return <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginTop: 4 }}>{t.home.dueIn + " " + diffDays + " " + t.home.days}</div>; return null; })()}</div>
-              <div onClick={() => setActiveTab("documents")} style={{ ...sCard, cursor: "pointer", transition: "border-color .15s", borderColor: dl && dl <= 60 ? hexRgba(C.red, .2) : "rgba(0,0,0,.06)" }}><span style={sLabel}>{t.home.leaseEnd}</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " " + t.home.daysRemaining : t.home.expired}</div>}{dl !== null && dl <= 90 && dl > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, marginTop: 6, display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-start" }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>Renewal options</div>}</div>
+              <div onClick={() => { if (dl !== null && dl <= 90 && dl > 0) setRenewalModal({ open: true, choice: null, submitting: false, submitted: false }); else setActiveTab("documents"); }} style={{ ...sCard, cursor: "pointer", transition: "border-color .15s", borderColor: dl && dl <= 60 ? hexRgba(C.red, .2) : "rgba(0,0,0,.06)" }}><span style={sLabel}>{t.home.leaseEnd}</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " " + t.home.daysRemaining : t.home.expired}</div>}{dl !== null && dl <= 90 && dl > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, marginTop: 6, display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-start" }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>Renewal options</div>}</div>
             </div>
             {announcements.length > 0 && (
               <div style={{ marginBottom: 12 }}>
@@ -1094,11 +1095,14 @@ export default function TenantPortal() {
               </div>
             )}
 
-            {/* Lease expiration warning */}
-            {dl !== null && dl <= 60 && (
+            {/* Lease expiration warning + renewal */}
+            {dl !== null && dl <= 90 && dl > 0 && (
               <div style={{ background: dl <= 30 ? hexRgba(C.red, .06) : hexRgba(C.accent, .06), border: `1px solid ${dl <= 30 ? hexRgba(C.red, .2) : hexRgba(C.accent, .2)}`, borderRadius: 12, padding: 16, marginTop: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: dl <= 30 ? C.red : C.accent, marginBottom: 4 }}>{t.lease.expiresIn} {dl} {t.home.days}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{t.common.contact} {pm.company_name} {t.common.at} {pm.phone} {t.lease.contactRenewal}</div>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>{t.common.contact} {pm.company_name}{pm.phone ? " " + t.common.at + " " + pm.phone : ""} {t.lease.contactRenewal}</div>
+                <button onClick={() => setRenewalModal({ open: true, choice: null, submitting: false, submitted: false })} style={{ width: "100%", padding: "11px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+                  View Renewal Options
+                </button>
               </div>
             )}
 
@@ -1363,6 +1367,90 @@ export default function TenantPortal() {
                 {tab.badge > 0 && <span style={{ position: "absolute", top: 2, right: "calc(50% - 16px)", minWidth: 14, height: 14, borderRadius: 7, background: "#c45c4a", color: "#fff", fontSize: 7, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: `2px solid ${C.bg}` }}>{tab.badge}</span>}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Renewal Modal */}
+      {renewalModal.open && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={() => setRenewalModal({ open: false, choice: null, submitting: false, submitted: false })}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, maxWidth: 460, width: "100%", padding: 28, boxShadow: "0 12px 48px rgba(0,0,0,.2)" }}>
+            {renewalModal.submitted ? (
+              <div style={{ textAlign: "center" }}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>Renewal Request Submitted</div>
+                <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 16 }}>{pm.company_name} will review your request and follow up with next steps.</div>
+                <button onClick={() => setRenewalModal({ open: false, choice: null, submitting: false, submitted: false })} style={{ padding: "10px 28px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>Close</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Lease Renewal Options</div>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 20, lineHeight: 1.5 }}>Your lease expires {fmtD(tenant?.lease_end)}. Choose how you{"\u2019"}d like to continue:</div>
+
+                {/* Fixed-term renewal options */}
+                {(pmSettings?.renewalTerms || [12]).map(months => {
+                  const isSelected = renewalModal.choice === months;
+                  return (
+                    <div key={months} onClick={() => setRenewalModal(p => ({ ...p, choice: months }))} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 10, border: isSelected ? "2px solid " + C.green : "1.5px solid rgba(0,0,0,.08)", background: isSelected ? hexRgba(C.green, .04) : "#fff", cursor: "pointer", marginBottom: 8, transition: "all .15s" }}>
+                      <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSelected ? "6px solid " + C.green : "2px solid rgba(0,0,0,.15)", flexShrink: 0, transition: "all .15s" }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>Renew for {months} months</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Same rent: {fmt(tenant?.rent)}/mo</div>
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.green, flexShrink: 0 }}>No increase</div>
+                    </div>
+                  );
+                })}
+
+                {/* M2M option */}
+                {(() => {
+                  const m2m = pmSettings?.m2mIncrease || 50;
+                  const newRent = (tenant?.rent || 0) + m2m;
+                  const isSelected = renewalModal.choice === "m2m";
+                  return (
+                    <div onClick={() => setRenewalModal(p => ({ ...p, choice: "m2m" }))} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 10, border: isSelected ? "2px solid " + C.accent : "1.5px solid rgba(0,0,0,.08)", background: isSelected ? hexRgba(C.accent, .04) : "#fff", cursor: "pointer", marginBottom: 16, transition: "all .15s" }}>
+                      <div style={{ width: 20, height: 20, borderRadius: "50%", border: isSelected ? "6px solid " + C.accent : "2px solid rgba(0,0,0,.15)", flexShrink: 0, transition: "all .15s" }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700 }}>Go month-to-month</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Flexible {"\u2014"} cancel with 30 days notice</div>
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{fmt(newRent)}/mo (+${m2m})</div>
+                    </div>
+                  );
+                })()}
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setRenewalModal({ open: false, choice: null, submitting: false, submitted: false })} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Cancel</button>
+                  <button disabled={!renewalModal.choice || renewalModal.submitting} onClick={async () => {
+                    setRenewalModal(p => ({ ...p, submitting: true }));
+                    const choice = renewalModal.choice;
+                    const isM2M = choice === "m2m";
+                    // Save renewal request to messages + notify PM
+                    await supabase.from("messages").insert({
+                      tenant_id: tenant?.id, tenant_name: tenant?.name, sender_email: user?.email || "",
+                      sender_name: tenant?.name, direction: "inbound",
+                      subject: isM2M ? "Lease Renewal: Month-to-Month" : "Lease Renewal: " + choice + " months",
+                      body: isM2M
+                        ? "I would like to go month-to-month when my lease expires on " + fmtD(tenant?.lease_end) + ". I understand the rent will increase to " + fmt((tenant?.rent || 0) + (pmSettings?.m2mIncrease || 50)) + "/mo."
+                        : "I would like to renew my lease for " + choice + " months at " + fmt(tenant?.rent) + "/mo when my current lease expires on " + fmtD(tenant?.lease_end) + ".",
+                      property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false,
+                    });
+                    try {
+                      await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+                        to: pmSettings?.pmEmail || pmSettings?.email || "",
+                        subject: "Lease Renewal Request: " + (tenant?.name || "Tenant") + " \u2014 " + (isM2M ? "Month-to-Month" : choice + " months"),
+                        html: "<p><strong>" + esc(tenant?.name) + "</strong> has requested to " + (isM2M ? "go month-to-month" : "renew for " + choice + " months") + " when their lease expires on " + fmtD(tenant?.lease_end) + ".</p><p>" + esc(tenant?.property?.name) + " \u2014 " + esc(tenant?.room?.name) + "</p>",
+                        replyTo: user?.email || "",
+                      }) });
+                    } catch (e) {}
+                    setRenewalModal({ open: false, choice: null, submitting: false, submitted: true });
+                    setTimeout(() => setRenewalModal(p => ({ ...p, submitted: false })), 5000);
+                  }} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: renewalModal.choice ? C.bg : "rgba(0,0,0,.08)", color: renewalModal.choice ? C.accent : "#bbb", cursor: renewalModal.choice ? "pointer" : "default", fontWeight: 800, fontSize: 13 }}>
+                    {renewalModal.submitting ? "Submitting..." : "Request Renewal"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
