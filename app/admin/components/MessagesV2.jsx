@@ -652,7 +652,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 14, fontWeight: 700 }}>{activeThread.tenantName}</span>
-                          <button onClick={() => { if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 9, color: "#007AFF", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: 0 }}>View Profile</button>
+                          <button onClick={e => { e.stopPropagation(); if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 10, color: "#007AFF", background: "rgba(0,122,255,.06)", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: "2px 8px", borderRadius: 4, lineHeight: 1.2 }}>View Profile →</button>
                         </div>
                         <div style={{ fontSize: 10, color: "#8e8e93" }}>
                           {activeThread.propertyName}{activeThread.roomName ? " · " + activeThread.roomName : ""}
