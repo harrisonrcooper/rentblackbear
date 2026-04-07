@@ -325,7 +325,11 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
     if (text.startsWith("/maintenance")) {
       const details = text.replace("/maintenance", "").trim();
       if (!details) { setReplyText("/maintenance "); inputRef.current?.focus(); return false; }
+      // Get pm_id from pm_accounts if available
+      let pmId = null;
+      try { const { data: pmRows } = await supabase.from("pm_accounts").select("id").limit(1).single(); pmId = pmRows?.id || null; } catch (e) {}
       const { error } = await supabase.from("maintenance_requests").insert({
+        pm_id: pmId,
         title: details,
         description: "Created via PM messages by " + (settings?.pmName || "PM"),
         priority: "medium",
