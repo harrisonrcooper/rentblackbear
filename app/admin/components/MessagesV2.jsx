@@ -794,8 +794,8 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                           )}
                           {/* Reaction trigger button — appears on hover, opposite side of bubble */}
                           {!isOut && !isNote && isHovered && !isDeleted && (
-                            <button className="msg-react-trigger" onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ position: "absolute", top: "50%", right: isOut ? undefined : -32, transform: "translateY(-50%)", width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "all .15s ease", zIndex: 5 }}>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                            <button onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ position: "absolute", top: "50%", right: -32, transform: "translateY(-50%)", width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b6b6e" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                             </button>
                           )}
                           <div
@@ -828,7 +828,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                               <div style={{ fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{msg.body}{msg.edited && <span style={{ fontSize: 9, opacity: .5, marginLeft: 4 }}>(edited)</span>}</div>
                             )}
                             {/* Timestamp — hidden by default, visible on hover or last in group */}
-                            <div className="msg-time-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 3, opacity: (isLastInGroup && !groupedWithNext) ? 1 : 0, transition: "opacity .15s ease", height: (isLastInGroup && !groupedWithNext) ? "auto" : 0, overflow: "hidden" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 3, opacity: (isLastInGroup && !groupedWithNext) || isHovered ? 1 : 0, maxHeight: (isLastInGroup && !groupedWithNext) || isHovered ? 20 : 0, transition: "opacity .15s ease, max-height .15s ease", overflow: "hidden" }}>
                               <div style={{ fontSize: 9, color: isOut ? "rgba(255,255,255,.9)" : "#3a3a3c", fontWeight: 500 }}>{fmtTime(msg.created_at)}</div>
                               {isOut && <div style={{ fontSize: 9, color: "rgba(255,255,255,.6)", marginLeft: 8, display: "flex", alignItems: "center", gap: 2 }}>
                                 {msg.status === "read" || msg.read ? (
