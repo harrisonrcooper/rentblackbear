@@ -614,10 +614,13 @@ export default function TenantPortal() {
                   <span style={{ color: C.muted }}>Door Code</span>
                   <button onClick={() => setShowDoorCode(!showDoorCode)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "monospace", fontWeight: 800, letterSpacing: showDoorCode ? 4 : 2, fontSize: 13, color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
                     {showDoorCode ? (tenant?.door_code || tenant?.room?.door_code) : "\u2022\u2022\u2022\u2022"}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{showDoorCode ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></> : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}</svg>
+                    {showDoorCode
+                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    }
                   </button>
                 </div>
-              ))}
+              )}
             </div>
             {maintenance.filter(m => m.status !== "resolved").length > 0 && (
               <div style={sCard}>
