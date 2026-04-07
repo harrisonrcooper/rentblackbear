@@ -97,6 +97,41 @@ function SignatureCanvas({ onSave, onCancel, C }) {
   );
 }
 
+// ── Autopay Setup Form ───────────────────────────────────────────────
+function AutopaySetupForm({ onSuccess, onCancel, C }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async () => {
+    if (!stripe || !elements) return;
+    setSaving(true); setErr("");
+    const { error, setupIntent } = await stripe.confirmSetup({
+      elements, redirect: "if_required",
+      confirmParams: { return_url: window.location.href },
+    });
+    if (error) { setErr(error.message); setSaving(false); }
+    else if (setupIntent?.status === "succeeded") onSuccess(setupIntent);
+    else setSaving(false);
+  };
+
+  return (
+    <div>
+      <div style={{ background: "#f8f7f5", borderRadius: 10, padding: 16, marginBottom: 16 }}>
+        <PaymentElement options={{ layout: "tabs" }} />
+      </div>
+      {err && <div style={{ fontSize: 12, color: C.red, background: hexRgba(C.red, .06), border: `1px solid ${hexRgba(C.red, .2)}`, borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>{err}</div>}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={onCancel} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Cancel</button>
+        <button onClick={submit} disabled={saving || !stripe} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, cursor: "pointer", fontWeight: 800, fontSize: 14 }}>
+          {saving ? "Saving..." : "Save Payment Method"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────
 export default function TenantPortal() {
   const [screen, setScreen]               = useState("loading");
@@ -112,6 +147,7 @@ export default function TenantPortal() {
   const [pmSettings, setPmSettings]       = useState(null);
   const [charges, setCharges]             = useState([]);
   const [maintenance, setMaintenance]     = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [activeTab, setActiveTab]         = useState("home");
   const [token, setToken]                 = useState(null);
   const [leaseId, setLeaseId]             = useState(null);
@@ -126,6 +162,7 @@ export default function TenantPortal() {
   const [maintSubmitting, setMaintSubmitting] = useState(false);
   const [maintSuccess, setMaintSuccess]   = useState(false);
   const [noticeForm, setNoticeForm]       = useState({ moveOutDate: "", reason: "", showForm: false, submitting: false, submitted: false });
+  const [autopay, setAutopay]             = useState({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
   const CREDIT_FEE = 0.029;
 
   // Dynamic theme — PM can override bg, accent, green, red via pm_accounts columns
@@ -158,6 +195,10 @@ export default function TenantPortal() {
       supabase.from("lease_instances").select("*").eq("id", "ul56zet").single().then(({ data: row }) => {
         if (row) setLeaseData({ ...(row.variable_data || {}), id: row.id, status: row.status, landlordSig: row.landlord_sig, tenantSig: row.tenant_sig, landlordSignedAt: row.landlord_signed_at, tenantSignedAt: row.tenant_signed_at });
       });
+      setAnnouncements([
+        { id: "demo1", title: "Water shut-off scheduled", body: "City maintenance will shut off water on April 12 from 8am to 2pm. Please plan accordingly.", createdAt: "2026-04-05T12:00:00Z", expiresAt: null, propertyId: null },
+        { id: "demo2", title: "Parking lot repaving", body: "The main lot will be repaved April 15-17. Use the side lot during this time.", createdAt: "2026-04-03T09:00:00Z", expiresAt: "2026-04-18T23:59:59Z", propertyId: null },
+      ]);
       setOnboarding({ leaseSigned: true, sdPaid: true, firstMonthPaid: true });
       setScreen("portal");
       return;
@@ -189,6 +230,20 @@ export default function TenantPortal() {
       setTenant(pu.tenant);
       await supabase.from("portal_users").update({ last_seen_at: new Date().toISOString() }).eq("id", pu.id);
       if (pu.pm_id) { const { data: pm } = await supabase.from("pm_accounts").select("*").eq("id", pu.pm_id).single(); setPmSettings(pm); }
+      // Load announcements from hq-settings in app_data
+      try {
+        const { data: adRows } = await supabase.from("app_data").select("value").eq("key", "hq-settings").single();
+        if (adRows?.value?.announcements) {
+          const now = new Date().toISOString();
+          const propId = pu.tenant?.property_id || null;
+          const active = adRows.value.announcements.filter(a => {
+            if (a.expiresAt && a.expiresAt < now) return false;
+            if (a.propertyId && a.propertyId !== propId) return false;
+            return true;
+          });
+          setAnnouncements(active);
+        }
+      } catch (e) { console.warn("Announcements load:", e); }
       const { data: ch } = await supabase.from("charges").select("*, payments(*)").eq("tenant_id", pu.tenant_id).order("due_date", { ascending: false });
       setCharges(ch || []);
       const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false });
@@ -221,6 +276,18 @@ export default function TenantPortal() {
       const { data: pm } = await supabase.from("pm_accounts").select("*").eq("id", inv.pm_id).single(); setPmSettings(pm);
       const { data: ch } = await supabase.from("charges").select("*, payments(*)").eq("tenant_id", inv.tenant_id).order("due_date", { ascending: false }); setCharges(ch || []);
       const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", inv.tenant_id).order("created_at", { ascending: false }); setMaintenance(mt || []);
+      try {
+        const { data: adRows } = await supabase.from("app_data").select("value").eq("key", "hq-settings").single();
+        if (adRows?.value?.announcements) {
+          const now = new Date().toISOString();
+          const propId = pu.tenant?.property_id || null;
+          setAnnouncements(adRows.value.announcements.filter(a => {
+            if (a.expiresAt && a.expiresAt < now) return false;
+            if (a.propertyId && a.propertyId !== propId) return false;
+            return true;
+          }));
+        }
+      } catch (e) { console.warn("Announcements load:", e); }
       setOnboarding({ leaseSigned: false, sdPaid: !!(ch || []).find(c => c.category === "Security Deposit" && c.amount_paid >= c.amount), firstMonthPaid: !!(ch || []).find(c => c.category === "Rent" && c.amount_paid >= c.amount) });
       setScreen("portal");
     } catch (e) { console.error(e); setScreen("error"); }
@@ -507,6 +574,23 @@ export default function TenantPortal() {
               <div style={sCard}><span style={sLabel}>Monthly Rent</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st — late after 3rd</div></div>
               <div style={sCard}><span style={sLabel}>Lease End</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " days remaining" : "Expired"}</div>}</div>
             </div>
+            {announcements.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <span style={sLabel}>Announcements</span>
+                {announcements.map(a => (
+                  <div key={a.id} style={{ background: "#fff", borderRadius: 14, padding: "16px 18px", border: "1px solid rgba(0,0,0,.06)", borderLeft: `4px solid ${C.accent}`, marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>{a.title}</div>
+                        <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{a.body}</div>
+                        <div style={{ fontSize: 10, color: "#999", marginTop: 8 }}>Posted {new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={sCard}>
               <span style={sLabel}>Your Room</span>
               {[["Property", tenant?.property?.name], ["Room", tenant?.room?.name], ["Move-in", fmtD(tenant?.move_in)], ["Door Code", tenant?.door_code || tenant?.room?.door_code]].filter(([, v]) => v).map(([label, val]) => (
@@ -595,6 +679,58 @@ export default function TenantPortal() {
                 </div>
               );
             })}
+
+            {/* Auto-Pay Enrollment */}
+            <div style={{ ...sCard, marginTop: 16 }}>
+              <span style={sLabel}>Auto-Pay</span>
+              {autopay.enrolled ? (
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.green }}>Auto-pay is active</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>Your rent will be charged automatically on the 1st of each month using your saved payment method.</div>
+                  <button onClick={async () => {
+                    setAutopay(p => ({ ...p, loading: true }));
+                    await fetch("/api/stripe/cancel-autopay", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId: tenant?.id }) });
+                    setAutopay({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
+                  }} style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                    {autopay.loading ? "Canceling..." : "Cancel Auto-Pay"}
+                  </button>
+                </div>
+              ) : !autopay.showSetup ? (
+                <div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>Save a payment method and your rent will be charged automatically on the 1st of each month. No more manual payments.</div>
+                  <div style={{ fontSize: 11, color: "#999", background: hexRgba(C.accent, .06), border: `1px solid ${hexRgba(C.accent, .15)}`, borderRadius: 8, padding: "8px 12px", marginBottom: 12 }}>
+                    ACH bank transfer recommended for lowest fees (~$1 flat). Card payments include a {(CREDIT_FEE * 100).toFixed(1)}% convenience fee.
+                  </div>
+                  <button onClick={async () => {
+                    setAutopay(p => ({ ...p, loading: true }));
+                    try {
+                      const res = await fetch("/api/stripe/create-setup-intent", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ tenantId: tenant?.id, tenantName: tenant?.name, tenantEmail: user?.email }),
+                      });
+                      const { clientSecret } = await res.json();
+                      if (clientSecret) setAutopay({ enrolled: false, loading: false, setupSecret: clientSecret, showSetup: true });
+                      else setAutopay(p => ({ ...p, loading: false }));
+                    } catch (e) { setAutopay(p => ({ ...p, loading: false })); }
+                  }} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
+                    {autopay.loading ? "Setting up..." : "Enroll in Auto-Pay"}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 12 }}>Save your payment method</div>
+                  <Elements stripe={stripePromise} options={{ clientSecret: autopay.setupSecret, appearance: { theme: "stripe", variables: { colorPrimary: C.accent, borderRadius: "8px" } } }}>
+                    <AutopaySetupForm onSuccess={() => {
+                      setAutopay({ enrolled: true, loading: false, setupSecret: null, showSetup: false });
+                      supabase.from("portal_users").update({ autopay_enabled: true }).eq("tenant_id", tenant?.id);
+                    }} onCancel={() => setAutopay({ enrolled: false, loading: false, setupSecret: null, showSetup: false })} C={C} />
+                  </Elements>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
