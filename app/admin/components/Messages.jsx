@@ -175,13 +175,43 @@ export default function Messages({ settings, properties }) {
                 <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
                   {activeMessages.map((msg) => {
                     const isOutbound = msg.direction === "outbound";
+                    const isRenewalReq = !isOutbound && msg.subject && msg.subject.startsWith("Lease Renewal:");
+                    const isNoticeReq = !isOutbound && msg.subject && msg.subject.includes("Notice to Vacate");
+                    const isActionable = isRenewalReq || isNoticeReq;
                     return (
-                      <div key={msg.id} style={{ display: "flex", justifyContent: isOutbound ? "flex-end" : "flex-start", marginBottom: 12 }}>
-                        <div style={{ maxWidth: "75%", padding: "10px 14px", borderRadius: 12, background: isOutbound ? _acc : "#f4f3f0", color: isOutbound ? "#fff" : "#1a1714", borderBottomRightRadius: isOutbound ? 4 : 12, borderBottomLeftRadius: isOutbound ? 12 : 4 }}>
-                          {msg.subject && <div style={{ fontSize: 10, fontWeight: 700, opacity: .7, marginBottom: 4 }}>{msg.subject}</div>}
-                          <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.body}</div>
-                          <div style={{ fontSize: 9, opacity: .6, marginTop: 4, textAlign: "right" }}>{fmtTime(msg.created_at)}</div>
+                      <div key={msg.id} style={{ marginBottom: 12 }}>
+                        <div style={{ display: "flex", justifyContent: isOutbound ? "flex-end" : "flex-start" }}>
+                          <div style={{ maxWidth: "75%", padding: "10px 14px", borderRadius: 12, background: isOutbound ? _acc : isActionable ? "#fffbf0" : "#f4f3f0", color: isOutbound ? "#fff" : "#1a1714", borderBottomRightRadius: isOutbound ? 4 : 12, borderBottomLeftRadius: isOutbound ? 12 : 4, border: isActionable ? "1px solid rgba(212,168,83,.25)" : "none" }}>
+                            {msg.subject && <div style={{ fontSize: 10, fontWeight: 700, opacity: .7, marginBottom: 4 }}>{msg.subject}</div>}
+                            <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.body}</div>
+                            <div style={{ fontSize: 9, opacity: .6, marginTop: 4, textAlign: "right" }}>{fmtTime(msg.created_at)}</div>
+                          </div>
                         </div>
+                        {/* Renewal action buttons */}
+                        {isRenewalReq && !msg._handled && (
+                          <div style={{ display: "flex", gap: 6, marginTop: 6, paddingLeft: 4 }}>
+                            <button onClick={async () => {
+                              // Approve — send confirmation to tenant
+                              const reply = "Your lease renewal request has been approved. We will prepare the new lease agreement and send it for your signature shortly.";
+                              await supabase.from("messages").insert({ tenant_id: msg.tenant_id, tenant_name: msg.tenant_name, sender_email: settings?.pmEmail || settings?.email || "", sender_name: settings?.pmName || "Property Manager", direction: "outbound", subject: "Re: " + msg.subject, body: reply, property_name: msg.property_name, room_name: msg.room_name, read: true, created_at: new Date().toISOString() });
+                              try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: msg.sender_email, subject: "Lease Renewal Approved", html: "<p>" + reply + "</p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {}
+                              await supabase.from("messages").update({ _handled: true }).eq("id", msg.id);
+                              loadMessages();
+                            }} style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: "#4a7c59", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                              Approve
+                            </button>
+                            <button onClick={async () => {
+                              const reply = "We have reviewed your lease renewal request and are unable to approve it at this time. Please contact us to discuss your options.";
+                              await supabase.from("messages").insert({ tenant_id: msg.tenant_id, tenant_name: msg.tenant_name, sender_email: settings?.pmEmail || settings?.email || "", sender_name: settings?.pmName || "Property Manager", direction: "outbound", subject: "Re: " + msg.subject, body: reply, property_name: msg.property_name, room_name: msg.room_name, read: true, created_at: new Date().toISOString() });
+                              try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: msg.sender_email, subject: "Lease Renewal Update", html: "<p>" + reply + "</p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {}
+                              await supabase.from("messages").update({ _handled: true }).eq("id", msg.id);
+                              loadMessages();
+                            }} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid rgba(196,92,74,.2)", background: "rgba(196,92,74,.06)", color: "#c45c4a", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                              Deny
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

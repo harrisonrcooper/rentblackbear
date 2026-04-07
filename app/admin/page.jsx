@@ -2687,15 +2687,13 @@ export default function Page(){
       if(themeSec>=0){cfg[themeSec]={...cfg[themeSec],ids:["pm-settings",...cfg[themeSec].ids]};}
       else cfg.push({label:"Settings",ids:["pm-settings"]});
     }
-    if(!allIds().includes("messages")){
-      const notifSec=cfg.findIndex(s=>s.ids.includes("notifications"));
-      if(notifSec>=0){cfg[notifSec]={...cfg[notifSec],label:"Communications",ids:["messages","announcements",...cfg[notifSec].ids]};}
-      else cfg.push({label:"Communications",ids:["messages","announcements","notifications"]});
-    }
-    if(!allIds().includes("announcements")){
-      const commSec=cfg.findIndex(s=>s.ids.includes("messages"));
-      if(commSec>=0&&!cfg[commSec].ids.includes("announcements")){cfg[commSec]={...cfg[commSec],ids:[...cfg[commSec].ids.slice(0,1),"announcements",...cfg[commSec].ids.slice(1)]};}
-      else if(!allIds().includes("announcements")) cfg.push({label:"Communications",ids:["announcements"]});
+    // Ensure Communications is its own section with messages, announcements, notifications
+    const commTargetIds=["messages","announcements","notifications"];
+    const hasCommSection=cfg.some(s=>s.label==="Communications"&&commTargetIds.every(id=>s.ids.includes(id)));
+    if(!hasCommSection){
+      // Remove these IDs from whatever sections they're currently in
+      cfg=cfg.map(s=>({...s,ids:s.ids.filter(id=>!commTargetIds.includes(id))})).filter(s=>s.ids.length>0);
+      cfg.push({label:"Communications",ids:commTargetIds});
     }
     return cfg;
   })();
@@ -3178,17 +3176,7 @@ export default function Page(){
           ))}
         </div>
 
-        {/* ── Quick Announcements link ── */}
-        <div onClick={()=>goTab("announcements")} style={{marginTop:20,padding:"14px 18px",background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.06)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.15)"} onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.06)"}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
-            <div>
-              <div style={{fontSize:12,fontWeight:700}}>Tenant Announcements</div>
-              <div style={{fontSize:10,color:"#6b5e52"}}>{(settings.announcements||[]).filter(a=>!a.expiresAt||new Date(a.expiresAt)>new Date()).length} active</div>
-            </div>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
+        {/* Announcements removed from dashboard — now in Communications sidebar */}
       </>);})()}
 
       {/* ═══ TENANTS ═══ */}
