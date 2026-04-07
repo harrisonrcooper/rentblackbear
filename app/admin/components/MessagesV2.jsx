@@ -188,8 +188,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
 
   const loadMessages = async () => {
     setLoading(true);
-    const { data } = await supabase.from("messages").select("*").order("created_at", { ascending: false });
-    setMessages(data || []);
+    try {
+      const { data } = await supabase.from("messages").select("*").order("created_at", { ascending: false });
+      setMessages(data || []);
+    } catch (e) {
+      console.error("Failed to load messages:", e);
+    }
     setLoading(false);
   };
 
