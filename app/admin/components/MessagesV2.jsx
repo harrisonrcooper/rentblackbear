@@ -810,14 +810,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   </div>
                 )}
 
-                {/* Schedule message */}
+                {/* Schedule mode — inline date picker above input */}
                 {showSchedule && (
-                  <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,.06)", background: "#fafaf8", display: "flex", gap: 8, alignItems: "center" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#6b5e52" }}>Send later:</span>
-                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit" }} />
-                    <button onClick={scheduleMessage} disabled={!scheduleTime || !replyText.trim()} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: scheduleTime && replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: scheduleTime && replyText.trim() ? "#fff" : "#bbb", fontSize: 11, fontWeight: 700, cursor: scheduleTime && replyText.trim() ? "pointer" : "default" }}>Schedule</button>
-                    <button onClick={() => { setShowSchedule(false); setScheduleTime(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 14 }}>
+                  <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(59,130,246,.15)", background: "rgba(59,130,246,.03)", display: "flex", gap: 8, alignItems: "center" }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6" }}>Schedule for:</span>
+                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(59,130,246,.2)", fontSize: 11, fontFamily: "inherit", background: "#fff" }} />
+                    <button onClick={() => { setShowSchedule(false); setScheduleTime(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#999" }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                   </div>
@@ -1031,17 +1030,22 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1.5px solid rgba(0,0,0,.1)", fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "#fff", minHeight: 44, maxHeight: 120, lineHeight: 1.5 }}
                     />
                   </div>
-                  {/* Schedule button */}
-                  <button onClick={() => setShowSchedule(!showSchedule)} title="Send later" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showSchedule ? "rgba(59,130,246,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={showSchedule ? "#3b82f6" : "#999"} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  </button>
-                  {/* Send button */}
-                  <button onClick={showSchedule ? scheduleMessage : sendReply} disabled={sending || !replyText.trim() || (showSchedule && !scheduleTime)} style={{ width: 40, height: 40, borderRadius: 20, border: "none", background: (replyText.trim() && (!showSchedule || scheduleTime)) ? (showSchedule ? "#3b82f6" : _acc) : "rgba(0,0,0,.08)", color: (replyText.trim() && (!showSchedule || scheduleTime)) ? "#fff" : "#bbb", cursor: (replyText.trim() && (!showSchedule || scheduleTime)) ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all .15s" }}>
-                    {showSchedule
-                      ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    }
-                  </button>
+                  {/* Send / Schedule button group */}
+                  <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+                    {showSchedule ? (
+                      <button onClick={scheduleMessage} disabled={!replyText.trim() || !scheduleTime} style={{ height: 40, padding: "0 16px", borderRadius: "20px 0 0 20px", border: "none", background: (replyText.trim() && scheduleTime) ? "#3b82f6" : "rgba(0,0,0,.08)", color: (replyText.trim() && scheduleTime) ? "#fff" : "#bbb", cursor: (replyText.trim() && scheduleTime) ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Schedule
+                      </button>
+                    ) : (
+                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 40, height: 40, borderRadius: "20px 0 0 20px", border: "none", background: replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      </button>
+                    )}
+                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 20, height: 40, borderRadius: "0 20px 20px 0", border: "none", borderLeft: "1px solid rgba(255,255,255,.2)", background: showSchedule ? "#3b82f6" : (replyText.trim() ? _acc : "rgba(0,0,0,.08)"), color: showSchedule ? "#fff" : (replyText.trim() ? "#fff" : "#bbb"), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="8" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 1l5 5 5-5"/></svg>
+                    </button>
+                  </div>
                 </div>
               </>
             )}
