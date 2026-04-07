@@ -174,6 +174,8 @@ export default function TenantPortal() {
   const [msgInput, setMsgInput]           = useState("");
   const [portalHoveredMsg, setPortalHoveredMsg] = useState(null);
   const [portalShowReactions, setPortalShowReactions] = useState(null);
+  const portalMsgEndRef = useRef(null);
+  const portalMsgCountRef = useRef(0);
   const [renewalModal, setRenewalModal]   = useState({ open: false, choice: null, submitting: false, submitted: false });
 
   // Realtime subscription for portal messages
@@ -913,7 +915,7 @@ export default function TenantPortal() {
 
             <div style={{ borderRadius: 16, overflow: "hidden", background: "linear-gradient(180deg, #f8f8fa 0%, #eeeef2 100%)", boxShadow: "0 2px 12px rgba(0,0,0,.06)", display: "flex", flexDirection: "column" }}>
               {/* Messages list */}
-              <div className="portal-msg-scroll" ref={el => { if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 50); }} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px", maxHeight: 450, minHeight: 300 }}>
+              <div className="portal-msg-scroll" onClick={() => setPortalShowReactions(null)} ref={el => { if (el && tenantMessages.length !== portalMsgCountRef.current) { portalMsgCountRef.current = tenantMessages.length; setTimeout(() => el.scrollTop = el.scrollHeight, 50); } }} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px", maxHeight: 450, minHeight: 300 }}>
                 {visibleMsgs.length === 0 && (
                   <div style={{ textAlign: "center", padding: 40, color: "#8e8e93" }}>
                     <div style={{ width: 48, height: 48, borderRadius: 24, background: "rgba(0,122,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
