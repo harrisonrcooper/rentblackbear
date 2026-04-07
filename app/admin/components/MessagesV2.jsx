@@ -850,7 +850,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                             )}
                             {/* Reaction badges — pinned to top corner of bubble */}
                             {hasReactions && (
-                              <div className="msg-reaction-badge" style={S.reactionBadge(isOut)}>
+                              <div className="msg-reaction-badge" style={S.reactionBadge(isOut || isNote)}>
                                 {Object.entries(reactions).map(([key, users]) => {
                                   const r = REACTIONS.find(x => x.label === key);
                                   return r ? <span key={key} style={{ cursor: "pointer" }} onClick={e => { e.stopPropagation(); toggleReaction(msg.id, key); }}>{r.emoji}</span> : null;
