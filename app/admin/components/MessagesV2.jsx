@@ -36,11 +36,12 @@ const fmtDateGroup = (iso) => {
 };
 
 const REACTIONS = [
-  { emoji: "\ud83d\udc4d", label: "thumbsup" },
-  { emoji: "\u2764\ufe0f", label: "heart" },
-  { emoji: "\ud83d\ude02", label: "laugh" },
-  { emoji: "\ud83d\ude2e", label: "surprised" },
-  { emoji: "\ud83d\udc4e", label: "thumbsdown" },
+  { emoji: "❤️", label: "heart" },
+  { emoji: "👍", label: "thumbsup" },
+  { emoji: "👎", label: "thumbsdown" },
+  { emoji: "😂", label: "laugh" },
+  { emoji: "‼️", label: "exclaim" },
+  { emoji: "❓", label: "question" },
 ];
 
 const DEFAULT_SAVED_REPLIES = [
@@ -61,26 +62,26 @@ const COMMON_EMOJIS = [
   "\ud83d\udcb0","\ud83d\udcc5","\ud83d\udce2","\ud83d\udca1","\u23f0","\ud83d\ude80","\ud83c\udf1f","\ud83d\udccc","\ud83d\udcde","\u270f\ufe0f",
 ];
 
-// ── Styles ─────────────────────────────────────────────────────────
+// ── iMessage Styles ───────────────────────────────────────────────
 const S = {
   outer: { position: "fixed", top: 96, bottom: 0, left: 220, right: 0, display: "flex", flexDirection: "column", background: "#f4f3f0", zIndex: 5 },
 
   wrap: { display: "flex", gap: 0, flex: 1, overflow: "hidden", background: "#fff", minHeight: 0 },
-  threadList: { width: 300, borderRight: "1px solid rgba(0,0,0,.06)", display: "flex", flexDirection: "column", background: "#fafaf8" },
-  threadSearch: { padding: "12px 14px", borderBottom: "1px solid rgba(0,0,0,.06)" },
+  threadList: { width: 300, borderRight: "1px solid rgba(0,0,0,.04)", display: "flex", flexDirection: "column", background: "rgba(245,244,242,.85)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" },
+  threadSearch: { padding: "12px 14px", borderBottom: "1px solid rgba(0,0,0,.04)" },
   threadScroll: { flex: 1, overflowY: "auto" },
-  threadItem: (active, unread) => ({ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.03)", background: active ? "#fff" : "transparent", borderLeft: active ? "3px solid" : "3px solid transparent", transition: "all .1s", position: "relative" }),
-  chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "#fff", minWidth: 0, overflow: "hidden" },
-  chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "#fff", zIndex: 2 },
+  threadItem: (active, unread) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? "rgba(0,122,255,.08)" : "transparent", borderLeft: active ? "3px solid #007AFF" : "3px solid transparent", transition: "all .15s ease", position: "relative" }),
+  chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #f8f8fa 0%, #eeeef2 100%)", minWidth: 0, overflow: "hidden" },
+  chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", zIndex: 2 },
   chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px" },
-  chatInput: { padding: "12px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0 },
-  bubble: (isOut, _acc) => ({ maxWidth: "72%", padding: "10px 14px", borderRadius: 18, background: isOut ? _acc : "#f0efec", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 6 : 18, borderBottomLeftRadius: isOut ? 18 : 6, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere" }),
-  dateGroup: { textAlign: "center", margin: "16px 0 8px", fontSize: 10, fontWeight: 700, color: "#999", letterSpacing: .5, textTransform: "uppercase" },
-  reactionBar: { display: "flex", gap: 2, position: "absolute", top: -8, right: 0, background: "#fff", borderRadius: 20, boxShadow: "0 2px 12px rgba(0,0,0,.15)", padding: "3px 4px", zIndex: 10 },
-  reactionBtn: { width: 28, height: 28, borderRadius: 14, border: "none", background: "transparent", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .1s" },
-  reactionPill: { display: "inline-flex", alignItems: "center", gap: 2, padding: "2px 6px", borderRadius: 10, background: "rgba(0,0,0,.06)", fontSize: 11, marginTop: 4, marginRight: 3, cursor: "pointer" },
-  typingDots: { display: "flex", gap: 4, padding: "10px 14px", borderRadius: 18, background: "#f0efec", borderBottomLeftRadius: 6, width: "fit-content" },
-  dot: (delay) => ({ width: 7, height: 7, borderRadius: "50%", background: "#999", animation: `msgDotBounce 1.2s ease-in-out ${delay}s infinite` }),
+  chatInput: { padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" },
+  bubble: (isOut, _acc) => ({ maxWidth: "68%", padding: "9px 14px", borderRadius: 18, background: isOut ? "#007AFF" : "rgba(255,255,255,.85)", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 4 : 18, borderBottomLeftRadius: isOut ? 18 : 4, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere", boxShadow: isOut ? "0 1px 3px rgba(0,122,255,.2)" : "0 1px 3px rgba(0,0,0,.06)", backdropFilter: isOut ? "none" : "blur(12px)", WebkitBackdropFilter: isOut ? "none" : "blur(12px)" }),
+  dateGroup: { textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#8e8e93", letterSpacing: .2 },
+  reactionBar: { display: "flex", gap: 2, position: "absolute", top: -42, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,.92)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderRadius: 22, boxShadow: "0 4px 24px rgba(0,0,0,.18), 0 0 0 0.5px rgba(0,0,0,.08)", padding: "4px 6px", zIndex: 10 },
+  reactionBtn: { width: 32, height: 32, borderRadius: 16, border: "none", background: "transparent", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" },
+  reactionPill: { display: "inline-flex", alignItems: "center", gap: 2, padding: "2px 7px", borderRadius: 12, background: "rgba(0,0,0,.06)", backdropFilter: "blur(8px)", fontSize: 12, marginTop: 4, marginRight: 3, cursor: "pointer", transition: "transform .1s ease" },
+  typingDots: { display: "flex", gap: 4, padding: "10px 14px", borderRadius: 18, background: "rgba(255,255,255,.85)", backdropFilter: "blur(12px)", borderBottomLeftRadius: 4, width: "fit-content", boxShadow: "0 1px 3px rgba(0,0,0,.06)" },
+  dot: (delay) => ({ width: 7, height: 7, borderRadius: "50%", background: "#8e8e93", animation: `msgDotBounce 1.2s ease-in-out ${delay}s infinite` }),
 };
 
 // ── Component ──────────────────────────────────────────────────────
@@ -503,10 +504,26 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
     <>
       <style>{`
         @keyframes msgDotBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-        @keyframes msgFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .msg-bubble{animation:msgFadeIn .2s ease}
-        .msg-reaction-btn:hover{transform:scale(1.3)}
-        .msg-thread:hover{background:rgba(0,0,0,.03)}
+        @keyframes msgSlideUp{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes msgSlideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes tapbackIn{from{opacity:0;transform:translateX(-50%) scale(.5)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+        .msg-bubble{animation:msgSlideUp .25s cubic-bezier(.23,1,.32,1)}
+        .msg-bubble-in{animation:msgSlideIn .25s cubic-bezier(.23,1,.32,1)}
+        .msg-reaction-btn:hover{transform:scale(1.35);background:rgba(0,0,0,.06)}
+        .msg-reaction-btn:active{transform:scale(1.1)}
+        .msg-thread:hover{background:rgba(0,122,255,.04)!important}
+        .msg-tapback-bar{animation:tapbackIn .2s cubic-bezier(.23,1,.32,1)}
+        .msg-bubble-wrap:hover .msg-time-hover{opacity:1!important}
+        .msg-reaction-pill:hover{transform:scale(1.1)}
+        /* Bubble tails */
+        .msg-tail-out::after{content:'';position:absolute;bottom:0;right:-6px;width:12px;height:12px;background:#007AFF;clip-path:polygon(0 0, 0% 100%, 100% 100%);border-bottom-right-radius:4px}
+        .msg-tail-in::after{content:'';position:absolute;bottom:0;left:-6px;width:12px;height:12px;background:rgba(255,255,255,.85);clip-path:polygon(100% 0, 0% 100%, 100% 100%);border-bottom-left-radius:4px}
+        .msg-tail-note::after{content:none}
+        /* Scrollbar styling */
+        .imsg-scroll::-webkit-scrollbar{width:6px}
+        .imsg-scroll::-webkit-scrollbar-track{background:transparent}
+        .imsg-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12);border-radius:3px}
+        .imsg-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.2)}
       `}</style>
 
       <div style={S.outer}>
@@ -519,10 +536,10 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           {/* ── Thread List ── */}
           <div style={S.threadList}>
             <div style={S.threadSearch}>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ width: "100%", padding: "8px 12px", borderRadius: 10, border: "none", fontSize: 12, fontFamily: "inherit", outline: "none", background: "rgba(0,0,0,.06)" }} />
               <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
                 {[["all", "All"], ["unread", "Unread"], ["starred", "Starred"], ["pinned", "Pinned"], ["archived", "Archived"]].map(([id, label]) => (
-                  <button key={id} onClick={() => setThreadFilter(id)} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: "1px solid " + (threadFilter === id ? _acc : "rgba(0,0,0,.08)"), background: threadFilter === id ? _acc + "12" : "#fff", color: threadFilter === id ? _acc : "#999", fontSize: 10, fontWeight: threadFilter === id ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+                  <button key={id} onClick={() => setThreadFilter(id)} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: "none", background: threadFilter === id ? "rgba(0,122,255,.12)" : "transparent", color: threadFilter === id ? "#007AFF" : "#8e8e93", fontSize: 10, fontWeight: threadFilter === id ? 700 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>{label}</button>
                 ))}
               </div>
               {allProps.length > 1 && (
@@ -545,7 +562,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         {/* Avatar circle */}
-                        <div style={{ width: 32, height: 32, minWidth: 32, minHeight: 32, borderRadius: "50%", background: isActive ? _acc : "#e8e5e0", color: isActive ? "#fff" : "#6b5e52", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
+                        <div style={{ width: 34, height: 34, minWidth: 34, minHeight: 34, borderRadius: "50%", background: isActive ? "#007AFF" : "#e5e5ea", color: isActive ? "#fff" : "#8e8e93", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0, transition: "all .15s" }}>
                           {(thread.tenantName || "?")[0].toUpperCase()}
                         </div>
                         <div>
@@ -562,7 +579,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <div style={{ fontSize: 9, color: "#999" }}>{fmtTime(thread.lastAt)}</div>
-                        {unread > 0 && <div style={{ width: 18, height: 18, borderRadius: 9, background: _acc, color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</div>}
+                        {unread > 0 && <div style={{ width: 20, height: 20, borderRadius: 10, background: "#007AFF", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</div>}
                       </div>
                     </div>
                     <div style={{ fontSize: 11, color: unread ? "#1a1714" : "#999", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: 38, marginTop: 2 }}>
@@ -584,26 +601,28 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           {/* ── Chat Area ── */}
           <div style={S.chatArea}>
             {!activeThread ? (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#999" }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ddd" strokeWidth="1.25" style={{ marginBottom: 12 }}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Select a conversation</div>
-                <div style={{ fontSize: 12 }}>Choose from the list on the left</div>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#8e8e93" }}>
+                <div style={{ width: 64, height: 64, borderRadius: 32, background: "rgba(0,122,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>Select a conversation</div>
+                <div style={{ fontSize: 13 }}>Choose from the list on the left</div>
               </div>
             ) : (
               <>
                 {/* Header */}
                 <div style={S.chatHeader}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, position: "relative", flexShrink: 0 }}>
+                    <div style={{ width: 38, height: 38, minWidth: 38, minHeight: 38, borderRadius: "50%", background: "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, position: "relative", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,122,255,.25)" }}>
                       {(activeThread.tenantName || "?")[0].toUpperCase()}
-                      {/* Online indicator — based on last message time */}
-                      {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 60000 : 999; return minAgo < 5 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: 5, background: "#4a7c59", border: "2px solid #fff" }} /> : minAgo < 60 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: 5, background: "#d4a853", border: "2px solid #fff" }} /> : null; })()}
+                      {/* Online indicator */}
+                      {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 60000 : 999; return minAgo < 5 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, background: "#34C759", border: "2.5px solid #fff" }} /> : minAgo < 60 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 11, height: 11, borderRadius: 6, background: "#FF9500", border: "2.5px solid #fff" }} /> : null; })()}
                     </div>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThread.tenantName}</div>
                       <div style={{ fontSize: 11, color: "#6b5e52" }}>
                         {activeThread.propertyName}{activeThread.roomName ? " \u00b7 " + activeThread.roomName : ""}
-                        {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? Math.floor((Date.now() - new Date(lastInbound.created_at).getTime()) / 60000) : null; return minAgo !== null ? <span style={{ marginLeft: 6, fontSize: 9, color: minAgo < 5 ? "#4a7c59" : "#999" }}>{minAgo < 5 ? "Active now" : "Last active " + fmtTime(lastInbound.created_at)}</span> : null; })()}
+                        {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? Math.floor((Date.now() - new Date(lastInbound.created_at).getTime()) / 60000) : null; return minAgo !== null ? <span style={{ marginLeft: 6, fontSize: 9, color: minAgo < 5 ? "#34C759" : "#8e8e93" }}>{minAgo < 5 ? "Active now" : "Last active " + fmtTime(lastInbound.created_at)}</span> : null; })()}
                       </div>
                     </div>
                   </div>
@@ -709,11 +728,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 </div>
 
                 {/* Messages */}
-                <div style={S.chatScroll} onClick={() => { setShowReactions(null); setShowCanned(false); setShowTagDropdown(false); setShowAwayEdit(false); setShowEmoji(false); }}>
+                <div className="imsg-scroll" style={S.chatScroll} onClick={() => { setShowReactions(null); setShowCanned(false); setShowTagDropdown(false); setShowAwayEdit(false); setShowEmoji(false); }}>
                   {activeMessages.map((msg, i) => {
                     const isOut = msg.direction === "outbound";
                     const isNote = msg.direction === "note";
                     const prevMsg = activeMessages[i - 1];
+                    const nextMsg = activeMessages[i + 1];
                     const showDateGroup = !prevMsg || fmtDateGroup(prevMsg.created_at) !== fmtDateGroup(msg.created_at);
                     const reactions = msg.reactions || {};
                     const hasReactions = Object.keys(reactions).length > 0;
@@ -722,66 +742,104 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     const isEditing = editingMsg === msg.id;
                     const isDeleted = msg.deleted;
 
+                    // Message grouping: consecutive same-direction messages
+                    const sameSenderAsPrev = prevMsg && prevMsg.direction === msg.direction && !showDateGroup;
+                    const sameSenderAsNext = nextMsg && nextMsg.direction === msg.direction && fmtDateGroup(nextMsg.created_at) === fmtDateGroup(msg.created_at);
+                    const isLastInGroup = !sameSenderAsNext;
+                    // Time gap: show timestamp if >5 min gap from previous
+                    const timeDiffMin = prevMsg ? (new Date(msg.created_at) - new Date(prevMsg.created_at)) / 60000 : 999;
+                    const showTimeGap = timeDiffMin > 5 || showDateGroup;
+                    // Reset grouping if time gap
+                    const groupedWithPrev = sameSenderAsPrev && !showTimeGap;
+                    const groupedWithNext = sameSenderAsNext && (nextMsg ? (new Date(nextMsg.created_at) - new Date(msg.created_at)) / 60000 <= 5 : false);
+                    // Tail only on last message of a group
+                    const showTail = isLastInGroup && !groupedWithNext;
+
                     return (
                       <div key={msg.id}>
                         {showDateGroup && <div style={S.dateGroup}>{fmtDateGroup(msg.created_at)}</div>}
-                        <div className="msg-bubble" style={{ display: "flex", justifyContent: isOut || isNote ? "flex-end" : "flex-start", marginBottom: hasReactions ? 20 : 8, position: "relative" }}
+                        {/* Time gap indicator */}
+                        {!showDateGroup && showTimeGap && <div style={{ textAlign: "center", margin: "12px 0 8px", fontSize: 10, color: "#8e8e93" }}>{fmtTime(msg.created_at)}</div>}
+                        <div className={"msg-bubble-wrap " + (isOut ? "msg-bubble" : "msg-bubble-in")} style={{ display: "flex", justifyContent: isOut || isNote ? "flex-end" : "flex-start", marginBottom: hasReactions ? 22 : (groupedWithNext && !isNote ? 2 : 8), position: "relative" }}
                           onMouseEnter={() => setHoveredMsg(msg.id)} onMouseLeave={() => setHoveredMsg(null)}>
+                          {/* Inbound avatar — only on last in group */}
+                          {!isOut && !isNote && (
+                            <div style={{ width: 28, minWidth: 28, marginRight: 6, alignSelf: "flex-end" }}>
+                              {isLastInGroup && !groupedWithNext ? (
+                                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#e5e5ea", color: "#8e8e93", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
+                                  {(activeThread.tenantName || "?")[0].toUpperCase()}
+                                </div>
+                              ) : <div style={{ width: 28 }} />}
+                            </div>
+                          )}
                           {/* Edit/Delete actions for outbound */}
                           {(isOut || isNote) && isHovered && !isEditing && !isDeleted && (
-                            <div style={{ display: "flex", gap: 2, alignItems: "center", marginRight: 4, alignSelf: "center" }}>
-                              <button onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            <div style={{ display: "flex", gap: 2, alignItems: "center", marginRight: 6, alignSelf: "center" }}>
+                              <button onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .15s" }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
-                              <button onClick={e => { e.stopPropagation(); deleteMsg(msg.id); }} title="Delete" style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <button onClick={e => { e.stopPropagation(); deleteMsg(msg.id); }} title="Delete" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background .15s" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               </button>
                             </div>
                           )}
                           <div
+                            className={isNote ? "msg-tail-note" : showTail ? (isOut ? "msg-tail-out" : "msg-tail-in") : ""}
                             onDoubleClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }}
                             style={{
                               ...S.bubble(isOut || isNote, isNote ? "#f5f0e8" : _acc),
-                              ...(isNote ? { background: "#fef9ed", border: "1px dashed rgba(212,168,83,.4)", color: "#6b5e52" } : {}),
+                              ...(isNote ? { background: "rgba(254,249,237,.9)", border: "1px dashed rgba(212,168,83,.35)", color: "#6b5e52", backdropFilter: "blur(12px)", boxShadow: "none" } : {}),
                               ...(isDeleted ? { opacity: .5, fontStyle: "italic" } : {}),
+                              // Adjust border radius for grouped bubbles
+                              ...(groupedWithPrev && isOut ? { borderTopRightRadius: 6 } : {}),
+                              ...(groupedWithPrev && !isOut && !isNote ? { borderTopLeftRadius: 6 } : {}),
+                              ...(groupedWithNext && isOut ? { borderBottomRightRadius: 6 } : {}),
+                              ...(groupedWithNext && !isOut && !isNote ? { borderBottomLeftRadius: 6 } : {}),
                             }}>
-                            {isNote && <div style={{ fontSize: 9, fontWeight: 700, color: "#9a7422", marginBottom: 3 }}>INTERNAL NOTE</div>}
+                            {isNote && <div style={{ fontSize: 9, fontWeight: 700, color: "#9a7422", marginBottom: 3, letterSpacing: .3 }}>INTERNAL NOTE</div>}
                             {isRenewal && !isOut && <div style={{ fontSize: 9, fontWeight: 700, color: isOut ? "rgba(255,255,255,.7)" : "#9a7422", marginBottom: 3 }}>LEASE RENEWAL REQUEST</div>}
                             {msg.subject && !isRenewal && !isNote && <div style={{ fontSize: 10, fontWeight: 700, opacity: .6, marginBottom: 3 }}>{msg.subject}</div>}
-                            {msg.attachment && msg.attachment.type?.startsWith("image/") && <img src={msg.attachment.data} style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4, maxHeight: 200, objectFit: "cover" }} alt="" />}
-                            {msg.attachment && !msg.attachment.type?.startsWith("image/") && <div style={{ padding: "6px 10px", background: "rgba(0,0,0,.08)", borderRadius: 6, fontSize: 11, marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{msg.attachment.name}</div>}
+                            {msg.attachment && msg.attachment.type?.startsWith("image/") && <img src={msg.attachment.data} style={{ maxWidth: "100%", borderRadius: 10, marginBottom: 4, maxHeight: 200, objectFit: "cover" }} alt="" />}
+                            {msg.attachment && !msg.attachment.type?.startsWith("image/") && <div style={{ padding: "6px 10px", background: isOut ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.06)", borderRadius: 8, fontSize: 11, marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{msg.attachment.name}</div>}
                             {isEditing ? (
                               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                <textarea value={editMsgText} onChange={e => setEditMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEditMsg(msg.id); } if (e.key === "Escape") { setEditingMsg(null); setEditMsgText(""); } }} rows={2} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(255,255,255,.3)", fontSize: 12, fontFamily: "inherit", resize: "none", outline: "none", background: "rgba(255,255,255,.15)", color: "inherit", boxSizing: "border-box" }} autoFocus />
+                                <textarea value={editMsgText} onChange={e => setEditMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEditMsg(msg.id); } if (e.key === "Escape") { setEditingMsg(null); setEditMsgText(""); } }} rows={2} style={{ width: "100%", padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,.3)", fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none", background: "rgba(255,255,255,.15)", color: "inherit", boxSizing: "border-box" }} autoFocus />
                                 <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-                                  <button onClick={() => { setEditingMsg(null); setEditMsgText(""); }} style={{ padding: "2px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,.3)", background: "transparent", color: "inherit", fontSize: 10, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
-                                  <button onClick={() => saveEditMsg(msg.id)} style={{ padding: "2px 8px", borderRadius: 4, border: "none", background: "rgba(255,255,255,.25)", color: "inherit", fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Save</button>
+                                  <button onClick={() => { setEditingMsg(null); setEditMsgText(""); }} style={{ padding: "3px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,.3)", background: "transparent", color: "inherit", fontSize: 10, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+                                  <button onClick={() => saveEditMsg(msg.id)} style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "rgba(255,255,255,.25)", color: "inherit", fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Save</button>
                                 </div>
                               </div>
                             ) : (
-                              <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.body}{msg.edited && <span style={{ fontSize: 9, opacity: .6, marginLeft: 4 }}>(edited)</span>}</div>
+                              <div style={{ fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{msg.body}{msg.edited && <span style={{ fontSize: 9, opacity: .5, marginLeft: 4 }}>(edited)</span>}</div>
                             )}
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                              <div style={{ fontSize: 9, opacity: .5 }}>{fmtTime(msg.created_at)}</div>
-                              {isOut && <div style={{ fontSize: 9, opacity: .5, marginLeft: 8, display: "flex", alignItems: "center", gap: 2 }}>
-                                {msg.status === "read" || msg.read ? <><svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg><span style={{ fontSize: 8 }}>Read</span></> : msg.status === "delivered" ? <><svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg></> : <svg width="10" height="9" viewBox="0 0 14 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 5 5 9 12 1"/></svg>}
+                            {/* Timestamp — hidden by default, visible on hover or last in group */}
+                            <div className="msg-time-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 3, opacity: (isLastInGroup && !groupedWithNext) ? .45 : 0, transition: "opacity .15s ease", height: (isLastInGroup && !groupedWithNext) ? "auto" : 0, overflow: "hidden" }}>
+                              <div style={{ fontSize: 9, color: isOut ? "rgba(255,255,255,.7)" : "#8e8e93" }}>{fmtTime(msg.created_at)}</div>
+                              {isOut && <div style={{ fontSize: 9, color: "rgba(255,255,255,.6)", marginLeft: 8, display: "flex", alignItems: "center", gap: 2 }}>
+                                {msg.status === "read" || msg.read ? (
+                                  <><svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="#5AC8FA" strokeWidth="2.5" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg></>
+                                ) : msg.status === "delivered" ? (
+                                  <svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg>
+                                ) : (
+                                  <svg width="10" height="9" viewBox="0 0 14 10" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/></svg>
+                                )}
                               </div>}
                             </div>
-                            {/* Reaction picker */}
+                            {/* Tapback reaction picker — floats above bubble */}
                             {showReactions === msg.id && (
-                              <div style={S.reactionBar} onClick={e => e.stopPropagation()}>
+                              <div className="msg-tapback-bar" style={S.reactionBar} onClick={e => e.stopPropagation()}>
                                 {REACTIONS.map(r => (
                                   <button key={r.label} className="msg-reaction-btn" onClick={() => toggleReaction(msg.id, r.label)} style={S.reactionBtn}>{r.emoji}</button>
                                 ))}
                               </div>
                             )}
                           </div>
-                          {/* Reaction pills */}
+                          {/* Reaction pills — pinned to top-right/top-left corner of bubble */}
                           {hasReactions && (
-                            <div style={{ position: "absolute", bottom: -14, [isOut ? "right" : "left"]: 12, display: "flex", gap: 2 }}>
+                            <div style={{ position: "absolute", bottom: -12, [isOut ? "right" : "left"]: isOut ? 8 : 42, display: "flex", gap: 2 }}>
                               {Object.entries(reactions).map(([key, users]) => {
                                 const r = REACTIONS.find(x => x.label === key);
-                                return r ? <span key={key} style={S.reactionPill} onClick={() => toggleReaction(msg.id, key)}>{r.emoji} {users.length}</span> : null;
+                                return r ? <span key={key} className="msg-reaction-pill" style={S.reactionPill} onClick={() => toggleReaction(msg.id, key)}>{r.emoji}{users.length > 1 ? " " + users.length : ""}</span> : null;
                               })}
                             </div>
                           )}
@@ -990,12 +1048,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     </button>
                     {showEmoji && (() => {
                       const EMOJI_CATS = [
-                        { name: "Smileys", emojis: "\ud83d\ude00\ud83d\ude03\ud83d\ude04\ud83d\ude01\ud83d\ude06\ud83d\ude05\ud83e\udd23\ud83d\ude02\ud83d\ude42\ud83d\ude43\ud83d\ude09\ud83d\ude0a\ud83d\ude07\ud83e\udd70\ud83d\ude0d\ud83e\udd29\ud83d\ude18\ud83d\ude17\ud83d\ude1a\ud83d\ude19\ud83d\ude0b\ud83d\ude1b\ud83d\ude1c\ud83d\ude1d\ud83e\udd11\ud83e\udd17\ud83e\udd2d\ud83e\udd2b\ud83e\udd14\ud83e\udd28\ud83d\ude10\ud83d\ude11\ud83d\ude36\ud83d\ude0f\ud83d\ude12\ud83d\ude44\ud83d\ude2c\ud83e\udd25\ud83d\ude0c\ud83d\ude14\ud83d\ude2a\ud83e\udd24\ud83d\ude34\ud83d\ude37\ud83e\udd12\ud83e\udd15\ud83e\udd22\ud83e\udd2e\ud83e\udd27\ud83e\udd75\ud83e\udd76\ud83d\ude35\ud83e\udd2f\ud83e\udd20\ud83e\udd73\ud83d\ude0e\ud83e\uddd0\ud83d\ude15\ud83d\ude1f\ud83d\ude41\ud83d\ude2e\ud83d\ude2f\ud83d\ude32\ud83d\ude33\ud83e\udd7a\ud83d\ude26\ud83d\ude27\ud83d\ude28\ud83d\ude30\ud83d\ude25\ud83d\ude22\ud83d\ude2d\ud83d\ude31\ud83d\ude16\ud83d\ude23\ud83d\ude1e\ud83d\ude13\ud83d\ude29\ud83d\ude24\ud83d\ude21\ud83d\ude20\ud83e\udd2c\ud83d\ude08\ud83d\udc7f\ud83d\udc80\u2620\ufe0f\ud83d\udca9\ud83e\udd21\ud83d\udc7b\ud83d\udc7d\ud83d\udc7e\ud83e\udd16".match(/./gu) },
-                        { name: "People", emojis: "\ud83d\udc4d\ud83d\udc4e\u270a\ud83d\udc4a\ud83e\udd1b\ud83e\udd1c\ud83d\udc4f\ud83d\ude4c\ud83d\udc50\ud83e\udd32\ud83e\udd1d\ud83d\ude4f\u270d\ufe0f\ud83d\udc85\ud83e\udd33\ud83d\udcaa\ud83e\uddb5\ud83e\uddb6\ud83d\udc42\ud83d\udc43\ud83e\udde0\ud83d\udc41\ufe0f\ud83d\udc40\ud83d\udc45\ud83d\udc44\ud83d\udc76\ud83e\uddd2\ud83d\udc66\ud83d\udc67\ud83e\uddd1\ud83d\udc71\ud83d\udc68\ud83e\uddd4\ud83d\udc69\ud83e\uddd3\ud83d\udc74\ud83d\udc75\ud83d\ude4d\ud83d\ude4e\ud83d\ude45\ud83d\ude46\ud83d\udc81\ud83d\ude4b\ud83e\uddcf\ud83d\ude47\ud83e\udd26\ud83e\udd37\ud83d\udc6e\ud83d\udd75\ufe0f\ud83d\udc82\ud83e\udd77\ud83d\udc77\ud83e\udec5\ud83e\uddb8\ud83e\uddb9".match(/./gu) },
-                        { name: "Nature", emojis: "\ud83d\udc36\ud83d\udc31\ud83d\udc2d\ud83d\udc39\ud83d\udc30\ud83e\udd8a\ud83d\udc3b\ud83d\udc3c\ud83e\udda5\ud83e\udda6\ud83e\udda8\ud83d\udc28\ud83d\udc2f\ud83e\udd81\ud83d\udc2e\ud83d\udc37\ud83d\udc38\ud83d\udc35\ud83d\udc12\ud83d\udc14\ud83d\udc27\ud83d\udc26\ud83e\udd85\ud83e\udd86\ud83e\udda2\ud83e\udd89\ud83e\udda4\ud83e\udda9\ud83d\udc22\ud83d\udc0d\ud83d\udc09\ud83e\udd95\ud83e\udd96\ud83d\udc33\ud83d\udc2c\ud83e\uddad\ud83d\udc1f\ud83d\udc20\ud83e\udd88\ud83d\udc19\ud83d\udc1a\ud83e\udd80\ud83e\udd90\ud83e\udeb2\ud83c\udf38\ud83c\udf39\ud83c\udf3b\ud83c\udf3c\ud83c\udf37\ud83c\udf3a\ud83c\udf32\ud83c\udf33\ud83c\udf34\ud83c\udf35\ud83c\udf3e\u2600\ufe0f\ud83c\udf24\ufe0f\u26c5\ud83c\udf25\ufe0f\ud83c\udf26\ufe0f\ud83c\udf27\ufe0f\u26c8\ufe0f\ud83c\udf28\ufe0f\ud83c\udf29\ufe0f\ud83c\udf2a\ufe0f\ud83c\udf08\u2744\ufe0f".match(/./gu) },
-                        { name: "Food", emojis: "\ud83c\udf4f\ud83c\udf4e\ud83c\udf50\ud83c\udf4a\ud83c\udf4b\ud83c\udf4c\ud83c\udf49\ud83c\udf47\ud83c\udf53\ud83e\uded0\ud83c\udf48\ud83c\udf51\ud83e\udd5d\ud83e\udd65\ud83e\udd51\ud83c\udf45\ud83e\udd52\ud83e\udd6c\ud83e\udd66\ud83e\uddc4\ud83e\uddc5\ud83c\udf3d\ud83c\udf36\ufe0f\ud83e\uded1\ud83e\udd54\ud83e\udd55\ud83c\udf5e\ud83e\udd50\ud83e\udd56\ud83e\udded\ud83e\udd68\ud83e\udd6f\ud83e\uddc0\ud83c\udf56\ud83c\udf57\ud83e\udd69\ud83c\udf54\ud83c\udf5f\ud83c\udf55\ud83c\udf2e\ud83c\udf2f\ud83e\udd59\ud83e\uddc6\ud83c\udf73\ud83c\udf72\ud83e\udd63\ud83e\udd57\ud83c\udf7f\ud83e\uddc8\ud83c\udf66\ud83c\udf70\ud83c\udf82\ud83c\udf6e\ud83c\udf6d\ud83c\udf6c\ud83c\udf6b\u2615\ud83c\udf75\ud83e\uddc3\ud83e\udd64\ud83c\udf7a\ud83c\udf77\ud83e\udd42\ud83c\udf78\ud83c\udf79".match(/./gu) },
-                        { name: "Travel", emojis: "\ud83c\udfe0\ud83c\udfe2\ud83c\udfe5\ud83c\udfe8\ud83c\udfea\ud83c\udfeb\ud83c\udfed\ud83c\udfef\ud83c\udff0\ud83d\udd4c\ud83d\udd4d\ud83d\uddfb\ud83c\udf0b\ud83d\uddfb\ud83c\udfd6\ufe0f\ud83c\udfd5\ufe0f\ud83c\udfd4\ufe0f\ud83d\ude97\ud83d\ude95\ud83d\ude99\ud83d\ude8c\ud83d\ude8e\ud83c\udfce\ufe0f\ud83d\ude93\ud83d\ude91\ud83d\ude92\ud83d\ude90\ud83d\udeb2\ud83d\udef5\ud83d\ude81\u2708\ufe0f\ud83d\udef3\ufe0f\ud83d\ude80\ud83d\udef8\ud83c\udf1e\ud83c\udf1d\ud83c\udf1b\ud83c\udf1c\ud83c\udf19\u2b50\ud83c\udf1f\ud83c\udf20\u2604\ufe0f\ud83c\udf0d\ud83c\udf0e\ud83c\udf0f\ud83c\udf0c\ud83c\udf89\ud83c\udf8a\ud83c\udf88\ud83c\udf87\ud83c\udf86\ud83c\udfc6\ud83e\udd47\ud83e\udd48\ud83e\udd49".match(/./gu) },
-                        { name: "Symbols", emojis: "\u2764\ufe0f\ud83e\udde1\ud83d\udc9b\ud83d\udc9a\ud83d\udc99\ud83d\udc9c\ud83d\udda4\ud83e\udd0d\ud83e\udd0e\ud83d\udc94\u2763\ufe0f\ud83d\udc95\ud83d\udc9e\ud83d\udc93\ud83d\udc97\ud83d\udc96\ud83d\udc98\ud83d\udc9d\u2705\u274c\u2757\u2753\u2755\u203c\ufe0f\u2049\ufe0f\ud83d\udcaf\ud83d\udd05\ud83d\udd06\u26a0\ufe0f\ud83d\udea8\ud83d\uded1\u267b\ufe0f\ud83c\ude51\ud83c\ude50\u2795\u2796\u2716\ufe0f\u27b0\u27bf\u3030\ufe0f\u00a9\ufe0f\u00ae\ufe0f\u2122\ufe0f\ud83d\udd1d\ud83d\udd1a\ud83d\udd19\ud83d\udd1b\ud83d\udd1c\u23ea\u23e9\u23eb\u23ec\u25b6\ufe0f\u23f8\ufe0f\u23f9\ufe0f\u23fa\ufe0f\u23ef\ufe0f\ud83c\udf10\u267e\ufe0f\u269b\ufe0f\ud83c\udff3\ufe0f\ud83c\udff4\ud83c\udfc1\ud83d\udea9".match(/./gu) },
+                        { name: "Smileys", emojis: [..."😀😃😄😁😆😅🤣😂🙂🙃😉😊😇🥰😍🤩😘😗😚😙😋😛😜😝🤑🤗🤭🤫🤔🤨😐😑😶😏😒🙄😬🤥😌😔😪🤤😴😷🤒🤕🤢🤮🤧🥵🥶😵🤯🤠🥳😎🧐😕😟🙁😮😯😲😳🥺😦😧😨😰😥😢😭😱😖😣😞😓😩😤😡😠🤬😈👿💀☠️💩🤡👻👽👾🤖"] },
+                        { name: "People", emojis: [..."👍👎✊👊🤛🤜👏🙌👐🤲🤝🙏✍️💅🤳💪🦵🦶👂👃🧠👁️👀👅👄👶🧒👦👧🧑👱👨🧔👩🧓👴👵🙍🙎🙅🙆💁🙋🧏🙇🤦🤷👮🕵️💂🥷👷🫅🦸🦹"] },
+                        { name: "Nature", emojis: [..."🐶🐱🐭🐹🐰🦊🐻🐼🦥🦦🦨🐨🐯🦁🐮🐷🐸🐵🐒🐔🐧🐦🦅🦆🦢🦉🦤🦩🐢🐍🐉🦕🦖🐳🐬🦭🐟🐠🦈🐙🐚🦀🦐🪲🌸🌹🌻🌼🌷🌺🌲🌳🌴🌵🌾☀️🌤️⛅🌥️🌦️🌧️⛈️🌨️🌩️🌪️🌈❄️"] },
+                        { name: "Food", emojis: [..."🍏🍎🍐🍊🍋🍌🍉🍇🍓🫐🍈🍑🥝🥥🥑🍅🥒🥬🥦🧄🧅🌽🌶️🫑🥔🥕🍞🥐🥖🫓🥨🥯🧀🍖🍗🥩🍔🍟🍕🌮🌯🥙🧆🍳🍲🥣🥗🍿🧈🍦🍰🎂🍮🍭🍬🍫☕🍵🧃🥤🍺🍷🥂🍸🍹"] },
+                        { name: "Travel", emojis: [..."🏠🏢🏥🏨🏪🏫🏭🏯🏰🕌🕍🗻🌋🗻🏖️🏕️🏔️🚗🚕🚙🚌🚎🏎️🚓🚑🚒🚐🚲🛵🚁✈️🛳️🚀🛸🌞🌝🌛🌜🌙⭐🌟🌠☄️🌍🌎🌏🌌🎉🎊🎈🎇🎆🏆🥇🥈🥉"] },
+                        { name: "Symbols", emojis: [..."❤️🧡💛💚💙💜🖤🤍🤎💔❣️💕💞💓💗💖💘💝✅❌❗❓❕‼️⁉️💯🔅🔆⚠️🚨🛑♻️🈁🈀➕➖✖️➰➿〰️©️®️™️🔝🔚🔙🔛🔜⏪⏩⏫⏬▶️⏸️⏹️⏺️⏯️🌐♾️⚛️🏳️🏴🏁🚩"] },
                       ];
                       const [emojiCat, setEmojiCatLocal] = [showEmoji === true ? 0 : showEmoji, (v) => setShowEmoji(v === false ? false : v)];
                       const cat = EMOJI_CATS[typeof emojiCat === "number" ? emojiCat : 0] || EMOJI_CATS[0];
@@ -1030,7 +1088,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       onKeyDown={async e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (showSlashMenu) { const filtered = SLASH_COMMANDS.filter(c => c.cmd.startsWith(replyText.trim())); if (filtered.length === 1) insertSlashCommand(filtered[0].cmd); } else if (replyText.trim().startsWith("/")) { await executeSlashCommand(); } else { sendReply(); } } }}
                       placeholder={noteMode ? "Write an internal note..." : "Type a message... (/ for commands)"}
                       rows={1}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1.5px solid rgba(0,0,0,.1)", fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "#fff", minHeight: 44, maxHeight: 120, lineHeight: 1.5 }}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 20, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1px solid rgba(0,0,0,.08)", fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "rgba(0,0,0,.04)", minHeight: 44, maxHeight: 120, lineHeight: 1.5, transition: "border-color .15s" }}
                     />
                   </div>
                   {/* Send / Schedule button group */}
@@ -1041,11 +1099,11 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                         Schedule
                       </button>
                     ) : (
-                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 40, height: 40, borderRadius: "20px 0 0 20px", border: "none", background: replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: replyText.trim() ? "#007AFF" : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s ease", transform: replyText.trim() ? "scale(1)" : "scale(.9)" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                       </button>
                     )}
-                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 20, height: 40, borderRadius: "0 20px 20px 0", border: "none", borderLeft: "1px solid rgba(255,255,255,.2)", background: showSchedule ? "#3b82f6" : (replyText.trim() ? _acc : "rgba(0,0,0,.08)"), color: showSchedule ? "#fff" : (replyText.trim() ? "#fff" : "#bbb"), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 28, height: 28, borderRadius: 14, border: "none", marginLeft: 2, background: showSchedule ? "#3b82f6" : "rgba(0,0,0,.06)", color: showSchedule ? "#fff" : "#8e8e93", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
                       <svg width="8" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 1l5 5 5-5"/></svg>
                     </button>
                   </div>
@@ -1058,7 +1116,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           {showTenantInfo && activeThread && (
             <div style={{ width: 240, borderLeft: "1px solid rgba(0,0,0,.06)", overflowY: "auto", padding: "20px 16px", background: "#fafaf8" }}>
               <div style={{ textAlign: "center", marginBottom: 16 }}>
-                <div style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, margin: "0 auto 8px" }}>
+                <div style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, borderRadius: "50%", background: "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, margin: "0 auto 8px", boxShadow: "0 4px 12px rgba(0,122,255,.2)" }}>
                   {(activeThread.tenantName || "?")[0].toUpperCase()}
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThread.tenantName}</div>
