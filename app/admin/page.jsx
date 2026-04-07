@@ -2230,6 +2230,7 @@ export default function Page(){
   const[dashDragOver,setDashDragOver]=useState(null);
   const[annForm,setAnnForm]=useState({title:"",body:"",propertyId:"",expiresAt:""});
   const[renewalRequests,setRenewalRequests]=useState([]);
+  const[unreadMsgCount,setUnreadMsgCount]=useState(0);
   const[annShowForm,setAnnShowForm]=useState(false);
   const[ledgerTenant,setLedgerTenant]=useState("all");
   const[portalTenant,setPortalTenant]=useState(null);
@@ -2308,8 +2309,9 @@ export default function Page(){
     const migratedAf=(()=>{if(hasDoorCode||(af||[]).length===0)return af||[];const idx=af.findIndex(f=>f.key==="selectedRoom");const insertAt=idx>=0?idx+1:af.findIndex(f=>f.section==="Move-In & Property")+1;const at=insertAt<0?af.length:insertAt;return[...af.slice(0,at),DOOR_CODE_APP_FIELD,...af.slice(at)];})();
     if(!hasDoorCode&&(af||[]).length>0){save("hq-app-fields",migratedAf);}
     setAppFields(migratedAf);setLeases(ls);setLeaseTemplates(lt);setLeaseTemplate(lt[0]||null);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setWidgetList(null);setLoaded(true);
-    // Load renewal requests from messages table
+    // Load renewal requests + unread message count
     fetch(SUPA_URL+"/rest/v1/messages?direction=eq.inbound&subject=like.Lease Renewal:*&order=created_at.desc",{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setRenewalRequests(d);}).catch(()=>{});
+    fetch(SUPA_URL+"/rest/v1/messages?direction=eq.inbound&read=eq.false&select=id",{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setUnreadMsgCount(d.length);}).catch(()=>{});
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,loaded]);
@@ -2629,7 +2631,7 @@ export default function Page(){
     {id:"theme",i:<IconPalette/>,l:"Admin Theme"},
     {id:"website",i:<IconGlobe/>,l:"Website"},
     {id:"ideas",i:<IconBrain/>,l:"Brain Dump"},
-    {id:"messages",i:<IconMail/>,l:"Messages"},
+    {id:"messages",i:<IconMail/>,l:"Messages",badge:unreadMsgCount||null},
     {id:"announcements",i:<IconMegaphone/>,l:"Announcements"},
     {id:"notifications",i:<IconBell/>,l:"Alerts",badge:m.unreadNotifs||null},
     {id:"add-expense",i:<span>＋</span>,l:"Add Expense"},
