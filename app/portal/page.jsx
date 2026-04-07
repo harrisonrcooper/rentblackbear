@@ -154,7 +154,10 @@ export default function TenantPortal() {
         { id: "c3", category: "Rent", description: "July 2025 Rent", amount: 750, amount_paid: 0, due_date: "2025-07-01", payments: [] },
       ]);
       setLeaseId("ul56zet");
-      setLeaseData({ id: "ul56zet", status: "executed", tenantName: "Demo Tenant", property: "Demo Property", room: "Room A", rent: 750, sd: 750, moveIn: "2025-06-01", leaseEnd: "2026-06-01", landlordName: "Carolina Cooper", landlordSignedAt: "2025-05-28T00:00:00Z", tenantSignedAt: "2025-05-29T00:00:00Z", sections: [{ id: "s1", title: "Nature of Tenancy", content: "<p>This is a room rental agreement for shared co-living.</p>", active: true, requiresInitials: true }, { id: "s2", title: "Term of Lease", content: "<p>The lease term begins on the move-in date and ends on the lease end date specified above.</p>", active: true, requiresInitials: true }, { id: "s3", title: "Rent", content: "<p>Rent is due on the 1st of each month. Late fees apply after the 3rd.</p><ul><li>Monthly rent: $750</li><li>Late fee: $50 after day 3</li><li>Daily late fee: $5/day</li></ul>", active: true, requiresInitials: true }] });
+      // Load real lease data from Supabase for dev preview
+      supabase.from("lease_instances").select("*").eq("id", "ul56zet").single().then(({ data: row }) => {
+        if (row) setLeaseData({ ...(row.variable_data || {}), id: row.id, status: row.status, landlordSig: row.landlord_sig, tenantSig: row.tenant_sig, landlordSignedAt: row.landlord_signed_at, tenantSignedAt: row.tenant_signed_at });
+      });
       setOnboarding({ leaseSigned: true, sdPaid: true, firstMonthPaid: true });
       setScreen("portal");
       return;
