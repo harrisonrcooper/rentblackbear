@@ -341,8 +341,16 @@ export default function TenantPortal() {
     setObStep(charge.category === "Security Deposit" ? "sd" : "firstMonth");
   };
 
-  const onPaymentSuccess = () => {
-    setCharges(prev => prev.map(c => c.id === payingCharge.id ? { ...c, amount_paid: c.amount } : c));
+  const onPaymentSuccess = (paymentIntent) => {
+    const amountPaid = payingCharge.amount - payingCharge.amount_paid;
+    const now = new Date().toISOString().split("T")[0];
+    const method = paymentIntent?.payment_method_types?.[0] === "us_bank_account" ? "ACH Bank Transfer" : "Card";
+    const payment = { amount: amountPaid, date: now, method, deposit_status: "transit", stripe_payment_id: paymentIntent?.id || null };
+    // Record payment in Supabase
+    supabase.from("payments").insert({ charge_id: payingCharge.id, amount: amountPaid, date: now, method, deposit_status: "transit", stripe_payment_id: paymentIntent?.id || null });
+    supabase.from("charges").update({ amount_paid: payingCharge.amount }).eq("id", payingCharge.id);
+    // Update local state with the payment record
+    setCharges(prev => prev.map(c => c.id === payingCharge.id ? { ...c, amount_paid: c.amount, payments: [...(c.payments || []), payment] } : c));
     if (payingCharge.category === "Security Deposit") setOnboarding(p => ({ ...p, sdPaid: true }));
     if (payingCharge.category === "Rent") setOnboarding(p => ({ ...p, firstMonthPaid: true }));
     setStripeSecret(null); setPayingCharge(null); setObStep(null);
@@ -633,7 +641,7 @@ export default function TenantPortal() {
                   </div>
                   {c.amount_paid > 0 && c.amount_paid < c.amount && <div style={{ fontSize: 11, color: "#999", marginBottom: 8 }}>{fmt(c.amount_paid)} paid — {fmt(c.amount - c.amount_paid)} remaining</div>}
                   {(c.payments || []).map((p, i) => {
-                    const confId = `BB-${c.id.slice(0,6).toUpperCase()}-${i+1}`;
+                    const confId = p.stripe_payment_id || `BB-${c.id.slice(0,6).toUpperCase()}-${i+1}`;
                     const printReceipt = () => {
                       const w = window.open("","_blank");
                       w.document.write(`<!DOCTYPE html><html><head><title>Payment Receipt ${confId}</title><style>
@@ -653,6 +661,7 @@ export default function TenantPortal() {
                         <div class="row"><span class="label">Charge</span><span class="value">${c.category?c.category+" — ":""}${c.description||""}</span></div>
                         <div class="row"><span class="label">Payment Method</span><span class="value">${p.method||""}</span></div>
                         <div class="row"><span class="label">Status</span><span class="value">${p.deposit_status==="transit"?"In Transit":"Received &amp; Deposited"}</span></div>
+                        ${p.stripe_payment_id?`<div class="row"><span class="label">Transaction ID</span><span class="value" style="font-family:monospace;font-size:11px">${p.stripe_payment_id}</span></div>`:""}
                         <div class="total"><span>Amount Paid</span><span>$${Number(p.amount).toLocaleString()}</span></div>
                         <div class="footer">${pm?.company_name||""}${pm?.phone?" · "+pm.phone:""}<br/>This receipt confirms payment was received. Please retain for your records.</div>
                       </body></html>`);
