@@ -72,7 +72,7 @@ const S = {
   threadScroll: { flex: 1, overflowY: "auto" },
   threadItem: (active, unread) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? "rgba(0,122,255,.08)" : "transparent", borderLeft: active ? "3px solid #007AFF" : "3px solid transparent", transition: "all .15s ease", position: "relative" }),
   chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #f8f8fa 0%, #eeeef2 100%)", minWidth: 0, overflow: "hidden" },
-  chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", zIndex: 2 },
+  chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "rgba(255,255,255,.92)", zIndex: 20, overflow: "visible", position: "relative" },
   chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px" },
   chatInput: { padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" },
   bubble: (isOut, _acc) => ({ maxWidth: "68%", padding: "9px 14px", borderRadius: 18, background: isOut ? "#007AFF" : "rgba(255,255,255,.85)", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 4 : 18, borderBottomLeftRadius: isOut ? 18 : 4, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere", boxShadow: isOut ? "0 1px 3px rgba(0,122,255,.2)" : "0 1px 3px rgba(0,0,0,.06)", backdropFilter: isOut ? "none" : "blur(12px)", WebkitBackdropFilter: isOut ? "none" : "blur(12px)" }),
@@ -667,7 +667,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={awayMode ? _acc : "#999"} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                       </button>
                       {showAwayEdit && (
-                        <div style={{ position: "absolute", top: 36, right: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,.15)", padding: 14, zIndex: 20, width: 260 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ position: "absolute", top: 36, right: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,.15)", padding: 14, zIndex: 9999, width: 260 }} onClick={e => e.stopPropagation()}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                             <span style={{ fontSize: 11, fontWeight: 700, color: "#1a1714" }}>Away Mode</span>
                             <button onClick={() => setAwayMode(!awayMode)} style={{ padding: "3px 10px", borderRadius: 6, border: "1px solid " + (awayMode ? "#c45c4a" : _acc), background: awayMode ? "rgba(196,92,74,.08)" : _acc + "12", color: awayMode ? "#c45c4a" : _acc, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{awayMode ? "Turn Off" : "Turn On"}</button>
