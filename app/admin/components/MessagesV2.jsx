@@ -664,51 +664,10 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     <button className="msg-header-btn" data-tip="Export" onClick={exportConversation} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
-                    {/* Away toggle */}
-                    <div style={{ position: "relative" }}>
-                      <button className="msg-header-btn" data-tip={awayMode ? "Away ON" : "Away"} onClick={() => setShowAwayEdit(!showAwayEdit)} style={{ width: 32, height: 32, borderRadius: 8, border: awayMode ? "2px solid " + _acc : "1px solid rgba(0,0,0,.1)", background: awayMode ? _acc + "12" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={awayMode ? _acc : "#999"} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      </button>
-                      {showAwayEdit && (
-                        <div style={{ position: "absolute", top: 36, right: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,.15)", padding: 14, zIndex: 9999, width: 260 }} onClick={e => e.stopPropagation()}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#1a1714" }}>Away Mode</span>
-                            <button onClick={() => setAwayMode(!awayMode)} style={{ padding: "3px 10px", borderRadius: 6, border: "1px solid " + (awayMode ? "#c45c4a" : _acc), background: awayMode ? "rgba(196,92,74,.08)" : _acc + "12", color: awayMode ? "#c45c4a" : _acc, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{awayMode ? "Turn Off" : "Turn On"}</button>
-                          </div>
-                          <textarea value={awayMessage} onChange={e => setAwayMessage(e.target.value)} rows={3} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit", resize: "none", outline: "none", boxSizing: "border-box" }} />
-                          <div style={{ fontSize: 9, color: "#999", marginTop: 4 }}>Auto-replies to new inbound messages when enabled.</div>
-                        </div>
-                      )}
-                    </div>
-                    {/* Notifications */}
-                    {!notifEnabled && (
-                      <button className="msg-header-btn" data-tip="Notifications" onClick={requestNotifPermission} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                      </button>
-                    )}
-                    {notifEnabled && (
-                      <div className="msg-header-btn" data-tip="Notifications ON" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: _acc + "12", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                      </div>
-                    )}
                     {/* Pin */}
                     <button className="msg-header-btn" data-tip={pinnedThreads.has(selectedThread) ? "Unpin" : "Pin"} onClick={() => setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: pinnedThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill={pinnedThreads.has(selectedThread) ? "#d4a853" : "none"} stroke={pinnedThreads.has(selectedThread) ? "#d4a853" : "#999"} strokeWidth="2"><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>
                     </button>
-                    {/* Snooze */}
-                    <div style={{ position: "relative" }}>
-                      <button className="msg-header-btn" data-tip="Snooze" onClick={() => setShowSnoozeMenu(!showSnoozeMenu)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: snoozedThreads[selectedThread] ? "rgba(59,130,246,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={snoozedThreads[selectedThread] ? "#3b82f6" : "#999"} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      </button>
-                      {showSnoozeMenu && (
-                        <div style={{ position: "absolute", top: 36, right: 0, background: "#fff", border: "1px solid rgba(0,0,0,.1)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.12)", zIndex: 20, minWidth: 160, overflow: "hidden" }}>
-                          {[["1 hour", 1], ["4 hours", 4], ["Tomorrow", 24], ["3 days", 72], ["1 week", 168]].map(([label, hours]) => (
-                            <button key={label} onClick={() => { setSnoozedThreads(prev => ({ ...prev, [selectedThread]: Date.now() + hours * 3600000 })); setShowSnoozeMenu(false); setSelectedThread(null); }} style={{ display: "block", width: "100%", padding: "9px 14px", background: "none", border: "none", textAlign: "left", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#1a1714" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>{label}</button>
-                          ))}
-                          {snoozedThreads[selectedThread] && <button onClick={() => { setSnoozedThreads(prev => { const next = { ...prev }; delete next[selectedThread]; return next; }); setShowSnoozeMenu(false); }} style={{ display: "block", width: "100%", padding: "9px 14px", background: "none", border: "none", borderTop: "1px solid rgba(0,0,0,.06)", textAlign: "left", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#3b82f6", fontWeight: 700 }}>Unsnooze</button>}
-                        </div>
-                      )}
-                    </div>
                     {/* Assign */}
                     <div style={{ position: "relative" }}>
                       <button className="msg-header-btn" data-tip="Assign" onClick={() => setShowAssignMenu(!showAssignMenu)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: assignedThreads[selectedThread] ? "rgba(74,124,89,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
