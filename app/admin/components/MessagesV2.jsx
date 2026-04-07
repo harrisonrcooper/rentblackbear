@@ -141,9 +141,18 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   useEffect(() => { awayModeRef.current = awayMode; }, [awayMode]);
   useEffect(() => { awayMessageRef.current = awayMessage; }, [awayMessage]);
 
+  // Load scheduled messages from Supabase
+  const loadScheduled = async () => {
+    try {
+      const { data } = await supabase.from("scheduled_messages").select("*").eq("sent", false).order("scheduled_at", { ascending: true });
+      if (data) setScheduledMsgs(data.map(d => ({ id: d.id, text: d.body, threadKey: d.thread_key, scheduledAt: d.scheduled_at, tenantName: d.tenant_name })));
+    } catch (e) {}
+  };
+
   // Load messages + setup realtime
   useEffect(() => {
     loadMessages();
+    loadScheduled();
     // Realtime subscription
     const channel = supabase.channel("messages-realtime").on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload) => {
       if (payload.eventType === "INSERT") {
@@ -374,10 +383,14 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   };
 
   // Schedule message
-  const scheduleMessage = () => {
+  const scheduleMessage = async () => {
     if (!replyText.trim() || !scheduleTime || !activeThread) return;
     const scheduledAt = new Date(scheduleTime).toISOString();
-    setScheduledMsgs(prev => [...prev, { text: replyText, threadKey: selectedThread, scheduledAt, tenantName: activeThread.tenantName }]);
+    const { data } = await supabase.from("scheduled_messages").insert({
+      tenant_name: activeThread.tenantName, thread_key: selectedThread,
+      body: replyText, scheduled_at: scheduledAt,
+    }).select().single();
+    if (data) setScheduledMsgs(prev => [...prev, { id: data.id, text: replyText, threadKey: selectedThread, scheduledAt, tenantName: activeThread.tenantName }]);
     setReplyText("");
     setShowSchedule(false);
     setScheduleTime("");
@@ -385,24 +398,45 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
 
   // Check and send scheduled messages
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       const now = new Date().toISOString();
-      setScheduledMsgs(prev => {
-        const due = prev.filter(m => m.scheduledAt <= now);
-        const remaining = prev.filter(m => m.scheduledAt > now);
-        due.forEach(m => {
-          supabase.from("messages").insert({
-            tenant_name: m.tenantName, sender_email: settings?.pmEmail || settings?.email || "",
-            sender_name: settings?.pmName || "Property Manager", direction: "outbound",
-            subject: "", body: m.text, read: true, status: "sent",
-          });
+      const due = scheduledMsgs.filter(m => m.scheduledAt <= now);
+      if (due.length === 0) return;
+      for (const m of due) {
+        await supabase.from("messages").insert({
+          tenant_name: m.tenantName, sender_email: settings?.pmEmail || settings?.email || "",
+          sender_name: settings?.pmName || "Property Manager", direction: "outbound",
+          subject: "", body: m.text, read: true,
         });
-        if (due.length > 0) loadMessages();
-        return remaining;
-      });
-    }, 30000); // check every 30 seconds
+        if (m.id) await supabase.from("scheduled_messages").update({ sent: true }).eq("id", m.id);
+      }
+      setScheduledMsgs(prev => prev.filter(m => m.scheduledAt > now));
+      loadMessages();
+    }, 15000); // check every 15 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [scheduledMsgs]);
+
+  // Update scheduled message in Supabase when edited
+  const updateScheduled = async (idx, updates) => {
+    const msg = scheduledMsgs[idx];
+    if (!msg) return;
+    const next = [...scheduledMsgs];
+    next[idx] = { ...next[idx], ...updates };
+    setScheduledMsgs(next);
+    if (msg.id) {
+      const patch = {};
+      if (updates.text !== undefined) patch.body = updates.text;
+      if (updates.scheduledAt !== undefined) patch.scheduled_at = updates.scheduledAt;
+      await supabase.from("scheduled_messages").update(patch).eq("id", msg.id);
+    }
+  };
+
+  // Delete scheduled message from Supabase
+  const deleteScheduled = async (idx) => {
+    const msg = scheduledMsgs[idx];
+    setScheduledMsgs(prev => prev.filter((_, i) => i !== idx));
+    if (msg?.id) await supabase.from("scheduled_messages").delete().eq("id", msg.id);
+  };
 
   const toggleReaction = async (msgId, reaction) => {
     const msg = messages.find(m => m.id === msgId);
@@ -861,16 +895,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                         <div key={si} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 6, padding: "6px 8px", background: "#fff", borderRadius: 6, border: "1px solid rgba(59,130,246,.15)" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <textarea value={sm.text} onChange={e => { const next = [...scheduledMsgs]; next[idx] = { ...next[idx], text: e.target.value }; setScheduledMsgs(next); }} style={{ width: "100%", border: "none", background: "transparent", fontSize: 11, fontFamily: "inherit", resize: "none", outline: "none", padding: 0, lineHeight: 1.4 }} rows={1} />
+                            <textarea value={sm.text} onChange={e => updateScheduled(idx, { text: e.target.value })} style={{ width: "100%", border: "none", background: "transparent", fontSize: 11, fontFamily: "inherit", resize: "none", outline: "none", padding: 0, lineHeight: 1.4 }} rows={1} />
                             <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>
-                              <input type="datetime-local" value={sm.scheduledAt ? new Date(sm.scheduledAt).toISOString().slice(0, 16) : ""} onChange={e => { const next = [...scheduledMsgs]; next[idx] = { ...next[idx], scheduledAt: new Date(e.target.value).toISOString() }; setScheduledMsgs(next); }} style={{ border: "none", background: "transparent", fontSize: 9, color: "#3b82f6", fontFamily: "inherit", outline: "none", padding: 0 }} />
+                              <input type="datetime-local" value={sm.scheduledAt ? new Date(sm.scheduledAt).toISOString().slice(0, 16) : ""} onChange={e => updateScheduled(idx, { scheduledAt: new Date(e.target.value).toISOString() })} style={{ border: "none", background: "transparent", fontSize: 9, color: "#3b82f6", fontFamily: "inherit", outline: "none", padding: 0 }} />
                             </div>
                           </div>
                           <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                            <button onClick={() => { const msg = scheduledMsgs[idx]; setReplyText(msg.text); setScheduledMsgs(prev => prev.filter((_, i) => i !== idx)); }} title="Send now" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(74,124,89,.1)", color: "#4a7c59", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
+                            <button onClick={() => { const msg = scheduledMsgs[idx]; setReplyText(msg.text); deleteScheduled(idx); }} title="Send now" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(74,124,89,.1)", color: "#4a7c59", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                             </button>
-                            <button onClick={() => setScheduledMsgs(prev => prev.filter((_, i) => i !== idx))} title="Delete" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(196,92,74,.08)", color: "#c45c4a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
+                            <button onClick={() => deleteScheduled(idx)} title="Delete" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(196,92,74,.08)", color: "#c45c4a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                           </div>
@@ -948,17 +982,35 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     <button onClick={() => setShowEmoji(!showEmoji)} title="Insert emoji" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showEmoji ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                     </button>
-                    {showEmoji && (
-                      <div style={{ position: "absolute", bottom: 42, left: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,.15)", padding: 8, zIndex: 20, width: 220 }} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 2 }}>
-                          {COMMON_EMOJIS.map((em, i) => (
-                            <button key={i} onClick={() => { setReplyText(prev => prev + em); setShowEmoji(false); inputRef.current?.focus(); }} style={{ width: 28, height: 28, border: "none", background: "transparent", cursor: "pointer", fontSize: 16, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.06)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                              {em}
-                            </button>
-                          ))}
+                    {showEmoji && (() => {
+                      const EMOJI_CATS = [
+                        { name: "Smileys", emojis: ["\ud83d\ude00","\ud83d\ude03","\ud83d\ude04","\ud83d\ude01","\ud83d\ude06","\ud83d\ude05","\ud83e\udd23","\ud83d\ude02","\ud83d\ude42","\ud83d\ude09","\ud83d\ude0a","\ud83d\ude07","\ud83e\udd70","\ud83d\ude0d","\ud83e\udd29","\ud83d\ude18","\ud83d\ude1a","\ud83d\ude0b","\ud83d\ude1d","\ud83e\udd11","\ud83e\udd17","\ud83e\udd14","\ud83e\udd28","\ud83d\ude10","\ud83d\ude11","\ud83d\ude36","\ud83d\ude0f","\ud83d\ude12","\ud83d\ude44","\ud83d\ude2c","\ud83e\udd25","\ud83d\ude33","\ud83d\ude32","\ud83d\ude31","\ud83d\ude28","\ud83d\ude30","\ud83d\ude25","\ud83d\ude22","\ud83d\ude2d","\ud83d\ude24"] },
+                        { name: "Gestures", emojis: ["\ud83d\udc4d","\ud83d\udc4e","\u270a","\ud83d\udc4a","\ud83e\udd1b","\ud83e\udd1c","\ud83d\udc4f","\ud83d\ude4c","\ud83d\udc4b","\ud83e\udd1a","\ud83d\udc4c","\u270c\ufe0f","\ud83e\udd1e","\ud83e\udd1f","\ud83e\udd18","\ud83d\udc48","\ud83d\udc49","\ud83d\udc46","\ud83d\udc47","\u261d\ufe0f","\ud83d\ude4f","\ud83d\udcaa","\u2764\ufe0f","\ud83e\udde1","\ud83d\udc9b","\ud83d\udc9a","\ud83d\udc99","\ud83d\udc9c","\ud83d\udda4","\ud83d\udc94","\u2763\ufe0f","\ud83d\udc95","\ud83d\udc9e","\ud83d\udc93","\ud83d\udc97","\ud83d\udc96","\ud83d\udc98","\ud83d\udc9d","\ud83d\udc9f","\u2665\ufe0f"] },
+                        { name: "Objects", emojis: ["\ud83c\udfe0","\ud83d\udee0\ufe0f","\ud83d\udd27","\ud83d\udd28","\ud83d\udcb0","\ud83d\udcb3","\ud83d\udcb5","\ud83d\udce7","\ud83d\udce8","\ud83d\udce9","\ud83d\udcde","\ud83d\udcf1","\ud83d\udcbb","\ud83d\udcdd","\ud83d\udcc4","\ud83d\udccb","\ud83d\udcc5","\ud83d\udcc6","\ud83d\udd10","\ud83d\udd11","\ud83d\udd12","\ud83d\udd13","\u23f0","\ud83d\udca1","\ud83d\udca7","\ud83c\udf21\ufe0f","\ud83c\udfaf","\u2705","\u274c","\u26a0\ufe0f","\ud83d\udea8","\ud83d\ude97","\ud83d\ude99","\ud83d\ude8c","\u2708\ufe0f","\ud83c\udf1e","\ud83c\udf19","\u2b50","\ud83c\udf08","\u2602\ufe0f","\ud83c\udf89"] },
+                      ];
+                      const [emojiCat, setEmojiCatLocal] = [showEmoji === true ? 0 : showEmoji, (v) => setShowEmoji(v === false ? false : v)];
+                      const cat = EMOJI_CATS[typeof emojiCat === "number" ? emojiCat : 0] || EMOJI_CATS[0];
+                      return (
+                        <div style={{ position: "absolute", bottom: 44, right: 0, background: "#fff", borderRadius: 12, boxShadow: "0 4px 24px rgba(0,0,0,.18)", padding: 0, zIndex: 20, width: 300, overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+                          {/* Category tabs */}
+                          <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+                            {EMOJI_CATS.map((c, ci) => (
+                              <button key={ci} onClick={() => setShowEmoji(ci)} style={{ flex: 1, padding: "8px 0", border: "none", borderBottom: (typeof emojiCat === "number" ? emojiCat : 0) === ci ? "2px solid " + _acc : "2px solid transparent", background: "transparent", fontSize: 10, fontWeight: (typeof emojiCat === "number" ? emojiCat : 0) === ci ? 700 : 500, color: (typeof emojiCat === "number" ? emojiCat : 0) === ci ? _acc : "#999", cursor: "pointer", fontFamily: "inherit" }}>{c.name}</button>
+                            ))}
+                          </div>
+                          {/* Emoji grid */}
+                          <div style={{ padding: 8, maxHeight: 200, overflowY: "auto" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2 }}>
+                              {cat.emojis.map((em, i) => (
+                                <button key={i} onClick={() => { setReplyText(prev => prev + em); setShowEmoji(false); inputRef.current?.focus(); }} style={{ width: 32, height: 32, border: "none", background: "transparent", cursor: "pointer", fontSize: 18, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.06)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                                  {em}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                   <div style={{ flex: 1, position: "relative" }}>
                     {noteMode && <div style={{ position: "absolute", top: -20, left: 0, fontSize: 9, fontWeight: 700, color: "#9a7422" }}>INTERNAL NOTE (tenant will not see this)</div>}
