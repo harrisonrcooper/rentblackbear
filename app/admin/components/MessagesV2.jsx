@@ -77,7 +77,7 @@ const S = {
   chatInput: { padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" },
   bubble: (isOut, _acc) => ({ maxWidth: "68%", padding: "9px 14px", borderRadius: 18, background: isOut ? "#007AFF" : "rgba(255,255,255,.85)", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 4 : 18, borderBottomLeftRadius: isOut ? 18 : 4, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere", boxShadow: isOut ? "0 1px 3px rgba(0,122,255,.2)" : "0 1px 3px rgba(0,0,0,.06)", backdropFilter: isOut ? "none" : "blur(12px)", WebkitBackdropFilter: isOut ? "none" : "blur(12px)" }),
   dateGroup: { textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#3a3a3c", letterSpacing: .2 },
-  reactionBar: (isOut) => ({ display: "flex", gap: 4, position: "absolute", bottom: -44, [isOut ? "left" : "right"]: 0, background: "rgba(255,255,255,.95)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderRadius: 24, boxShadow: "0 4px 20px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.08)", padding: "6px 10px", zIndex: 10 }),
+  reactionBar: { display: "flex", gap: 4, position: "absolute", top: -48, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,.95)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderRadius: 24, boxShadow: "0 4px 20px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.08)", padding: "6px 10px", zIndex: 10 },
   reactionBtn: { width: 36, height: 36, borderRadius: 18, border: "none", background: "transparent", cursor: "pointer", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease" },
   reactionBadge: (isOut) => ({ position: "absolute", top: -8, [isOut ? "left" : "right"]: -4, background: "#fff", borderRadius: 12, padding: "2px 5px", fontSize: 14, lineHeight: 1, boxShadow: "0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", gap: 2, zIndex: 3 }),
   typingDots: { display: "flex", gap: 4, padding: "10px 14px", borderRadius: 18, background: "rgba(255,255,255,.85)", backdropFilter: "blur(12px)", borderBottomLeftRadius: 4, width: "fit-content", boxShadow: "0 1px 3px rgba(0,0,0,.06)" },
@@ -510,7 +510,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
         @keyframes msgDotBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
         @keyframes msgSlideUp{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
         @keyframes msgSlideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes tapbackIn{from{opacity:0;transform:scale(.4) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+        @keyframes tapbackIn{from{opacity:0;transform:translateX(-50%) scale(.4)}to{opacity:1;transform:translateX(-50%) scale(1)}}
         @keyframes reactionPop{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
         .msg-reaction-badge{animation:reactionPop .35s cubic-bezier(.34,1.56,.64,1)}
         .msg-bubble{animation:msgSlideUp .25s cubic-bezier(.23,1,.32,1)}
@@ -769,7 +769,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                         {showDateGroup && <div style={S.dateGroup}>{fmtDateGroup(msg.created_at)}</div>}
                         {/* Time gap indicator */}
                         {!showDateGroup && showTimeGap && <div style={{ textAlign: "center", margin: "12px 0 8px", fontSize: 10, color: "#3a3a3c", fontWeight: 500 }}>{fmtTime(msg.created_at)}</div>}
-                        <div className={"msg-bubble-wrap " + (isOut ? "msg-bubble" : "msg-bubble-in")} style={{ display: "flex", justifyContent: isOut || isNote ? "flex-end" : "flex-start", marginTop: hasReactions ? 14 : 0, marginBottom: showReactions === msg.id ? 52 : (groupedWithNext && !isNote ? 2 : 8), position: "relative" }}
+                        <div className={"msg-bubble-wrap " + (isOut ? "msg-bubble" : "msg-bubble-in")} style={{ display: "flex", justifyContent: isOut || isNote ? "flex-end" : "flex-start", marginTop: showReactions === msg.id ? 52 : (hasReactions ? 14 : 0), marginBottom: groupedWithNext && !isNote ? 2 : 8, position: "relative" }}
                           onMouseEnter={() => setHoveredMsg(msg.id)} onMouseLeave={() => setHoveredMsg(null)}>
                           {/* Inbound avatar — only on last in group */}
                           {!isOut && !isNote && (
@@ -845,7 +845,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                             </div>
                             {/* Tapback reaction picker — dark bar below bubble like macOS iMessage */}
                             {showReactions === msg.id && (
-                              <div className="msg-tapback-bar" style={S.reactionBar(isOut)} onClick={e => e.stopPropagation()}>
+                              <div className="msg-tapback-bar" style={S.reactionBar} onClick={e => e.stopPropagation()}>
                                 {REACTIONS.map(r => {
                                   const active = (reactions[r.label] || []).includes("pm");
                                   return (
