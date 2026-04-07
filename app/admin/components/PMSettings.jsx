@@ -234,6 +234,20 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
           </div>
         </div></div>
 
+        {/* Referral Program */}
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Tenant Referral Program</h3>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Set the credit amount tenants earn when they refer a friend who signs a lease. Set to 0 to disable the referral program.</p>
+          <div className="fld" style={{marginBottom:0}}>
+            <label>Referral Credit Amount</label>
+            <div style={{display:"flex",alignItems:"center",gap:0}}>
+              <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
+              <input type="number" min={0} value={settings.referralCredit||0} onChange={e=>{const u={...settings,referralCredit:Number(e.target.value)};setSettings(u);save("hq-settings",u);}} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%"}}/>
+            </div>
+          </div>
+          <div style={{fontSize:9,color:"#6b5e52",marginTop:6}}>This amount shows in the tenant portal{"\u2019"}s referral card. Credit is applied manually after the referred tenant signs a lease.</div>
+        </div></div>
+
         {/* House Rules — managed in Templates */}
         <div style={{marginTop:12,padding:"10px 14px",background:"rgba(0,0,0,.03)",borderRadius:8,border:"1px solid rgba(0,0,0,.05)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
