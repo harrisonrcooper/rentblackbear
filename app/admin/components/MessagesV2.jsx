@@ -315,18 +315,15 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
       const details = text.replace("/maintenance", "").trim();
       const title = details || "Maintenance request for " + (activeThread.tenantName || "tenant");
       const { error } = await supabase.from("maintenance_requests").insert({
-        pm_id: null, tenant_id: null,
-        tenant_name: activeThread.tenantName,
-        property_name: activeThread.propertyName,
-        room_name: activeThread.roomName,
         title: title,
         description: "Created via PM messages by " + (settings?.pmName || "PM"),
         priority: "medium",
         submitted_by: settings?.pmName || "PM",
         status: "open",
       });
-      if (!error) {
-        await sendSystemMessage("Maintenance request created: " + title);
+      if (error) console.error("Maintenance create error:", error);
+      await sendSystemMessage("Maintenance request created: " + title);
+      {
         // Also notify tenant
         if (activeThread.tenantEmail) {
           try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Maintenance Request Created: " + title, html: "<p>A maintenance request has been created for you:</p><p><strong>" + title + "</strong></p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {}
