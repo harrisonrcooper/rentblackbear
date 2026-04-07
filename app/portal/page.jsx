@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import translations from "@/lib/i18n";
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -187,6 +188,10 @@ export default function TenantPortal() {
     muted:  pmSettings?.portal_muted  || C_DEFAULT.muted,
   };
 
+  // i18n — PM can set language per property via pmSettings.language
+  const lang = pmSettings?.language || "en";
+  const t = translations[lang] || translations.en;
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const t = params.get("token");
@@ -244,20 +249,38 @@ export default function TenantPortal() {
       setTenant(pu.tenant);
       await supabase.from("portal_users").update({ last_seen_at: new Date().toISOString() }).eq("id", pu.id);
       if (pu.pm_id) { const { data: pm } = await supabase.from("pm_accounts").select("*").eq("id", pu.pm_id).single(); setPmSettings(pm); }
-      // Load announcements from hq-settings in app_data
+      // Load settings from hq-settings (company info, announcements, house rules, referral credit)
       try {
         const { data: adRows } = await supabase.from("app_data").select("value").eq("key", "hq-settings").single();
-        if (adRows?.value?.announcements) {
-          const now = new Date().toISOString();
-          const propId = pu.tenant?.property_id || null;
-          const active = adRows.value.announcements.filter(a => {
-            if (a.expiresAt && a.expiresAt < now) return false;
-            if (a.propertyId && a.propertyId !== propId) return false;
-            return true;
-          });
-          setAnnouncements(active);
+        if (adRows?.value) {
+          const hqSettings = adRows.value;
+          // Merge company info into pmSettings so portal uses what PM configured
+          setPmSettings(prev => ({
+            ...prev,
+            company_name: hqSettings.companyName || prev?.company_name || "PropOS",
+            phone: hqSettings.phone || prev?.phone || "",
+            email: hqSettings.email || prev?.email || "",
+            pmName: hqSettings.pmName || prev?.pmName || "",
+            pmEmail: hqSettings.pmEmail || prev?.pmEmail || "",
+            houseRules: hqSettings.houseRules || prev?.houseRules || [],
+            referralCredit: hqSettings.referralCredit || 0,
+            lateFeeGraceDays: hqSettings.lateFeeGraceDays ?? prev?.lateFeeGraceDays,
+            m2mIncrease: hqSettings.m2mIncrease ?? prev?.m2mIncrease,
+            language: hqSettings.portalLanguage || prev?.language || "en",
+          }));
+          // Announcements
+          if (hqSettings.announcements) {
+            const now = new Date().toISOString();
+            const propId = pu.tenant?.property_id || null;
+            const active = hqSettings.announcements.filter(a => {
+              if (a.expiresAt && a.expiresAt < now) return false;
+              if (a.propertyId && a.propertyId !== propId) return false;
+              return true;
+            });
+            setAnnouncements(active);
+          }
         }
-      } catch (e) { console.warn("Announcements load:", e); }
+      } catch (e) { console.warn("Settings load:", e); }
       const { data: ch } = await supabase.from("charges").select("*, payments(*)").eq("tenant_id", pu.tenant_id).order("due_date", { ascending: false });
       setCharges(ch || []);
       const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false });
@@ -292,16 +315,16 @@ export default function TenantPortal() {
       const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", inv.tenant_id).order("created_at", { ascending: false }); setMaintenance(mt || []);
       try {
         const { data: adRows } = await supabase.from("app_data").select("value").eq("key", "hq-settings").single();
-        if (adRows?.value?.announcements) {
-          const now = new Date().toISOString();
-          const propId = pu.tenant?.property_id || null;
-          setAnnouncements(adRows.value.announcements.filter(a => {
-            if (a.expiresAt && a.expiresAt < now) return false;
-            if (a.propertyId && a.propertyId !== propId) return false;
-            return true;
-          }));
+        if (adRows?.value) {
+          const hqSettings = adRows.value;
+          setPmSettings(prev => ({ ...prev, company_name: hqSettings.companyName || prev?.company_name, phone: hqSettings.phone || prev?.phone, email: hqSettings.email || prev?.email, pmName: hqSettings.pmName || prev?.pmName, pmEmail: hqSettings.pmEmail || prev?.pmEmail, houseRules: hqSettings.houseRules || prev?.houseRules || [], referralCredit: hqSettings.referralCredit || 0, language: hqSettings.portalLanguage || prev?.language || "en" }));
+          if (hqSettings.announcements) {
+            const now = new Date().toISOString();
+            const propId = pu.tenant?.property_id || null;
+            setAnnouncements(hqSettings.announcements.filter(a => { if (a.expiresAt && a.expiresAt < now) return false; if (a.propertyId && a.propertyId !== propId) return false; return true; }));
+          }
         }
-      } catch (e) { console.warn("Announcements load:", e); }
+      } catch (e) { console.warn("Settings load:", e); }
       setOnboarding({ leaseSigned: false, sdPaid: !!(ch || []).find(c => c.category === "Security Deposit" && c.amount_paid >= c.amount), firstMonthPaid: !!(ch || []).find(c => c.category === "Rent" && c.amount_paid >= c.amount) });
       setScreen("portal");
     } catch (e) { console.error(e); setScreen("error"); }
@@ -448,7 +471,7 @@ export default function TenantPortal() {
         </div>
         <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, height: 160, animation: "pulse 1.5s ease infinite .6s" }} />
         <div style={{ textAlign: "center", marginTop: 20 }}>
-          <div style={{ color: "rgba(255,255,255,.3)", fontSize: 12 }}>Loading your portal...</div>
+          <div style={{ color: "rgba(255,255,255,.3)", fontSize: 12 }}>{translations.en.common.loading}</div>
         </div>
       </div>
     </div>
@@ -464,7 +487,7 @@ export default function TenantPortal() {
         <h2 style={{ color: "#f5f0e8", fontSize: 20, marginBottom: 8 }}>No portal access found</h2>
         <p style={{ color: "rgba(255,255,255,.45)", fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>Your account is not linked to a tenant record. Make sure you are using the same email your property manager sent the invite to.</p>
         <button onClick={signOut} style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Sign Out and Try Again</button>
-        <div style={{ marginTop: 32, fontSize: 11, color: "rgba(255,255,255,.2)" }}>Powered by PropOS</div>
+        <div style={{ marginTop: 32, fontSize: 11, color: "rgba(255,255,255,.2)" }}>{t.common.poweredBy}</div>
       </div>
     </div>
   );
@@ -484,30 +507,30 @@ export default function TenantPortal() {
           <div style={{ fontSize: 13, color: "rgba(255,255,255,.4)" }}>Tenant Portal</div>
         </div>
         <div style={{ background: "#fff", borderRadius: 16, padding: 32, boxShadow: "0 8px 40px rgba(0,0,0,.3)" }}>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 4 }}>{authMode === "signin" ? "Sign in" : authMode === "signup" ? "Create account" : "Reset password"}</h2>
-          <p style={{ fontSize: 12, color: "#999", marginBottom: 24 }}>{authMode === "signin" ? "Access your lease, payments, and maintenance." : authMode === "signup" ? "You need an invite from your property manager." : "Enter your email to receive a reset link."}</p>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 4 }}>{authMode === "signin" ? t.auth.signIn : authMode === "signup" ? t.auth.createAccount : t.auth.resetPassword}</h2>
+          <p style={{ fontSize: 12, color: "#999", marginBottom: 24 }}>{authMode === "signin" ? t.auth.accessPortal : authMode === "signup" ? t.auth.needInvite : t.auth.enterEmail}</p>
           {successMsg && <div style={{ background: hexRgba(C.green, .08), border: `1px solid ${hexRgba(C.green, .2)}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.green, marginBottom: 16 }}>{successMsg}</div>}
           {authErr && <div style={{ background: hexRgba(C.red, .08), border: `1px solid ${hexRgba(C.red, .2)}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.red, marginBottom: 16 }}>{authErr}</div>}
-          {authMode !== "forgot" && <button onClick={signInGoogle} disabled={authLoading} style={{ width: "100%", padding: "11px 16px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}><IcGoogle /> Continue with Google</button>}
-          {authMode !== "forgot" && <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}><div style={{ flex: 1, height: 1, background: "rgba(0,0,0,.08)" }} /><span style={{ fontSize: 11, color: "#bbb", fontWeight: 600 }}>or</span><div style={{ flex: 1, height: 1, background: "rgba(0,0,0,.08)" }} /></div>}
+          {authMode !== "forgot" && <button onClick={signInGoogle} disabled={authLoading} style={{ width: "100%", padding: "11px 16px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}><IcGoogle /> {t.auth.continueGoogle}</button>}
+          {authMode !== "forgot" && <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}><div style={{ flex: 1, height: 1, background: "rgba(0,0,0,.08)" }} /><span style={{ fontSize: 11, color: "#bbb", fontWeight: 600 }}>{t.auth.or}</span><div style={{ flex: 1, height: 1, background: "rgba(0,0,0,.08)" }} /></div>}
           <form onSubmit={authMode === "signin" ? signInEmail : authMode === "signup" ? signUpEmail : forgotPassword}>
-            {authMode === "signup" && <div style={{ marginBottom: 14 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Full Name</label><input value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Jane Smith" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>}
-            <div style={{ marginBottom: 14 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Email Address</label><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="you@email.com" autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>
-            {authMode !== "forgot" && <div style={{ marginBottom: 20 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Password</label><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder={authMode === "signup" ? "Min. 8 characters" : "••••••••"} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>}
-            <button type="submit" disabled={authLoading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 14, cursor: "pointer", marginBottom: 16 }}>{authLoading ? "Please wait..." : authMode === "signin" ? "Sign In" : authMode === "signup" ? "Create Account" : "Send Reset Link"}</button>
+            {authMode === "signup" && <div style={{ marginBottom: 14 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.auth.fullName}</label><input value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Jane Smith" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>}
+            <div style={{ marginBottom: 14 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.auth.emailAddress}</label><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="you@email.com" autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>
+            {authMode !== "forgot" && <div style={{ marginBottom: 20 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.auth.password}</label><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder={authMode === "signup" ? "Min. 8 characters" : "••••••••"} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>}
+            <button type="submit" disabled={authLoading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 14, cursor: "pointer", marginBottom: 16 }}>{authLoading ? t.auth.pleaseWait : authMode === "signin" ? t.auth.signInBtn : authMode === "signup" ? t.auth.createAccountBtn : t.auth.sendResetLink}</button>
           </form>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "center" }}>
-            {authMode === "signin" && <><button onClick={() => { setAuthMode("forgot"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>Forgot your password?</button><button onClick={() => { setAuthMode("signup"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>Don't have an account? Sign up</button></>}
-            {authMode !== "signin" && <button onClick={() => { setAuthMode("signin"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>Back to sign in</button>}
+            {authMode === "signin" && <><button onClick={() => { setAuthMode("forgot"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>{t.auth.forgotPassword}</button><button onClick={() => { setAuthMode("signup"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>{t.auth.noAccount}</button></>}
+            {authMode !== "signin" && <button onClick={() => { setAuthMode("signin"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>{t.auth.backToSignIn}</button>}
           </div>
         </div>
-        <div style={{ textAlign: "center", marginTop: 28, fontSize: 11, color: "rgba(255,255,255,.2)" }}>Powered by PropOS</div>
+        <div style={{ textAlign: "center", marginTop: 28, fontSize: 11, color: "rgba(255,255,255,.2)" }}>{t.common.poweredBy}</div>
       </div>
     </div>
   );
 
   // ── PORTAL ────────────────────────────────────────────────────────────
-  const portalTabs = (() => { const unpaidCount = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).length; const openMaintCount = maintenance.filter(m => m.status !== "resolved").length; return [{ id: "home", label: "Home", icon: <IcHome s={16} />, badge: 0 }, { id: "payments", label: "Payments", icon: <IcDollar s={16} />, badge: unpaidCount }, { id: "maintenance", label: "Maintenance", icon: <IcWrench s={16} />, badge: openMaintCount }, { id: "documents", label: "Lease", icon: <IcFile s={16} />, badge: 0 }, { id: "account", label: "Account", icon: <IcUser s={16} />, badge: 0 }]; })();
+  const portalTabs = (() => { const unpaidCount = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).length; const openMaintCount = maintenance.filter(m => m.status !== "resolved").length; return [{ id: "home", label: t.nav.home, icon: <IcHome s={16} />, badge: 0 }, { id: "payments", label: t.nav.payments, icon: <IcDollar s={16} />, badge: unpaidCount }, { id: "maintenance", label: t.nav.maintenance, icon: <IcWrench s={16} />, badge: openMaintCount }, { id: "documents", label: t.nav.lease, icon: <IcFile s={16} />, badge: 0 }, { id: "account", label: t.nav.account, icon: <IcUser s={16} />, badge: 0 }]; })();
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", minHeight: "100vh", background: "#f4f3f0", color: C.text }}>
       <style>{globalStyle + `
@@ -537,10 +560,10 @@ export default function TenantPortal() {
       {onboardingDone && (
         <div className="portal-top-nav" style={{ background: "#fff", borderBottom: "1px solid rgba(0,0,0,.07)", overflowX: "auto" }}>
           <div style={{ display: "flex", maxWidth: 680, margin: "0 auto" }}>
-            {portalTabs.map(t => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, padding: "13px 8px", border: "none", background: "transparent", borderBottom: activeTab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", cursor: "pointer", fontSize: 11, fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? C.text : "#999", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all .15s", position: "relative" }}>
-                <span style={{ color: activeTab === t.id ? C.accent : "#bbb" }}>{t.icon}</span>{t.label}
-                {t.badge > 0 && <span style={{ position: "absolute", top: 4, right: "calc(50% - 18px)", minWidth: 16, height: 16, borderRadius: 8, background: "#c45c4a", color: "#fff", fontSize: 8, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", border: "2px solid #fff" }}>{t.badge}</span>}
+            {portalTabs.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: "13px 8px", border: "none", background: "transparent", borderBottom: activeTab === tab.id ? `2px solid ${C.accent}` : "2px solid transparent", cursor: "pointer", fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 500, color: activeTab === tab.id ? C.text : "#999", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all .15s", position: "relative" }}>
+                <span style={{ color: activeTab === tab.id ? C.accent : "#bbb" }}>{tab.icon}</span>{tab.label}
+                {tab.badge > 0 && <span style={{ position: "absolute", top: 4, right: "calc(50% - 18px)", minWidth: 16, height: 16, borderRadius: 8, background: "#c45c4a", color: "#fff", fontSize: 8, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", border: "2px solid #fff" }}>{tab.badge}</span>}
               </button>
             ))}
           </div>
@@ -624,18 +647,18 @@ export default function TenantPortal() {
         {/* ── HOME ── */}
         {onboardingDone && activeTab === "home" && (
           <div style={{ animation: "fadeIn .2s" }}>
-            <div style={{ background: C.bg, borderRadius: 16, padding: 24, marginBottom: 14 }}>
-              <span style={sLabel}>Balance Due</span>
-              <div style={{ fontSize: 40, fontWeight: 800, color: totalDue > 0 ? "#f87171" : C.accent, marginBottom: 4 }}>{fmt(totalDue)}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>{totalDue === 0 ? "You're all paid up" : "Contact your property manager to pay"}</div>
+            <div onClick={() => { if (totalDue > 0) { setActiveTab("payments"); const unpaid = charges.find(c => !c.waived && !c.voided && c.amount_paid < c.amount); if (unpaid) setTimeout(() => startPayment(unpaid), 300); } }} style={{ background: totalDue > 0 ? "linear-gradient(135deg, #fff, #fef8f0)" : C.bg, borderRadius: 16, padding: 24, marginBottom: 14, cursor: totalDue > 0 ? "pointer" : "default", border: totalDue > 0 ? "1.5px solid " + hexRgba(C.red, .2) : "none", transition: "all .15s" }}>
+              <span style={{ ...sLabel, color: totalDue > 0 ? C.muted : sLabel.color }}>{t.home.balanceDue}</span>
+              <div style={{ fontSize: 40, fontWeight: 800, color: totalDue > 0 ? C.red : C.green, marginBottom: 4 }}>{fmt(totalDue)}</div>
+              <div style={{ fontSize: 12, color: totalDue > 0 ? C.muted : "rgba(255,255,255,.4)" }}>{totalDue === 0 ? t.home.allPaidUp : <span style={{ display: "flex", alignItems: "center", gap: 6 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>Tap to pay now</span>}</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-              <div style={sCard}><span style={sLabel}>Monthly Rent</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st{pmSettings?.lateFeeGraceDays ? ` \u2014 late after day ${pmSettings.lateFeeGraceDays}` : ""}</div>{(() => { const now = new Date(); const y = now.getFullYear(); const mo = now.getMonth(); const firstNextMonth = new Date(y, mo + 1, 1); const firstThisMonth = new Date(y, mo, 1); const nextDue = now.getDate() > 1 ? firstNextMonth : firstThisMonth; const diffDays = Math.ceil((nextDue - now) / (1e3 * 60 * 60 * 24)); const nearestUnpaid = charges.find(c => !c.waived && !c.voided && c.amount_paid < c.amount && (c.type === "rent" || (c.label || "").toLowerCase().includes("rent"))); const isPastDue = nearestUnpaid && nearestUnpaid.due_date && new Date(nearestUnpaid.due_date + "T00:00:00") < now; if (isPastDue) { const overdueDays = Math.floor((now - new Date(nearestUnpaid.due_date + "T00:00:00")) / (1e3 * 60 * 60 * 24)); return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{"PAST DUE -- " + overdueDays + " day" + (overdueDays !== 1 ? "s" : "") + " overdue"}</div>; } if (diffDays === 0) return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>DUE TODAY</div>; if (diffDays <= 3) return <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginTop: 4 }}>{"Due in " + diffDays + " day" + (diffDays !== 1 ? "s" : "")}</div>; if (diffDays <= 7) return <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginTop: 4 }}>{"Due in " + diffDays + " days"}</div>; return null; })()}</div>
-              <div style={sCard}><span style={sLabel}>Lease End</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " days remaining" : "Expired"}</div>}</div>
+              <div style={sCard}><span style={sLabel}>{t.home.monthlyRent}</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st{pmSettings?.lateFeeGraceDays ? ` \u2014 late after day ${pmSettings.lateFeeGraceDays}` : ""}</div>{(() => { const now = new Date(); const y = now.getFullYear(); const mo = now.getMonth(); const firstNextMonth = new Date(y, mo + 1, 1); const firstThisMonth = new Date(y, mo, 1); const nextDue = now.getDate() > 1 ? firstNextMonth : firstThisMonth; const diffDays = Math.ceil((nextDue - now) / (1e3 * 60 * 60 * 24)); const nearestUnpaid = charges.find(c => !c.waived && !c.voided && c.amount_paid < c.amount && (c.type === "rent" || (c.label || "").toLowerCase().includes("rent"))); const isPastDue = nearestUnpaid && nearestUnpaid.due_date && new Date(nearestUnpaid.due_date + "T00:00:00") < now; if (isPastDue) { const overdueDays = Math.floor((now - new Date(nearestUnpaid.due_date + "T00:00:00")) / (1e3 * 60 * 60 * 24)); return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{t.home.pastDue + " -- " + overdueDays + " " + t.home.daysOverdue}</div>; } if (diffDays === 0) return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{t.home.dueToday}</div>; if (diffDays <= 3) return <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginTop: 4 }}>{t.home.dueIn + " " + diffDays + " " + t.home.days}</div>; if (diffDays <= 7) return <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginTop: 4 }}>{t.home.dueIn + " " + diffDays + " " + t.home.days}</div>; return null; })()}</div>
+              <div style={sCard}><span style={sLabel}>{t.home.leaseEnd}</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " " + t.home.daysRemaining : t.home.expired}</div>}</div>
             </div>
             {announcements.length > 0 && (
               <div style={{ marginBottom: 12 }}>
-                <span style={sLabel}>Announcements</span>
+                <span style={sLabel}>{t.home.announcements}</span>
                 {announcements.map(a => (
                   <div key={a.id} style={{ background: "#fff", borderRadius: 14, padding: "16px 18px", border: "1px solid rgba(0,0,0,.06)", borderLeft: `4px solid ${C.accent}`, marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -643,7 +666,7 @@ export default function TenantPortal() {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>{a.title}</div>
                         <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{a.body}</div>
-                        <div style={{ fontSize: 10, color: "#999", marginTop: 8 }}>Posted {new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                        <div style={{ fontSize: 10, color: "#999", marginTop: 8 }}>{t.home.posted} {new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
                       </div>
                     </div>
                   </div>
@@ -651,13 +674,13 @@ export default function TenantPortal() {
               </div>
             )}
             <div style={sCard}>
-              <span style={sLabel}>Your Room</span>
-              {[["Property", tenant?.property?.name], ["Room", tenant?.room?.name], ["Move-in", fmtD(tenant?.move_in)]].filter(([, v]) => v).map(([label, val]) => (
+              <span style={sLabel}>{t.home.yourRoom}</span>
+              {[[t.home.property, tenant?.property?.name], [t.home.room, tenant?.room?.name], [t.home.moveIn, fmtD(tenant?.move_in)]].filter(([, v]) => v).map(([label, val]) => (
                 <div key={label} style={sRow}><span style={{ color: C.muted }}>{label}</span><span style={{ fontWeight: 600 }}>{val}</span></div>
               ))}
               {(tenant?.door_code || tenant?.room?.door_code) && (
                 <div style={sRow}>
-                  <span style={{ color: C.muted }}>Door Code</span>
+                  <span style={{ color: C.muted }}>{t.home.doorCode}</span>
                   <button onClick={() => setShowDoorCode(!showDoorCode)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "monospace", fontWeight: 800, letterSpacing: showDoorCode ? 4 : 2, fontSize: 13, color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
                     {showDoorCode ? (tenant?.door_code || tenant?.room?.door_code) : "\u2022\u2022\u2022\u2022"}
                     {showDoorCode
@@ -670,11 +693,11 @@ export default function TenantPortal() {
             </div>
             {maintenance.filter(m => m.status !== "resolved").length > 0 && (
               <div style={sCard}>
-                <span style={sLabel}>Open Maintenance</span>
+                <span style={sLabel}>{t.home.openMaintenance}</span>
                 {maintenance.filter(m => m.status !== "resolved").map(req => (
                   <div key={req.id} style={{ ...sRow, alignItems: "flex-start" }}>
                     <div><div style={{ fontSize: 12, fontWeight: 600 }}>{req.title}</div><div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>{new Date(req.created_at).toLocaleDateString()}</div></div>
-                    <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 100, fontWeight: 700, background: req.status === "in-progress" ? hexRgba(C.accent, .12) : hexRgba(C.red, .08), color: req.status === "in-progress" ? C.accent : C.red }}>{req.status === "in-progress" ? "In Progress" : "Open"}</span>
+                    <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 100, fontWeight: 700, background: req.status === "in-progress" ? hexRgba(C.accent, .12) : hexRgba(C.red, .08), color: req.status === "in-progress" ? C.accent : C.red }}>{req.status === "in-progress" ? t.home.inProgress : t.home.open}</span>
                   </div>
                 ))}
               </div>
@@ -682,7 +705,7 @@ export default function TenantPortal() {
             <div style={{ background: hexRgba(C.accent, .06), border: `1px solid ${hexRgba(C.accent, .2)}`, borderRadius: 12, padding: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
-                <div style={{ fontSize: 14, fontWeight: 800, color: C.accent }}>Contact Your Property Manager</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.accent }}>{t.home.questions}</div>
               </div>
               <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
                 {pm.company_name}
@@ -694,18 +717,18 @@ export default function TenantPortal() {
               {contactForm.sent ? (
                 <div style={{ marginTop: 14, padding: "12px 14px", background: hexRgba(C.green, .08), border: `1px solid ${hexRgba(C.green, .2)}`, borderRadius: 8, fontSize: 12, color: C.green, fontWeight: 600 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", marginRight: 6 }}><path d="M20 6L9 17l-5-5" /></svg>
-                  Message sent. We will respond within 24 hours.
+                  {t.home.messageSent}
                 </div>
               ) : !contactForm.showForm ? (
                 <button onClick={() => setContactForm(f => ({ ...f, showForm: true }))} style={{ marginTop: 14, width: "100%", padding: "10px 16px", borderRadius: 8, border: `1.5px solid ${hexRgba(C.accent, .3)}`, background: "transparent", color: C.accent, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
-                  Send a Message
+                  {t.home.sendMessage}
                 </button>
               ) : (
                 <div style={{ marginTop: 14 }}>
                   <input
                     type="text"
-                    placeholder="Subject"
+                    placeholder={t.home.subject}
                     value={contactForm.subject}
                     onChange={e => setContactForm(f => ({ ...f, subject: e.target.value }))}
                     style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", fontSize: 12, marginBottom: 8, boxSizing: "border-box", outline: "none" }}
@@ -747,7 +770,7 @@ export default function TenantPortal() {
                       style={{ flex: 1, padding: "9px 16px", borderRadius: 8, border: "none", background: (!contactForm.subject.trim() || !contactForm.message.trim()) ? "rgba(0,0,0,.08)" : C.bg, color: (!contactForm.subject.trim() || !contactForm.message.trim()) ? "#bbb" : C.accent, cursor: (!contactForm.subject.trim() || !contactForm.message.trim() || contactForm.sending) ? "default" : "pointer", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-                      {contactForm.sending ? "Sending..." : "Send Message"}
+                      {contactForm.sending ? "Sending..." : t.home.send}
                     </button>
                   </div>
                 </div>
@@ -759,20 +782,20 @@ export default function TenantPortal() {
         {/* ── PAYMENTS ── */}
         {onboardingDone && activeTab === "payments" && (
           <div style={{ animation: "fadeIn .2s" }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Payments</h2>
-            {charges.length === 0 && <div style={{ ...sCard, textAlign: "center", padding: 40, color: "#999" }}>No charges on file yet.</div>}
+            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>{t.payments.title}</h2>
+            {charges.length === 0 && <div style={{ ...sCard, textAlign: "center", padding: 40, color: "#999" }}>{t.payments.noCharges}</div>}
             {charges.map(c => {
               const st = chargeStatus(c);
               const stColor = { paid: C.green, unpaid: "#3b82f6", pastdue: C.red, partial: C.accent, waived: "#999", voided: "#999" }[st];
-              const stLabel = { paid: "Paid", unpaid: "Unpaid", pastdue: "Past Due", partial: "Partial", waived: "Waived", voided: "Voided" }[st];
+              const stLabel = { paid: t.payments.paid, unpaid: t.payments.unpaid, pastdue: t.payments.pastDue, partial: t.payments.partial, waived: t.payments.waived, voided: t.payments.voided }[st];
               const canPay = st === "unpaid" || st === "pastdue" || st === "partial";
               return (
                 <div key={c.id} style={{ ...sCard, borderColor: st === "pastdue" ? hexRgba(C.red, .25) : "rgba(0,0,0,.06)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                    <div><div style={{ fontSize: 13, fontWeight: 700 }}>{c.description || c.category}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due {fmtD(c.due_date)}</div></div>
+                    <div><div style={{ fontSize: 13, fontWeight: 700 }}>{c.description || c.category}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>{t.payments.due} {fmtD(c.due_date)}</div></div>
                     <div style={{ textAlign: "right" }}><div style={{ fontSize: 16, fontWeight: 800 }}>{fmt(c.amount)}</div><span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 100, fontWeight: 700, background: stColor + "18", color: stColor }}>{stLabel}</span></div>
                   </div>
-                  {c.amount_paid > 0 && c.amount_paid < c.amount && <div style={{ fontSize: 11, color: "#999", marginBottom: 8 }}>{fmt(c.amount_paid)} paid — {fmt(c.amount - c.amount_paid)} remaining</div>}
+                  {c.amount_paid > 0 && c.amount_paid < c.amount && <div style={{ fontSize: 11, color: "#999", marginBottom: 8 }}>{fmt(c.amount_paid)} {t.payments.paid.toLowerCase()} — {fmt(c.amount - c.amount_paid)} {t.payments.remaining}</div>}
                   {(c.payments || []).map((p, i) => {
                     const confId = p.stripe_payment_id || `BB-${c.id.slice(0,6).toUpperCase()}-${i+1}`;
                     const printReceipt = () => {
@@ -802,15 +825,15 @@ export default function TenantPortal() {
                     };
                     return (
                       <div key={i} style={{ padding: "8px 10px", background: hexRgba(C.green, .05), borderRadius: 8, fontSize: 11, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ color: C.muted }}>{p.method} — {fmtD(p.date)} — {p.deposit_status === "transit" ? "In Transit" : p.deposit_status === "deposited" ? "Deposited" : "Processing"}</span>
+                        <span style={{ color: C.muted }}>{p.method} — {fmtD(p.date)} — {p.deposit_status === "transit" ? t.payments.inTransit : p.deposit_status === "deposited" ? t.payments.deposited : t.payments.processing}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontWeight: 700, color: C.green }}>{fmt(p.amount)}</span>
-                          {st === "paid" && <button onClick={printReceipt} title="Download Receipt" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, border: `1px solid ${hexRgba(C.green, .2)}`, background: hexRgba(C.green, .06), color: C.green, fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Receipt</button>}
+                          {st === "paid" && <button onClick={printReceipt} title="Download Receipt" style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, border: `1px solid ${hexRgba(C.green, .2)}`, background: hexRgba(C.green, .06), color: C.green, fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>{t.payments.receipt}</button>}
                         </div>
                       </div>
                     );
                   })}
-                  {canPay && !stripeSecret && <button onClick={() => startPayment(c)} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 8 }}>Pay {fmt(c.amount - c.amount_paid)} Online</button>}
+                  {canPay && !stripeSecret && <button onClick={() => startPayment(c)} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 8 }}>{t.payments.payOnline} {fmt(c.amount - c.amount_paid)}</button>}
                   {stripeSecret && payingCharge?.id === c.id && (
                     <div style={{ marginTop: 16, borderTop: "1px solid rgba(0,0,0,.06)", paddingTop: 16 }}>
                       <Elements stripe={stripePromise} options={{ clientSecret: stripeSecret, appearance: { theme: "stripe", variables: { colorPrimary: C.accent, borderRadius: "8px" } } }}>
@@ -824,25 +847,25 @@ export default function TenantPortal() {
 
             {/* Auto-Pay Enrollment */}
             <div style={{ ...sCard, marginTop: 16 }}>
-              <span style={sLabel}>Auto-Pay</span>
+              <span style={sLabel}>{t.payments.autopay}</span>
               {autopay.enrolled ? (
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.green }}>Auto-pay is active</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.green }}>{t.payments.autopayActive}</div>
                   </div>
-                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>Your rent will be charged automatically on the 1st of each month using your saved payment method.</div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>{t.payments.autopayDesc}</div>
                   <button onClick={async () => {
                     setAutopay(p => ({ ...p, loading: true }));
                     await fetch("/api/stripe/cancel-autopay", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId: tenant?.id }) });
                     setAutopay({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
                   }} style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                    {autopay.loading ? "Canceling..." : "Cancel Auto-Pay"}
+                    {autopay.loading ? "Canceling..." : t.payments.cancelAutopay}
                   </button>
                 </div>
               ) : !autopay.showSetup ? (
                 <div>
-                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>Save a payment method and your rent will be charged automatically on the 1st of each month. No more manual payments.</div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>{t.payments.enrollDesc}</div>
                   <div style={{ fontSize: 11, color: "#999", background: hexRgba(C.accent, .06), border: `1px solid ${hexRgba(C.accent, .15)}`, borderRadius: 8, padding: "8px 12px", marginBottom: 12 }}>
                     ACH bank transfer recommended for lowest fees (~$1 flat). Card payments include a {(CREDIT_FEE * 100).toFixed(1)}% convenience fee.
                   </div>
@@ -858,12 +881,12 @@ export default function TenantPortal() {
                       else setAutopay(p => ({ ...p, loading: false }));
                     } catch (e) { setAutopay(p => ({ ...p, loading: false })); }
                   }} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>
-                    {autopay.loading ? "Setting up..." : "Enroll in Auto-Pay"}
+                    {autopay.loading ? "Setting up..." : t.payments.enrollAutopay}
                   </button>
                 </div>
               ) : (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 12 }}>Save your payment method</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 12 }}>{t.payments.saveMethod}</div>
                   <Elements stripe={stripePromise} options={{ clientSecret: autopay.setupSecret, appearance: { theme: "stripe", variables: { colorPrimary: C.accent, borderRadius: "8px" } } }}>
                     <AutopaySetupForm onSuccess={(setupIntent) => {
                       setAutopay({ enrolled: true, loading: false, setupSecret: null, showSetup: false });
@@ -883,26 +906,26 @@ export default function TenantPortal() {
         {/* ── MAINTENANCE ── */}
         {onboardingDone && activeTab === "maintenance" && (
           <div style={{ animation: "fadeIn .2s" }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Maintenance</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>{t.maintenance.title}</h2>
             <div style={sCard}>
-              <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 14 }}>Submit a Request</div>
-              {maintSuccess && <div style={{ background: hexRgba(C.green, .08), border: `1px solid ${hexRgba(C.green, .2)}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.green, marginBottom: 14 }}>Request submitted. We will be in touch soon.</div>}
-              <div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>What is the issue?</label><input value={maintForm.title} onChange={e => setMaintForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Leaky faucet in bathroom" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>
-              <div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Details (optional)</label><textarea value={maintForm.desc} onChange={e => setMaintForm(p => ({ ...p, desc: e.target.value }))} placeholder="Describe the issue..." rows={3} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13, resize: "vertical" }} /></div>
+              <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 14 }}>{t.maintenance.submitRequest}</div>
+              {maintSuccess && <div style={{ background: hexRgba(C.green, .08), border: `1px solid ${hexRgba(C.green, .2)}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.green, marginBottom: 14 }}>{t.maintenance.success}</div>}
+              <div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.maintenance.whatIsIssue}</label><input value={maintForm.title} onChange={e => setMaintForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Leaky faucet in bathroom" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>
+              <div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.maintenance.details}</label><textarea value={maintForm.desc} onChange={e => setMaintForm(p => ({ ...p, desc: e.target.value }))} placeholder="Describe the issue..." rows={3} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13, resize: "vertical" }} /></div>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Priority</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.maintenance.priority}</label>
                 <div style={{ display: "flex", gap: 8 }}>
-                  {[["low", "Low", C.green], ["medium", "Medium", C.accent], ["high", "High", C.red]].map(([v, l, col]) => (
+                  {[["low", t.maintenance.low, C.green], ["medium", t.maintenance.medium, C.accent], ["high", t.maintenance.high, C.red]].map(([v, l, col]) => (
                     <button key={v} onClick={() => setMaintForm(p => ({ ...p, priority: v }))} style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1.5px solid ${maintForm.priority === v ? col : "rgba(0,0,0,.1)"}`, background: maintForm.priority === v ? col + "15" : "#fff", cursor: "pointer", fontSize: 11, fontWeight: maintForm.priority === v ? 700 : 500, color: maintForm.priority === v ? col : "#999" }}>{l}</button>
                   ))}
                 </div>
               </div>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Photos (optional, max 3)</label>
+                <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.maintenance.photos}</label>
                 {maintForm.photos.length < 3 && (
                   <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, color: C.muted }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                    Add Photo
+                    {t.maintenance.addPhoto}
                     <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={e => {
                       const files = Array.from(e.target.files || []);
                       const remaining = 3 - maintForm.photos.length;
@@ -928,13 +951,13 @@ export default function TenantPortal() {
                   </div>
                 )}
               </div>
-              <button onClick={submitMaint} disabled={maintSubmitting || !maintForm.title.trim()} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: maintForm.title.trim() ? C.bg : "rgba(0,0,0,.08)", color: maintForm.title.trim() ? C.accent : "#bbb", fontWeight: 800, fontSize: 14, cursor: maintForm.title.trim() ? "pointer" : "default" }}>{maintSubmitting ? "Submitting..." : "Submit Request"}</button>
+              <button onClick={submitMaint} disabled={maintSubmitting || !maintForm.title.trim()} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: maintForm.title.trim() ? C.bg : "rgba(0,0,0,.08)", color: maintForm.title.trim() ? C.accent : "#bbb", fontWeight: 800, fontSize: 14, cursor: maintForm.title.trim() ? "pointer" : "default" }}>{maintSubmitting ? t.maintenance.submitting : t.maintenance.submit}</button>
             </div>
             {maintenance.length > 0 && <>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .8, marginBottom: 10 }}>History</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .8, marginBottom: 10 }}>{t.maintenance.history}</div>
               {maintenance.map(req => {
                 const stColor = { open: C.red, "in-progress": C.accent, resolved: C.green }[req.status];
-                const stLabel = { open: "Open", "in-progress": "In Progress", resolved: "Resolved" }[req.status];
+                const stLabel = { open: t.home.open, "in-progress": t.home.inProgress, resolved: t.maintenance.resolved }[req.status];
                 return (
                   <div key={req.id} style={sCard}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -958,29 +981,29 @@ export default function TenantPortal() {
         {/* ── LEASE ── */}
         {onboardingDone && activeTab === "documents" && (
           <div style={{ animation: "fadeIn .2s" }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Your Lease</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>{t.lease.title}</h2>
 
             {/* Summary Card */}
             <div style={sCard}>
-              <span style={sLabel}>Lease Summary</span>
+              <span style={sLabel}>{t.lease.summary}</span>
               {[["Property", tenant?.property?.name], ["Room", tenant?.room?.name], ["Monthly Rent", fmt(tenant?.rent)], ["Security Deposit", fmt(tenant?.security_deposit)], ["Move-in", fmtD(tenant?.move_in)], ["Lease End", fmtD(tenant?.lease_end)], ["Signed", tenant?.lease_signed_at ? new Date(tenant.lease_signed_at).toLocaleDateString() : null]].filter(([, v]) => v).map(([label, val]) => (
                 <div key={label} style={sRow}><span style={{ color: C.muted }}>{label}</span><span style={{ fontWeight: 700 }}>{val}</span></div>
               ))}
-              {leaseData?.landlordSignedAt && <div style={{ ...sRow, borderBottom: "none" }}><span style={{ color: C.muted }}>PM Signed</span><span style={{ fontWeight: 600, color: C.green }}>{new Date(leaseData.landlordSignedAt).toLocaleDateString()}</span></div>}
-              {leaseData?.tenantSignedAt && <div style={{ ...sRow, borderBottom: "none" }}><span style={{ color: C.muted }}>Tenant Signed</span><span style={{ fontWeight: 600, color: C.green }}>{new Date(leaseData.tenantSignedAt).toLocaleDateString()}</span></div>}
+              {leaseData?.landlordSignedAt && <div style={{ ...sRow, borderBottom: "none" }}><span style={{ color: C.muted }}>{t.lease.pmSigned}</span><span style={{ fontWeight: 600, color: C.green }}>{new Date(leaseData.landlordSignedAt).toLocaleDateString()}</span></div>}
+              {leaseData?.tenantSignedAt && <div style={{ ...sRow, borderBottom: "none" }}><span style={{ color: C.muted }}>{t.lease.tenantSigned}</span><span style={{ fontWeight: 600, color: C.green }}>{new Date(leaseData.tenantSignedAt).toLocaleDateString()}</span></div>}
 
               {/* Action buttons */}
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 {leaseData?.sections?.length > 0 && (
                   <button onClick={() => setShowFullLease(!showFullLease)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", color: C.text }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    {showFullLease ? "Hide Full Lease" : "View Full Lease"}
+                    {showFullLease ? t.lease.hideFull : t.lease.viewFull}
                   </button>
                 )}
                 {leaseId && (
                   <a href={"/api/generate-lease-pdf?id=" + leaseId} target="_blank" rel="noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Download PDF
+                    {t.lease.downloadPdf}
                   </a>
                 )}
               </div>
@@ -992,17 +1015,17 @@ export default function TenantPortal() {
                 {/* Lease header */}
                 <div style={{ background: C.bg, borderRadius: "14px 14px 0 0", padding: "20px 24px", textAlign: "center" }}>
                   <div style={{ fontFamily: "Georgia,serif", fontSize: 18, color: C.accent, fontWeight: 700 }}>{pm.company_name}</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", marginTop: 4, textTransform: "uppercase", letterSpacing: 1 }}>Lease Agreement</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", marginTop: 4, textTransform: "uppercase", letterSpacing: 1 }}>{t.lease.leaseAgreement}</div>
                 </div>
 
                 {/* Parties */}
                 <div style={{ display: "flex", gap: 12, padding: "16px 20px", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
                   <div style={{ flex: 1, padding: 10, background: "#faf9f7", borderRadius: 6, border: "1px solid rgba(0,0,0,.05)" }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>Property Manager</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>{t.lease.propertyManager}</div>
                     <div style={{ fontSize: 12, fontWeight: 700 }}>{leaseData.landlordName || pm.company_name}</div>
                   </div>
                   <div style={{ flex: 1, padding: 10, background: "#faf9f7", borderRadius: 6, border: "1px solid rgba(0,0,0,.05)" }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>Tenant</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>{t.lease.tenant}</div>
                     <div style={{ fontSize: 12, fontWeight: 700 }}>{leaseData.tenantName || tenant?.name}</div>
                   </div>
                 </div>
@@ -1028,13 +1051,13 @@ export default function TenantPortal() {
                 {/* Signatures */}
                 <div style={{ display: "flex", gap: 16, padding: "16px 20px", borderTop: "2px solid rgba(0,0,0,.08)" }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Property Manager</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>{t.lease.propertyManager}</div>
                     {leaseData.landlordSig ? (
                       <div><img src={leaseData.landlordSig} alt="PM signature" style={{ height: 40, maxWidth: 160, objectFit: "contain", display: "block", marginBottom: 4 }} /><div style={{ fontSize: 11, fontWeight: 600 }}>{leaseData.landlordName}</div>{leaseData.landlordSignedAt && <div style={{ fontSize: 10, color: C.muted }}>Signed {new Date(leaseData.landlordSignedAt).toLocaleDateString()}</div>}</div>
                     ) : <div style={{ borderBottom: "1px solid rgba(0,0,0,.2)", height: 40, marginBottom: 4 }} />}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Tenant</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>{t.lease.tenant}</div>
                     {leaseData.tenantSig ? (
                       <div><img src={leaseData.tenantSig} alt="Tenant signature" style={{ height: 40, maxWidth: 160, objectFit: "contain", display: "block", marginBottom: 4 }} /><div style={{ fontSize: 11, fontWeight: 600 }}>{leaseData.tenantName || tenant?.name}</div>{leaseData.tenantSignedAt && <div style={{ fontSize: 10, color: C.muted }}>Signed {new Date(leaseData.tenantSignedAt).toLocaleDateString()}</div>}</div>
                     ) : <div style={{ borderBottom: "1px solid rgba(0,0,0,.2)", height: 40, marginBottom: 4 }} />}
@@ -1046,35 +1069,48 @@ export default function TenantPortal() {
             {/* Lease expiration warning */}
             {dl !== null && dl <= 60 && (
               <div style={{ background: dl <= 30 ? hexRgba(C.red, .06) : hexRgba(C.accent, .06), border: `1px solid ${dl <= 30 ? hexRgba(C.red, .2) : hexRgba(C.accent, .2)}`, borderRadius: 12, padding: 16, marginTop: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: dl <= 30 ? C.red : C.accent, marginBottom: 4 }}>Lease expires in {dl} days</div>
-                <div style={{ fontSize: 12, color: C.muted }}>Contact {pm.company_name} at {pm.phone} to discuss renewal.</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: dl <= 30 ? C.red : C.accent, marginBottom: 4 }}>{t.lease.expiresIn} {dl} {t.home.days}</div>
+                <div style={{ fontSize: 12, color: C.muted }}>{t.common.contact} {pm.company_name} {t.common.at} {pm.phone} {t.lease.contactRenewal}</div>
+              </div>
+            )}
+
+            {/* House Rules */}
+            {(pmSettings?.houseRules || tenant?.property?.house_rules || []).length > 0 && (
+              <div style={{ ...sCard, marginTop: 12 }}>
+                <span style={sLabel}>{t.account.houseRules}</span>
+                {(pmSettings?.houseRules || tenant?.property?.house_rules || []).map((rule, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: "1px solid rgba(0,0,0,.04)", fontSize: 12, color: C.muted }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><polyline points="20 6 9 17 4 12"/></svg>
+                    {rule}
+                  </div>
+                ))}
               </div>
             )}
 
             {/* Notice to Vacate */}
             <div style={{ ...sCard, marginTop: 12 }}>
-              <span style={sLabel}>Notice to Vacate</span>
+              <span style={sLabel}>{t.lease.noticeToVacate}</span>
               {noticeForm.submitted ? (
                 <div style={{ background: hexRgba(C.green, .08), border: `1px solid ${hexRgba(C.green, .2)}`, borderRadius: 8, padding: "12px 14px", fontSize: 12, color: C.green, fontWeight: 600 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }}><path d="M20 6L9 17l-5-5"/></svg>
-                  Your 30-day notice has been submitted. {pm.company_name} will be in touch about move-out details.
+                  {t.lease.noticeSubmitted} {pm.company_name} {t.lease.moveOutDetails}
                 </div>
               ) : !noticeForm.showForm ? (
                 <div>
-                  <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.6 }}>30-day written notice is required before vacating. Submitting this form starts the clock.</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.6 }}>{t.lease.noticeDesc}</div>
                   <button onClick={() => setNoticeForm(p => ({ ...p, showForm: true }))} style={{ width: "100%", padding: "11px", borderRadius: 10, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                    Submit 30-Day Notice
+                    {t.lease.submitNotice}
                   </button>
                 </div>
               ) : (
                 <div>
                   <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Intended Move-Out Date</label>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.lease.moveOutDate}</label>
                     <input type="date" value={noticeForm.moveOutDate} onChange={e => setNoticeForm(p => ({ ...p, moveOutDate: e.target.value }))} min={new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} />
-                    <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>Must be at least 30 days from today.</div>
+                    <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{t.lease.moveOutMin}</div>
                   </div>
                   <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Reason for leaving (optional)</label>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.lease.reason}</label>
                     <textarea value={noticeForm.reason} onChange={e => setNoticeForm(p => ({ ...p, reason: e.target.value }))} placeholder="e.g. Relocating for work, end of internship..." rows={2} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13, resize: "vertical" }} />
                   </div>
                   {!noticeForm.confirming ? (
@@ -1086,12 +1122,12 @@ export default function TenantPortal() {
                     </div>
                   ) : (
                     <div style={{ background: hexRgba(C.red, .04), border: `1px solid ${hexRgba(C.red, .15)}`, borderRadius: 10, padding: 14, marginTop: 4 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.red, marginBottom: 6 }}>Confirm 30-Day Notice</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: C.red, marginBottom: 6 }}>{t.lease.confirmNotice}</div>
                       <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>This is a legally binding notice to vacate. Your intended move-out date is <strong>{fmtD(noticeForm.moveOutDate)}</strong>. This cannot be undone once submitted.</div>
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => setNoticeForm(p => ({ ...p, confirming: false }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Go Back</button>
+                        <button onClick={() => setNoticeForm(p => ({ ...p, confirming: false }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>{t.lease.goBack}</button>
                         <button onClick={submitNotice} disabled={noticeForm.submitting} style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontWeight: 800, fontSize: 13 }}>
-                          {noticeForm.submitting ? "Submitting..." : "I Understand \u2014 Submit Notice"}
+                          {noticeForm.submitting ? t.maintenance.submitting : t.lease.iUnderstand}
                         </button>
                       </div>
                     </div>
@@ -1102,8 +1138,8 @@ export default function TenantPortal() {
 
             {/* Proof of Residency */}
             <div style={{ ...sCard, marginTop: 12 }}>
-              <span style={sLabel}>PROOF OF RESIDENCY</span>
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.6 }}>Generate an official letter confirming your tenancy. Commonly needed for employment verification, bank applications, or government services.</div>
+              <span style={sLabel}>{t.lease.proofOfResidency}</span>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.6 }}>{t.lease.proofDesc}</div>
               <button onClick={() => {
                 const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
                 const w = window.open("","_blank");
@@ -1136,7 +1172,7 @@ export default function TenantPortal() {
                 w.document.close();w.print();
               }} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 10, border: `1.5px solid ${hexRgba(C.accent, .2)}`, background: hexRgba(C.accent, .04), color: C.accent, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                Generate Letter
+                {t.lease.generateLetter}
               </button>
             </div>
           </div>
@@ -1145,19 +1181,19 @@ export default function TenantPortal() {
         {/* ── ACCOUNT ── */}
         {onboardingDone && activeTab === "account" && (
           <div style={{ animation: "fadeIn .2s" }}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Account</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>{t.account.title}</h2>
 
             {/* Profile — editable phone */}
             <div style={sCard}>
-              <span style={sLabel}>Profile</span>
-              <div style={sRow}><span style={{ color: C.muted }}>Name</span><span style={{ fontWeight: 600 }}>{tenant?.name}</span></div>
-              <div style={sRow}><span style={{ color: C.muted }}>Email</span><span style={{ fontWeight: 600 }}>{user?.email}</span></div>
+              <span style={sLabel}>{t.account.profile}</span>
+              <div style={sRow}><span style={{ color: C.muted }}>{t.account.name}</span><span style={{ fontWeight: 600 }}>{tenant?.name}</span></div>
+              <div style={sRow}><span style={{ color: C.muted }}>{t.account.email}</span><span style={{ fontWeight: 600 }}>{user?.email}</span></div>
               <div style={{ ...sRow, borderBottom: "none" }}>
-                <span style={{ color: C.muted }}>Phone</span>
+                <span style={{ color: C.muted }}>{t.account.phone}</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <input
                     defaultValue={tenant?.phone || ""}
-                    placeholder="Add phone number"
+                    placeholder={t.account.addPhone}
                     onBlur={e => { const v = e.target.value.trim(); if (v !== (tenant?.phone || "")) supabase.from("tenants").update({ phone: v }).eq("id", tenant?.id); }}
                     style={{ border: "none", background: "transparent", textAlign: "right", fontWeight: 600, fontSize: 13, fontFamily: "inherit", outline: "none", padding: "2px 0", width: 160 }}
                   />
@@ -1168,8 +1204,8 @@ export default function TenantPortal() {
 
             {/* Payment History Export */}
             <div style={sCard}>
-              <span style={sLabel}>Payment History</span>
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 1.5 }}>Download your complete payment history as a CSV file. Useful for rental history verification, tax records, or personal tracking.</div>
+              <span style={sLabel}>{t.account.paymentHistory}</span>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 1.5 }}>{t.account.exportDesc}</div>
               <button onClick={() => {
                 const rows = [["Date", "Category", "Description", "Amount", "Status", "Method"]];
                 charges.forEach(c => {
@@ -1184,36 +1220,38 @@ export default function TenantPortal() {
                 URL.revokeObjectURL(url);
               }} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Export Payment History (CSV)
+                {t.account.exportCsv}
               </button>
             </div>
 
-            {/* Refer a Friend */}
-            <div style={sCard}>
-              <span style={sLabel}>Refer a Friend</span>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
-                Know someone looking for a room? Share your referral link. When they sign a lease, you may be eligible for a credit on your next month{"\u2019"}s rent.
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "monospace", color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {referralLink}
+            {/* Refer a Friend — only show if PM has set a referral credit > 0 */}
+            {(pmSettings?.referralCredit || 0) > 0 && (
+              <div style={sCard}>
+                <span style={sLabel}>{t.account.referFriend}</span>
+                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
+                  {t.account.referDesc} When they sign a lease, you{"\u2019"}ll earn a <strong style={{ color: C.green }}>${pmSettings.referralCredit} credit</strong> on your next month{"\u2019"}s rent.
                 </div>
-                <button onClick={copyReferral} style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
-                  {referralCopied ? "Copied!" : "Copy Link"}
-                </button>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "monospace", color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {referralLink}
+                  </div>
+                  <button onClick={copyReferral} style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    {referralCopied ? t.account.copied : t.account.copyLink}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Notification Preferences */}
             <div style={sCard}>
-              <span style={sLabel}>Notification Preferences</span>
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 1.5 }}>Choose which email notifications you receive.</div>
+              <span style={sLabel}>{t.account.notifications}</span>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 1.5 }}>{t.account.notifDesc}</div>
               {[
-                { key: "payment_reminders", label: "Payment reminders", desc: "Get reminded when rent is due" },
-                { key: "payment_confirmations", label: "Payment confirmations", desc: "Confirmation when a payment is received" },
-                { key: "maintenance_updates", label: "Maintenance updates", desc: "Status changes on your requests" },
-                { key: "lease_reminders", label: "Lease reminders", desc: "Renewal and expiration notices" },
-                { key: "announcements", label: "Announcements", desc: "Property-wide announcements from your PM" },
+                { key: "payment_reminders", label: t.account.paymentReminders, desc: "Get reminded when rent is due" },
+                { key: "payment_confirmations", label: t.account.paymentConfirmations, desc: "Confirmation when a payment is received" },
+                { key: "maintenance_updates", label: t.account.maintenanceUpdates, desc: "Status changes on your requests" },
+                { key: "lease_reminders", label: t.account.leaseReminders, desc: "Renewal and expiration notices" },
+                { key: "announcements", label: t.account.announcementsNotif, desc: "Property-wide announcements from your PM" },
               ].map((item, i, arr) => (
                 <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(0,0,0,.04)" : "none" }}>
                   <div style={{ flex: 1 }}>
@@ -1237,29 +1275,20 @@ export default function TenantPortal() {
               ))}
             </div>
 
-            {/* House Rules */}
-            <div style={sCard}>
-              <span style={sLabel}>House Rules</span>
-              {(pmSettings?.houseRules || tenant?.property?.house_rules || []).map((rule, i) => (
-                <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: "1px solid rgba(0,0,0,.04)", fontSize: 12, color: C.muted }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><polyline points="20 6 9 17 4 12"/></svg>
-                  {rule}
-                </div>
-              ))}
-            </div>
+            {/* House Rules moved to Lease tab */}
 
             {/* Contact PM */}
             <div style={{ ...sCard, background: hexRgba(C.accent, .04), border: `1px solid ${hexRgba(C.accent, .15)}` }}>
-              <span style={sLabel}>Property Manager</span>
+              <span style={sLabel}>{t.account.propertyManager}</span>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{pm.company_name}</div>
               {pm.phone && <div style={{ fontSize: 12, color: C.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.16 12a19.79 19.79 0 0 1-3-8.57A2 2 0 0 1 3.13 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91"/></svg>{pm.phone}</div>}
               {pmSettings?.email && <div style={{ fontSize: 12, color: C.muted, display: "flex", alignItems: "center", gap: 6 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>{pmSettings.email}</div>}
             </div>
 
             <button onClick={() => { if (window.confirm("Are you sure you want to sign out?")) signOut(); }} style={{ width: "100%", padding: "13px", borderRadius: 12, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
-              <IcLogout s={16} /> Sign Out
+              <IcLogout s={16} /> {t.account.signOut}
             </button>
-            <div style={{ textAlign: "center", fontSize: 11, color: "#bbb" }}>Powered by PropOS</div>
+            <div style={{ textAlign: "center", fontSize: 11, color: "#bbb" }}>{t.common.poweredBy}</div>
           </div>
         )}
 
@@ -1269,11 +1298,11 @@ export default function TenantPortal() {
       {onboardingDone && (
         <div className="portal-bot-nav" style={{ display: "none", position: "fixed", bottom: 0, left: 0, right: 0, background: C.bg, borderTop: "1px solid rgba(255,255,255,.08)", zIndex: 100, paddingBottom: "env(safe-area-inset-bottom)" }}>
           <div style={{ display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-            {portalTabs.map(t => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: "1 0 auto", minWidth: 72, padding: "8px 12px", border: "none", background: "transparent", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", color: activeTab === t.id ? C.accent : "rgba(255,255,255,.4)", fontSize: 9, fontWeight: activeTab === t.id ? 700 : 500, fontFamily: "inherit", transition: "color .15s", position: "relative" }}>
-                <span style={{ color: activeTab === t.id ? C.accent : "rgba(255,255,255,.35)" }}>{t.icon}</span>
-                {t.label}
-                {t.badge > 0 && <span style={{ position: "absolute", top: 2, right: "calc(50% - 16px)", minWidth: 14, height: 14, borderRadius: 7, background: "#c45c4a", color: "#fff", fontSize: 7, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: `2px solid ${C.bg}` }}>{t.badge}</span>}
+            {portalTabs.map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: "1 0 auto", minWidth: 72, padding: "8px 12px", border: "none", background: "transparent", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", color: activeTab === tab.id ? C.accent : "rgba(255,255,255,.4)", fontSize: 9, fontWeight: activeTab === tab.id ? 700 : 500, fontFamily: "inherit", transition: "color .15s", position: "relative" }}>
+                <span style={{ color: activeTab === tab.id ? C.accent : "rgba(255,255,255,.35)" }}>{tab.icon}</span>
+                {tab.label}
+                {tab.badge > 0 && <span style={{ position: "absolute", top: 2, right: "calc(50% - 16px)", minWidth: 14, height: 14, borderRadius: 7, background: "#c45c4a", color: "#fff", fontSize: 7, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: `2px solid ${C.bg}` }}>{tab.badge}</span>}
               </button>
             ))}
           </div>
