@@ -234,45 +234,14 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
           </div>
         </div></div>
 
-        {/* House Rules */}
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Default House Rules</h3>
-          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>These rules appear in the tenant portal and can be referenced in leases. Drag to reorder. Override per-property in the Properties tab.</p>
-          <div style={{display:"flex",flexDirection:"column",gap:5}}>
-            {(settings.houseRules||DEF_SETTINGS.houseRules||[]).map((rule,i)=>{
-              const rules=settings.houseRules||DEF_SETTINGS.houseRules||[];
-              return(
-              <div key={i} draggable
-                onDragStart={e=>{e.dataTransfer.setData("ruleIdx",String(i));}}
-                onDragOver={e=>e.preventDefault()}
-                onDrop={e=>{
-                  e.preventDefault();
-                  const from=Number(e.dataTransfer.getData("ruleIdx"));
-                  if(from===i)return;
-                  const next=[...rules];
-                  const[moved]=next.splice(from,1);
-                  next.splice(i,0,moved);
-                  setSettings(s=>({...s,houseRules:next}));
-                }}
-                style={{display:"flex",gap:6,alignItems:"center",background:"#faf9f7",borderRadius:6,padding:"6px 8px",border:"1px solid rgba(0,0,0,.06)",cursor:"grab"}}>
-                <span style={{color:"#8a7d74",fontSize:13,flexShrink:0,cursor:"grab"}}>{"\u2261"}</span>
-                <input value={rule} style={{flex:1,border:"none",background:"transparent",fontFamily:"inherit",fontSize:12,outline:"none",padding:0}}
-                  onChange={e=>{const next=[...rules];next[i]=e.target.value;setSettings(s=>({...s,houseRules:next}));}}/>
-                <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1,flexShrink:0}} onClick={()=>{const next=rules.filter((_,j)=>j!==i);setSettings(s=>({...s,houseRules:next}));}}>
-                  {"\u2715"}
-                </button>
-              </div>);
-            })}
+        {/* House Rules — managed in Templates */}
+        <div style={{marginTop:12,padding:"10px 14px",background:"rgba(0,0,0,.03)",borderRadius:8,border:"1px solid rgba(0,0,0,.05)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:700}}>House Rules</div>
+            <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>{(settings.houseRules||[]).length} rules configured</div>
           </div>
-          <div style={{display:"flex",gap:8,marginTop:10}}>
-            <button className="btn btn-out" style={{flex:1}} onClick={()=>{
-              const rules=[...(settings.houseRules||DEF_SETTINGS.houseRules||[]),"New rule"];
-              setSettings(s=>({...s,houseRules:rules}));
-            }}>+ Add Rule</button>
-            <button className="btn btn-gold" style={{flex:1}} onClick={()=>save("hq-settings",settings)}>Save House Rules</button>
-          </div>
-          <div style={{fontSize:9,color:"#6b5e52",marginTop:6,textAlign:"center"}}>These are the default rules for all properties. Override per-property in the Properties tab.</div>
-        </div></div>
+          <div style={{fontSize:11,color:"#6b5e52"}}>Manage in Templates tab</div>
+        </div>
     </>
   );
 }
