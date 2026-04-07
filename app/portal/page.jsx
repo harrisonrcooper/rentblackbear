@@ -200,15 +200,12 @@ export default function TenantPortal() {
     // DEV BYPASS — localhost:3000/portal?dev=true
     if (params.get("dev") === "true" && window.location.hostname === "localhost") {
       // Load real PM settings from hq-settings for dev mode too
-      try {
-        const { data: devSettings } = await supabase.from("app_data").select("value").eq("key", "hq-settings").single();
+      supabase.from("app_data").select("value").eq("key", "hq-settings").single().then(({ data: devSettings }) => {
         if (devSettings?.value) {
           const s = devSettings.value;
           setPmSettings({ company_name: s.companyName || "PropOS", phone: s.phone || "", email: s.email || "", pmName: s.pmName || "", pmEmail: s.pmEmail || "", houseRules: s.houseRules || [], referralCredit: s.referralCredit || 0, lateFeeGraceDays: s.lateFeeGraceDays, m2mIncrease: s.m2mIncrease, language: s.portalLanguage || "en" });
-        } else {
-          setPmSettings({ company_name: "PropOS", phone: "" });
-        }
-      } catch (e) { setPmSettings({ company_name: "PropOS", phone: "" }); }
+        } else { setPmSettings({ company_name: "PropOS", phone: "" }); }
+      }).catch(() => { setPmSettings({ company_name: "PropOS", phone: "" }); });
       setUser({ email: "demo@test.com" });
       setTenant({ id: "dev", name: "Demo Tenant", rent: 750, security_deposit: 750, move_in: "2025-06-01", lease_end: "2026-06-01", lease_signed_at: new Date().toISOString(), door_code: "1234", property: { name: "Demo Property" }, room: { name: "Room A" } });
       setCharges([
