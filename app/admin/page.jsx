@@ -5144,7 +5144,7 @@ export default function Page(){
 
         {/* Sub-tabs */}
         <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"2px solid rgba(0,0,0,.08)"}}>
-          {[["leases","Lease Agreements"],["checklists","Checklists"],["notices","Notices"],["houserules","House Rules"],["editor","Edit Template"]].filter(([id])=>id!=="editor"||leaseTemplate).map(([id,label])=>(
+          {[["leases","Lease Agreements"],["checklists","Checklists"],["notices","Notices"],["houserules","House Rules"],["editor","Edit Templates"]].map(([id,label])=>(
             <button key={id} onClick={()=>{if(templateEditorDirty&&leaseSubTab==="editor"&&id!=="editor"){setPendingNavTab("__subtab__"+id);return;}setLeaseSubTab(id);}}
               style={{padding:"12px 24px",border:"none",borderBottom:leaseSubTab===id?"2px solid "+_acc:"2px solid transparent",marginBottom:-2,background:"transparent",color:leaseSubTab===id?_acc:"#9a8878",fontWeight:leaseSubTab===id?700:500,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",letterSpacing:.1}}>
               {label}
@@ -5374,15 +5374,47 @@ export default function Page(){
           </div>
         </div>}
 
-        {/* Template Editor */}
-        {leaseSubTab==="editor"&&<TemplateEditor
-          template={leaseTemplate}
-          setTemplate={setLeaseTemplate}
-          settings={settings}
-          showAlert={showAlert}
-          DEF_LEASE_SECTIONS={DEF_LEASE_SECTIONS}
-          onDirtyChange={setTemplateEditorDirty}
-        />}
+        {/* Template Editor — pick template first, then edit */}
+        {leaseSubTab==="editor"&&(!leaseTemplate?(
+          <div>
+            <div style={{fontSize:15,fontWeight:800,marginBottom:4}}>Select a Template to Edit</div>
+            <div style={{fontSize:11,color:"#6b5e52",marginBottom:16}}>Choose which lease template you want to modify.</div>
+            {leaseTemplates.length===0?(
+              <div className="card"><div className="card-bd" style={{textAlign:"center",padding:40,color:"#6b5e52"}}>
+                <div style={{fontSize:13,marginBottom:8}}>No templates yet. Create one from the Lease Agreements tab.</div>
+              </div></div>
+            ):(
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {leaseTemplates.map(tmpl=>(
+                  <div key={tmpl.id} onClick={()=>setLeaseTemplate(tmpl)} className="card" style={{cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.15)"} onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.06)"}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px"}}>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:700}}>{tmpl.name}</div>
+                        <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>{(tmpl.sections||[]).filter(s=>s.active!==false).length} active sections</div>
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ):(
+          <div>
+            <button onClick={()=>setLeaseTemplate(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#6b5e52",fontFamily:"inherit",padding:0,marginBottom:12,display:"flex",alignItems:"center",gap:4}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+              Back to template list
+            </button>
+            <TemplateEditor
+              template={leaseTemplate}
+              setTemplate={setLeaseTemplate}
+              settings={settings}
+              showAlert={showAlert}
+              DEF_LEASE_SECTIONS={DEF_LEASE_SECTIONS}
+              onDirtyChange={setTemplateEditorDirty}
+            />
+          </div>
+        ))}
 
         <LeaseModal
           leaseForm={leaseForm} setLeaseForm={setLeaseForm}
