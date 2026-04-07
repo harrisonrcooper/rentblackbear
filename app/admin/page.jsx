@@ -2684,6 +2684,11 @@ export default function Page(){
       if(themeSec>=0){cfg[themeSec]={...cfg[themeSec],ids:["pm-settings",...cfg[themeSec].ids]};}
       else cfg.push({label:"Settings",ids:["pm-settings"]});
     }
+    if(!allIds().includes("messages")){
+      const notifSec=cfg.findIndex(s=>s.ids.includes("notifications"));
+      if(notifSec>=0){cfg[notifSec]={...cfg[notifSec],label:cfg[notifSec].label||"Communications",ids:["messages",...cfg[notifSec].ids]};}
+      else cfg.push({label:"Communications",ids:["messages","notifications"]});
+    }
     return cfg;
   })();
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
