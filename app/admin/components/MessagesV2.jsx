@@ -120,6 +120,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   const [showAwayEdit, setShowAwayEdit] = useState(false);
   // Notifications
   const [notifEnabled, setNotifEnabled] = useState(typeof Notification !== "undefined" && Notification.permission === "granted");
+  const [soundEnabled, setSoundEnabled] = useState(true);
   // Emoji picker
   const [showEmoji, setShowEmoji] = useState(false);
   // Message editing
@@ -136,11 +137,20 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   const fileInputRef = useRef(null);
   const awayModeRef = useRef(awayMode);
   const awayMessageRef = useRef(awayMessage);
+  const soundEnabledRef = useRef(soundEnabled);
   const _acc = settings?.adminAccent || "#4a7c59";
 
   // Keep refs in sync for use in realtime callback
   useEffect(() => { awayModeRef.current = awayMode; }, [awayMode]);
   useEffect(() => { awayMessageRef.current = awayMessage; }, [awayMessage]);
+  useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
+
+  // Auto-request notification permission on mount
+  useEffect(() => {
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission().then(p => setNotifEnabled(p === "granted"));
+    }
+  }, []);
 
   // Load scheduled messages from Supabase
   const loadScheduled = async () => {
@@ -158,11 +168,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
     const channel = supabase.channel("messages-realtime").on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload) => {
       if (payload.eventType === "INSERT") {
         setMessages(prev => [payload.new, ...prev]);
-        // Browser notification for inbound
+        // Browser notification + sound for inbound
         if (payload.new.direction === "inbound") {
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-            new Notification("New message from " + (payload.new.tenant_name || "Tenant"), { body: (payload.new.body || "").slice(0, 100) });
+            new Notification("New message from " + (payload.new.tenant_name || "Tenant"), { body: (payload.new.body || "").slice(0, 100), icon: "/favicon.ico" });
           }
+          // Sound notification
+          try { if (soundEnabledRef.current) { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.setValueAtTime(880, ctx.currentTime); osc.frequency.setValueAtTime(1047, ctx.currentTime + 0.08); gain.gain.setValueAtTime(0.15, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.25); } } catch (e) {}
           // Away mode auto-reply
           if (awayModeRef.current && payload.new.tenant_name) {
             supabase.from("messages").insert({
@@ -231,6 +243,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   const activeThread = selectedThread ? threads[selectedThread] : null;
   const activeMessages = activeThread ? [...activeThread.messages].sort((a, b) => a.created_at.localeCompare(b.created_at)) : [];
   const unreadTotal = threadList.reduce((s, t) => s + t.messages.filter(m => m.direction === "inbound" && !m.read).length, 0);
+
+  // Badge count on browser tab title
+  useEffect(() => {
+    const base = "Black Bear HQ";
+    document.title = unreadTotal > 0 ? `(${unreadTotal}) ${base}` : base;
+    return () => { document.title = base; };
+  }, [unreadTotal]);
 
   // Mark read
   const markRead = async (threadKey) => {
@@ -1059,6 +1078,14 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       );
                     })()}
                   </div>
+                  {/* Sound toggle */}
+                  <button onClick={() => setSoundEnabled(!soundEnabled)} title={soundEnabled ? "Mute sounds" : "Unmute sounds"} style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: soundEnabled ? "rgba(0,122,255,.06)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {soundEnabled ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                    )}
+                  </button>
                   <div style={{ flex: 1, position: "relative" }}>
                     {noteMode && <div style={{ position: "absolute", top: -20, left: 0, fontSize: 9, fontWeight: 700, color: "#9a7422" }}>INTERNAL NOTE (tenant will not see this)</div>}
                     <textarea
