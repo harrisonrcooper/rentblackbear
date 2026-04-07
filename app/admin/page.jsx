@@ -2905,7 +2905,7 @@ export default function Page(){
 
     {/* Main */}
     <div className="mn" style={{zoom:_zoom,left:220*_zoom}}>
-      {tab!=="messages"&&<div className="tbar"><div><h1><span style={{color:"#d4a853",display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>}
+      <div className="tbar"><div><h1><span style={{color:"#d4a853",display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>
       <div className="cnt">
 
       {/* ═══ DASHBOARD ═══ */}

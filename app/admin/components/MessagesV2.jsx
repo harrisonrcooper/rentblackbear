@@ -63,8 +63,8 @@ const COMMON_EMOJIS = [
 
 // ── Styles ─────────────────────────────────────────────────────────
 const S = {
-  outer: { position: "fixed", top: 48, bottom: 0, left: 220, right: 0, display: "flex", flexDirection: "column", background: "#f4f3f0", zIndex: 5 },
-  header: { padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "#fff" },
+  outer: { position: "fixed", top: 96, bottom: 0, left: 220, right: 0, display: "flex", flexDirection: "column", background: "#f4f3f0", zIndex: 5 },
+
   wrap: { display: "flex", gap: 0, flex: 1, overflow: "hidden", background: "#fff", minHeight: 0 },
   threadList: { width: 300, borderRight: "1px solid rgba(0,0,0,.06)", display: "flex", flexDirection: "column", background: "#fafaf8" },
   threadSearch: { padding: "12px 14px", borderBottom: "1px solid rgba(0,0,0,.06)" },
@@ -328,22 +328,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
       `}</style>
 
       <div style={S.outer}>
-      {/* Header — always visible */}
-      <div style={S.header}>
-        <div>
-          <div style={{ fontSize: 17, fontWeight: 800 }}>Messages</div>
-          <div style={{ fontSize: 10, color: "#6b5e52" }}>{unreadTotal > 0 ? unreadTotal + " unread" : "All caught up"}</div>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-out btn-sm" onClick={() => { const unreadIds = messages.filter(m => m.direction === "inbound" && !m.read).map(m => m.id); if (unreadIds.length) { supabase.from("messages").update({ read: true }).in("id", unreadIds); setMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, read: true } : m)); } }}>
-            Mark All Read
-          </button>
-          <button className="btn btn-out btn-sm" onClick={loadMessages} title="Reload messages" style={{ display: "flex", alignItems: "center", gap: 4, opacity: .6 }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            Refresh
-          </button>
-        </div>
-      </div>
+
 
       {loading ? (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#6b5e52" }}>Loading messages...</div>
