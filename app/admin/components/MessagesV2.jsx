@@ -84,12 +84,25 @@ export default function MessagesV2({ settings, properties }) {
   const [showCanned, setShowCanned] = useState(false);
   const [noteMode, setNoteMode] = useState(false); // internal note toggle
   const [propFilter, setPropFilter] = useState("all");
+  const [pinnedThreads, setPinnedThreads] = useState(new Set());
+  const [showTenantInfo, setShowTenantInfo] = useState(false);
+  const [attachFile, setAttachFile] = useState(null); // { name, data, type }
+  const [threadFilter, setThreadFilter] = useState("all"); // all, unread, pinned
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const _acc = settings?.adminAccent || "#4a7c59";
 
-  // Load messages
-  useEffect(() => { loadMessages(); }, []);
+  // Load messages + setup realtime
+  useEffect(() => {
+    loadMessages();
+    // Realtime subscription
+    const channel = supabase.channel("messages-realtime").on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload) => {
+      if (payload.eventType === "INSERT") setMessages(prev => [payload.new, ...prev]);
+      else if (payload.eventType === "UPDATE") setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
+    }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const loadMessages = async () => {
     setLoading(true);
@@ -107,10 +120,18 @@ export default function MessagesV2({ settings, properties }) {
     return acc;
   }, {});
 
-  let threadList = Object.values(threads).sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+  let threadList = Object.values(threads).sort((a, b) => {
+    const aPinned = pinnedThreads.has(a.key);
+    const bPinned = pinnedThreads.has(b.key);
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
+    return b.lastAt.localeCompare(a.lastAt);
+  });
 
   // Filters
   if (propFilter !== "all") threadList = threadList.filter(t => t.propertyName === propFilter);
+  if (threadFilter === "unread") threadList = threadList.filter(t => t.messages.some(m => m.direction === "inbound" && !m.read));
+  if (threadFilter === "pinned") threadList = threadList.filter(t => pinnedThreads.has(t.key));
   if (search) { const q = search.toLowerCase(); threadList = threadList.filter(t => t.tenantName.toLowerCase().includes(q) || t.messages.some(m => (m.body || "").toLowerCase().includes(q) || (m.subject || "").toLowerCase().includes(q))); }
 
   const activeThread = selectedThread ? threads[selectedThread] : null;
@@ -146,6 +167,8 @@ export default function MessagesV2({ settings, properties }) {
       room_name: activeThread.roomName,
       read: true,
       created_at: now,
+      status: "sent",
+      attachment: attachFile ? { name: attachFile.name, type: attachFile.type, data: attachFile.data } : null,
     };
 
     const { data } = await supabase.from("messages").insert(newMsg).select().single();
@@ -172,6 +195,7 @@ export default function MessagesV2({ settings, properties }) {
     setSending(false);
     setNoteMode(false);
     setShowCanned(false);
+    setAttachFile(null);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
@@ -234,6 +258,11 @@ export default function MessagesV2({ settings, properties }) {
           <div style={S.threadList}>
             <div style={S.threadSearch}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+              <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+                {[["all", "All"], ["unread", "Unread"], ["pinned", "Pinned"]].map(([id, label]) => (
+                  <button key={id} onClick={() => setThreadFilter(id)} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: "1px solid " + (threadFilter === id ? _acc : "rgba(0,0,0,.08)"), background: threadFilter === id ? _acc + "12" : "#fff", color: threadFilter === id ? _acc : "#999", fontSize: 10, fontWeight: threadFilter === id ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+                ))}
+              </div>
               {allProps.length > 1 && (
                 <select value={propFilter} onChange={e => setPropFilter(e.target.value)} style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 10, fontFamily: "inherit", marginTop: 6, color: "#6b5e52" }}>
                   <option value="all">All Properties</option>
@@ -268,6 +297,7 @@ export default function MessagesV2({ settings, properties }) {
                       </div>
                     </div>
                     <div style={{ fontSize: 11, color: unread ? "#1a1714" : "#999", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: 38, marginTop: 2 }}>
+                      {pinnedThreads.has(thread.key) && <svg width="8" height="8" viewBox="0 0 24 24" fill="#d4a853" stroke="#d4a853" strokeWidth="2" style={{ marginRight: 3, verticalAlign: "middle" }}><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>}
                       {isRenewal && <span style={{ fontSize: 9, fontWeight: 700, color: "#9a7422", marginRight: 4 }}>RENEWAL</span>}
                       {lastMsg?.direction === "outbound" ? "You: " : lastMsg?.direction === "note" ? "Note: " : ""}{lastMsg?.body?.slice(0, 50) || lastMsg?.subject || ""}
                     </div>
@@ -290,13 +320,26 @@ export default function MessagesV2({ settings, properties }) {
                 {/* Header */}
                 <div style={S.chatHeader}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, position: "relative" }}>
                       {(activeThread.tenantName || "?")[0].toUpperCase()}
+                      {/* Online indicator — based on last message time */}
+                      {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 60000 : 999; return minAgo < 5 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: 5, background: "#4a7c59", border: "2px solid #fff" }} /> : minAgo < 60 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: 5, background: "#d4a853", border: "2px solid #fff" }} /> : null; })()}
                     </div>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThread.tenantName}</div>
-                      <div style={{ fontSize: 11, color: "#6b5e52" }}>{activeThread.tenantEmail}{activeThread.propertyName ? " \u00b7 " + activeThread.propertyName + (activeThread.roomName ? " \u00b7 " + activeThread.roomName : "") : ""}</div>
+                      <div style={{ fontSize: 11, color: "#6b5e52" }}>
+                        {activeThread.propertyName}{activeThread.roomName ? " \u00b7 " + activeThread.roomName : ""}
+                        {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? Math.floor((Date.now() - new Date(lastInbound.created_at).getTime()) / 60000) : null; return minAgo !== null ? <span style={{ marginLeft: 6, fontSize: 9, color: minAgo < 5 ? "#4a7c59" : "#999" }}>{minAgo < 5 ? "Active now" : "Last active " + fmtTime(lastInbound.created_at)}</span> : null; })()}
+                      </div>
                     </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} title={pinnedThreads.has(selectedThread) ? "Unpin" : "Pin conversation"} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: pinnedThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={pinnedThreads.has(selectedThread) ? "#d4a853" : "none"} stroke={pinnedThreads.has(selectedThread) ? "#d4a853" : "#999"} strokeWidth="2"><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>
+                    </button>
+                    <button onClick={() => setShowTenantInfo(!showTenantInfo)} title="Tenant info" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showTenantInfo ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    </button>
                   </div>
                 </div>
 
@@ -324,11 +367,13 @@ export default function MessagesV2({ settings, properties }) {
                             {isNote && <div style={{ fontSize: 9, fontWeight: 700, color: "#9a7422", marginBottom: 3 }}>INTERNAL NOTE</div>}
                             {isRenewal && !isOut && <div style={{ fontSize: 9, fontWeight: 700, color: isOut ? "rgba(255,255,255,.7)" : "#9a7422", marginBottom: 3 }}>LEASE RENEWAL REQUEST</div>}
                             {msg.subject && !isRenewal && !isNote && <div style={{ fontSize: 10, fontWeight: 700, opacity: .6, marginBottom: 3 }}>{msg.subject}</div>}
+                            {msg.attachment && msg.attachment.type?.startsWith("image/") && <img src={msg.attachment.data} style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4, maxHeight: 200, objectFit: "cover" }} alt="" />}
+                            {msg.attachment && !msg.attachment.type?.startsWith("image/") && <div style={{ padding: "6px 10px", background: "rgba(0,0,0,.08)", borderRadius: 6, fontSize: 11, marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{msg.attachment.name}</div>}
                             <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.body}</div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
                               <div style={{ fontSize: 9, opacity: .5 }}>{fmtTime(msg.created_at)}</div>
-                              {isOut && <div style={{ fontSize: 9, opacity: .5, marginLeft: 8 }}>
-                                {msg.read !== false ? <svg width="14" height="10" viewBox="0 0 20 12" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 6 6 11 18 1"/></svg> : <svg width="10" height="10" viewBox="0 0 16 12" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 6 5 10 14 1"/></svg>}
+                              {isOut && <div style={{ fontSize: 9, opacity: .5, marginLeft: 8, display: "flex", alignItems: "center", gap: 2 }}>
+                                {msg.status === "read" || msg.read ? <><svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg><span style={{ fontSize: 8 }}>Read</span></> : msg.status === "delivered" ? <><svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg></> : <svg width="10" height="9" viewBox="0 0 14 10" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 5 5 9 12 1"/></svg>}
                               </div>}
                             </div>
                             {/* Reaction picker */}
@@ -353,6 +398,14 @@ export default function MessagesV2({ settings, properties }) {
                       </div>
                     );
                   })}
+                  {/* Typing indicator — shows if tenant sent a message in last 30 seconds */}
+                  {(() => { const lastInbound = activeMessages.filter(m => m.direction === "inbound").slice(-1)[0]; const secAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 1000 : 999; return secAgo < 30 ? (
+                    <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 8 }}>
+                      <div style={S.typingDots}>
+                        <div style={S.dot(0)} /><div style={S.dot(0.15)} /><div style={S.dot(0.3)} />
+                      </div>
+                    </div>
+                  ) : null; })()}
                   <div ref={bottomRef} />
                 </div>
 
@@ -368,8 +421,22 @@ export default function MessagesV2({ settings, properties }) {
                   </div>
                 )}
 
+                {/* Attachment preview */}
+                {attachFile && (
+                  <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", alignItems: "center", gap: 8 }}>
+                    {attachFile.type?.startsWith("image/") ? <img src={attachFile.data} style={{ height: 40, borderRadius: 6, objectFit: "cover" }} alt="" /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+                    <span style={{ fontSize: 11, color: "#6b5e52", flex: 1 }}>{attachFile.name}</span>
+                    <button onClick={() => setAttachFile(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", fontSize: 14 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                  </div>
+                )}
+
                 {/* Input */}
                 <div style={S.chatInput}>
+                  {/* File attach */}
+                  <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: "none" }} onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => setAttachFile({ name: file.name, type: file.type, data: ev.target.result }); reader.readAsDataURL(file); e.target.value = ""; }} />
+                  <button onClick={() => fileInputRef.current?.click()} title="Attach file" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                  </button>
                   {/* Note toggle */}
                   <button onClick={() => setNoteMode(!noteMode)} title={noteMode ? "Switch to reply" : "Switch to internal note"} style={{ width: 36, height: 36, borderRadius: 8, border: noteMode ? "2px solid #d4a853" : "1px solid rgba(0,0,0,.1)", background: noteMode ? "rgba(212,168,83,.08)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={noteMode ? "#9a7422" : "#999"} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -397,6 +464,38 @@ export default function MessagesV2({ settings, properties }) {
               </>
             )}
           </div>
+
+          {/* ── Tenant Info Sidebar ── */}
+          {showTenantInfo && activeThread && (
+            <div style={{ width: 240, borderLeft: "1px solid rgba(0,0,0,.06)", overflowY: "auto", padding: "20px 16px", background: "#fafaf8" }}>
+              <div style={{ textAlign: "center", marginBottom: 16 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, margin: "0 auto 8px" }}>
+                  {(activeThread.tenantName || "?")[0].toUpperCase()}
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThread.tenantName}</div>
+                <div style={{ fontSize: 11, color: "#6b5e52", marginTop: 2 }}>{activeThread.tenantEmail}</div>
+              </div>
+              <div style={{ borderTop: "1px solid rgba(0,0,0,.06)", paddingTop: 12 }}>
+                {[
+                  ["Property", activeThread.propertyName],
+                  ["Room", activeThread.roomName],
+                  ["Messages", activeThread.messages.length],
+                  ["First Message", activeThread.messages.length > 0 ? new Date(activeThread.messages[activeThread.messages.length - 1].created_at).toLocaleDateString() : "\u2014"],
+                  ["Last Active", (() => { const last = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; return last ? fmtTime(last.created_at) : "\u2014"; })()],
+                ].filter(([, v]) => v).map(([k, v]) => (
+                  <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(0,0,0,.03)", fontSize: 11 }}>
+                    <span style={{ color: "#6b5e52" }}>{k}</span>
+                    <span style={{ fontWeight: 600, textAlign: "right", maxWidth: "55%" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Quick Actions</div>
+                <button className="btn btn-out btn-sm" style={{ width: "100%", marginBottom: 4, fontSize: 10 }} onClick={() => { /* navigate to tenant */ }}>View Tenant Profile</button>
+                <button className="btn btn-out btn-sm" style={{ width: "100%", fontSize: 10 }} onClick={() => { setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; }); }}>{pinnedThreads.has(selectedThread) ? "Unpin Conversation" : "Pin Conversation"}</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </>
