@@ -2224,6 +2224,8 @@ export default function Page(){
   const[dashEditMode,setDashEditMode]=useState(false);
   const[dashDragWidget,setDashDragWidget]=useState(null);
   const[dashDragOver,setDashDragOver]=useState(null);
+  const[annForm,setAnnForm]=useState({title:"",body:"",propertyId:"",expiresAt:""});
+  const[annShowForm,setAnnShowForm]=useState(false);
   const[ledgerTenant,setLedgerTenant]=useState("all");
   const[portalTenant,setPortalTenant]=useState(null);
   const[portalTab,setPortalTab]=useState("home");
@@ -3158,7 +3160,62 @@ export default function Page(){
             </div>
           ))}
         </div>
-      </>);})()} 
+
+        {/* ── Announcements ── */}
+        <div className="card" style={{marginTop:20}}>
+          <div className="card-bd">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:annShowForm?16:0}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8}}>Tenant Announcements</div>
+                <div style={{fontSize:11,color:"#7a7067",marginTop:2}}>{(settings.announcements||[]).length} active</div>
+              </div>
+              <button className="btn btn-green btn-sm" onClick={()=>setAnnShowForm(s=>!s)}>{annShowForm?"Cancel":"+ New Announcement"}</button>
+            </div>
+            {annShowForm&&<div style={{borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:14}}>
+              <div style={{marginBottom:10}}>
+                <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Title</label>
+                <input value={annForm.title} onChange={e=>setAnnForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Water shut-off notice" style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
+              </div>
+              <div style={{marginBottom:10}}>
+                <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Message</label>
+                <textarea value={annForm.body} onChange={e=>setAnnForm(f=>({...f,body:e.target.value}))} placeholder="Details for your tenants..." rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit",resize:"vertical"}}/>
+              </div>
+              <div style={{display:"flex",gap:10,marginBottom:14}}>
+                <div style={{flex:1}}>
+                  <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Property (optional)</label>
+                  <select value={annForm.propertyId} onChange={e=>setAnnForm(f=>({...f,propertyId:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit",background:"#fff"}}>
+                    <option value="">All Properties</option>
+                    {props.map(p=><option key={p.id} value={p.id}>{p.addr||p.name}</option>)}
+                  </select>
+                </div>
+                <div style={{flex:1}}>
+                  <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Expires (optional)</label>
+                  <input type="date" value={annForm.expiresAt} onChange={e=>setAnnForm(f=>({...f,expiresAt:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
+                </div>
+              </div>
+              <button className="btn btn-green" disabled={!annForm.title.trim()||!annForm.body.trim()} onClick={()=>{
+                const ann={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:annForm.title.trim(),body:annForm.body.trim(),propertyId:annForm.propertyId||null,createdAt:new Date().toISOString(),expiresAt:annForm.expiresAt?annForm.expiresAt+"T23:59:59.999Z":null};
+                const u={...settings,announcements:[ann,...(settings.announcements||[])]};setSettings(u);save("hq-settings",u);
+                setAnnForm({title:"",body:"",propertyId:"",expiresAt:""});setAnnShowForm(false);
+              }}>Post Announcement</button>
+            </div>}
+            {(settings.announcements||[]).length>0&&<div style={{marginTop:annShowForm?16:12,borderTop:annShowForm?"1px solid rgba(0,0,0,.06)":"none",paddingTop:annShowForm?12:0}}>
+              {(settings.announcements||[]).map(a=>{
+                const propName=a.propertyId?((props.find(p=>p.id===a.propertyId)||{}).addr||(props.find(p=>p.id===a.propertyId)||{}).name||"Specific property"):"All properties";
+                const isExpired=a.expiresAt&&new Date(a.expiresAt)<new Date();
+                return(<div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)",opacity:isExpired?.5:1}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#1a1714",marginBottom:2}}>{a.title}{isExpired&&<span style={{fontSize:9,color:"#c45c4a",marginLeft:6,fontWeight:600}}>EXPIRED</span>}</div>
+                    <div style={{fontSize:11,color:"#5c4a3a",marginBottom:4,whiteSpace:"pre-wrap",lineHeight:1.4}}>{a.body}</div>
+                    <div style={{fontSize:9,color:"#7a7067"}}>{propName} · Posted {new Date(a.createdAt).toLocaleDateString()}{a.expiresAt?" · Expires "+new Date(a.expiresAt).toLocaleDateString():""}</div>
+                  </div>
+                  <button onClick={()=>{const u={...settings,announcements:(settings.announcements||[]).filter(x=>x.id!==a.id)};setSettings(u);save("hq-settings",u);}} style={{padding:"4px 10px",borderRadius:5,border:"1px solid rgba(196,92,74,.2)",background:"rgba(196,92,74,.06)",color:"#c45c4a",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0,marginLeft:10}}>Delete</button>
+                </div>);
+              })}
+            </div>}
+          </div>
+        </div>
+      </>);})()}
 
       {/* ═══ TENANTS ═══ */}
       {tab==="tenants"&&(()=>{
