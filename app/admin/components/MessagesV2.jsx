@@ -1000,7 +1000,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       const [emojiCat, setEmojiCatLocal] = [showEmoji === true ? 0 : showEmoji, (v) => setShowEmoji(v === false ? false : v)];
                       const cat = EMOJI_CATS[typeof emojiCat === "number" ? emojiCat : 0] || EMOJI_CATS[0];
                       return (
-                        <div style={{ position: "absolute", bottom: 44, right: 0, background: "#fff", borderRadius: 12, boxShadow: "0 4px 24px rgba(0,0,0,.18)", padding: 0, zIndex: 20, width: 300, overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+                        <div style={{ position: "fixed", bottom: 70, right: 280, background: "#fff", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,.2)", padding: 0, zIndex: 100, width: 320, overflow: "hidden" }} onClick={e => e.stopPropagation()}>
                           {/* Category tabs */}
                           <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
                             {EMOJI_CATS.map((c, ci) => (
