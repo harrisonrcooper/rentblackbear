@@ -2638,7 +2638,8 @@ export default function Page(){
     {label:"Traction",ids:["scorecard","rocks","issues"]},
     {label:"Leasing",ids:["applications","app-setup"]},
     {label:"Tenants",ids:["tenants","portal","payments","timeline"]},
-    {label:"Operations",ids:["maintenance","leases","documents"]},
+    {label:"Operations",ids:["maintenance"]},
+    {label:"Documents",ids:["leases","documents"]},
     {label:"Financials",ids:["accounting","add-expense","reports"]},
     {label:"Portfolio",ids:["properties"]},
     {label:"Communications",ids:["messages","announcements","notifications"]},
@@ -2687,6 +2688,16 @@ export default function Page(){
       if(themeSec>=0){cfg[themeSec]={...cfg[themeSec],ids:["pm-settings",...cfg[themeSec].ids]};}
       else cfg.push({label:"Settings",ids:["pm-settings"]});
     }
+    // Ensure Templates + Documents are in their own section, not under Operations
+    const docIds=["leases","documents"];
+    const opsSec=cfg.find(s=>s.label==="Operations"&&docIds.some(id=>s.ids.includes(id)));
+    if(opsSec){
+      opsSec.ids=opsSec.ids.filter(id=>!docIds.includes(id));
+      const movedIds=docIds.filter(id=>allIds().includes(id));
+      if(movedIds.length>0) cfg.splice(cfg.indexOf(opsSec)+1,0,{label:"Documents",ids:movedIds});
+      cfg=cfg.filter(s=>s.ids.length>0);
+    }
+
     // Ensure Communications is its own section with messages, announcements, notifications
     const commTargetIds=["messages","announcements","notifications"];
     const hasCommSection=cfg.some(s=>s.label==="Communications"&&commTargetIds.every(id=>s.ids.includes(id)));
