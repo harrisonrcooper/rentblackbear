@@ -7563,6 +7563,7 @@ export default function Page(){
   {/* ═══ MODALS ═══ */}
   {modal&&modal.type==="tenant"&&(()=>{
     const r=modal.data;
+    const tLease=leases.find(l=>apps.find(a=>a.name===r.tenant?.name&&a.id===l.applicationId))||leases.find(l=>l.tenantEmail===r.tenant?.email||l.tenantName===r.tenant?.name);
     const pd=(payments[r.id]&&payments[r.id][MO])||0;
     const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;
     const months=dl?Math.max(0,Math.ceil(dl/30)):null;
@@ -7731,7 +7732,6 @@ export default function Page(){
 
             {/* Lease section */}
             {(()=>{
-              const tLease=leases.find(l=>apps.find(a=>a.name===r.tenant?.name&&a.id===l.applicationId))||leases.find(l=>l.tenantEmail===r.tenant?.email||l.tenantName===r.tenant?.name);
               const scColors={draft:"#6b5e52",pending_landlord:"#d4a853",pending_tenant:"#3b82f6",executed:"#4a7c59"};
               const scLabels={draft:"Draft",pending_landlord:"Awaiting Your Signature",pending_tenant:"Sent to Tenant",executed:"Current"};
               return(
@@ -7808,7 +7808,36 @@ export default function Page(){
                               try{await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:renewal.sender_email||r.tenant?.email,subject:"Lease Renewal Approved",fromName:(settings.pmName||"")+" | "+(settings.companyName||""),html:"<p>Your lease renewal request has been approved. We will prepare the new lease agreement and send it for your signature shortly.</p><p>"+(settings.companyName||"")+"</p>"})});}catch(e){}
                               // Reply message
                               await fetch(SUPA_URL+"/rest/v1/messages",{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({tenant_name:renewal.tenant_name,sender_email:settings.pmEmail||settings.email||"",sender_name:settings.pmName||"Property Manager",direction:"outbound",subject:"Re: "+renewal.subject,body:"Your lease renewal has been approved. A new lease will be sent to you for signature.",property_name:renewal.property_name,room_name:renewal.room_name,read:true})});
-                              showAlert({title:"Approved",body:"Renewal approved for "+r.tenant.name+". Create the new lease from the Lease Templates tab."});
+                              // Auto-create new lease draft from current lease
+                              const currentEnd=tLease?.leaseEnd||r.le||"";
+                              const newStart=currentEnd||TODAY.toISOString().split("T")[0];
+                              const newEndD=new Date(newStart+"T00:00:00");
+                              if(isM2M){newEndD.setMonth(newEndD.getMonth()+1);}else{newEndD.setMonth(newEndD.getMonth()+(termMonths||12));}
+                              const newEnd=newEndD.toISOString().split("T")[0];
+                              const newRent=isM2M?m2mRent:(r.rent||0);
+                              const template=leaseTemplates[0]||leaseTemplate;
+                              setModal(null);
+                              setLeaseForm({
+                                id:null,status:"draft",applicationId:null,
+                                tenantName:r.tenant.name,tenantEmail:r.tenant.email||"",tenantPhone:r.tenant.phone||"",
+                                property:r.propName,room:r.name,propertyId:r.propId||"",roomId:r.id,
+                                unitId:r.unitId||"",unitName:r.unitName||"",
+                                propertyAddress:prop?.addr||r.propAddr||"",
+                                rent:newRent,sd:r.rent||0,proratedRent:0,prorationMethod:"std",
+                                moveIn:newStart,leaseStart:newStart,leaseEnd:newEnd,leaseEndTbd:false,leaseType:isM2M?"m2m":"fixed",
+                                utilitiesMode:tLease?.utilitiesMode||"",utilitiesClause:tLease?.utilitiesClause||"",
+                                doorCode:r.tenant.doorCode||tLease?.doorCode||"",
+                                parking:tLease?.parking||"",parkingChoice:tLease?.parkingChoice||"",
+                                landlordName:template?.landlordName||settings.pmName||"",
+                                company:template?.company||settings.companyName||"",
+                                landlordEmail:template?.landlordEmail||settings.email||"",
+                                agreementDate:TODAY.toISOString().split("T")[0],
+                                sections:template?.sections||tLease?.sections||[],
+                                addenda:[],notes:"Renewal from previous lease ending "+fmtD(currentEnd),
+                                requireLastMonth:false,lastMonthInstallments:3,lastMonthFrequency:"monthly",
+                              });
+                              goTab("leases");
+                              showAlert({title:"Renewal Approved",body:"New lease draft created for "+r.tenant.name+". Review and sign to send to tenant."});
                             }}>
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                               Approve
