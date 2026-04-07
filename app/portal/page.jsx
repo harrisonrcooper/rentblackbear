@@ -981,20 +981,67 @@ export default function TenantPortal() {
         {onboardingDone && activeTab === "account" && (
           <div style={{ animation: "fadeIn .2s" }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Account</h2>
+
+            {/* Profile — editable phone */}
             <div style={sCard}>
               <span style={sLabel}>Profile</span>
-              {[["Name", tenant?.name], ["Email", user?.email], ["Phone", tenant?.phone]].filter(([, v]) => v).map(([label, val]) => (
-                <div key={label} style={sRow}><span style={{ color: C.muted }}>{label}</span><span style={{ fontWeight: 600 }}>{val}</span></div>
-              ))}
+              <div style={sRow}><span style={{ color: C.muted }}>Name</span><span style={{ fontWeight: 600 }}>{tenant?.name}</span></div>
+              <div style={sRow}><span style={{ color: C.muted }}>Email</span><span style={{ fontWeight: 600 }}>{user?.email}</span></div>
+              <div style={{ ...sRow, borderBottom: "none" }}>
+                <span style={{ color: C.muted }}>Phone</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input
+                    defaultValue={tenant?.phone || ""}
+                    placeholder="Add phone number"
+                    onBlur={e => { const v = e.target.value.trim(); if (v !== (tenant?.phone || "")) supabase.from("tenants").update({ phone: v }).eq("id", tenant?.id); }}
+                    style={{ border: "none", background: "transparent", textAlign: "right", fontWeight: 600, fontSize: 13, fontFamily: "inherit", outline: "none", padding: "2px 0", width: 160 }}
+                  />
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </div>
+              </div>
             </div>
+
+            {/* Payment History Export */}
+            <div style={sCard}>
+              <span style={sLabel}>Payment History</span>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 1.5 }}>Download your complete payment history as a CSV file. Useful for rental history verification, tax records, or personal tracking.</div>
+              <button onClick={() => {
+                const rows = [["Date", "Category", "Description", "Amount", "Status", "Method"]];
+                charges.forEach(c => {
+                  const st = c.amount_paid >= c.amount ? "Paid" : c.amount_paid > 0 ? "Partial" : "Unpaid";
+                  (c.payments || []).forEach(p => rows.push([p.date, c.category, c.description || "", p.amount, st, p.method || ""]));
+                  if (!(c.payments || []).length) rows.push([c.due_date, c.category, c.description || "", c.amount, st, ""]);
+                });
+                const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(",")).join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a"); a.href = url; a.download = "payment-history-" + (tenant?.name || "tenant").replace(/\s+/g, "-").toLowerCase() + ".csv"; a.click();
+                URL.revokeObjectURL(url);
+              }} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export Payment History (CSV)
+              </button>
+            </div>
+
+            {/* House Rules */}
             <div style={sCard}>
               <span style={sLabel}>House Rules</span>
-              {(pmSettings?.houseRules || tenant?.property?.house_rules || ["No smoking or vaping anywhere on property", "No pets", "Remove shoes at the door", "Quiet hours: 10pm-7am weekdays, 11pm-10am weekends", "Keep shared spaces clean"]).map((rule, i) => (
+              {(pmSettings?.houseRules || tenant?.property?.house_rules || []).map((rule, i) => (
                 <div key={i} style={{ display: "flex", gap: 10, padding: "7px 0", borderBottom: "1px solid rgba(0,0,0,.04)", fontSize: 12, color: C.muted }}>
-                  <span style={{ color: C.green, fontWeight: 800, flexShrink: 0 }}>✓</span>{rule}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><polyline points="20 6 9 17 4 12"/></svg>
+                  {rule}
                 </div>
               ))}
             </div>
+
+            {/* Contact PM */}
+            <div style={{ ...sCard, background: hexRgba(C.accent, .04), border: `1px solid ${hexRgba(C.accent, .15)}` }}>
+              <span style={sLabel}>Property Manager</span>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{pm.company_name}</div>
+              {pm.phone && <div style={{ fontSize: 12, color: C.muted, display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.16 12a19.79 19.79 0 0 1-3-8.57A2 2 0 0 1 3.13 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91"/></svg>{pm.phone}</div>}
+              {pmSettings?.email && <div style={{ fontSize: 12, color: C.muted, display: "flex", alignItems: "center", gap: 6 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>{pmSettings.email}</div>}
+            </div>
+
             <button onClick={() => { if (window.confirm("Are you sure you want to sign out?")) signOut(); }} style={{ width: "100%", padding: "13px", borderRadius: 12, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
               <IcLogout s={16} /> Sign Out
             </button>
