@@ -378,7 +378,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         {/* Avatar circle */}
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: isActive ? _acc : "#e8e5e0", color: isActive ? "#fff" : "#6b5e52", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
+                        <div style={{ width: 32, height: 32, minWidth: 32, minHeight: 32, borderRadius: "50%", background: isActive ? _acc : "#e8e5e0", color: isActive ? "#fff" : "#6b5e52", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
                           {(thread.tenantName || "?")[0].toUpperCase()}
                         </div>
                         <div>
@@ -422,7 +422,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 {/* Header */}
                 <div style={S.chatHeader}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, position: "relative" }}>
+                    <div style={{ width: 36, height: 36, minWidth: 36, minHeight: 36, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, position: "relative", flexShrink: 0 }}>
                       {(activeThread.tenantName || "?")[0].toUpperCase()}
                       {/* Online indicator — based on last message time */}
                       {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 60000 : 999; return minAgo < 5 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: 5, background: "#4a7c59", border: "2px solid #fff" }} /> : minAgo < 60 ? <div style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: 5, background: "#d4a853", border: "2px solid #fff" }} /> : null; })()}
@@ -499,7 +499,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 </div>
 
                 {/* Messages */}
-                <div style={S.chatScroll} onClick={() => { setShowReactions(null); setShowCanned(false); }}>
+                <div style={S.chatScroll} onClick={() => { setShowReactions(null); setShowCanned(false); setShowTagDropdown(false); setShowAwayEdit(false); setShowEmoji(false); }}>
                   {activeMessages.map((msg, i) => {
                     const isOut = msg.direction === "outbound";
                     const isNote = msg.direction === "note";
@@ -508,23 +508,49 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     const reactions = msg.reactions || {};
                     const hasReactions = Object.keys(reactions).length > 0;
                     const isRenewal = msg.subject?.startsWith("Lease Renewal:");
+                    const isHovered = hoveredMsg === msg.id;
+                    const isEditing = editingMsg === msg.id;
+                    const isDeleted = msg.deleted;
 
                     return (
                       <div key={msg.id}>
                         {showDateGroup && <div style={S.dateGroup}>{fmtDateGroup(msg.created_at)}</div>}
-                        <div className="msg-bubble" style={{ display: "flex", justifyContent: isOut || isNote ? "flex-end" : "flex-start", marginBottom: hasReactions ? 20 : 8, position: "relative" }}>
+                        <div className="msg-bubble" style={{ display: "flex", justifyContent: isOut || isNote ? "flex-end" : "flex-start", marginBottom: hasReactions ? 20 : 8, position: "relative" }}
+                          onMouseEnter={() => setHoveredMsg(msg.id)} onMouseLeave={() => setHoveredMsg(null)}>
+                          {/* Edit/Delete actions for outbound */}
+                          {(isOut || isNote) && isHovered && !isEditing && !isDeleted && (
+                            <div style={{ display: "flex", gap: 2, alignItems: "center", marginRight: 4, alignSelf: "center" }}>
+                              <button onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                              </button>
+                              <button onClick={e => { e.stopPropagation(); deleteMsg(msg.id); }} title="Delete" style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                              </button>
+                            </div>
+                          )}
                           <div
                             onDoubleClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }}
                             style={{
                               ...S.bubble(isOut || isNote, isNote ? "#f5f0e8" : _acc),
                               ...(isNote ? { background: "#fef9ed", border: "1px dashed rgba(212,168,83,.4)", color: "#6b5e52" } : {}),
+                              ...(isDeleted ? { opacity: .5, fontStyle: "italic" } : {}),
                             }}>
                             {isNote && <div style={{ fontSize: 9, fontWeight: 700, color: "#9a7422", marginBottom: 3 }}>INTERNAL NOTE</div>}
                             {isRenewal && !isOut && <div style={{ fontSize: 9, fontWeight: 700, color: isOut ? "rgba(255,255,255,.7)" : "#9a7422", marginBottom: 3 }}>LEASE RENEWAL REQUEST</div>}
                             {msg.subject && !isRenewal && !isNote && <div style={{ fontSize: 10, fontWeight: 700, opacity: .6, marginBottom: 3 }}>{msg.subject}</div>}
                             {msg.attachment && msg.attachment.type?.startsWith("image/") && <img src={msg.attachment.data} style={{ maxWidth: "100%", borderRadius: 8, marginBottom: 4, maxHeight: 200, objectFit: "cover" }} alt="" />}
                             {msg.attachment && !msg.attachment.type?.startsWith("image/") && <div style={{ padding: "6px 10px", background: "rgba(0,0,0,.08)", borderRadius: 6, fontSize: 11, marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{msg.attachment.name}</div>}
-                            <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.body}</div>
+                            {isEditing ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                <textarea value={editMsgText} onChange={e => setEditMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEditMsg(msg.id); } if (e.key === "Escape") { setEditingMsg(null); setEditMsgText(""); } }} rows={2} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(255,255,255,.3)", fontSize: 12, fontFamily: "inherit", resize: "none", outline: "none", background: "rgba(255,255,255,.15)", color: "inherit", boxSizing: "border-box" }} autoFocus />
+                                <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+                                  <button onClick={() => { setEditingMsg(null); setEditMsgText(""); }} style={{ padding: "2px 8px", borderRadius: 4, border: "1px solid rgba(255,255,255,.3)", background: "transparent", color: "inherit", fontSize: 10, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+                                  <button onClick={() => saveEditMsg(msg.id)} style={{ padding: "2px 8px", borderRadius: 4, border: "none", background: "rgba(255,255,255,.25)", color: "inherit", fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Save</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.body}{msg.edited && <span style={{ fontSize: 9, opacity: .6, marginLeft: 4 }}>(edited)</span>}</div>
+                            )}
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
                               <div style={{ fontSize: 9, opacity: .5 }}>{fmtTime(msg.created_at)}</div>
                               {isOut && <div style={{ fontSize: 9, opacity: .5, marginLeft: 8, display: "flex", alignItems: "center", gap: 2 }}>
@@ -624,7 +650,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           {showTenantInfo && activeThread && (
             <div style={{ width: 240, borderLeft: "1px solid rgba(0,0,0,.06)", overflowY: "auto", padding: "20px 16px", background: "#fafaf8" }}>
               <div style={{ textAlign: "center", marginBottom: 16 }}>
-                <div style={{ width: 56, height: 56, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, margin: "0 auto 8px" }}>
+                <div style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800, margin: "0 auto 8px" }}>
                   {(activeThread.tenantName || "?")[0].toUpperCase()}
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThread.tenantName}</div>
