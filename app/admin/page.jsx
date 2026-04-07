@@ -7081,8 +7081,9 @@ export default function Page(){
       Object.entries(varMap).forEach(([k,v])=>{out=out.replaceAll("{{"+k+"}}","<strong>"+(v||"")+"</strong>");});
       return out;
     };
-    // Use current template sections, fall back to l.sections
-    const viewSections=(leaseTemplate?.sections||l.sections||[]).filter(s=>s.active!==false);
+    // Executed leases ALWAYS use their stored snapshot — template edits must never affect signed leases
+    // Drafts/pending use the live template so edits are reflected before signing
+    const viewSections=(isExec ? (l.sections||[]) : (leaseTemplate?.sections||l.sections||[])).filter(s=>s.active!==false);
 
     return(
     <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>

@@ -198,7 +198,8 @@ export default function LeasePage(){
     PRORATED_RENT:lease.proratedRent?Number(lease.proratedRent).toLocaleString():"",
   }:{};
 
-  const sections=template?.sections||[];
+  // Executed leases use stored snapshot — template edits must never affect signed leases
+  const sections=(lease?.status==="executed"&&lease?.sections?.length) ? lease.sections : (template?.sections||[]);
   const activeSections=sections.filter(s=>s.active!==false);
 
   // ── Render states ───────────────────────────────────────────────────

@@ -73,7 +73,9 @@ const S=StyleSheet.create({
 
 // ── PDF Document ─────────────────────────────────────────────────────
 function LeasePDF({lease,template,vars}){
-  const activeSections=(template?.sections||[]).filter(s=>s.active!==false);
+  // Executed leases use their stored snapshot — template edits must never affect signed leases
+  const isExec=lease.status==="executed";
+  const activeSections=(isExec&&lease.sections?.length ? lease.sections : (template?.sections||[])).filter(s=>s.active!==false);
   const company=lease.companyName||"Black Bear Rentals";
   const templateName=template?.name||"Alabama Co-Living Lease Agreement";
 
