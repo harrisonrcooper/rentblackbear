@@ -129,6 +129,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   const [scheduleTime, setScheduleTime] = useState("");
   const [scheduledMsgs, setScheduledMsgs] = useState([]);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [maintForm, setMaintForm] = useState(null); // { title, scope, priority } — inline form for /maintenance
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -324,28 +325,8 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
 
     if (text.startsWith("/maintenance")) {
       const details = text.replace("/maintenance", "").trim();
-      if (!details) { setReplyText("/maintenance "); inputRef.current?.focus(); return false; }
-      // Get pm_id from pm_accounts if available
-      let pmId = null;
-      try { const { data: pmRows } = await supabase.from("pm_accounts").select("id").limit(1).single(); pmId = pmRows?.id || null; } catch (e) {}
-      const { error } = await supabase.from("maintenance_requests").insert({
-        pm_id: pmId,
-        title: details,
-        description: "Created via PM messages by " + (settings?.pmName || "PM"),
-        priority: "medium",
-        submitted_by: settings?.pmName || "PM",
-        status: "open",
-      });
-      if (error) { console.error("Maintenance error:", error); await sendSystemMessage("Failed to create maintenance request: " + error.message); }
-      else {
-        // Add to admin dashboard maintenance list (hq-maint cache)
-        if (setMaint && uid) {
-          const newReq = { id: uid(), roomId: "", propId: "", tenant: activeThread.tenantName || "", title: details, desc: "Created via PM messages", status: "open", priority: "medium", created: new Date().toISOString().split("T")[0], photos: 0 };
-          setMaint(prev => { const updated = [newReq, ...prev]; if (save) save("hq-maint", updated); return updated; });
-        }
-        await sendSystemMessage("Maintenance request created: " + details);
-        if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Maintenance Request: " + details, html: "<p>A maintenance request has been created:</p><p><strong>" + details + "</strong></p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {} }
-      }
+      // Open inline maintenance form with prefilled title
+      setMaintForm({ title: details, scope: "room", priority: "medium", propName: activeThread?.propertyName || "", roomName: activeThread?.roomName || "" });
       setReplyText("");
       return true;
     }
@@ -800,6 +781,70 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     <button onClick={scheduleMessage} disabled={!scheduleTime || !replyText.trim()} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: scheduleTime && replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: scheduleTime && replyText.trim() ? "#fff" : "#bbb", fontSize: 11, fontWeight: 700, cursor: scheduleTime && replyText.trim() ? "pointer" : "default" }}>Schedule</button>
                     <button onClick={() => { setShowSchedule(false); setScheduleTime(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 14 }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                )}
+
+                {/* Inline maintenance request form */}
+                {maintForm && (
+                  <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(0,0,0,.06)", background: "#fafaf8" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1714" }}>New Maintenance Request</div>
+                      <button onClick={() => setMaintForm(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 14 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                    <input value={maintForm.title} onChange={e => setMaintForm(p => ({ ...p, title: e.target.value }))} placeholder="What is the issue?" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 12, fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" }} />
+                    <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#6b5e52", marginBottom: 3 }}>SCOPE</div>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {[["room", "Room Only"], ["unit", "Whole Unit"], ["common", "Common Area"]].map(([v, l]) => (
+                            <button key={v} onClick={() => setMaintForm(p => ({ ...p, scope: v }))} style={{ flex: 1, padding: "5px 0", borderRadius: 5, fontSize: 10, fontWeight: maintForm.scope === v ? 700 : 500, border: "1px solid " + (maintForm.scope === v ? _acc : "rgba(0,0,0,.08)"), background: maintForm.scope === v ? _acc + "12" : "#fff", color: maintForm.scope === v ? _acc : "#999", cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#6b5e52", marginBottom: 3 }}>PRIORITY</div>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {[["low", "Low", "#4a7c59"], ["medium", "Med", "#d4a853"], ["high", "High", "#c45c4a"]].map(([v, l, c]) => (
+                            <button key={v} onClick={() => setMaintForm(p => ({ ...p, priority: v }))} style={{ flex: 1, padding: "5px 0", borderRadius: 5, fontSize: 10, fontWeight: maintForm.priority === v ? 700 : 500, border: "1px solid " + (maintForm.priority === v ? c : "rgba(0,0,0,.08)"), background: maintForm.priority === v ? c + "15" : "#fff", color: maintForm.priority === v ? c : "#999", cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 8, fontSize: 10, color: "#6b5e52" }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, marginBottom: 3 }}>PROPERTY</div>
+                        <div style={{ padding: "4px 8px", background: "#fff", borderRadius: 4, border: "1px solid rgba(0,0,0,.06)" }}>{maintForm.propName || "Not specified"}</div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, marginBottom: 3 }}>ROOM</div>
+                        <div style={{ padding: "4px 8px", background: "#fff", borderRadius: 4, border: "1px solid rgba(0,0,0,.06)" }}>{maintForm.scope === "common" ? "N/A (common area)" : maintForm.roomName || "Not specified"}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 4, fontSize: 10, color: "#6b5e52" }}>
+                      <div style={{ padding: "4px 8px", background: "#fff", borderRadius: 4, border: "1px solid rgba(0,0,0,.06)", flex: 1 }}>Tenant: {activeThread?.tenantName || "Unknown"}</div>
+                    </div>
+                    <button disabled={!maintForm.title.trim()} onClick={async () => {
+                      let pmId = null;
+                      try { const { data: pmRows } = await supabase.from("pm_accounts").select("id").limit(1).single(); pmId = pmRows?.id || null; } catch (e) {}
+                      const { error } = await supabase.from("maintenance_requests").insert({
+                        pm_id: pmId, title: maintForm.title, description: "Scope: " + maintForm.scope + " | Created via PM messages",
+                        priority: maintForm.priority, submitted_by: settings?.pmName || "PM", status: "open",
+                      });
+                      if (error) { console.error("Maintenance error:", error); await sendSystemMessage("Failed: " + error.message); }
+                      else {
+                        if (setMaint && uid) {
+                          const newReq = { id: uid(), roomId: "", propId: "", tenant: activeThread?.tenantName || "", propName: maintForm.propName, roomName: maintForm.scope === "common" ? "Common Area" : maintForm.roomName, title: maintForm.title, desc: "Scope: " + maintForm.scope, status: "open", priority: maintForm.priority, created: new Date().toISOString().split("T")[0], photos: 0 };
+                          setMaint(prev => { const updated = [newReq, ...prev]; if (save) save("hq-maint", updated); return updated; });
+                        }
+                        await sendSystemMessage("Maintenance request created: " + maintForm.title + " (" + maintForm.scope + ", " + maintForm.priority + " priority) at " + maintForm.propName);
+                        if (activeThread?.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Maintenance Request: " + maintForm.title, html: "<p>A maintenance request has been created:</p><p><strong>" + maintForm.title + "</strong></p><p>Priority: " + maintForm.priority + " | Scope: " + maintForm.scope + "</p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {} }
+                      }
+                      setMaintForm(null);
+                    }} style={{ width: "100%", padding: "8px", borderRadius: 6, border: "none", background: maintForm.title.trim() ? _acc : "rgba(0,0,0,.08)", color: maintForm.title.trim() ? "#fff" : "#bbb", fontWeight: 700, fontSize: 12, cursor: maintForm.title.trim() ? "pointer" : "default", fontFamily: "inherit" }}>
+                      Create Maintenance Request
                     </button>
                   </div>
                 )}
