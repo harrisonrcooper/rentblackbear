@@ -2,6 +2,9 @@
 import { syncTenantToSupabase } from "@/lib/syncTenant";
 import LeaseModal from "./components/LeaseModal";
 import TemplateEditor from "./components/TemplateEditor";
+import PMSettings from "./components/PMSettings";
+import AppSetup from "./components/AppSetup";
+import WebsiteSettings from "./components/WebsiteSettings";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
@@ -59,6 +62,44 @@ async function uploadPhoto(file,propId){
   }catch(e){console.error("Upload error:",e);return null;}
 }
 const uid=()=>Math.random().toString(36).slice(2,9);
+
+const DEF_APP_FIELDS=[
+  // ── Section 1: Contact Info ──
+  {id:uid(),label:"First Name",key:"firstName",type:"text",section:"Contact Info",required:true,active:true,placeholder:"First name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Last Name",key:"lastName",type:"text",section:"Contact Info",required:true,active:true,placeholder:"Last name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Email Address",key:"email",type:"email",section:"Contact Info",required:true,active:true,placeholder:"you@email.com",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Phone Number",key:"phone",type:"phone",section:"Contact Info",required:true,active:true,placeholder:"(256) 555-1234",helpText:"Pre-filled from invite if applicable.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Date of Birth",key:"dob",type:"date-dob",section:"Contact Info",required:true,active:true,placeholder:"",helpText:"Month / Day / Year dropdowns.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  // ── Section 2: Move-In & Property ──
+  {id:uid(),label:"Desired Move-in Date",key:"moveIn",type:"date-movein",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Month / Day / Year dropdowns.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Property Interest",key:"preferredProperty",type:"property-select",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Required for walk-in applicants. Pre-filled from invite if applicable.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Preferred Room",key:"selectedRoom",type:"room-select",section:"Move-In & Property",required:false,active:true,placeholder:"",helpText:"Optional — shown based on selected property.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"text",section:"Move-In & Property",required:true,active:true,placeholder:"Choose a 4-digit code (numbers only)",helpText:"This code will be programmed into your smart lock and written into your lease. Choose any 4 digits. Activates at 12:00am on move-in day once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
+  {id:uid(),label:"Number of Occupants",key:"occupants",type:"counter",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Only 1 person per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
+  // ── Section 3: Personal Information ──
+  {id:uid(),label:"Photo ID Upload",key:"idFile",type:"file",section:"Personal Information",required:true,active:true,placeholder:"Upload driver's license, passport, or state ID",helpText:"JPG, PNG, or PDF. Can be uploaded later — application will be marked incomplete until received.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  // ── Section 4: Rental History ──
+  {id:uid(),label:"Current / Previous Address",key:"addresses",type:"address-block",section:"Rental History",required:true,active:true,placeholder:"",helpText:"Include landlord name and contact info to strengthen your application.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Have you ever been evicted?",key:"evicted",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain the circumstances.",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Do you have any felony convictions?",key:"felony",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain.",followUpNo:"",min:null,max:null},
+  // ── Section 5: Employment & Income ──
+  {id:uid(),label:"Currently Employed",key:"unemployed",type:"employed-toggle",section:"Employment & Income",required:false,active:true,placeholder:"",helpText:"If unemployed, employer reference and employer fields are skipped. Previous work history is optional.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Current Employer",key:"employers",type:"employer-block",section:"Employment & Income",required:true,active:true,placeholder:"Company name",helpText:"Landlords like to see ~5 years of employment history.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Gross Monthly Income",key:"income",type:"number",section:"Employment & Income",required:true,active:true,placeholder:"4200",helpText:"Before taxes. We look for 3x the monthly rent.",options:[],followUpYes:"",followUpNo:"",min:0,max:null},
+  {id:uid(),label:"Proof of Income (Optional)",key:"payStubs",type:"file",section:"Employment & Income",required:false,active:true,placeholder:"Upload pay stubs, offer letter, or bank statement",helpText:"Optional — skip if you don't have them handy. Your income will be verified through RentPrep.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  // ── Section 6: References ──
+  {id:uid(),label:"Employer Reference Name",key:"empRefName",type:"text",section:"References",required:true,active:true,placeholder:"Supervisor or HR contact",helpText:"Skipped if applicant is unemployed.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Employer Reference Phone",key:"empRefPhone",type:"phone",section:"References",required:true,active:true,placeholder:"(256) 555-0000",helpText:"Skipped if applicant is unemployed.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Employer Reference Relationship",key:"empRefRelation",type:"text",section:"References",required:false,active:true,placeholder:"e.g. Manager",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Personal Reference Name",key:"persRefName",type:"text",section:"References",required:true,active:true,placeholder:"Someone who knows you well",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Personal Reference Phone",key:"persRefPhone",type:"phone",section:"References",required:true,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Personal Reference Relationship",key:"persRefRelation",type:"text",section:"References",required:false,active:true,placeholder:"e.g. Friend, Colleague",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  // ── Section 7: Emergency Contact ──
+  {id:uid(),label:"Emergency Contact Name",key:"emergName",type:"text",section:"Emergency Contact",required:true,active:true,placeholder:"Full name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Emergency Contact Phone",key:"emergPhone",type:"phone",section:"Emergency Contact",required:true,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+  {id:uid(),label:"Relationship to Applicant",key:"emergRelation",type:"text",section:"Emergency Contact",required:true,active:true,placeholder:"e.g. Parent, Sibling, Friend",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
+];
+
 const fmt=n=>"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtS=n=>"$"+Number(n).toLocaleString();
 const fmtD=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;}
@@ -381,6 +422,16 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
     subtext:"All fields are required.",
     sources:["Roomies.com","Google Search","Facebook / Instagram","Friend / Referral","Zillow / Apartments.com","Craigslist","Drive-by / Sign","Military / Contractor Network","NASA / Redstone Network","Other"],
   },
+  houseRules:[
+    "No smoking or vaping anywhere on property",
+    "No pets",
+    "Remove shoes at the door",
+    "Quiet hours: 10pm\u20137am weekdays, 11pm\u201310am weekends",
+    "Keep shared spaces clean",
+    "No overnight guests without prior approval",
+    "Lock all doors when leaving",
+    "Report maintenance issues promptly",
+  ],
   utilTemplates:[
     {id:"ut1",name:"All Utilities Included",key:"allIncluded",desc:"Landlord pays all utilities — water, sewer, garbage, electric, gas, and WiFi.",clause:"PROPERTY MANAGER agrees to pay all utilities including water, sewer, garbage, electricity, gas, and internet (WiFi). RESIDENT is responsible for no utility costs beyond the monthly rent."},
     {id:"ut2",name:"First $100 Covered — Overage Split",key:"first100",desc:"PM covers first $100/mo of combined utilities. Any overage is split equally among all residents. WiFi always included.",clause:"PROPERTY MANAGER agrees to pay the first $100.00 of combined utilities (water, sewer, garbage, electricity, and gas) per month. Any usage exceeding $100.00 per month shall be split equally among all current residents and billed on the 1st of each month. Internet (WiFi) is provided by PROPERTY MANAGER at no additional cost to RESIDENT."},
@@ -1899,7 +1950,8 @@ const S=`
 
 /* Layout */
 .app{display:flex;height:100vh;overflow:hidden}
-.side{width:220px;background:#1a1714;display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;overscroll-behavior:contain;will-change:transform;transform:translateZ(0);-webkit-overflow-scrolling:touch;z-index:50}
+.side{width:220px;background:#1a1714;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;z-index:50;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.side-scroll{padding-bottom:16px}
 .s-logo{padding:16px 18px;font-size:15px;font-weight:800;color:#f5f0e8;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:7px}
 .s-logo span{color:#d4a853}
 .s-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.72);padding:14px 16px 4px}
@@ -2560,12 +2612,12 @@ export default function Page(){
     {id:"accounting",i:<IconBook/>,l:"Accounting"},
     {id:"reports",i:<IconTrending/>,l:"Reports"},
     {id:"properties",i:<IconHome/>,l:"Properties"},
-    {id:"site-settings",i:<IconGlobe/>,l:"Site Settings"},
-    {id:"theme",i:<IconPalette/>,l:"Theme Editor"},
+    {id:"pm-settings",i:<IconSettings/>,l:"PM Settings"},
+    {id:"app-setup",i:<IconClipboard/>,l:"Application Setup"},
+    {id:"theme",i:<IconPalette/>,l:"Admin Theme"},
+    {id:"website",i:<IconGlobe/>,l:"Website"},
     {id:"ideas",i:<IconBrain/>,l:"Brain Dump"},
     {id:"notifications",i:<IconBell/>,l:"Alerts",badge:m.unreadNotifs||null},
-    {id:"settings_dummy",i:<IconSettings/>,l:"Settings"},
-    {id:"configuration",i:<IconClipboard/>,l:"Configuration"},
     {id:"add-expense",i:<span>＋</span>,l:"Add Expense"},
   ];
 
@@ -2573,19 +2625,22 @@ export default function Page(){
   const DEF_SIDEBAR=[
     {label:"Overview",ids:["dashboard"]},
     {label:"Traction",ids:["scorecard","rocks","issues"]},
-    {label:"Leasing",ids:["applications"]},
+    {label:"Leasing",ids:["applications","app-setup"]},
     {label:"Tenants",ids:["tenants","portal","payments","timeline"]},
     {label:"Operations",ids:["maintenance","leases","documents"]},
     {label:"Financials",ids:["accounting","add-expense","reports"]},
     {label:"Portfolio",ids:["properties"]},
-    {label:"System",ids:["site-settings","theme","ideas","notifications","settings_dummy"]},
-    {label:"Configuration",ids:["configuration"]},
+    {label:"Settings",ids:["pm-settings","theme","notifications"]},
+    {label:"Website",ids:["website","ideas"]},
   ];
   const rawSidebarConfig=settings.sidebarConfig||DEF_SIDEBAR;
   const sidebarConfig=(()=>{
-    const allIds=rawSidebarConfig.flatMap(s=>s.ids);
-    let cfg=rawSidebarConfig;
-    if(!allIds.includes("add-expense")){
+    // Migrate old IDs to new ones
+    const ID_MAP={"site-settings":"pm-settings","settings_dummy":null,"configuration":"app-setup"};
+    let cfg=rawSidebarConfig.map(s=>({...s,ids:s.ids.map(id=>ID_MAP[id]!==undefined?ID_MAP[id]:id).filter(Boolean)})).filter(s=>s.ids.length>0);
+    const allIds=()=>cfg.flatMap(s=>s.ids);
+    // Inject missing tabs into sensible locations
+    if(!allIds().includes("add-expense")){
       cfg=cfg.map(s=>{
         if(!s.ids.includes("accounting"))return s;
         const ids=[...s.ids];
@@ -2594,7 +2649,7 @@ export default function Page(){
         return{...s,ids};
       });
     }
-    if(!allIds.includes("timeline")){
+    if(!allIds().includes("timeline")){
       cfg=cfg.map(s=>{
         if(!s.ids.includes("payments"))return s;
         const ids=[...s.ids];
@@ -2602,6 +2657,23 @@ export default function Page(){
         ids.splice(pi+1,0,"timeline");
         return{...s,ids};
       });
+    }
+    if(!allIds().includes("app-setup")){
+      cfg=cfg.map(s=>{
+        if(!s.ids.includes("applications"))return s;
+        return{...s,ids:[...s.ids,"app-setup"]};
+      });
+      if(!allIds().includes("app-setup"))cfg.push({label:"Leasing",ids:["app-setup"]});
+    }
+    if(!allIds().includes("website")){
+      const ideasSec=cfg.findIndex(s=>s.ids.includes("ideas"));
+      if(ideasSec>=0){cfg[ideasSec]={...cfg[ideasSec],label:cfg[ideasSec].label||"Website",ids:[...cfg[ideasSec].ids.filter(id=>id!=="ideas"),"website","ideas"]};}
+      else cfg.push({label:"Website",ids:["website"]});
+    }
+    if(!allIds().includes("pm-settings")){
+      const themeSec=cfg.findIndex(s=>s.ids.includes("theme"));
+      if(themeSec>=0){cfg[themeSec]={...cfg[themeSec],ids:["pm-settings",...cfg[themeSec].ids]};}
+      else cfg.push({label:"Settings",ids:["pm-settings"]});
     }
     return cfg;
   })();
@@ -2649,7 +2721,7 @@ export default function Page(){
 
   const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-gold:hover{background:#1a1714!important;color:#d4a853!important}.btn-green{background:${acc}!important}.btn-green:hover{background:#1a1714!important;color:#d4a853!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
   const _acc=settings.adminAccent||"#4a7c59";const _rgb=settings.adminAccentRgb||"74,124,89";const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";const _zoom=settings.adminZoom||1;
-  return(<div style={{fontFamily:_font}}><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app" style={{zoom:_zoom}}>
+  return(<div style={{fontFamily:_font}}><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app">
     {/* Mobile bottom tab bar */}
     <div className="bot-bar">
       {(()=>{
@@ -2686,9 +2758,10 @@ export default function Page(){
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
 
     {/* Sidebar */}
-    <div className={`side ${sideOpen?"open":""}`}>
+    <div className={`side ${sideOpen?"open":""}`} style={{zoom:_zoom,height:`calc(100vh / ${_zoom})`}}>
       <div className="s-logo">🐻 Black Bear <span>HQ</span></div>
 
+      <div className="side-scroll">
       {/* Data-driven sections */}
       {sidebarConfig.map((sec,si)=>{
         const isSecDragging=sidebarSecDrag===si;
@@ -2805,10 +2878,12 @@ export default function Page(){
       <div className="s-ft">
         <a href="#">View Public Site</a>
       </div>
-    </div>
+      </div>{/* end side-scroll */}
+
+    </div>{/* end .side */}
 
     {/* Main */}
-    <div className="mn">
+    <div className="mn" style={{zoom:_zoom,left:220*_zoom}}>
       <div className="tbar"><div><h1><span style={{color:"#d4a853",display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>
       <div className="cnt">
 
@@ -4439,42 +4514,6 @@ export default function Page(){
           apps.filter(x=>x.id!==a.id).forEach(x=>{if((x.name&&nm&&x.name.toLowerCase()===nm)||(x.email&&em&&x.email.toLowerCase()===em)||(x.phone&&ph&&x.phone===ph))flags.push({type:"dup",label:"Duplicate — also "+x.status,data:x});});
           return flags;
         };
-        const DEF_APP_FIELDS=[
-          // ── Section 1: Contact Info ──
-          {id:uid(),label:"First Name",key:"firstName",type:"text",section:"Contact Info",required:true,active:true,placeholder:"First name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Last Name",key:"lastName",type:"text",section:"Contact Info",required:true,active:true,placeholder:"Last name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Email Address",key:"email",type:"email",section:"Contact Info",required:true,active:true,placeholder:"you@email.com",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Phone Number",key:"phone",type:"phone",section:"Contact Info",required:true,active:true,placeholder:"(256) 555-1234",helpText:"Pre-filled from invite if applicable.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Date of Birth",key:"dob",type:"date-dob",section:"Contact Info",required:true,active:true,placeholder:"",helpText:"Month / Day / Year dropdowns.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          // ── Section 2: Move-In & Property ──
-          {id:uid(),label:"Desired Move-in Date",key:"moveIn",type:"date-movein",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Month / Day / Year dropdowns.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Property Interest",key:"preferredProperty",type:"property-select",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Required for walk-in applicants. Pre-filled from invite if applicable.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Preferred Room",key:"selectedRoom",type:"room-select",section:"Move-In & Property",required:false,active:true,placeholder:"",helpText:"Optional — shown based on selected property.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Door Code (4-digit PIN)",key:"doorCode",type:"text",section:"Move-In & Property",required:true,active:true,placeholder:"Choose a 4-digit code (numbers only)",helpText:"This code will be programmed into your smart lock and written into your lease. Choose any 4 digits. Activates at 12:00am on move-in day once payment is received.",options:[],followUpYes:"",followUpNo:"",min:4,max:4},
-          {id:uid(),label:"Number of Occupants",key:"occupants",type:"counter",section:"Move-In & Property",required:true,active:true,placeholder:"",helpText:"Only 1 person per room. Each adult over 18 must apply separately.",options:[],followUpYes:"",followUpNo:"",min:1,max:10},
-          // ── Section 3: Personal Information ──
-          {id:uid(),label:"Photo ID Upload",key:"idFile",type:"file",section:"Personal Information",required:true,active:true,placeholder:"Upload driver's license, passport, or state ID",helpText:"JPG, PNG, or PDF. Can be uploaded later — application will be marked incomplete until received.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          // ── Section 4: Rental History ──
-          {id:uid(),label:"Current / Previous Address",key:"addresses",type:"address-block",section:"Rental History",required:true,active:true,placeholder:"",helpText:"Include landlord name and contact info to strengthen your application.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Have you ever been evicted?",key:"evicted",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain the circumstances.",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Do you have any felony convictions?",key:"felony",type:"yes-no",section:"Rental History",required:true,active:true,placeholder:"",helpText:"",options:[],followUpYes:"Please briefly explain.",followUpNo:"",min:null,max:null},
-          // ── Section 5: Employment & Income ──
-          {id:uid(),label:"Currently Employed",key:"unemployed",type:"employed-toggle",section:"Employment & Income",required:false,active:true,placeholder:"",helpText:"If unemployed, employer reference and employer fields are skipped. Previous work history is optional.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Current Employer",key:"employers",type:"employer-block",section:"Employment & Income",required:true,active:true,placeholder:"Company name",helpText:"Landlords like to see ~5 years of employment history.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Gross Monthly Income",key:"income",type:"number",section:"Employment & Income",required:true,active:true,placeholder:"4200",helpText:"Before taxes. We look for 3x the monthly rent.",options:[],followUpYes:"",followUpNo:"",min:0,max:null},
-          {id:uid(),label:"Proof of Income (Optional)",key:"payStubs",type:"file",section:"Employment & Income",required:false,active:true,placeholder:"Upload pay stubs, offer letter, or bank statement",helpText:"Optional — skip if you don't have them handy. Your income will be verified through RentPrep.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          // ── Section 6: References ──
-          {id:uid(),label:"Employer Reference Name",key:"empRefName",type:"text",section:"References",required:true,active:true,placeholder:"Supervisor or HR contact",helpText:"Skipped if applicant is unemployed.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Employer Reference Phone",key:"empRefPhone",type:"phone",section:"References",required:true,active:true,placeholder:"(256) 555-0000",helpText:"Skipped if applicant is unemployed.",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Employer Reference Relationship",key:"empRefRelation",type:"text",section:"References",required:false,active:true,placeholder:"e.g. Manager",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Personal Reference Name",key:"persRefName",type:"text",section:"References",required:true,active:true,placeholder:"Someone who knows you well",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Personal Reference Phone",key:"persRefPhone",type:"phone",section:"References",required:true,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Personal Reference Relationship",key:"persRefRelation",type:"text",section:"References",required:false,active:true,placeholder:"e.g. Friend, Colleague",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          // ── Section 7: Emergency Contact ──
-          {id:uid(),label:"Emergency Contact Name",key:"emergName",type:"text",section:"Emergency Contact",required:true,active:true,placeholder:"Full name",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Emergency Contact Phone",key:"emergPhone",type:"phone",section:"Emergency Contact",required:true,active:true,placeholder:"(256) 555-0000",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-          {id:uid(),label:"Relationship to Applicant",key:"emergRelation",type:"text",section:"Emergency Contact",required:true,active:true,placeholder:"e.g. Parent, Sibling, Friend",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null},
-        ];
 
         return(<>
         {/* Follow-up alerts */}
@@ -4833,19 +4872,19 @@ export default function Page(){
                     })()}
 
                     {/* Standard card footer */}
-                    {!isOnboarding&&a.status!=="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#5c4a3a",marginTop:5}}>
+                    {!isOnboarding&&a.status!=="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#5c4a3a",marginTop:5,overflow:"hidden"}}>
                       <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
-                      <div style={{display:"flex",alignItems:"center",gap:4}}>
+                      <div style={{display:"flex",alignItems:"center",gap:4,minWidth:0,flexShrink:1}}>
                         {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#888",fontWeight:700}}>{d}d</span>}
                         {canInvite&&<button
                           onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,168,83,.3)";e.currentTarget.style.color="#7a5a10";}}
                           onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,168,83,.12)";e.currentTarget.style.color="#9a7422";}}
-                          style={{fontSize:7,padding:"3px 7px",background:"rgba(212,168,83,.12)",color:"#9a7422",border:"1px solid rgba(212,168,83,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s"}}
+                          style={{fontSize:7,padding:"3px 7px",background:"rgba(212,168,83,.12)",color:"#9a7422",border:"1px solid rgba(212,168,83,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}
                           onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Continue — Invite to Apply</button>}
                         <button
                           onMouseEnter={e=>{e.currentTarget.style.background="rgba(74,124,89,.25)";e.currentTarget.style.color="#2d6a3f";}}
                           onMouseLeave={e=>{e.currentTarget.style.background="rgba(74,124,89,.1)";e.currentTarget.style.color="#4a7c59";}}
-                          style={{fontSize:7,padding:"3px 7px",background:"rgba(74,124,89,.1)",color:"#4a7c59",border:"1px solid rgba(74,124,89,.3)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s"}}
+                          style={{fontSize:7,padding:"3px 7px",background:"rgba(74,124,89,.1)",color:"#4a7c59",border:"1px solid rgba(74,124,89,.3)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,whiteSpace:"nowrap"}}
                           title="Send portal invite — bypasses application requirement"
                           onClick={e=>{e.stopPropagation();setPiState("idle");setModal({type:"sendPortalInviteApp",data:a});}}>Portal Invite</button>
                       </div>
@@ -4911,388 +4950,8 @@ export default function Page(){
 
       </>);})()}
 
-      {/* ═══ CONFIGURATION ═══ */}
-      {tab==="configuration"&&<>
-        <div className="sec-hd"><div><h2>Configuration</h2><p>Pre-screen questions and application form</p></div></div>
-
-        {/* ── Screening Questions Editor ── */}
-        <div style={{marginTop:16,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,screenEditor:!p.screenEditor}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Pre-Screen Questions</div><div style={{fontSize:9,color:"#6b5e52"}}>{screenQs.length} questions · Edit what prospects answer before applying</div></div></div>
-            <div style={{display:"flex",gap:4,alignItems:"center"}}>
-              <span style={{fontSize:10,color:screenQs.filter(q=>q.active).length===screenQs.length?"#4a7c59":"#d4a853",fontWeight:600}}>{screenQs.filter(q=>q.active).length}/{screenQs.length} active</span>
-              {screenQs.length===0&&<button className="btn btn-gold btn-sm" onClick={e=>{e.stopPropagation();setScreenQs([
-                {id:uid(),q:"Are you a non-smoker? We have a strict no-smoking policy (including vapes).",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Do you agree to our zero-tolerance drug policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Are you comfortable with our no-pets policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Can you pass a background check with no criminal record?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Is your credit score 650 or above?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Is your gross monthly income at least 3x your expected rent?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Can you provide professional references and verifiable landlord history?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              ]);}}>Load Default Questions</button>}
-            </div>
-          </div>
-          {expanded.screenEditor&&<div style={{padding:16,background:"#fff"}}>
-            {screenQs.length===0&&<div style={{textAlign:"center",padding:24,color:"#6b5e52"}}><p style={{fontSize:12,marginBottom:8}}>No screening questions configured.</p><button className="btn btn-gold" onClick={()=>setScreenQs([
-              {id:uid(),q:"Are you a non-smoker? We have a strict no-smoking policy (including vapes).",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              {id:uid(),q:"Do you agree to our zero-tolerance drug policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              {id:uid(),q:"Are you comfortable with our no-pets policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              {id:uid(),q:"Can you pass a background check with no criminal record?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              {id:uid(),q:"Is your credit score 650 or above?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              {id:uid(),q:"Is your gross monthly income at least 3x your expected rent?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              {id:uid(),q:"Can you provide professional references and verifiable landlord history?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-            ])}>Load 7 Default Questions</button></div>}
-            {screenQs.map((q,i)=>(
-              <div key={q.id} style={{padding:12,border:"1px solid rgba(0,0,0,.04)",borderRadius:8,marginBottom:8,background:q.active?"#fff":"#f8f7f4",opacity:q.active?1:0.6}}>
-                <div style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:8}}>
-                  <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:4}}>
-                    {i>0&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52"}} onClick={()=>{const n=[...screenQs];[n[i-1],n[i]]=[n[i],n[i-1]];setScreenQs(n);}}>▲</button>}
-                    {i<screenQs.length-1&&<button style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"#6b5e52"}} onClick={()=>{const n=[...screenQs];[n[i],n[i+1]]=[n[i+1],n[i]];setScreenQs(n);}}>▼</button>}
-                  </div>
-                  <div style={{flex:1}}>
-                    <textarea value={q.q} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,q:e.target.value}:x))} rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:12,fontFamily:"inherit",resize:"vertical"}}/>
-                  </div>
-                  <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:14,marginTop:4}} onClick={()=>setScreenQs(p=>p.filter((_,j)=>j!==i))}>✕</button>
-                </div>
-                <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",fontSize:11}}>
-                  <label style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><input type="checkbox" checked={q.required} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,required:e.target.checked}:x))}/> Required</label>
-                  <label style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><input type="checkbox" checked={q.active} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,active:e.target.checked}:x))}/> Active</label>
-                  <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#6b5e52"}}>Type:</span><select value={q.type||"yes-no"} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,type:e.target.value}:x))} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="yes-no">Yes / No</option><option value="text">Text</option><option value="number">Number</option></select></div>
-                  <div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#6b5e52"}}>Pass:</span><select value={q.pass||"Yes"} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,pass:e.target.value}:x))} style={{padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="Yes">Yes</option><option value="No">No</option><option value="">Any</option></select></div>
-                  {(q.type==="text"||q.type==="number")&&<div style={{display:"flex",alignItems:"center",gap:4}}><span style={{color:"#6b5e52"}}>Min chars:</span><input type="number" value={q.minChars||0} onChange={e=>setScreenQs(p=>p.map((x,j)=>j===i?{...x,minChars:Number(e.target.value)}:x))} style={{width:50,padding:"3px 6px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:10}}/></div>}
-                </div>
-              </div>
-            ))}
-            {screenQs.length>0&&<button className="btn btn-out" style={{width:"100%",marginTop:8}} onClick={()=>setScreenQs(p=>[...p,{id:uid(),q:"New question...",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"}])}>+ Add Question</button>}
-            {screenQs.length>0&&<div style={{display:"flex",gap:8,marginTop:12}}>
-              <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-screen-qs",screenQs);setNotifs(p=>[{id:uid(),type:"app",msg:`Pre-screen questions published (${screenQs.filter(q=>q.active).length} active)`,date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);showAlert({title:"Published!",body:"Pre-screen questions saved and published. The public site will use these questions immediately."});}}> 🚀 Save &amp; Publish to Site</button>
-              <button className="btn btn-out" onClick={()=>{showConfirm({title:"Reset to Defaults?",body:"This will replace your current questions with the 7 default Black Bear screening questions. Your current questions will be lost.",confirmLabel:"Reset",danger:true,onConfirm:()=>setScreenQs([
-                {id:uid(),q:"Are you a non-smoker? We have a strict no-smoking policy (including vapes).",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Do you agree to our zero-tolerance drug policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Are you comfortable with our no-pets policy?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Can you pass a background check with no criminal record?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Is your credit score 650 or above?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Is your gross monthly income at least 3x your expected rent?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-                {id:uid(),q:"Can you provide professional references and verifiable landlord history?",pass:"Yes",required:true,minChars:0,active:true,type:"yes-no"},
-              ])});}}>Reset to Defaults</button>
-            </div>}
-            <div style={{fontSize:9,color:"#6b5e52",marginTop:8,textAlign:"center"}}>Saves to Supabase · Click "Save & Publish" to push changes live</div>
-          </div>}
-        </div>
-
-        {/* ── Pre-Screen Preview ── */}
-        {screenQs.length>0&&<div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,screenPreview:!p.screenPreview}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.screenPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>👁 Pre-Screen Preview</div><div style={{fontSize:9,color:"#6b5e52"}}>See what tenants see on the public site</div></div></div>
-          </div>
-          {expanded.screenPreview&&(()=>{
-            const activeQs=screenQs.filter(q=>q.active);
-            const answerPreview=(v)=>{
-              const q=activeQs[prevStep];
-              if(q.pass&&v!==q.pass){setPrevResult("fail");return;}
-              if(prevStep<activeQs.length-1)setPrevStep(prevStep+1);
-              else setPrevResult("pass");
-            };
-            const resetPreview=()=>{setPrevStep(0);setPrevResult(null);};
-            return(
-            <div style={{padding:20,background:"linear-gradient(165deg,#1a1714,#2c2520)",borderRadius:0}}>
-              <div style={{maxWidth:480,margin:"0 auto"}}>
-                <div style={{background:"rgba(255,255,255,.06)",borderRadius:14,padding:24,border:"1px solid rgba(255,255,255,.08)"}}>
-                  {prevResult===null&&<>
-                    <div style={{textAlign:"center",marginBottom:16}}><div style={{fontSize:11,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:"#d4a853",marginBottom:8}}>Quick Pre-Screen</div><div style={{fontSize:10,color:"rgba(196,168,130,.6)"}}>{activeQs.length} questions · Takes 30 seconds</div></div>
-                    <div style={{display:"flex",gap:4,justifyContent:"center",marginBottom:16}}>{activeQs.map((_,i)=><div key={i} style={{width:i===prevStep?24:8,height:8,borderRadius:4,background:i<prevStep?"#4a7c59":i===prevStep?"#d4a853":"rgba(255,255,255,.1)",transition:"all .2s"}}/>)}</div>
-                    <div style={{fontSize:10,color:"rgba(196,168,130,.5)",marginBottom:6}}>Question {prevStep+1} of {activeQs.length}</div>
-                    <div style={{fontSize:15,color:"#f5f0e8",fontWeight:600,lineHeight:1.5,marginBottom:20}}>{activeQs[prevStep].q}</div>
-                    <div style={{display:"flex",gap:10}}>
-                      {activeQs[prevStep].type==="yes-no"?<>
-                        <button onClick={()=>answerPreview("Yes")} style={{flex:1,padding:"12px 20px",borderRadius:8,border:"none",background:"#4a7c59",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Yes</button>
-                        <button onClick={()=>answerPreview("No")} style={{flex:1,padding:"12px 20px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#f5f0e8",fontSize:14,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>No</button>
-                      </>:<div style={{width:"100%"}}><input placeholder="Type your answer..." style={{width:"100%",padding:"12px 14px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"rgba(255,255,255,.05)",color:"#f5f0e8",fontSize:13,fontFamily:"inherit"}}/><button onClick={()=>answerPreview("Yes")} style={{marginTop:8,width:"100%",padding:"10px",borderRadius:8,border:"none",background:"#d4a853",color:"#1a1714",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Next →</button></div>}
-                    </div>
-                  </>}
-                  {prevResult==="pass"&&<div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:"50%",background:"rgba(74,124,89,.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#4a7c59"}}>✓</div><div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>You Pre-Qualify!</div><div style={{fontSize:12,color:"rgba(196,168,130,.6)",marginBottom:16}}>This is where they fill out the contact form.</div><button onClick={resetPreview} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#d4a853",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button></div>}
-                  {prevResult==="fail"&&<div style={{textAlign:"center"}}><div style={{width:56,height:56,borderRadius:"50%",background:"rgba(196,92,74,.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#c45c4a"}}>✕</div><div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>Didn't Qualify</div><div style={{fontSize:12,color:"rgba(196,168,130,.6)",marginBottom:16}}>This is what they see when they fail a question.</div><button onClick={resetPreview} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#d4a853",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button></div>}
-                </div>
-                <div style={{textAlign:"center",marginTop:10,fontSize:9,color:"rgba(196,168,130,.3)"}}>Preview only — this is how it appears on rentblackbear.com</div>
-              </div>
-            </div>);
-          })()}
-        </div>}
-
-        {/* ── Pre-Screen Contact Form ── */}
-        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(x=>({...x,screenForm:!x.screenForm}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:14}}>{expanded.screenForm?"▼":"▶"}</span>
-              <div>
-                <div style={{fontSize:13,fontWeight:700}}>Pre-Screen Contact Form</div>
-                <div style={{fontSize:9,color:"#6b5e52"}}>Heading, subtext, and "How did you hear about us?" options</div>
-              </div>
-            </div>
-          </div>
-          {expanded.screenForm&&<div style={{padding:16,background:"#fff"}}>
-            <div className="fr">
-              <div className="fld"><label>Heading</label><input value={(settings.screenForm||DEF_SETTINGS.screenForm).heading} placeholder="Almost There" onChange={e=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),heading:e.target.value}}))}/></div>
-              <div className="fld"><label>Subtext</label><input value={(settings.screenForm||DEF_SETTINGS.screenForm).subtext} placeholder="All fields are required." onChange={e=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),subtext:e.target.value}}))}/></div>
-            </div>
-            <div className="fld">
-              <label style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                "How did you hear about us?" Options
-                <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setSettings(s=>({...s,screenForm:{...(s.screenForm||DEF_SETTINGS.screenForm),sources:[...(s.screenForm||DEF_SETTINGS.screenForm).sources,"New Option"]}}))}>+ Add</button>
-              </label>
-              <div style={{fontSize:9,color:"#6b5e52",marginBottom:6}}>⠿ drag to reorder · click to edit · ✕ to remove</div>
-              <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                {((settings.screenForm||DEF_SETTINGS.screenForm).sources||[]).map((src,i)=>{
-                  const sf=settings.screenForm||DEF_SETTINGS.screenForm;
-                  return(
-                  <div key={i} draggable
-                    onDragStart={e=>{e.dataTransfer.setData("srcIdx",i);}}
-                    onDragOver={e=>e.preventDefault()}
-                    onDrop={e=>{
-                      e.preventDefault();
-                      const from=Number(e.dataTransfer.getData("srcIdx"));
-                      if(from===i)return;
-                      const sources=[...sf.sources];
-                      const[moved]=sources.splice(from,1);
-                      sources.splice(i,0,moved);
-                      setSettings(s=>({...s,screenForm:{...sf,sources}}));
-                    }}
-                    style={{display:"flex",gap:6,alignItems:"center",background:"#faf9f7",borderRadius:6,padding:"4px 6px",border:"1px solid rgba(0,0,0,.06)",cursor:"grab"}}>
-                    <span style={{color:"#8a7d74",fontSize:13,flexShrink:0,cursor:"grab"}}>⠿</span>
-                    <input value={src} style={{flex:1,border:"none",background:"transparent",fontFamily:"inherit",fontSize:12,outline:"none",padding:0}}
-                      onChange={e=>{const sources=[...sf.sources];sources[i]=e.target.value;setSettings(s=>({...s,screenForm:{...sf,sources}}));}}/>
-                    <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:13,padding:"0 2px",lineHeight:1,flexShrink:0}} onClick={()=>{const sources=sf.sources.filter((_,j)=>j!==i);setSettings(s=>({...s,screenForm:{...sf,sources}}));}}>✕</button>
-                  </div>);
-                })}
-              </div>
-              <div style={{fontSize:9,color:"#6b5e52",marginTop:6}}>"Other" should stay last — it triggers a free-text field.</div>
-            </div>
-            <div style={{display:"flex",gap:8,marginTop:12}}>
-              <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-settings",settings);save("hq-screen-form",settings.screenForm||DEF_SETTINGS.screenForm);setNotifs(p=>[{id:uid(),type:"app",msg:"Pre-screen form settings saved",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);}}>🚀 Save & Publish</button>
-            </div>
-            <div style={{fontSize:9,color:"#6b5e52",marginTop:6,textAlign:"center"}}>Changes apply immediately on the public site</div>
-          </div>}
-        </div>
-
-
-        {/* ── Application Fields Editor ── */}
-        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appFieldsEditor:!p.appFieldsEditor}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appFieldsEditor?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>Application Fields</div><div style={{fontSize:9,color:"#6b5e52"}}>{appFields.length} fields across {[...new Set(appFields.map(f=>f.section))].length} sections · Drives the entire /apply form</div></div></div>
-            <div style={{display:"flex",gap:4,alignItems:"center"}}>
-              <span style={{fontSize:10,color:appFields.filter(f=>f.active).length===appFields.length&&appFields.length>0?"#4a7c59":"#d4a853",fontWeight:600}}>{appFields.filter(f=>f.active).length}/{appFields.length} active</span>
-              {appFields.length===0&&<button className="btn btn-gold btn-sm" onClick={e=>{e.stopPropagation();setAppFields(DEF_APP_FIELDS);}}>Load Defaults</button>}
-            </div>
-          </div>
-          {expanded.appFieldsEditor&&(()=>{
-            const sections=[...new Set(appFields.map(f=>f.section))];
-            const updateField=(gi,key,val)=>{const n=[...appFields];n[gi]={...n[gi],[key]:val};setAppFields(n);};
-            const moveField=(gi,dir)=>{const n=[...appFields];const ti=gi+dir;if(ti<0||ti>=n.length)return;[n[gi],n[ti]]=[n[ti],n[gi]];setAppFields(n);};
-            const deleteField=(gi)=>setAppFields(p=>p.filter((_,j)=>j!==gi));
-            const toggleFieldExpand=(id)=>setExpanded(p=>({...p,["af_"+id]:!p["af_"+id]}));
-            const renameSection=(oldSec,newSec)=>{if(!newSec.trim()||newSec.trim()===oldSec)return;setAppFields(p=>p.map(f=>f.section===oldSec?{...f,section:newSec.trim()}:f));setExpanded(p=>{const next={...p};delete next["afSecEdit_"+oldSec];return next;});};
-            const duplicateSection=(sec)=>{
-              // Strip any existing " #N" suffix to get the base name
-              const base=sec.replace(/ #\d+$/,"");
-              // Find all sections that share this base name
-              const siblings=sections.filter(s=>s===base||s.match(new RegExp("^"+base.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+" #\\d+$")));
-              // If the original hasn't been numbered yet, rename it to #1 first
-              const renameOriginal=siblings.length===1&&sec===base;
-              const nextNum=siblings.length+(renameOriginal?1:0)+1;
-              const newName=base+" #"+nextNum;
-              // Rename original to #1 if this is the first duplication
-              if(renameOriginal){
-                setAppFields(p=>p.map(f=>f.section===sec?{...f,section:base+" #1"}:f));
-                // Also update any pending edit key
-                setExpanded(prev=>{const next={...prev};delete next["afSecEdit_"+sec];return next;});
-              }
-              const srcFields=appFields.filter(f=>f.section===sec);
-              const duped=srcFields.map(f=>({...f,id:uid(),section:newName}));
-              setAppFields(p=>[...p,...duped]);
-            };
-            const addFieldToSection=(sec)=>{
-              const newId=uid();
-              setAppFields(p=>[...p,{id:newId,label:"New Field",type:"text",section:sec,required:false,active:true,placeholder:"",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null}]);
-              // Auto-expand the new field so user sees it right away
-              setExpanded(p=>({...p,["af_"+newId]:true}));
-              // Scroll to bottom of editor after a tick
-              setTimeout(()=>{const el=document.querySelector(".app-fields-editor-bottom");if(el)el.scrollIntoView({behavior:"smooth",block:"nearest"});},80);
-            };
-            const deleteSection=(sec)=>{setModal({type:"confirmAction",title:"Delete Section",body:"Delete the \""+sec+"\" section and all its fields? This cannot be undone.",confirmLabel:"Delete Section",confirmStyle:"btn-red",onConfirm:()=>{setAppFields(p=>p.filter(f=>f.section!==sec));setModal(null);}});};
-            const addSection=()=>{const newId=uid();const name="New Section "+(sections.length+1);setAppFields(p=>[...p,{id:newId,label:"New Field",type:"text",section:name,required:false,active:true,placeholder:"",helpText:"",options:[],followUpYes:"",followUpNo:"",min:null,max:null}]);setExpanded(p=>({...p,["af_"+newId]:true}));setTimeout(()=>{const el=document.querySelector(".app-fields-editor-bottom");if(el)el.scrollIntoView({behavior:"smooth",block:"nearest"});},80);};
-            const TYPES=[["text","Text"],["email","Email"],["phone","Phone"],["date","Date"],["number","Number"],["yes-no","Yes / No"],["file","File Upload"],["long-text","Long Text"],["dropdown","Dropdown"],["counter","Counter"],["address","Address Block"]];
-            const TCOL={text:"#3b82f6",email:"#8b5cf6",phone:"#4a7c59",date:"#d4a853",number:"#f97316","yes-no":"#4a7c59",file:"#0ea5e9","long-text":"#6366f1",dropdown:"#d4a853",counter:"#f97316",address:"#8b5cf6"};
-            return(
-            <div style={{padding:16,background:"#fff"}}>
-              {appFields.length===0&&<div style={{textAlign:"center",padding:28,color:"#6b5e52"}}>
-                <div style={{fontSize:36,marginBottom:8}}>📝</div>
-                <p style={{fontSize:12,marginBottom:12}}>No fields configured yet. Load the defaults to get started — you can customize everything.</p>
-                <button className="btn btn-gold" onClick={()=>setAppFields(DEF_APP_FIELDS)}>Load 26 Default Fields</button>
-              </div>}
-              {sections.map(sec=>{
-                const sFields=appFields.filter(f=>f.section===sec);
-                const secEditKey="afSecEdit_"+sec;
-                const secEditVal=expanded[secEditKey]!==undefined?expanded[secEditKey]:sec;
-                return(
-                <div key={sec} style={{marginBottom:10,border:"1px solid rgba(0,0,0,.06)",borderRadius:10,overflow:"hidden"}}>
-                  {/* Section header */}
-                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",background:"rgba(212,168,83,.04)",borderBottom:"1px solid rgba(212,168,83,.12)"}}>
-                    <span style={{fontSize:12,color:"#c4a882",flexShrink:0}}>☰</span>
-                    <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0,border:"1px solid transparent",borderRadius:5,padding:"2px 4px",transition:"border .15s",cursor:"text"}}
-                      onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(212,168,83,.3)"}
-                      onMouseLeave={e=>e.currentTarget.style.borderColor="transparent"}>
-                      <input
-                        value={secEditVal}
-                        onChange={e=>setExpanded(p=>({...p,[secEditKey]:e.target.value}))}
-                        onBlur={e=>renameSection(sec,e.target.value)}
-                        onKeyDown={e=>{if(e.key==="Enter")e.target.blur();}}
-                        style={{flex:1,fontSize:11,fontWeight:800,color:"#9a7422",background:"transparent",border:"none",outline:"none",padding:0,fontFamily:"inherit",textTransform:"uppercase",letterSpacing:.8,cursor:"text",minWidth:0}}
-                      />
-                      <span style={{fontSize:9,color:"#c4a882",flexShrink:0,opacity:.6}}>✏️</span>
-                    </div>
-                    <span style={{fontSize:9,color:"#6b5e52",whiteSpace:"nowrap"}}>{sFields.length} field{sFields.length!==1?"s":""}</span>
-                    <button className="btn btn-gold btn-sm" style={{fontSize:9,padding:"2px 9px"}} onClick={()=>addFieldToSection(sec)}>+ Field</button>
-                    <button className="btn btn-out btn-sm" style={{fontSize:9,padding:"2px 9px",color:"#d4a853",borderColor:"rgba(212,168,83,.35)"}} title="Duplicate this entire section" onClick={()=>duplicateSection(sec)}>⧉ Duplicate</button>
-                    {sections.length>1&&<button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:12,padding:"0 2px"}} onClick={()=>deleteSection(sec)}>🗑</button>}
-                  </div>
-                  {/* Fields in this section */}
-                  {sFields.length===0&&<div style={{padding:"10px 14px",fontSize:11,color:"#7a7067",fontStyle:"italic"}}>No fields — click + Field above</div>}
-                  {sFields.map(f=>{
-                    const gi=appFields.indexOf(f);
-                    const isExp=!!expanded["af_"+f.id];
-                    const tc=TCOL[f.type]||"#999";
-                    return(
-                    <div key={f.id} style={{borderBottom:"1px solid rgba(0,0,0,.03)"}}>
-                      {/* Field header row */}
-                      <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",background:f.active?"#fff":"rgba(0,0,0,.01)",opacity:f.active?1:.6}}>
-                        <div style={{display:"flex",flexDirection:"column",gap:1,flexShrink:0}}>
-                          <button style={{background:"none",border:"none",cursor:gi>0?"pointer":"default",fontSize:9,color:gi>0?"#bbb":"#e8e5e0",lineHeight:1,padding:0}} onClick={()=>moveField(gi,-1)}>▲</button>
-                          <button style={{background:"none",border:"none",cursor:gi<appFields.length-1?"pointer":"default",fontSize:9,color:gi<appFields.length-1?"#bbb":"#e8e5e0",lineHeight:1,padding:0}} onClick={()=>moveField(gi,1)}>▼</button>
-                        </div>
-                        <input value={f.label} onChange={e=>updateField(gi,"label",e.target.value)} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:12,fontFamily:"inherit",background:"#faf9f7",minWidth:0}}/>
-                        <select value={f.type} onChange={e=>updateField(gi,"type",e.target.value)} style={{padding:"4px 6px",borderRadius:6,border:"none",fontSize:9,fontFamily:"inherit",background:tc+"18",color:tc,fontWeight:700,cursor:"pointer",flexShrink:0}}>
-                          {TYPES.map(([v,l])=><option key={v} value={v}>{l}</option>)}
-                        </select>
-                        <button onClick={()=>updateField(gi,"required",!f.required)} style={{padding:"3px 7px",borderRadius:6,border:"none",fontSize:9,fontWeight:700,cursor:"pointer",background:f.required?"rgba(196,92,74,.1)":"rgba(0,0,0,.04)",color:f.required?"#c45c4a":"#999",whiteSpace:"nowrap",flexShrink:0}}>{f.required?"Req ✓":"Optional"}</button>
-                        <button onClick={()=>updateField(gi,"active",!f.active)} style={{padding:"3px 8px",borderRadius:6,border:"none",fontSize:9,fontWeight:800,cursor:"pointer",background:f.active?"rgba(74,124,89,.1)":"rgba(0,0,0,.04)",color:f.active?"#4a7c59":"#bbb",minWidth:32,flexShrink:0}}>{f.active?"ON":"OFF"}</button>
-                        <button style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#7a7067",padding:"0 1px",flexShrink:0}} onClick={()=>toggleFieldExpand(f.id)}>{isExp?"▾":"▸"}</button>
-                        <button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:13,lineHeight:1,padding:"0 1px",flexShrink:0}} onClick={()=>deleteField(gi)}>✕</button>
-                      </div>
-                      {/* Expanded detail panel */}
-                      {isExp&&<div style={{padding:"12px 14px 14px",background:"rgba(0,0,0,.012)",borderTop:"1px solid rgba(0,0,0,.04)"}}>
-                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Placeholder Text</div><input value={f.placeholder||""} onChange={e=>updateField(gi,"placeholder",e.target.value)} placeholder="e.g. Enter your name..." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Help Text (shows below field)</div><input value={f.helpText||""} onChange={e=>updateField(gi,"helpText",e.target.value)} placeholder="e.g. We'll never share this." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
-                        </div>
-                        {f.type==="dropdown"&&<div style={{marginBottom:8}}><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Dropdown Options (one per line)</div><textarea value={(f.options||[]).join(", ")} onChange={e=>updateField(gi,"options",e.target.value.split("\n"))} rows={3} placeholder={"Option 1\nOption 2\nOption 3"} style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>}
-                        {f.type==="yes-no"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Follow-up if "Yes"</div><input value={f.followUpYes||""} onChange={e=>updateField(gi,"followUpYes",e.target.value)} placeholder="e.g. Please explain..." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(74,124,89,.2)",fontSize:11,fontFamily:"inherit"}}/></div>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#c45c4a",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Follow-up if "No"</div><input value={f.followUpNo||""} onChange={e=>updateField(gi,"followUpNo",e.target.value)} placeholder="e.g. Please explain..." style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(196,92,74,.2)",fontSize:11,fontFamily:"inherit"}}/></div>
-                        </div>}
-                        {(f.type==="number"||f.type==="counter")&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Min Value</div><input type="number" value={f.min||""} onChange={e=>updateField(gi,"min",e.target.value?Number(e.target.value):null)} placeholder="0" style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
-                          <div><div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Max Value</div><input type="number" value={f.max||""} onChange={e=>updateField(gi,"max",e.target.value?Number(e.target.value):null)} placeholder="99" style={{width:"100%",padding:"6px 9px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/></div>
-                        </div>}
-                      </div>}
-                    </div>);
-                  })}
-                </div>);
-              })}
-              {appFields.length>0&&<>
-                <div className="app-fields-editor-bottom"/>
-                <button className="btn btn-out" style={{width:"100%",marginTop:8,marginBottom:8}} onClick={addSection}>＋ Add New Section</button>
-                <div style={{display:"flex",gap:6}}>
-                  <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal({type:"confirmAction",title:"Reset to Defaults",body:"This will delete all your current fields and sections and reload the 26 default fields. This cannot be undone.",confirmLabel:"Yes, Reset",confirmStyle:"btn-red",onConfirm:()=>{setAppFields(DEF_APP_FIELDS);setModal(null);}})}>↺ Reset to Defaults</button>
-                  <button className="btn btn-green" style={{flex:1}} onClick={()=>{
-                    save("hq-app-fields",appFields);
-                    setNotifs(p=>[{id:uid(),type:"app",msg:"Application form published — "+appFields.filter(f=>f.active).length+" fields across "+sections.length+" sections",date:TODAY.toISOString().split("T")[0],read:false,urgent:false},...p]);
-                    setExpanded(p=>({...p,appPubSuccess:true}));
-                    setTimeout(()=>setExpanded(p=>({...p,appPubSuccess:false})),3500);
-                  }}>🚀 Save &amp; Publish to Site</button>
-                </div>
-                {expanded.appPubSuccess&&<div style={{marginTop:8,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,textAlign:"center",animation:"fadeIn .3s"}}>✓ Live on rentblackbear.com/apply</div>}
-              </>}
-            </div>);
-          })()}
-        </div>
-
-        {/* ── Application Preview ── */}
-        {appFields.filter(f=>f.active).length>0&&<div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,appPreview:!p.appPreview,appPrevSec:p.appPreview?p.appPrevSec:0}))}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}>{expanded.appPreview?"▼":"▶"}</span><div><div style={{fontSize:13,fontWeight:700}}>📱 Application Preview</div><div style={{fontSize:9,color:"#6b5e52"}}>Live preview — reflects your current fields exactly</div></div></div>
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {expanded.appPreview&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={e=>{e.stopPropagation();setExpanded(p=>({...p,appPrevSec:0}));}}>↺ Restart</button>}
-              <span style={{fontSize:10,color:"#6b5e52"}}>{[...new Set(appFields.filter(f=>f.active).map(f=>f.section))].length} sections · {appFields.filter(f=>f.active).length} fields</span>
-            </div>
-          </div>
-          {expanded.appPreview&&(()=>{
-            const activeSections=[...new Set(appFields.filter(f=>f.active).map(f=>f.section))];
-            const curSecIdx=expanded.appPrevSec||0;
-            const isDone=curSecIdx===-1;
-            const secName=activeSections[curSecIdx]||"";
-            const secFields=appFields.filter(f=>f.active&&f.section===secName);
-            const isLast=curSecIdx===activeSections.length-1;
-            const goNext=()=>setExpanded(p=>({...p,appPrevSec:isLast?-1:(p.appPrevSec||0)+1}));
-            const reset=()=>setExpanded(p=>({...p,appPrevSec:0}));
-            const inStyle={width:"100%",padding:"11px 13px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"rgba(255,255,255,.06)",color:"#f5f0e8",fontSize:13,fontFamily:"inherit",marginTop:4,display:"block"};
-            const renderField=(f)=>(
-              <div key={f.id} style={{marginBottom:14}}>
-                <div style={{fontSize:10,fontWeight:700,color:"rgba(196,168,130,.8)",textTransform:"uppercase",letterSpacing:.3}}>{f.label}{f.required&&<span style={{color:"#c45c4a",marginLeft:2}}>*</span>}</div>
-                {f.helpText&&<div style={{fontSize:9,color:"rgba(196,168,130,.4)",marginTop:1,marginBottom:2}}>{f.helpText}</div>}
-                {(f.type==="text"||f.type==="email"||f.type==="phone"||f.type==="passcode")&&<div style={{...inStyle,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"..."}</div>}
-                {f.type==="number"&&<div style={{...inStyle,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"0"}</div>}
-                {f.type==="date"&&<div style={{...inStyle,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"MM / DD / YYYY"}</div>}
-                {f.type==="long-text"&&<div style={{...inStyle,minHeight:60,color:"rgba(196,168,130,.35)",pointerEvents:"none"}}>{f.placeholder||"..."}</div>}
-                {f.type==="file"&&<div style={{...inStyle,textAlign:"center",padding:"16px",border:"1px dashed rgba(196,168,130,.25)",color:"rgba(196,168,130,.5)",pointerEvents:"none"}}>📎 {f.placeholder||"Tap to upload"}</div>}
-                {f.type==="yes-no"&&<div style={{display:"flex",gap:8,marginTop:5}}>
-                  <div style={{flex:1,padding:"11px",borderRadius:8,border:"1px solid rgba(74,124,89,.35)",background:"rgba(74,124,89,.08)",textAlign:"center",fontSize:13,fontWeight:700,color:"#4a7c59"}}>Yes</div>
-                  <div style={{flex:1,padding:"11px",borderRadius:8,border:"1px solid rgba(196,168,130,.15)",textAlign:"center",fontSize:13,color:"rgba(196,168,130,.5)"}}>No</div>
-                </div>}
-                {f.type==="dropdown"&&<select disabled style={{...inStyle,cursor:"default",opacity:.7}}><option>{f.placeholder||"Select..."}</option>{(f.options||[]).map((o,i)=><option key={i}>{o}</option>)}</select>}
-                {f.type==="counter"&&<div style={{display:"flex",alignItems:"center",gap:16,marginTop:6}}>
-                  <div style={{width:36,height:36,borderRadius:"50%",border:"1px solid rgba(196,168,130,.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(196,168,130,.4)",fontSize:20}}>−</div>
-                  <div style={{fontSize:26,fontWeight:700,color:"#f5f0e8",minWidth:30,textAlign:"center"}}>{f.min||0}</div>
-                  <div style={{width:36,height:36,borderRadius:"50%",border:"1px solid rgba(196,168,130,.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(196,168,130,.4)",fontSize:20}}>+</div>
-                </div>}
-                {f.type==="address"&&<div style={{display:"flex",flexDirection:"column",gap:5,marginTop:4}}>
-                  <div style={{...inStyle,color:"rgba(196,168,130,.35)"}}>Street address</div>
-                  <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:5}}>
-                    <div style={{...inStyle,color:"rgba(196,168,130,.35)"}}>City</div>
-                    <div style={{...inStyle,color:"rgba(196,168,130,.35)"}}>State</div>
-                  </div>
-                </div>}
-              </div>
-            );
-            return(
-            <div style={{padding:20,background:"linear-gradient(165deg,#1a1714,#2c2520)"}}>
-              <div style={{maxWidth:400,margin:"0 auto"}}>
-                {!isDone&&<>
-                  <div style={{display:"flex",gap:3,marginBottom:5}}>
-                    {activeSections.map((_,i)=><div key={i} style={{flex:1,height:3,borderRadius:2,background:i<curSecIdx?"#4a7c59":i===curSecIdx?"#d4a853":"rgba(255,255,255,.1)",transition:"all .3s"}}/>)}
-                  </div>
-                  <div style={{fontSize:9,color:"rgba(196,168,130,.35)",marginBottom:14,textAlign:"right"}}>Section {curSecIdx+1} of {activeSections.length}</div>
-                  <div style={{background:"rgba(255,255,255,.06)",borderRadius:14,padding:20,border:"1px solid rgba(255,255,255,.07)"}}>
-                    <div style={{fontSize:11,fontWeight:800,color:"#d4a853",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{secName}</div>
-                    <div style={{height:1,background:"rgba(212,168,83,.15)",marginBottom:16}}/>
-                    {secFields.map(renderField)}
-                    <button onClick={goNext} style={{width:"100%",padding:"14px",background:"#d4a853",color:"#1a1714",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:6}}>
-                      {isLast?"Submit Application →":"Continue →"}
-                    </button>
-                    {curSecIdx>0&&<button onClick={()=>setExpanded(p=>({...p,appPrevSec:(p.appPrevSec||0)-1}))} style={{width:"100%",padding:"11px",background:"transparent",border:"none",fontSize:12,color:"rgba(196,168,130,.4)",cursor:"pointer",fontFamily:"inherit",marginTop:4}}>← Back</button>}
-                  </div>
-                </>}
-                {isDone&&<div style={{background:"rgba(255,255,255,.06)",borderRadius:14,padding:28,border:"1px solid rgba(255,255,255,.07)",textAlign:"center"}}>
-                  <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(74,124,89,.15)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:26,color:"#4a7c59"}}>✓</div>
-                  <div style={{fontSize:18,fontWeight:700,color:"#f5f0e8",marginBottom:6}}>Application Submitted!</div>
-                  <div style={{fontSize:12,color:"rgba(196,168,130,.55)",marginBottom:20}}>This is the final screen tenants see after completing all sections.</div>
-                  <button onClick={reset} style={{padding:"10px 24px",borderRadius:8,border:"1px solid rgba(196,168,130,.2)",background:"transparent",color:"#d4a853",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Preview Again</button>
-                </div>}
-                <div style={{textAlign:"center",marginTop:10,fontSize:9,color:"rgba(196,168,130,.25)"}}>Preview only — rentblackbear.com/apply</div>
-              </div>
-            </div>);
-          })()}
-        </div>}
-      </>}
+      {/* ═══ APPLICATION SETUP ═══ */}
+      {tab==="app-setup"&&<AppSetup screenQs={screenQs} setScreenQs={setScreenQs} appFields={appFields} setAppFields={setAppFields} settings={settings} setSettings={setSettings} expanded={expanded} setExpanded={setExpanded} prevStep={prevStep} setPrevStep={setPrevStep} prevResult={prevResult} setPrevResult={setPrevResult} save={save} uid={uid} showAlert={showAlert} showConfirm={showConfirm} setNotifs={setNotifs} setModal={setModal} DEF_SETTINGS={DEF_SETTINGS} DEF_APP_FIELDS={DEF_APP_FIELDS} TODAY={TODAY} />}
 
       {tab==="maintenance"&&<>
         <div className="sec-hd"><div><h2>Maintenance Requests</h2><p>{m.openMaint} open</p></div>
@@ -7045,246 +6704,9 @@ export default function Page(){
         {props.length===0&&<div style={{textAlign:"center",padding:40,color:"#6b5e52"}}><div style={{fontSize:40,marginBottom:8}}>🏠</div><h3 style={{fontSize:15}}>No Properties</h3><p style={{fontSize:12,marginTop:4}}>Add your first property above.</p></div>}
       </>}
 
-      {/* ═══ SITE SETTINGS ═══ */}
-      {tab==="site-settings"&&<>
-        <div className="sec-hd"><div><h2>Site Settings</h2><p>Edit company info and hero copy</p></div></div>
-        <div className="card"><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Company Info</h3>
-          <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
-          <div className="fld"><label>Property Manager Name <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>— used in outgoing reference & applicant emails</span></label><input value={settings.pmName||""} onChange={e=>setSettings({...settings,pmName:e.target.value})} placeholder="Carolina Cooper"/></div>
-          <div className="fr3"><div className="fld"><label>Phone</label><input value={settings.phone} onChange={e=>setSettings({...settings,phone:e.target.value})}/></div><div className="fld"><label>Public Email</label><input value={settings.email} onChange={e=>setSettings({...settings,email:e.target.value})} placeholder="info@rentblackbear.com"/></div><div className="fld"><label>City</label><input value={settings.city} onChange={e=>setSettings({...settings,city:e.target.value})}/></div></div><div className="fld"><label>PM Notification Email <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>— where you receive application, lease, and payment alerts</span></label><input type="email" value={settings.pmEmail||""} onChange={e=>setSettings({...settings,pmEmail:e.target.value})} placeholder="blackbearhousing@gmail.com"/></div>
-        </div></div>
-        {/* Email Templates */}
-        {(()=>{
-          const etOpen=expanded.emailTemplatesOpen;
-          const tmpl=settings.emailTemplates||{};
-          const def=DEF_SETTINGS.emailTemplates;
-          const TEMPLATES=[
-            {key:"refEmployer",label:"Employer Reference",subjectKey:"refEmployerSubject",bodyKey:"refEmployerBody",tokens:["{refName}","{applicantName}","{applicantFirstName}","{pmName}","{companyName}","{city}","{phone}","{email}"]},
-            {key:"refPersonal",label:"Personal Reference",subjectKey:"refPersonalSubject",bodyKey:"refPersonalBody",tokens:["{refName}","{applicantName}","{applicantFirstName}","{pmName}","{companyName}","{city}","{phone}","{email}"]},
-            {key:"refLandlord",label:"Previous Landlord",subjectKey:"refLandlordSubject",bodyKey:"refLandlordBody",tokens:["{refName}","{applicantName}","{applicantFirstName}","{address}","{pmName}","{companyName}","{city}","{phone}","{email}"]},
-            {key:"reupload",label:"Re-Upload Request",subjectKey:"reuploadSubject",bodyKey:"reuploadBody",tokens:["{applicantFirstName}","{docLabel}","{portalLink}","{pmName}","{companyName}"]},
-          ];
-          const[etTab,setEtTab]=[expanded.emailTemplatesTab||"refEmployer",(v)=>setExpanded(p=>({...p,emailTemplatesTab:v}))];
-          const curTpl=TEMPLATES.find(t=>t.key===etTab)||TEMPLATES[0];
-          const setTmplField=(k,v)=>setSettings(p=>({...p,emailTemplates:{...(p.emailTemplates||{}),emailTemplates:{...(p.emailTemplates||{}),[k]:v},[k]:v}}));
-          return(
-          <div className="card" id="email-templates-section" style={{marginTop:12}} ref={el=>{if(el&&etOpen)setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),150)}}>            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",cursor:"pointer",borderBottom:etOpen?"1px solid rgba(0,0,0,.06)":"none"}} onClick={()=>setExpanded(p=>({...p,emailTemplatesOpen:!etOpen}))}>
-              <div>
-                <h3 style={{fontSize:13,fontWeight:800,margin:0}}>Email Templates</h3>
-                <p style={{fontSize:11,color:"#5c4a3a",margin:"2px 0 0"}}>Edit the outgoing reference and re-upload email templates. Use tokens to insert dynamic values.</p>
-              </div>
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" style={{transform:etOpen?"rotate(180deg)":"none",transition:"transform .2s",flexShrink:0}}><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            {etOpen&&<div style={{padding:"16px"}}>
-              {/* Tab row */}
-              <div style={{display:"flex",gap:4,marginBottom:16,flexWrap:"wrap"}}>
-                {TEMPLATES.map(t=><button key={t.key} onClick={()=>setEtTab(t.key)} style={{fontSize:10,fontWeight:700,padding:"5px 12px",borderRadius:6,border:"1px solid "+(etTab===t.key?"#1a1714":"rgba(0,0,0,.1)"),background:etTab===t.key?"#1a1714":"#fff",color:etTab===t.key?"#f5f0e8":"#5c4a3a",cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>)}
-              </div>
-              {/* Subject */}
-              <div className="fld">
-                <label>Subject Line</label>
-                <input value={tmpl[curTpl.subjectKey]||def[curTpl.subjectKey]||""} onChange={e=>setTmplField(curTpl.subjectKey,e.target.value)} style={{width:"100%",fontFamily:"inherit"}}/>
-              </div>
-              {/* Body */}
-              <div className="fld">
-                <label>Body</label>
-                <textarea value={tmpl[curTpl.bodyKey]||def[curTpl.bodyKey]||""} onChange={e=>setTmplField(curTpl.bodyKey,e.target.value)} rows={12} style={{width:"100%",fontFamily:"inherit",fontSize:12,padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",resize:"vertical"}}/>
-              </div>
-              {/* Token legend */}
-              <div style={{padding:"10px 12px",background:"rgba(0,0,0,.03)",borderRadius:7,border:"1px solid rgba(0,0,0,.06)",marginBottom:12}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.6,marginBottom:6}}>Available Tokens</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                  {curTpl.tokens.map(t=><code key={t} style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"rgba(74,124,89,.08)",color:"#2d6a3f",fontFamily:"monospace"}}>{t}</code>)}
-                </div>
-              </div>
-              {/* Reset + Save */}
-              <div style={{display:"flex",gap:8}}>
-                <button className="btn btn-out btn-sm" onClick={()=>{setTmplField(curTpl.subjectKey,def[curTpl.subjectKey]);setTmplField(curTpl.bodyKey,def[curTpl.bodyKey]);}}>Reset to Default</button>
-                <button className="btn btn-gold btn-sm" onClick={()=>{}}>✓ Saved Automatically</button>
-              </div>
-            </div>}
-          </div>);
-        })()}
-        {/* Signature Settings */}
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Property Manager Signature</h3>
-          <p style={{fontSize:11,color:"#5c4a3a",marginBottom:12}}>Saved here and auto-offered when signing leases. Draw a new one anytime to replace it.</p>
-          {settings.savedSignature
-            ?<div>
-              <div style={{padding:12,background:"#faf9f7",border:"1px solid rgba(0,0,0,.08)",borderRadius:8,display:"inline-block",marginBottom:10}}>
-                <img src={settings.savedSignature} alt="Saved signature" style={{maxHeight:70,maxWidth:260,display:"block"}}/>
-              </div>
-              <div style={{display:"flex",gap:8}}>
-                <button className="btn btn-out btn-sm" onClick={()=>setExpanded(p=>({...p,redrawSig:!p.redrawSig}))}>
-                  {expanded.redrawSig?"Cancel Redraw":"✏️ Redraw Signature"}
-                </button>
-                <button className="btn btn-red btn-sm" onClick={()=>{setSettings(p=>{const u={...p,savedSignature:null};save("hq-settings",u);return u;});}}>
-                  🗑 Remove
-                </button>
-              </div>
-              {expanded.redrawSig&&<div style={{marginTop:12}}>
-                <SigCanvas onSave={(data)=>{setSettings(p=>{const u={...p,savedSignature:data};save("hq-settings",u);return u;});setExpanded(p=>({...p,redrawSig:false}));}} height={100}/>
-              </div>}
-            </div>
-            :<div>
-              <div style={{fontSize:11,color:"#6b5e52",marginBottom:10}}>No signature saved yet. Draw one below and it will be offered automatically when signing leases.</div>
-              <SigCanvas onSave={(data)=>{setSettings(p=>{const u={...p,savedSignature:data};save("hq-settings",u);return u;});}} height={100}/>
-            </div>
-          }
-        </div></div>
-
-        {/* Email Notifications */}
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Email Notifications</h3>
-          <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Choose which events trigger an email to you at <strong>{settings.email||"info@rentblackbear.com"}</strong>. Tenant-facing emails always send regardless.</p>
-          {[
-            {key:"notifPrescreen",label:"New pre-screen submitted",desc:"When someone passes the qualifying questions and submits their contact info"},
-            {key:"notifAppReceived",label:"New full application received",desc:"When an invited applicant submits their full application"},
-            {key:"notifLeaseSent",label:"Lease sent for signatures",desc:"When you send a lease to a tenant"},
-            {key:"notifLeaseSigned",label:"Tenant signs lease",desc:"When a tenant completes their e-signature"},
-            {key:"notifPaymentReceived",label:"Payment received",desc:"When a tenant makes a payment (SD, rent, prorated rent)"},
-            {key:"notifMaintenanceRequest",label:"Maintenance request",desc:"When a tenant submits a maintenance request"},
-          ].map(({key,label,desc})=>(
-            <div key={key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-              <div>
-                <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{label}</div>
-                <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>{desc}</div>
-              </div>
-              <button onClick={()=>setSettings(p=>{const u={...p,[key]:!p[key]};save("hq-settings",u);return u;})} style={{
-                flexShrink:0,marginLeft:12,width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",
-                background:settings[key]!==false?"#4a7c59":"rgba(0,0,0,.1)",
-                transition:"background .2s",position:"relative",
-              }}>
-                <div style={{
-                  position:"absolute",top:3,left:settings[key]!==false?22:3,width:18,height:18,borderRadius:"50%",
-                  background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"
-                }}/>
-              </button>
-            </div>
-          ))}
-          <div style={{marginTop:12,padding:"8px 12px",background:"rgba(212,168,83,.06)",borderRadius:6,fontSize:11,color:"#9a7422"}}>
-            💡 Notification emails are sent to <strong>{settings.email||"info@rentblackbear.com"}</strong>. Update your email in Company Info above.
-          </div>
-        </div></div>
-
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Email Templates</h3>
-          <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Customize the subject line and body of notification emails sent to you. Use <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"name{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"property{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"room{"+"}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3,fontSize:9}}>{"{"+"amount{"+"}"}</code> as placeholders.</p>
-          {[
-            {key:"prescreen",label:"Pre-Screen Alert (to you)",icon:"📋",desc:"Sent to PM when someone completes the qualifying questions"},
-            {key:"prescreenTenant",label:"Pre-Screen Confirmation (to applicant)",icon:"✉️",desc:"Sent to the applicant after they pass the pre-screen — the '24 hours' email"},
-            {key:"application",label:"Full Application Received",icon:"📝",desc:"Sent when an invited applicant submits their full application"},
-            {key:"leaseSigned",label:"Lease Signed",icon:"✍️",desc:"Sent when a tenant e-signs their lease"},
-            {key:"payment",label:"Payment Received",icon:"💰",desc:"Sent when a payment is recorded"},
-          ].map(({key,label,icon,desc})=>{
-            const tpl=settings.emailTemplates||DEF_SETTINGS.emailTemplates;
-            const subjKey=key+"Subject";const bodyKey=key+"Body";
-            return(<div key={key} style={{marginBottom:16,paddingBottom:16,borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#1a1714",marginBottom:2}}>{icon} {label}</div>
-              <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>{desc}</div>
-              <div className="fld" style={{marginBottom:6}}>
-                <label>Subject Line</label>
-                <input value={tpl[subjKey]||DEF_SETTINGS.emailTemplates[subjKey]||""} placeholder={DEF_SETTINGS.emailTemplates[subjKey]}
-                  onChange={e=>setSettings(s=>({...s,emailTemplates:{...(s.emailTemplates||DEF_SETTINGS.emailTemplates),[subjKey]:e.target.value}}))}/>
-              </div>
-              <div className="fld" style={{marginBottom:0}}>
-                <label style={{display:"flex",justifyContent:"space-between"}}>Body
-                  <button className="btn btn-out btn-sm" style={{fontSize:8}} onClick={()=>setSettings(s=>({...s,emailTemplates:{...(s.emailTemplates||DEF_SETTINGS.emailTemplates),[subjKey]:DEF_SETTINGS.emailTemplates[subjKey],[bodyKey]:DEF_SETTINGS.emailTemplates[bodyKey]}}))}>↺ Reset</button>
-                </label>
-                <textarea value={tpl[bodyKey]||DEF_SETTINGS.emailTemplates[bodyKey]||""} rows={2} placeholder={DEF_SETTINGS.emailTemplates[bodyKey]}
-                  onChange={e=>setSettings(s=>({...s,emailTemplates:{...(s.emailTemplates||DEF_SETTINGS.emailTemplates),[bodyKey]:e.target.value}}))}
-                  style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.5}}/>
-              </div>
-            </div>);
-          })}
-          <button className="btn btn-gold" style={{width:"100%",marginTop:4}} onClick={()=>save("hq-settings",settings)}>Save Email Templates</button>
-        </div></div>
-
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Utility Clause Templates</h3>
-          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>These clauses auto-populate into leases based on the utility setting of each unit. Edit the clause text here to change what appears in all future leases.</p>
-          {(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map((t,i)=>(
-            <div key={t.id} style={{border:"0.5px solid rgba(0,0,0,.08)",borderRadius:8,padding:12,marginBottom:8,background:"rgba(0,0,0,.01)"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div>
-                  <div style={{fontSize:12,fontWeight:700,color:"#1a1714"}}>{t.name}</div>
-                  <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>{t.desc}</div>
-                </div>
-                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:8,background:"rgba(0,0,0,.05)",color:"#6b5e52",fontFamily:"monospace"}}>{t.key}</span>
-              </div>
-              <div className="fld" style={{marginBottom:0}}>
-                <label>Lease clause text</label>
-                <textarea rows={3} value={t.clause||""} onChange={e=>{const updated=(settings.utilTemplates||DEF_SETTINGS.utilTemplates).map((x,j)=>j===i?{...x,clause:e.target.value}:x);setSettings(p=>({...p,utilTemplates:updated}));}} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>
-              </div>
-            </div>
-          ))}
-          <button className="btn btn-gold" style={{width:"100%",marginTop:4}} onClick={()=>save("hq-settings",settings)}>Save Utility Clauses</button>
-        </div></div>
-
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Hero Section</h3>
-          <div className="fld"><label>Tagline</label><input value={settings.tagline} onChange={e=>setSettings({...settings,tagline:e.target.value})}/></div>
-          <div className="fr"><div className="fld"><label>Headline</label><input value={settings.heroHeadline} onChange={e=>setSettings({...settings,heroHeadline:e.target.value})}/></div><div className="fld"><label>Subline</label><input value={settings.heroSubline} onChange={e=>setSettings({...settings,heroSubline:e.target.value})}/></div></div>
-          <div className="fld"><label>Description</label><textarea value={settings.heroDesc} onChange={e=>setSettings({...settings,heroDesc:e.target.value})}/></div>
-        </div></div>
-
-
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Lease & M2M Settings</h3>
-          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Controls automatic month-to-month conversion and daily payment reminders.</p>
-          <div className="fr" style={{marginBottom:12}}>
-            <div className="fld" style={{marginBottom:0}}>
-              <label>M2M Rent Increase <span style={{fontWeight:400,color:"#6b5e52"}}>($/mo added when lease converts to month-to-month)</span></label>
-              <div style={{display:"flex",alignItems:"center",gap:0}}>
-                <span style={{padding:"8px 10px",background:"rgba(0,0,0,.04)",border:"1px solid rgba(0,0,0,.08)",borderRight:"none",borderRadius:"6px 0 0 6px",fontSize:13,color:"#999",fontWeight:700}}>$</span>
-                <input type="number" min={0} value={settings.m2mIncrease||50} onChange={e=>{const u={...settings,m2mIncrease:Number(e.target.value)};setSettings(u);save("hq-settings",u);}} style={{borderRadius:"0 6px 6px 0",borderLeft:"none",width:"100%"}}/>
-              </div>
-            </div>
-            <div className="fld" style={{marginBottom:0}}>
-              <label>Renewal Prompt <span style={{fontWeight:400,color:"#6b5e52"}}>(days before expiry to show renewal options)</span></label>
-              <input type="number" min={7} max={180} value={settings.m2mNoticeDays||90} onChange={e=>{const u={...settings,m2mNoticeDays:Number(e.target.value)};setSettings(u);save("hq-settings",u);}} style={{width:"100%"}}/>
-            </div>
-          </div>
-          <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,cursor:"pointer"}}>
-            <input type="checkbox" checked={settings.autoReminders!==false} onChange={e=>{const u={...settings,autoReminders:e.target.checked};setSettings(u);save("hq-settings",u);}}/>
-            <span>Auto-send daily payment reminders for past-due charges (stops when paid)</span>
-          </label>
-        </div></div>
-
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Occupancy Policy Default</h3>
-          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Sets the default answer to "Allow a couple in this bedroom?" when reviewing new applicants. Can be overridden per-property or per-application.</p>
-          <div style={{display:"flex",gap:8}}>
-            {[{val:false,label:"No — 1 adult per bedroom",sub:"Default for most co-living setups"},{val:true,label:"Yes — couples OK by default",sub:"Can still deny per-applicant"}].map(({val,label,sub})=>(
-              <button key={String(val)} style={{flex:1,padding:"10px 12px",borderRadius:8,border:"2px solid "+((settings.couplesDefault||false)===val?(val?"rgba(74,124,89,.7)":"rgba(196,92,74,.5)"):"rgba(0,0,0,.08)"),background:(settings.couplesDefault||false)===val?(val?"rgba(74,124,89,.06)":"rgba(196,92,74,.04)"):"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}
-                onClick={()=>{const u={...settings,couplesDefault:val};setSettings(u);save("hq-settings",u);}}>
-                <div style={{fontSize:12,fontWeight:700,color:(settings.couplesDefault||false)===val?(val?"#2d6a3f":"#c45c4a"):"#1a1714",marginBottom:2}}>{label}</div>
-                <div style={{fontSize:10,color:"#6b5e52"}}>{sub}</div>
-              </button>
-            ))}
-          </div>
-          <div style={{fontSize:10,color:"#6b5e52",marginTop:8}}>Current portfolio default: <strong>{(settings.couplesDefault||false)?"Couples allowed":"1 adult per bedroom"}</strong></div>
-        </div></div>
-
-        <div className="card" style={{marginTop:12}}><div className="card-bd">
-          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Payment Reminder Template</h3>
-          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>This is the default message pre-filled every time you send a payment reminder. Edit and save to update the default for all future reminders.</p>
-          <div className="fld">
-            <label style={{display:"flex",justifyContent:"space-between"}}>
-              Message Template
-              <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setSettings(s=>({...s,reminderTemplate:DEF_SETTINGS.reminderTemplate}))}>↺ Restore original</button>
-            </label>
-            <textarea value={settings.reminderTemplate||DEF_SETTINGS.reminderTemplate} onChange={e=>setSettings({...settings,reminderTemplate:e.target.value})} rows={4} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
-          </div>
-          <div style={{fontSize:9,color:"#6b5e52",marginTop:4,lineHeight:1.6}}>
-            Available variables: <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{firstName}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{fullName}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{amount}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{dueDate}"}</code> <code style={{background:"rgba(0,0,0,.04)",padding:"1px 4px",borderRadius:3}}>{"{category}"}</code>
-          </div>
-          <div style={{marginTop:8,background:"rgba(212,168,83,.06)",borderRadius:6,padding:10,fontSize:11,color:"#9a7422"}}>
-            <strong>Preview:</strong> {(settings.reminderTemplate||DEF_SETTINGS.reminderTemplate).replace(/{firstName}/g,"Marcus").replace(/{fullName}/g,"Marcus Johnson").replace(/{amount}/g,"$850.00").replace(/{dueDate}/g,"Mar 1, 2026").replace(/{category}/g,"Rent")}
-          </div>
-        </div></div>
-      </>}
+      {/* ═══ PM SETTINGS ═══ */}
+      {tab==="pm-settings"&&<PMSettings settings={settings} setSettings={setSettings} save={save} expanded={expanded} setExpanded={setExpanded} DEF_SETTINGS={DEF_SETTINGS} SigCanvas={SigCanvas} />}
+      {tab==="website"&&<WebsiteSettings settings={settings} setSettings={setSettings} save={save} />}
       {tab==="theme"&&(()=>{
         const tSub=expanded.themeSubTab||"admin";
         const setTSub=v=>setExpanded(p=>({...p,themeSubTab:v}));
@@ -12970,7 +12392,7 @@ export default function Page(){
       <h2 style={{marginBottom:4}}>{em.type==="reupload"?"Request Re-Upload":"Reference Check Email"}</h2>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <p style={{fontSize:11,color:"#6b5e52",margin:0}}>Review the draft below, edit if needed, then click Send.</p>
-        <button onClick={()=>{setModal(null);goTab("site-settings");setExpanded(p=>({...p,emailTemplatesOpen:true,emailTemplatesTab:em.type||"refEmployer"}));}} style={{fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+        <button onClick={()=>{setModal(null);goTab("pm-settings");setExpanded(p=>({...p,emailTemplatesOpen:true,emailTemplatesTab:em.type||"refEmployer"}));}} style={{fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:6,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
           ✏ Draft Email Settings
         </button>
       </div>

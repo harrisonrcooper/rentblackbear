@@ -120,6 +120,13 @@ export default function LeasePage(){
         console.error("PATCH failed:",patchRes.status,err);
         throw new Error("Failed to save signature: "+err);
       }
+      // Verify signature was saved — guard against silent data loss
+      const verify=await supa("lease_instances?id=eq."+lease.id+"&select=tenant_sig");
+      const vRows=await verify.json();
+      if(!vRows?.[0]?.tenant_sig){
+        console.error("Signature verification failed — tenant_sig is null after PATCH");
+        throw new Error("Signature was not saved. Please try again.");
+      }
 
       // Send confirmation emails
       const moveInFmt=lease.moveIn?new Date(lease.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}):"";

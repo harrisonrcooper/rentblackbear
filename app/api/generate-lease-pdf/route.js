@@ -38,7 +38,7 @@ const S=StyleSheet.create({
   partyName:{fontSize:11,fontFamily:"Helvetica-Bold",color:"#1a1714"},
   partyDetail:{fontSize:9,color:"#6b5e52",marginTop:1},
   // Summary table
-  summaryHeader:{flexDirection:"row",alignItems:"center",backgroundColor:"#1a1714",padding:"8 12",borderRadius:"4 4 0 0",marginBottom:0},
+  summaryHeader:{flexDirection:"row",alignItems:"center",backgroundColor:"#1a1714",padding:"8 12",borderTopLeftRadius:4,borderTopRightRadius:4,marginBottom:0},
   summaryTitle:{fontSize:8,fontFamily:"Helvetica-Bold",color:"#d4a853",textTransform:"uppercase",letterSpacing:1},
   summaryRow:{flexDirection:"row",borderBottomWidth:0.5,borderBottomColor:"rgba(0,0,0,0.06)"},
   summaryLabel:{width:"35%",padding:"6 12",fontSize:8,fontFamily:"Helvetica-Bold",color:"#5c4a3a",textTransform:"uppercase",letterSpacing:0.3},
@@ -116,7 +116,7 @@ function LeasePDF({lease,template,vars}){
             ["Monthly Rent",fmtS(lease.rent),"Section 3"],
             ["Security Deposit",fmtS(lease.sd),"Section 4"],
             ["Prorated First Month",lease.proratedRent&&lease.proratedRent>0?fmtS(lease.proratedRent):"N/A","Section 3"],
-            ["Late Fee","$50 after the 3rd · $5/day thereafter","Section 5"],
+            ["Late Fee","$"+(lease.lateFeeInitial||50)+" after day "+(lease.lateFeeGraceDays||3)+" · $"+(lease.lateFeeDaily||5)+"/day thereafter","Section 5"],
             ["Door Code",lease.doorCode||"—","Section 13"],
             ["Parking",lease.parking||"No assigned parking","Section 9"],
           ].map(([label,value,ref],i)=>(
