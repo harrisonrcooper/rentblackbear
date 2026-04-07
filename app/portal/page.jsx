@@ -186,8 +186,8 @@ export default function TenantPortal() {
       setUser({ email: "demo@test.com" });
       setTenant({ id: "dev", name: "Demo Tenant", rent: 750, security_deposit: 750, move_in: "2025-06-01", lease_end: "2026-06-01", lease_signed_at: new Date().toISOString(), door_code: "1234", property: { name: "Demo Property" }, room: { name: "Room A" } });
       setCharges([
-        { id: "c1", category: "Security Deposit", description: "Security Deposit", amount: 750, amount_paid: 750, due_date: "2025-06-01", payments: [] },
-        { id: "c2", category: "Rent", description: "June 2025 Rent", amount: 750, amount_paid: 750, due_date: "2025-06-01", payments: [] },
+        { id: "c1", category: "Security Deposit", description: "Security Deposit", amount: 750, amount_paid: 750, due_date: "2025-06-01", payments: [{ amount: 750, date: "2025-05-30", method: "ACH Bank Transfer", deposit_status: "deposited" }] },
+        { id: "c2", category: "Rent", description: "June 2025 Rent", amount: 750, amount_paid: 750, due_date: "2025-06-01", payments: [{ amount: 750, date: "2025-06-01", method: "Debit Card", deposit_status: "deposited" }] },
         { id: "c3", category: "Rent", description: "July 2025 Rent", amount: 750, amount_paid: 0, due_date: "2025-07-01", payments: [] },
       ]);
       setLeaseId("ul56zet");
