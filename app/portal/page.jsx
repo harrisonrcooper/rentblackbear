@@ -165,6 +165,8 @@ export default function TenantPortal() {
   const [noticeForm, setNoticeForm]       = useState({ moveOutDate: "", reason: "", showForm: false, submitting: false, submitted: false });
   const [autopay, setAutopay]             = useState({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
   const [showDoorCode, setShowDoorCode]   = useState(false);
+  const [notifPrefs, setNotifPrefs]       = useState({ payment_reminders: true, payment_confirmations: true, maintenance_updates: true, lease_reminders: true, announcements: true });
+  const [contactForm, setContactForm]     = useState({ subject: "", message: "", sending: false, sent: false, showForm: false });
   const CREDIT_FEE = 0.029;
 
   // Dynamic theme — PM can override bg, accent, green, red via pm_accounts columns
@@ -1021,6 +1023,39 @@ export default function TenantPortal() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export Payment History (CSV)
               </button>
+            </div>
+
+            {/* Notification Preferences */}
+            <div style={sCard}>
+              <span style={sLabel}>Notification Preferences</span>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 1.5 }}>Choose which email notifications you receive.</div>
+              {[
+                { key: "payment_reminders", label: "Payment reminders", desc: "Get reminded when rent is due" },
+                { key: "payment_confirmations", label: "Payment confirmations", desc: "Confirmation when a payment is received" },
+                { key: "maintenance_updates", label: "Maintenance updates", desc: "Status changes on your requests" },
+                { key: "lease_reminders", label: "Lease reminders", desc: "Renewal and expiration notices" },
+                { key: "announcements", label: "Announcements", desc: "Property-wide announcements from your PM" },
+              ].map((item, i, arr) => (
+                <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(0,0,0,.04)" : "none" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{item.label}</div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.desc}</div>
+                  </div>
+                  <button onClick={() => {
+                    const updated = { ...notifPrefs, [item.key]: !notifPrefs[item.key] };
+                    setNotifPrefs(updated);
+                    supabase.from("portal_users").update({ notif_prefs: updated }).eq("tenant_id", tenant?.id);
+                  }} style={{
+                    flexShrink: 0, width: 40, height: 22, borderRadius: 11, border: "none", cursor: "pointer",
+                    background: notifPrefs[item.key] ? C.green : "rgba(0,0,0,.1)", transition: "background .2s", position: "relative"
+                  }}>
+                    <div style={{
+                      position: "absolute", top: 2, left: notifPrefs[item.key] ? 20 : 2, width: 18, height: 18, borderRadius: "50%",
+                      background: "#fff", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)"
+                    }}/>
+                  </button>
+                </div>
+              ))}
             </div>
 
             {/* House Rules */}
