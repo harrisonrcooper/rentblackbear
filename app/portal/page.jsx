@@ -539,7 +539,7 @@ export default function TenantPortal() {
         </div>
       )}
 
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "20px 16px" }}>
+      <div className="portal-content" style={{ maxWidth: 680, margin: "0 auto", padding: "20px 16px" }}>
 
         {/* ── ONBOARDING ── */}
         {!onboardingDone && (
@@ -1240,6 +1240,21 @@ export default function TenantPortal() {
         )}
 
       </div>
+
+      {/* Bottom nav — visible on mobile only (shown via media query) */}
+      {onboardingDone && (
+        <div className="portal-bot-nav" style={{ display: "none", position: "fixed", bottom: 0, left: 0, right: 0, background: C.bg, borderTop: "1px solid rgba(255,255,255,.08)", zIndex: 100, paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div style={{ display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            {portalTabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: "1 0 auto", minWidth: 72, padding: "8px 12px", border: "none", background: "transparent", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", color: activeTab === t.id ? C.accent : "rgba(255,255,255,.4)", fontSize: 9, fontWeight: activeTab === t.id ? 700 : 500, fontFamily: "inherit", transition: "color .15s", position: "relative" }}>
+                <span style={{ color: activeTab === t.id ? C.accent : "rgba(255,255,255,.35)" }}>{t.icon}</span>
+                {t.label}
+                {t.badge > 0 && <span style={{ position: "absolute", top: 2, right: "calc(50% - 16px)", minWidth: 14, height: 14, borderRadius: 7, background: "#c45c4a", color: "#fff", fontSize: 7, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: `2px solid ${C.bg}` }}>{t.badge}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
