@@ -63,7 +63,9 @@ const COMMON_EMOJIS = [
 
 // ── Styles ─────────────────────────────────────────────────────────
 const S = {
-  wrap: { display: "flex", gap: 0, border: "1px solid rgba(0,0,0,.07)", borderRadius: 14, overflow: "hidden", height: "calc(100vh - 200px)", minHeight: 500, maxHeight: "calc(100vh - 200px)", background: "#fff" },
+  outer: { height: "calc(100vh - 120px)", display: "flex", flexDirection: "column", margin: "-20px -24px", padding: 0 },
+  header: { padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "#fff" },
+  wrap: { display: "flex", gap: 0, flex: 1, overflow: "hidden", background: "#fff", minHeight: 0 },
   threadList: { width: 300, borderRight: "1px solid rgba(0,0,0,.06)", display: "flex", flexDirection: "column", background: "#fafaf8" },
   threadSearch: { padding: "12px 14px", borderBottom: "1px solid rgba(0,0,0,.06)" },
   threadScroll: { flex: 1, overflowY: "auto" },
@@ -82,7 +84,7 @@ const S = {
 };
 
 // ── Component ──────────────────────────────────────────────────────
-export default function MessagesV2({ settings, properties }) {
+export default function MessagesV2({ settings, properties, charges, maintenance: maintRequests, leases }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedThread, setSelectedThread] = useState(null);
@@ -97,17 +99,66 @@ export default function MessagesV2({ settings, properties }) {
   const [showTenantInfo, setShowTenantInfo] = useState(false);
   const [attachFile, setAttachFile] = useState(null); // { name, data, type }
   const [threadFilter, setThreadFilter] = useState("all"); // all, unread, pinned
+  // Tags/Labels
+  const [threadTags, setThreadTags] = useState({});
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  // Saved replies (editable)
+  const [savedReplies, setSavedReplies] = useState(settings?.savedReplies || DEFAULT_SAVED_REPLIES);
+  const [editingReplies, setEditingReplies] = useState(false);
+  const [editReplyDraft, setEditReplyDraft] = useState("");
+  // Away mode
+  const [awayMode, setAwayMode] = useState(false);
+  const [awayMessage, setAwayMessage] = useState(settings?.awayMessage || "Thanks for your message. We'll respond within 24 hours.");
+  const [showAwayEdit, setShowAwayEdit] = useState(false);
+  // Notifications
+  const [notifEnabled, setNotifEnabled] = useState(typeof Notification !== "undefined" && Notification.permission === "granted");
+  // Emoji picker
+  const [showEmoji, setShowEmoji] = useState(false);
+  // Message editing
+  const [editingMsg, setEditingMsg] = useState(null); // msg id
+  const [editMsgText, setEditMsgText] = useState("");
+  const [hoveredMsg, setHoveredMsg] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const awayModeRef = useRef(awayMode);
+  const awayMessageRef = useRef(awayMessage);
   const _acc = settings?.adminAccent || "#4a7c59";
+
+  // Keep refs in sync for use in realtime callback
+  useEffect(() => { awayModeRef.current = awayMode; }, [awayMode]);
+  useEffect(() => { awayMessageRef.current = awayMessage; }, [awayMessage]);
 
   // Load messages + setup realtime
   useEffect(() => {
     loadMessages();
     // Realtime subscription
     const channel = supabase.channel("messages-realtime").on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload) => {
-      if (payload.eventType === "INSERT") setMessages(prev => [payload.new, ...prev]);
+      if (payload.eventType === "INSERT") {
+        setMessages(prev => [payload.new, ...prev]);
+        // Browser notification for inbound
+        if (payload.new.direction === "inbound") {
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification("New message from " + (payload.new.tenant_name || "Tenant"), { body: (payload.new.body || "").slice(0, 100) });
+          }
+          // Away mode auto-reply
+          if (awayModeRef.current && payload.new.tenant_name) {
+            supabase.from("messages").insert({
+              tenant_name: payload.new.tenant_name,
+              sender_email: payload.new.sender_email || "",
+              direction: "outbound",
+              body: awayMessageRef.current,
+              property_name: payload.new.property_name || "",
+              room_name: payload.new.room_name || "",
+              read: true,
+              created_at: new Date().toISOString(),
+              status: "sent",
+            }).select().single().then(({ data }) => {
+              if (data) setMessages(prev => [data, ...prev]);
+            });
+          }
+        }
+      }
       else if (payload.eventType === "UPDATE") setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
     }).subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -225,6 +276,39 @@ export default function MessagesV2({ settings, properties }) {
     setShowReactions(null);
   };
 
+  // Edit message
+  const saveEditMsg = async (msgId) => {
+    if (!editMsgText.trim()) return;
+    const editedBody = editMsgText.trim() + (editMsgText.trim().endsWith("(edited)") ? "" : "");
+    await supabase.from("messages").update({ body: editedBody, edited: true }).eq("id", msgId);
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, body: editedBody, edited: true } : m));
+    setEditingMsg(null);
+    setEditMsgText("");
+  };
+
+  // Delete message
+  const deleteMsg = async (msgId) => {
+    await supabase.from("messages").update({ body: "This message was deleted", deleted: true }).eq("id", msgId);
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, body: "This message was deleted", deleted: true } : m));
+  };
+
+  // Request notification permission
+  const requestNotifPermission = async () => {
+    if (typeof Notification === "undefined") return;
+    const perm = await Notification.requestPermission();
+    setNotifEnabled(perm === "granted");
+  };
+
+  // Export conversation as PDF
+  const exportConversation = () => {
+    if (!activeThread) return;
+    const msgs = [...activeThread.messages].sort((a, b) => a.created_at.localeCompare(b.created_at));
+    const html = `<html><head><title>Conversation - ${activeThread.tenantName}</title><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1714}h1{font-size:18px;border-bottom:2px solid #eee;padding-bottom:12px}.meta{font-size:11px;color:#999;margin-bottom:20px}.msg{margin-bottom:16px;padding:12px 16px;border-radius:12px}.msg.out{background:#f0f7f2;margin-left:60px}.msg.in{background:#f5f4f2;margin-right:60px}.msg.note{background:#fef9ed;border:1px dashed #d4a853;margin-left:60px}.msg-meta{font-size:10px;color:#999;margin-bottom:4px}.msg-body{font-size:13px;line-height:1.6;white-space:pre-wrap}@media print{body{margin:20px}}</style></head><body><h1>Conversation with ${activeThread.tenantName}</h1><div class="meta">${activeThread.propertyName}${activeThread.roomName ? " / " + activeThread.roomName : ""} &mdash; ${msgs.length} messages &mdash; Exported ${new Date().toLocaleDateString()}</div>${msgs.map(m => `<div class="msg ${m.direction === "outbound" ? "out" : m.direction === "note" ? "note" : "in"}"><div class="msg-meta">${m.direction === "outbound" ? "You" : m.direction === "note" ? "Internal Note" : activeThread.tenantName} &mdash; ${new Date(m.created_at).toLocaleString()}</div><div class="msg-body">${(m.body || "").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div></div>`).join("")}</body></html>`;
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
+  };
+
   // Auto-scroll
   useEffect(() => {
     if (activeThread) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 200);
@@ -243,10 +327,12 @@ export default function MessagesV2({ settings, properties }) {
         .msg-thread:hover{background:rgba(0,0,0,.03)}
       `}</style>
 
-      <div className="sec-hd" style={{ marginBottom: 16 }}>
+      <div style={S.outer}>
+      {/* Header — always visible */}
+      <div style={S.header}>
         <div>
-          <h2>Messages</h2>
-          <p>{unreadTotal > 0 ? unreadTotal + " unread" : "All caught up"}</p>
+          <div style={{ fontSize: 17, fontWeight: 800 }}>Messages</div>
+          <div style={{ fontSize: 10, color: "#6b5e52" }}>{unreadTotal > 0 ? unreadTotal + " unread" : "All caught up"}</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-out btn-sm" onClick={() => { const unreadIds = messages.filter(m => m.direction === "inbound" && !m.read).map(m => m.id); if (unreadIds.length) { supabase.from("messages").update({ read: true }).in("id", unreadIds); setMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, read: true } : m)); } }}>
@@ -260,7 +346,7 @@ export default function MessagesV2({ settings, properties }) {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: 48, color: "#6b5e52" }}>Loading messages...</div>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#6b5e52" }}>Loading messages...</div>
       ) : (
         <div style={S.wrap}>
           {/* ── Thread List ── */}
@@ -298,6 +384,13 @@ export default function MessagesV2({ settings, properties }) {
                         <div>
                           <div style={{ fontSize: 13, fontWeight: unread ? 800 : 600, color: "#1a1714" }}>{thread.tenantName}</div>
                           <div style={{ fontSize: 9, color: "#999" }}>{thread.propertyName}{thread.roomName ? " \u00b7 " + thread.roomName : ""}</div>
+                          {(threadTags[thread.key] || []).length > 0 && (
+                            <div style={{ display: "flex", gap: 3, marginTop: 2, flexWrap: "wrap" }}>
+                              {threadTags[thread.key].map(tag => (
+                                <span key={tag} style={{ fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 4, background: TAG_COLORS[tag] + "18", color: TAG_COLORS[tag], textTransform: "uppercase", letterSpacing: .3 }}>{tag}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
@@ -342,7 +435,60 @@ export default function MessagesV2({ settings, properties }) {
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 6 }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {/* Tag button */}
+                    <div style={{ position: "relative" }}>
+                      <button onClick={() => setShowTagDropdown(!showTagDropdown)} title="Tags" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: (threadTags[selectedThread] || []).length > 0 ? "rgba(74,124,89,.08)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={(threadTags[selectedThread] || []).length > 0 ? _acc : "#999"} strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                      </button>
+                      {showTagDropdown && (
+                        <div style={{ position: "absolute", top: 36, right: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,.15)", padding: "8px 4px", zIndex: 20, width: 160 }} onClick={e => e.stopPropagation()}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5, padding: "4px 10px" }}>Labels</div>
+                          {TAG_OPTIONS.map(tag => {
+                            const active = (threadTags[selectedThread] || []).includes(tag);
+                            return (
+                              <div key={tag} onClick={() => { setThreadTags(prev => { const curr = prev[selectedThread] || []; return { ...prev, [selectedThread]: active ? curr.filter(t => t !== tag) : [...curr, tag] }; }); }} style={{ padding: "6px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, borderRadius: 6, fontSize: 12 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                                <div style={{ width: 10, height: 10, borderRadius: 3, background: TAG_COLORS[tag], opacity: active ? 1 : .3 }} />
+                                <span style={{ flex: 1, textTransform: "capitalize", color: active ? "#1a1714" : "#999", fontWeight: active ? 600 : 400 }}>{tag}</span>
+                                {active && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {/* Export PDF */}
+                    <button onClick={exportConversation} title="Export conversation" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
+                    {/* Away toggle */}
+                    <div style={{ position: "relative" }}>
+                      <button onClick={() => setShowAwayEdit(!showAwayEdit)} title={awayMode ? "Away mode ON" : "Away mode"} style={{ width: 32, height: 32, borderRadius: 8, border: awayMode ? "2px solid " + _acc : "1px solid rgba(0,0,0,.1)", background: awayMode ? _acc + "12" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={awayMode ? _acc : "#999"} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      </button>
+                      {showAwayEdit && (
+                        <div style={{ position: "absolute", top: 36, right: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,.15)", padding: 14, zIndex: 20, width: 260 }} onClick={e => e.stopPropagation()}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "#1a1714" }}>Away Mode</span>
+                            <button onClick={() => setAwayMode(!awayMode)} style={{ padding: "3px 10px", borderRadius: 6, border: "1px solid " + (awayMode ? "#c45c4a" : _acc), background: awayMode ? "rgba(196,92,74,.08)" : _acc + "12", color: awayMode ? "#c45c4a" : _acc, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{awayMode ? "Turn Off" : "Turn On"}</button>
+                          </div>
+                          <textarea value={awayMessage} onChange={e => setAwayMessage(e.target.value)} rows={3} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit", resize: "none", outline: "none", boxSizing: "border-box" }} />
+                          <div style={{ fontSize: 9, color: "#999", marginTop: 4 }}>Auto-replies to new inbound messages when enabled.</div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Notifications */}
+                    {!notifEnabled && (
+                      <button onClick={requestNotifPermission} title="Enable notifications" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                      </button>
+                    )}
+                    {notifEnabled && (
+                      <div title="Notifications enabled" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: _acc + "12", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                      </div>
+                    )}
+                    {/* Pin */}
                     <button onClick={() => setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} title={pinnedThreads.has(selectedThread) ? "Unpin" : "Pin conversation"} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: pinnedThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill={pinnedThreads.has(selectedThread) ? "#d4a853" : "none"} stroke={pinnedThreads.has(selectedThread) ? "#d4a853" : "#999"} strokeWidth="2"><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>
                     </button>
@@ -507,6 +653,7 @@ export default function MessagesV2({ settings, properties }) {
           )}
         </div>
       )}
+      </div>{/* end outer */}
     </>
   );
 }
