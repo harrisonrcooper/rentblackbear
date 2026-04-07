@@ -5,6 +5,7 @@ import TemplateEditor from "./components/TemplateEditor";
 import PMSettings from "./components/PMSettings";
 import LeaseTemplateList from "./components/LeaseTemplateList";
 import Messages from "./components/Messages";
+import Announcements from "./components/Announcements";
 import AppSetup from "./components/AppSetup";
 import WebsiteSettings from "./components/WebsiteSettings";
 // ADMIN HQ — rentblackbear.com/admin
@@ -30,6 +31,7 @@ const IconPalette=()=><I d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67
 const IconBrain=()=><I d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14z M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14z"/>;
 const IconBell=()=><I d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0"/>;
 const IconMail=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>;
+const IconMegaphone=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>;
 const IconTimeline=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>;
 const IconSettings=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 
@@ -2625,6 +2627,7 @@ export default function Page(){
     {id:"website",i:<IconGlobe/>,l:"Website"},
     {id:"ideas",i:<IconBrain/>,l:"Brain Dump"},
     {id:"messages",i:<IconMail/>,l:"Messages"},
+    {id:"announcements",i:<IconMegaphone/>,l:"Announcements"},
     {id:"notifications",i:<IconBell/>,l:"Alerts",badge:m.unreadNotifs||null},
     {id:"add-expense",i:<span>＋</span>,l:"Add Expense"},
   ];
@@ -2638,7 +2641,7 @@ export default function Page(){
     {label:"Operations",ids:["maintenance","leases","documents"]},
     {label:"Financials",ids:["accounting","add-expense","reports"]},
     {label:"Portfolio",ids:["properties"]},
-    {label:"Communications",ids:["messages","notifications"]},
+    {label:"Communications",ids:["messages","announcements","notifications"]},
     {label:"Settings",ids:["pm-settings","theme"]},
     {label:"Website",ids:["website","ideas"]},
   ];
@@ -2686,8 +2689,13 @@ export default function Page(){
     }
     if(!allIds().includes("messages")){
       const notifSec=cfg.findIndex(s=>s.ids.includes("notifications"));
-      if(notifSec>=0){cfg[notifSec]={...cfg[notifSec],label:cfg[notifSec].label||"Communications",ids:["messages",...cfg[notifSec].ids]};}
-      else cfg.push({label:"Communications",ids:["messages","notifications"]});
+      if(notifSec>=0){cfg[notifSec]={...cfg[notifSec],label:"Communications",ids:["messages","announcements",...cfg[notifSec].ids]};}
+      else cfg.push({label:"Communications",ids:["messages","announcements","notifications"]});
+    }
+    if(!allIds().includes("announcements")){
+      const commSec=cfg.findIndex(s=>s.ids.includes("messages"));
+      if(commSec>=0&&!cfg[commSec].ids.includes("announcements")){cfg[commSec]={...cfg[commSec],ids:[...cfg[commSec].ids.slice(0,1),"announcements",...cfg[commSec].ids.slice(1)]};}
+      else if(!allIds().includes("announcements")) cfg.push({label:"Communications",ids:["announcements"]});
     }
     return cfg;
   })();
@@ -3170,59 +3178,16 @@ export default function Page(){
           ))}
         </div>
 
-        {/* ── Announcements ── */}
-        <div className="card" style={{marginTop:20}}>
-          <div className="card-bd">
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:annShowForm?16:0}}>
-              <div>
-                <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8}}>Tenant Announcements</div>
-                <div style={{fontSize:11,color:"#7a7067",marginTop:2}}>{(settings.announcements||[]).length} active</div>
-              </div>
-              <button className="btn btn-green btn-sm" onClick={()=>setAnnShowForm(s=>!s)}>{annShowForm?"Cancel":"+ New Announcement"}</button>
+        {/* ── Quick Announcements link ── */}
+        <div onClick={()=>goTab("announcements")} style={{marginTop:20,padding:"14px 18px",background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.06)",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",transition:"border-color .15s"}} onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.15)"} onMouseLeave={e=>e.currentTarget.style.borderColor="rgba(0,0,0,.06)"}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            <div>
+              <div style={{fontSize:12,fontWeight:700}}>Tenant Announcements</div>
+              <div style={{fontSize:10,color:"#6b5e52"}}>{(settings.announcements||[]).filter(a=>!a.expiresAt||new Date(a.expiresAt)>new Date()).length} active</div>
             </div>
-            {annShowForm&&<div style={{borderTop:"1px solid rgba(0,0,0,.06)",paddingTop:14}}>
-              <div style={{marginBottom:10}}>
-                <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Title</label>
-                <input value={annForm.title} onChange={e=>setAnnForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Water shut-off notice" style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
-              </div>
-              <div style={{marginBottom:10}}>
-                <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Message</label>
-                <textarea value={annForm.body} onChange={e=>setAnnForm(f=>({...f,body:e.target.value}))} placeholder="Details for your tenants..." rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit",resize:"vertical"}}/>
-              </div>
-              <div style={{display:"flex",gap:10,marginBottom:14}}>
-                <div style={{flex:1}}>
-                  <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Property (optional)</label>
-                  <select value={annForm.propertyId} onChange={e=>setAnnForm(f=>({...f,propertyId:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit",background:"#fff"}}>
-                    <option value="">All Properties</option>
-                    {props.map(p=><option key={p.id} value={p.id}>{p.addr||p.name}</option>)}
-                  </select>
-                </div>
-                <div style={{flex:1}}>
-                  <label style={{fontSize:10,fontWeight:700,color:"#6b5e52",display:"block",marginBottom:4}}>Expires (optional)</label>
-                  <input type="date" value={annForm.expiresAt} onChange={e=>setAnnForm(f=>({...f,expiresAt:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
-                </div>
-              </div>
-              <button className="btn btn-green" disabled={!annForm.title.trim()||!annForm.body.trim()} onClick={()=>{
-                const ann={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:annForm.title.trim(),body:annForm.body.trim(),propertyId:annForm.propertyId||null,createdAt:new Date().toISOString(),expiresAt:annForm.expiresAt?annForm.expiresAt+"T23:59:59.999Z":null};
-                const u={...settings,announcements:[ann,...(settings.announcements||[])]};setSettings(u);save("hq-settings",u);
-                setAnnForm({title:"",body:"",propertyId:"",expiresAt:""});setAnnShowForm(false);
-              }}>Post Announcement</button>
-            </div>}
-            {(settings.announcements||[]).length>0&&<div style={{marginTop:annShowForm?16:12,borderTop:annShowForm?"1px solid rgba(0,0,0,.06)":"none",paddingTop:annShowForm?12:0}}>
-              {(settings.announcements||[]).map(a=>{
-                const propName=a.propertyId?((props.find(p=>p.id===a.propertyId)||{}).addr||(props.find(p=>p.id===a.propertyId)||{}).name||"Specific property"):"All properties";
-                const isExpired=a.expiresAt&&new Date(a.expiresAt)<new Date();
-                return(<div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"10px 0",borderBottom:"1px solid rgba(0,0,0,.04)",opacity:isExpired?.5:1}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"#1a1714",marginBottom:2}}>{a.title}{isExpired&&<span style={{fontSize:9,color:"#c45c4a",marginLeft:6,fontWeight:600}}>EXPIRED</span>}</div>
-                    <div style={{fontSize:11,color:"#5c4a3a",marginBottom:4,whiteSpace:"pre-wrap",lineHeight:1.4}}>{a.body}</div>
-                    <div style={{fontSize:9,color:"#7a7067"}}>{propName} · Posted {new Date(a.createdAt).toLocaleDateString()}{a.expiresAt?" · Expires "+new Date(a.expiresAt).toLocaleDateString():""}</div>
-                  </div>
-                  <button onClick={()=>{const u={...settings,announcements:(settings.announcements||[]).filter(x=>x.id!==a.id)};setSettings(u);save("hq-settings",u);}} style={{padding:"4px 10px",borderRadius:5,border:"1px solid rgba(196,92,74,.2)",background:"rgba(196,92,74,.06)",color:"#c45c4a",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0,marginLeft:10}}>Delete</button>
-                </div>);
-              })}
-            </div>}
           </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
         </div>
       </>);})()}
 
@@ -6572,6 +6537,7 @@ export default function Page(){
 
       {/* ═══ MESSAGES ═══ */}
       {tab==="messages"&&<Messages settings={settings} properties={props} />}
+      {tab==="announcements"&&<Announcements settings={settings} setSettings={setSettings} save={save} properties={props} uid={uid} />}
 
       {/* ═══ NOTIFICATIONS ═══ */}
       {tab==="notifications"&&<>
