@@ -167,7 +167,7 @@ export default function TenantPortal() {
   const [autopay, setAutopay]             = useState({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
   const [showDoorCode, setShowDoorCode]   = useState(false);
   const [referralCopied, setReferralCopied] = useState(false);
-  const [notifPrefs, setNotifPrefs]       = useState({ payment_reminders: "all", payment_confirmations: "all", maintenance_updates: "all", lease_reminders: "email", announcements: "email" });
+  const [notifPrefs, setNotifPrefs]       = useState({ payment_reminders: { email: true, text: true }, payment_confirmations: { email: true, text: true }, maintenance_updates: { email: true, text: true }, lease_reminders: { email: true, text: false }, announcements: { email: true, text: false } });
   const [contactForm, setContactForm]     = useState({ subject: "", message: "", sending: false, sent: false, showForm: false });
   const CREDIT_FEE = 0.029;
 
@@ -647,22 +647,28 @@ export default function TenantPortal() {
         {/* ── HOME ── */}
         {onboardingDone && activeTab === "home" && (
           <div style={{ animation: "fadeIn .2s" }}>
-            <div style={{ textAlign: "center", marginBottom: 14 }}>
-              <div style={{ background: totalDue > 0 ? "#fff" : C.bg, borderRadius: 16, padding: "28px 24px", border: totalDue > 0 ? "1px solid rgba(0,0,0,.06)" : "none" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 10 }}>{t.home.balanceDue}</div>
-                <div style={{ fontSize: 44, fontWeight: 800, color: totalDue > 0 ? C.text : C.green, letterSpacing: -1 }}>{fmt(totalDue)}</div>
-                <div style={{ fontSize: 12, color: totalDue > 0 ? C.muted : "rgba(255,255,255,.4)", marginTop: 6 }}>{totalDue === 0 ? t.home.allPaidUp : ""}</div>
-                {totalDue > 0 && (
-                  <button onClick={() => { setActiveTab("payments"); const unpaid = charges.find(c => !c.waived && !c.voided && c.amount_paid < c.amount); if (unpaid) setTimeout(() => startPayment(unpaid), 300); }} style={{ marginTop: 14, padding: "10px 32px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    Pay Now
-                  </button>
-                )}
-              </div>
-            </div>
+            {(() => {
+              const hasPastDue = charges.some(c => !c.waived && !c.voided && c.amount_paid < c.amount && c.due_date && new Date(c.due_date + "T00:00:00") < new Date());
+              return (
+                <div style={{ textAlign: "center", marginBottom: 14 }}>
+                  <div style={{ background: totalDue > 0 ? (hasPastDue ? hexRgba(C.red, .04) : "#fff") : C.bg, borderRadius: 16, padding: "28px 24px", border: totalDue > 0 ? (hasPastDue ? "2px solid " + hexRgba(C.red, .25) : "1px solid rgba(0,0,0,.06)") : "none" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: hasPastDue ? C.red : C.muted, textTransform: "uppercase", letterSpacing: .8, marginBottom: 10 }}>{hasPastDue ? "PAST DUE" : t.home.balanceDue}</div>
+                    <div style={{ fontSize: 44, fontWeight: 800, color: totalDue > 0 ? (hasPastDue ? C.red : C.text) : C.green, letterSpacing: -1 }}>{fmt(totalDue)}</div>
+                    {totalDue === 0 && <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)", marginTop: 6 }}>{t.home.allPaidUp}</div>}
+                    {totalDue > 0 && hasPastDue && <div style={{ fontSize: 11, color: C.red, fontWeight: 600, marginTop: 6 }}>Please pay immediately to avoid additional late fees</div>}
+                    {totalDue > 0 && (
+                      <button onClick={() => { setActiveTab("payments"); const unpaid = charges.find(c => !c.waived && !c.voided && c.amount_paid < c.amount); if (unpaid) setTimeout(() => startPayment(unpaid), 300); }} style={{ marginTop: 14, padding: "10px 32px", borderRadius: 8, border: "none", background: hasPastDue ? C.red : C.bg, color: hasPastDue ? "#fff" : C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Pay Now
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
               <div style={sCard}><span style={sLabel}>{t.home.monthlyRent}</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st{pmSettings?.lateFeeGraceDays ? ` \u2014 late after day ${pmSettings.lateFeeGraceDays}` : ""}</div>{(() => { const now = new Date(); const y = now.getFullYear(); const mo = now.getMonth(); const firstNextMonth = new Date(y, mo + 1, 1); const firstThisMonth = new Date(y, mo, 1); const nextDue = now.getDate() > 1 ? firstNextMonth : firstThisMonth; const diffDays = Math.ceil((nextDue - now) / (1e3 * 60 * 60 * 24)); const nearestUnpaid = charges.find(c => !c.waived && !c.voided && c.amount_paid < c.amount && (c.type === "rent" || (c.label || "").toLowerCase().includes("rent"))); const isPastDue = nearestUnpaid && nearestUnpaid.due_date && new Date(nearestUnpaid.due_date + "T00:00:00") < now; if (isPastDue) { const overdueDays = Math.floor((now - new Date(nearestUnpaid.due_date + "T00:00:00")) / (1e3 * 60 * 60 * 24)); return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{t.home.pastDue + " -- " + overdueDays + " " + t.home.daysOverdue}</div>; } if (diffDays === 0) return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{t.home.dueToday}</div>; if (diffDays <= 3) return <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginTop: 4 }}>{t.home.dueIn + " " + diffDays + " " + t.home.days}</div>; if (diffDays <= 7) return <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginTop: 4 }}>{t.home.dueIn + " " + diffDays + " " + t.home.days}</div>; return null; })()}</div>
-              <div style={sCard}><span style={sLabel}>{t.home.leaseEnd}</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " " + t.home.daysRemaining : t.home.expired}</div>}</div>
+              <div onClick={() => setActiveTab("documents")} style={{ ...sCard, cursor: "pointer", transition: "border-color .15s", borderColor: dl && dl <= 60 ? hexRgba(C.red, .2) : "rgba(0,0,0,.06)" }}><span style={sLabel}>{t.home.leaseEnd}</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " " + t.home.daysRemaining : t.home.expired}</div>}{dl !== null && dl <= 90 && dl > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: C.accent, marginTop: 6, display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-start" }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>Renewal options</div>}</div>
             </div>
             {announcements.length > 0 && (
               <div style={{ marginBottom: 12 }}>
@@ -1259,46 +1265,52 @@ export default function TenantPortal() {
                 { key: "lease_reminders", label: t.account.leaseReminders, desc: "Renewal and expiration notices" },
                 { key: "announcements", label: t.account.announcementsNotif, desc: "Property-wide announcements from your PM" },
               ];
-              const MODES = [["all", "All"], ["email", "Email"], ["text", "Text"], ["none", "None"]];
-              const allOn = NOTIF_ITEMS.every(item => notifPrefs[item.key] === "all");
-              const allOff = NOTIF_ITEMS.every(item => notifPrefs[item.key] === "none");
-              const bulkSet = (mode) => {
+              const allOn = NOTIF_ITEMS.every(item => notifPrefs[item.key]?.email && notifPrefs[item.key]?.text);
+              const allOff = NOTIF_ITEMS.every(item => !notifPrefs[item.key]?.email && !notifPrefs[item.key]?.text);
+              const bulkSet = (on) => {
                 const updated = { ...notifPrefs };
-                NOTIF_ITEMS.forEach(item => { updated[item.key] = mode; });
+                NOTIF_ITEMS.forEach(item => { updated[item.key] = { email: on, text: on }; });
                 setNotifPrefs(updated);
                 supabase.from("portal_users").update({ notif_prefs: updated }).eq("tenant_id", tenant?.id);
               };
+              const toggle = (key, channel) => {
+                const cur = notifPrefs[key] || { email: false, text: false };
+                const updated = { ...notifPrefs, [key]: { ...cur, [channel]: !cur[channel] } };
+                setNotifPrefs(updated);
+                supabase.from("portal_users").update({ notif_prefs: updated }).eq("tenant_id", tenant?.id);
+              };
+              const Toggle = ({ on, onClick }) => (
+                <button onClick={onClick} style={{ flexShrink: 0, width: 40, height: 22, borderRadius: 11, border: "none", cursor: "pointer", background: on ? C.green : "rgba(0,0,0,.1)", transition: "background .2s", position: "relative" }}>
+                  <div style={{ position: "absolute", top: 2, left: on ? 20 : 2, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }}/>
+                </button>
+              );
               return (
                 <div style={sCard}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <span style={sLabel}>{t.account.notifications}</span>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button onClick={() => bulkSet("all")} disabled={allOn} style={{ padding: "4px 10px", borderRadius: 6, border: "1.5px solid " + (allOn ? hexRgba(C.green, .3) : "rgba(0,0,0,.1)"), background: allOn ? hexRgba(C.green, .06) : "#fff", color: allOn ? C.green : C.muted, fontSize: 10, fontWeight: 700, cursor: allOn ? "default" : "pointer" }}>All On</button>
-                      <button onClick={() => bulkSet("none")} disabled={allOff} style={{ padding: "4px 10px", borderRadius: 6, border: "1.5px solid " + (allOff ? hexRgba(C.red, .3) : "rgba(0,0,0,.1)"), background: allOff ? hexRgba(C.red, .06) : "#fff", color: allOff ? C.red : C.muted, fontSize: 10, fontWeight: 700, cursor: allOff ? "default" : "pointer" }}>All Off</button>
+                      <button onClick={() => bulkSet(true)} disabled={allOn} style={{ padding: "4px 10px", borderRadius: 6, border: "1.5px solid " + (allOn ? hexRgba(C.green, .3) : "rgba(0,0,0,.1)"), background: allOn ? hexRgba(C.green, .06) : "#fff", color: allOn ? C.green : C.muted, fontSize: 10, fontWeight: 700, cursor: allOn ? "default" : "pointer" }}>All On</button>
+                      <button onClick={() => bulkSet(false)} disabled={allOff} style={{ padding: "4px 10px", borderRadius: 6, border: "1.5px solid " + (allOff ? hexRgba(C.red, .3) : "rgba(0,0,0,.1)"), background: allOff ? hexRgba(C.red, .06) : "#fff", color: allOff ? C.red : C.muted, fontSize: 10, fontWeight: 700, cursor: allOff ? "default" : "pointer" }}>All Off</button>
                     </div>
                   </div>
                   <div style={{ fontSize: 11, color: C.muted, marginBottom: 14, lineHeight: 1.5 }}>{t.account.notifDesc}</div>
                   {NOTIF_ITEMS.map((item, i, arr) => {
-                    const val = notifPrefs[item.key] || "none";
+                    const pref = notifPrefs[item.key] || { email: false, text: false };
                     return (
-                      <div key={item.key} style={{ padding: "10px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(0,0,0,.04)" : "none" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <div key={item.key} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(0,0,0,.04)" : "none" }}>
+                        <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 13, fontWeight: 600 }}>{item.label}</div>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: val === "none" ? C.muted : C.green }}>{val === "all" ? "Email + Text" : val === "email" ? "Email" : val === "text" ? "Text" : "Off"}</span>
+                          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{item.desc}</div>
                         </div>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          {MODES.map(([mode, label]) => (
-                            <button key={mode} onClick={() => {
-                              const updated = { ...notifPrefs, [item.key]: mode };
-                              setNotifPrefs(updated);
-                              supabase.from("portal_users").update({ notif_prefs: updated }).eq("tenant_id", tenant?.id);
-                            }} style={{
-                              flex: 1, padding: "6px 0", borderRadius: 6, fontSize: 10, fontWeight: val === mode ? 700 : 500, cursor: "pointer",
-                              border: "1.5px solid " + (val === mode ? (mode === "none" ? hexRgba(C.red, .3) : hexRgba(C.green, .3)) : "rgba(0,0,0,.08)"),
-                              background: val === mode ? (mode === "none" ? hexRgba(C.red, .06) : hexRgba(C.green, .06)) : "#fff",
-                              color: val === mode ? (mode === "none" ? C.red : C.green) : C.muted,
-                            }}>{label}</button>
-                          ))}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>Email</div>
+                            <Toggle on={pref.email} onClick={() => toggle(item.key, "email")} />
+                          </div>
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ fontSize: 8, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>Text</div>
+                            <Toggle on={pref.text} onClick={() => toggle(item.key, "text")} />
+                          </div>
                         </div>
                       </div>
                     );
