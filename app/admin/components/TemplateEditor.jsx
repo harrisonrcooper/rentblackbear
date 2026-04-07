@@ -89,23 +89,36 @@ function RichEditor({value,onChange}){
     if(editorRef.current&&editorRef.current.innerHTML!==(value||""))
       editorRef.current.innerHTML=value||"";
   },[]);// eslint-disable-line
-  const exec=(cmd)=>{editorRef.current?.focus();document.execCommand(cmd,false,null);onChange(editorRef.current?.innerHTML||"");};
+  const exec=(cmd,val)=>{editorRef.current?.focus();document.execCommand(cmd,false,val||null);onChange(editorRef.current?.innerHTML||"");};
+  const tbtn=(label,cmd,opts={})=>(
+    <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd,opts.val);}} title={opts.title||cmd}
+      style={{width:opts.w||26,height:26,borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",fontSize:opts.fs||11,fontFamily:"inherit",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:opts.bold?700:400,fontStyle:opts.italic?"italic":"normal",textDecoration:opts.underline?"underline":"none",padding:"0 4px"}}>{label}</button>
+  );
+  const tsep=()=>(<div style={{width:1,background:"rgba(0,0,0,.1)",margin:"2px 4px"}}/>);
+  const tsvg=(d,cmd,title,val)=>(
+    <button key={cmd+title} onMouseDown={e=>{e.preventDefault();exec(cmd,val);}} title={title}
+      style={{width:26,height:26,borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+    </button>
+  );
   return(
     <div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden"}}>
-      <div style={{display:"flex",gap:2,padding:"5px 8px",borderBottom:"1px solid rgba(0,0,0,.07)",background:"rgba(0,0,0,.02)"}}>
-        {[["B","bold"],["I","italic"],["U","underline"]].map(([label,cmd])=>(
-          <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd);}}
-            style={{width:26,height:26,borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",fontSize:11,fontFamily:"inherit",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:cmd==="bold"?700:400,fontStyle:cmd==="italic"?"italic":"normal",textDecoration:cmd==="underline"?"underline":"none"}}>{label}</button>
-        ))}
-        <div style={{width:1,background:"rgba(0,0,0,.1)",margin:"2px 4px"}}/>
-        <button onMouseDown={e=>{e.preventDefault();exec("removeFormat");}} title="Clear formatting"
-          style={{width:26,height:26,borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-          <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M3 21h9"/><path d="M6.5 4.5l10 10M9.5 2.5L20 13"/></svg>
-        </button>
+      <div style={{display:"flex",gap:2,padding:"5px 8px",borderBottom:"1px solid rgba(0,0,0,.07)",background:"rgba(0,0,0,.02)",flexWrap:"wrap"}}>
+        {tbtn("B","bold",{bold:true,title:"Bold"})}
+        {tbtn("I","italic",{italic:true,title:"Italic"})}
+        {tbtn("U","underline",{underline:true,title:"Underline"})}
+        {tsep()}
+        {tsvg(<><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>,"insertUnorderedList","Bullet list")}
+        {tsvg(<><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v1H4zM4 12h1v1H4zM4 18h1v1H4z"/></>,"insertOrderedList","Numbered list")}
+        {tsep()}
+        {tsvg(<><polyline points="15 18 9 12 15 6"/></>,"outdent","Decrease indent")}
+        {tsvg(<><polyline points="9 18 15 12 9 6"/></>,"indent","Increase indent")}
+        {tsep()}
+        {tsvg(<><path d="M18 6L6 18M3 21h9"/><path d="M6.5 4.5l10 10M9.5 2.5L20 13"/></>,"removeFormat","Clear formatting")}
       </div>
-      <div ref={editorRef} contentEditable suppressContentEditableWarning
+      <style>{`.rich-ed ul,.rich-ed ol{padding-left:24px;margin:4px 0}.rich-ed li{margin:2px 0}`}</style>
+      <div ref={editorRef} className="rich-ed" contentEditable suppressContentEditableWarning
         onInput={e=>onChange(e.currentTarget.innerHTML)}
-        onMouseUp={()=>{const sel=window.getSelection();}} onKeyUp={()=>{}}
         style={{minHeight:90,padding:"10px 12px",fontSize:12,lineHeight:1.7,fontFamily:"inherit",outline:"none",color:"#1a1714"}}/>
     </div>
   );
@@ -285,7 +298,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
                 <span>·</span>
                 <span>{sec.requiresInitials?"Requires initials":"No initials"}</span>
                 {hasVars&&<><span>·</span><span style={{color:_acc,fontWeight:600}}>Has policy variables</span></>}
-                {dirtySecs.has(sec.id)&&<><span>·</span><span style={{color:"#c45c4a",fontWeight:700}}>Unsaved changes</span></>}
+                {dirtySecs.has(sec.id)&&<><span>·</span><span style={{color:"#c45c4a",fontWeight:700,animation:"shake .4s ease"}}>Unsaved changes</span></>}
               </div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}} onClick={e=>e.stopPropagation()}>

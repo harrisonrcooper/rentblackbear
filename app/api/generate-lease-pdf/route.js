@@ -16,10 +16,18 @@ const fillVars=(html,vars)=>{
   if(!html)return"";
   let out=html;
   Object.entries(vars).forEach(([k,v])=>{out=out.replaceAll("{{"+k+"}}",(v||"").toString());});
-  // Strip HTML tags for PDF text rendering
+  // Convert lists to indented text before stripping tags
+  let counter=0;
+  out=out.replace(/<ol[^>]*>/gi,()=>{counter=0;return"";});
+  out=out.replace(/<\/ol>/gi,"");
+  out=out.replace(/<ul[^>]*>/gi,"");
+  out=out.replace(/<\/ul>/gi,"");
+  out=out.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi,(m,content)=>{counter++;const bullet=counter>0&&out.indexOf(m)>out.lastIndexOf("<ol")?"  "+counter+". ":"  \u2022 ";return"\n"+bullet+content.replace(/<[^>]+>/g,"").trim();});
+  // Strip remaining HTML tags
   out=out.replace(/<strong>(.*?)<\/strong>/gi,"$1");
   out=out.replace(/<\/?[^>]+(>|$)/g," ");
-  out=out.replace(/\s+/g," ").trim();
+  out=out.replace(/\n\s+/g,"\n");
+  out=out.replace(/[ \t]+/g," ").trim();
   return out;
 };
 

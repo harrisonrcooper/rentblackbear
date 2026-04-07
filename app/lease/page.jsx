@@ -464,6 +464,8 @@ export default function LeasePage(){
         @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
         *{box-sizing:border-box}
         body{margin:0}
+        ul,ol{padding-left:24px;margin:6px 0}
+        li{margin:3px 0;line-height:1.85}
       `}</style>
     </div>
   );

@@ -1985,6 +1985,7 @@ const S=`
 .tbar h1{font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
 .tbar-sub{font-size:10px;color:#5c4a3a;margin-top:1px}
 .cnt{padding:20px 24px;flex:1}
+.cnt ul,.cnt ol{padding-left:24px;margin:6px 0}.cnt li{margin:3px 0;line-height:1.7}
 
 /* Buttons */
 .btn{padding:7px 14px;border-radius:7px;border:none;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .1s}
@@ -5076,7 +5077,7 @@ export default function Page(){
         {/* Sub-tabs */}
         <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"2px solid rgba(0,0,0,.08)"}}>
           {[["leases","Lease Agreements"],["checklists","Checklists"],["notices","Notices"],["houserules","House Rules"],["editor","Edit Template"]].filter(([id])=>id!=="editor"||leaseTemplate).map(([id,label])=>(
-            <button key={id} onClick={()=>setLeaseSubTab(id)}
+            <button key={id} onClick={()=>{if(templateEditorDirty&&leaseSubTab==="editor"&&id!=="editor"){setPendingNavTab("__subtab__"+id);return;}setLeaseSubTab(id);}}
               style={{padding:"12px 24px",border:"none",borderBottom:leaseSubTab===id?"2px solid "+_acc:"2px solid transparent",marginBottom:-2,background:"transparent",color:leaseSubTab===id?_acc:"#9a8878",fontWeight:leaseSubTab===id?700:500,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",letterSpacing:.1}}>
               {label}
             </button>
@@ -5339,7 +5340,7 @@ export default function Page(){
             </p>
             <div className="mft">
               <button className="btn btn-out" onClick={()=>setPendingNavTab(null)}>Cancel — Stay Here</button>
-              <button className="btn btn-out" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.3)"}} onClick={()=>{setTemplateEditorDirty(false);goTab(pendingNavTab,true);setPendingNavTab(null);}}>Leave Without Saving</button>
+              <button className="btn btn-out" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.3)"}} onClick={()=>{setTemplateEditorDirty(false);if(pendingNavTab?.startsWith("__subtab__")){setLeaseSubTab(pendingNavTab.replace("__subtab__",""));}else{goTab(pendingNavTab,true);}setPendingNavTab(null);}}>Leave Without Saving</button>
               <button className="btn btn-gold" onClick={async()=>{
                 // Save template then navigate
                 if(leaseTemplate?.id){
@@ -5348,7 +5349,7 @@ export default function Page(){
                   }catch(e){}
                 }
                 setTemplateEditorDirty(false);
-                goTab(pendingNavTab,true);
+                if(pendingNavTab?.startsWith("__subtab__")){setLeaseSubTab(pendingNavTab.replace("__subtab__",""));}else{goTab(pendingNavTab,true);}
                 setPendingNavTab(null);
               }}>Save & Leave</button>
             </div>
