@@ -71,7 +71,7 @@ const S = {
   threadScroll: { flex: 1, overflowY: "auto" },
   threadItem: (active, unread) => ({ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.03)", background: active ? "#fff" : "transparent", borderLeft: active ? "3px solid" : "3px solid transparent", transition: "all .1s", position: "relative" }),
   chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "#fff", minWidth: 0, overflow: "hidden" },
-  chatHeader: { padding: "14px 20px", borderBottom: "1px solid rgba(0,0,0,.06)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, background: "#fff", zIndex: 2 },
+  chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "#fff", zIndex: 2 },
   chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px" },
   chatInput: { padding: "12px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0 },
   bubble: (isOut, _acc) => ({ maxWidth: "72%", padding: "10px 14px", borderRadius: 18, background: isOut ? _acc : "#f0efec", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 6 : 18, borderBottomLeftRadius: isOut ? 18 : 6, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere" }),
@@ -528,7 +528,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       )}
                     </div>
                     {/* Archive */}
-                    <button onClick={() => { setArchivedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else { next.add(selectedThread); setSelectedThread(null); } return next; }); }} title={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button onClick={() => { if (archivedThreads.has(selectedThread)) { setArchivedThreads(prev => { const next = new Set(prev); next.delete(selectedThread); return next; }); } else if (window.confirm("Archive this conversation with " + activeThread.tenantName + "? You can find it in the Archived filter.")) { setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; }); setSelectedThread(null); } }} title={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
                     </button>
                     {/* Info */}
@@ -767,7 +767,10 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   View Profile
                 </button>
-                <button className="btn btn-out btn-sm" style={{ width: "100%", marginBottom: 4, fontSize: 10 }} onClick={() => { setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; }); }}>{pinnedThreads.has(selectedThread) ? "Unpin Conversation" : "Pin Conversation"}</button>
+                <button className="btn btn-out btn-sm" style={{ width: "100%", marginBottom: 4, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={() => { setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; }); }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill={pinnedThreads.has(selectedThread) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2"><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>
+                  {pinnedThreads.has(selectedThread) ? "Unpin Conversation" : "Pin Conversation"}
+                </button>
                 <button className="btn btn-out btn-sm" style={{ width: "100%", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={exportConversation}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Export Chat
