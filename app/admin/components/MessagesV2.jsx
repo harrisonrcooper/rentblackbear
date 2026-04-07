@@ -338,7 +338,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           <button className="btn btn-out btn-sm" onClick={() => { const unreadIds = messages.filter(m => m.direction === "inbound" && !m.read).map(m => m.id); if (unreadIds.length) { supabase.from("messages").update({ read: true }).in("id", unreadIds); setMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, read: true } : m)); } }}>
             Mark All Read
           </button>
-          <button className="btn btn-out btn-sm" onClick={loadMessages} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <button className="btn btn-out btn-sm" onClick={loadMessages} title="Reload messages" style={{ display: "flex", alignItems: "center", gap: 4, opacity: .6 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Refresh
           </button>
@@ -702,6 +702,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   ["Messages", activeThread.messages.length],
                   ["First Message", activeThread.messages.length > 0 ? new Date(activeThread.messages[activeThread.messages.length - 1].created_at).toLocaleDateString() : "\u2014"],
                   ["Last Active", (() => { const last = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; return last ? fmtTime(last.created_at) : "\u2014"; })()],
+                  ["Avg Response", (() => { const sorted = [...activeThread.messages].sort((a, b) => a.created_at.localeCompare(b.created_at)); let totalMs = 0, count = 0; for (let j = 1; j < sorted.length; j++) { if (sorted[j].direction === "outbound" && sorted[j - 1].direction === "inbound") { totalMs += new Date(sorted[j].created_at) - new Date(sorted[j - 1].created_at); count++; } } if (!count) return "\u2014"; const avgMin = Math.round(totalMs / count / 60000); return avgMin < 60 ? avgMin + "m" : Math.round(avgMin / 60) + "h " + (avgMin % 60) + "m"; })()],
                 ].filter(([, v]) => v).map(([k, v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(0,0,0,.03)", fontSize: 11 }}>
                     <span style={{ color: "#6b5e52" }}>{k}</span>
@@ -709,10 +710,28 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   </div>
                 ))}
               </div>
+              {/* Tags in sidebar */}
+              {(threadTags[selectedThread] || []).length > 0 && (
+                <div style={{ marginTop: 12, borderTop: "1px solid rgba(0,0,0,.06)", paddingTop: 10 }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Labels</div>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {threadTags[selectedThread].map(tag => (
+                      <span key={tag} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: TAG_COLORS[tag] + "18", color: TAG_COLORS[tag], textTransform: "capitalize" }}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div style={{ marginTop: 16 }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Quick Actions</div>
-                <button className="btn btn-out btn-sm" style={{ width: "100%", marginBottom: 4, fontSize: 10 }} onClick={() => { /* navigate to tenant */ }}>View Tenant Profile</button>
-                <button className="btn btn-out btn-sm" style={{ width: "100%", fontSize: 10 }} onClick={() => { setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; }); }}>{pinnedThreads.has(selectedThread) ? "Unpin Conversation" : "Pin Conversation"}</button>
+                <button className="btn btn-out btn-sm" style={{ width: "100%", marginBottom: 4, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={() => { if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  View Profile
+                </button>
+                <button className="btn btn-out btn-sm" style={{ width: "100%", marginBottom: 4, fontSize: 10 }} onClick={() => { setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; }); }}>{pinnedThreads.has(selectedThread) ? "Unpin Conversation" : "Pin Conversation"}</button>
+                <button className="btn btn-out btn-sm" style={{ width: "100%", fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }} onClick={exportConversation}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export Chat
+                </button>
               </div>
             </div>
           )}
