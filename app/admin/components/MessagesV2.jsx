@@ -280,62 +280,92 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   };
 
   // React to message
-  // Slash commands
+  // Slash commands — two types: instant (no args) and input (type details after)
   const SLASH_COMMANDS = [
-    { cmd: "/maintenance", label: "Create maintenance request", desc: "Creates a request for this tenant" },
-    { cmd: "/charge", label: "Create a charge", desc: "Creates a payment charge for this tenant" },
-    { cmd: "/note", label: "Add internal note", desc: "Switches to note mode" },
-    { cmd: "/canned", label: "Quick replies", desc: "Opens saved reply templates" },
-    { cmd: "/assign", label: "Assign conversation", desc: "Assign to a team member" },
-    { cmd: "/archive", label: "Archive conversation", desc: "Move to archived" },
+    { cmd: "/maintenance", label: "Create maintenance request", desc: "Type issue after command", type: "input", placeholder: "e.g. /maintenance Leaky faucet in bathroom" },
+    { cmd: "/remind", label: "Send payment reminder", desc: "Sends rent reminder to tenant", type: "instant" },
+    { cmd: "/lease", label: "Send lease for signing", desc: "Sends lease signing link to tenant", type: "instant" },
+    { cmd: "/inspect", label: "Schedule inspection", desc: "Type date/details after command", type: "input", placeholder: "e.g. /inspect Move-out inspection April 15 2pm" },
+    { cmd: "/note", label: "Add internal note", desc: "Switches to note mode", type: "instant" },
+    { cmd: "/canned", label: "Quick replies", desc: "Opens saved reply templates", type: "instant" },
+    { cmd: "/assign", label: "Assign conversation", desc: "Assign to a team member", type: "instant" },
+    { cmd: "/star", label: "Star conversation", desc: "Toggle star on this thread", type: "instant" },
+    { cmd: "/pin", label: "Pin conversation", desc: "Pin to top of list", type: "instant" },
+    { cmd: "/archive", label: "Archive conversation", desc: "Move to archived", type: "instant" },
   ];
 
-  // When clicking a command from the menu — insert it into the input
+  // When clicking a command from the menu
   const insertSlashCommand = (cmd) => {
     setShowSlashMenu(false);
-    // Commands that need details: insert into input and let user type
-    if (cmd === "/maintenance" || cmd === "/charge") {
+    const cmdDef = SLASH_COMMANDS.find(c => c.cmd === cmd);
+    if (cmdDef?.type === "input") {
+      // Insert into input — user types details after
       setReplyText(cmd + " ");
       inputRef.current?.focus();
       return;
     }
-    // Instant commands: execute immediately
-    if (cmd === "/note") { setReplyText(""); setNoteMode(true); inputRef.current?.focus(); }
-    else if (cmd === "/canned") { setReplyText(""); setShowCanned(true); }
-    else if (cmd === "/assign") { setReplyText(""); setShowAssignMenu(true); }
-    else if (cmd === "/archive") { setReplyText(""); if (window.confirm("Archive this conversation?")) { setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; }); setSelectedThread(null); } }
+    // Instant commands
+    setReplyText("");
+    if (cmd === "/note") { setNoteMode(true); inputRef.current?.focus(); }
+    else if (cmd === "/canned") setShowCanned(true);
+    else if (cmd === "/assign") setShowAssignMenu(true);
+    else if (cmd === "/star") setStarredThreads(prev => { const n = new Set(prev); if (n.has(selectedThread)) n.delete(selectedThread); else n.add(selectedThread); return n; });
+    else if (cmd === "/pin") setPinnedThreads(prev => { const n = new Set(prev); if (n.has(selectedThread)) n.delete(selectedThread); else n.add(selectedThread); return n; });
+    else if (cmd === "/archive") { if (window.confirm("Archive this conversation?")) { setArchivedThreads(prev => { const n = new Set(prev); n.add(selectedThread); return n; }); setSelectedThread(null); } }
+    else if (cmd === "/remind") executeSlashCommand("/remind");
+    else if (cmd === "/lease") executeSlashCommand("/lease");
   };
 
-  // When hitting Enter with a slash command in the input — execute it
-  const executeSlashCommand = async () => {
-    const text = replyText.trim();
+  // Execute slash commands with details
+  const executeSlashCommand = async (override) => {
+    const text = (override || replyText.trim());
     if (!text.startsWith("/") || !activeThread) return false;
+    const tenant = activeThread.tenantName || "Tenant";
 
     if (text.startsWith("/maintenance")) {
       const details = text.replace("/maintenance", "").trim();
-      const title = details || "Maintenance request for " + (activeThread.tenantName || "tenant");
+      if (!details) { setReplyText("/maintenance "); inputRef.current?.focus(); return false; }
       const { error } = await supabase.from("maintenance_requests").insert({
-        title: title,
+        title: details,
         description: "Created via PM messages by " + (settings?.pmName || "PM"),
         priority: "medium",
         submitted_by: settings?.pmName || "PM",
         status: "open",
       });
-      if (error) console.error("Maintenance create error:", error);
-      await sendSystemMessage("Maintenance request created: " + title);
-      {
-        // Also notify tenant
-        if (activeThread.tenantEmail) {
-          try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Maintenance Request Created: " + title, html: "<p>A maintenance request has been created for you:</p><p><strong>" + title + "</strong></p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {}
-        }
+      if (error) { console.error("Maintenance error:", error); await sendSystemMessage("Failed to create maintenance request: " + error.message); }
+      else {
+        await sendSystemMessage("Maintenance request created: " + details);
+        if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Maintenance Request: " + details, html: "<p>A maintenance request has been created:</p><p><strong>" + details + "</strong></p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {} }
       }
       setReplyText("");
       return true;
     }
 
-    if (text.startsWith("/charge")) {
-      const details = text.replace("/charge", "").trim();
-      await sendSystemMessage("Charge request noted: " + (details || "See Tenant Ledger") + ". Navigate to Tenants > " + (activeThread.tenantName || "") + " > Payments to create the charge.");
+    if (text.startsWith("/inspect")) {
+      const details = text.replace("/inspect", "").trim();
+      if (!details) { setReplyText("/inspect "); inputRef.current?.focus(); return false; }
+      await sendSystemMessage("Inspection scheduled: " + details);
+      // Send to tenant
+      if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Inspection Scheduled", html: "<p>An inspection has been scheduled:</p><p><strong>" + details + "</strong></p><p>Please ensure the unit is accessible. " + (settings?.companyName || "") + "</p>" }) }); } catch (e) {} }
+      // Also send as outbound message so tenant sees it in portal
+      await supabase.from("messages").insert({ tenant_name: activeThread.tenantName, sender_email: settings?.pmEmail || "", sender_name: settings?.pmName || "PM", direction: "outbound", subject: "Inspection Scheduled", body: details, property_name: activeThread.propertyName, room_name: activeThread.roomName, read: true });
+      setReplyText("");
+      return true;
+    }
+
+    if (text.startsWith("/remind")) {
+      await sendSystemMessage("Payment reminder sent to " + tenant);
+      if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Payment Reminder \u2014 " + (settings?.companyName || ""), html: "<p>Hi " + tenant.split(" ")[0] + ",</p><p>This is a friendly reminder about your upcoming rent payment. Please log in to your tenant portal to view your balance and pay.</p><p>" + (settings?.companyName || "") + "<br/>" + (settings?.phone || "") + "</p>" }) }); } catch (e) {} }
+      // Also send as portal message
+      await supabase.from("messages").insert({ tenant_name: activeThread.tenantName, sender_email: settings?.pmEmail || "", sender_name: settings?.pmName || "PM", direction: "outbound", body: "This is a friendly reminder about your upcoming rent payment. Please log in to your portal to view your balance and pay.", property_name: activeThread.propertyName, room_name: activeThread.roomName, read: true });
+      setReplyText("");
+      return true;
+    }
+
+    if (text.startsWith("/lease")) {
+      await sendSystemMessage("Lease signing reminder sent to " + tenant);
+      if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Your Lease is Ready to Sign", html: "<p>Hi " + tenant.split(" ")[0] + ",</p><p>Your lease is ready for signature. Please log in to your tenant portal to review and sign.</p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {} }
+      await supabase.from("messages").insert({ tenant_name: activeThread.tenantName, sender_email: settings?.pmEmail || "", sender_name: settings?.pmName || "PM", direction: "outbound", body: "Your lease is ready for signature. Please log in to your portal to review and sign.", property_name: activeThread.propertyName, room_name: activeThread.roomName, read: true });
       setReplyText("");
       return true;
     }
@@ -765,10 +795,34 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   </div>
                 )}
 
-                {/* Scheduled messages indicator */}
+                {/* Scheduled messages — editable */}
                 {scheduledMsgs.filter(m => m.threadKey === selectedThread).length > 0 && (
-                  <div style={{ padding: "6px 16px", background: "rgba(59,130,246,.04)", borderTop: "1px solid rgba(59,130,246,.1)", fontSize: 10, color: "#3b82f6", fontWeight: 600 }}>
-                    {scheduledMsgs.filter(m => m.threadKey === selectedThread).length} scheduled message{scheduledMsgs.filter(m => m.threadKey === selectedThread).length > 1 ? "s" : ""} pending
+                  <div style={{ padding: "8px 16px", background: "rgba(59,130,246,.04)", borderTop: "1px solid rgba(59,130,246,.1)" }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: "#3b82f6", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
+                      Scheduled ({scheduledMsgs.filter(m => m.threadKey === selectedThread).length})
+                    </div>
+                    {scheduledMsgs.filter(m => m.threadKey === selectedThread).map((sm, si) => {
+                      const idx = scheduledMsgs.indexOf(sm);
+                      return (
+                        <div key={si} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 6, padding: "6px 8px", background: "#fff", borderRadius: 6, border: "1px solid rgba(59,130,246,.15)" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <textarea value={sm.text} onChange={e => { const next = [...scheduledMsgs]; next[idx] = { ...next[idx], text: e.target.value }; setScheduledMsgs(next); }} style={{ width: "100%", border: "none", background: "transparent", fontSize: 11, fontFamily: "inherit", resize: "none", outline: "none", padding: 0, lineHeight: 1.4 }} rows={1} />
+                            <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>
+                              <input type="datetime-local" value={sm.scheduledAt ? new Date(sm.scheduledAt).toISOString().slice(0, 16) : ""} onChange={e => { const next = [...scheduledMsgs]; next[idx] = { ...next[idx], scheduledAt: new Date(e.target.value).toISOString() }; setScheduledMsgs(next); }} style={{ border: "none", background: "transparent", fontSize: 9, color: "#3b82f6", fontFamily: "inherit", outline: "none", padding: 0 }} />
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                            <button onClick={() => { const msg = scheduledMsgs[idx]; setReplyText(msg.text); setScheduledMsgs(prev => prev.filter((_, i) => i !== idx)); }} title="Send now" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(74,124,89,.1)", color: "#4a7c59", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            </button>
+                            <button onClick={() => setScheduledMsgs(prev => prev.filter((_, i) => i !== idx))} title="Delete" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(196,92,74,.08)", color: "#c45c4a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
