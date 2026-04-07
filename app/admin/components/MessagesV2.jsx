@@ -800,7 +800,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                           )}
                           <div
                             className={isNote ? "msg-tail-note" : showTail ? (isOut ? "msg-tail-out" : "msg-tail-in") : ""}
-                            onDoubleClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }}
+                            onClick={e => e.stopPropagation()}
                             style={{
                               ...S.bubble(isOut || isNote, isNote ? "#f5f0e8" : _acc),
                               ...(isNote ? { background: "rgba(254,249,237,.9)", border: "1px dashed rgba(212,168,83,.35)", color: "#6b5e52", backdropFilter: "blur(12px)", boxShadow: "none" } : {}),
