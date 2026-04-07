@@ -2688,24 +2688,11 @@ export default function Page(){
       if(themeSec>=0){cfg[themeSec]={...cfg[themeSec],ids:["pm-settings",...cfg[themeSec].ids]};}
       else cfg.push({label:"Settings",ids:["pm-settings"]});
     }
-    // Ensure Templates + Documents are in their own section, not under Operations
-    const docIds=["leases","documents"];
-    const opsSec=cfg.find(s=>s.label==="Operations"&&docIds.some(id=>s.ids.includes(id)));
-    if(opsSec){
-      opsSec.ids=opsSec.ids.filter(id=>!docIds.includes(id));
-      const movedIds=docIds.filter(id=>allIds().includes(id));
-      if(movedIds.length>0) cfg.splice(cfg.indexOf(opsSec)+1,0,{label:"Documents",ids:movedIds});
-      cfg=cfg.filter(s=>s.ids.length>0);
-    }
-
-    // Ensure Communications is its own section with messages, announcements, notifications
-    const commTargetIds=["messages","announcements","notifications"];
-    const hasCommSection=cfg.some(s=>s.label==="Communications"&&commTargetIds.every(id=>s.ids.includes(id)));
-    if(!hasCommSection){
-      // Remove these IDs from whatever sections they're currently in
-      cfg=cfg.map(s=>({...s,ids:s.ids.filter(id=>!commTargetIds.includes(id))})).filter(s=>s.ids.length>0);
-      cfg.push({label:"Communications",ids:commTargetIds});
-    }
+    // Only inject IDs that are completely missing — never reorganize existing placement
+    if(!allIds().includes("messages")) cfg.push({label:"Communications",ids:["messages"]});
+    if(!allIds().includes("announcements")){const ms=cfg.findIndex(s=>s.ids.includes("messages"));if(ms>=0)cfg[ms].ids.push("announcements");else cfg.push({label:"Communications",ids:["announcements"]});}
+    if(!allIds().includes("leases")) cfg.push({label:"Documents",ids:["leases"]});
+    if(!allIds().includes("documents")){const ls=cfg.findIndex(s=>s.ids.includes("leases"));if(ls>=0&&!cfg[ls].ids.includes("documents"))cfg[ls].ids.push("documents");else if(!allIds().includes("documents"))cfg.push({label:"Documents",ids:["documents"]});}
     return cfg;
   })();
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
