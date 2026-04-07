@@ -895,7 +895,7 @@ export default function TenantPortal() {
                     <div key={msg.id} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginBottom: 10 }}>
                       <div style={{ maxWidth: "80%", padding: "10px 14px", borderRadius: 14, background: isMe ? C.bg : "#f4f3f0", color: isMe ? "#f5f0e8" : C.text, borderBottomRightRadius: isMe ? 4 : 14, borderBottomLeftRadius: isMe ? 14 : 4 }}>
                         {msg.subject && <div style={{ fontSize: 10, fontWeight: 700, opacity: .6, marginBottom: 3 }}>{msg.subject}</div>}
-                        <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.body}</div>
+                        <div style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{msg.original_body || msg.body}</div>
                         <div style={{ fontSize: 9, opacity: .5, marginTop: 4, textAlign: "right" }}>
                           {new Date(msg.created_at).toLocaleDateString()} {new Date(msg.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                         </div>

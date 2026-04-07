@@ -454,12 +454,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
     setShowReactions(null);
   };
 
-  // Edit message
+  // Edit message — saves edited version for PM view, keeps original for tenant
   const saveEditMsg = async (msgId) => {
     if (!editMsgText.trim()) return;
-    const editedBody = editMsgText.trim() + (editMsgText.trim().endsWith("(edited)") ? "" : "");
-    await supabase.from("messages").update({ body: editedBody, edited: true }).eq("id", msgId);
-    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, body: editedBody, edited: true } : m));
+    const msg = messages.find(m => m.id === msgId);
+    const originalBody = msg?.original_body || msg?.body || "";
+    const editedBody = editMsgText.trim();
+    // Store original_body on first edit, update body with edited version
+    // Tenant portal reads original_body (falls back to body if not set)
+    await supabase.from("messages").update({ body: editedBody, original_body: originalBody, edited: true }).eq("id", msgId);
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, body: editedBody, original_body: originalBody, edited: true } : m));
     setEditingMsg(null);
     setEditMsgText("");
   };
