@@ -63,7 +63,7 @@ const COMMON_EMOJIS = [
 
 // ── Styles ─────────────────────────────────────────────────────────
 const S = {
-  outer: { height: "calc(100vh - 120px)", display: "flex", flexDirection: "column", margin: "-20px -24px", padding: 0 },
+  outer: { position: "fixed", top: 48, bottom: 0, left: 220, right: 0, display: "flex", flexDirection: "column", background: "#f4f3f0", zIndex: 5 },
   header: { padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "#fff" },
   wrap: { display: "flex", gap: 0, flex: 1, overflow: "hidden", background: "#fff", minHeight: 0 },
   threadList: { width: 300, borderRight: "1px solid rgba(0,0,0,.06)", display: "flex", flexDirection: "column", background: "#fafaf8" },
@@ -590,15 +590,35 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <div ref={bottomRef} />
                 </div>
 
-                {/* Canned responses */}
+                {/* Canned responses (editable) */}
                 {showCanned && (
-                  <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(0,0,0,.06)", maxHeight: 150, overflowY: "auto" }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Quick Replies</div>
-                    {CANNED_RESPONSES.map((cr, i) => (
-                      <div key={i} onClick={() => { setReplyText(cr); setShowCanned(false); inputRef.current?.focus(); }} style={{ padding: "8px 10px", borderRadius: 6, cursor: "pointer", fontSize: 12, color: "#5c4a3a", marginBottom: 2, transition: "background .1s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        {cr}
+                  <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(0,0,0,.06)", maxHeight: 200, overflowY: "auto" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5 }}>Quick Replies</div>
+                      <button onClick={() => setEditingReplies(!editingReplies)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: _acc, fontWeight: 600, fontFamily: "inherit" }}>{editingReplies ? "Done" : "Edit"}</button>
+                    </div>
+                    {editingReplies ? (
+                      <div>
+                        {savedReplies.map((cr, i) => (
+                          <div key={i} style={{ display: "flex", gap: 4, marginBottom: 4, alignItems: "center" }}>
+                            <input value={cr} onChange={e => { const next = [...savedReplies]; next[i] = e.target.value; setSavedReplies(next); }} style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit", outline: "none" }} />
+                            <button onClick={() => setSavedReplies(prev => prev.filter((_, j) => j !== i))} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                          </div>
+                        ))}
+                        <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                          <input value={editReplyDraft} onChange={e => setEditReplyDraft(e.target.value)} placeholder="Add new reply..." onKeyDown={e => { if (e.key === "Enter" && editReplyDraft.trim()) { setSavedReplies(prev => [...prev, editReplyDraft.trim()]); setEditReplyDraft(""); } }} style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit", outline: "none" }} />
+                          <button onClick={() => { if (editReplyDraft.trim()) { setSavedReplies(prev => [...prev, editReplyDraft.trim()]); setEditReplyDraft(""); } }} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid " + _acc, background: _acc + "12", color: _acc, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Add</button>
+                        </div>
                       </div>
-                    ))}
+                    ) : (
+                      savedReplies.map((cr, i) => (
+                        <div key={i} onClick={() => { setReplyText(cr); setShowCanned(false); inputRef.current?.focus(); }} style={{ padding: "8px 10px", borderRadius: 6, cursor: "pointer", fontSize: 12, color: "#5c4a3a", marginBottom: 2, transition: "background .1s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          {cr}
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
 
@@ -626,6 +646,23 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <button onClick={() => setShowCanned(!showCanned)} title="Quick replies" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showCanned ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                   </button>
+                  {/* Emoji picker */}
+                  <div style={{ position: "relative" }}>
+                    <button onClick={() => setShowEmoji(!showEmoji)} title="Insert emoji" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showEmoji ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                    </button>
+                    {showEmoji && (
+                      <div style={{ position: "absolute", bottom: 42, left: 0, background: "#fff", borderRadius: 10, boxShadow: "0 4px 20px rgba(0,0,0,.15)", padding: 8, zIndex: 20, width: 220 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 2 }}>
+                          {COMMON_EMOJIS.map((em, i) => (
+                            <button key={i} onClick={() => { setReplyText(prev => prev + em); setShowEmoji(false); inputRef.current?.focus(); }} style={{ width: 28, height: 28, border: "none", background: "transparent", cursor: "pointer", fontSize: 16, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.06)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              {em}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div style={{ flex: 1, position: "relative" }}>
                     {noteMode && <div style={{ position: "absolute", top: -20, left: 0, fontSize: 9, fontWeight: 700, color: "#9a7422" }}>INTERNAL NOTE (tenant will not see this)</div>}
                     <textarea
@@ -659,6 +696,8 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
               <div style={{ borderTop: "1px solid rgba(0,0,0,.06)", paddingTop: 12 }}>
                 {[
                   ["Property", activeThread.propertyName],
+                  ["Inbound", activeThread.messages.filter(m => m.direction === "inbound").length],
+                  ["Outbound", activeThread.messages.filter(m => m.direction === "outbound").length],
                   ["Room", activeThread.roomName],
                   ["Messages", activeThread.messages.length],
                   ["First Message", activeThread.messages.length > 0 ? new Date(activeThread.messages[activeThread.messages.length - 1].created_at).toLocaleDateString() : "\u2014"],
