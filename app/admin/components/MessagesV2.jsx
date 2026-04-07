@@ -125,6 +125,10 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   const [editingMsg, setEditingMsg] = useState(null); // msg id
   const [editMsgText, setEditMsgText] = useState("");
   const [hoveredMsg, setHoveredMsg] = useState(null);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduledMsgs, setScheduledMsgs] = useState([]);
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -275,6 +279,81 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   };
 
   // React to message
+  // Slash commands
+  const SLASH_COMMANDS = [
+    { cmd: "/maintenance", label: "Create maintenance request", desc: "Creates a request for this tenant" },
+    { cmd: "/charge", label: "Create a charge", desc: "Creates a payment charge for this tenant" },
+    { cmd: "/note", label: "Add internal note", desc: "Switches to note mode" },
+    { cmd: "/canned", label: "Quick replies", desc: "Opens saved reply templates" },
+    { cmd: "/assign", label: "Assign conversation", desc: "Assign to a team member" },
+    { cmd: "/archive", label: "Archive conversation", desc: "Move to archived" },
+  ];
+
+  const handleSlashCommand = (cmd) => {
+    setShowSlashMenu(false);
+    setReplyText("");
+    if (cmd === "/maintenance") {
+      const title = "Maintenance request from chat with " + (activeThread?.tenantName || "tenant");
+      supabase.from("maintenance_requests").insert({ tenant_id: null, tenant_name: activeThread?.tenantName, property_name: activeThread?.propertyName, room_name: activeThread?.roomName, title, description: "Created via PM messages", priority: "medium", submitted_by: settings?.pmName || "PM" });
+      sendSystemMessage("Maintenance request created: " + title);
+    } else if (cmd === "/charge") {
+      sendSystemMessage("Charge creation is available from the Tenant Ledger. Navigate to Tenants > " + (activeThread?.tenantName || "") + " > Payments.");
+    } else if (cmd === "/note") {
+      setNoteMode(true);
+      inputRef.current?.focus();
+    } else if (cmd === "/canned") {
+      setShowCanned(true);
+    } else if (cmd === "/assign") {
+      setShowAssignMenu(true);
+    } else if (cmd === "/archive") {
+      if (window.confirm("Archive this conversation?")) {
+        setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; });
+        setSelectedThread(null);
+      }
+    }
+  };
+
+  const sendSystemMessage = async (text) => {
+    if (!activeThread) return;
+    await supabase.from("messages").insert({
+      tenant_name: activeThread.tenantName, sender_email: settings?.pmEmail || settings?.email || "",
+      sender_name: "System", direction: "note", subject: "[System]", body: text,
+      property_name: activeThread.propertyName, room_name: activeThread.roomName, read: true,
+    });
+    loadMessages();
+  };
+
+  // Schedule message
+  const scheduleMessage = () => {
+    if (!replyText.trim() || !scheduleTime || !activeThread) return;
+    const scheduledAt = new Date(scheduleTime).toISOString();
+    setScheduledMsgs(prev => [...prev, { text: replyText, threadKey: selectedThread, scheduledAt, tenantName: activeThread.tenantName }]);
+    setReplyText("");
+    setShowSchedule(false);
+    setScheduleTime("");
+  };
+
+  // Check and send scheduled messages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().toISOString();
+      setScheduledMsgs(prev => {
+        const due = prev.filter(m => m.scheduledAt <= now);
+        const remaining = prev.filter(m => m.scheduledAt > now);
+        due.forEach(m => {
+          supabase.from("messages").insert({
+            tenant_name: m.tenantName, sender_email: settings?.pmEmail || settings?.email || "",
+            sender_name: settings?.pmName || "Property Manager", direction: "outbound",
+            subject: "", body: m.text, read: true, status: "sent",
+          });
+        });
+        if (due.length > 0) loadMessages();
+        return remaining;
+      });
+    }, 30000); // check every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleReaction = async (msgId, reaction) => {
     const msg = messages.find(m => m.id === msgId);
     if (!msg) return;
@@ -630,6 +709,39 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <div ref={bottomRef} />
                 </div>
 
+                {/* Slash command menu */}
+                {showSlashMenu && (
+                  <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(0,0,0,.06)", background: "#fafaf8" }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Commands</div>
+                    {SLASH_COMMANDS.filter(c => c.cmd.startsWith(replyText.trim()) || replyText.trim() === "/").map(c => (
+                      <div key={c.cmd} onClick={() => handleSlashCommand(c.cmd)} style={{ padding: "8px 10px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, transition: "background .1s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <code style={{ fontSize: 12, fontWeight: 700, color: _acc, background: "rgba(0,0,0,.04)", padding: "2px 6px", borderRadius: 4 }}>{c.cmd}</code>
+                        <div><div style={{ fontSize: 12, fontWeight: 600 }}>{c.label}</div><div style={{ fontSize: 10, color: "#999" }}>{c.desc}</div></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Schedule message */}
+                {showSchedule && (
+                  <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,.06)", background: "#fafaf8", display: "flex", gap: 8, alignItems: "center" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#6b5e52" }}>Send later:</span>
+                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit" }} />
+                    <button onClick={scheduleMessage} disabled={!scheduleTime || !replyText.trim()} style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: scheduleTime && replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: scheduleTime && replyText.trim() ? "#fff" : "#bbb", fontSize: 11, fontWeight: 700, cursor: scheduleTime && replyText.trim() ? "pointer" : "default" }}>Schedule</button>
+                    <button onClick={() => { setShowSchedule(false); setScheduleTime(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 14 }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                )}
+
+                {/* Scheduled messages indicator */}
+                {scheduledMsgs.filter(m => m.threadKey === selectedThread).length > 0 && (
+                  <div style={{ padding: "6px 16px", background: "rgba(59,130,246,.04)", borderTop: "1px solid rgba(59,130,246,.1)", fontSize: 10, color: "#3b82f6", fontWeight: 600 }}>
+                    {scheduledMsgs.filter(m => m.threadKey === selectedThread).length} scheduled message{scheduledMsgs.filter(m => m.threadKey === selectedThread).length > 1 ? "s" : ""} pending
+                  </div>
+                )}
+
                 {/* Canned responses (editable) */}
                 {showCanned && (
                   <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(0,0,0,.06)", maxHeight: 200, overflowY: "auto" }}>
@@ -708,13 +820,18 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     <textarea
                       ref={inputRef}
                       value={replyText}
-                      onChange={e => setReplyText(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
-                      placeholder={noteMode ? "Write an internal note..." : "Type a message..."}
+                      onChange={e => { const v = e.target.value; setReplyText(v); setShowSlashMenu(v.startsWith("/") && v.length > 0 && v.length < 15); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
+                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (showSlashMenu) { const filtered = SLASH_COMMANDS.filter(c => c.cmd.startsWith(replyText.trim())); if (filtered.length === 1) handleSlashCommand(filtered[0].cmd); } else { sendReply(); } } }}
+                      placeholder={noteMode ? "Write an internal note..." : "Type a message... (/ for commands)"}
                       rows={1}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1.5px solid rgba(0,0,0,.1)", fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "#fff" }}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1.5px solid rgba(0,0,0,.1)", fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "#fff", minHeight: 44, maxHeight: 120, lineHeight: 1.5 }}
                     />
                   </div>
+                  {/* Schedule button */}
+                  <button onClick={() => setShowSchedule(!showSchedule)} title="Send later" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showSchedule ? "rgba(59,130,246,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={showSchedule ? "#3b82f6" : "#999"} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </button>
+                  {/* Send button */}
                   <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 40, height: 40, borderRadius: 20, border: "none", background: replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all .15s" }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                   </button>
