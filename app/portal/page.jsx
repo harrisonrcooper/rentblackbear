@@ -172,6 +172,8 @@ export default function TenantPortal() {
   const [contactForm, setContactForm]     = useState({ subject: "", message: "", sending: false, sent: false, showForm: false });
   const [tenantMessages, setTenantMessages] = useState([]);
   const [msgInput, setMsgInput]           = useState("");
+  const [portalHoveredMsg, setPortalHoveredMsg] = useState(null);
+  const [portalShowReactions, setPortalShowReactions] = useState(null);
   const [renewalModal, setRenewalModal]   = useState({ open: false, choice: null, submitting: false, submitted: false });
 
   // Realtime subscription for portal messages
@@ -937,7 +939,14 @@ export default function TenantPortal() {
                     <div key={msg.id}>
                       {showDateGroup && <div style={{ textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#3a3a3c" }}>{fmtMsgDateGroup(msg.created_at)}</div>}
                       {!showDateGroup && showTimeGap && <div style={{ textAlign: "center", margin: "12px 0 8px", fontSize: 10, color: "#3a3a3c", fontWeight: 500 }}>{fmtMsgTime(msg.created_at)}</div>}
-                      <div className="portal-msg" style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginTop: hasReactions ? 14 : 0, marginBottom: groupedNext ? 2 : 8, position: "relative" }}>
+                      <div className="portal-msg" style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginTop: portalShowReactions === msg.id ? 52 : (hasReactions ? 14 : 0), marginBottom: groupedNext ? 2 : 8, position: "relative" }}
+                        onMouseEnter={() => setPortalHoveredMsg(msg.id)} onMouseLeave={() => setPortalHoveredMsg(null)}>
+                        {/* Reaction button — left side for tenant's own messages */}
+                        {isMe && portalHoveredMsg === msg.id && (
+                          <button className="portal-action-btn" onClick={e => { e.stopPropagation(); setPortalShowReactions(portalShowReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 4, alignSelf: "center", transition: "transform .15s ease, background .15s ease" }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b6b6e" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                          </button>
+                        )}
                         {/* PM avatar on inbound — only on last in group */}
                         {!isMe && (
                           <div style={{ width: 26, minWidth: 26, marginRight: 6, alignSelf: "flex-end" }}>
@@ -964,8 +973,18 @@ export default function TenantPortal() {
                           }}>
                           {msg.subject && <div style={{ fontSize: 10, fontWeight: 700, opacity: .6, marginBottom: 3 }}>{msg.subject}</div>}
                           <div style={{ fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{msg.original_body || msg.body}</div>
-                          {/* Timestamp — show on last in group */}
                           {isLast && <div style={{ fontSize: 9, color: isMe ? "rgba(255,255,255,.7)" : "#3a3a3c", fontWeight: 500, marginTop: 3 }}>{fmtMsgTime(msg.created_at)}</div>}
+                          {/* Tapback picker — centered above bubble */}
+                          {portalShowReactions === msg.id && (
+                            <div className="portal-tapback" style={{ display: "flex", gap: 4, position: "absolute", top: -48, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,.95)", backdropFilter: "blur(20px) saturate(180%)", borderRadius: 24, boxShadow: "0 4px 20px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.08)", padding: "6px 10px", zIndex: 10 }} onClick={e => e.stopPropagation()}>
+                              {PORTAL_REACTIONS.map(r => {
+                                const active = (reactions[r.label] || []).includes("tenant");
+                                return (
+                                  <button key={r.label} className="portal-react-btn" onClick={() => { togglePortalReaction(msg.id, r.label); setPortalShowReactions(null); }} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: active ? "rgba(0,122,255,.12)" : "transparent", cursor: "pointer", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease" }}>{r.emoji}</button>
+                                );
+                              })}
+                            </div>
+                          )}
                           {/* Reaction badge */}
                           {hasReactions && (
                             <div className="portal-react-badge" style={{ position: "absolute", top: -8, [isMe ? "left" : "right"]: -4, background: "#fff", borderRadius: 12, padding: "2px 5px", fontSize: 14, lineHeight: 1, boxShadow: "0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.06)", display: "flex", alignItems: "center", gap: 2, zIndex: 3 }}>
@@ -977,6 +996,12 @@ export default function TenantPortal() {
                             </div>
                           )}
                         </div>
+                        {/* Reaction button — right side for PM messages */}
+                        {!isMe && portalHoveredMsg === msg.id && (
+                          <button className="portal-action-btn" onClick={e => { e.stopPropagation(); setPortalShowReactions(portalShowReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 4, alignSelf: "center", transition: "transform .15s ease, background .15s ease" }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b6b6e" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
