@@ -368,7 +368,27 @@ export default function TenantPortal() {
     setMaintSubmitting(true);
     await supabase.from("maintenance_requests").insert({ pm_id: tenant?.pm_id, tenant_id: tenant?.id, property_id: tenant?.property_id, room_id: tenant?.room_id, title: maintForm.title, description: maintForm.desc, priority: maintForm.priority, submitted_by: tenant?.name, photos: maintForm.photos.length > 0 ? maintForm.photos : null });
     const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", tenant.id).order("created_at", { ascending: false });
-    setMaintenance(mt || []); setMaintForm({ title: "", desc: "", priority: "medium", photos: [] }); setMaintSuccess(true);
+    setMaintenance(mt || []);
+    // Send email notification to PM
+    try {
+      await fetch("/api/send-email", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: pmSettings?.pmEmail || pmSettings?.email || "",
+          subject: "New Maintenance Request — " + maintForm.title,
+          fromName: (pmSettings?.pmName || "PropOS") + " — Tenant Portal",
+          replyTo: user?.email || "",
+          html: "<p><strong>New maintenance request from " + (tenant?.name || "Tenant") + "</strong></p>" +
+            "<p><strong>Issue:</strong> " + maintForm.title + "</p>" +
+            (maintForm.desc ? "<p><strong>Details:</strong> " + maintForm.desc + "</p>" : "") +
+            "<p><strong>Priority:</strong> " + maintForm.priority + "</p>" +
+            "<p><strong>Property:</strong> " + (tenant?.property?.name || "") + " — " + (tenant?.room?.name || "") + "</p>" +
+            (maintForm.photos.length > 0 ? "<p><em>" + maintForm.photos.length + " photo(s) attached</em></p>" : "") +
+            "<p style='font-size:11px;color:#999;margin-top:16px;'>Submitted via tenant portal</p>",
+        }),
+      });
+    } catch (e) {}
+    setMaintForm({ title: "", desc: "", priority: "medium", photos: [] }); setMaintSuccess(true);
     setTimeout(() => setMaintSuccess(false), 4000); setMaintSubmitting(false);
   };
 
@@ -494,9 +514,10 @@ export default function TenantPortal() {
       {onboardingDone && (
         <div style={{ background: "#fff", borderBottom: "1px solid rgba(0,0,0,.07)", overflowX: "auto" }}>
           <div style={{ display: "flex", maxWidth: 680, margin: "0 auto" }}>
-            {[{ id: "home", label: "Home", icon: <IcHome s={16} /> }, { id: "payments", label: "Payments", icon: <IcDollar s={16} /> }, { id: "maintenance", label: "Maintenance", icon: <IcWrench s={16} /> }, { id: "documents", label: "Lease", icon: <IcFile s={16} /> }, { id: "account", label: "Account", icon: <IcUser s={16} /> }].map(t => (
-              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, padding: "13px 8px", border: "none", background: "transparent", borderBottom: activeTab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", cursor: "pointer", fontSize: 11, fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? C.text : "#999", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all .15s" }}>
+            {(() => { const unpaidCount = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).length; const openMaintCount = maintenance.filter(m => m.status !== "resolved").length; return [{ id: "home", label: "Home", icon: <IcHome s={16} />, badge: 0 }, { id: "payments", label: "Payments", icon: <IcDollar s={16} />, badge: unpaidCount }, { id: "maintenance", label: "Maintenance", icon: <IcWrench s={16} />, badge: openMaintCount }, { id: "documents", label: "Lease", icon: <IcFile s={16} />, badge: 0 }, { id: "account", label: "Account", icon: <IcUser s={16} />, badge: 0 }]; })().map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ flex: 1, padding: "13px 8px", border: "none", background: "transparent", borderBottom: activeTab === t.id ? `2px solid ${C.accent}` : "2px solid transparent", cursor: "pointer", fontSize: 11, fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? C.text : "#999", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all .15s", position: "relative" }}>
                 <span style={{ color: activeTab === t.id ? C.accent : "#bbb" }}>{t.icon}</span>{t.label}
+                {t.badge > 0 && <span style={{ position: "absolute", top: 4, right: "calc(50% - 18px)", minWidth: 16, height: 16, borderRadius: 8, background: "#c45c4a", color: "#fff", fontSize: 8, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", border: "2px solid #fff" }}>{t.badge}</span>}
               </button>
             ))}
           </div>
