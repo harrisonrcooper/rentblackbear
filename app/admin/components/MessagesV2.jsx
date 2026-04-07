@@ -795,12 +795,6 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                               </button>
                             </div>
                           )}
-                          {/* Reaction trigger button — appears on hover, opposite side of bubble */}
-                          {!isOut && !isNote && isHovered && !isDeleted && (
-                            <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 4, alignSelf: "center", transition: "transform .15s ease, background .15s ease" }}>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b6b6e" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                            </button>
-                          )}
                           <div
                             className={isNote ? "msg-tail-note" : showTail ? (isOut ? "msg-tail-out" : "msg-tail-in") : ""}
                             onClick={e => e.stopPropagation()}
@@ -865,6 +859,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                               </div>
                             )}
                           </div>
+                          {/* Inbound reaction trigger — right side of tenant message */}
+                          {!isOut && !isNote && isHovered && !isDeleted && (
+                            <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.08)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 4, alignSelf: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b6b6e" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
