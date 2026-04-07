@@ -6607,7 +6607,7 @@ export default function Page(){
       })()}
 
       {/* ═══ MESSAGES ═══ */}
-      {tab==="messages"&&<Messages settings={settings} properties={props} />}
+      {tab==="messages"&&<Messages settings={settings} properties={props} maint={maint} setMaint={setMaint} save={save} uid={uid} />}
       {tab==="announcements"&&<Announcements settings={settings} setSettings={setSettings} save={save} properties={props} uid={uid} />}
 
       {/* ═══ NOTIFICATIONS ═══ */}

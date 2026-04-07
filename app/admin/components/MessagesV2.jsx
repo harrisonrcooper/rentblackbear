@@ -84,7 +84,7 @@ const S = {
 };
 
 // ── Component ──────────────────────────────────────────────────────
-export default function MessagesV2({ settings, properties, charges, maintenance: maintRequests, leases }) {
+export default function MessagesV2({ settings, properties, charges, maintenance: maintRequests, leases, maint, setMaint, save, uid }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedThread, setSelectedThread] = useState(null);
@@ -338,6 +338,11 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
       });
       if (error) { console.error("Maintenance error:", error); await sendSystemMessage("Failed to create maintenance request: " + error.message); }
       else {
+        // Add to admin dashboard maintenance list (hq-maint cache)
+        if (setMaint && uid) {
+          const newReq = { id: uid(), roomId: "", propId: "", tenant: activeThread.tenantName || "", title: details, desc: "Created via PM messages", status: "open", priority: "medium", created: new Date().toISOString().split("T")[0], photos: 0 };
+          setMaint(prev => { const updated = [newReq, ...prev]; if (save) save("hq-maint", updated); return updated; });
+        }
         await sendSystemMessage("Maintenance request created: " + details);
         if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Maintenance Request: " + details, html: "<p>A maintenance request has been created:</p><p><strong>" + details + "</strong></p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {} }
       }
