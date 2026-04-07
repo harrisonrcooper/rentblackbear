@@ -7779,6 +7779,53 @@ export default function Page(){
                       <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Addenda ({tLease.addenda.length})</div>
                       {tLease.addenda.map((a,i)=><div key={i} style={{fontSize:11,color:"#5c4a3a",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.03)"}}>{a.title||"Addendum "+(i+1)} <span style={{color:"#9a8878",fontSize:9}}>{a.date}</span></div>)}
                     </div>}
+                    {/* Renewal Request — actionable */}
+                    {(()=>{
+                      const renewal=renewalRequests.find(rr=>rr.tenant_name===r.tenant?.name&&!rr.read);
+                      if(!renewal)return null;
+                      const isM2M=renewal.subject?.includes("Month-to-Month");
+                      const termMonths=isM2M?null:parseInt((renewal.subject||"").replace(/\D/g,""))||12;
+                      const m2mRent=(r.rent||0)+(settings.m2mIncrease||50);
+                      return(
+                        <div style={{marginTop:10,border:"2px solid rgba(212,168,83,.3)",borderRadius:10,padding:"14px 16px",background:"rgba(212,168,83,.04)"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a7422" strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                            <span style={{fontSize:13,fontWeight:800,color:"#9a7422"}}>Lease Renewal Requested</span>
+                          </div>
+                          <div style={{fontSize:12,color:"#5c4a3a",lineHeight:1.6,marginBottom:10}}>
+                            {isM2M
+                              ?<>Requesting <strong>month-to-month</strong> at <strong>{fmtS(m2mRent)}/mo</strong> (+${settings.m2mIncrease||50})</>
+                              :<>Requesting <strong>{termMonths}-month renewal</strong> at current rent <strong>{fmtS(r.rent)}/mo</strong></>
+                            }
+                          </div>
+                          <div style={{fontSize:10,color:"#9a8878",marginBottom:10}}>Submitted {new Date(renewal.created_at).toLocaleDateString()}</div>
+                          <div style={{display:"flex",gap:6}}>
+                            <button className="btn btn-green btn-sm" style={{flex:1}} onClick={async()=>{
+                              // Approve — mark read, send confirmation, create new lease draft
+                              await fetch(SUPA_URL+"/rest/v1/messages?id=eq."+renewal.id,{method:"PATCH",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({read:true})});
+                              setRenewalRequests(p=>p.map(rr=>rr.id===renewal.id?{...rr,read:true}:rr));
+                              // Send approval email
+                              try{await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:renewal.sender_email||r.tenant?.email,subject:"Lease Renewal Approved",fromName:(settings.pmName||"")+" | "+(settings.companyName||""),html:"<p>Your lease renewal request has been approved. We will prepare the new lease agreement and send it for your signature shortly.</p><p>"+(settings.companyName||"")+"</p>"})});}catch(e){}
+                              // Reply message
+                              await fetch(SUPA_URL+"/rest/v1/messages",{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({tenant_name:renewal.tenant_name,sender_email:settings.pmEmail||settings.email||"",sender_name:settings.pmName||"Property Manager",direction:"outbound",subject:"Re: "+renewal.subject,body:"Your lease renewal has been approved. A new lease will be sent to you for signature.",property_name:renewal.property_name,room_name:renewal.room_name,read:true})});
+                              showAlert({title:"Approved",body:"Renewal approved for "+r.tenant.name+". Create the new lease from the Lease Templates tab."});
+                            }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                              Approve
+                            </button>
+                            <button className="btn btn-out btn-sm" style={{flex:1,color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={async()=>{
+                              await fetch(SUPA_URL+"/rest/v1/messages?id=eq."+renewal.id,{method:"PATCH",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({read:true})});
+                              setRenewalRequests(p=>p.map(rr=>rr.id===renewal.id?{...rr,read:true}:rr));
+                              try{await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:renewal.sender_email||r.tenant?.email,subject:"Lease Renewal Update",fromName:(settings.pmName||"")+" | "+(settings.companyName||""),html:"<p>We have reviewed your lease renewal request and are unable to approve it at this time. Please contact us to discuss your options.</p><p>"+(settings.companyName||"")+"</p>"})});}catch(e){}
+                              await fetch(SUPA_URL+"/rest/v1/messages",{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({tenant_name:renewal.tenant_name,sender_email:settings.pmEmail||settings.email||"",sender_name:settings.pmName||"Property Manager",direction:"outbound",subject:"Re: "+renewal.subject,body:"We are unable to approve your renewal request at this time. Please contact us to discuss options.",property_name:renewal.property_name,room_name:renewal.room_name,read:true})});
+                              showAlert({title:"Denied",body:"Renewal denied. Tenant has been notified."});
+                            }}>
+                              Deny
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ):(
                   <div style={{textAlign:"center",padding:16}}>
