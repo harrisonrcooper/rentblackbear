@@ -196,9 +196,11 @@ export default function TenantPortal() {
       ]);
       setLeaseId("ul56zet");
       // Load real lease data from Supabase for dev preview
-      supabase.from("lease_instances").select("*").eq("id", "ul56zet").single().then(({ data: row }) => {
-        if (row) setLeaseData({ ...(row.variable_data || {}), id: row.id, status: row.status, landlordSig: row.landlord_sig, tenantSig: row.tenant_sig, landlordSignedAt: row.landlord_signed_at, tenantSignedAt: row.tenant_signed_at });
-      });
+      try {
+        supabase.from("lease_instances").select("*").eq("id", "ul56zet").single().then(({ data: row }) => {
+          if (row) setLeaseData({ ...(row.variable_data || {}), id: row.id, status: row.status, landlordSig: row.landlord_sig, tenantSig: row.tenant_sig, landlordSignedAt: row.landlord_signed_at, tenantSignedAt: row.tenant_signed_at });
+        }).catch(() => {});
+      } catch (e) {}
       setAnnouncements([
         { id: "demo1", title: "Water shut-off scheduled", body: "City maintenance will shut off water on April 12 from 8am to 2pm. Please plan accordingly.", createdAt: "2026-04-05T12:00:00Z", expiresAt: null, propertyId: null },
         { id: "demo2", title: "Parking lot repaving", body: "The main lot will be repaved April 15-17. Use the side lot during this time.", createdAt: "2026-04-03T09:00:00Z", expiresAt: "2026-04-18T23:59:59Z", propertyId: null },
