@@ -397,6 +397,37 @@ export async function GET(req) {
       }
     }
 
+    // ── 8. SCHEDULED MESSAGES — send any that are past due ──────────
+    try {
+      const smRes = await fetch(`${SUPA_URL}/rest/v1/scheduled_messages?sent=eq.false&scheduled_at=lte.${new Date().toISOString()}&select=*`, {
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+      });
+      const scheduledMsgs = await smRes.json();
+      if (Array.isArray(scheduledMsgs) && scheduledMsgs.length > 0) {
+        for (const sm of scheduledMsgs) {
+          // Send the message
+          await fetch(`${SUPA_URL}/rest/v1/messages`, {
+            method: "POST",
+            headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+            body: JSON.stringify({
+              tenant_name: sm.tenant_name, sender_email: s.pmEmail || s.email || "",
+              sender_name: s.pmName || "Property Manager", direction: "outbound",
+              body: sm.body, read: true,
+            }),
+          });
+          // Mark as sent
+          await fetch(`${SUPA_URL}/rest/v1/scheduled_messages?id=eq.${sm.id}`, {
+            method: "PATCH",
+            headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+            body: JSON.stringify({ sent: true }),
+          });
+          log.push(`Scheduled message sent to ${sm.tenant_name}: ${(sm.body || "").slice(0, 40)}`);
+        }
+      }
+    } catch (schedErr) {
+      log.push(`Scheduled messages error: ${schedErr.message}`);
+    }
+
     // ── Save ──────────────────────────────────────────────────────────
     const saves = [];
     if (chargesChanged) saves.push(supaSet("hq-charges", updatedCharges));
