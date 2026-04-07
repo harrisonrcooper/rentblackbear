@@ -976,6 +976,46 @@ export default function TenantPortal() {
                 </div>
               )}
             </div>
+
+            {/* Proof of Residency */}
+            <div style={{ ...sCard, marginTop: 12 }}>
+              <span style={sLabel}>PROOF OF RESIDENCY</span>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.6 }}>Generate an official letter confirming your tenancy. Commonly needed for employment verification, bank applications, or government services.</div>
+              <button onClick={() => {
+                const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+                const w = window.open("","_blank");
+                w.document.write(`<!DOCTYPE html><html><head><title>Proof of Residency — ${esc(tenant?.name)}</title><style>
+                  body{font-family:Georgia,serif;max-width:620px;margin:50px auto;padding:0 32px;color:#1a1714;line-height:1.8}
+                  .header{text-align:center;border-bottom:2px solid #1a1714;padding-bottom:16px;margin-bottom:32px}
+                  .header h1{font-size:18px;font-weight:700;margin:0 0 4px}
+                  .title{font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;text-align:center;margin-bottom:24px}
+                  .date{font-size:13px;color:#666;margin-bottom:24px}
+                  .body{font-size:14px;margin-bottom:32px;text-align:justify}
+                  .closing{font-size:14px;margin-top:40px}
+                  .closing .name{font-weight:700;margin-top:24px}
+                  .footer{margin-top:48px;padding-top:16px;border-top:1px solid #ddd;font-size:11px;color:#999;text-align:center}
+                  @media print{body{margin:20px}}
+                </style></head><body>
+                  <div class="header"><h1>${esc(pm?.company_name)}</h1></div>
+                  <div class="title">Proof of Residency</div>
+                  <div class="date">${today}</div>
+                  <div class="body">
+                    <p>To Whom It May Concern,</p>
+                    <p>This letter confirms that <strong>${esc(tenant?.name)}</strong> currently resides at <strong>${esc(tenant?.property)}, ${esc(tenant?.room)}</strong>. They have been a resident since <strong>${esc(fmtD(tenant?.move_in))}</strong>. Their monthly rent is <strong>${esc(fmt(tenant?.rent))}</strong>.</p>
+                    <p>If you require any additional information, please contact ${esc(pm?.company_name)} at ${esc(pm?.phone)}${pmSettings?.email ? " or " + esc(pmSettings.email) : ""}.</p>
+                  </div>
+                  <div class="closing">
+                    <p>Sincerely,</p>
+                    <p class="name">${esc(pm?.company_name)}</p>
+                  </div>
+                  <div class="footer">${esc(pm?.company_name)}${pm?.phone ? " &middot; " + esc(pm.phone) : ""}${pmSettings?.email ? " &middot; " + esc(pmSettings.email) : ""}</div>
+                </body></html>`);
+                w.document.close();w.print();
+              }} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px", borderRadius: 10, border: `1.5px solid ${hexRgba(C.accent, .2)}`, background: hexRgba(C.accent, .04), color: C.accent, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Generate Letter
+              </button>
+            </div>
           </div>
         )}
 
