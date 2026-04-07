@@ -17,6 +17,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
 // ── Helpers ──────────────────────────────────────────────────────────
 const hexRgba = (hex, a) => { const h = hex.replace("#", ""); const r = parseInt(h.substring(0, 2), 16); const g = parseInt(h.substring(2, 4), 16); const b = parseInt(h.substring(4, 6), 16); return `rgba(${r},${g},${b},${a})`; };
+const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const fmt = (n) => n != null ? "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
 const fmtD = (d) => { if (!d) return "—"; const dt = new Date(d + "T00:00:00"); return `${dt.getMonth() + 1}/${dt.getDate()}/${dt.getFullYear()}`; };
 const daysLeft = (d) => { if (!d) return null; return Math.ceil((new Date(d + "T00:00:00") - new Date()) / (1e3 * 60 * 60 * 24)); };
@@ -163,6 +164,7 @@ export default function TenantPortal() {
   const [maintSuccess, setMaintSuccess]   = useState(false);
   const [noticeForm, setNoticeForm]       = useState({ moveOutDate: "", reason: "", showForm: false, submitting: false, submitted: false });
   const [autopay, setAutopay]             = useState({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
+  const [showDoorCode, setShowDoorCode]   = useState(false);
   const CREDIT_FEE = 0.029;
 
   // Dynamic theme — PM can override bg, accent, green, red via pm_accounts columns
@@ -331,6 +333,7 @@ export default function TenantPortal() {
   };
 
   const startPayment = async (charge) => {
+    if (payingCharge) return; // prevent double-click creating multiple intents
     setPayingCharge(charge);
     const res = await fetch("/api/stripe/create-payment-intent", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -561,7 +564,7 @@ export default function TenantPortal() {
             })}
             {onboardingDone && (
               <div style={{ textAlign: "center", padding: 28, background: hexRgba(C.green, .06), borderRadius: 14, border: `1px solid ${hexRgba(C.green, .2)}` }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
+                <div style={{ marginBottom: 8 }}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: C.green, marginBottom: 4 }}>You are all set!</div>
                 <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>Your portal is now unlocked. Welcome home.</div>
                 <button onClick={() => setActiveTab("home")} style={{ padding: "10px 28px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, cursor: "pointer", fontSize: 14 }}>Go to My Portal</button>
@@ -579,7 +582,7 @@ export default function TenantPortal() {
               <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>{totalDue === 0 ? "You're all paid up" : "Contact your property manager to pay"}</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-              <div style={sCard}><span style={sLabel}>Monthly Rent</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st — late after 3rd</div></div>
+              <div style={sCard}><span style={sLabel}>Monthly Rent</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st{pmSettings?.lateFeeGraceDays ? ` \u2014 late after day ${pmSettings.lateFeeGraceDays}` : ""}</div></div>
               <div style={sCard}><span style={sLabel}>Lease End</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " days remaining" : "Expired"}</div>}</div>
             </div>
             {announcements.length > 0 && (
@@ -601,8 +604,17 @@ export default function TenantPortal() {
             )}
             <div style={sCard}>
               <span style={sLabel}>Your Room</span>
-              {[["Property", tenant?.property?.name], ["Room", tenant?.room?.name], ["Move-in", fmtD(tenant?.move_in)], ["Door Code", tenant?.door_code || tenant?.room?.door_code]].filter(([, v]) => v).map(([label, val]) => (
-                <div key={label} style={sRow}><span style={{ color: C.muted }}>{label}</span><span style={{ fontWeight: label === "Door Code" ? 800 : 600, letterSpacing: label === "Door Code" ? 4 : 0, fontFamily: label === "Door Code" ? "monospace" : "inherit" }}>{val}</span></div>
+              {[["Property", tenant?.property?.name], ["Room", tenant?.room?.name], ["Move-in", fmtD(tenant?.move_in)]].filter(([, v]) => v).map(([label, val]) => (
+                <div key={label} style={sRow}><span style={{ color: C.muted }}>{label}</span><span style={{ fontWeight: 600 }}>{val}</span></div>
+              ))}
+              {(tenant?.door_code || tenant?.room?.door_code) && (
+                <div style={sRow}>
+                  <span style={{ color: C.muted }}>Door Code</span>
+                  <button onClick={() => setShowDoorCode(!showDoorCode)} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "monospace", fontWeight: 800, letterSpacing: showDoorCode ? 4 : 2, fontSize: 13, color: C.text, display: "flex", alignItems: "center", gap: 6, padding: 0 }}>
+                    {showDoorCode ? (tenant?.door_code || tenant?.room?.door_code) : "\u2022\u2022\u2022\u2022"}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{showDoorCode ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></> : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}</svg>
+                  </button>
+                </div>
               ))}
             </div>
             {maintenance.filter(m => m.status !== "resolved").length > 0 && (
@@ -618,7 +630,7 @@ export default function TenantPortal() {
             )}
             <div style={{ background: hexRgba(C.accent, .06), border: `1px solid ${hexRgba(C.accent, .2)}`, borderRadius: 12, padding: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.accent, marginBottom: 4 }}>Questions?</div>
-              <div style={{ fontSize: 12, color: C.muted }}>Contact {pm.company_name} at <strong>{pm.phone}</strong></div>
+              <div style={{ fontSize: 12, color: C.muted }}>Contact {pm.company_name}{pm.phone ? <> at <strong>{pm.phone}</strong></> : ""}{pmSettings?.email ? <> or <strong>{pmSettings.email}</strong></> : ""}</div>
             </div>
           </div>
         )}
@@ -657,13 +669,13 @@ export default function TenantPortal() {
                         <h1>Payment Receipt</h1>
                         <div class="conf">${confId}</div>
                         <div class="row"><span class="label">Date</span><span class="value">${new Date(p.date).toLocaleDateString()}</span></div>
-                        <div class="row"><span class="label">Tenant</span><span class="value">${tenant?.name||""}</span></div>
-                        <div class="row"><span class="label">Charge</span><span class="value">${c.category?c.category+" — ":""}${c.description||""}</span></div>
-                        <div class="row"><span class="label">Payment Method</span><span class="value">${p.method||""}</span></div>
+                        <div class="row"><span class="label">Tenant</span><span class="value">${esc(tenant?.name)}</span></div>
+                        <div class="row"><span class="label">Charge</span><span class="value">${c.category?esc(c.category)+" — ":""}${esc(c.description)}</span></div>
+                        <div class="row"><span class="label">Payment Method</span><span class="value">${esc(p.method)}</span></div>
                         <div class="row"><span class="label">Status</span><span class="value">${p.deposit_status==="transit"?"In Transit":"Received &amp; Deposited"}</span></div>
                         ${p.stripe_payment_id?`<div class="row"><span class="label">Transaction ID</span><span class="value" style="font-family:monospace;font-size:11px">${p.stripe_payment_id}</span></div>`:""}
                         <div class="total"><span>Amount Paid</span><span>$${Number(p.amount).toLocaleString()}</span></div>
-                        <div class="footer">${pm?.company_name||""}${pm?.phone?" · "+pm.phone:""}<br/>This receipt confirms payment was received. Please retain for your records.</div>
+                        <div class="footer">${esc(pm?.company_name)}${pm?.phone?" · "+esc(pm.phone):""}<br/>This receipt confirms payment was received. Please retain for your records.</div>
                       </body></html>`);
                       w.document.close();w.print();
                     };
@@ -940,12 +952,25 @@ export default function TenantPortal() {
                     <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>Reason for leaving (optional)</label>
                     <textarea value={noticeForm.reason} onChange={e => setNoticeForm(p => ({ ...p, reason: e.target.value }))} placeholder="e.g. Relocating for work, end of internship..." rows={2} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13, resize: "vertical" }} />
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setNoticeForm(p => ({ ...p, showForm: false }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Cancel</button>
-                    <button onClick={submitNotice} disabled={noticeForm.submitting || !noticeForm.moveOutDate} style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: noticeForm.moveOutDate ? C.red : "rgba(0,0,0,.08)", color: noticeForm.moveOutDate ? "#fff" : "#bbb", cursor: noticeForm.moveOutDate ? "pointer" : "default", fontWeight: 800, fontSize: 13 }}>
-                      {noticeForm.submitting ? "Submitting..." : "Submit Notice"}
-                    </button>
-                  </div>
+                  {!noticeForm.confirming ? (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => setNoticeForm(p => ({ ...p, showForm: false }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Cancel</button>
+                      <button onClick={() => { if (!noticeForm.moveOutDate) return; setNoticeForm(p => ({ ...p, confirming: true })); }} disabled={!noticeForm.moveOutDate} style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: noticeForm.moveOutDate ? C.red : "rgba(0,0,0,.08)", color: noticeForm.moveOutDate ? "#fff" : "#bbb", cursor: noticeForm.moveOutDate ? "pointer" : "default", fontWeight: 800, fontSize: 13 }}>
+                        Continue
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ background: hexRgba(C.red, .04), border: `1px solid ${hexRgba(C.red, .15)}`, borderRadius: 10, padding: 14, marginTop: 4 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: C.red, marginBottom: 6 }}>Confirm 30-Day Notice</div>
+                      <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>This is a legally binding notice to vacate. Your intended move-out date is <strong>{fmtD(noticeForm.moveOutDate)}</strong>. This cannot be undone once submitted.</div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => setNoticeForm(p => ({ ...p, confirming: false }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Go Back</button>
+                        <button onClick={submitNotice} disabled={noticeForm.submitting} style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontWeight: 800, fontSize: 13 }}>
+                          {noticeForm.submitting ? "Submitting..." : "I Understand \u2014 Submit Notice"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -970,7 +995,7 @@ export default function TenantPortal() {
                 </div>
               ))}
             </div>
-            <button onClick={signOut} style={{ width: "100%", padding: "13px", borderRadius: 12, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+            <button onClick={() => { if (window.confirm("Are you sure you want to sign out?")) signOut(); }} style={{ width: "100%", padding: "13px", borderRadius: 12, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
               <IcLogout s={16} /> Sign Out
             </button>
             <div style={{ textAlign: "center", fontSize: 11, color: "#bbb" }}>Powered by PropOS</div>
