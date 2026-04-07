@@ -2229,6 +2229,7 @@ export default function Page(){
   const[dashDragWidget,setDashDragWidget]=useState(null);
   const[dashDragOver,setDashDragOver]=useState(null);
   const[annForm,setAnnForm]=useState({title:"",body:"",propertyId:"",expiresAt:""});
+  const[renewalRequests,setRenewalRequests]=useState([]);
   const[annShowForm,setAnnShowForm]=useState(false);
   const[ledgerTenant,setLedgerTenant]=useState("all");
   const[portalTenant,setPortalTenant]=useState(null);
@@ -2307,6 +2308,8 @@ export default function Page(){
     const migratedAf=(()=>{if(hasDoorCode||(af||[]).length===0)return af||[];const idx=af.findIndex(f=>f.key==="selectedRoom");const insertAt=idx>=0?idx+1:af.findIndex(f=>f.section==="Move-In & Property")+1;const at=insertAt<0?af.length:insertAt;return[...af.slice(0,at),DOOR_CODE_APP_FIELD,...af.slice(at)];})();
     if(!hasDoorCode&&(af||[]).length>0){save("hq-app-fields",migratedAf);}
     setAppFields(migratedAf);setLeases(ls);setLeaseTemplates(lt);setLeaseTemplate(lt[0]||null);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setWidgetList(null);setLoaded(true);
+    // Load renewal requests from messages table
+    fetch(SUPA_URL+"/rest/v1/messages?direction=eq.inbound&subject=like.Lease Renewal:*&order=created_at.desc",{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setRenewalRequests(d);}).catch(()=>{});
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,loaded]);
@@ -3290,7 +3293,10 @@ export default function Page(){
               </div>
               {/* Tenant col */}
               <div>
-                <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:2}}>{r.tenant.name}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#1a1714",marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
+                  {r.tenant.name}
+                  {renewalRequests.some(rr=>rr.tenant_name===r.tenant.name&&!rr.read)&&<span style={{fontSize:8,fontWeight:700,padding:"2px 6px",borderRadius:99,background:"rgba(212,168,83,.15)",color:"#9a7422",whiteSpace:"nowrap"}}>RENEWAL REQUEST</span>}
+                </div>
                 <div style={{fontSize:11,color:"#5c4a3a",marginBottom:5}}>{prop?getPropDisplayName(prop):r.propName} · {r.name}</div>
                 <button onClick={e=>{e.stopPropagation();setModal({type:"tenant",data:r});}}
                   onMouseEnter={e=>{e.currentTarget.style.background=`rgba(${settings.adminAccentRgb||"74,124,89"},.2)`;e.currentTarget.style.transform="scale(1.02)";}}
@@ -4987,6 +4993,31 @@ export default function Page(){
             </div>)}
           </div>:null;
         })()}
+
+        {/* ── Renewal Requests — only shows if any exist ── */}
+        {renewalRequests.length>0&&(
+          <div style={{marginTop:24}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#9a7422",textTransform:"uppercase",letterSpacing:1,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a7422" strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              Lease Renewal Requests ({renewalRequests.filter(r=>!r.read).length} pending)
+            </div>
+            {renewalRequests.map(req=>(
+              <div key={req.id} className="card" style={{marginBottom:8,borderLeft:"3px solid #d4a853"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px"}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700}}>{req.tenant_name}</div>
+                    <div style={{fontSize:11,color:"#6b5e52"}}>{req.property_name}{req.room_name?" \u00b7 "+req.room_name:""} \u00b7 {req.subject?.replace("Lease Renewal: ","")}</div>
+                    <div style={{fontSize:10,color:"#999",marginTop:2}}>{new Date(req.created_at).toLocaleDateString()}</div>
+                  </div>
+                  <div style={{display:"flex",gap:6}}>
+                    {!req.read&&<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"rgba(212,168,83,.12)",color:"#9a7422"}}>PENDING</span>}
+                    <button className="btn btn-out btn-sm" onClick={()=>goTab("messages")}>View in Messages</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
       </>);})()}
 
