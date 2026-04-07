@@ -199,7 +199,16 @@ export default function TenantPortal() {
 
     // DEV BYPASS — localhost:3000/portal?dev=true
     if (params.get("dev") === "true" && window.location.hostname === "localhost") {
-      setPmSettings({ company_name: "PropOS Demo", phone: "(555) 000-0000", houseRules: ["No smoking or vaping anywhere on property", "No pets", "Remove shoes at the door", "Quiet hours: 10pm-7am weekdays, 11pm-10am weekends", "Keep shared spaces clean", "No overnight guests without prior approval", "Lock all doors when leaving", "Report maintenance issues promptly"] });
+      // Load real PM settings from hq-settings for dev mode too
+      try {
+        const { data: devSettings } = await supabase.from("app_data").select("value").eq("key", "hq-settings").single();
+        if (devSettings?.value) {
+          const s = devSettings.value;
+          setPmSettings({ company_name: s.companyName || "PropOS", phone: s.phone || "", email: s.email || "", pmName: s.pmName || "", pmEmail: s.pmEmail || "", houseRules: s.houseRules || [], referralCredit: s.referralCredit || 0, lateFeeGraceDays: s.lateFeeGraceDays, m2mIncrease: s.m2mIncrease, language: s.portalLanguage || "en" });
+        } else {
+          setPmSettings({ company_name: "PropOS", phone: "" });
+        }
+      } catch (e) { setPmSettings({ company_name: "PropOS", phone: "" }); }
       setUser({ email: "demo@test.com" });
       setTenant({ id: "dev", name: "Demo Tenant", rent: 750, security_deposit: 750, move_in: "2025-06-01", lease_end: "2026-06-01", lease_signed_at: new Date().toISOString(), door_code: "1234", property: { name: "Demo Property" }, room: { name: "Room A" } });
       setCharges([
@@ -766,6 +775,14 @@ export default function TenantPortal() {
                         try {
                           const tenantName = tenant?.name || user?.user_metadata?.full_name || user?.email || "Tenant";
                           const toEmail = pmSettings?.pmEmail || pmSettings?.email || "";
+                          // Save to messages table for persistent history
+                          await supabase.from("messages").insert({
+                            tenant_id: tenant?.id, tenant_name: tenantName, sender_email: user?.email || "",
+                            sender_name: tenantName, direction: "inbound", subject: contactForm.subject,
+                            body: contactForm.message, property_name: tenant?.property?.name || "",
+                            room_name: tenant?.room?.name || "", read: false,
+                          });
+                          // Send email notification to PM
                           await fetch("/api/send-email", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },

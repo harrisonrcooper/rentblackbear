@@ -4,6 +4,7 @@ import LeaseModal from "./components/LeaseModal";
 import TemplateEditor from "./components/TemplateEditor";
 import PMSettings from "./components/PMSettings";
 import LeaseTemplateList from "./components/LeaseTemplateList";
+import Messages from "./components/Messages";
 import AppSetup from "./components/AppSetup";
 import WebsiteSettings from "./components/WebsiteSettings";
 // ADMIN HQ — rentblackbear.com/admin
@@ -6565,18 +6566,7 @@ export default function Page(){
       })()}
 
       {/* ═══ MESSAGES ═══ */}
-      {tab==="messages"&&<>
-        <div className="sec-hd"><div><h2>Messages</h2><p>Tenant messages received through the portal</p></div></div>
-        <div style={{padding:"12px 16px",background:"rgba(212,168,83,.06)",borderRadius:10,border:"1px solid rgba(212,168,83,.15)",fontSize:11,color:"#9a7422",marginBottom:16}}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          Messages from tenants are sent to your email at <strong>{settings.pmEmail||settings.email||"your email"}</strong>. A persistent inbox is coming soon.
-        </div>
-        <div className="card"><div className="card-bd" style={{textAlign:"center",padding:40}}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#c4a882" strokeWidth="1.25" style={{marginBottom:10}}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:4}}>No messages yet</div>
-          <div style={{fontSize:11,color:"#6b5e52"}}>When tenants send messages through the portal, they will appear here.</div>
-        </div></div>
-      </>}
+      {tab==="messages"&&<Messages settings={settings} properties={props} />}
 
       {/* ═══ NOTIFICATIONS ═══ */}
       {tab==="notifications"&&<>
