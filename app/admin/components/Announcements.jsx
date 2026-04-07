@@ -36,7 +36,7 @@ export default function Announcements({ settings, setSettings, save, properties,
   };
 
   const isExpired = (a) => a.expiresAt && new Date(a.expiresAt) < new Date();
-  const propName = (id) => { if (!id) return "All Properties"; const p = (properties || []).find(x => x.id === id); return p?.name || p?.addr || id; };
+  const propName = (id) => { if (!id) return "All Properties"; const p = (properties || []).find(x => x.id === id); if (!p) return id; return p.addr || p.name; };
 
   return (
     <>
@@ -67,7 +67,7 @@ export default function Announcements({ settings, setSettings, save, properties,
                 <label>Property <span style={{ fontWeight: 400, color: "#6b5e52" }}>(optional, blank = all)</span></label>
                 <select value={form.propertyId} onChange={e => setForm(f => ({ ...f, propertyId: e.target.value }))} style={{ width: "100%" }}>
                   <option value="">All Properties</option>
-                  {(properties || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {(properties || []).map(p => <option key={p.id} value={p.id}>{p.addr || p.name}{p.addr && p.name && p.addr !== p.name ? " (" + p.name + ")" : ""}</option>)}
                 </select>
               </div>
               <div className="fld">
