@@ -163,7 +163,7 @@ export default function TenantPortal() {
   const [maintForm, setMaintForm]         = useState({ title: "", desc: "", priority: "medium", photos: [] });
   const [maintSubmitting, setMaintSubmitting] = useState(false);
   const [maintSuccess, setMaintSuccess]   = useState(false);
-  const [noticeForm, setNoticeForm]       = useState({ moveOutDate: "", reason: "", showForm: false, submitting: false, submitted: false });
+  const [noticeForm, setNoticeForm]       = useState({ moveOutDate: "", reason: "", showForm: false, step: 1, signature: null, submitting: false, submitted: false });
   const [autopay, setAutopay]             = useState({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
   const [showDoorCode, setShowDoorCode]   = useState(false);
   const [referralCopied, setReferralCopied] = useState(false);
@@ -430,14 +430,85 @@ export default function TenantPortal() {
     setTimeout(() => setMaintSuccess(false), 4000); setMaintSubmitting(false);
   };
 
+  // Calculate early termination details
+  const getTerminationDetails = (moveOutDate) => {
+    if (!moveOutDate || !tenant?.lease_end) return null;
+    const moveOut = new Date(moveOutDate + "T00:00:00");
+    const leaseEnd = new Date(tenant.lease_end + "T00:00:00");
+    const isEarly = moveOut < leaseEnd;
+    if (!isEarly) return { isEarly: false, remainingMonths: 0, remainingRent: 0, unpaidCharges: 0, sdAtRisk: false };
+    const diffMs = leaseEnd - moveOut;
+    const remainingMonths = Math.ceil(diffMs / (1e3 * 60 * 60 * 24 * 30));
+    const remainingRent = remainingMonths * (tenant?.rent || 0);
+    const unpaidCharges = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).reduce((s, c) => s + (c.amount - c.amount_paid), 0);
+    return { isEarly: true, remainingMonths, remainingRent, unpaidCharges, sdAtRisk: true, leaseEnd: tenant.lease_end };
+  };
+
   const submitNotice = async () => {
-    if (!noticeForm.moveOutDate) return;
+    if (!noticeForm.moveOutDate || !noticeForm.signature) return;
     setNoticeForm(p => ({ ...p, submitting: true }));
     const moveOut = noticeForm.moveOutDate;
     const today = new Date().toISOString().split("T")[0];
-    await supabase.from("notices").insert({ pm_id: tenant?.pm_id, tenant_id: tenant?.id, property_id: tenant?.property_id, room_id: tenant?.room_id, tenant_name: tenant?.name, move_out_date: moveOut, reason: noticeForm.reason, submitted_at: new Date().toISOString() });
+    const termDetails = getTerminationDetails(moveOut);
+
+    // Save to Supabase
+    await supabase.from("notices").insert({
+      pm_id: tenant?.pm_id, tenant_id: tenant?.id, property_id: tenant?.property_id,
+      room_id: tenant?.room_id, tenant_name: tenant?.name, move_out_date: moveOut,
+      reason: noticeForm.reason, signature: noticeForm.signature,
+      is_early_termination: termDetails?.isEarly || false,
+      remaining_rent: termDetails?.remainingRent || 0,
+      unpaid_balance: termDetails?.unpaidCharges || 0,
+      submitted_at: new Date().toISOString(),
+    });
     await supabase.from("tenants").update({ notice_given_at: today, intended_move_out: moveOut }).eq("id", tenant.id);
-    setNoticeForm({ moveOutDate: "", reason: "", showForm: false, submitting: false, submitted: true });
+
+    // Generate notice document and send to PM
+    const noticeHtml = `
+      <h2 style="font-family:Georgia,serif;text-align:center;">Notice to Vacate</h2>
+      <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+      <p><strong>Tenant:</strong> ${esc(tenant?.name)}</p>
+      <p><strong>Property:</strong> ${esc(tenant?.property?.name)} — ${esc(tenant?.room?.name)}</p>
+      <p><strong>Intended Move-Out Date:</strong> ${fmtD(moveOut)}</p>
+      ${noticeForm.reason ? `<p><strong>Reason:</strong> ${esc(noticeForm.reason)}</p>` : ""}
+      <hr/>
+      ${termDetails?.isEarly ? `
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:16px 0;">
+          <p style="color:#dc2626;font-weight:700;margin:0 0 8px;">Early Lease Termination</p>
+          <p style="margin:4px 0;">Lease end date: ${fmtD(termDetails.leaseEnd)}</p>
+          <p style="margin:4px 0;">Remaining months on lease: ${termDetails.remainingMonths}</p>
+          <p style="margin:4px 0;">Remaining rent obligation: ${fmt(termDetails.remainingRent)}</p>
+          <p style="margin:4px 0;">Current unpaid balance: ${fmt(termDetails.unpaidCharges)}</p>
+          <p style="margin:4px 0;font-weight:600;">Security deposit may be forfeited per lease terms.</p>
+        </div>
+      ` : `<p style="color:#166534;">This is a standard end-of-lease move-out. No early termination fees apply.</p>`}
+      <div style="margin-top:24px;">
+        <p><strong>Tenant Signature:</strong></p>
+        <img src="${noticeForm.signature}" style="max-height:60px;max-width:200px;"/>
+        <p>${esc(tenant?.name)} — ${new Date().toLocaleDateString()}</p>
+      </div>
+    `;
+
+    // Email notice to PM
+    try {
+      await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        to: pmSettings?.pmEmail || pmSettings?.email || "",
+        subject: "30-Day Notice to Vacate: " + (tenant?.name || "") + (termDetails?.isEarly ? " (EARLY TERMINATION)" : ""),
+        html: noticeHtml,
+        replyTo: user?.email || "",
+      }) });
+    } catch (e) {}
+
+    // Also save as a message for the inbox
+    await supabase.from("messages").insert({
+      tenant_id: tenant?.id, tenant_name: tenant?.name, sender_email: user?.email || "",
+      sender_name: tenant?.name, direction: "inbound",
+      subject: "30-Day Notice to Vacate" + (termDetails?.isEarly ? " (Early Termination)" : ""),
+      body: "I am submitting my 30-day notice to vacate on " + fmtD(moveOut) + "." + (noticeForm.reason ? " Reason: " + noticeForm.reason : "") + (termDetails?.isEarly ? " This is an early termination with " + termDetails.remainingMonths + " months remaining on my lease." : ""),
+      property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false,
+    });
+
+    setNoticeForm({ moveOutDate: "", reason: "", showForm: false, step: 1, signature: null, submitting: false, submitted: true });
   };
 
   const chargeStatus = (c) => {
@@ -1119,7 +1190,7 @@ export default function TenantPortal() {
               </div>
             )}
 
-            {/* Notice to Vacate */}
+            {/* Notice to Vacate — Multi-step flow */}
             <div style={{ ...sCard, marginTop: 12 }}>
               <span style={sLabel}>{t.lease.noticeToVacate}</span>
               {noticeForm.submitted ? (
@@ -1130,36 +1201,84 @@ export default function TenantPortal() {
               ) : !noticeForm.showForm ? (
                 <div>
                   <div style={{ fontSize: 12, color: C.muted, marginBottom: 10, lineHeight: 1.6 }}>{t.lease.noticeDesc}</div>
-                  <button onClick={() => setNoticeForm(p => ({ ...p, showForm: true }))} style={{ width: "100%", padding: "11px", borderRadius: 10, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                  <button onClick={() => setNoticeForm(p => ({ ...p, showForm: true, step: 1 }))} style={{ width: "100%", padding: "11px", borderRadius: 10, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                     {t.lease.submitNotice}
                   </button>
                 </div>
               ) : (
                 <div>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.lease.moveOutDate}</label>
-                    <input type="date" value={noticeForm.moveOutDate} onChange={e => setNoticeForm(p => ({ ...p, moveOutDate: e.target.value }))} min={new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} />
-                    <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{t.lease.moveOutMin}</div>
+                  {/* Step indicator */}
+                  <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+                    {[1, 2, 3].map(s => <div key={s} style={{ flex: 1, height: 3, borderRadius: 2, background: noticeForm.step >= s ? C.red : "rgba(0,0,0,.08)", transition: "background .2s" }} />)}
                   </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.lease.reason}</label>
-                    <textarea value={noticeForm.reason} onChange={e => setNoticeForm(p => ({ ...p, reason: e.target.value }))} placeholder="e.g. Relocating for work, end of internship..." rows={2} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13, resize: "vertical" }} />
-                  </div>
-                  {!noticeForm.confirming ? (
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => setNoticeForm(p => ({ ...p, showForm: false }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Cancel</button>
-                      <button onClick={() => { if (!noticeForm.moveOutDate) return; setNoticeForm(p => ({ ...p, confirming: true })); }} disabled={!noticeForm.moveOutDate} style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: noticeForm.moveOutDate ? C.red : "rgba(0,0,0,.08)", color: noticeForm.moveOutDate ? "#fff" : "#bbb", cursor: noticeForm.moveOutDate ? "pointer" : "default", fontWeight: 800, fontSize: 13 }}>
-                        Continue
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ background: hexRgba(C.red, .04), border: `1px solid ${hexRgba(C.red, .15)}`, borderRadius: 10, padding: 14, marginTop: 4 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: C.red, marginBottom: 6 }}>{t.lease.confirmNotice}</div>
-                      <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>This is a legally binding notice to vacate. Your intended move-out date is <strong>{fmtD(noticeForm.moveOutDate)}</strong>. This cannot be undone once submitted.</div>
+
+                  {/* Step 1: Date + Reason */}
+                  {noticeForm.step === 1 && (
+                    <div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.lease.moveOutDate}</label>
+                        <input type="date" value={noticeForm.moveOutDate} onChange={e => setNoticeForm(p => ({ ...p, moveOutDate: e.target.value }))} min={new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} />
+                        <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{t.lease.moveOutMin}</div>
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.lease.reason}</label>
+                        <textarea value={noticeForm.reason} onChange={e => setNoticeForm(p => ({ ...p, reason: e.target.value }))} placeholder="e.g. Relocating for work, end of internship..." rows={2} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13, resize: "vertical" }} />
+                      </div>
+                      {/* Early termination warning */}
+                      {noticeForm.moveOutDate && (() => {
+                        const td = getTerminationDetails(noticeForm.moveOutDate);
+                        if (!td?.isEarly) return null;
+                        return (
+                          <div style={{ background: hexRgba(C.red, .04), border: `1px solid ${hexRgba(C.red, .15)}`, borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: C.red, marginBottom: 6 }}>Early Lease Termination</div>
+                            <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.6 }}>
+                              Your lease runs until <strong>{fmtD(td.leaseEnd)}</strong>. Moving out early means:
+                            </div>
+                            <div style={{ marginTop: 8, fontSize: 11 }}>
+                              {[["Months remaining", td.remainingMonths], ["Rent obligation", fmt(td.remainingRent)], ["Current unpaid balance", fmt(td.unpaidCharges)]].map(([k, v]) => (
+                                <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(0,0,0,.04)" }}><span style={{ color: C.muted }}>{k}</span><span style={{ fontWeight: 700, color: C.red }}>{v}</span></div>
+                              ))}
+                            </div>
+                            <div style={{ fontSize: 10, color: C.red, fontWeight: 600, marginTop: 8 }}>Security deposit may be forfeited per lease terms.</div>
+                          </div>
+                        );
+                      })()}
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => setNoticeForm(p => ({ ...p, confirming: false }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>{t.lease.goBack}</button>
+                        <button onClick={() => setNoticeForm(p => ({ ...p, showForm: false, step: 1 }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>{t.common.cancel}</button>
+                        <button onClick={() => { if (noticeForm.moveOutDate) setNoticeForm(p => ({ ...p, step: 2 })); }} disabled={!noticeForm.moveOutDate} style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: noticeForm.moveOutDate ? C.bg : "rgba(0,0,0,.08)", color: noticeForm.moveOutDate ? C.accent : "#bbb", cursor: noticeForm.moveOutDate ? "pointer" : "default", fontWeight: 800, fontSize: 13 }}>Continue</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: Signature */}
+                  {noticeForm.step === 2 && (
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Sign Your Notice</div>
+                      <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>Draw your signature below to confirm this notice. This is a legally binding document.</div>
+                      <SignatureCanvas onSave={(sig) => setNoticeForm(p => ({ ...p, signature: sig, step: 3 }))} onCancel={() => setNoticeForm(p => ({ ...p, step: 1 }))} C={C} />
+                    </div>
+                  )}
+
+                  {/* Step 3: Review + Confirm */}
+                  {noticeForm.step === 3 && (
+                    <div>
+                      <div style={{ background: hexRgba(C.red, .04), border: `2px solid ${hexRgba(C.red, .2)}`, borderRadius: 10, padding: 16, marginBottom: 14 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: C.red }}>Legal Notice</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.7 }}>
+                          By submitting this notice, you are providing <strong>30 days written notice</strong> of your intent to vacate <strong>{tenant?.property?.name} {"\u2014"} {tenant?.room?.name}</strong> on <strong>{fmtD(noticeForm.moveOutDate)}</strong>.
+                          {(() => { const td = getTerminationDetails(noticeForm.moveOutDate); return td?.isEarly ? " This is an early termination. You may be responsible for " + fmt(td.remainingRent) + " in remaining rent and your security deposit of " + fmt(tenant?.security_deposit) + " may be forfeited." : ""; })()}
+                          {" "}This action cannot be undone.
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>Your signature:</div>
+                      {noticeForm.signature && <img src={noticeForm.signature} alt="Signature" style={{ height: 50, maxWidth: 200, objectFit: "contain", display: "block", marginBottom: 12, border: "1px solid rgba(0,0,0,.08)", borderRadius: 6, padding: 4 }} />}
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => setNoticeForm(p => ({ ...p, step: 2, signature: null }))} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>{t.lease.goBack}</button>
                         <button onClick={submitNotice} disabled={noticeForm.submitting} style={{ flex: 2, padding: "11px", borderRadius: 10, border: "none", background: C.red, color: "#fff", cursor: "pointer", fontWeight: 800, fontSize: 13 }}>
-                          {noticeForm.submitting ? t.maintenance.submitting : t.lease.iUnderstand}
+                          {noticeForm.submitting ? "Submitting..." : "I Understand \u2014 Submit Notice"}
                         </button>
                       </div>
                     </div>
