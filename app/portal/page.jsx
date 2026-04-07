@@ -426,14 +426,22 @@ export default function TenantPortal() {
   const sRow = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(0,0,0,.04)", fontSize: 13 };
 
   // ── SCREENS ───────────────────────────────────────────────────────────
-  const globalStyle = `*{box-sizing:border-box;margin:0;padding:0} input,textarea,select,button{font-family:inherit} @keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`;
+  const globalStyle = `*{box-sizing:border-box;margin:0;padding:0} input,textarea,select,button{font-family:inherit} @keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} @keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}`;
 
   if (screen === "loading") return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: C.bg, fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#1a1714", fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
       <style>{globalStyle}</style>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", border: `3px solid ${C.accent}`, borderTopColor: "transparent", animation: "spin .8s linear infinite", margin: "0 auto 16px" }} />
-        <div style={{ color: "rgba(255,255,255,.4)", fontSize: 13 }}>Loading your portal...</div>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "20px 16px" }}>
+        {/* Skeleton header */}
+        <div style={{ background: "rgba(255,255,255,.06)", borderRadius: 16, height: 120, marginBottom: 14, animation: "pulse 1.5s ease infinite" }} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, height: 90, animation: "pulse 1.5s ease infinite .2s" }} />
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, height: 90, animation: "pulse 1.5s ease infinite .4s" }} />
+        </div>
+        <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, height: 160, animation: "pulse 1.5s ease infinite .6s" }} />
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          <div style={{ color: "rgba(255,255,255,.3)", fontSize: 12 }}>Loading your portal...</div>
+        </div>
       </div>
     </div>
   );
@@ -607,7 +615,7 @@ export default function TenantPortal() {
               <div style={{ fontSize: 12, color: "rgba(255,255,255,.4)" }}>{totalDue === 0 ? "You're all paid up" : "Contact your property manager to pay"}</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-              <div style={sCard}><span style={sLabel}>Monthly Rent</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st{pmSettings?.lateFeeGraceDays ? ` \u2014 late after day ${pmSettings.lateFeeGraceDays}` : ""}</div></div>
+              <div style={sCard}><span style={sLabel}>Monthly Rent</span><div style={{ fontSize: 22, fontWeight: 800 }}>{fmt(tenant?.rent)}</div><div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Due 1st{pmSettings?.lateFeeGraceDays ? ` \u2014 late after day ${pmSettings.lateFeeGraceDays}` : ""}</div>{(() => { const now = new Date(); const y = now.getFullYear(); const mo = now.getMonth(); const firstNextMonth = new Date(y, mo + 1, 1); const firstThisMonth = new Date(y, mo, 1); const nextDue = now.getDate() > 1 ? firstNextMonth : firstThisMonth; const diffDays = Math.ceil((nextDue - now) / (1e3 * 60 * 60 * 24)); const nearestUnpaid = charges.find(c => !c.waived && !c.voided && c.amount_paid < c.amount && (c.type === "rent" || (c.label || "").toLowerCase().includes("rent"))); const isPastDue = nearestUnpaid && nearestUnpaid.due_date && new Date(nearestUnpaid.due_date + "T00:00:00") < now; if (isPastDue) { const overdueDays = Math.floor((now - new Date(nearestUnpaid.due_date + "T00:00:00")) / (1e3 * 60 * 60 * 24)); return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>{"PAST DUE -- " + overdueDays + " day" + (overdueDays !== 1 ? "s" : "") + " overdue"}</div>; } if (diffDays === 0) return <div style={{ fontSize: 11, color: C.red, fontWeight: 700, marginTop: 4 }}>DUE TODAY</div>; if (diffDays <= 3) return <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, marginTop: 4 }}>{"Due in " + diffDays + " day" + (diffDays !== 1 ? "s" : "")}</div>; if (diffDays <= 7) return <div style={{ fontSize: 11, color: C.muted, fontWeight: 600, marginTop: 4 }}>{"Due in " + diffDays + " days"}</div>; return null; })()}</div>
               <div style={sCard}><span style={sLabel}>Lease End</span><div style={{ fontSize: 22, fontWeight: 800, color: dl && dl <= 60 ? C.red : C.text }}>{fmtD(tenant?.lease_end)}</div>{dl !== null && <div style={{ fontSize: 11, color: dl <= 30 ? C.red : dl <= 60 ? C.accent : "#999", marginTop: 2 }}>{dl > 0 ? dl + " days remaining" : "Expired"}</div>}</div>
             </div>
             {announcements.length > 0 && (
