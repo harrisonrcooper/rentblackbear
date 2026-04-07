@@ -4,7 +4,7 @@ import LeaseModal from "./components/LeaseModal";
 import TemplateEditor from "./components/TemplateEditor";
 import PMSettings from "./components/PMSettings";
 import LeaseTemplateList from "./components/LeaseTemplateList";
-import Messages from "./components/Messages";
+import Messages from "./components/MessagesV2";
 import Announcements from "./components/Announcements";
 import AppSetup from "./components/AppSetup";
 import WebsiteSettings from "./components/WebsiteSettings";
