@@ -753,6 +753,10 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       <div>
                         {savedReplies.map((cr, i) => (
                           <div key={i} style={{ display: "flex", gap: 4, marginBottom: 4, alignItems: "center" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 1, flexShrink: 0 }}>
+                              <button disabled={i === 0} onClick={() => { const next = [...savedReplies]; [next[i - 1], next[i]] = [next[i], next[i - 1]]; setSavedReplies(next); }} style={{ background: "none", border: "none", cursor: i > 0 ? "pointer" : "default", fontSize: 8, color: i > 0 ? "#999" : "#e0e0e0", padding: 0, lineHeight: 1 }}>&#9650;</button>
+                              <button disabled={i === savedReplies.length - 1} onClick={() => { const next = [...savedReplies]; [next[i], next[i + 1]] = [next[i + 1], next[i]]; setSavedReplies(next); }} style={{ background: "none", border: "none", cursor: i < savedReplies.length - 1 ? "pointer" : "default", fontSize: 8, color: i < savedReplies.length - 1 ? "#999" : "#e0e0e0", padding: 0, lineHeight: 1 }}>&#9660;</button>
+                            </div>
                             <input value={cr} onChange={e => { const next = [...savedReplies]; next[i] = e.target.value; setSavedReplies(next); }} style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit", outline: "none" }} />
                             <button onClick={() => setSavedReplies(prev => prev.filter((_, j) => j !== i))} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
