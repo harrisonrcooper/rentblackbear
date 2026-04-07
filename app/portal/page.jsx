@@ -229,6 +229,8 @@ export default function TenantPortal() {
         { id: "demo2", title: "Parking lot repaving", body: "The main lot will be repaved April 15-17. Use the side lot during this time.", createdAt: "2026-04-03T09:00:00Z", expiresAt: "2026-04-18T23:59:59Z", propertyId: null },
       ]);
       setOnboarding({ leaseSigned: true, sdPaid: true, firstMonthPaid: true });
+      // Load messages for dev tenant
+      supabase.from("messages").select("*").eq("tenant_name", "Demo Tenant").order("created_at", { ascending: true }).then(({ data }) => { if (data) setTenantMessages(data); });
       setScreen("portal");
       return;
     }
@@ -863,10 +865,22 @@ export default function TenantPortal() {
           <div style={{ animation: "fadeIn .2s" }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Messages</h2>
 
+            {/* Realtime subscription for messages */}
+            {(() => {
+              // Subscribe to new messages for this tenant
+              const tenantName = tenant?.name || "Demo Tenant";
+              supabase.channel("portal-messages-" + tenantName).on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+                if (payload.new.tenant_name === tenantName) {
+                  setTenantMessages(prev => [...prev, payload.new]);
+                }
+              }).subscribe();
+              return null;
+            })()}
+
             {/* Message thread */}
             <div style={{ ...sCard, padding: 0, minHeight: 300, display: "flex", flexDirection: "column" }}>
               {/* Messages list */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px", maxHeight: 400 }}>
+              <div ref={el => { if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 50); }} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px", maxHeight: 400 }}>
                 {tenantMessages.length === 0 && (
                   <div style={{ textAlign: "center", padding: 40, color: C.muted }}>
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" style={{ marginBottom: 8 }}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
