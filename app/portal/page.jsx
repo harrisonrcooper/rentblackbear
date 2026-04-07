@@ -630,9 +630,79 @@ export default function TenantPortal() {
                 ))}
               </div>
             )}
-            <div style={{ background: hexRgba(C.accent, .06), border: `1px solid ${hexRgba(C.accent, .2)}`, borderRadius: 12, padding: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.accent, marginBottom: 4 }}>Questions?</div>
-              <div style={{ fontSize: 12, color: C.muted }}>Contact {pm.company_name}{pm.phone ? <> at <strong>{pm.phone}</strong></> : ""}{pmSettings?.email ? <> or <strong>{pmSettings.email}</strong></> : ""}</div>
+            <div style={{ background: hexRgba(C.accent, .06), border: `1px solid ${hexRgba(C.accent, .2)}`, borderRadius: 12, padding: 20 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.accent }}>Contact Your Property Manager</div>
+              </div>
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>
+                {pm.company_name}
+                {pm.phone ? <><br /><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", marginRight: 4 }}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg><strong>{pm.phone}</strong></> : ""}
+                {pmSettings?.email ? <><br /><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", marginRight: 4 }}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg><strong>{pmSettings.email}</strong></> : ""}
+              </div>
+
+              {/* Collapsible message form */}
+              {contactForm.sent ? (
+                <div style={{ marginTop: 14, padding: "12px 14px", background: hexRgba(C.green, .08), border: `1px solid ${hexRgba(C.green, .2)}`, borderRadius: 8, fontSize: 12, color: C.green, fontWeight: 600 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", marginRight: 6 }}><path d="M20 6L9 17l-5-5" /></svg>
+                  Message sent. We will respond within 24 hours.
+                </div>
+              ) : !contactForm.showForm ? (
+                <button onClick={() => setContactForm(f => ({ ...f, showForm: true }))} style={{ marginTop: 14, width: "100%", padding: "10px 16px", borderRadius: 8, border: `1.5px solid ${hexRgba(C.accent, .3)}`, background: "transparent", color: C.accent, cursor: "pointer", fontWeight: 700, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                  Send a Message
+                </button>
+              ) : (
+                <div style={{ marginTop: 14 }}>
+                  <input
+                    type="text"
+                    placeholder="Subject"
+                    value={contactForm.subject}
+                    onChange={e => setContactForm(f => ({ ...f, subject: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", fontSize: 12, marginBottom: 8, boxSizing: "border-box", outline: "none" }}
+                  />
+                  <textarea
+                    placeholder="Your message..."
+                    value={contactForm.message}
+                    onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))}
+                    rows={4}
+                    style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", fontSize: 12, marginBottom: 10, boxSizing: "border-box", resize: "vertical", fontFamily: "inherit", outline: "none" }}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => setContactForm({ subject: "", message: "", sending: false, sent: false, showForm: false })}
+                      style={{ padding: "9px 16px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                    >Cancel</button>
+                    <button
+                      disabled={contactForm.sending || !contactForm.subject.trim() || !contactForm.message.trim()}
+                      onClick={async () => {
+                        setContactForm(f => ({ ...f, sending: true }));
+                        try {
+                          const tenantName = tenant?.name || user?.user_metadata?.full_name || user?.email || "Tenant";
+                          const toEmail = pmSettings?.pmEmail || pmSettings?.email || "";
+                          await fetch("/api/send-email", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              to: toEmail,
+                              subject: `Portal Message from ${tenantName}: ${contactForm.subject}`,
+                              html: `<p><strong>From:</strong> ${esc(tenantName)} (${esc(user?.email || "")})</p><p><strong>Subject:</strong> ${esc(contactForm.subject)}</p><hr/><p>${esc(contactForm.message).replace(/\n/g, "<br/>")}</p><hr/><p style="font-size:11px;color:#999;">Sent via tenant portal</p>`,
+                              replyTo: user?.email || "",
+                            }),
+                          });
+                          setContactForm({ subject: "", message: "", sending: false, sent: true, showForm: false });
+                        } catch {
+                          setContactForm(f => ({ ...f, sending: false }));
+                        }
+                      }}
+                      style={{ flex: 1, padding: "9px 16px", borderRadius: 8, border: "none", background: (!contactForm.subject.trim() || !contactForm.message.trim()) ? "rgba(0,0,0,.08)" : C.bg, color: (!contactForm.subject.trim() || !contactForm.message.trim()) ? "#bbb" : C.accent, cursor: (!contactForm.subject.trim() || !contactForm.message.trim() || contactForm.sending) ? "default" : "pointer", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                      {contactForm.sending ? "Sending..." : "Send Message"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -746,9 +816,13 @@ export default function TenantPortal() {
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 12 }}>Save your payment method</div>
                   <Elements stripe={stripePromise} options={{ clientSecret: autopay.setupSecret, appearance: { theme: "stripe", variables: { colorPrimary: C.accent, borderRadius: "8px" } } }}>
-                    <AutopaySetupForm onSuccess={() => {
+                    <AutopaySetupForm onSuccess={(setupIntent) => {
                       setAutopay({ enrolled: true, loading: false, setupSecret: null, showSetup: false });
-                      supabase.from("portal_users").update({ autopay_enabled: true }).eq("tenant_id", tenant?.id);
+                      supabase.from("portal_users").update({
+                        autopay_enabled: true,
+                        stripe_customer_id: setupIntent?.customer || null,
+                        stripe_payment_method_id: setupIntent?.payment_method || null,
+                      }).eq("tenant_id", tenant?.id);
                     }} onCancel={() => setAutopay({ enrolled: false, loading: false, setupSecret: null, showSetup: false })} C={C} />
                   </Elements>
                 </div>

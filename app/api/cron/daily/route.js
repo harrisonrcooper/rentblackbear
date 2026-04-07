@@ -315,6 +315,88 @@ export async function GET(req) {
       if (propChanged) updatedProps[pi] = { ...prop, units: updatedUnits };
     }
 
+    // ── 7. AUTOPAY — charge saved payment methods on the 1st ─────────
+    if (dayOfMonth === 1 && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+        // Fetch all portal_users with autopay enabled
+        const puRes = await fetch(`${SUPA_URL}/rest/v1/portal_users?autopay_enabled=eq.true&select=*,tenant:tenants(id,name,email,room_id)`, {
+          headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+        });
+        const autopayUsers = await puRes.json();
+        if (Array.isArray(autopayUsers)) {
+          const mk = todayStr.slice(0, 7); // current month key e.g. "2026-04"
+          for (const pu of autopayUsers) {
+            if (!pu.stripe_customer_id || !pu.stripe_payment_method_id) continue;
+            const tenantName = pu.tenant?.name || "Tenant";
+            // Find this month's unpaid rent charge
+            const rentCharge = updatedCharges.find(c =>
+              c.roomId && pu.tenant?.room_id &&
+              c.category === "Rent" && c.dueDate?.startsWith(mk) &&
+              c.amountPaid < c.amount &&
+              // Match by room ID or tenant name
+              (c.roomId === pu.tenant.room_id || c.tenantName === tenantName)
+            );
+            if (!rentCharge) { log.push(`Autopay skip: ${tenantName} — no unpaid rent for ${mk}`); continue; }
+            const amountDue = rentCharge.amount - rentCharge.amountPaid;
+            if (amountDue <= 0) continue;
+            try {
+              const paymentIntent = await stripe.paymentIntents.create({
+                amount: Math.round(amountDue * 100),
+                currency: "usd",
+                customer: pu.stripe_customer_id,
+                payment_method: pu.stripe_payment_method_id,
+                off_session: true,
+                confirm: true,
+                metadata: { chargeId: rentCharge.id, tenantName, autopay: "true" },
+              });
+              if (paymentIntent.status === "succeeded") {
+                rentCharge.amountPaid = rentCharge.amount;
+                rentCharge.payments = [...(rentCharge.payments || []), {
+                  amount: amountDue, date: todayStr, method: "Autopay",
+                  deposit_status: "transit", stripe_payment_id: paymentIntent.id,
+                }];
+                chargesChanged = true;
+                log.push(`Autopay charged: ${tenantName} — ${fmtS(amountDue)} (${paymentIntent.id})`);
+                // Send confirmation email
+                if (pu.tenant?.email) {
+                  sendEmail(pu.tenant.email,
+                    `Autopay Processed — ${fmtS(amountDue)} Rent Payment`,
+                    emailWrap(`<p>Hi ${tenantName.split(" ")[0]},</p>
+                    <p>Your automatic rent payment of <strong>${fmtS(amountDue)}</strong> has been processed successfully.</p>
+                    <p><strong>Confirmation:</strong> ${paymentIntent.id}</p>
+                    <p>Log in to your tenant portal to view your payment history: <a href="${portalLink}">Access Portal</a></p>
+                    <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+                    s
+                  );
+                }
+              } else {
+                log.push(`Autopay pending: ${tenantName} — status ${paymentIntent.status}`);
+              }
+            } catch (stripeErr) {
+              log.push(`Autopay failed: ${tenantName} — ${stripeErr.message}`);
+              // Notify PM of failed autopay
+              updatedNotifs.unshift({ id: uid(), type: "payment", msg: `Autopay failed for ${tenantName}: ${stripeErr.message}`, date: todayStr, read: false, urgent: true });
+              notifsChanged = true;
+              // Send failure email to tenant
+              if (pu.tenant?.email) {
+                sendEmail(pu.tenant.email,
+                  `Autopay Failed — Action Required`,
+                  emailWrap(`<p>Hi ${tenantName.split(" ")[0]},</p>
+                  <p>Your automatic rent payment of <strong>${fmtS(amountDue)}</strong> could not be processed.</p>
+                  <p>Please log in to your tenant portal to pay manually and update your payment method: <a href="${portalLink}">Access Portal</a></p>
+                  <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+                  s
+                );
+              }
+            }
+          }
+        }
+      } catch (autopayErr) {
+        log.push(`Autopay system error: ${autopayErr.message}`);
+      }
+    }
+
     // ── Save ──────────────────────────────────────────────────────────
     const saves = [];
     if (chargesChanged) saves.push(supaSet("hq-charges", updatedCharges));
