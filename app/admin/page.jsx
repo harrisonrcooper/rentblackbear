@@ -5145,7 +5145,7 @@ export default function Page(){
         {/* Sub-tabs */}
         <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"2px solid rgba(0,0,0,.08)"}}>
           {[["leases","Lease Agreements"],["checklists","Checklists"],["notices","Notices"],["houserules","House Rules"],["editor","Edit Templates"]].map(([id,label])=>(
-            <button key={id} onClick={()=>{if(templateEditorDirty&&leaseSubTab==="editor"&&id!=="editor"){setPendingNavTab("__subtab__"+id);return;}setLeaseSubTab(id);}}
+            <button key={id} onClick={()=>{if(templateEditorDirty&&leaseSubTab==="editor"&&id!=="editor"){setPendingNavTab("__subtab__"+id);return;}if(id==="editor")setLeaseTemplate(null);setLeaseSubTab(id);}}
               style={{padding:"12px 24px",border:"none",borderBottom:leaseSubTab===id?"2px solid "+_acc:"2px solid transparent",marginBottom:-2,background:"transparent",color:leaseSubTab===id?_acc:"#9a8878",fontWeight:leaseSubTab===id?700:500,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",letterSpacing:.1}}>
               {label}
             </button>
@@ -5401,9 +5401,9 @@ export default function Page(){
           </div>
         ):(
           <div>
-            <button onClick={()=>setLeaseTemplate(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:"#6b5e52",fontFamily:"inherit",padding:0,marginBottom:12,display:"flex",alignItems:"center",gap:4}}>
+            <button onClick={()=>setLeaseTemplate(null)} className="btn btn-out btn-sm" style={{marginBottom:14,display:"flex",alignItems:"center",gap:6}}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
-              Back to template list
+              All Templates
             </button>
             <TemplateEditor
               template={leaseTemplate}
