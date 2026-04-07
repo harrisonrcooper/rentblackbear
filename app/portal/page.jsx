@@ -115,6 +115,8 @@ export default function TenantPortal() {
   const [activeTab, setActiveTab]         = useState("home");
   const [token, setToken]                 = useState(null);
   const [leaseId, setLeaseId]             = useState(null);
+  const [leaseData, setLeaseData]         = useState(null);
+  const [showFullLease, setShowFullLease] = useState(false);
   const [onboarding, setOnboarding]       = useState({ leaseSigned: false, sdPaid: false, firstMonthPaid: false });
   const [obStep, setObStep]               = useState(null);
   const [showSig, setShowSig]             = useState(false);
@@ -152,6 +154,7 @@ export default function TenantPortal() {
         { id: "c3", category: "Rent", description: "July 2025 Rent", amount: 750, amount_paid: 0, due_date: "2025-07-01", payments: [] },
       ]);
       setLeaseId("ul56zet");
+      setLeaseData({ id: "ul56zet", status: "executed", tenantName: "Demo Tenant", property: "Demo Property", room: "Room A", rent: 750, sd: 750, moveIn: "2025-06-01", leaseEnd: "2026-06-01", landlordName: "Carolina Cooper", landlordSignedAt: "2025-05-28T00:00:00Z", tenantSignedAt: "2025-05-29T00:00:00Z", sections: [{ id: "s1", title: "Nature of Tenancy", content: "<p>This is a room rental agreement for shared co-living.</p>", active: true, requiresInitials: true }, { id: "s2", title: "Term of Lease", content: "<p>The lease term begins on the move-in date and ends on the lease end date specified above.</p>", active: true, requiresInitials: true }, { id: "s3", title: "Rent", content: "<p>Rent is due on the 1st of each month. Late fees apply after the 3rd.</p><ul><li>Monthly rent: $750</li><li>Late fee: $50 after day 3</li><li>Daily late fee: $5/day</li></ul>", active: true, requiresInitials: true }] });
       setOnboarding({ leaseSigned: true, sdPaid: true, firstMonthPaid: true });
       setScreen("portal");
       return;
@@ -188,8 +191,12 @@ export default function TenantPortal() {
       const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false });
       setMaintenance(mt || []);
       if (pu.tenant?.room_id) {
-        const { data: leases } = await supabase.from("lease_instances").select("id,status").eq("room_id", pu.tenant.room_id).eq("status", "executed").order("created_at", { ascending: false }).limit(1);
-        if (leases?.length) setLeaseId(leases[0].id);
+        const { data: leases } = await supabase.from("lease_instances").select("*").eq("room_id", pu.tenant.room_id).eq("status", "executed").order("created_at", { ascending: false }).limit(1);
+        if (leases?.length) {
+          setLeaseId(leases[0].id);
+          const row = leases[0];
+          setLeaseData({ ...(row.variable_data || {}), id: row.id, status: row.status, landlordSig: row.landlord_sig, tenantSig: row.tenant_sig, landlordSignedAt: row.landlord_signed_at, tenantSignedAt: row.tenant_signed_at });
+        }
       }
       const allCh = ch || [];
       setOnboarding({
@@ -667,20 +674,93 @@ export default function TenantPortal() {
         {onboardingDone && activeTab === "documents" && (
           <div style={{ animation: "fadeIn .2s" }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Your Lease</h2>
+
+            {/* Summary Card */}
             <div style={sCard}>
               <span style={sLabel}>Lease Summary</span>
               {[["Property", tenant?.property?.name], ["Room", tenant?.room?.name], ["Monthly Rent", fmt(tenant?.rent)], ["Security Deposit", fmt(tenant?.security_deposit)], ["Move-in", fmtD(tenant?.move_in)], ["Lease End", fmtD(tenant?.lease_end)], ["Signed", tenant?.lease_signed_at ? new Date(tenant.lease_signed_at).toLocaleDateString() : null]].filter(([, v]) => v).map(([label, val]) => (
                 <div key={label} style={sRow}><span style={{ color: C.muted }}>{label}</span><span style={{ fontWeight: 700 }}>{val}</span></div>
               ))}
-              {leaseId && (
-                <a href={`/api/generate-lease-pdf?id=${leaseId}`} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none", marginTop: 12 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Download Lease PDF
-                </a>
-              )}
+              {leaseData?.landlordSignedAt && <div style={{ ...sRow, borderBottom: "none" }}><span style={{ color: C.muted }}>PM Signed</span><span style={{ fontWeight: 600, color: C.green }}>{new Date(leaseData.landlordSignedAt).toLocaleDateString()}</span></div>}
+              {leaseData?.tenantSignedAt && <div style={{ ...sRow, borderBottom: "none" }}><span style={{ color: C.muted }}>Tenant Signed</span><span style={{ fontWeight: 600, color: C.green }}>{new Date(leaseData.tenantSignedAt).toLocaleDateString()}</span></div>}
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                {leaseData?.sections?.length > 0 && (
+                  <button onClick={() => setShowFullLease(!showFullLease)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", color: C.text }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    {showFullLease ? "Hide Full Lease" : "View Full Lease"}
+                  </button>
+                )}
+                {leaseId && (
+                  <a href={"/api/generate-lease-pdf?id=" + leaseId} target="_blank" rel="noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download PDF
+                  </a>
+                )}
+              </div>
             </div>
+
+            {/* Full Lease Preview */}
+            {showFullLease && leaseData?.sections && (
+              <div style={{ ...sCard, marginTop: 12, padding: 0 }}>
+                {/* Lease header */}
+                <div style={{ background: C.bg, borderRadius: "14px 14px 0 0", padding: "20px 24px", textAlign: "center" }}>
+                  <div style={{ fontFamily: "Georgia,serif", fontSize: 18, color: C.accent, fontWeight: 700 }}>{pm.company_name}</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", marginTop: 4, textTransform: "uppercase", letterSpacing: 1 }}>Lease Agreement</div>
+                </div>
+
+                {/* Parties */}
+                <div style={{ display: "flex", gap: 12, padding: "16px 20px", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+                  <div style={{ flex: 1, padding: 10, background: "#faf9f7", borderRadius: 6, border: "1px solid rgba(0,0,0,.05)" }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>Property Manager</div>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>{leaseData.landlordName || pm.company_name}</div>
+                  </div>
+                  <div style={{ flex: 1, padding: 10, background: "#faf9f7", borderRadius: 6, border: "1px solid rgba(0,0,0,.05)" }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>Tenant</div>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>{leaseData.tenantName || tenant?.name}</div>
+                  </div>
+                </div>
+
+                {/* Sections */}
+                <div style={{ padding: "16px 20px" }}>
+                  <style>{`
+                    .lease-content ul,.lease-content ol{padding-left:24px;margin:6px 0}
+                    .lease-content li{margin:3px 0;line-height:1.7}
+                    .lease-content p{margin:4px 0}
+                  `}</style>
+                  {(leaseData.sections || []).filter(s => s.active !== false).map((sec, i) => (
+                    <div key={sec.id || i} style={{ marginBottom: 20 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+                        <div style={{ width: 22, height: 22, borderRadius: "50%", background: C.bg, color: C.accent, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: .3 }}>{sec.title}</div>
+                      </div>
+                      <div className="lease-content" style={{ fontSize: 12, lineHeight: 1.8, color: C.muted, paddingLeft: 32 }} dangerouslySetInnerHTML={{ __html: sec.content || "" }} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Signatures */}
+                <div style={{ display: "flex", gap: 16, padding: "16px 20px", borderTop: "2px solid rgba(0,0,0,.08)" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Property Manager</div>
+                    {leaseData.landlordSig ? (
+                      <div><img src={leaseData.landlordSig} alt="PM signature" style={{ height: 40, maxWidth: 160, objectFit: "contain", display: "block", marginBottom: 4 }} /><div style={{ fontSize: 11, fontWeight: 600 }}>{leaseData.landlordName}</div>{leaseData.landlordSignedAt && <div style={{ fontSize: 10, color: C.muted }}>Signed {new Date(leaseData.landlordSignedAt).toLocaleDateString()}</div>}</div>
+                    ) : <div style={{ borderBottom: "1px solid rgba(0,0,0,.2)", height: 40, marginBottom: 4 }} />}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Tenant</div>
+                    {leaseData.tenantSig ? (
+                      <div><img src={leaseData.tenantSig} alt="Tenant signature" style={{ height: 40, maxWidth: 160, objectFit: "contain", display: "block", marginBottom: 4 }} /><div style={{ fontSize: 11, fontWeight: 600 }}>{leaseData.tenantName || tenant?.name}</div>{leaseData.tenantSignedAt && <div style={{ fontSize: 10, color: C.muted }}>Signed {new Date(leaseData.tenantSignedAt).toLocaleDateString()}</div>}</div>
+                    ) : <div style={{ borderBottom: "1px solid rgba(0,0,0,.2)", height: 40, marginBottom: 4 }} />}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Lease expiration warning */}
             {dl !== null && dl <= 60 && (
-              <div style={{ background: dl <= 30 ? hexRgba(C.red, .06) : hexRgba(C.accent, .06), border: `1px solid ${dl <= 30 ? hexRgba(C.red, .2) : hexRgba(C.accent, .2)}`, borderRadius: 12, padding: 16 }}>
+              <div style={{ background: dl <= 30 ? hexRgba(C.red, .06) : hexRgba(C.accent, .06), border: `1px solid ${dl <= 30 ? hexRgba(C.red, .2) : hexRgba(C.accent, .2)}`, borderRadius: 12, padding: 16, marginTop: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: dl <= 30 ? C.red : C.accent, marginBottom: 4 }}>Lease expires in {dl} days</div>
                 <div style={{ fontSize: 12, color: C.muted }}>Contact {pm.company_name} at {pm.phone} to discuss renewal.</div>
               </div>
