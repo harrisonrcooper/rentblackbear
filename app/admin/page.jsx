@@ -28,6 +28,7 @@ const IconGlobe=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" 
 const IconPalette=()=><I d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/>;
 const IconBrain=()=><I d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14z M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14z"/>;
 const IconBell=()=><I d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0"/>;
+const IconMail=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>;
 const IconTimeline=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>;
 const IconSettings=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 
@@ -2622,6 +2623,7 @@ export default function Page(){
     {id:"theme",i:<IconPalette/>,l:"Admin Theme"},
     {id:"website",i:<IconGlobe/>,l:"Website"},
     {id:"ideas",i:<IconBrain/>,l:"Brain Dump"},
+    {id:"messages",i:<IconMail/>,l:"Messages"},
     {id:"notifications",i:<IconBell/>,l:"Alerts",badge:m.unreadNotifs||null},
     {id:"add-expense",i:<span>＋</span>,l:"Add Expense"},
   ];
@@ -2635,7 +2637,8 @@ export default function Page(){
     {label:"Operations",ids:["maintenance","leases","documents"]},
     {label:"Financials",ids:["accounting","add-expense","reports"]},
     {label:"Portfolio",ids:["properties"]},
-    {label:"Settings",ids:["pm-settings","theme","notifications"]},
+    {label:"Communications",ids:["messages","notifications"]},
+    {label:"Settings",ids:["pm-settings","theme"]},
     {label:"Website",ids:["website","ideas"]},
   ];
   const rawSidebarConfig=settings.sidebarConfig||DEF_SIDEBAR;
@@ -6561,6 +6564,20 @@ export default function Page(){
         </>);
       })()}
 
+      {/* ═══ MESSAGES ═══ */}
+      {tab==="messages"&&<>
+        <div className="sec-hd"><div><h2>Messages</h2><p>Tenant messages received through the portal</p></div></div>
+        <div style={{padding:"12px 16px",background:"rgba(212,168,83,.06)",borderRadius:10,border:"1px solid rgba(212,168,83,.15)",fontSize:11,color:"#9a7422",marginBottom:16}}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Messages from tenants are sent to your email at <strong>{settings.pmEmail||settings.email||"your email"}</strong>. A persistent inbox is coming soon.
+        </div>
+        <div className="card"><div className="card-bd" style={{textAlign:"center",padding:40}}>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#c4a882" strokeWidth="1.25" style={{marginBottom:10}}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:4}}>No messages yet</div>
+          <div style={{fontSize:11,color:"#6b5e52"}}>When tenants send messages through the portal, they will appear here.</div>
+        </div></div>
+      </>}
+
       {/* ═══ NOTIFICATIONS ═══ */}
       {tab==="notifications"&&<>
         <div className="sec-hd"><div><h2>Notifications</h2><p>{m.unreadNotifs} unread</p></div>
@@ -7799,6 +7816,18 @@ export default function Page(){
                 </div>
               ))}
             </div>);})()}
+            {/* 30-Day Notice */}
+            {(r.tenant?.notice_given_at||r.tenant?.intended_move_out)&&(
+              <div style={{background:"#fff",borderRadius:12,border:"2px solid rgba(196,92,74,.25)",padding:"16px 20px",marginBottom:16}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span style={{fontSize:13,fontWeight:700,color:"#c45c4a"}}>30-Day Notice Filed</span>
+                </div>
+                <div style={{fontSize:11,color:"#5c4a3a"}}>
+                  {r.tenant.intended_move_out?"Intended move-out: "+fmtD(r.tenant.intended_move_out):"Notice given: "+fmtD(r.tenant.notice_given_at)}
+                </div>
+              </div>
+            )}
             {/* Room & Lease */}
             <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}><TI d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" d2="M9 22V12h6v10"/><span style={{fontSize:14,fontWeight:700}}>Room & Lease</span></div>
