@@ -3,6 +3,7 @@ import { syncTenantToSupabase } from "@/lib/syncTenant";
 import LeaseModal from "./components/LeaseModal";
 import TemplateEditor from "./components/TemplateEditor";
 import PMSettings from "./components/PMSettings";
+import LeaseTemplateList from "./components/LeaseTemplateList";
 import AppSetup from "./components/AppSetup";
 import WebsiteSettings from "./components/WebsiteSettings";
 // ADMIN HQ — rentblackbear.com/admin
@@ -2239,8 +2240,9 @@ export default function Page(){
   const[sidebarSecDragOver,setSidebarSecDragOver]=useState(null); // section index drag target
   const[maintForm,setMaintForm]=useState({title:"",desc:"",priority:"medium",submitted:false});
   const[leases,setLeases]=useState([]);
+  const[leaseTemplates,setLeaseTemplates]=useState([]);
   const[leaseTemplate,setLeaseTemplate]=useState(null);
-  const[leaseSubTab,setLeaseSubTab]=useState("active");
+  const[leaseSubTab,setLeaseSubTab]=useState("templates");
   const[templateEditorDirty,setTemplateEditorDirty]=useState(false);
   const[pendingNavTab,setPendingNavTab]=useState(null);// tab waiting for dirty confirm
   const[leaseForm,setLeaseForm]=useState(null);
@@ -2249,7 +2251,7 @@ export default function Page(){
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
   useEffect(()=>{(async()=>{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),loadLeases(),supa("lease_templates?is_active=eq.true&workspace_id=is.null&type=eq.standard&order=created_at.asc&limit=1").then(r=>r.json()).then(d=>d&&d.length>0?d[0]:null).catch(()=>null),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS_BY_CAT),load("hq-dismissed-followups",[])]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),loadLeases(),supa("lease_templates?is_active=eq.true&workspace_id=is.null&type=eq.standard&order=created_at.asc").then(r=>r.json()).then(d=>Array.isArray(d)?d:[]).catch(()=>[]),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS_BY_CAT),load("hq-dismissed-followups",[])]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
@@ -2297,7 +2299,7 @@ export default function Page(){
     const hasDoorCode=(af||[]).some(f=>f.key==="doorCode");
     const migratedAf=(()=>{if(hasDoorCode||(af||[]).length===0)return af||[];const idx=af.findIndex(f=>f.key==="selectedRoom");const insertAt=idx>=0?idx+1:af.findIndex(f=>f.section==="Move-In & Property")+1;const at=insertAt<0?af.length:insertAt;return[...af.slice(0,at),DOOR_CODE_APP_FIELD,...af.slice(at)];})();
     if(!hasDoorCode&&(af||[]).length>0){save("hq-app-fields",migratedAf);}
-    setAppFields(migratedAf);setLeases(ls);setLeaseTemplate(lt);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setWidgetList(null);setLoaded(true);
+    setAppFields(migratedAf);setLeases(ls);setLeaseTemplates(lt);setLeaseTemplate(lt[0]||null);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setWidgetList(null);setLoaded(true);
   })();},[]);
 
   useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,loaded]);
@@ -2607,7 +2609,7 @@ export default function Page(){
     {id:"timeline",i:<IconTimeline/>,l:"Tenant Timeline"},
     {id:"applications",i:<IconClipboard/>,l:"Applications",badge:(settings.showAppBadge!==false&&m.needsAttention>0)?m.needsAttention:null},
     {id:"maintenance",i:<IconWrench/>,l:"Maintenance",badge:m.openMaint||null},
-    {id:"leases",i:<IconFile/>,l:"Leases & Docs",badge:pendingLeases||null},
+    {id:"leases",i:<IconFile/>,l:"Lease Templates",badge:pendingLeases||null},
     {id:"documents",i:<IconFolder/>,l:"Documents"},
     {id:"accounting",i:<IconBook/>,l:"Accounting"},
     {id:"reports",i:<IconTrending/>,l:"Reports"},
@@ -2685,7 +2687,7 @@ export default function Page(){
   const propDisplay=(propName)=>{const p=getPropByName(propName);return p?getPropDisplayName(p):propName;};
   const roomSubLine=(propName,roomName)=>{const dispName=propDisplay(propName);return `${dispName} · ${roomName}`;};  // No more double address
   const goTab=(t,force=false)=>{
-    if(!force&&templateEditorDirty&&tab==="leases"&&leaseSubTab==="template"&&t!=="leases"){
+    if(!force&&templateEditorDirty&&tab==="leases"&&leaseSubTab==="editor"&&t!=="leases"){
       setPendingNavTab(t);return;
     }
     setTab(t);setDrill(null);setSideOpen(false);setViewingLease(null);if(modal?.type==="tenant")setModal(null);
@@ -5063,18 +5065,17 @@ export default function Page(){
         return(<>
         <div className="sec-hd" style={{marginBottom:16}}>
           <div>
-            <h2>Leases & Docs</h2>
-            <p>Create, send, and manage lease agreements · Drawn e-signatures · Auto-filled from applications</p>
+            <h2>Lease Templates</h2>
+            <p>Manage lease templates and active leases</p>
           </div>
           <div style={{display:"flex",gap:8}}>
-            <button className="btn btn-out btn-sm" onClick={()=>{setLeaseSubTab("template");}}>Template</button>
             <button className="btn btn-gold" onClick={()=>openCreateLease(null)}>+ New Lease</button>
           </div>
         </div>
 
         {/* Sub-tabs */}
         <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"2px solid rgba(0,0,0,.08)"}}>
-          {[["active","Active Leases"],["template","Template Editor"]].map(([id,label])=>(
+          {[["templates","My Templates"],["active","Active Leases"],["editor","Edit Template"]].filter(([id])=>id!=="editor"||leaseTemplate).map(([id,label])=>(
             <button key={id} onClick={()=>setLeaseSubTab(id)}
               style={{padding:"12px 24px",border:"none",borderBottom:leaseSubTab===id?"2px solid "+_acc:"2px solid transparent",marginBottom:-2,background:"transparent",color:leaseSubTab===id?_acc:"#9a8878",fontWeight:leaseSubTab===id?700:500,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",letterSpacing:.1}}>
               {label}
@@ -5150,8 +5151,19 @@ export default function Page(){
           })}
         </>}
 
+        {/* Templates List */}
+        {leaseSubTab==="templates"&&<LeaseTemplateList
+          templates={leaseTemplates}
+          setTemplates={setLeaseTemplates}
+          selectedTemplate={leaseTemplate}
+          setSelectedTemplate={setLeaseTemplate}
+          onEdit={(tmpl)=>{setLeaseTemplate(tmpl);setLeaseSubTab("editor");}}
+          onCreateLease={(tmpl)=>{setLeaseTemplate(tmpl);openCreateLease(null);}}
+          settings={settings}
+        />}
+
         {/* Template Editor */}
-        {leaseSubTab==="template"&&<TemplateEditor
+        {leaseSubTab==="editor"&&<TemplateEditor
           template={leaseTemplate}
           setTemplate={setLeaseTemplate}
           settings={settings}
@@ -6810,7 +6822,7 @@ export default function Page(){
               const ALL_MOB_TABS=[
                 {id:"dashboard",label:"Dashboard"},{id:"tenants",label:"Tenants"},{id:"applications",label:"Applications"},
                 {id:"accounting",label:"Accounting"},{id:"payments",label:"Tenant Ledger"},{id:"maintenance",label:"Maintenance"},
-                {id:"timeline",label:"Tenant Timeline"},{id:"leases",label:"Leases & Docs"},{id:"properties",label:"Properties"},{id:"reports",label:"Reports"},
+                {id:"timeline",label:"Tenant Timeline"},{id:"leases",label:"Lease Templates"},{id:"properties",label:"Properties"},{id:"reports",label:"Reports"},
               ];
               const cur=settings.mobileTabs||["dashboard","tenants","applications","accounting"];
               const saveMobTabs=(tabs)=>{const u={...settings,mobileTabs:tabs};setSettings(u);save("hq-settings",u);};
