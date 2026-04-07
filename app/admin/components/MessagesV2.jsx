@@ -246,11 +246,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
       room_name: activeThread.roomName,
       read: true,
       created_at: now,
-      status: "sent",
-      attachment: attachFile ? { name: attachFile.name, type: attachFile.type, data: attachFile.data } : null,
     };
+    // Only add optional columns if they have values (columns may not exist yet)
+    if (attachFile) newMsg.attachment = { name: attachFile.name, type: attachFile.type, data: attachFile.data };
 
-    const { data } = await supabase.from("messages").insert(newMsg).select().single();
+    const { data, error: insertErr } = await supabase.from("messages").insert(newMsg).select().single();
+    if (insertErr) { console.error("Message send error:", insertErr); setSending(false); return; }
 
     // Email tenant (only for real replies, not notes)
     if (!isNote && activeThread.tenantEmail) {
@@ -289,28 +290,60 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
     { cmd: "/archive", label: "Archive conversation", desc: "Move to archived" },
   ];
 
-  const handleSlashCommand = (cmd) => {
+  // When clicking a command from the menu — insert it into the input
+  const insertSlashCommand = (cmd) => {
     setShowSlashMenu(false);
-    setReplyText("");
-    if (cmd === "/maintenance") {
-      const title = "Maintenance request from chat with " + (activeThread?.tenantName || "tenant");
-      supabase.from("maintenance_requests").insert({ tenant_id: null, tenant_name: activeThread?.tenantName, property_name: activeThread?.propertyName, room_name: activeThread?.roomName, title, description: "Created via PM messages", priority: "medium", submitted_by: settings?.pmName || "PM" });
-      sendSystemMessage("Maintenance request created: " + title);
-    } else if (cmd === "/charge") {
-      sendSystemMessage("Charge creation is available from the Tenant Ledger. Navigate to Tenants > " + (activeThread?.tenantName || "") + " > Payments.");
-    } else if (cmd === "/note") {
-      setNoteMode(true);
+    // Commands that need details: insert into input and let user type
+    if (cmd === "/maintenance" || cmd === "/charge") {
+      setReplyText(cmd + " ");
       inputRef.current?.focus();
-    } else if (cmd === "/canned") {
-      setShowCanned(true);
-    } else if (cmd === "/assign") {
-      setShowAssignMenu(true);
-    } else if (cmd === "/archive") {
-      if (window.confirm("Archive this conversation?")) {
-        setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; });
-        setSelectedThread(null);
-      }
+      return;
     }
+    // Instant commands: execute immediately
+    if (cmd === "/note") { setReplyText(""); setNoteMode(true); inputRef.current?.focus(); }
+    else if (cmd === "/canned") { setReplyText(""); setShowCanned(true); }
+    else if (cmd === "/assign") { setReplyText(""); setShowAssignMenu(true); }
+    else if (cmd === "/archive") { setReplyText(""); if (window.confirm("Archive this conversation?")) { setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; }); setSelectedThread(null); } }
+  };
+
+  // When hitting Enter with a slash command in the input — execute it
+  const executeSlashCommand = async () => {
+    const text = replyText.trim();
+    if (!text.startsWith("/") || !activeThread) return false;
+
+    if (text.startsWith("/maintenance")) {
+      const details = text.replace("/maintenance", "").trim();
+      const title = details || "Maintenance request for " + (activeThread.tenantName || "tenant");
+      const { error } = await supabase.from("maintenance_requests").insert({
+        pm_id: null, tenant_id: null,
+        tenant_name: activeThread.tenantName,
+        property_name: activeThread.propertyName,
+        room_name: activeThread.roomName,
+        title: title,
+        description: "Created via PM messages by " + (settings?.pmName || "PM"),
+        priority: "medium",
+        submitted_by: settings?.pmName || "PM",
+        status: "open",
+      });
+      if (!error) {
+        await sendSystemMessage("Maintenance request created: " + title);
+        // Also notify tenant
+        if (activeThread.tenantEmail) {
+          try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Maintenance Request Created: " + title, html: "<p>A maintenance request has been created for you:</p><p><strong>" + title + "</strong></p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {}
+        }
+      }
+      setReplyText("");
+      return true;
+    }
+
+    if (text.startsWith("/charge")) {
+      const details = text.replace("/charge", "").trim();
+      await sendSystemMessage("Charge request noted: " + (details || "See Tenant Ledger") + ". Navigate to Tenants > " + (activeThread.tenantName || "") + " > Payments to create the charge.");
+      setReplyText("");
+      return true;
+    }
+
+    return false;
   };
 
   const sendSystemMessage = async (text) => {
@@ -714,7 +747,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(0,0,0,.06)", background: "#fafaf8" }}>
                     <div style={{ fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Commands</div>
                     {SLASH_COMMANDS.filter(c => c.cmd.startsWith(replyText.trim()) || replyText.trim() === "/").map(c => (
-                      <div key={c.cmd} onClick={() => handleSlashCommand(c.cmd)} style={{ padding: "8px 10px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, transition: "background .1s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <div key={c.cmd} onClick={() => insertSlashCommand(c.cmd)} style={{ padding: "8px 10px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, transition: "background .1s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         <code style={{ fontSize: 12, fontWeight: 700, color: _acc, background: "rgba(0,0,0,.04)", padding: "2px 6px", borderRadius: 4 }}>{c.cmd}</code>
                         <div><div style={{ fontSize: 12, fontWeight: 600 }}>{c.label}</div><div style={{ fontSize: 10, color: "#999" }}>{c.desc}</div></div>
                       </div>
@@ -827,8 +860,8 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     <textarea
                       ref={inputRef}
                       value={replyText}
-                      onChange={e => { const v = e.target.value; setReplyText(v); setShowSlashMenu(v.startsWith("/") && v.length > 0 && v.length < 15); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
-                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (showSlashMenu) { const filtered = SLASH_COMMANDS.filter(c => c.cmd.startsWith(replyText.trim())); if (filtered.length === 1) handleSlashCommand(filtered[0].cmd); } else { sendReply(); } } }}
+                      onChange={e => { const v = e.target.value; setReplyText(v); setShowSlashMenu(v === "/" || (v.startsWith("/") && !v.includes(" ") && v.length < 15)); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
+                      onKeyDown={async e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (showSlashMenu) { const filtered = SLASH_COMMANDS.filter(c => c.cmd.startsWith(replyText.trim())); if (filtered.length === 1) insertSlashCommand(filtered[0].cmd); } else if (replyText.trim().startsWith("/")) { await executeSlashCommand(); } else { sendReply(); } } }}
                       placeholder={noteMode ? "Write an internal note..." : "Type a message... (/ for commands)"}
                       rows={1}
                       style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1.5px solid rgba(0,0,0,.1)", fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "#fff", minHeight: 44, maxHeight: 120, lineHeight: 1.5 }}
