@@ -5030,7 +5030,7 @@ export default function Page(){
                   <div className="row-s">{req.tenant} · {req.created}{req.photos>0?` · ${req.photos} photo${req.photos>1?"s":""}`:""}</div>
                 </div>
                 <span className={`badge ${colors[status]}`}>{labels[status]}</span>
-                <select value={req.status} onChange={e=>setMaint(p=>p.map(x=>x.id===req.id?{...x,status:e.target.value}:x))} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}}>
+                <select value={req.status} onChange={e=>{const newStatus=e.target.value;setMaint(p=>p.map(x=>x.id===req.id?{...x,status:newStatus}:x));if(newStatus!==req.status){const found=findRoom(props,req.roomId);const tenantEmail=found?.room?.tenant?.email;if(tenantEmail){fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tenantEmail,subject:"Maintenance Update — "+req.title,fromName:(settings.pmName||"PropOS")+" — "+(settings.companyName||""),html:"<p>Hi "+(req.tenant||req.submitted_by||"").split(" ")[0]+",</p>"+"<p>Your maintenance request <strong>"+req.title+"</strong> has been updated:</p>"+"<p>Status: <strong>"+newStatus.toUpperCase()+"</strong></p>"+(newStatus==="resolved"?"<p>This issue has been marked as resolved. If the problem persists, please submit a new request through your tenant portal.</p>":"<p>We are working on this. You will be notified when there is another update.</p>")+"<p>"+(settings.companyName||"")+"<br/>"+(settings.phone||"")+"</p>"})}).catch(()=>{});}}}} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}}>
                   <option value="open">Open</option><option value="in-progress">In Progress</option><option value="resolved">Resolved</option>
                 </select>
               </div>
@@ -7781,6 +7781,24 @@ export default function Page(){
               <div style={{display:"flex",gap:10,marginBottom:8,alignItems:"center"}}><TI d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.16 12a19.79 19.79 0 0 1-3-8.57A2 2 0 0 1 3.13 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z" size={14}/><span style={{fontSize:12}}>{r.tenant.phone||"—"}</span></div>
               <div style={{display:"flex",gap:10,alignItems:"center"}}><TI d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" d2="M22 6l-10 7L2 6" size={14}/><span style={{fontSize:12,color:"#3b82f6"}}>{r.tenant.email||"—"}</span></div>
             </div>
+            {/* Onboarding Progress */}
+            {(()=>{const onboardingSteps=[{label:"Lease Signed",done:tLease?.status==="executed"},{label:"Security Deposit Paid",done:tenantCharges.some(c=>c.category==="Security Deposit"&&c.amountPaid>=c.amount)},{label:"First Month Rent Paid",done:tenantCharges.some(c=>c.category==="Rent"&&c.amountPaid>=c.amount)},{label:"Moved In",done:tLease?.status==="executed"&&tenantCharges.some(c=>c.category==="Security Deposit"&&c.amountPaid>=c.amount)&&tenantCharges.some(c=>c.category==="Rent"&&c.amountPaid>=c.amount)}];return(
+            <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px",marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>
+                <span style={{fontSize:14,fontWeight:700}}>Onboarding Progress</span>
+                <span style={{marginLeft:"auto",fontSize:10,fontWeight:700,color:"#6b5e52"}}>{onboardingSteps.filter(s=>s.done).length}/{onboardingSteps.length}</span>
+              </div>
+              {onboardingSteps.map((step,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0",borderBottom:i<onboardingSteps.length-1?"1px solid rgba(0,0,0,.03)":"none"}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",background:step.done?"#4a7c59":"rgba(0,0,0,.08)",color:step.done?"#fff":"#999",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0}}>
+                    {step.done?<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>:i+1}
+                  </div>
+                  <div style={{flex:1,fontSize:12,fontWeight:600}}>{step.label}</div>
+                  <span style={{fontSize:10,fontWeight:700,color:step.done?"#4a7c59":"#999"}}>{step.done?"Complete":"Pending"}</span>
+                </div>
+              ))}
+            </div>);})()}
             {/* Room & Lease */}
             <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}><TI d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" d2="M9 22V12h6v10"/><span style={{fontSize:14,fontWeight:700}}>Room & Lease</span></div>

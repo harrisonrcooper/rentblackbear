@@ -165,9 +165,17 @@ export default function TenantPortal() {
   const [noticeForm, setNoticeForm]       = useState({ moveOutDate: "", reason: "", showForm: false, submitting: false, submitted: false });
   const [autopay, setAutopay]             = useState({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
   const [showDoorCode, setShowDoorCode]   = useState(false);
+  const [referralCopied, setReferralCopied] = useState(false);
   const [notifPrefs, setNotifPrefs]       = useState({ payment_reminders: true, payment_confirmations: true, maintenance_updates: true, lease_reminders: true, announcements: true });
   const [contactForm, setContactForm]     = useState({ subject: "", message: "", sending: false, sent: false, showForm: false });
   const CREDIT_FEE = 0.029;
+
+  const referralLink = typeof window !== "undefined" ? window.location.origin + "/apply?ref=" + (tenant?.id || "") : "";
+  const copyReferral = () => {
+    navigator.clipboard.writeText(referralLink);
+    setReferralCopied(true);
+    setTimeout(() => setReferralCopied(false), 2000);
+  };
 
   // Dynamic theme — PM can override bg, accent, green, red via pm_accounts columns
   const C = {
@@ -1178,6 +1186,22 @@ export default function TenantPortal() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export Payment History (CSV)
               </button>
+            </div>
+
+            {/* Refer a Friend */}
+            <div style={sCard}>
+              <span style={sLabel}>Refer a Friend</span>
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
+                Know someone looking for a room? Share your referral link. When they sign a lease, you may be eligible for a credit on your next month{"\u2019"}s rent.
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "monospace", color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {referralLink}
+                </div>
+                <button onClick={copyReferral} style={{ padding: "10px 16px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {referralCopied ? "Copied!" : "Copy Link"}
+                </button>
+              </div>
             </div>
 
             {/* Notification Preferences */}
