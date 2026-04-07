@@ -43,7 +43,7 @@ const REACTIONS = [
   { emoji: "\ud83d\udc4e", label: "thumbsdown" },
 ];
 
-const CANNED_RESPONSES = [
+const DEFAULT_SAVED_REPLIES = [
   "We'll look into this right away.",
   "Thanks for letting us know. A team member will follow up shortly.",
   "Maintenance has been scheduled. We'll update you with a date and time.",
@@ -52,14 +52,23 @@ const CANNED_RESPONSES = [
   "That's been taken care of. Let us know if there's anything else.",
 ];
 
+const TAG_OPTIONS = ["maintenance", "billing", "lease", "general", "urgent"];
+const TAG_COLORS = { maintenance: "#3b82f6", billing: "#d4a853", lease: "#4a7c59", general: "#999", urgent: "#c45c4a" };
+
+const COMMON_EMOJIS = [
+  "\ud83d\ude00","\ud83d\ude02","\ud83d\ude0a","\ud83d\ude0d","\ud83e\udd14","\ud83d\udc4d","\ud83d\udc4e","\ud83d\udc4b","\ud83d\ude4f","\u2764\ufe0f",
+  "\ud83d\udd25","\ud83c\udf89","\u2705","\u274c","\ud83d\udcaa","\ud83c\udfaf","\ud83d\udce7","\ud83d\udd11","\ud83c\udfe0","\ud83d\udee0\ufe0f",
+  "\ud83d\udcb0","\ud83d\udcc5","\ud83d\udce2","\ud83d\udca1","\u23f0","\ud83d\ude80","\ud83c\udf1f","\ud83d\udccc","\ud83d\udcde","\u270f\ufe0f",
+];
+
 // ── Styles ─────────────────────────────────────────────────────────
 const S = {
-  wrap: { display: "flex", gap: 0, border: "1px solid rgba(0,0,0,.07)", borderRadius: 14, overflow: "hidden", height: "calc(100vh - 180px)", minHeight: 500, background: "#fff" },
+  wrap: { display: "flex", gap: 0, border: "1px solid rgba(0,0,0,.07)", borderRadius: 14, overflow: "hidden", height: "calc(100vh - 200px)", minHeight: 500, maxHeight: "calc(100vh - 200px)", background: "#fff" },
   threadList: { width: 300, borderRight: "1px solid rgba(0,0,0,.06)", display: "flex", flexDirection: "column", background: "#fafaf8" },
   threadSearch: { padding: "12px 14px", borderBottom: "1px solid rgba(0,0,0,.06)" },
   threadScroll: { flex: 1, overflowY: "auto" },
   threadItem: (active, unread) => ({ padding: "14px 16px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.03)", background: active ? "#fff" : "transparent", borderLeft: active ? "3px solid" : "3px solid transparent", transition: "all .1s", position: "relative" }),
-  chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "#fff" },
+  chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "#fff", minWidth: 0, overflow: "hidden" },
   chatHeader: { padding: "14px 20px", borderBottom: "1px solid rgba(0,0,0,.06)", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, background: "#fff", zIndex: 2 },
   chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px" },
   chatInput: { padding: "12px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0 },
