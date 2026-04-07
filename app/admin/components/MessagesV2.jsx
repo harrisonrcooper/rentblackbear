@@ -76,7 +76,7 @@ const S = {
   chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px" },
   chatInput: { padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" },
   bubble: (isOut, _acc) => ({ maxWidth: "68%", padding: "9px 14px", borderRadius: 18, background: isOut ? "#007AFF" : "rgba(255,255,255,.85)", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 4 : 18, borderBottomLeftRadius: isOut ? 18 : 4, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere", boxShadow: isOut ? "0 1px 3px rgba(0,122,255,.2)" : "0 1px 3px rgba(0,0,0,.06)", backdropFilter: isOut ? "none" : "blur(12px)", WebkitBackdropFilter: isOut ? "none" : "blur(12px)" }),
-  dateGroup: { textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#8e8e93", letterSpacing: .2 },
+  dateGroup: { textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#3a3a3c", letterSpacing: .2 },
   reactionBar: { display: "flex", gap: 2, position: "absolute", top: -42, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,.92)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderRadius: 22, boxShadow: "0 4px 24px rgba(0,0,0,.18), 0 0 0 0.5px rgba(0,0,0,.08)", padding: "4px 6px", zIndex: 10 },
   reactionBtn: { width: 32, height: 32, borderRadius: 16, border: "none", background: "transparent", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" },
   reactionPill: { display: "inline-flex", alignItems: "center", gap: 2, padding: "2px 7px", borderRadius: 12, background: "rgba(0,0,0,.06)", backdropFilter: "blur(8px)", fontSize: 12, marginTop: 4, marginRight: 3, cursor: "pointer", transition: "transform .1s ease" },
@@ -765,7 +765,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       <div key={msg.id}>
                         {showDateGroup && <div style={S.dateGroup}>{fmtDateGroup(msg.created_at)}</div>}
                         {/* Time gap indicator */}
-                        {!showDateGroup && showTimeGap && <div style={{ textAlign: "center", margin: "12px 0 8px", fontSize: 10, color: "#8e8e93" }}>{fmtTime(msg.created_at)}</div>}
+                        {!showDateGroup && showTimeGap && <div style={{ textAlign: "center", margin: "12px 0 8px", fontSize: 10, color: "#3a3a3c", fontWeight: 500 }}>{fmtTime(msg.created_at)}</div>}
                         <div className={"msg-bubble-wrap " + (isOut ? "msg-bubble" : "msg-bubble-in")} style={{ display: "flex", justifyContent: isOut || isNote ? "flex-end" : "flex-start", marginBottom: hasReactions ? 22 : (groupedWithNext && !isNote ? 2 : 8), position: "relative" }}
                           onMouseEnter={() => setHoveredMsg(msg.id)} onMouseLeave={() => setHoveredMsg(null)}>
                           {/* Inbound avatar — only on last in group */}
@@ -828,8 +828,8 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                               <div style={{ fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{msg.body}{msg.edited && <span style={{ fontSize: 9, opacity: .5, marginLeft: 4 }}>(edited)</span>}</div>
                             )}
                             {/* Timestamp — hidden by default, visible on hover or last in group */}
-                            <div className="msg-time-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 3, opacity: (isLastInGroup && !groupedWithNext) ? .45 : 0, transition: "opacity .15s ease", height: (isLastInGroup && !groupedWithNext) ? "auto" : 0, overflow: "hidden" }}>
-                              <div style={{ fontSize: 9, color: isOut ? "rgba(255,255,255,.7)" : "#8e8e93" }}>{fmtTime(msg.created_at)}</div>
+                            <div className="msg-time-hover" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 3, opacity: (isLastInGroup && !groupedWithNext) ? 1 : 0, transition: "opacity .15s ease", height: (isLastInGroup && !groupedWithNext) ? "auto" : 0, overflow: "hidden" }}>
+                              <div style={{ fontSize: 9, color: isOut ? "rgba(255,255,255,.9)" : "#3a3a3c", fontWeight: 500 }}>{fmtTime(msg.created_at)}</div>
                               {isOut && <div style={{ fontSize: 9, color: "rgba(255,255,255,.6)", marginLeft: 8, display: "flex", alignItems: "center", gap: 2 }}>
                                 {msg.status === "read" || msg.read ? (
                                   <><svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="#5AC8FA" strokeWidth="2.5" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg></>
