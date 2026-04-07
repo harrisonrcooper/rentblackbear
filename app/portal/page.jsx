@@ -173,6 +173,17 @@ export default function TenantPortal() {
   const [tenantMessages, setTenantMessages] = useState([]);
   const [msgInput, setMsgInput]           = useState("");
   const [renewalModal, setRenewalModal]   = useState({ open: false, choice: null, submitting: false, submitted: false });
+
+  // Realtime subscription for portal messages
+  useEffect(() => {
+    if (!tenant?.name) return;
+    const channel = supabase.channel("portal-msgs-" + tenant.name).on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+      if (payload.new.tenant_name === tenant.name && payload.new.direction !== "note") {
+        setTenantMessages(prev => [...prev, payload.new]);
+      }
+    }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [tenant?.name]);
   const CREDIT_FEE = 0.029;
 
   const referralLink = typeof window !== "undefined" ? window.location.origin + "/apply?ref=" + (tenant?.id || "") : "";
@@ -865,17 +876,7 @@ export default function TenantPortal() {
           <div style={{ animation: "fadeIn .2s" }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>Messages</h2>
 
-            {/* Realtime subscription for messages */}
-            {(() => {
-              // Subscribe to new messages for this tenant
-              const tenantName = tenant?.name || "Demo Tenant";
-              supabase.channel("portal-messages-" + tenantName).on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-                if (payload.new.tenant_name === tenantName) {
-                  setTenantMessages(prev => [...prev, payload.new]);
-                }
-              }).subscribe();
-              return null;
-            })()}
+            {/* Realtime handled in useEffect below */}
 
             {/* Message thread */}
             <div style={{ ...sCard, padding: 0, minHeight: 300, display: "flex", flexDirection: "column" }}>
@@ -888,7 +889,7 @@ export default function TenantPortal() {
                     <div style={{ fontSize: 11, marginTop: 4 }}>Send a message to your property manager below.</div>
                   </div>
                 )}
-                {tenantMessages.map(msg => {
+                {tenantMessages.filter(msg => msg.direction !== "note").map(msg => {
                   const isMe = msg.direction === "inbound";
                   return (
                     <div key={msg.id} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start", marginBottom: 10 }}>
