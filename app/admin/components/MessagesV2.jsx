@@ -99,6 +99,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   const [showTenantInfo, setShowTenantInfo] = useState(false);
   const [attachFile, setAttachFile] = useState(null); // { name, data, type }
   const [threadFilter, setThreadFilter] = useState("all"); // all, unread, pinned
+  // Conversation management
+  const [starredThreads, setStarredThreads] = useState(new Set());
+  const [archivedThreads, setArchivedThreads] = useState(new Set());
+  const [snoozedThreads, setSnoozedThreads] = useState({}); // key -> resume timestamp
+  const [assignedThreads, setAssignedThreads] = useState({}); // key -> team member name
+  const [showSnoozeMenu, setShowSnoozeMenu] = useState(false);
+  const [showAssignMenu, setShowAssignMenu] = useState(false);
   // Tags/Labels
   const [threadTags, setThreadTags] = useState({});
   const [showTagDropdown, setShowTagDropdown] = useState(false);
@@ -190,8 +197,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
 
   // Filters
   if (propFilter !== "all") threadList = threadList.filter(t => t.propertyName === propFilter);
+  // Filter out archived and snoozed by default (unless viewing those filters)
+  if (threadFilter !== "archived") threadList = threadList.filter(t => !archivedThreads.has(t.key));
+  if (threadFilter !== "all" && threadFilter !== "archived") {
+    const now = Date.now();
+    threadList = threadList.filter(t => { const snoozeUntil = snoozedThreads[t.key]; return !snoozeUntil || snoozeUntil < now; });
+  }
   if (threadFilter === "unread") threadList = threadList.filter(t => t.messages.some(m => m.direction === "inbound" && !m.read));
+  if (threadFilter === "starred") threadList = threadList.filter(t => starredThreads.has(t.key));
   if (threadFilter === "pinned") threadList = threadList.filter(t => pinnedThreads.has(t.key));
+  if (threadFilter === "archived") threadList = threadList.filter(t => archivedThreads.has(t.key));
   if (search) { const q = search.toLowerCase(); threadList = threadList.filter(t => t.tenantName.toLowerCase().includes(q) || t.messages.some(m => (m.body || "").toLowerCase().includes(q) || (m.subject || "").toLowerCase().includes(q))); }
 
   const activeThread = selectedThread ? threads[selectedThread] : null;
@@ -339,7 +354,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
             <div style={S.threadSearch}>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
               <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-                {[["all", "All"], ["unread", "Unread"], ["pinned", "Pinned"]].map(([id, label]) => (
+                {[["all", "All"], ["unread", "Unread"], ["starred", "Starred"], ["pinned", "Pinned"], ["archived", "Archived"]].map(([id, label]) => (
                   <button key={id} onClick={() => setThreadFilter(id)} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: "1px solid " + (threadFilter === id ? _acc : "rgba(0,0,0,.08)"), background: threadFilter === id ? _acc + "12" : "#fff", color: threadFilter === id ? _acc : "#999", fontSize: 10, fontWeight: threadFilter === id ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
                 ))}
               </div>
@@ -384,7 +399,9 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       </div>
                     </div>
                     <div style={{ fontSize: 11, color: unread ? "#1a1714" : "#999", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: 38, marginTop: 2 }}>
-                      {pinnedThreads.has(thread.key) && <svg width="8" height="8" viewBox="0 0 24 24" fill="#d4a853" stroke="#d4a853" strokeWidth="2" style={{ marginRight: 3, verticalAlign: "middle" }}><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>}
+                      {starredThreads.has(thread.key) && <svg width="8" height="8" viewBox="0 0 24 24" fill="#d4a853" stroke="#d4a853" strokeWidth="1.5" style={{ marginRight: 2, verticalAlign: "middle" }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
+                      {pinnedThreads.has(thread.key) && <svg width="8" height="8" viewBox="0 0 24 24" fill="#d4a853" stroke="#d4a853" strokeWidth="2" style={{ marginRight: 2, verticalAlign: "middle" }}><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>}
+                      {assignedThreads[thread.key] && <span style={{ fontSize: 8, color: "#4a7c59", fontWeight: 700, marginRight: 2 }}>{assignedThreads[thread.key]}</span>}
                       {isRenewal && <span style={{ fontSize: 9, fontWeight: 700, color: "#9a7422", marginRight: 4 }}>RENEWAL</span>}
                       {lastMsg?.direction === "outbound" ? "You: " : lastMsg?.direction === "note" ? "Note: " : ""}{lastMsg?.body?.slice(0, 50) || lastMsg?.subject || ""}
                     </div>
@@ -477,6 +494,44 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     <button onClick={() => setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} title={pinnedThreads.has(selectedThread) ? "Unpin" : "Pin conversation"} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: pinnedThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill={pinnedThreads.has(selectedThread) ? "#d4a853" : "none"} stroke={pinnedThreads.has(selectedThread) ? "#d4a853" : "#999"} strokeWidth="2"><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>
                     </button>
+                    {/* Star */}
+                    <button onClick={() => setStarredThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} title={starredThreads.has(selectedThread) ? "Unstar" : "Star"} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: starredThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill={starredThreads.has(selectedThread) ? "#d4a853" : "none"} stroke={starredThreads.has(selectedThread) ? "#d4a853" : "#999"} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </button>
+                    {/* Snooze */}
+                    <div style={{ position: "relative" }}>
+                      <button onClick={() => setShowSnoozeMenu(!showSnoozeMenu)} title="Snooze" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: snoozedThreads[selectedThread] ? "rgba(59,130,246,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={snoozedThreads[selectedThread] ? "#3b82f6" : "#999"} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      </button>
+                      {showSnoozeMenu && (
+                        <div style={{ position: "absolute", top: 36, right: 0, background: "#fff", border: "1px solid rgba(0,0,0,.1)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.12)", zIndex: 20, minWidth: 160, overflow: "hidden" }}>
+                          {[["1 hour", 1], ["4 hours", 4], ["Tomorrow", 24], ["3 days", 72], ["1 week", 168]].map(([label, hours]) => (
+                            <button key={label} onClick={() => { setSnoozedThreads(prev => ({ ...prev, [selectedThread]: Date.now() + hours * 3600000 })); setShowSnoozeMenu(false); setSelectedThread(null); }} style={{ display: "block", width: "100%", padding: "9px 14px", background: "none", border: "none", textAlign: "left", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#1a1714" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>{label}</button>
+                          ))}
+                          {snoozedThreads[selectedThread] && <button onClick={() => { setSnoozedThreads(prev => { const next = { ...prev }; delete next[selectedThread]; return next; }); setShowSnoozeMenu(false); }} style={{ display: "block", width: "100%", padding: "9px 14px", background: "none", border: "none", borderTop: "1px solid rgba(0,0,0,.06)", textAlign: "left", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#3b82f6", fontWeight: 700 }}>Unsnooze</button>}
+                        </div>
+                      )}
+                    </div>
+                    {/* Assign */}
+                    <div style={{ position: "relative" }}>
+                      <button onClick={() => setShowAssignMenu(!showAssignMenu)} title="Assign" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: assignedThreads[selectedThread] ? "rgba(74,124,89,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={assignedThreads[selectedThread] ? "#4a7c59" : "#999"} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </button>
+                      {showAssignMenu && (
+                        <div style={{ position: "absolute", top: 36, right: 0, background: "#fff", border: "1px solid rgba(0,0,0,.1)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,.12)", zIndex: 20, minWidth: 180, overflow: "hidden" }}>
+                          <div style={{ padding: "8px 14px", fontSize: 9, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: .5 }}>Assign to</div>
+                          {(settings?.teamMembers || [settings?.pmName || "Me"]).map(name => (
+                            <button key={name} onClick={() => { setAssignedThreads(prev => ({ ...prev, [selectedThread]: name })); setShowAssignMenu(false); }} style={{ display: "block", width: "100%", padding: "9px 14px", background: assignedThreads[selectedThread] === name ? "rgba(74,124,89,.06)" : "none", border: "none", textAlign: "left", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#1a1714", fontWeight: assignedThreads[selectedThread] === name ? 700 : 400 }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.04)"} onMouseLeave={e => e.currentTarget.style.background = assignedThreads[selectedThread] === name ? "rgba(74,124,89,.06)" : "none"}>{name}{assignedThreads[selectedThread] === name ? " (assigned)" : ""}</button>
+                          ))}
+                          {assignedThreads[selectedThread] && <button onClick={() => { setAssignedThreads(prev => { const next = { ...prev }; delete next[selectedThread]; return next; }); setShowAssignMenu(false); }} style={{ display: "block", width: "100%", padding: "9px 14px", background: "none", border: "none", borderTop: "1px solid rgba(0,0,0,.06)", textAlign: "left", fontSize: 12, cursor: "pointer", fontFamily: "inherit", color: "#c45c4a", fontWeight: 700 }}>Unassign</button>}
+                        </div>
+                      )}
+                    </div>
+                    {/* Archive */}
+                    <button onClick={() => { setArchivedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else { next.add(selectedThread); setSelectedThread(null); } return next; }); }} title={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                    </button>
+                    {/* Info */}
                     <button onClick={() => setShowTenantInfo(!showTenantInfo)} title="Tenant info" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showTenantInfo ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </button>
