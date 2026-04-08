@@ -1,8 +1,8 @@
 // Runs every minute via Vercel cron (vercel.json)
 // Sends any scheduled messages that are past due
 
-const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+import { supaGet, supaUpsert, supaPatch, loadAppData } from "@/lib/supabase-server";
+
 const RESEND_KEY = process.env.RESEND_API_KEY;
 
 export async function GET(req) {
@@ -17,53 +17,35 @@ export async function GET(req) {
 
   try {
     // Fetch all unsent scheduled messages that are past due
-    const res = await fetch(`${SUPA_URL}/rest/v1/scheduled_messages?sent=eq.false&scheduled_at=lte.${now}&select=*`, {
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
-    });
-    const messages = await res.json();
+    const messages = await supaGet("scheduled_messages", `sent=eq.false&scheduled_at=lte.${now}&select=*`);
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return Response.json({ sent: 0, log: ["No scheduled messages due"] });
     }
 
     // Load settings for PM info
-    const settingsRes = await fetch(`${SUPA_URL}/rest/v1/app_data?key=eq.hq-settings&select=value`, {
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
-    });
-    const settingsData = await settingsRes.json();
-    const s = settingsData?.[0]?.value || {};
+    const s = await loadAppData("hq-settings", {});
 
     for (const sm of messages) {
       // Insert as a real message
-      await fetch(`${SUPA_URL}/rest/v1/messages`, {
-        method: "POST",
-        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
-        body: JSON.stringify({
-          tenant_name: sm.tenant_name,
-          sender_email: s.pmEmail || s.email || "",
-          sender_name: s.pmName || "Property Manager",
-          direction: "outbound",
-          body: sm.body,
-          property_name: sm.property_name || "",
-          room_name: sm.room_name || "",
-          read: true,
-        }),
+      await supaUpsert("messages", {
+        tenant_name: sm.tenant_name,
+        sender_email: s.pmEmail || s.email || "",
+        sender_name: s.pmName || "Property Manager",
+        direction: "outbound",
+        body: sm.body,
+        property_name: sm.property_name || "",
+        room_name: sm.room_name || "",
+        read: true,
       });
 
       // Mark as sent
-      await fetch(`${SUPA_URL}/rest/v1/scheduled_messages?id=eq.${sm.id}`, {
-        method: "PATCH",
-        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
-        body: JSON.stringify({ sent: true }),
-      });
+      await supaPatch(`scheduled_messages?id=eq.${sm.id}`, { sent: true });
 
       // Email tenant if we can find their email
       if (RESEND_KEY && sm.tenant_name) {
         // Try to find tenant email from messages
-        const emailRes = await fetch(`${SUPA_URL}/rest/v1/messages?tenant_name=eq.${encodeURIComponent(sm.tenant_name)}&direction=eq.inbound&select=sender_email&limit=1`, {
-          headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
-        });
-        const emailData = await emailRes.json();
+        const emailData = await supaGet("messages", `tenant_name=eq.${encodeURIComponent(sm.tenant_name)}&direction=eq.inbound&select=sender_email&limit=1`);
         const tenantEmail = emailData?.[0]?.sender_email;
         if (tenantEmail) {
           try {

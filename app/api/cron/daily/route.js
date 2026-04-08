@@ -4,31 +4,14 @@
 //          daily payment reminders, month-to-month auto-escalation
 
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
+import { loadAppData, saveAppData, supa } from "@/lib/supabase-server";
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPA_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const RESEND_KEY = process.env.RESEND_API_KEY;
 
-async function supaGet(key) {
-  const r = await fetch(`${SUPA_URL}/rest/v1/app_data?key=eq.${key}&select=value`, {
-    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
-  });
-  const d = await r.json();
-  return d && d.length > 0 ? d[0].value : null;
-}
-
-async function supaSet(key, value) {
-  await fetch(`${SUPA_URL}/rest/v1/app_data`, {
-    method: "POST",
-    headers: {
-      apikey: SUPA_KEY,
-      Authorization: `Bearer ${SUPA_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates",
-    },
-    body: JSON.stringify({ key, value }),
-  });
-}
+const supaGet = (key) => loadAppData(key, null);
+const supaSet = saveAppData;
 
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -99,12 +82,14 @@ export async function GET(req) {
     for (const targetDate of monthsToCheck) {
       const mk = fmtDate(targetDate).slice(0, 7);
       const moLabel = targetDate.toLocaleString("default", { month: "long", year: "numeric" });
-      const existingRoomIds = new Set(updatedCharges.filter(c => c.category === "Rent" && c.dueDate?.startsWith(mk)).map(c => c.roomId));
+      /* [P0-6] Check idempotency by roomId+month for ANY recurring category, not just "Rent" */
+      const existingRoomCats = new Set(updatedCharges.filter(c => c.dueDate?.startsWith(mk) && !c.voided && !c.deleted).map(c => c.roomId + "|" + c.category));
+      const existingRoomIds = { has: (roomId, cat) => existingRoomCats.has(roomId + "|" + (cat || "Rent")) };
 
       for (const prop of updatedProps) {
         for (const room of allRooms(prop)) {
           if (room.st !== "occupied" || !room.tenant) continue;
-          if (existingRoomIds.has(room.id)) continue;
+          if (existingRoomIds.has(room.id, room.recurringCategory || "Rent")) continue;
           const moveIn = room.tenant.moveIn ? new Date(room.tenant.moveIn + "T00:00:00") : null;
           const monthEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
           if (moveIn && moveIn > monthEnd) continue;
@@ -334,8 +319,8 @@ export async function GET(req) {
               c.roomId && pu.tenant?.room_id &&
               c.category === "Rent" && c.dueDate?.startsWith(mk) &&
               c.amountPaid < c.amount &&
-              // Match by room ID or tenant name
-              (c.roomId === pu.tenant.room_id || c.tenantName === tenantName)
+              // [P2-4] Match by room ID only — tenant name matching is fragile across properties
+              c.roomId === pu.tenant.room_id
             );
             if (!rentCharge) { log.push(`Autopay skip: ${tenantName} — no unpaid rent for ${mk}`); continue; }
             const amountDue = rentCharge.amount - rentCharge.amountPaid;

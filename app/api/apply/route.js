@@ -1,31 +1,10 @@
 // app/api/apply/route.js
 // Handles pre-screen form submissions from the public site
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
+import { loadAppData, saveAppData, supaUpsert, supaGet } from "@/lib/supabase-server";
 
-const SUPA = "https://vxysaclhucdjxzcknoar.supabase.co/rest/v1";
-const KEY  = process.env.SUPABASE_ANON_KEY;
-
-async function loadKey(key, fallback=[]) {
-  try {
-    const r = await fetch(`${SUPA}/app_data?key=eq.${key}&select=value`, {
-      headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }
-    });
-    const d = await r.json();
-    return d?.[0]?.value ?? fallback;
-  } catch { return fallback; }
-}
-async function saveKey(key, value) {
-  const existing = await fetch(`${SUPA}/app_data?key=eq.${key}`, {
-    headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }
-  });
-  const rows = await existing.json();
-  const method = rows?.length > 0 ? "PATCH" : "POST";
-  const url = rows?.length > 0 ? `${SUPA}/app_data?key=eq.${key}` : `${SUPA}/app_data`;
-  await fetch(url, {
-    method, headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify(rows?.length > 0 ? { value } : { key, value })
-  });
-}
+const loadKey = loadAppData;
+const saveKey = saveAppData;
 
 function applyTemplate(str, vars) {
   return (str||"").replace(/\{(\w+)\}/g, (_, k) => vars[k] || "");

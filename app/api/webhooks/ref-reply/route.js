@@ -1,34 +1,10 @@
 // app/api/webhooks/ref-reply/route.js
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { loadAppData, saveAppData } from "@/lib/supabase-server";
 
-const SUPA_URL = "https://vxysaclhucdjxzcknoar.supabase.co";
-const SUPA_KEY = process.env.SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-async function supaGet(path) {
-  const r = await fetch(SUPA_URL + "/rest/v1/" + path, {
-    headers: {
-      apikey: SUPA_KEY,
-      Authorization: "Bearer " + SUPA_KEY,
-      "Content-Type": "application/json",
-    },
-  });
-  return r.json();
-}
-
-async function supaPost(path, body) {
-  await fetch(SUPA_URL + "/rest/v1/" + path, {
-    method: "POST",
-    headers: {
-      apikey: SUPA_KEY,
-      Authorization: "Bearer " + SUPA_KEY,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates",
-    },
-    body: JSON.stringify(body),
-  });
-}
+let _resend;
+const getResend = () => _resend || (_resend = new Resend(process.env.RESEND_API_KEY));
 
 // Verify Resend webhook signature using svix
 async function verifySignature(request) {
@@ -79,7 +55,7 @@ export async function POST(request) {
     let bodyText = "";
     if (emailId) {
       try {
-        const { data: email, error } = await resend.emails.receiving.get(emailId);
+        const { data: email, error } = await getResend().emails.receiving.get(emailId);
         if (error) {
           console.error("Resend receiving.get error:", error);
           bodyText = "(Could not fetch reply: " + JSON.stringify(error) + ")";
@@ -97,10 +73,8 @@ export async function POST(request) {
     }
 
     // Load hq-apps from Supabase
-    const rows = await supaGet("app_data?key=eq.hq-apps&select=value");
-    if (!rows || rows.length === 0) return NextResponse.json({ ok: false, msg: "No apps found" });
-
-    const apps = rows[0].value || [];
+    const apps = await loadAppData("hq-apps", []);
+    if (!apps || apps.length === 0) return NextResponse.json({ ok: false, msg: "No apps found" });
     const appIdx = apps.findIndex(a => a.id === appId);
     if (appIdx === -1) return NextResponse.json({ ok: false, msg: "App not found: " + appId });
 
@@ -130,11 +104,10 @@ export async function POST(request) {
     // Append to _refReplies array on the app — stored as a separate key per app
     // to avoid blowing up the main hq-apps payload
     const repliesKey = `hq-ref-replies-${appId}`;
-    const existingRows = await supaGet(`app_data?key=eq.${repliesKey}&select=value`);
-    const existing = existingRows?.[0]?.value || [];
+    const existing = await loadAppData(repliesKey, []);
     const updatedReplies = [...existing, newReply];
 
-    await supaPost("app_data", { key: repliesKey, value: updatedReplies });
+    await saveAppData(repliesKey, updatedReplies);
 
     // Also log to comm history on the app itself
     const newHistory = {
@@ -149,7 +122,7 @@ export async function POST(request) {
       _hasUnreadRefReply: true, // flag for badge in admin modal
     };
     apps[appIdx] = updatedApp;
-    await supaPost("app_data", { key: "hq-apps", value: apps });
+    await saveAppData("hq-apps", apps);
 
     return NextResponse.json({ ok: true, appId, refKey, from: fromAddr });
   } catch (e) {

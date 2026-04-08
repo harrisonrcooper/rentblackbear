@@ -4,33 +4,10 @@
 // POST — receives form submission {token, appId, refId, response}, updates hq-apps, notifies PM
 
 import { getSettings } from "@/lib/getSettings";
+import { loadAppData, saveAppData } from "@/lib/supabase-server";
 
-const SUPA = "https://vxysaclhucdjxzcknoar.supabase.co/rest/v1";
-const KEY  = process.env.SUPABASE_ANON_KEY;
-
-async function loadKey(key, fallback = []) {
-  try {
-    const r = await fetch(`${SUPA}/app_data?key=eq.${key}&select=value`, {
-      headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }
-    });
-    const d = await r.json();
-    return d?.[0]?.value ?? fallback;
-  } catch { return fallback; }
-}
-
-async function saveKey(key, value) {
-  const existing = await fetch(`${SUPA}/app_data?key=eq.${key}`, {
-    headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }
-  });
-  const rows = await existing.json();
-  const method = rows?.length > 0 ? "PATCH" : "POST";
-  const url    = rows?.length > 0 ? `${SUPA}/app_data?key=eq.${key}` : `${SUPA}/app_data`;
-  await fetch(url, {
-    method,
-    headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify(rows?.length > 0 ? { value } : { key, value })
-  });
-}
+const loadKey = loadAppData;
+const saveKey = saveAppData;
 
 export async function POST(request) {
   try {
