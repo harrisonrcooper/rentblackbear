@@ -84,7 +84,7 @@ const S = {
   threadItem: (active, unread, acc) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? hexToRgba(acc, .08) : "transparent", borderLeft: active ? "3px solid " + acc : "3px solid transparent", transition: "all .15s ease", position: "relative" }),
   chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #f8f8fa 0%, #eeeef2 100%)", minWidth: 0 },
   chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "rgba(255,255,255,.92)", zIndex: 20, overflow: "visible", position: "relative" },
-  chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px" },
+  chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "52px 20px 16px" },
   chatInput: { padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" },
   bubble: (isOut, acc) => ({ maxWidth: "68%", padding: "9px 14px", borderRadius: 18, background: isOut ? acc : "rgba(255,255,255,.85)", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 4 : 18, borderBottomLeftRadius: isOut ? 18 : 4, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere", boxShadow: isOut ? "0 1px 3px " + hexToRgba(acc, .25) : "0 1px 3px rgba(0,0,0,.06)", backdropFilter: isOut ? "none" : "blur(12px)", WebkitBackdropFilter: isOut ? "none" : "blur(12px)" }),
   dateGroup: { textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#3a3a3c", letterSpacing: .2 },
