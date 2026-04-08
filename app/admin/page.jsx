@@ -1794,7 +1794,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
               {locked&&<button className="btn btn-gold btn-sm" onClick={()=>{
                 // Save current PropEditor state to global props first so tenant modal can find the room
                 onSave(p);
-                setTimeout(()=>{if(onViewTenant)onViewTenant(r,p.name);},150);
+                setTimeout(()=>{if(onViewTenant)onViewTenant(r,p.name,p.id);},150);
               }}>📄 Manage Lease / Terminate</button>}
               {locked&&<span style={{fontSize:10,color:"#6b5e52"}}>Save required to manage lease</span>}
             </div>
@@ -1817,7 +1817,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
               {anyOcc
                 ?<button className="btn btn-gold btn-sm" style={{fontSize:10}} onClick={()=>{
                     onSave(p);
-                    setTimeout(()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name);}},150);
+                    setTimeout(()=>{if(onViewTenant&&occupant){onViewTenant(rooms.find(r=>r.tenant),p.name,p.id);}},150);
                   }}>Manage Lease / Terminate</button>
                 :(curUnit.ownerOccupied?null:<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>)}
             </div>
@@ -5089,7 +5089,7 @@ export default function Page(){
       {/* ═══ LEASES & DOCS ═══ */}
       {tab==="leases"&&(()=>{
 
-        const template=leaseTemplate||{name:"Alabama Room Rental Agreement",landlordName:"Carolina Cooper",company:"Black Bear Properties",landlordEmail:"info@rentblackbear.com",sections:DEF_LEASE_SECTIONS};
+        const template=leaseTemplate||{name:(settings.companyName||"")+" Lease Agreement",landlordName:settings.pmName||"Property Manager",company:settings.companyName||"",landlordEmail:settings.pmEmail||settings.email||"",sections:DEF_LEASE_SECTIONS};
 
         const statusColors={draft:{bg:"rgba(0,0,0,.06)",tx:"#666",label:"Draft"},pending_landlord:{bg:"rgba(212,168,83,.1)",tx:"#9a7422",label:"Awaiting Your Signature"},pending_tenant:{bg:"rgba(59,130,246,.1)",tx:"#1d4ed8",label:"Sent to Tenant"},executed:{bg:"rgba(74,124,89,.1)",tx:"#2d6a3f",label:"Executed"},};
 
@@ -6406,7 +6406,7 @@ export default function Page(){
       </>}
 
       {/* ═══ PROPERTIES ═══ */}
-      {tab==="properties"&&<PropertiesList settings={settings} properties={props} setProperties={setProps} payments={payments} leaseableItems={leaseableItems} expanded={expanded} setExpanded={setExpanded} editProp={editProp} setEditProp={setEditProp} setIsNewProp={setIsNewProp} setTab={setTab} setModal={setModal} setBulkSel={setBulkSel} fmtS={fmtS} fmtD={fmtD} PROP_TYPES={PROP_TYPES} getPropDisplayName={getPropDisplayName} TODAY={TODAY} MO={MO} />}
+      {tab==="properties"&&<PropertiesList settings={settings} properties={props} setProperties={setProps} payments={payments} leaseableItems={leaseableItems} expanded={expanded} setExpanded={setExpanded} editProp={editProp} setEditProp={setEditProp} setIsNewProp={setIsNewProp} setTab={setTab} setModal={setModal} setBulkSel={setBulkSel} fmtS={fmtS} fmtD={fmtD} PROP_TYPES={PROP_TYPES} getPropDisplayName={getPropDisplayName} TODAY={TODAY} MO={MO} save={save} />}
 
       {/* ═══ PM SETTINGS ═══ */}
       {tab==="pm-settings"&&<PMSettings settings={settings} setSettings={setSettings} save={save} expanded={expanded} setExpanded={setExpanded} DEF_SETTINGS={DEF_SETTINGS} SigCanvas={SigCanvas} />}
@@ -12816,15 +12816,15 @@ export default function Page(){
     </div></div>);})()}
 
   {editProp!==null&&<PropEditor prop={isNewProp?null:editProp} onSave={saveProp} onClose={()=>setEditProp(null)} isNew={isNewProp}
-    onViewTenant={(r,propName)=>{
+    onViewTenant={(r,propName,propId)=>{
       // PropEditor already called onSave(p) before this — props is up to date
-      // Find the room in freshly saved props so tenant modal has correct data
-      const freshProp=props.find(p=>p.name===propName)||(isNewProp?null:editProp);
+      // Find the room in freshly saved props by ID (not name — avoids 2907/2909 Wilson collision)
+      const freshProp=props.find(p=>p.id===propId)||(isNewProp?null:editProp);
       const freshRoom=freshProp?allRooms(freshProp).find(x=>x.id===r.id)||r:r;
       const freshUnit=freshProp?(freshProp.units||[]).find(u=>(u.rooms||[]).some(x=>x.id===r.id)):null;
       setModal({type:"tenant",data:{...freshRoom,propName,unitId:freshUnit?.id,isWholeUnit:!!(freshUnit&&(freshUnit.rentalMode||"byRoom")==="wholeHouse"),propUtils:freshUnit?.utils||freshProp?.utils||r.utils,propClean:freshUnit?.clean||freshProp?.clean||r.clean}});
     }}
-    settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}} onDelete={id=>{setProps(prev=>prev.filter(x=>x.id!==id));setEditProp(null);}}/>}
+    settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}} onDelete={id=>{const dp=props.find(x=>x.id===id);const rooms=dp?allRooms(dp):[];const occCount=rooms.filter(r=>r.st==="occupied").length;const linkedCharges=charges.filter(c=>c.propName===(dp?.addr||dp?.name)).length;const msg="Delete "+((dp?.addr||dp?.name)||"this property")+"?\n\n"+(occCount?"WARNING: "+occCount+" occupied room(s) will lose tenant assignments.\n":"")+(linkedCharges?linkedCharges+" charge record(s) reference this property.\n":"")+"\nThis cannot be undone.";if(!window.confirm(msg))return;setProps(prev=>prev.filter(x=>x.id!==id));save("hq-props",props.filter(x=>x.id!==id));setEditProp(null);}}/>}
 
   {/* Centered Confirm / Alert Dialog — replaces all window.confirm and alert calls */}
   {confirmDialog&&<div className="mbg" onClick={()=>{if(!confirmDialog.onConfirm)setConfirmDialog(null);}} style={{zIndex:9999,alignItems:"center"}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}}>

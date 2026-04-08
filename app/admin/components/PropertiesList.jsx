@@ -35,6 +35,7 @@ export default function PropertiesList({
   settings, properties, setProperties, payments, leaseableItems,
   expanded, setExpanded, editProp, setEditProp, setIsNewProp,
   setTab, setModal, setBulkSel, fmtS, fmtD, PROP_TYPES, getPropDisplayName, TODAY, MO,
+  save,
 }) {
   const [dragPropIdx, setDragPropIdx] = useState(null);
   const [dragOverPropIdx, setDragOverPropIdx] = useState(null);
@@ -77,6 +78,7 @@ export default function PropertiesList({
               const [moved] = reordered.splice(dragPropIdx, 1);
               reordered.splice(dragOverPropIdx, 0, moved);
               setProperties(reordered);
+              if (save) save("hq-props", reordered);
             }
             setDragPropIdx(null); setDragOverPropIdx(null);
           }}
