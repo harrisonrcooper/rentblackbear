@@ -39,12 +39,11 @@ const IconTimeline=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="non
 const IconSettings=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 
 // ─── Storage ────────────────────────────────────────────────────────
-// Supabase
-const SUPA_URL="https://vxysaclhucdjxzcknoar.supabase.co";
-const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4eXNhY2xodWNkanh6Y2tub2FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzA5NTEsImV4cCI6MjA4ODg0Njk1MX0.AiAkd5eZZm8ztaUsfGUj-XF7zL_mwCTy7bAGF-mqmoM";
-const supa=(path,opts={})=>fetch(SUPA_URL+"/rest/v1/"+path,{...opts,headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":opts.prefer||"return=representation",...(opts.headers||{})}});
-async function load(k,fb){try{const r=await supa("app_data?key=eq."+k+"&select=value");const d=await r.json();return d&&d.length>0&&d[0].value!=null?d[0].value:fb;}catch{return fb;}}
-async function save(k,d){try{await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:k,value:d})});}catch(e){console.error("Save error:",k,e);}}
+// Centralized Supabase client + domain-specific load/save
+import { supa, loadAppData as load, saveAppData as save } from "@/lib/supabase-client";
+import * as db from "@/lib/db";
+const SUPA_URL=process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPA_KEY=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // ── Lease instance CRUD (lease_instances table) ──────────────────────────────
 const LEASE_TEMPLATE_ID="2d9d0941-2802-468a-a6e8-b2cceacf78d1";
@@ -2285,7 +2284,22 @@ export default function Page(){
 
   useEffect(()=>{console.log("Admin init starting...");(async()=>{
     try{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu,_ub,_dr,_am,_ab,_sv,_sr,_pk,_ro,_insp]=await Promise.all([load("hq-props",DEF_PROPS),load("hq-pay",DEF_PAYMENTS),load("hq-maint",[]),load("hq-apps",[]),load("hq-docs",[]),load("hq-txns",[]),load("hq-notifs",[]),load("hq-rocks",DEF_ROCKS),load("hq-issues",DEF_ISSUES),load("hq-sc",DEF_SC_HISTORY),load("hq-settings",DEF_SETTINGS),load("hq-theme",DEF_THEME),load("hq-ideas",[]),load("hq-archive",[]),load("hq-charges",[]),load("hq-credits",[]),load("hq-sdledger",[]),load("hq-svthemes",[]),load("hq-monthly",DEF_MONTHLY),load("hq-screen-qs",[]),load("hq-app-fields",[]),loadLeases(),supa("lease_templates?is_active=eq.true&workspace_id=is.null&type=eq.standard&order=created_at.asc").then(r=>r.json()).then(d=>Array.isArray(d)?d:[]).catch(()=>[]),load("hq-expenses",[]),load("hq-mortgages",[]),load("hq-vendors",[]),load("hq-improvements",[]),load("hq-subcats",STARTER_SUBCATS_BY_CAT),load("hq-dismissed-followups",[]),load("hq-utility-bills",[]),load("hq-doc-requests",[]),load("hq-amenities",[]),load("hq-amenity-bookings",[]),load("hq-surveys",[]),load("hq-survey-results",[]),load("hq-packages",[]),load("hq-renewal-offers",[]),load("hq-inspections",[])]);
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu,_ub,_dr,_am,_ab,_sv,_sr,_pk,_ro,_insp]=await Promise.all([
+      db.loadProps(DEF_PROPS),db.loadPayments(DEF_PAYMENTS),db.loadMaint([]),
+      db.loadApps(),db.loadDocs(),db.loadTxns(),db.loadNotifs(),
+      db.loadRocks(),db.loadIssues(),db.loadScorecard(),
+      db.loadSettings(DEF_SETTINGS),db.loadTheme(DEF_THEME),
+      db.loadIdeas(),db.loadArchive(),db.loadCharges([]),
+      db.loadCredits(),db.loadSdLedger(),db.loadSavedThemes([]),
+      db.loadMonthly([]),db.loadScreenQs([]),db.loadAppFields([]),
+      loadLeases(),
+      supa("lease_templates?is_active=eq.true&workspace_id=is.null&type=eq.standard&order=created_at.asc").then(r=>r.json()).then(d=>Array.isArray(d)?d:[]).catch(()=>[]),
+      db.loadExpenses(),db.loadMortgages(),db.loadVendors(),db.loadImprovements(),
+      db.loadSubcats(STARTER_SUBCATS_BY_CAT),load("hq-dismissed-followups",[]),
+      db.loadUtilityBills([]),db.loadDocRequests([]),db.loadAmenities([]),
+      db.loadAmenityBookings([]),db.loadSurveys([]),db.loadSurveyResults([]),
+      db.loadPackages([]),db.loadRenewalOffers(),db.loadInspections([])
+    ]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
     // Geocode any property missing valid coords — do this BEFORE setting state
@@ -2342,7 +2356,26 @@ export default function Page(){
     setLoaded(true);
   })();},[]);
 
-  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([save("hq-props",props),save("hq-pay",payments),save("hq-maint",maint),save("hq-apps",apps),save("hq-docs",docs),save("hq-txns",txns),save("hq-notifs",notifs),save("hq-rocks",rocks),save("hq-issues",issues),save("hq-sc",scorecard),save("hq-settings",settings),save("hq-theme",theme),save("hq-ideas",ideas),save("hq-archive",archive),save("hq-charges",charges),save("hq-credits",credits),save("hq-sdledger",sdLedger),save("hq-svthemes",savedThemes),save("hq-monthly",monthly),save("hq-screen-qs",screenQs),save("hq-app-fields",appFields),save("hq-expenses",expenses),save("hq-mortgages",mortgages),save("hq-vendors",vendors),save("hq-improvements",improvements),save("hq-subcats",subcats),save("hq-utility-bills",utilityBills),save("hq-doc-requests",docRequests),save("hq-amenities",amenities),save("hq-amenity-bookings",amenityBookings),save("hq-surveys",surveys),save("hq-survey-results",surveyResults),save("hq-packages",packages),save("hq-renewal-offers",renewalOffers),save("hq-inspections",inspections)]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,utilityBills,docRequests,amenities,amenityBookings,surveys,surveyResults,packages,renewalOffers,inspections,loaded]);
+  useEffect(()=>{if(loaded){const t=setTimeout(()=>{Promise.all([
+    // Tier 3: complex nested data stays in app_data
+    db.saveProps(props),db.savePayments(payments),db.saveMaint(maint),db.saveCharges(charges),
+    // Tier 1: domain-specific relational tables
+    db.saveApps(apps),db.saveDocs(docs),db.saveTxns(txns),db.saveNotifs(notifs),
+    db.saveRocks(rocks),db.saveIssues(issues),db.saveScorecard(scorecard),
+    db.saveIdeas(ideas),db.saveArchive(archive),db.saveCredits(credits),
+    db.saveSdLedger(sdLedger),db.saveMonthly(monthly),
+    db.saveExpenses(expenses),db.saveMortgages(mortgages),db.saveVendors(vendors),
+    db.saveImprovements(improvements),db.saveRenewalOffers(renewalOffers),
+    // Tier 2: config stays in app_data
+    db.saveSettings(settings),db.saveTheme(theme),db.saveSavedThemes(savedThemes),
+    db.saveScreenQs(screenQs),db.saveAppFields(appFields),db.saveSubcats(subcats),
+    // Tier 3: portal-adjacent data in app_data
+    db.saveUtilityBills(utilityBills),db.saveDocRequests(docRequests),
+    db.saveAmenities(amenities),db.saveAmenityBookings(amenityBookings),
+    db.saveSurveys(surveys),db.saveSurveyResults(surveyResults),
+    db.savePackages(packages),db.saveInspections(inspections),
+    save("hq-dismissed-followups",dismissedFollowUps),
+  ]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,utilityBills,docRequests,amenities,amenityBookings,surveys,surveyResults,packages,renewalOffers,inspections,loaded,dismissedFollowUps]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   // ── Load onboarding statuses for approved/onboarding applicants ──────
@@ -2350,8 +2383,7 @@ export default function Page(){
     if(!loaded)return;
     const approvedApps=apps.filter(a=>["approved","onboarding"].includes(a.status)&&a.email);
     if(!approvedApps.length)return;
-    const SUPA_URL=process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const SUPA_KEY=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // Uses SUPA_URL and SUPA_KEY from module scope
     const headers={"apikey":SUPA_KEY,"Authorization":`Bearer ${SUPA_KEY}`};
     const loadStatuses=async()=>{
       try{
@@ -7527,7 +7559,7 @@ export default function Page(){
       <div style={{maxWidth:1100,margin:"0 auto",padding:"28px 32px 60px"}}>
 
         {/* ── SUMMARY TAB ── */}
-        {tenantProfileTab==="summary"&&<div style={{display:"grid",gridTemplateColumns:"1fr 340px",gap:24,alignItems:"start"}}>
+        {tenantProfileTab==="summary"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,alignItems:"start"}}>
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
 
             {/* Lease expiry / M2M panel */}
@@ -7733,7 +7765,7 @@ export default function Page(){
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
             {/* Contact */}
             <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}><TI d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" d2="M12 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><span style={{fontSize:14,fontWeight:700}}>Contact</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}><TI d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" d2="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><span style={{fontSize:14,fontWeight:700}}>Contact</span></div>
               <div style={{display:"flex",gap:10,marginBottom:8,alignItems:"center"}}><TI d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.16 12a19.79 19.79 0 0 1-3-8.57A2 2 0 0 1 3.13 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z" size={14}/><span style={{fontSize:12}}>{r.tenant.phone||"—"}</span></div>
               <div style={{display:"flex",gap:10,alignItems:"center"}}><TI d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" d2="M22 6l-10 7L2 6" size={14}/><span style={{fontSize:12,color:"#3b82f6"}}>{r.tenant.email||"—"}</span></div>
             </div>
