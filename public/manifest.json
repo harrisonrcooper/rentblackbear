@@ -1,0 +1,24 @@
+{
+  "name": "Black Bear Rentals - Tenant Portal",
+  "short_name": "BB Portal",
+  "description": "Manage your lease, payments, and maintenance requests",
+  "start_url": "/portal",
+  "display": "standalone",
+  "background_color": "#1a1714",
+  "theme_color": "#1a1714",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
