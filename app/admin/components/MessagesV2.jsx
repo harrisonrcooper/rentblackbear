@@ -62,20 +62,31 @@ const COMMON_EMOJIS = [
   "\ud83d\udcb0","\ud83d\udcc5","\ud83d\udce2","\ud83d\udca1","\u23f0","\ud83d\ude80","\ud83c\udf1f","\ud83d\udccc","\ud83d\udcde","\u270f\ufe0f",
 ];
 
+// ── Helpers: hex to rgba ──────────────────────────────────────────
+const hexToRgba = (hex, opacity) => {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.substr(0, 2), 16) || 0;
+  const g = parseInt(h.substr(2, 2), 16) || 0;
+  const b = parseInt(h.substr(4, 2), 16) || 0;
+  return `rgba(${r},${g},${b},${opacity})`;
+};
+
 // ── iMessage Styles ───────────────────────────────────────────────
 const S = {
   outer: { position: "fixed", top: 96, bottom: 0, left: 220, right: 0, display: "flex", flexDirection: "column", background: "#f4f3f0", zIndex: 5 },
+  outerMobile: { position: "fixed", top: 56, bottom: 0, left: 0, right: 0, display: "flex", flexDirection: "column", background: "#f4f3f0", zIndex: 5 },
 
   wrap: { display: "flex", gap: 0, flex: 1, overflow: "hidden", background: "#fff", minHeight: 0 },
   threadList: { width: 300, borderRight: "1px solid rgba(0,0,0,.04)", display: "flex", flexDirection: "column", background: "rgba(245,244,242,.85)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" },
+  threadListMobile: { width: "100%", display: "flex", flexDirection: "column", background: "rgba(245,244,242,.85)" },
   threadSearch: { padding: "12px 14px", borderBottom: "1px solid rgba(0,0,0,.04)" },
   threadScroll: { flex: 1, overflowY: "auto" },
-  threadItem: (active, unread) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? "rgba(0,122,255,.08)" : "transparent", borderLeft: active ? "3px solid #007AFF" : "3px solid transparent", transition: "all .15s ease", position: "relative" }),
+  threadItem: (active, unread, acc) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? hexToRgba(acc, .08) : "transparent", borderLeft: active ? "3px solid " + acc : "3px solid transparent", transition: "all .15s ease", position: "relative" }),
   chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #f8f8fa 0%, #eeeef2 100%)", minWidth: 0 },
   chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "rgba(255,255,255,.92)", zIndex: 20, overflow: "visible", position: "relative" },
   chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 20px" },
   chatInput: { padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 8, alignItems: "flex-end", flexShrink: 0, background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)" },
-  bubble: (isOut, _acc) => ({ maxWidth: "68%", padding: "9px 14px", borderRadius: 18, background: isOut ? "#007AFF" : "rgba(255,255,255,.85)", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 4 : 18, borderBottomLeftRadius: isOut ? 18 : 4, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere", boxShadow: isOut ? "0 1px 3px rgba(0,122,255,.2)" : "0 1px 3px rgba(0,0,0,.06)", backdropFilter: isOut ? "none" : "blur(12px)", WebkitBackdropFilter: isOut ? "none" : "blur(12px)" }),
+  bubble: (isOut, acc) => ({ maxWidth: "68%", padding: "9px 14px", borderRadius: 18, background: isOut ? acc : "rgba(255,255,255,.85)", color: isOut ? "#fff" : "#1a1714", borderBottomRightRadius: isOut ? 4 : 18, borderBottomLeftRadius: isOut ? 18 : 4, position: "relative", wordBreak: "break-word", overflowWrap: "anywhere", boxShadow: isOut ? "0 1px 3px " + hexToRgba(acc, .25) : "0 1px 3px rgba(0,0,0,.06)", backdropFilter: isOut ? "none" : "blur(12px)", WebkitBackdropFilter: isOut ? "none" : "blur(12px)" }),
   dateGroup: { textAlign: "center", margin: "20px 0 12px", fontSize: 11, fontWeight: 600, color: "#3a3a3c", letterSpacing: .2 },
   reactionBar: { display: "flex", gap: 4, position: "absolute", top: -48, left: "50%", transform: "translateX(-50%)", background: "rgba(255,255,255,.95)", backdropFilter: "blur(20px) saturate(180%)", WebkitBackdropFilter: "blur(20px) saturate(180%)", borderRadius: 24, boxShadow: "0 4px 20px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.08)", padding: "6px 10px", zIndex: 10 },
   reactionBtn: { width: 36, height: 36, borderRadius: 18, border: "none", background: "transparent", cursor: "pointer", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease" },
@@ -132,13 +143,68 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   const [scheduledMsgs, setScheduledMsgs] = useState([]);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [maintForm, setMaintForm] = useState(null); // { title, scope, priority } — inline form for /maintenance
+  const [toast, setToast] = useState(null); // { text, type: "ok"|"err" }
+  const [slashRunning, setSlashRunning] = useState(false); // double-send guard
+  const [composeMode, setComposeMode] = useState(false);
+  const [composeRecipient, setComposeRecipient] = useState(null); // { name, email, propName, roomName }
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [composeSending, setComposeSending] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileShowChat, setMobileShowChat] = useState(false); // on mobile: false=thread list, true=chat view
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const awayModeRef = useRef(awayMode);
   const awayMessageRef = useRef(awayMessage);
   const soundEnabledRef = useRef(soundEnabled);
+  const awayRepliedRef = useRef({}); // { tenantName: timestamp } — cooldown for auto-replies
   const _acc = settings?.adminAccent || "#4a7c59";
+
+  const showToast = (text, type = "ok") => { setToast({ text, type }); setTimeout(() => setToast(null), 3000); };
+
+  // Responsive: detect mobile
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Load persisted message UI state from app_data
+  const msgStateLoaded = useRef(false);
+  useEffect(() => {
+    supabase.from("app_data").select("value").eq("key", "hq-msg-state").single().then(({ data }) => {
+      if (!data?.value) { msgStateLoaded.current = true; return; }
+      const s = data.value;
+      if (s.pinned) setPinnedThreads(new Set(s.pinned));
+      if (s.starred) setStarredThreads(new Set(s.starred));
+      if (s.archived) setArchivedThreads(new Set(s.archived));
+      if (s.tags) setThreadTags(s.tags);
+      if (s.assigned) setAssignedThreads(s.assigned);
+      if (s.savedReplies) setSavedReplies(s.savedReplies);
+      if (typeof s.awayMode === "boolean") setAwayMode(s.awayMode);
+      if (s.awayMessage) setAwayMessage(s.awayMessage);
+      msgStateLoaded.current = true;
+    });
+  }, []);
+
+  // Persist message UI state whenever it changes
+  const saveMsgState = useCallback(() => {
+    if (!msgStateLoaded.current || !save) return;
+    save("hq-msg-state", {
+      pinned: [...pinnedThreads],
+      starred: [...starredThreads],
+      archived: [...archivedThreads],
+      tags: threadTags,
+      assigned: assignedThreads,
+      savedReplies,
+      awayMode,
+      awayMessage,
+    });
+  }, [pinnedThreads, starredThreads, archivedThreads, threadTags, assignedThreads, savedReplies, awayMode, awayMessage]);
+
+  useEffect(() => { saveMsgState(); }, [saveMsgState]);
 
   // Keep refs in sync for use in realtime callback
   useEffect(() => { awayModeRef.current = awayMode; }, [awayMode]);
@@ -175,8 +241,11 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           }
           // Sound notification
           try { if (soundEnabledRef.current) { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination); osc.frequency.setValueAtTime(880, ctx.currentTime); osc.frequency.setValueAtTime(1047, ctx.currentTime + 0.08); gain.gain.setValueAtTime(0.15, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.25); } } catch (e) {}
-          // Away mode auto-reply
-          if (awayModeRef.current && payload.new.tenant_name) {
+          // Away mode auto-reply (with 1-hour cooldown per tenant)
+          const awayKey = payload.new.tenant_name;
+          const lastAway = awayRepliedRef.current[awayKey] || 0;
+          if (awayModeRef.current && awayKey && (Date.now() - lastAway > 3600000)) {
+            awayRepliedRef.current[awayKey] = Date.now();
             supabase.from("messages").insert({
               tenant_name: payload.new.tenant_name,
               sender_email: payload.new.sender_email || "",
@@ -246,7 +315,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
 
   // Badge count on browser tab title
   useEffect(() => {
-    const base = "Black Bear HQ";
+    const base = settings?.companyName ? settings.companyName + " HQ" : "PropOS HQ";
     document.title = unreadTotal > 0 ? `(${unreadTotal}) ${base}` : base;
     return () => { document.title = base; };
   }, [unreadTotal]);
@@ -285,12 +354,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
     if (attachFile) newMsg.attachment = { name: attachFile.name, type: attachFile.type, data: attachFile.data };
 
     const { data, error: insertErr } = await supabase.from("messages").insert(newMsg).select().single();
-    if (insertErr) { console.error("Message send error:", insertErr); setSending(false); return; }
+    if (insertErr) { console.error("Message send error:", insertErr); showToast("Failed to save message: " + insertErr.message, "err"); setSending(false); return; }
 
     // Email tenant (only for real replies, not notes)
+    let emailOk = true;
     if (!isNote && activeThread.tenantEmail) {
       try {
-        await fetch("/api/send-email", {
+        const res = await fetch("/api/send-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -301,10 +371,15 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
             html: "<p>" + replyText.replace(/\n/g, "<br/>") + "</p><p style='font-size:11px;color:#999;margin-top:16px;'>Sent by " + (settings?.companyName || "") + "</p>",
           }),
         });
-      } catch (e) {}
+        if (!res.ok) { emailOk = false; console.error("Email API error:", res.status); }
+      } catch (e) { emailOk = false; console.error("Email send exception:", e); }
     }
 
     if (data) setMessages(prev => [data, ...prev]);
+    if (isNote) showToast("Note saved");
+    else if (!activeThread.tenantEmail) showToast("Saved (no tenant email on file)", "err");
+    else if (!emailOk) showToast("Saved but email failed to send", "err");
+    else showToast("Message sent");
     setReplyText("");
     setSending(false);
     setNoteMode(false);
@@ -354,11 +429,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   const executeSlashCommand = async (override) => {
     const text = (override || replyText.trim());
     if (!text.startsWith("/") || !activeThread) return false;
+    if (slashRunning) return false;
+    setSlashRunning(true);
+    try {
     const tenant = activeThread.tenantName || "Tenant";
 
     if (text.startsWith("/maintenance")) {
       const details = text.replace("/maintenance", "").trim();
-      // Open inline maintenance form with prefilled title
       setMaintForm({ title: details, scope: "room", priority: "medium", propName: activeThread?.propertyName || "", roomName: activeThread?.roomName || "" });
       setReplyText("");
       return true;
@@ -368,20 +445,19 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
       const details = text.replace("/inspect", "").trim();
       if (!details) { setReplyText("/inspect "); inputRef.current?.focus(); return false; }
       await sendSystemMessage("Inspection scheduled: " + details);
-      // Send to tenant
       if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Inspection Scheduled", html: "<p>An inspection has been scheduled:</p><p><strong>" + details + "</strong></p><p>Please ensure the unit is accessible. " + (settings?.companyName || "") + "</p>" }) }); } catch (e) {} }
-      // Also send as outbound message so tenant sees it in portal
       await supabase.from("messages").insert({ tenant_name: activeThread.tenantName, sender_email: settings?.pmEmail || "", sender_name: settings?.pmName || "PM", direction: "outbound", subject: "Inspection Scheduled", body: details, property_name: activeThread.propertyName, room_name: activeThread.roomName, read: true });
       setReplyText("");
+      showToast("Inspection scheduled");
       return true;
     }
 
     if (text.startsWith("/remind")) {
       await sendSystemMessage("Payment reminder sent to " + tenant);
       if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Payment Reminder \u2014 " + (settings?.companyName || ""), html: "<p>Hi " + tenant.split(" ")[0] + ",</p><p>This is a friendly reminder about your upcoming rent payment. Please log in to your tenant portal to view your balance and pay.</p><p>" + (settings?.companyName || "") + "<br/>" + (settings?.phone || "") + "</p>" }) }); } catch (e) {} }
-      // Also send as portal message
       await supabase.from("messages").insert({ tenant_name: activeThread.tenantName, sender_email: settings?.pmEmail || "", sender_name: settings?.pmName || "PM", direction: "outbound", body: "This is a friendly reminder about your upcoming rent payment. Please log in to your portal to view your balance and pay.", property_name: activeThread.propertyName, room_name: activeThread.roomName, read: true });
       setReplyText("");
+      showToast("Payment reminder sent");
       return true;
     }
 
@@ -390,10 +466,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
       if (activeThread.tenantEmail) { try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: activeThread.tenantEmail, subject: "Your Lease is Ready to Sign", html: "<p>Hi " + tenant.split(" ")[0] + ",</p><p>Your lease is ready for signature. Please log in to your tenant portal to review and sign.</p><p>" + (settings?.companyName || "") + "</p>" }) }); } catch (e) {} }
       await supabase.from("messages").insert({ tenant_name: activeThread.tenantName, sender_email: settings?.pmEmail || "", sender_name: settings?.pmName || "PM", direction: "outbound", body: "Your lease is ready for signature. Please log in to your portal to review and sign.", property_name: activeThread.propertyName, room_name: activeThread.roomName, read: true });
       setReplyText("");
+      showToast("Lease signing reminder sent");
       return true;
     }
 
     return false;
+    } finally { setSlashRunning(false); }
   };
 
   const sendSystemMessage = async (text) => {
@@ -413,11 +491,15 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
     const { data } = await supabase.from("scheduled_messages").insert({
       tenant_name: activeThread.tenantName, thread_key: selectedThread,
       body: replyText, scheduled_at: scheduledAt,
+      tenant_email: activeThread.tenantEmail || "",
+      property_name: activeThread.propertyName || "",
+      room_name: activeThread.roomName || "",
     }).select().single();
     if (data) setScheduledMsgs(prev => [...prev, { id: data.id, text: replyText, threadKey: selectedThread, scheduledAt, tenantName: activeThread.tenantName }]);
     setReplyText("");
     setShowSchedule(false);
     setScheduleTime("");
+    showToast("Message scheduled");
   };
 
   // Check and send scheduled messages
@@ -523,6 +605,64 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
   // Properties list for filter
   const allProps = [...new Set(Object.values(threads).map(t => t.propertyName).filter(Boolean))];
 
+  // Extract tenants from properties for compose recipient picker
+  const allTenants = (properties || []).flatMap(p =>
+    (p.units || []).flatMap(u =>
+      (u.rooms || []).filter(r => r.tenant && r.tenant.name && r.tenant.email).map(r => ({
+        name: r.tenant.name,
+        email: r.tenant.email,
+        propName: p.name || p.addr || "",
+        roomName: r.name || "",
+      }))
+    )
+  );
+
+  // Send composed new message
+  const sendCompose = async () => {
+    if (!composeRecipient || !composeBody.trim()) return;
+    setComposeSending(true);
+    const { data, error: insertErr } = await supabase.from("messages").insert({
+      tenant_name: composeRecipient.name,
+      sender_email: settings?.pmEmail || settings?.email || "",
+      sender_name: settings?.pmName || settings?.companyName || "Property Manager",
+      direction: "outbound",
+      subject: composeSubject || "",
+      body: composeBody,
+      property_name: composeRecipient.propName,
+      room_name: composeRecipient.roomName,
+      read: true,
+      created_at: new Date().toISOString(),
+    }).select().single();
+
+    if (insertErr) { showToast("Failed to save: " + insertErr.message, "err"); setComposeSending(false); return; }
+
+    // Send email
+    let emailOk = true;
+    try {
+      const res = await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: composeRecipient.email,
+          subject: composeSubject || "Message from " + (settings?.companyName || "Your Property Manager"),
+          fromName: (settings?.pmName || "Property Manager") + " | " + (settings?.companyName || ""),
+          replyTo: settings?.pmEmail || settings?.email || "",
+          html: "<p>" + composeBody.replace(/\n/g, "<br/>") + "</p><p style='font-size:11px;color:#999;margin-top:16px;'>Sent by " + (settings?.companyName || "") + "</p>",
+        }),
+      });
+      if (!res.ok) emailOk = false;
+    } catch (e) { emailOk = false; }
+
+    if (data) setMessages(prev => [data, ...prev]);
+    setComposeMode(false);
+    setComposeRecipient(null);
+    setComposeSubject("");
+    setComposeBody("");
+    setComposeSending(false);
+    setSelectedThread(composeRecipient.name);
+    showToast(emailOk ? "Message sent" : "Saved but email failed", emailOk ? "ok" : "err");
+  };
+
   return (
     <>
       <style>{`
@@ -536,7 +676,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
         .msg-bubble-in{animation:msgSlideIn .25s cubic-bezier(.23,1,.32,1)}
         .msg-reaction-btn:hover{transform:scale(1.4)!important;background:rgba(0,0,0,.06)!important}
         .msg-reaction-btn:active{transform:scale(1.1)!important}
-        .msg-thread:hover{background:rgba(0,122,255,.04)!important}
+        .msg-thread:hover{background:${hexToRgba(_acc, .04)}!important}
         .msg-tapback-bar{animation:tapbackIn .2s cubic-bezier(.23,1,.32,1)}
         .msg-bubble-wrap:hover .msg-time-hover{opacity:1!important}
         .msg-bubble-wrap:hover .msg-react-trigger{opacity:1!important}
@@ -547,7 +687,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
         .msg-header-btn:hover::after{content:attr(data-tip);position:absolute;top:100%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px;white-space:nowrap;z-index:9999;margin-top:4px;pointer-events:none}
         .msg-reaction-pill:hover{transform:scale(1.1)}
         /* Bubble tails */
-        .msg-tail-out::after{content:'';position:absolute;bottom:0;right:-6px;width:12px;height:12px;background:#007AFF;clip-path:polygon(0 0, 0% 100%, 100% 100%);border-bottom-right-radius:4px}
+        .msg-tail-out::after{content:'';position:absolute;bottom:0;right:-6px;width:12px;height:12px;background:${_acc};clip-path:polygon(0 0, 0% 100%, 100% 100%);border-bottom-right-radius:4px}
         .msg-tail-in::after{content:'';position:absolute;bottom:0;left:-6px;width:12px;height:12px;background:rgba(255,255,255,.85);clip-path:polygon(100% 0, 0% 100%, 100% 100%);border-bottom-left-radius:4px}
         .msg-tail-note::after{content:none}
         /* Scrollbar styling */
@@ -557,7 +697,9 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
         .imsg-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.2)}
       `}</style>
 
-      <div style={S.outer}>
+      {toast && <div style={{ position: "fixed", top: 110, left: "50%", transform: "translateX(-50%)", zIndex: 9999, padding: "8px 20px", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#fff", background: toast.type === "err" ? "#c45c4a" : _acc, boxShadow: "0 4px 16px rgba(0,0,0,.2)", animation: "msgSlideUp .2s ease" }}>{toast.text}</div>}
+
+      <div style={isMobile ? S.outerMobile : S.outer}>
 
 
       {loading ? (
@@ -565,12 +707,17 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
       ) : (
         <div style={S.wrap}>
           {/* ── Thread List ── */}
-          <div style={S.threadList}>
+          <div style={{ ...(isMobile ? S.threadListMobile : S.threadList), display: isMobile && mobileShowChat ? "none" : "flex" }}>
             <div style={S.threadSearch}>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ width: "100%", padding: "8px 12px", borderRadius: 10, border: "none", fontSize: 12, fontFamily: "inherit", outline: "none", background: "rgba(0,0,0,.06)" }} />
+              <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "none", fontSize: 12, fontFamily: "inherit", outline: "none", background: "rgba(0,0,0,.06)" }} />
+                <button onClick={() => { setComposeMode(true); setComposeRecipient(null); setComposeSubject(""); setComposeBody(""); }} title="New message" style={{ width: 34, height: 34, minWidth: 34, borderRadius: 10, border: "none", background: _acc, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </div>
               <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
                 {[["all", "All"], ["unread", "Unread"], ["starred", "Starred"], ["pinned", "Pinned"], ["archived", "Archived"]].map(([id, label]) => (
-                  <button key={id} onClick={() => setThreadFilter(id)} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: "none", background: threadFilter === id ? "rgba(0,122,255,.12)" : "transparent", color: threadFilter === id ? "#007AFF" : "#8e8e93", fontSize: 10, fontWeight: threadFilter === id ? 700 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>{label}</button>
+                  <button key={id} onClick={() => setThreadFilter(id)} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: "none", background: threadFilter === id ? hexToRgba(_acc, .12) : "transparent", color: threadFilter === id ? _acc : "#8e8e93", fontSize: 10, fontWeight: threadFilter === id ? 700 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>{label}</button>
                 ))}
               </div>
               {allProps.length > 1 && (
@@ -588,12 +735,12 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 const lastMsg = thread.messages[0];
                 const isRenewal = lastMsg?.subject?.startsWith("Lease Renewal:");
                 return (
-                  <div key={thread.key} className="msg-thread" onClick={() => { setSelectedThread(thread.key); markRead(thread.key); }}
-                    style={{ ...S.threadItem(isActive, unread > 0), borderLeftColor: isActive ? _acc : "transparent" }}>
+                  <div key={thread.key} className="msg-thread" onClick={() => { setSelectedThread(thread.key); markRead(thread.key); if (isMobile) setMobileShowChat(true); }}
+                    style={S.threadItem(isActive, unread > 0, _acc)}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         {/* Avatar circle */}
-                        <div style={{ width: 34, height: 34, minWidth: 34, minHeight: 34, borderRadius: "50%", background: isActive ? "#007AFF" : "#e5e5ea", color: isActive ? "#fff" : "#8e8e93", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0, transition: "all .15s" }}>
+                        <div style={{ width: 34, height: 34, minWidth: 34, minHeight: 34, borderRadius: "50%", background: isActive ? _acc : "#e5e5ea", color: isActive ? "#fff" : "#8e8e93", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0, transition: "all .15s" }}>
                           {(thread.tenantName || "?")[0].toUpperCase()}
                         </div>
                         <div>
@@ -610,15 +757,15 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                         <div style={{ fontSize: 9, color: "#999" }}>{fmtTime(thread.lastAt)}</div>
-                        {unread > 0 && <div style={{ width: 20, height: 20, borderRadius: 10, background: "#007AFF", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</div>}
+                        {unread > 0 && <div style={{ width: 20, height: 20, borderRadius: 10, background: _acc, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{unread}</div>}
                       </div>
                     </div>
                     <div style={{ fontSize: 11, color: unread ? "#1a1714" : "#999", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: 38, marginTop: 2 }}>
                       {starredThreads.has(thread.key) && <svg width="8" height="8" viewBox="0 0 24 24" fill="#d4a853" stroke="#d4a853" strokeWidth="1.5" style={{ marginRight: 2, verticalAlign: "middle" }}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>}
                       {pinnedThreads.has(thread.key) && <svg width="8" height="8" viewBox="0 0 24 24" fill="#d4a853" stroke="#d4a853" strokeWidth="2" style={{ marginRight: 2, verticalAlign: "middle" }}><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>}
                       {assignedThreads[thread.key] && <span style={{ fontSize: 8, color: "#4a7c59", fontWeight: 700, marginRight: 2 }}>{assignedThreads[thread.key]}</span>}
-                      {scheduledMsgs.some(m => m.threadKey === thread.key) && <span style={{ fontSize: 8, color: "#3b82f6", fontWeight: 700, marginRight: 2 }}>
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="3" style={{ verticalAlign: "middle" }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {scheduledMsgs.some(m => m.threadKey === thread.key) && <span style={{ fontSize: 8, color: _acc, fontWeight: 700, marginRight: 2 }}>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="3" style={{ verticalAlign: "middle" }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                       </span>}
                       {isRenewal && <span style={{ fontSize: 9, fontWeight: 700, color: "#9a7422", marginRight: 4 }}>RENEWAL</span>}
                       {lastMsg?.direction === "outbound" ? "You: " : lastMsg?.direction === "note" ? "Note: " : ""}{lastMsg?.body?.slice(0, 50) || lastMsg?.subject || ""}
@@ -630,14 +777,71 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           </div>
 
           {/* ── Chat Area ── */}
-          <div style={S.chatArea}>
-            {!activeThread ? (
+          <div style={{ ...S.chatArea, display: isMobile && !mobileShowChat ? "none" : "flex" }}>
+            {composeMode ? (
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700 }}>New Message</div>
+                  <button onClick={() => setComposeMode(false)} style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", marginBottom: 4, textTransform: "uppercase", letterSpacing: .3 }}>To</div>
+                  {composeRecipient ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: hexToRgba(_acc, .06), borderRadius: 8, border: "1px solid " + hexToRgba(_acc, .15) }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 14, background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{composeRecipient.name[0].toUpperCase()}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{composeRecipient.name}</div>
+                        <div style={{ fontSize: 10, color: "#6b5e52" }}>{composeRecipient.email} &middot; {composeRecipient.propName}</div>
+                      </div>
+                      <button onClick={() => setComposeRecipient(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#999" }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid rgba(0,0,0,.08)", borderRadius: 8 }}>
+                      {allTenants.length === 0 ? (
+                        <div style={{ padding: 16, textAlign: "center", fontSize: 12, color: "#999" }}>No tenants found in properties</div>
+                      ) : allTenants.map((t, i) => (
+                        <div key={i} onClick={() => setComposeRecipient(t)} style={{ padding: "10px 12px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.03)", display: "flex", alignItems: "center", gap: 8, transition: "background .1s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.03)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          <div style={{ width: 28, height: 28, borderRadius: 14, background: "#e5e5ea", color: "#8e8e93", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{t.name[0].toUpperCase()}</div>
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 600 }}>{t.name}</div>
+                            <div style={{ fontSize: 10, color: "#6b5e52" }}>{t.propName}{t.roomName ? " \u00b7 " + t.roomName : ""}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", marginBottom: 4, textTransform: "uppercase", letterSpacing: .3 }}>Subject (optional)</div>
+                  <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)} placeholder="Subject..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ marginBottom: 16, flex: 1, display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", marginBottom: 4, textTransform: "uppercase", letterSpacing: .3 }}>Message</div>
+                  <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} placeholder="Type your message..." style={{ flex: 1, minHeight: 120, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  <button onClick={() => setComposeMode(false)} className="btn btn-out btn-sm">Cancel</button>
+                  <button onClick={sendCompose} disabled={composeSending || !composeRecipient || !composeBody.trim()} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: (composeRecipient && composeBody.trim()) ? _acc : "rgba(0,0,0,.08)", color: (composeRecipient && composeBody.trim()) ? "#fff" : "#bbb", fontWeight: 700, fontSize: 13, cursor: (composeRecipient && composeBody.trim()) ? "pointer" : "default", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    {composeSending ? "Sending..." : "Send"}
+                  </button>
+                </div>
+              </div>
+            ) : !activeThread ? (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#8e8e93" }}>
-                <div style={{ width: 64, height: 64, borderRadius: 32, background: "rgba(0,122,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <div style={{ width: 64, height: 64, borderRadius: 32, background: hexToRgba(_acc, .08), display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>Select a conversation</div>
-                <div style={{ fontSize: 13 }}>Choose from the list on the left</div>
+                <div style={{ fontSize: 13, marginBottom: 12 }}>Choose from the list or start a new one</div>
+                <button onClick={() => setComposeMode(true)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid " + hexToRgba(_acc, .2), background: hexToRgba(_acc, .06), color: _acc, fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  New Message
+                </button>
               </div>
             ) : (
               <>
@@ -645,14 +849,17 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 <div style={S.chatHeader}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 34, height: 34, minWidth: 34, minHeight: 34, borderRadius: "50%", background: "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, position: "relative", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,122,255,.2)" }}>
+                      {isMobile && <button onClick={() => setMobileShowChat(false)} style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 2 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1714" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>}
+                      <div style={{ width: 34, height: 34, minWidth: 34, minHeight: 34, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, position: "relative", flexShrink: 0, boxShadow: "0 2px 8px " + hexToRgba(_acc, .2) }}>
                         {(activeThread.tenantName || "?")[0].toUpperCase()}
                         {(() => { const lastInbound = activeThread.messages.filter(m => m.direction === "inbound").sort((a, b) => b.created_at.localeCompare(a.created_at))[0]; const minAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 60000 : 999; return minAgo < 5 ? <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: 5, background: "#34C759", border: "2px solid #fff" }} /> : minAgo < 60 ? <div style={{ position: "absolute", bottom: -1, right: -1, width: 10, height: 10, borderRadius: 5, background: "#FF9500", border: "2px solid #fff" }} /> : null; })()}
                       </div>
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 14, fontWeight: 700 }}>{activeThread.tenantName}</span>
-                          <button onClick={e => { e.stopPropagation(); if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 10, color: "#007AFF", background: "rgba(0,122,255,.06)", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: "2px 8px", borderRadius: 4, lineHeight: 1.2 }}>View Profile →</button>
+                          <button onClick={e => { e.stopPropagation(); if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 10, color: _acc, background: hexToRgba(_acc, .06), border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: "2px 8px", borderRadius: 4, lineHeight: 1.2 }}>View Profile &rarr;</button>
                         </div>
                         <div style={{ fontSize: 10, color: "#8e8e93" }}>
                           {activeThread.propertyName}{activeThread.roomName ? " · " + activeThread.roomName : ""}
@@ -771,7 +978,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                               <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
-                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); deleteMsg(msg.id); }} title="Delete" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); if (window.confirm("Delete this message? This cannot be undone.")) deleteMsg(msg.id); }} title="Delete" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               </button>
                             </div>
@@ -810,9 +1017,9 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                               <div style={{ fontSize: 9, color: isOut ? "rgba(255,255,255,.9)" : "#3a3a3c", fontWeight: 500 }}>{fmtTime(msg.created_at)}</div>
                               {isOut && <div style={{ fontSize: 9, color: "rgba(255,255,255,.6)", marginLeft: 8, display: "flex", alignItems: "center", gap: 2 }}>
                                 {msg.status === "read" || msg.read ? (
-                                  <><svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="#5AC8FA" strokeWidth="2.5" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg></>
+                                  <><svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="rgba(255,255,255,.85)" strokeWidth="2.5" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg></>
                                 ) : msg.status === "delivered" ? (
-                                  <svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg>
+                                  <svg width="12" height="9" viewBox="0 0 18 10" fill="none" stroke="rgba(255,255,255,.5)" strokeWidth="2" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/><polyline points="6 5 10 9 17 1"/></svg>
                                 ) : (
                                   <svg width="10" height="9" viewBox="0 0 14 10" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeLinecap="round"><polyline points="1 5 5 9 12 1"/></svg>
                                 )}
@@ -824,7 +1031,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                                 {REACTIONS.map(r => {
                                   const active = (reactions[r.label] || []).includes("pm");
                                   return (
-                                    <button key={r.label} className="msg-reaction-btn" onClick={() => toggleReaction(msg.id, r.label)} style={{ ...S.reactionBtn, background: active ? "rgba(0,122,255,.12)" : "transparent" }}>{r.emoji}</button>
+                                    <button key={r.label} className="msg-reaction-btn" onClick={() => toggleReaction(msg.id, r.label)} style={{ ...S.reactionBtn, background: active ? hexToRgba(_acc, .12) : "transparent" }}>{r.emoji}</button>
                                   );
                                 })}
                               </div>
@@ -850,14 +1057,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       </div>
                     );
                   })}
-                  {/* Typing indicator — shows if tenant sent a message in last 30 seconds */}
-                  {(() => { const lastInbound = activeMessages.filter(m => m.direction === "inbound").slice(-1)[0]; const secAgo = lastInbound ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 1000 : 999; return secAgo < 30 ? (
-                    <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 8 }}>
-                      <div style={S.typingDots}>
-                        <div style={S.dot(0)} /><div style={S.dot(0.15)} /><div style={S.dot(0.3)} />
-                      </div>
-                    </div>
-                  ) : null; })()}
+                  {/* Typing indicator removed — no real-time typing detection available */}
                   <div ref={bottomRef} />
                 </div>
 
@@ -876,10 +1076,10 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
 
                 {/* Schedule mode — inline date picker above input */}
                 {showSchedule && (
-                  <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(59,130,246,.15)", background: "rgba(59,130,246,.03)", display: "flex", gap: 8, alignItems: "center" }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "#3b82f6" }}>Schedule for:</span>
-                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(59,130,246,.2)", fontSize: 11, fontFamily: "inherit", background: "#fff" }} />
+                  <div style={{ padding: "8px 16px", borderTop: "1px solid " + hexToRgba(_acc, .15), background: hexToRgba(_acc, .03), display: "flex", gap: 8, alignItems: "center" }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: _acc }}>Schedule for:</span>
+                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid " + hexToRgba(_acc, .2), fontSize: 11, fontFamily: "inherit", background: "#fff" }} />
                     <button onClick={() => { setShowSchedule(false); setScheduleTime(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#999" }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
@@ -952,19 +1152,19 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
 
                 {/* Scheduled messages — always visible above input */}
                 {scheduledMsgs.filter(m => m.threadKey === selectedThread).length > 0 && (
-                  <div style={{ padding: "8px 16px", background: "rgba(59,130,246,.04)", borderTop: "2px solid rgba(59,130,246,.2)", flexShrink: 0 }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: "#3b82f6", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
+                  <div style={{ padding: "8px 16px", background: hexToRgba(_acc, .04), borderTop: "2px solid " + hexToRgba(_acc, .2), flexShrink: 0 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: _acc, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
                       Scheduled ({scheduledMsgs.filter(m => m.threadKey === selectedThread).length})
                     </div>
                     {scheduledMsgs.filter(m => m.threadKey === selectedThread).map((sm, si) => {
                       const idx = scheduledMsgs.indexOf(sm);
                       return (
-                        <div key={si} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 6, padding: "6px 8px", background: "#fff", borderRadius: 6, border: "1px solid rgba(59,130,246,.15)" }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <div key={si} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 6, padding: "6px 8px", background: "#fff", borderRadius: 6, border: "1px solid " + hexToRgba(_acc, .15) }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <textarea value={sm.text} onChange={e => updateScheduled(idx, { text: e.target.value })} style={{ width: "100%", border: "none", background: "transparent", fontSize: 11, fontFamily: "inherit", resize: "none", outline: "none", padding: 0, lineHeight: 1.4 }} rows={1} />
-                            <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>
-                              <input type="datetime-local" value={sm.scheduledAt ? new Date(sm.scheduledAt).toISOString().slice(0, 16) : ""} onChange={e => updateScheduled(idx, { scheduledAt: new Date(e.target.value).toISOString() })} style={{ border: "none", background: "transparent", fontSize: 9, color: "#3b82f6", fontFamily: "inherit", outline: "none", padding: 0 }} />
+                            <div style={{ fontSize: 9, color: _acc, marginTop: 2 }}>
+                              <input type="datetime-local" value={sm.scheduledAt ? new Date(sm.scheduledAt).toISOString().slice(0, 16) : ""} onChange={e => updateScheduled(idx, { scheduledAt: new Date(e.target.value).toISOString() })} style={{ border: "none", background: "transparent", fontSize: 9, color: _acc, fontFamily: "inherit", outline: "none", padding: 0 }} />
                             </div>
                           </div>
                           <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
@@ -1061,7 +1261,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       const [emojiCat, setEmojiCatLocal] = [showEmoji === true ? 0 : showEmoji, (v) => setShowEmoji(v === false ? false : v)];
                       const cat = EMOJI_CATS[typeof emojiCat === "number" ? emojiCat : 0] || EMOJI_CATS[0];
                       return (
-                        <div style={{ position: "fixed", bottom: 70, right: 280, background: "#fff", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,.2)", padding: 0, zIndex: 100, width: 320, overflow: "hidden" }} onClick={e => e.stopPropagation()}>
+                        <div style={{ position: "absolute", bottom: 44, left: 0, background: "#fff", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,.2)", padding: 0, zIndex: 100, width: isMobile ? 280 : 320, overflow: "hidden" }} onClick={e => e.stopPropagation()}>
                           {/* Category tabs */}
                           <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
                             {EMOJI_CATS.map((c, ci) => (
@@ -1083,9 +1283,9 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     })()}
                   </div>
                   {/* Sound toggle */}
-                  <button onClick={() => setSoundEnabled(!soundEnabled)} title={soundEnabled ? "Mute sounds" : "Unmute sounds"} style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: soundEnabled ? "rgba(0,122,255,.06)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => setSoundEnabled(!soundEnabled)} title={soundEnabled ? "Mute sounds" : "Unmute sounds"} style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: soundEnabled ? hexToRgba(_acc, .06) : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {soundEnabled ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                     ) : (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
                     )}
@@ -1105,16 +1305,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   {/* Send / Schedule button group */}
                   <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
                     {showSchedule ? (
-                      <button onClick={scheduleMessage} disabled={!replyText.trim() || !scheduleTime} style={{ height: 40, padding: "0 16px", borderRadius: "20px 0 0 20px", border: "none", background: (replyText.trim() && scheduleTime) ? "#3b82f6" : "rgba(0,0,0,.08)", color: (replyText.trim() && scheduleTime) ? "#fff" : "#bbb", cursor: (replyText.trim() && scheduleTime) ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>
+                      <button onClick={scheduleMessage} disabled={!replyText.trim() || !scheduleTime} style={{ height: 40, padding: "0 16px", borderRadius: "20px 0 0 20px", border: "none", background: (replyText.trim() && scheduleTime) ? _acc : "rgba(0,0,0,.08)", color: (replyText.trim() && scheduleTime) ? "#fff" : "#bbb", cursor: (replyText.trim() && scheduleTime) ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         Schedule
                       </button>
                     ) : (
-                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: replyText.trim() ? "#007AFF" : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s ease", transform: replyText.trim() ? "scale(1)" : "scale(.9)" }}>
+                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s ease", transform: replyText.trim() ? "scale(1)" : "scale(.9)" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                       </button>
                     )}
-                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 28, height: 28, borderRadius: 14, border: "none", marginLeft: 2, background: showSchedule ? "#3b82f6" : "rgba(0,0,0,.06)", color: showSchedule ? "#fff" : "#8e8e93", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
+                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 28, height: 28, borderRadius: 14, border: "none", marginLeft: 2, background: showSchedule ? _acc : "rgba(0,0,0,.06)", color: showSchedule ? "#fff" : "#8e8e93", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
                       <svg width="8" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 1l5 5 5-5"/></svg>
                     </button>
                   </div>
@@ -1124,10 +1324,10 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           </div>
 
           {/* ── Tenant Info Sidebar ── */}
-          {showTenantInfo && activeThread && (
+          {showTenantInfo && activeThread && !isMobile && (
             <div style={{ width: 240, borderLeft: "1px solid rgba(0,0,0,.06)", overflowY: "auto", padding: "20px 16px", background: "#fafaf8" }}>
               <div style={{ textAlign: "center", marginBottom: 16 }}>
-                <div style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, borderRadius: "50%", background: "linear-gradient(135deg, #007AFF 0%, #5856D6 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, margin: "0 auto 8px", boxShadow: "0 4px 12px rgba(0,122,255,.2)" }}>
+                <div style={{ width: 56, height: 56, minWidth: 56, minHeight: 56, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, margin: "0 auto 8px", boxShadow: "0 4px 12px " + hexToRgba(_acc, .2) }}>
                   {(activeThread.tenantName || "?")[0].toUpperCase()}
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThread.tenantName}</div>
