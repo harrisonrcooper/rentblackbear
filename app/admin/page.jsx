@@ -2772,7 +2772,7 @@ export default function Page(){
     return(u.rooms||[]).filter(r=>r.st==="occupied"&&r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:pr.name,propId:pr.id,unitId:u.id,isWholeUnit:false}));
   }));
 
-  const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-gold:hover{background:#1a1714!important;color:#d4a853!important}.btn-green{background:${acc}!important}.btn-green:hover{background:#1a1714!important;color:#d4a853!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}`;
+  const adminDynCSS=(acc,rgb)=>`.btn-gold{background:${acc}!important;color:#fff!important}.btn-gold:hover{background:#1a1714!important;color:${acc}!important}.btn-green{background:${acc}!important}.btn-green:hover{background:#1a1714!important;color:${acc}!important}.sn.on{background:rgba(${rgb},.22)!important}.sn-badge{background:${acc}!important}.badge.b-green{background:rgba(${rgb},.12)!important;color:${acc}!important}.tab.on{background:${acc}!important;color:#fff!important;border-color:${acc}!important}.acct-sub.on{background:${acc}!important;color:#fff!important}.btn-out:hover{border-color:${acc}!important}`;
   const _acc=settings.adminAccent||"#4a7c59";const _rgb=settings.adminAccentRgb||"74,124,89";const _font=settings.adminFont||"'Plus Jakarta Sans',system-ui,sans-serif";const _zoom=settings.adminZoom||1;
   return(<div style={{fontFamily:_font}}><style>{S}</style><style>{adminDynCSS(_acc,_rgb)}</style><div className="app">
     {/* Mobile bottom tab bar */}
@@ -5266,9 +5266,7 @@ export default function Page(){
                         const dup={...cl,id:uid(),name:cl.name+" (Copy)",items:cl.items.map(i=>({...i,id:uid()}))};
                         setSettings(s=>{const u={...s,checklists:[...(s.checklists||[]),dup]};save("hq-settings",u);return u;});
                       }}>Duplicate</button>
-                      <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>{
-                        setSettings(s=>{const u={...s,checklists:(s.checklists||[]).filter((_,i)=>i!==ci)};save("hq-settings",u);return u;});
-                      }}>Delete</button>
+                      <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>showConfirm({title:"Delete Checklist?",body:'Delete "'+cl.name+'"? This cannot be undone.',confirmLabel:"Delete",danger:true,onConfirm:()=>setSettings(s=>{const u={...s,checklists:(s.checklists||[]).filter((_,i)=>i!==ci)};save("hq-settings",u);return u;})})}>Delete</button>
                     </div>
                   </div>
                   <div style={{padding:"12px 16px"}}>
@@ -5335,9 +5333,7 @@ export default function Page(){
                         const dup={...notice,id:uid(),name:notice.name+" (Copy)"};
                         setSettings(s=>{const u={...s,noticeTemplates:[...(s.noticeTemplates||[]),dup]};save("hq-settings",u);return u;});
                       }}>Duplicate</button>
-                      <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>{
-                        setSettings(s=>{const u={...s,noticeTemplates:(s.noticeTemplates||[]).filter((_,i)=>i!==ni)};save("hq-settings",u);return u;});
-                      }}>Delete</button>
+                      <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>showConfirm({title:"Delete Notice?",body:'Delete "'+notice.name+'"? This cannot be undone.',confirmLabel:"Delete",danger:true,onConfirm:()=>setSettings(s=>{const u={...s,noticeTemplates:(s.noticeTemplates||[]).filter((_,i)=>i!==ni)};save("hq-settings",u);return u;})})}>Delete</button>
                     </div>
                   </div>
                   <div style={{padding:"12px 16px"}}>
