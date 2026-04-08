@@ -2458,7 +2458,7 @@ export default function Page(){
     if(period==="next"){const nm=mo===11?0:mo+1,ny=mo===11?y+1:y;return charges.filter(c=>{const d=new Date(c.dueDate+"T00:00:00");return d.getFullYear()===ny&&d.getMonth()===nm;});}
     return charges;
   };
-  const createCharge=(data)=>{const c={id:uid(),createdDate:TODAY.toISOString().split("T")[0],amountPaid:0,payments:[],waived:false,waivedReason:"",sent:false,sentDate:null,...data};setCharges(p=>[c,...p]);return c;};
+  const createCharge=(data)=>{if(data.amount!=null&&Number(data.amount)<=0)return null;/* [P2-1] guard negative/zero */const c={id:uid(),createdDate:TODAY.toISOString().split("T")[0],amountPaid:0,payments:[],waived:false,waivedReason:"",sent:false,sentDate:null,...data,amount:Number(data.amount||0)};setCharges(p=>[c,...p]);return c;};
   const recordPayment=(chargeId,payData)=>{
     setCharges(p=>p.map(c=>{if(c.id!==chargeId)return c;const newPaid=c.amountPaid+payData.amount;return{...c,amountPaid:Math.min(newPaid,c.amount),payments:[...c.payments,{id:uid(),...payData}]};}));
     // Update quick-lookup for backwards compat
@@ -4164,12 +4164,12 @@ export default function Page(){
                   <div style={{fontSize:11,color:"#5c4a3a"}}>{propDisplay(r.propName)}</div>
                   <div style={{fontSize:11,color:"#5c4a3a"}}>{r.name}</div>
                   <div style={{fontSize:11,color:dl&&dl<=30?"#c45c4a":dl&&dl<=90?"#d4a853":"#5c4a3a"}}>{r.le?`${fmtD(r.le)}${dl&&dl<=90?` (${dl}d)`:""}` :"—"}</div>
-                  <div style={{fontSize:13,fontWeight:800,color:"#4a7c59",textAlign:"right"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</div>
+                  <div style={{fontSize:13,fontWeight:800,color:settings.adminAccent||"#4a7c59",textAlign:"right"}}>{fmtS((sd&&sd.amountHeld)||r.rent)}</div>
                 </div>
               );})}
               {sdTenants.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"10px 16px",borderTop:"2px solid rgba(0,0,0,.07)",background:"rgba(0,0,0,.02)"}}>
                 <div style={{fontSize:12,fontWeight:800,gridColumn:"1/5"}}>Total Held</div>
-                <div style={{fontSize:14,fontWeight:800,color:"#4a7c59",textAlign:"right"}}>{fmtS(totalSD)}</div>
+                <div style={{fontSize:14,fontWeight:800,color:settings.adminAccent||"#4a7c59",textAlign:"right"}}>{fmtS(totalSD)}</div>
               </div>}
             </div>
 
