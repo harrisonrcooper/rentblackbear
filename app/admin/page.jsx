@@ -1496,6 +1496,10 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
 }
 
 function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTenant,settings,onUpdateSettings}){
+  const _acc=settings?.adminAccent||"#4a7c59";
+  const _grn=settings?.themeGreen||"#4a7c59";
+  const _red=settings?.themeRed||"#c45c4a";
+  const _gold=settings?.themeGold||_gold;
   const[p,setP]=useState(()=>{if(!prop)return{id:uid(),name:"",addr:"",type:"SFH",sqft:0,photos:[],units:[]};try{return JSON.parse(JSON.stringify(prop));}catch{return{...prop,photos:prop.photos||[],units:(prop.units||[]).map(u=>({...u,rooms:(u.rooms||[])}))};} });
   const[activeUnit,setActiveUnit]=useState(0);
   const[warning,setWarning]=useState(null);
@@ -1582,10 +1586,10 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
         <div className="fld" style={{marginBottom:0}}>
           <label style={{visibility:"hidden"}}>.</label>
           {p.lat&&p.lng
-            ?<div style={{fontSize:9,color:"#4a7c59",padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:6,border:"1px solid rgba(74,124,89,.15)",height:"100%",display:"flex",alignItems:"center"}}>✓ Pin set · saves with property</div>
-            :<div style={{fontSize:9,color:"#c45c4a",padding:"8px 10px",background:"rgba(196,92,74,.04)",borderRadius:6,border:"1px solid rgba(196,92,74,.15)"}}>
+            ?<div style={{fontSize:9,color:_grn,padding:"8px 10px",background:"rgba(74,124,89,.06)",borderRadius:6,border:"1px solid rgba(74,124,89,.15)",height:"100%",display:"flex",alignItems:"center"}}>✓ Pin set · saves with property</div>
+            :<div style={{fontSize:9,color:_red,padding:"8px 10px",background:"rgba(196,92,74,.04)",borderRadius:6,border:"1px solid rgba(196,92,74,.15)"}}>
               No pin yet — Save to auto-geocode, or paste coords from{" "}
-              <a href={`https://www.google.com/maps/search/${encodeURIComponent((p.addr||"")+" Huntsville AL")}`} target="_blank" rel="noopener" style={{color:"#3b82f6"}}>Google Maps</a>
+              <a href={`https://www.google.com/maps/search/${encodeURIComponent((p.addr||"")+" Huntsville AL")}`} target="_blank" rel="noopener" style={{color:_acc}}>Google Maps</a>
               {" "}(right-click → What's here?)
             </div>}
         </div>
@@ -1617,7 +1621,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
     <div className="fld">
       <label>360 Tour Folder <span style={{fontWeight:400,color:"#6b5e52",fontSize:9,textTransform:"none",letterSpacing:0}}>— subfolder inside Supabase 360/ bucket</span></label>
       <input value={p.tourFolder||""} onChange={e=>updP({...p,tourFolder:e.target.value,tourScenes:[]})} placeholder="e.g. 908-lee-drive" style={{width:"100%"}}/>
-      {p.tourFolder&&<div style={{fontSize:9,color:"#4a7c59",marginTop:3}}>property-photos/360/{p.tourFolder}/</div>}
+      {p.tourFolder&&<div style={{fontSize:9,color:_grn,marginTop:3}}>property-photos/360/{p.tourFolder}/</div>}
     </div>
 
     {/* ── 3D Tour Scene Editor ── */}
@@ -1639,7 +1643,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
             <div key={u.id} style={{display:"flex",alignItems:"center",gap:3}}>
               <button onClick={()=>setActiveUnit(i)} style={{
                 padding:"5px 12px",borderRadius:7,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
-                background:i===activeUnit?"#1a1714":"#fff",color:i===activeUnit?"#d4a853":"#5c4a3a",
+                background:i===activeUnit?"#1a1714":"#fff",color:i===activeUnit?_gold:"#5c4a3a",
                 borderColor:i===activeUnit?"#1a1714":"rgba(0,0,0,.1)",transition:"all .15s",
               }}>{u.name||`Unit ${i+1}`}
               <span style={{fontSize:9,fontWeight:400,opacity:.6,marginLeft:4}}>{u.rentalMode==="wholeHouse"?"whole":"by room"}</span>
@@ -1693,7 +1697,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
         <div className="fld">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
             <label style={{marginBottom:0}}>Utilities</label>
-            <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600}}>✏ Draft Email Settings</button>
+            <button type="button" onClick={()=>setShowUtilModal(true)} style={{fontSize:9,color:_acc,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600}}>✏ Draft Email Settings</button>
           </div>
           <select value={curUnit.utils||"allIncluded"} onChange={e=>updUnit("utils",e.target.value)}>
             {(settings?.utilTemplates||DEF_SETTINGS.utilTemplates).map(t=><option key={t.id} value={t.key}>{t.name}</option>)}
@@ -1741,13 +1745,13 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
               <div className="fld"><label>TV Size</label><select value={r.tv||'55"'} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"tv",e.target.value)}><option value='75"'>75"</option><option value='65"'>65"</option><option value='55"'>55"</option><option value='50"'>50"</option><option value='43"'>43"</option><option value='42"'>42"</option><option value='32"'>32"</option><option value="None">None</option></select></div>
             </div>
             <div className="fr3">
-              <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:r.ownerOccupied?"rgba(59,130,246,.06)":locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:r.ownerOccupied?"#1d4ed8":locked?"#4a7c59":"#c45c4a",fontWeight:600}}>{r.ownerOccupied?"Owner Occupied":locked?("Occupied — "+(r.tenant.name)):"Vacant"}</div></div>
+              <div className="fld"><label>Status</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,background:r.ownerOccupied?"rgba(59,130,246,.06)":locked?"rgba(74,124,89,.06)":"rgba(196,92,74,.06)",color:r.ownerOccupied?_acc:locked?_grn:_red,fontWeight:600}}>{r.ownerOccupied?"Owner Occupied":locked?("Occupied — "+(r.tenant.name)):"Vacant"}</div></div>
               <div className="fld"><label>Lease End</label><div style={{padding:"8px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.08)",fontSize:12,color:"#6b5e52"}}>{r.le?fmtD(r.le):"—"}</div></div>
               <div className="fld"><label>Furnished</label><select value={String(r.furnished!==false)} disabled={locked} style={{background:locked?"#e8e7e4":undefined,cursor:locked?"not-allowed":undefined}} onChange={e=>updRoom(i,"furnished",e.target.value==="true")}><option value="true">✓ Furnished</option><option value="false">Unfurnished</option></select></div>
             </div>
             <div style={{marginBottom:8}}>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:r.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",borderRadius:7,border:"1px solid "+(r.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"),background:r.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
-                <input type="checkbox" checked={!!r.ownerOccupied} onChange={e=>updRoom(i,"ownerOccupied",e.target.checked)} style={{accentColor:"#3b82f6",width:14,height:14}}/>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:r.ownerOccupied?_acc:"#5c4a3a",padding:"7px 10px",borderRadius:7,border:"1px solid "+(r.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"),background:r.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
+                <input type="checkbox" checked={!!r.ownerOccupied} onChange={e=>updRoom(i,"ownerOccupied",e.target.checked)} style={{accentColor:_acc,width:14,height:14}}/>
                 Owner Occupied - exclude from rent, financials, and public listings
               </label>
             </div>
@@ -1773,7 +1777,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                 {["Walk-in closet","En-suite bath","Closet organizer","Street view","Backyard view","USB outlets","Blackout curtains","Ceiling fan","Private entrance","Corner room","Lots of natural light","Extra storage"].map(feat=>{
                   const checked=(r.feat||[]).includes(feat);
                   return(<label key={feat} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,cursor:"pointer",padding:"3px 8px",borderRadius:5,border:`1px solid ${checked?"rgba(212,168,83,.4)":"rgba(0,0,0,.08)"}`,background:checked?"rgba(212,168,83,.06)":"#faf9f7",userSelect:"none"}}>
-                    <input type="checkbox" checked={checked} style={{accentColor:"#d4a853",width:11,height:11}} onChange={()=>{const cur=r.feat||[];const next=checked?cur.filter(f=>f!==feat):[...cur,feat];updRoom(i,"feat",next);}}/>
+                    <input type="checkbox" checked={checked} style={{accentColor:_gold,width:11,height:11}} onChange={()=>{const cur=r.feat||[];const next=checked?cur.filter(f=>f!==feat):[...cur,feat];updRoom(i,"feat",next);}}/>
                     {feat}
                   </label>);
                 })}
@@ -1806,7 +1810,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
           return(<>
             <div style={{padding:"10px 14px",borderRadius:8,border:"1px solid rgba(0,0,0,.06)",background:anyOcc?"rgba(74,124,89,.04)":"rgba(196,92,74,.04)",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
-                <div style={{fontSize:12,fontWeight:700,color:anyOcc?"#4a7c59":"#c45c4a"}}>{anyOcc?"Occupied":"Vacant"}</div>
+                <div style={{fontSize:12,fontWeight:700,color:anyOcc?_grn:_red}}>{anyOcc?"Occupied":"Vacant"}</div>
                 {anyOcc&&occupant&&<div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>{occupant.name}{latestLe?<span style={{color:"#6b5e52",marginLeft:6}}>· lease ends {fmtD(latestLe)}</span>:null}</div>}
                 {!anyOcc&&<div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>No active tenant — ready to lease</div>}
               </div>
@@ -1818,12 +1822,12 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
                 :(curUnit.ownerOccupied?null:<button className="btn btn-green btn-sm" style={{fontSize:10}} onClick={()=>setAddTenantRoom({unitIdx:activeUnit,isWholeUnit:true})}>+ Add Existing Tenant</button>)}
             </div>
             {rooms.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
-              {rooms.map(r=><div key={r.id} style={{padding:"4px 9px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:9,background:"#faf9f7",color:r.ownerOccupied?"#1d4ed8":r.st==="occupied"?"#4a7c59":"#999"}}>
+              {rooms.map(r=><div key={r.id} style={{padding:"4px 9px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:9,background:"#faf9f7",color:r.ownerOccupied?_acc:r.st==="occupied"?_grn:"#999"}}>
                 {r.name} — {r.ownerOccupied?"Owner Occupied":r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}
               </div>)}
             </div>}
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:curUnit.ownerOccupied?"#1d4ed8":"#5c4a3a",padding:"7px 10px",marginTop:8,borderRadius:7,border:"1px solid "+(curUnit.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"),background:curUnit.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
-              <input type="checkbox" checked={!!curUnit.ownerOccupied} onChange={e=>updUnit("ownerOccupied",e.target.checked)} style={{accentColor:"#3b82f6",width:14,height:14}}/>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",fontSize:11,fontWeight:600,color:curUnit.ownerOccupied?_acc:"#5c4a3a",padding:"7px 10px",marginTop:8,borderRadius:7,border:"1px solid "+(curUnit.ownerOccupied?"rgba(59,130,246,.3)":"rgba(0,0,0,.06)"),background:curUnit.ownerOccupied?"rgba(59,130,246,.04)":"transparent"}}>
+              <input type="checkbox" checked={!!curUnit.ownerOccupied} onChange={e=>updUnit("ownerOccupied",e.target.checked)} style={{accentColor:_acc,width:14,height:14}}/>
               Owner Occupied - exclude from rent, financials, and public listings
             </label>
           </>);
@@ -1871,7 +1875,7 @@ function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTen
     </div></div>}
 
 
-    {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:"#4a7c59",textAlign:"center"}}>
+    {justSaved&&<div style={{marginBottom:8,padding:"8px 12px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,fontWeight:700,color:_grn,textAlign:"center"}}>
       ✓ Saved
     </div>}
     <div className="mft" style={{justifyContent:"space-between"}}>
@@ -3343,7 +3347,7 @@ export default function Page(){
               {/* Rent + payment status merged */}
               <div style={{display:"flex",flexDirection:"column",gap:3,justifyContent:"center"}}>
                 <div style={{fontSize:14,fontWeight:800,color:"#1a1714"}}>{fmtS(r.rent)}<span style={{fontSize:10,fontWeight:400,color:"#7a7067"}}>/mo</span></div>
-                <span className={`badge ${pd?"b-green":"b-red"}`} style={{alignSelf:"flex-start"}}>{pd?"✓ Paid":"Unpaid"}</span>
+                <span className={`badge ${pd?"b-green":"b-red"}`} style={{alignSelf:"flex-start"}}>{pd?<><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg> Paid</>:"Unpaid"}</span>
                 {r.tenant.moveIn&&<div style={{fontSize:9,color:"#7a7067"}}>Since {fmtD(r.tenant.moveIn)}</div>}
               </div>
               {/* Portal access */}
@@ -3733,7 +3737,7 @@ export default function Page(){
           </div></div>}
 
           {allTenants.length===0&&<div style={{textAlign:"center",padding:48,color:"#6b5e52"}}>
-            <div style={{fontSize:40,marginBottom:8}}>🏠</div>
+            <div style={{fontSize:40,marginBottom:8}}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
             <div style={{fontWeight:700,marginBottom:4}}>No active tenants</div>
             <div style={{fontSize:12}}>Add tenants from the Tenants tab to get started.</div>
           </div>}
@@ -5530,11 +5534,11 @@ export default function Page(){
           <button className="btn btn-gold">+ Upload Document</button></div>
         {["addendum","lease","rules","checklist"].map(type=>{
           const items=docs.filter(d=>d.type===type);if(!items.length)return null;
-          const labels={addendum:"📝 Lease Addendums",lease:"📄 Leases & Agreements",rules:"📋 House Rules",checklist:"✅ Checklists"};
+          const labels={addendum:<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Lease Addendums</>,lease:<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Leases & Agreements</>,rules:<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>House Rules</>,checklist:<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>Checklists</>};
           return(<div key={type} style={{marginBottom:16}}>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{labels[type]}</div>
             {items.map(d=><div key={d.id} className="row">
-              <span style={{fontSize:16}}>{type==="addendum"?"📝":"📄"}</span>
+              <span style={{fontSize:16}}>{type==="addendum"?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}</span>
               <div className="row-i">
                 <div className="row-t">{d.name}</div>
                 <div className="row-s">{d.property}{d.tenant?` · ${d.tenant}`:""} · {d.uploaded}</div>
@@ -6187,7 +6191,7 @@ export default function Page(){
           <button className="btn btn-out btn-sm" onClick={()=>setNotifs(p=>p.map(x=>({...x,read:true})))}>Mark All Read</button></div>
         {notifs.map(n=>(
           <div key={n.id} className="row" style={{opacity:n.read?0.6:1,cursor:"pointer"}} onClick={()=>setNotifs(p=>p.map(x=>x.id===n.id?{...x,read:true}:x))}>
-            <span style={{fontSize:16}}>{n.type==="lease"?"📋":n.type==="payment"?"💰":n.type==="maint"?"🔧":"📝"}</span>
+            <span style={{fontSize:16}}>{n.type==="lease"?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>:n.type==="payment"?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>:n.type==="maint"?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>}</span>
             <div className="row-i"><div className="row-t" style={{fontWeight:n.read?500:700}}>{n.msg}</div><div className="row-s">{n.date}</div></div>
             {!n.read&&<div className="notif-dot"/>}{n.urgent&&<span className="badge b-red">Urgent</span>}
           </div>
@@ -6197,7 +6201,7 @@ export default function Page(){
       {/* ═══ SCORECARD ═══ */}
       {tab==="scorecard"&&<>
         <div className="kgrid">
-          <div className={`kpi ${drill==="sc-occ"?"active":""}`} onClick={()=>setDrill(drill==="sc-occ"?null:"sc-occ")}><div className="kl">🏠 Occupancy</div><div className="kv" style={{color:m.occRate>=90?"#4a7c59":"#c45c4a"}}>{m.occRate}%</div><div className="ks">{m.occ}/{m.total} rooms</div></div>
+          <div className={`kpi ${drill==="sc-occ"?"active":""}`} onClick={()=>setDrill(drill==="sc-occ"?null:"sc-occ")}><div className="kl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Occupancy</div><div className="kv" style={{color:m.occRate>=90?"#4a7c59":"#c45c4a"}}>{m.occRate}%</div><div className="ks">{m.occ}/{m.total} rooms</div></div>
           <div className={`kpi ${drill==="sc-coll"?"active":""}`} onClick={()=>setDrill(drill==="sc-coll"?null:"sc-coll")}><div className="kl">Collection</div><div className="kv" style={{color:m.collRate>=90?"#4a7c59":"#c45c4a"}}>{m.collRate}%</div><div className="ks">{fmtS(m.coll)} / {fmtS(m.due)}</div></div>
           <div className={`kpi ${drill==="sc-vac"?"active":""}`} onClick={()=>setDrill(drill==="sc-vac"?null:"sc-vac")}><div className="kl">💸 Vacancy</div><div className="kv" style={{color:m.lost>0?"#c45c4a":"#4a7c59"}}>{fmtS(m.lost)}</div><div className="ks">/month lost</div></div>
           <div className={`kpi ${drill==="sc-proj"?"active":""}`} onClick={()=>setDrill(drill==="sc-proj"?null:"sc-proj")}><div className="kl">📈 Projected</div><div className="kv">{fmtS(m.proj)}</div><div className="ks">of {fmtS(m.full)}</div></div>

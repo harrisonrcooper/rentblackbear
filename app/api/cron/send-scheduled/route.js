@@ -71,7 +71,7 @@ export async function GET(req) {
               method: "POST",
               headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
               body: JSON.stringify({
-                from: `${s.pmName || "Property Manager"} <${s.email || "noreply@rentblackbear.com"}>`,
+                from: `${s.pmName || "Property Manager"} <${s.email || process.env.SENDER_EMAIL || "noreply@rentblackbear.com"}>`,
                 to: tenantEmail,
                 subject: "Message from " + (s.companyName || "Your Property Manager"),
                 html: `<p>${sm.body.replace(/\n/g, "<br/>")}</p><p style="font-size:11px;color:#999;">${s.companyName || ""}</p>`,

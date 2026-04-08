@@ -32,10 +32,13 @@ export async function POST(request) {
         : encoded;
     }
 
+    const senderEmail = process.env.SENDER_EMAIL || "hello@rentblackbear.com";
+    const senderName = process.env.SENDER_NAME || "Black Bear Rentals";
+
     const body = {
       from: fromName
-        ? `${fromName} <hello@rentblackbear.com>`
-        : "Black Bear Rentals <hello@rentblackbear.com>",
+        ? `${fromName} <${senderEmail}>`
+        : `${senderName} <${senderEmail}>`,
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
