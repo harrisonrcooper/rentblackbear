@@ -665,7 +665,7 @@ export default function SmartImporter({
   const nUnits = structure.reduce((s, p) => s + p.units.length, 0);
   const nRooms = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.length, 0), 0);
   const nTenants = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.tenants.filter(t => !t.excluded).length, 0), 0), 0);
-  const nWarn = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.warnings.length, 0), 0), 0);
+  const nWarn = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.warnings.filter(w => !(r.multiMode && (w.type === "co-living" || w.type === "transition"))).length, 0), 0), 0);
   const totalRent = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.tenants.filter(t => !t.excluded).reduce((s4, t) => s4 + (Number(t.rent) || 0), 0), 0), 0), 0);
   const totalSD = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.tenants.filter(t => !t.excluded).reduce((s4, t) => s4 + (parseRent(t.sd) || Number(t.rent) || 0), 0), 0), 0), 0);
 
@@ -1282,6 +1282,71 @@ export default function SmartImporter({
                                       {room.multiMode === "co-tenant" ? "Both imported to same room as co-tenants" : room.multiMode === "sequential" ? "Current tenant active, past tenants archived" : room.multiMode === "separate" ? "Each tenant gets their own room" : "Choose how to handle"}
                                     </span>
                                   </div>
+                                  {/* Mini Gantt timeline for sequential mode */}
+                                  {room.multiMode === "sequential" && (() => {
+                                    const active = room.tenants.filter(t => !t.excluded);
+                                    const withDates = active.filter(t => t.moveIn || t.leaseEnd);
+                                    if (!withDates.length) return <div style={{ fontSize: 10, color: "#7a7067", marginTop: 6 }}>Add move-in / lease-end dates to see the timeline</div>;
+                                    const allDates = [];
+                                    for (const t of withDates) {
+                                      if (t.moveIn && t.moveIn !== "MTM") allDates.push(t.moveIn);
+                                      if (t.leaseEnd && t.leaseEnd !== "MTM") allDates.push(t.leaseEnd);
+                                    }
+                                    allDates.push(todayStr);
+                                    allDates.sort();
+                                    const minD = allDates[0];
+                                    const maxD = allDates[allDates.length - 1];
+                                    const toMs = d => new Date(d).getTime();
+                                    const rangeMs = Math.max(toMs(maxD) - toMs(minD), 86400000);
+                                    const pct = d => d ? Math.max(0, Math.min(100, ((toMs(d) - toMs(minD)) / rangeMs) * 100)) : 0;
+                                    const todayPct = pct(todayStr);
+                                    const colors = [_ac, "#d4a853", "#6b8cae", "#c45c4a", "#8b7355"];
+                                    const fmtD = d => { if (!d || d === "MTM") return "MTM"; const p = d.split("-"); return p[1] + "/" + p[2] + "/" + p[0].slice(2); };
+                                    return (
+                                      <div style={{ marginTop: 8, padding: "8px 0" }}>
+                                        {/* Timeline axis */}
+                                        <div style={{ position: "relative", height: active.length * 26 + 20, marginBottom: 4 }}>
+                                          {/* Background track */}
+                                          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 16, background: "rgba(0,0,0,.03)", borderRadius: 4 }} />
+                                          {/* Today marker */}
+                                          <div style={{ position: "absolute", left: todayPct + "%", top: 0, bottom: 0, width: 1, background: "#c45c4a", zIndex: 2 }} />
+                                          <div style={{ position: "absolute", left: todayPct + "%", bottom: 0, transform: "translateX(-50%)", fontSize: 8, fontWeight: 700, color: "#c45c4a", whiteSpace: "nowrap" }}>today</div>
+                                          {/* Tenant bars */}
+                                          {active.map((t, ti) => {
+                                            const start = t.moveIn && t.moveIn !== "MTM" ? pct(t.moveIn) : 0;
+                                            const end = t.leaseEnd && t.leaseEnd !== "MTM" ? pct(t.leaseEnd) : 100;
+                                            const isCurrent = !(t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) && !(t.moveIn && t.moveIn > todayStr);
+                                            const barColor = colors[ti % colors.length];
+                                            return (
+                                              <div key={ti} style={{ position: "absolute", top: ti * 26 + 2, left: start + "%", width: Math.max(end - start, 1) + "%", height: 20, display: "flex", alignItems: "center" }}>
+                                                <div style={{ width: "100%", height: 14, borderRadius: 3, background: isCurrent ? barColor : "rgba(0,0,0,.08)", opacity: isCurrent ? 1 : 0.6, position: "relative", overflow: "hidden" }}>
+                                                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", padding: "0 6px" }}>
+                                                    <span style={{ fontSize: 9, fontWeight: 700, color: isCurrent ? "#fff" : "#5c4a3a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                        {/* Date labels per tenant */}
+                                        <div style={{ marginTop: 4 }}>
+                                          {active.map((t, ti) => {
+                                            const isCurrent = !(t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) && !(t.moveIn && t.moveIn > todayStr);
+                                            return (
+                                              <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: isCurrent ? "#1a1714" : "#7a7067", lineHeight: "18px" }}>
+                                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: isCurrent ? colors[ti % colors.length] : "rgba(0,0,0,.15)", flexShrink: 0 }} />
+                                                <span style={{ fontWeight: 600, minWidth: 80 }}>{t.name}</span>
+                                                <span>{t.moveIn ? fmtD(t.moveIn) : "?"}</span>
+                                                <span style={{ color: "#9ca3af" }}>{"\u2192"}</span>
+                                                <span>{t.leaseEnd ? fmtD(t.leaseEnd) : "?"}</span>
+                                                {isCurrent && <span style={{ fontSize: 8, fontWeight: 700, color: _ac }}>CURRENT</span>}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               )}
                               {room.tenants.map((t, ti) => (
@@ -1306,7 +1371,7 @@ export default function SmartImporter({
                                     <input type="number" value={t.rent || ""} onChange={e => uTen(pi, ui, ri, ti, "rent", e.target.value)} style={{ fontSize: 12, fontWeight: 700, color: t.rent ? "#1a1714" : "#c45c4a", border: "none", borderBottom: "1px dashed rgba(0,0,0,.1)", background: "transparent", padding: "1px 4px", width: 55, fontFamily: "inherit", textAlign: "right" }} placeholder="0" />
                                     <span style={{ fontSize: 10, color: "#5c4a3a" }}>/mo</span>
                                   </div>
-                                  {ti === 0 && room.warnings.map((w, wi) => (
+                                  {ti === 0 && room.warnings.filter(w => !(room.multiMode && (w.type === "co-living" || w.type === "transition"))).map((w, wi) => (
                                     <span key={wi} onClick={e => { e.stopPropagation(); setConfirmModal({ title: "Needs Review", body: w.msg, onConfirm: null }); }} style={{ fontSize: 9, fontWeight: 700, color: "#b8860b", background: "rgba(184,134,11,.08)", padding: "3px 8px", borderRadius: 100, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>
                                       <IW /> {w.type === "no-rent" ? "No rent" : w.type === "past-lease" ? "Expired" : w.type === "co-living" ? "Co-living" : w.type === "transition" ? "Transition" : w.type === "occupied" ? "Occupied" : "Review"}
                                     </span>
