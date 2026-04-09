@@ -118,7 +118,7 @@ export default function TenantTimeline({
       </div>
 
       {/* ═══ GANTT ═══ */}
-      {ttView === "gantt" && <div style={{ background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)", overflow: "hidden" }}>
+      {ttView === "gantt" && <div style={{ background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)", overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 220px)" }}>
         {/* Nav bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.015)", flexWrap: "wrap", gap: 6 }}>
           <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o - 1)}>Earlier</button>
@@ -140,6 +140,7 @@ export default function TenantTimeline({
           </div>
         </div>
         {/* Rows */}
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
         {(() => {
           const todayX = dateToX(TODAY_STR);
           const renderRow = (r, showProp = false) => {
@@ -222,10 +223,11 @@ export default function TenantTimeline({
           </div>
         </div>
         {sortedFiltered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52", fontSize: 12 }}>No rooms match this filter.</div>}
+        </div>
       </div>}
 
       {/* ═══ COUNTDOWN ═══ */}
-      {ttView === "countdown" && <div>
+      {ttView === "countdown" && <div style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}>
         {sortedFiltered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52", fontSize: 12, background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)" }}>No rooms match this filter.</div>}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10 }}>
           {sortedFiltered.map(r => {
@@ -274,8 +276,8 @@ export default function TenantTimeline({
         const cells = [];
         for (let i = 0; i < firstDow; i++) cells.push(null);
         for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-        return (<div style={{ background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)", overflow: "hidden" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.015)" }}>
+        return (<div style={{ background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)", overflow: "hidden", maxHeight: "calc(100vh - 220px)", display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.015)", flexShrink: 0 }}>
             <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o - 1)}>Prev</button>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <button className="btn btn-out btn-sm" style={{ fontSize: 9 }} onClick={() => setTtMonthOffset(0)}>Today</button>
@@ -283,9 +285,10 @@ export default function TenantTimeline({
             </div>
             <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o + 1)}>Next</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0 }}>
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => <div key={d} style={{ padding: "5px", textAlign: "center", fontSize: 10, fontWeight: 600, color: "#6b5e52", background: "rgba(0,0,0,.02)" }}>{d}</div>)}
           </div>
+          <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
             {cells.map((d, i) => {
               if (!d) return <div key={"e" + i} style={{ minHeight: 64, borderRight: "1px solid rgba(0,0,0,.04)", borderBottom: "1px solid rgba(0,0,0,.04)" }} />;
@@ -298,7 +301,8 @@ export default function TenantTimeline({
               </div>);
             })}
           </div>
-          <div style={{ padding: "8px 16px", display: "flex", gap: 12, borderTop: "1px solid rgba(0,0,0,.06)" }}>
+          </div>
+          <div style={{ padding: "8px 16px", display: "flex", gap: 12, borderTop: "1px solid rgba(0,0,0,.06)", flexShrink: 0 }}>
             {[["#FCEBEB", "#A32D2D", "Lease end"], ["#E6F1FB", "#0C447C", "Move-in"]].map(([bg, c, l]) => (
               <div key={l} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52" }}>
                 <div style={{ width: 10, height: 10, borderRadius: 2, background: bg, border: `1px solid ${c}44` }} />{l}
@@ -309,8 +313,8 @@ export default function TenantTimeline({
       })()}
 
       {/* ═══ KANBAN ═══ */}
-      {ttView === "kanban" && <div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 10 }}>
+      {ttView === "kanban" && <div style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto", overflowX: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 10, minWidth: 900 }}>
           {[
             { id: "incoming", label: "Incoming", color: "#065F46", bg: "#D1FAE5", border: "rgba(6,95,70,.2)", filter: r => r.st === "occupied" && r.tenant && isFutureRoom(r) },
             { id: "active", label: "Active", color: "#0C447C", bg: "#E6F1FB", border: "rgba(12,68,124,.15)", filter: r => r.st === "occupied" && r.tenant && !isFutureRoom(r) && ((r.le && daysUntil(r.le) > 90) || !r.le) },
