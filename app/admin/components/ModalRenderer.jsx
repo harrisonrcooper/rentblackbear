@@ -5509,14 +5509,91 @@ export default function ModalRenderer({
   {modal&&modal.type==="archived"&&(()=>{const a=modal.data;const payMonths=Object.keys(a.payments||{});const totalPaid=Object.values(a.payments||{}).reduce((s,v)=>s+(typeof v==="object"?Object.values(v).reduce((ss,vv)=>ss+vv,0):v),0);
     const moveIn=a.moveIn?new Date(a.moveIn+"T00:00:00"):null;const termDate=a.terminatedDate?new Date(a.terminatedDate+"T00:00:00"):null;
     const tenureDays=moveIn&&termDate?Math.ceil((termDate-moveIn)/(1e3*60*60*24)):null;const tenureMonths=tenureDays?Math.round(tenureDays/30):null;
+    const isEditing=modal._editMode;
+    const ed=modal._editData||{name:a.name,email:a.email||"",phone:a.phone||"",moveIn:a.moveIn||"",leaseEnd:a.leaseEnd||"",rent:a.rent||0,reason:a.reason||""};
+    const setEd=(k,v)=>setModal(p=>({...p,_editData:{...ed,[k]:v}}));
+    const saveEdit=()=>{
+      setArchive(prev=>(prev||[]).map(x=>x.id===a.id?{...x,name:ed.name,email:ed.email,phone:ed.phone,moveIn:ed.moveIn,leaseEnd:ed.leaseEnd,rent:Number(ed.rent)||0,reason:ed.reason}:x));
+      setModal(p=>({...p,_editMode:false,data:{...a,name:ed.name,email:ed.email,phone:ed.phone,moveIn:ed.moveIn,leaseEnd:ed.leaseEnd,rent:Number(ed.rent)||0,reason:ed.reason}}));
+    };
+    const deletePast=()=>{setArchive(prev=>(prev||[]).filter(x=>x.id!==a.id));setModal(null);};
+    const reinstateToRoom=()=>{setModal(p=>({...p,_reinstateMode:true}));};
+    const doReinstate=(propId,unitId,roomId)=>{
+      const prop=props.find(p=>p.id===propId);if(!prop)return;
+      const updated=JSON.parse(JSON.stringify(props));
+      const uProp=updated.find(p=>p.id===propId);
+      for(const u of(uProp.units||[])){for(const r of(u.rooms||[])){
+        if(r.id===roomId){
+          r.tenant={name:a.name,email:a.email||"",phone:a.phone||"",moveIn:a.moveIn||TODAY.toISOString().split("T")[0],doorCode:""};
+          r.st="occupied";r.le=a.leaseEnd||"";r.rent=a.rent||r.rent;
+        }
+      }}
+      setProps(updated);save("hq-props",updated);
+      setArchive(prev=>(prev||[]).filter(x=>x.id!==a.id));
+      setNotifs(prev=>[{id:uid(),type:"system",msg:`${a.name} reinstated to ${prop.addr||prop.name}`,date:TODAY.toISOString().split("T")[0],read:false},...(prev||[])]);
+      setModal(null);
+    };
+    const fldS={width:"100%",padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.12)",fontSize:12,fontFamily:"inherit",boxSizing:"border-box"};
+    /* Room picker for reinstate */
+    const vacantRooms=props.flatMap(p=>(p.units||[]).flatMap(u=>(u.rooms||[]).filter(r=>r.st==="vacant"||(!r.tenant&&!r.ownerOccupied)).map(r=>({propId:p.id,propName:p.addr||p.name,unitId:u.id,unitName:u.name,roomId:r.id,roomName:r.name,rent:r.rent}))));
     return(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:540}}>
-      <h2>{a.name} <span className="badge b-gray" style={{verticalAlign:"middle"}}>Past Tenant</span></h2>
-      <div className="tp-card"><h3>📞 Contact</h3><div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone}</strong></div><div className="tp-row"><span className="tp-label">Email</span><strong>{a.email}</strong></div></div>
-      <div className="tp-card"><h3>🏠 Room History</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{propDisplay(a.propName)}</strong></div><div className="tp-row"><span className="tp-label">Room</span><strong>{a.roomName}</strong></div><div className="tp-row"><span className="tp-label">Rent</span><strong>{fmtS(a.rent)}/mo</strong></div></div>
-      <div className="tp-card"><h3>📋 Lease History</h3><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">Lease End</span><strong>{fmtD(a.leaseEnd)}</strong></div><div className="tp-row"><span className="tp-label">Terminated</span><strong>{fmtD(a.terminatedDate)}</strong></div>{tenureMonths&&<div className="tp-row"><span className="tp-label">Tenure</span><strong>{tenureMonths} months ({tenureDays} days)</strong></div>}<div className="tp-row"><span className="tp-label">Total Revenue</span><strong style={{color:"#4a7c59"}}>{fmtS(a.rent*(tenureMonths||0))}</strong></div></div>
-      <div className="tp-card" style={{background:"rgba(196,92,74,.03)",borderColor:"rgba(196,92,74,.1)"}}><h3 style={{color:"#c45c4a"}}>⚠ Termination</h3><div className="tp-row"><span className="tp-label">Date</span><strong>{fmtD(a.terminatedDate)}</strong></div><div className="tp-row"><span className="tp-label">Reason</span><strong>{a.reason}</strong></div></div>
-      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Close</button></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <h2 style={{margin:0}}>{isEditing?<input value={ed.name} onChange={e=>setEd("name",e.target.value)} style={{...fldS,fontSize:16,fontWeight:700,width:"auto",minWidth:200}} />:a.name} <span className="badge b-gray" style={{verticalAlign:"middle"}}>Past Tenant</span></h2>
+        {!isEditing&&!modal._reinstateMode&&<button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={()=>setModal(p=>({...p,_editMode:true,_editData:{name:a.name,email:a.email||"",phone:a.phone||"",moveIn:a.moveIn||"",leaseEnd:a.leaseEnd||"",rent:a.rent||0,reason:a.reason||""}}))}>Edit</button>}
+      </div>
+
+      {/* ── Reinstate mode ── */}
+      {modal._reinstateMode&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>Reinstate {a.name} to a room</div>
+        {vacantRooms.length===0&&<div style={{fontSize:12,color:"#5c4a3a",padding:"12px 0"}}>No vacant rooms available. Add a property or vacate a room first.</div>}
+        {vacantRooms.map(r=>(
+          <div key={r.roomId} className="row" style={{padding:"8px 0",cursor:"pointer"}} onClick={()=>doReinstate(r.propId,r.unitId,r.roomId)}
+            onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.03)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
+            <div className="row-dot" style={{background:settings?.adminAccent||"#4a7c59"}}/>
+            <div className="row-i"><div className="row-t" style={{fontSize:12}}>{r.roomName}</div><div className="row-s">{r.propName} &middot; {fmtS(r.rent)}/mo</div></div>
+          </div>
+        ))}
+        <div style={{marginTop:10}}><button className="btn btn-out btn-sm" onClick={()=>setModal(p=>({...p,_reinstateMode:false}))}>Cancel</button></div>
+      </div>}
+
+      {/* ── Normal / Edit view ── */}
+      {!modal._reinstateMode&&<>
+        {isEditing?<>
+          <div className="tp-card"><h3>Contact</h3>
+            <div className="fld"><label>Email</label><input value={ed.email} onChange={e=>setEd("email",e.target.value)} style={fldS} /></div>
+            <div className="fld"><label>Phone</label><input value={ed.phone} onChange={e=>setEd("phone",e.target.value)} style={fldS} /></div>
+          </div>
+          <div className="tp-card"><h3>Lease</h3>
+            <div className="fr">
+              <div className="fld"><label>Move-In</label><input type="date" value={ed.moveIn} onChange={e=>setEd("moveIn",e.target.value)} style={fldS} /></div>
+              <div className="fld"><label>Lease End</label><input type="date" value={ed.leaseEnd} onChange={e=>setEd("leaseEnd",e.target.value)} style={fldS} /></div>
+            </div>
+            <div className="fld"><label>Rent</label><input type="number" value={ed.rent} onChange={e=>setEd("rent",e.target.value)} style={fldS} /></div>
+            <div className="fld"><label>Reason</label><input value={ed.reason} onChange={e=>setEd("reason",e.target.value)} style={fldS} placeholder="Moved out, lease ended, etc." /></div>
+          </div>
+        </>:<>
+          <div className="tp-card"><h3>Contact</h3><div className="tp-row"><span className="tp-label">Phone</span><strong>{a.phone||"\u2014"}</strong></div><div className="tp-row"><span className="tp-label">Email</span><strong style={{wordBreak:"break-all"}}>{a.email||"\u2014"}</strong></div></div>
+          <div className="tp-card"><h3>Room History</h3><div className="tp-row"><span className="tp-label">Property</span><strong>{propDisplay(a.propName)}</strong></div><div className="tp-row"><span className="tp-label">Room</span><strong>{a.roomName}</strong></div><div className="tp-row"><span className="tp-label">Rent</span><strong>{fmtS(a.rent)}/mo</strong></div></div>
+          <div className="tp-card"><h3>Lease History</h3><div className="tp-row"><span className="tp-label">Move-in</span><strong>{fmtD(a.moveIn)}</strong></div><div className="tp-row"><span className="tp-label">Lease End</span><strong>{fmtD(a.leaseEnd)}</strong></div>{a.terminatedDate&&<div className="tp-row"><span className="tp-label">{a.reason==="Moved out"?"Moved out":"Ended"}</span><strong>{fmtD(a.terminatedDate)}</strong></div>}{tenureMonths&&<div className="tp-row"><span className="tp-label">Tenure</span><strong>{tenureMonths} months</strong></div>}</div>
+          {a.reason&&a.reason!=="Moved out"&&<div className="tp-card" style={{background:"rgba(0,0,0,.02)"}}><div className="tp-row"><span className="tp-label">Reason</span><strong>{a.reason}</strong></div></div>}
+        </>}
+      </>}
+
+      <div className="mft" style={{display:"flex",gap:8,justifyContent:"space-between"}}>
+        <div style={{display:"flex",gap:6}}>
+          {isEditing?<>
+            <button className="btn btn-green" onClick={saveEdit}>Save</button>
+            <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_editMode:false}))}>Cancel</button>
+          </>:<>
+            <button className="btn btn-out" onClick={()=>setModal(null)}>Close</button>
+          </>}
+        </div>
+        {!isEditing&&!modal._reinstateMode&&<div style={{display:"flex",gap:6}}>
+          <button className="btn btn-out btn-sm" style={{fontSize:10}} onClick={reinstateToRoom}>Reinstate</button>
+          <button className="btn btn-sm" style={{fontSize:10,background:"#dc2626",color:"#fff",border:"none"}} onClick={()=>{if(confirm("Remove "+a.name+" from past tenants?"))deletePast();}}>Delete</button>
+        </div>}
+      </div>
     </div></div>);})()}
 
   {/* Draggable Full Timeline Float Modal — root level so position:fixed works */}
