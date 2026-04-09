@@ -1293,8 +1293,8 @@ export default function SmartImporter({
                                     <strong style={{ color: "#1a1714" }}>{room.tenants.length} tenants in {room.name}</strong>
                                   </div>
                                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                                    {[["co-tenant", "Co-tenants (share room)"], ["sequential", "Sequential (one after other)"], ["separate", "Separate rooms"]].map(([mode, label]) => (
-                                      <button key={mode} onClick={() => setRoomMode(pi, ui, ri, mode)} style={{ ...btn, fontSize: 10, padding: "4px 12px", minHeight: 32, background: room.multiMode === mode ? _ac : "#fff", color: room.multiMode === mode ? "#fff" : "#1a1714", borderColor: room.multiMode === mode ? _ac : "rgba(0,0,0,.1)" }}>{label}</button>
+                                    {[["co-tenant", "Co-tenants (share room)", "Couples or roommates sharing the same room"], ["sequential", "Sequential (one after other)", "One lease ends, next begins \u2014 current tenant stays active, others archived"], ["separate", "Separate rooms", "Creates a separate room entry for each tenant"]].map(([mode, label, tip]) => (
+                                      <button key={mode} title={tip} onClick={() => setRoomMode(pi, ui, ri, mode)} style={{ ...btn, fontSize: 10, padding: "4px 12px", minHeight: 32, background: room.multiMode === mode ? _ac : "#fff", color: room.multiMode === mode ? "#fff" : "#1a1714", borderColor: room.multiMode === mode ? _ac : "rgba(0,0,0,.1)" }}>{label}</button>
                                     ))}
                                     <span style={{ fontSize: 10, color: "#7a7067", marginLeft: 4 }}>
                                       {room.multiMode === "co-tenant" ? "Both imported to same room as co-tenants" : room.multiMode === "sequential" ? "Current tenant active, past tenants archived" : room.multiMode === "separate" ? "Each tenant gets their own room" : "Choose how to handle"}
@@ -1382,15 +1382,17 @@ export default function SmartImporter({
                                                 <span style={{ fontSize: 8, fontWeight: 700, color: "#c45c4a", whiteSpace: "nowrap" }}>{o.days}d overlap</span>
                                               </div>;
                                             })}
-                                            {/* Bars */}
+                                            {/* Bars — click to open edit */}
                                             {sorted.map((t, ti) => {
                                               const start = t.moveIn && t.moveIn !== "MTM" ? pct(t.moveIn) : 0;
                                               const end = t.leaseEnd && t.leaseEnd !== "MTM" ? pct(t.leaseEnd) : 100;
                                               const bc = getBarStyle(t);
                                               const barW = Math.max(end - start, 2);
+                                              const editKey = `${pi}-${ui}-${ri}`;
                                               return (
-                                                <div key={ti} style={{ position: "absolute", top: ti * 30 + 2, left: start + "%", width: barW + "%", height: 24, zIndex: 2 }}>
-                                                  <div style={{ width: "100%", height: "100%", borderRadius: 4, background: bc.bg, display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden" }}>
+                                                <div key={ti} onClick={() => setEditingSet(prev => { const next = new Set(prev); next.add(editKey); return next; })} title={"Click to edit " + t.name} style={{ position: "absolute", top: ti * 30 + 2, left: start + "%", width: barW + "%", height: 24, zIndex: 2, cursor: "pointer" }}>
+                                                  <div style={{ width: "100%", height: "100%", borderRadius: 4, background: bc.bg, display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", transition: "filter .1s" }}
+                                                    onMouseEnter={e => { e.currentTarget.style.filter = "brightness(.92)"; }} onMouseLeave={e => { e.currentTarget.style.filter = ""; }}>
                                                     <span style={{ fontSize: 9, fontWeight: 700, color: bc.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                                       {t.name}{t.moveIn ? " \u00B7 " + fmtD(t.moveIn) : ""}{t.leaseEnd && t.leaseEnd !== "MTM" ? " \u2013 " + fmtD(t.leaseEnd) : t.leaseEnd === "MTM" ? " \u00B7 MTM" : ""}
                                                     </span>
@@ -1406,13 +1408,15 @@ export default function SmartImporter({
                                               const isPast = t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr;
                                               const isUpcoming = t.moveIn && t.moveIn > todayStr;
                                               const label = isPast ? "PAST" : isUpcoming ? "UPCOMING" : "CURRENT";
+                                              const realTi = room.tenants.indexOf(t);
                                               return (
-                                                <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#1a1714", lineHeight: "20px" }}>
+                                                <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#1a1714", lineHeight: "24px" }}>
                                                   <span style={{ width: 8, height: 8, borderRadius: 2, background: bc.bg, flexShrink: 0 }} />
-                                                  <span style={{ fontWeight: 600, minWidth: 80 }}>{t.name}</span>
-                                                  <span style={{ color: "#5c4a3a" }}>{t.moveIn ? fmtD(t.moveIn) : "no start"}</span>
+                                                  <span onClick={() => setEditingSet(prev => { const next = new Set(prev); next.add(`${pi}-${ui}-${ri}`); return next; })} style={{ fontWeight: 600, minWidth: 80, cursor: "pointer", borderBottom: "1px dashed transparent" }} title={"Click to edit " + t.name}
+                                                    onMouseEnter={e => { e.currentTarget.style.borderBottom = "1px dashed rgba(0,0,0,.2)"; }} onMouseLeave={e => { e.currentTarget.style.borderBottom = "1px dashed transparent"; }}>{t.name}</span>
+                                                  <input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "moveIn", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(0,0,0,.08)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "#5c4a3a", minHeight: 24 }} title="Move-in date" />
                                                   <span style={{ color: "#5c4a3a" }}>{"\u2192"}</span>
-                                                  <span style={{ color: "#5c4a3a" }}>{t.leaseEnd ? fmtD(t.leaseEnd) : "no end"}</span>
+                                                  <input type="date" value={t.leaseEnd === "MTM" ? "" : (t.leaseEnd || "")} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "leaseEnd", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(0,0,0,.08)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "#5c4a3a", minHeight: 24 }} title="Lease end date" />
                                                   <span style={{ fontSize: 8, fontWeight: 700, padding: "1px 6px", borderRadius: 100, background: isPast ? "rgba(252,165,165,.3)" : isUpcoming ? "rgba(181,212,244,.3)" : `rgba(${_acR},.15)`, color: isPast ? "#791F1F" : isUpcoming ? "#0C447C" : _ac }}>{label}</span>
                                                 </div>
                                               );
@@ -1472,8 +1476,8 @@ export default function SmartImporter({
                                     <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: "#5c4a3a", cursor: "pointer", minHeight: 28, fontWeight: 600 }}>
                                       <input type="checkbox" checked={!!t.excluded} onChange={() => toggleSkip(pi, ui, ri, ti)} /> Skip
                                     </label>
-                                    {ti === 0 && <button onClick={() => delRoom(pi, ui, ri)} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", padding: "2px", minHeight: 28, minWidth: 28, display: "flex", alignItems: "center", justifyContent: "center" }} title="Delete room"><IX /></button>}
                                     {ti === 0 && <button onClick={() => setEditingSet(prev => { const next = new Set(prev); const key = `${pi}-${ui}-${ri}`; if (next.has(key)) next.delete(key); else next.add(key); return next; })} style={{ ...btn, fontSize: 10, padding: "3px 10px", minHeight: 28 }}>{editingSet.has(`${pi}-${ui}-${ri}`) ? "Close" : "Edit"}</button>}
+                                    {ti === 0 && <button onClick={() => { const tenantNames = room.tenants.filter(t => !t.excluded).map(t => t.name).join(", "); setConfirmModal({ title: "Delete " + room.name + "?", body: tenantNames ? tenantNames + " will be removed from import." : "This empty room will be removed.", onConfirm: () => delRoom(pi, ui, ri), danger: true }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", padding: "2px", minHeight: 28, minWidth: 28, display: "flex", alignItems: "center", justifyContent: "center" }} title="Delete room"><IX /></button>}
                                   </div>
                                   </div>{/* close inner flex row */}
                                 </div>
