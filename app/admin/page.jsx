@@ -2070,7 +2070,7 @@ export default function Page(){
 
   {/* ═══ MODALS ═══ */}
   {showSmartImport&&<SmartImporter props={props} setProps={setProps} settings={settings} uid={uid} createCharge={createCharge} setCharges={setCharges} setNotifs={setNotifs} setSdLedger={setSdLedger} setArchive={setArchive} charges={charges} TODAY={TODAY} onClose={()=>setShowSmartImport(false)} goTab={goTab} onImportComplete={()=>{const u={...settings,onboardingActive:true};setSettings(u);save("hq-settings",u);}} />}
-  {showLedgerImport&&<LedgerImporter props={props} setProps={setProps} settings={settings} setSettings={setSettings} charges={charges} setCharges={setCharges} setSdLedger={setSdLedger} setNotifs={setNotifs} createCharge={createCharge} uid={uid} TODAY={TODAY} onClose={()=>setShowLedgerImport(false)} goTab={goTab} CHARGE_CATS={CHARGE_CATS} />}
+  {showLedgerImport&&<LedgerImporter props={props} setProps={setProps} settings={settings} setSettings={setSettings} charges={charges} setCharges={setCharges} setSdLedger={setSdLedger} setNotifs={setNotifs} createCharge={createCharge} uid={uid} TODAY={TODAY} onClose={()=>setShowLedgerImport(false)} goTab={goTab} CHARGE_CATS={CHARGE_CATS} archive={archive} setArchive={setArchive} />}
 
   <ModalRenderer
     modal={modal} setModal={setModal}

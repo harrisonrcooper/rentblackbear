@@ -132,7 +132,7 @@ const uid = () => Math.random().toString(36).slice(2, 9) + Math.random().toStrin
 export default function LedgerImporter({
   props, setProps, settings, setSettings, charges, setCharges, setSdLedger, setNotifs,
   createCharge, uid: externalUid, TODAY, onClose, goTab,
-  CHARGE_CATS = DEF_PROPOS_CATS,
+  CHARGE_CATS = DEF_PROPOS_CATS, archive = [], setArchive,
 }) {
   const _ac = settings?.adminAccent || "#4a7c59";
   const _red = settings?.themeRed || "#c45c4a";
@@ -262,7 +262,19 @@ export default function LedgerImporter({
 
       // Parse lease title
       const parsed = parseLeaseTitle(leaseTitle);
-      const match = matchChargeToTenant(parsed, props || []);
+      let match = matchChargeToTenant(parsed, props || []);
+
+      // Fallback: try matching against archived/past tenants by name
+      if (!match && parsed.tenantName && (archive || []).length > 0) {
+        for (const a of archive) {
+          if (!a.name) continue;
+          const nameResult = fuzzyNameMatch(parsed.tenantName, a.name);
+          if (nameResult.match) {
+            match = { roomId: a.roomId || a.id, propName: a.propName || "", roomName: a.roomName || "Past", tenantName: a.name, confidence: nameResult.confidence * 0.9, isPast: true };
+            break;
+          }
+        }
+      }
 
       // Detect split payment pattern
       const isSplit = /installment|1st\s+install|2nd\s+install/i.test(description);
@@ -394,9 +406,27 @@ export default function LedgerImporter({
         }
       }
     }
+    // Include past/archived tenants so charges can be assigned to them
+    for (const a of (archive || [])) {
+      if (!a.name) continue;
+      // Use archive id as roomId fallback — charges link by roomId
+      const existsAlready = rooms.some(r => r.tenantName === a.name && r.roomName === a.roomName);
+      if (!existsAlready) {
+        rooms.push({
+          roomId: a.roomId || a.id,
+          propId: a.propId || "",
+          propName: a.propName || "",
+          unitName: "",
+          roomName: a.roomName || "Past",
+          tenantName: a.name,
+          rent: a.rent || 0,
+          isPast: true,
+        });
+      }
+    }
     rooms.sort((a, b) => a.tenantName.localeCompare(b.tenantName));
     return rooms;
-  }, [props]);
+  }, [props, archive]);
 
   // ── Execute import ─────────────────────────────────────────────
   const executeImport = async () => {
@@ -805,8 +835,12 @@ export default function LedgerImporter({
                     style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? "#d1d5db" : _red), fontSize: 11, fontFamily: "inherit", background: m ? "#fff" : _red + "08", maxWidth: 260, minWidth: 160 }}
                   >
                     <option value="">Assign tenant...</option>
-                    {allRooms.map(r => (
+                    {allRooms.filter(r => !r.isPast).map(r => (
                       <option key={r.roomId} value={r.roomId}>{r.tenantName} {"\u2014"} {r.roomName}</option>
+                    ))}
+                    {allRooms.some(r => r.isPast) && <option disabled>--- Past Tenants ---</option>}
+                    {allRooms.filter(r => r.isPast).map(r => (
+                      <option key={"past-" + r.roomId} value={r.roomId}>{r.tenantName} {"\u2014"} {r.roomName} (past)</option>
                     ))}
                   </select>
                   {/* Skip button */}
