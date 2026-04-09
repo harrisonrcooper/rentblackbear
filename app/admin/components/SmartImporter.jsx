@@ -1115,7 +1115,7 @@ export default function SmartImporter({
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }} onClick={handleClose}>
-      <div onClick={e => e.stopPropagation()} onAnimationEnd={() => setModalShake(false)} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 880, maxHeight: "93vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,.3)", animation: modalShake ? "shake .4s ease-in-out" : "none", fontFamily: settings?.adminFont || "inherit", zoom: settings?.adminZoom ? settings.adminZoom / 100 : undefined }}>
+      <div onClick={e => e.stopPropagation()} onAnimationEnd={() => setModalShake(false)} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 880, maxHeight: "93vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,.3)", animation: modalShake ? "shake .4s ease-in-out" : "none", fontFamily: settings?.adminFont || "inherit", zoom: settings?.adminZoom && settings.adminZoom > 1 ? settings.adminZoom / 100 : undefined }}>
 
         {/* Header */}
         <div style={{ padding: "18px 24px 14px", borderBottom: "1px solid rgba(128,128,128,.1)" }}>
