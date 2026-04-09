@@ -264,6 +264,24 @@ export default function LedgerImporter({
       const parsed = parseLeaseTitle(leaseTitle);
       let match = matchChargeToTenant(parsed, props || []);
 
+      // Fallback: try matching against incoming/future tenants on rooms
+      if (!match && parsed.tenantName) {
+        for (const p of (props || [])) {
+          for (const u of (p.units || [])) {
+            for (const r of (u.rooms || [])) {
+              if (!r.incomingTenant?.name) continue;
+              const nameResult = fuzzyNameMatch(parsed.tenantName, r.incomingTenant.name);
+              if (nameResult.match) {
+                match = { roomId: r.id + "_incoming", propName: p.addr || p.name, roomName: r.name, tenantName: r.incomingTenant.name, confidence: nameResult.confidence, isFuture: true };
+                break;
+              }
+            }
+            if (match) break;
+          }
+          if (match) break;
+        }
+      }
+
       // Fallback: try matching against archived/past tenants by name
       if (!match && parsed.tenantName && (archive || []).length > 0) {
         for (const a of archive) {
@@ -393,16 +411,30 @@ export default function LedgerImporter({
     for (const p of (props || [])) {
       for (const u of (p.units || [])) {
         for (const r of (u.rooms || [])) {
-          if (!r.tenant?.name) continue; // skip vacant rooms and rooms with no tenant
-          rooms.push({
-            roomId: r.id,
-            propId: p.id,
-            propName: p.addr || p.name,
-            unitName: u.name,
-            roomName: r.name,
-            tenantName: r.tenant.name,
-            rent: r.rent || 0,
-          });
+          if (r.tenant?.name) {
+            rooms.push({
+              roomId: r.id,
+              propId: p.id,
+              propName: p.addr || p.name,
+              unitName: u.name,
+              roomName: r.name,
+              tenantName: r.tenant.name,
+              rent: r.rent || 0,
+            });
+          }
+          // Include incoming/future tenants assigned to this room
+          if (r.incomingTenant?.name) {
+            rooms.push({
+              roomId: r.id + "_incoming",
+              propId: p.id,
+              propName: p.addr || p.name,
+              unitName: u.name,
+              roomName: r.name,
+              tenantName: r.incomingTenant.name,
+              rent: r.incomingTenant.rent || r.rent || 0,
+              isFuture: true,
+            });
+          }
         }
       }
     }
