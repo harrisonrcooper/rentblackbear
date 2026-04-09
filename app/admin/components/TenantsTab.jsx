@@ -495,13 +495,13 @@ export default function TenantsTab({
 
       {/* ═══ Future column headers ═══ */}
       {tenantView === "future" && (
-        <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 120px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 160px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)" }}>
           <div />
           <div style={HDR}>Tenant</div>
           <div style={HDR}>Contact</div>
           <div style={HDR}>Rent</div>
           <div style={HDR}>Move-In</div>
-          <div style={HDR}>SD Status</div>
+          <div style={HDR}>Security Deposit</div>
         </div>
       )}
 
@@ -617,9 +617,11 @@ export default function TenantsTab({
         const daysUntilMoveIn = Math.ceil((new Date(r.tenant.moveIn + "T00:00:00") - TODAY) / (1e3 * 60 * 60 * 24));
         const sd = sdStatus[r.id];
         const tLease = leases.find(l => l.tenantEmail === r.tenant?.email || l.tenantName === r.tenant?.name);
-        const leaseLabel = tLease ? (tLease.status === "executed" ? "Signed" : tLease.status === "pending_tenant" ? "Pending signature" : tLease.status === "draft" ? "Draft" : tLease.status) : "No lease";
+        const hasLease = tLease && tLease.status === "executed";
+        const leaseLabel = hasLease ? "Lease signed" : tLease && tLease.status === "pending_tenant" ? "Pending signature" : "Set up lease";
+        const leaseColor = hasLease ? "#2d6a3f" : "#c45c4a";
         return (
-          <div key={r.id} style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 120px", padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: "#fff", cursor: "pointer", transition: "all .15s" }}
+          <div key={r.id} style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 160px", padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: "#fff", cursor: "pointer", transition: "all .15s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,.03)"; e.currentTarget.style.boxShadow = "inset 3px 0 0 " + _ac; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.boxShadow = "none"; }}
             onClick={() => { setTenantProfileTab("summary"); setModal({ type: "tenant", data: r }); }}>
@@ -634,34 +636,34 @@ export default function TenantsTab({
               </div>
               <div style={{ fontSize: 11, color: "#5c4a3a", marginBottom: 3 }}>{prop ? getPropDisplayName(prop) : r.propName} &middot; {r.name}</div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 9, fontWeight: 600, color: _ac }}>{leaseLabel}</span>
-                {tLease && tLease.status === "executed" && (
+                <span style={{ fontSize: 9, fontWeight: 600, color: leaseColor }}>{leaseLabel}</span>
+                {hasLease && (
                   <button onClick={e => { e.stopPropagation(); setTenantProfileTab("summary"); setModal({ type: "tenant", data: r }); }} style={{ fontSize: 9, fontWeight: 600, color: _ac, background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 2 }}><IconFile /> Lease</button>
                 )}
               </div>
             </div>
             {/* Contact */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center", overflow: "hidden" }}>
               <div style={{ fontSize: 11, color: "#3b82f6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.tenant.email || "\u2014"}</div>
               <div style={{ fontSize: 11, color: "#5c4a3a" }}>{r.tenant.phone || "\u2014"}</div>
             </div>
             {/* Rent */}
             <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", fontFamily: MONO }}>{fmtS(r.rent)}<span style={{ fontSize: 9, fontWeight: 400, color: "#7a7067" }}>/mo</span></div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", fontFamily: MONO }}>{fmtS(r.rent)}<span style={{ fontSize: 9, fontWeight: 400, color: "#5c4a3a" }}>/mo</span></div>
             </div>
             {/* Move-In */}
             <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1714" }}>{fmtD(r.tenant.moveIn)}</div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: daysUntilMoveIn <= 7 ? "#c45c4a" : daysUntilMoveIn <= 30 ? "#9a7422" : _ac }}>{daysUntilMoveIn}d away</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: daysUntilMoveIn <= 7 ? "#c45c4a" : daysUntilMoveIn <= 30 ? "#9a7422" : "#3d3529" }}>{daysUntilMoveIn}d away</div>
             </div>
-            {/* SD Status */}
+            {/* Security Deposit Status */}
             <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
               {sd ? (
                 sd.paid
-                  ? <span className="badge b-green" style={{ alignSelf: "flex-start", fontSize: 9 }}>SD Paid</span>
-                  : <><span className="badge b-gold" style={{ alignSelf: "flex-start", fontSize: 9 }}>SD Partial</span><div style={{ fontSize: 9, color: "#5c4a3a" }}>{fmtS(sd.amountPaid)} of {fmtS(sd.amount)}</div></>
+                  ? <span className="badge b-green" style={{ alignSelf: "flex-start", fontSize: 9 }}>Deposit Paid</span>
+                  : <><span className="badge b-gold" style={{ alignSelf: "flex-start", fontSize: 9 }}>Deposit Partial</span><div style={{ fontSize: 9, color: "#3d3529" }}>{fmtS(sd.amountPaid)} of {fmtS(sd.amount)}</div></>
               ) : (
-                <span className="badge b-gray" style={{ alignSelf: "flex-start", fontSize: 9 }}>No SD</span>
+                <span className="badge b-gray" style={{ alignSelf: "flex-start", fontSize: 9 }}>No Deposit</span>
               )}
             </div>
           </div>);
