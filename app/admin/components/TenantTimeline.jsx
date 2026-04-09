@@ -39,13 +39,16 @@ export default function TenantTimeline({
 
   const sortedFiltered = useMemo(() => sortRooms(filtered), [filtered, sortRooms]);
 
-  /* ── Gantt window ─────────────────────────────────────────── */
+  /* ── Gantt window — 12 months, scrollable ─────────────────── */
+  const GANTT_MONTHS = 12;
+  const MONTH_W = 120; // px per month
+  const GANTT_W = GANTT_MONTHS * MONTH_W;
   const baseDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + ttMonthOffset, 1);
-  const windowStart = new Date(baseDate); windowStart.setMonth(windowStart.getMonth() - 1);
-  const windowEnd = new Date(baseDate); windowEnd.setMonth(windowEnd.getMonth() + 5);
+  const windowStart = new Date(baseDate); windowStart.setMonth(windowStart.getMonth() - 2);
+  const windowEnd = new Date(baseDate); windowEnd.setMonth(windowEnd.getMonth() + GANTT_MONTHS - 2);
   const totalDays = Math.ceil((windowEnd - windowStart) / 86400000);
-  const dateToX = (ds) => { if (!ds) return 0; const d = Math.ceil((new Date(ds + "T00:00:00") - windowStart) / 86400000); return Math.max(0, Math.min(100, (d / totalDays) * 100)); };
-  const months = useMemo(() => { const m = []; for (let i = 0; i < 7; i++) { const d = new Date(windowStart); d.setMonth(d.getMonth() + i); m.push({ label: d.toLocaleString("default", { month: "short", year: "2-digit" }), x: dateToX(d.toISOString().split("T")[0]) }); } return m; }, [ttMonthOffset]); // eslint-disable-line
+  const dateToX = (ds) => { if (!ds) return 0; const d = Math.ceil((new Date(ds + "T00:00:00") - windowStart) / 86400000); return Math.max(0, Math.min(GANTT_W, (d / totalDays) * GANTT_W)); };
+  const months = useMemo(() => { const m = []; for (let i = 0; i < GANTT_MONTHS; i++) { const d = new Date(windowStart); d.setMonth(d.getMonth() + i); m.push({ label: d.toLocaleString("default", { month: "short", year: "2-digit" }), x: (i / GANTT_MONTHS) * GANTT_W }); } return m; }, [ttMonthOffset]); // eslint-disable-line
 
   const views = [{ id: "gantt", label: "Gantt" }, { id: "countdown", label: "Countdown" }, { id: "calendar", label: "Calendar" }, { id: "kanban", label: "Kanban" }];
 
@@ -70,26 +73,15 @@ export default function TenantTimeline({
     return { bg: "#B5D4F4", text: "#0C447C" }; // active
   };
 
-  /* ── Gantt horizontal scroll via mouse wheel ───────────────── */
-  const ganttRef = useRef(null);
-  const lastWheelTs = useRef(0);
-  const offsetRef = useRef(setTtMonthOffset);
-  offsetRef.current = setTtMonthOffset;
+  /* ── Gantt scroll: auto-scroll to "today" on mount ──────── */
+  const ganttScrollRef = useRef(null);
   useEffect(() => {
-    const el = ganttRef.current;
-    if (!el) return;
-    const handler = (e) => {
-      const delta = e.deltaX || e.deltaY;
-      if (!delta) return;
-      const now = Date.now();
-      if (now - lastWheelTs.current < 200) return;
-      lastWheelTs.current = now;
-      e.preventDefault();
-      offsetRef.current(o => o + (delta > 0 ? 1 : -1));
-    };
-    el.addEventListener("wheel", handler, { passive: false });
-    return () => el.removeEventListener("wheel", handler);
-  }, [ttView]); // re-attach when view changes
+    const el = ganttScrollRef.current;
+    if (!el || ttView !== "gantt") return;
+    // Scroll to today marker
+    const todayPx = dateToX(TODAY_STR);
+    el.scrollLeft = Math.max(0, todayPx - 100);
+  }, [ttView, ttMonthOffset]); // eslint-disable-line
 
   /* ── Empty state guard ─────────────────────────────────────── */
   if (!props.length) return (
@@ -153,15 +145,15 @@ export default function TenantTimeline({
           </div>
           <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o + 1)}>Later</button>
         </div>
+        {/* Scrollable chart area (month axis + rows) */}
+        <div ref={ganttScrollRef} style={{ flex: 1, overflowX: "auto", overflowY: "auto", minHeight: 0 }}>
         {/* Month axis */}
-        <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
-          <div style={{ width: 140, flexShrink: 0, padding: "4px 12px", fontSize: 9, color: "#999", textTransform: "uppercase", letterSpacing: .5 }}>{ttGanttGrouped ? "Room" : "Room / Property"}</div>
-          <div style={{ flex: 1, position: "relative", height: 22 }}>
-            {months.map((m, i) => <div key={i} style={{ position: "absolute", left: m.x + "%", fontSize: 9, color: "#999", transform: "translateX(-50%)", whiteSpace: "nowrap", top: 5 }}>{m.label}</div>)}
+        <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.06)", position: "sticky", top: 0, zIndex: 2, background: "#fff" }}>
+          <div style={{ width: 140, flexShrink: 0, padding: "4px 12px", fontSize: 9, color: "#999", textTransform: "uppercase", letterSpacing: .5, position: "sticky", left: 0, background: "#fff", zIndex: 3 }}>{ttGanttGrouped ? "Room" : "Room / Property"}</div>
+          <div style={{ width: GANTT_W, flexShrink: 0, position: "relative", height: 22 }}>
+            {months.map((m, i) => <div key={i} style={{ position: "absolute", left: m.x, fontSize: 9, color: "#999", whiteSpace: "nowrap", top: 5, borderLeft: "1px solid rgba(0,0,0,.06)", paddingLeft: 4 }}>{m.label}</div>)}
           </div>
         </div>
-        {/* Rows */}
-        <div ref={ganttRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, cursor: "grab" }}>
         {(() => {
           const todayX = dateToX(TODAY_STR);
           const renderRow = (r, showProp = false) => {
@@ -178,43 +170,45 @@ export default function TenantTimeline({
                 onClick={() => openTenant(r)}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.025)"}
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
-                <div style={{ width: 140, flexShrink: 0, padding: "4px 12px" }}>
+                <div style={{ width: 140, flexShrink: 0, padding: "4px 12px", position: "sticky", left: 0, background: "#fff", zIndex: 1 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#1a1714", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
                   {showProp && <div style={{ fontSize: 9, color: _ac, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.propName}</div>}
                   {isFuture && <div style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Incoming: {r.tenant.name} &middot; {fmtD(r.tenant.moveIn)}</div>}
                   {isOcc && !isFuture && <div style={{ fontSize: 9, color: "#6b5e52", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.tenant.name}{r.tenant.moveIn ? " \u00B7 since " + fmtD(r.tenant.moveIn) : ""}</div>}
                   {isVac && <div style={{ fontSize: 9, color: _ac, fontWeight: 600 }}>Vacant</div>}
                 </div>
-                <div style={{ flex: 1, position: "relative", height: 36, display: "flex", alignItems: "center" }}>
+                <div style={{ width: GANTT_W, flexShrink: 0, position: "relative", height: 36, display: "flex", alignItems: "center" }}>
+                  {/* Month grid lines */}
+                  {months.map((m, i) => <div key={i} style={{ position: "absolute", left: m.x, top: 0, bottom: 0, width: 1, background: "rgba(0,0,0,.04)", zIndex: 0 }} />)}
                   {/* Today marker */}
-                  <div style={{ position: "absolute", left: todayX + "%", top: 0, bottom: 0, width: 1.5, background: "#c45c4a", zIndex: 3, opacity: .7 }} />
+                  <div style={{ position: "absolute", left: todayX, top: 0, bottom: 0, width: 1.5, background: "#c45c4a", zIndex: 3, opacity: .7 }} />
                   {/* Vacant bar */}
-                  {isVac && <div style={{ position: "absolute", left: "0%", right: "0%", height: 16, borderRadius: 3, background: `rgba(${_acRgb},.15)`, border: `1px solid rgba(${_acRgb},.3)`, display: "flex", alignItems: "center", paddingLeft: 6 }}>
+                  {isVac && <div style={{ position: "absolute", left: 0, width: GANTT_W, height: 16, borderRadius: 3, background: `rgba(${_acRgb},.15)`, border: `1px solid rgba(${_acRgb},.3)`, display: "flex", alignItems: "center", paddingLeft: 6 }}>
                     <span style={{ fontSize: 9, color: _ac, fontWeight: 600 }}>Available now</span>
                   </div>}
                   {/* Future/incoming bar */}
-                  {isFuture && moveInX !== null && <div style={{ position: "absolute", left: todayX + "%", width: Math.max(1, moveInX - todayX) + "%", height: 16, top: 10, borderRadius: 3, background: "repeating-linear-gradient(45deg, rgba(167,243,208,.3), rgba(167,243,208,.3) 4px, transparent 4px, transparent 8px)", border: "1px dashed #065F46", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
+                  {isFuture && moveInX !== null && <div style={{ position: "absolute", left: todayX, width: Math.max(4, moveInX - todayX), height: 16, top: 10, borderRadius: 3, background: "repeating-linear-gradient(45deg, rgba(167,243,208,.3), rgba(167,243,208,.3) 4px, transparent 4px, transparent 8px)", border: "1px dashed #065F46", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
                     <span style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap" }}>Incoming {fmtD(r.tenant.moveIn)}</span>
                   </div>}
-                  {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX + "%", width: Math.max(1, leX - moveInX) + "%", height: 20, top: 8, borderRadius: 3, background: bc.bg, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
+                  {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, leX - moveInX), height: 20, top: 8, borderRadius: 3, background: bc.bg, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
                     onMouseLeave={e => e.currentTarget.style.filter = ""}>
                     <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
                   </div>}
                   {/* M2M bar */}
-                  {isM2M && moveInX !== null && <div style={{ position: "absolute", left: moveInX + "%", right: "0%", height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
+                  {isM2M && moveInX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, GANTT_W - moveInX), height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.95)"}
                     onMouseLeave={e => e.currentTarget.style.filter = ""}>
-                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} · M2M</span>
+                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; M2M</span>
                   </div>}
                   {/* Fixed-term bar */}
-                  {isOcc && !isM2M && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: Math.min(moveInX, leX) + "%", width: Math.max(1, Math.abs(leX - Math.min(moveInX, leX))) + "%", height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
+                  {isOcc && !isM2M && !isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: Math.min(moveInX, leX), width: Math.max(4, Math.abs(leX - Math.min(moveInX, leX))), height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
                     onMouseLeave={e => e.currentTarget.style.filter = ""}>
-                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name}{dl !== null && dl <= 0 ? " · EXPIRED" : " · ends " + fmtD(r.le)}</span>
+                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name}{dl !== null && dl <= 0 ? " \u00B7 EXPIRED" : " \u00B7 ends " + fmtD(r.le)}</span>
                   </div>}
                   {/* Availability zone after lease */}
-                  {isOcc && !isM2M && leX !== null && <div style={{ position: "absolute", left: leX + "%", right: "0%", height: 16, top: 10, background: `rgba(${_acRgb},.1)`, border: `1px dashed rgba(${_acRgb},.3)`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
+                  {isOcc && !isM2M && !isFuture && leX !== null && <div style={{ position: "absolute", left: leX, width: Math.max(4, GANTT_W - leX), height: 16, top: 10, background: `rgba(${_acRgb},.1)`, border: `1px dashed rgba(${_acRgb},.3)`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
                     <span style={{ fontSize: 9, color: _ac, whiteSpace: "nowrap" }}>Avail. {fmtD(r.le)}</span>
                   </div>}
                 </div>
@@ -244,7 +238,7 @@ export default function TenantTimeline({
           </div>
         </div>
         {sortedFiltered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52", fontSize: 12 }}>No rooms match this filter.</div>}
-        </div>
+        </div>{/* close scroll container */}
       </div>}
 
       {/* ═══ COUNTDOWN ═══ */}
