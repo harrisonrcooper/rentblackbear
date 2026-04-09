@@ -477,6 +477,7 @@ export default function LedgerImporter({
       // Phase 1: Import charges
       const newCharges = [];
       const newSdEntries = [];
+      const newPastCreated = {}; // track past tenants created during this import
 
       for (const ch of active) {
         const override = matchOverrides[parsedCharges.indexOf(ch)];
@@ -487,6 +488,19 @@ export default function LedgerImporter({
           skipped++;
           tick();
           continue;
+        }
+
+        // Handle "import as past tenant" — create archive entry if needed
+        if (m.isNewPast) {
+          const archiveName = m.tenantName;
+          if (setArchive && !newPastCreated[archiveName]) {
+            newPastCreated[archiveName] = true;
+            setArchive(prev => {
+              if ((prev || []).some(a => a.name === archiveName)) return prev;
+              return [{ id: uidFn(), name: archiveName, email: "", phone: "", roomName: m.roomName || "Unknown", propName: m.propName || "", rent: 0, moveIn: "", leaseEnd: "", terminatedDate: "", reason: "Imported (past tenant)", isArchived: false, archivedOn: todayStr }, ...(prev || [])];
+            });
+          }
+          m.roomId = "past_" + archiveName.replace(/\s+/g, "_").toLowerCase();
         }
 
         // Re-import guard: skip if identical charge already exists
@@ -861,10 +875,15 @@ export default function LedgerImporter({
                     value={m ? m.roomId : ""}
                     onChange={e => {
                       if (!e.target.value) { setMatchOverrides(prev => { const n = { ...prev }; delete n[idx]; return n; }); return; }
+                      if (e.target.value.startsWith("_newpast_")) {
+                        const name = ch.parsed.tenantName || ch.leaseTitle || "Unknown";
+                        setMatchOverrides(prev => ({ ...prev, [idx]: { roomId: e.target.value, tenantName: name, propName: ch.parsed.address || "", roomName: ch.parsed.room || "Unknown", confidence: 1.0, isNewPast: true } }));
+                        return;
+                      }
                       const room = allRooms.find(r => r.roomId === e.target.value);
                       if (room) setMatchOverrides(prev => ({ ...prev, [idx]: { ...room, confidence: 1.0 } }));
                     }}
-                    style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? "#d1d5db" : _red), fontSize: 11, fontFamily: "inherit", background: m ? "#fff" : _red + "08", maxWidth: 260, minWidth: 160 }}
+                    style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? (m.isNewPast ? "#6b5e52" : "#d1d5db") : _red), fontSize: 11, fontFamily: "inherit", background: m ? (m.isNewPast ? "rgba(107,94,82,.06)" : "#fff") : _red + "08", maxWidth: 260, minWidth: 160 }}
                   >
                     <option value="">Assign tenant...</option>
                     {allRooms.filter(r => !r.isPast && !r.isFuture).map(r => (
@@ -878,6 +897,8 @@ export default function LedgerImporter({
                     {allRooms.filter(r => r.isPast).map(r => (
                       <option key={"past-" + r.roomId} value={r.roomId}>{r.tenantName} {"\u2014"} {r.roomName} (past)</option>
                     ))}
+                    <option disabled>---</option>
+                    <option value={"_newpast_" + idx}>Import as past tenant ({ch.parsed.tenantName || ch.leaseTitle || "Unknown"})</option>
                   </select>
                   {/* Skip button */}
                   <button
