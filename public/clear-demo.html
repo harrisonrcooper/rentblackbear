@@ -1,0 +1,23 @@
+<html><body style="font-family:sans-serif;padding:40px;">
+<h2>Clear Demo Data</h2>
+<p>This will remove all demo properties, tenants, charges, etc. from your browser. Your settings, themes, and templates will be kept.</p>
+<button onclick="
+var keep=['hq-settings','hq-theme','hq-docs','hq-svthemes','hq-screen-qs','hq-app-fields','hq-subcats','hq-surveys','hq-pub-theme'];
+var deleted=[];
+Object.keys(localStorage).forEach(function(k){
+  if(k.indexOf('hq-')===0 && keep.indexOf(k)===-1){
+    deleted.push(k);
+    localStorage.removeItem(k);
+  }
+});
+if(deleted.length>0){
+  document.getElementById('result').innerHTML='Deleted '+deleted.length+' keys: '+deleted.join(', ');
+  document.getElementById('result').style.color='green';
+}else{
+  document.getElementById('result').innerHTML='Nothing to delete - already clean!';
+  document.getElementById('result').style.color='gray';
+}
+" style="padding:16px 32px;font-size:16px;cursor:pointer;background:#c45c4a;color:white;border:none;border-radius:8px;">Clear Demo Data</button>
+<p id="result" style="margin-top:20px;font-size:14px;font-weight:bold"></p>
+<p style="margin-top:20px"><a href="/admin" style="color:#4a7c59;font-weight:bold;">← Back to Admin</a></p>
+</body></html>
