@@ -1284,7 +1284,7 @@ export default function SmartImporter({
                           </div>
 
                           {unit.rooms.map((room, ri) => (
-                            <div key={ri} style={{ marginLeft: 20, borderLeft: room.tenants.length > 1 ? `2px solid rgba(212,168,83,.4)` : `2px solid rgba(0,0,0,.05)`, marginBottom: 3 }}>
+                            <div key={ri} style={{ marginLeft: 20, borderLeft: room.tenants.length > 1 ? `2px solid rgba(212,168,83,.4)` : `2px solid rgba(0,0,0,.08)`, marginBottom: room.tenants.length > 1 ? 10 : 3, paddingBottom: room.tenants.length > 1 ? 6 : 0, borderBottom: ri < unit.rooms.length - 1 ? "1px solid rgba(0,0,0,.06)" : "none" }}>
                               {/* Multi-tenant mode selector */}
                               {room.tenants.length > 1 && (
                                 <div style={{ padding: "8px 12px", fontSize: 11, color: "#5c4a3a", background: "rgba(212,168,83,.06)", borderBottom: "1px solid rgba(212,168,83,.15)" }}>
