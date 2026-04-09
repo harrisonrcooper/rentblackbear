@@ -173,7 +173,7 @@ export default function LedgerImporter({
   const tryClose = () => { if (hasDirtyState) setShowUnsavedWarn(true); else onClose(); };
 
   // ── Step labels ────────────────────────────────────────────────
-  const steps = ["Upload", "Categories", "Match Tenants", "Review", "Cutoff", "Importing"];
+  const steps = ["Upload", "Categories", "Match Tenants", "Review", "Go Live", "Importing"];
 
   // ── Memoized category counts ──────────────────────────────────
   const catCounts = useMemo(() => {
@@ -860,7 +860,7 @@ export default function LedgerImporter({
                 const tier = isSkipped ? "skip" : !m ? "red" : conf >= 0.85 ? "green" : "amber";
                 const tierColor = isSkipped ? "#d1d5db" : tier === "green" ? _ac : tier === "amber" ? _gold : _red;
 
-                return (<div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid #f3f4f6", fontSize: 12, opacity: isSkipped ? .45 : 1, background: isSkipped ? "rgba(0,0,0,.02)" : "transparent" }}>
+                return (<div key={idx} data-charge-idx={idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid #f3f4f6", fontSize: 12, opacity: isSkipped ? .45 : 1, background: isSkipped ? "rgba(0,0,0,.02)" : tier === "red" ? "rgba(196,92,74,.05)" : "transparent", borderLeft: tier === "red" ? "3px solid " + _red : "3px solid transparent" }}>
                   {/* Confidence dot */}
                   <div style={{ width: 8, height: 8, borderRadius: 99, background: tierColor, flexShrink: 0 }} title={isSkipped ? "Skipped" : tier === "green" ? "Exact match" : tier === "amber" ? "Close match (verify)" : "No match found"} />
                   {/* Charge info */}
@@ -924,13 +924,20 @@ export default function LedgerImporter({
 
             {(() => {
               const unresolvedCount = parsedCharges.filter(c => !c.skip && !(matchOverrides[parsedCharges.indexOf(c)] || c.match)).length;
-              return (<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 20 }}>
+              const scrollToUnmatched = () => {
+                const firstIdx = parsedCharges.findIndex(c => !c.skip && !(matchOverrides[parsedCharges.indexOf(c)] || c.match));
+                if (firstIdx >= 0) {
+                  const el = document.querySelector(`[data-charge-idx="${firstIdx}"]`);
+                  if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.style.animation = "shake .4s ease"; setTimeout(() => { el.style.animation = ""; }, 500); }
+                }
+              };
+              return (<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 20, position: "sticky", bottom: 0, background: "#fff", padding: "12px 0", borderTop: "1px solid rgba(0,0,0,.06)", marginLeft: -24, marginRight: -24, paddingLeft: 24, paddingRight: 24 }}>
                 <div>
-                  {unresolvedCount > 0 && <span style={{ fontSize: 11, color: _red, fontWeight: 600 }}>{unresolvedCount} unmatched charge{unresolvedCount !== 1 ? "s" : ""} — assign a tenant or skip to continue</span>}
+                  {unresolvedCount > 0 && <span style={{ fontSize: 11, color: _red, fontWeight: 600, cursor: "pointer" }} onClick={scrollToUnmatched}>{unresolvedCount} unmatched charge{unresolvedCount !== 1 ? "s" : ""} — assign a tenant or skip to continue</span>}
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => setStep(1)} style={btnOut(_ac)}>Back</button>
-                  <button disabled={unresolvedCount > 0} onClick={() => setStep(3)} style={{ ...btnPrimary(_ac), opacity: unresolvedCount > 0 ? .4 : 1, cursor: unresolvedCount > 0 ? "not-allowed" : "pointer" }}>Continue to Review</button>
+                  <button onClick={() => { if (unresolvedCount > 0) { scrollToUnmatched(); return; } setStep(3); }} style={{ ...btnPrimary(_ac), opacity: unresolvedCount > 0 ? .7 : 1 }}>Continue to Review</button>
                 </div>
               </div>);
             })()}
@@ -948,7 +955,7 @@ export default function LedgerImporter({
                 ["Total Amount", fmtMoney(reviewStats.totalAmount)],
                 ["Paid", fmtMoney(reviewStats.totalPaid)],
                 ["Outstanding", fmtMoney(reviewStats.totalDue)],
-                ["Placeholders", placeholderCharges.length],
+                ["Auto-generated", placeholderCharges.length],
               ].map(([label, val]) => (
                 <div key={label} style={{ background: "#fafaf9", borderRadius: 8, padding: 10, textAlign: "center" }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#4b5563", textTransform: "uppercase", letterSpacing: .5 }}>{label}</div>
@@ -996,11 +1003,11 @@ export default function LedgerImporter({
 
             {/* Flags */}
             {placeholderCharges.length > 0 && (
-              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16, padding: "10px 14px", background: "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb", cursor: "pointer" }}>
-                <input type="checkbox" checked={removePlaceholders} onChange={e => setRemovePlaceholders(e.target.checked)} />
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginTop: 16, padding: "12px 14px", background: "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb", cursor: "pointer" }}>
+                <input type="checkbox" checked={removePlaceholders} onChange={e => setRemovePlaceholders(e.target.checked)} style={{ marginTop: 2 }} />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1714" }}>Remove {placeholderCharges.length} placeholder charges</div>
-                  <div style={{ fontSize: 10, color: "#4b5563" }}>Auto-generated during tenant import — superseded by real charge data</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1714" }}>Remove {placeholderCharges.length} auto-generated charges</div>
+                  <div style={{ fontSize: 11, color: "#5c4a3a", lineHeight: 1.5, marginTop: 2 }}>When you imported tenants, PropOS created estimated rent and security deposit charges to get you started. Now that you{"'"}re importing your real ledger data from your previous PM software, those estimates should be removed so you don{"'"}t have duplicates.</div>
                 </div>
               </label>
             )}
@@ -1018,15 +1025,15 @@ export default function LedgerImporter({
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
               <button onClick={() => setStep(2)} style={btnOut(_ac)}>Back</button>
-              <button onClick={() => setStep(4)} style={btnPrimary(_ac)}>Set Cutoff Date</button>
+              <button onClick={() => setStep(4)} style={btnPrimary(_ac)}>Set Go-Live Date</button>
             </div>
           </>)}
 
           {/* ═══ STEP 4: Cutoff Date ═══ */}
           {step === 4 && (<>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>Cutoff Date</div>
-            <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 16 }}>
-              Historical charges imported through this date. PropOS will generate new charges starting the following month.
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>When should PropOS take over?</div>
+            <div style={{ fontSize: 12, color: "#5c4a3a", marginBottom: 16, lineHeight: 1.6 }}>
+              Your imported charges cover your history from your previous PM software. Tell PropOS which month was the last one handled by your old system. PropOS will start auto-generating rent charges, late fees, and reminders for the month <strong>after</strong> this date.
             </div>
 
             <div style={{ padding: "16px 20px", background: "#fafaf9", borderRadius: 10, border: "1px solid #e5e7eb", marginBottom: 16 }}>
