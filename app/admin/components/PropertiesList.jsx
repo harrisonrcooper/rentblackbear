@@ -45,10 +45,40 @@ export default function PropertiesList({
   const _red = settings?.themeRed || "#c45c4a";
   const _gold = settings?.themeGold || "#d4a853";
   const props = properties || [];
+  const [showNuke, setShowNuke] = useState(false);
+  const [nukeConfirm, setNukeConfirm] = useState("");
+
+  const nukeAllProps = () => {
+    if (!onDeleteProp) return;
+    setProperties([]);
+    save("hq-props", []);
+    setShowNuke(false);
+    setNukeConfirm("");
+    setEditProp(null);
+  };
 
   return (<>
     <div className="sec-hd"><div><h2>Manage Properties</h2><p>Click any property for details, or edit to manage rooms</p></div>
-      <button className="btn btn-gold" onClick={() => { setIsNewProp(true); setEditProp({}); }}>+ Add Property</button></div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        {props.length > 0 && <button className="btn btn-out" onClick={() => setShowNuke(!showNuke)} style={{ color: "#c45c4a", borderColor: "rgba(196,92,74,.3)", fontSize: 12 }}><IconX /> Delete All</button>}
+        <button className="btn btn-gold" onClick={() => { setIsNewProp(true); setEditProp({}); }}>+ Add Property</button>
+      </div>
+    </div>
+
+    {showNuke && (
+      <div style={{ background: "rgba(196,92,74,.04)", border: "1px solid rgba(196,92,74,.2)", borderRadius: 10, padding: "16px 20px", marginBottom: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#c45c4a", marginBottom: 6 }}>Delete All Properties</div>
+        <div style={{ fontSize: 12, color: "#5c4a3a", lineHeight: 1.7, marginBottom: 12 }}>
+          This will permanently delete all {props.length} properties and their rooms. Tenants will lose their property assignments. Charges referencing these properties will remain but be unlinked.
+        </div>
+        <div style={{ fontSize: 12, color: "#c45c4a", fontWeight: 600, marginBottom: 8 }}>Type <strong>DELETE</strong> to confirm</div>
+        <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid rgba(196,92,74,.3)", fontSize: 13, fontFamily: "inherit", marginBottom: 12, boxSizing: "border-box" }} />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => { setShowNuke(false); setNukeConfirm(""); }} className="btn btn-out" style={{ fontSize: 12 }}>Cancel</button>
+          <button disabled={nukeConfirm !== "DELETE"} onClick={nukeAllProps} className="btn" style={{ background: nukeConfirm === "DELETE" ? "#c45c4a" : "rgba(196,92,74,.4)", color: "#fff", border: "none", fontSize: 12, opacity: nukeConfirm === "DELETE" ? 1 : .5 }}><IconX /> Delete All Properties</button>
+        </div>
+      </div>
+    )}
 
     {props.map((p, idx) => {
       const items = leaseableItems(p);
