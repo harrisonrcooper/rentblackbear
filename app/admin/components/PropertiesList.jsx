@@ -49,12 +49,11 @@ export default function PropertiesList({
   const [nukeConfirm, setNukeConfirm] = useState("");
 
   const nukeAllProps = () => {
-    if (!onDeleteProp) return;
     setProperties([]);
     save("hq-props", []);
     setShowNuke(false);
     setNukeConfirm("");
-    setEditProp(null);
+    if (setEditProp) setEditProp(null);
   };
 
   return (<>
@@ -124,13 +123,13 @@ export default function PropertiesList({
                 <span style={{ color: "#8a7d74", flexShrink: 0 }}>{isExp ? <IconChevDown /> : <IconChevRight />}</span>
                 {p.addr || p.name}
               </h3>
-              <div style={{ fontSize: 10, color: "#6b5e52", marginTop: 2 }}>
+              <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 2 }}>
                 {p.addr} &middot; {(PROP_TYPES[p.type] || PROP_TYPES.SFH).label} &middot; {allWhole ? "Whole Unit" : anyWhole ? "Mixed" : allRooms(p).length + "br"} &middot; {(p.units || []).length > 1 ? (p.units || []).length + " units" : "1 unit"} &middot; {(p.units || [])[0]?.utils === "allIncluded" ? "All Utils" : "Tenant Pays"}
               </div>
             </div>
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {allWhole && wholeUnitRent > 0 && <span style={{ fontWeight: 800, color: _gold, marginRight: 4 }}>{fmtS(wholeUnitRent)}/mo <span style={{ fontSize: 9, fontWeight: 400, color: "#6b5e52" }}>whole unit</span></span>}
-              {!allWhole && pr.length > 0 && <span style={{ fontWeight: 800, marginRight: 4 }}>{fmtS(Math.min(...pr))}&ndash;{fmtS(Math.max(...pr))} <span style={{ fontSize: 9, fontWeight: 400, color: "#6b5e52" }}>per room</span></span>}
+              {allWhole && wholeUnitRent > 0 && <span style={{ fontWeight: 800, color: _gold, marginRight: 4 }}>{fmtS(wholeUnitRent)}/mo <span style={{ fontSize: 9, fontWeight: 400, color: "#5c4a3a" }}>whole unit</span></span>}
+              {!allWhole && pr.length > 0 && <span style={{ fontWeight: 800, marginRight: 4 }}>{fmtS(Math.min(...pr))}&ndash;{fmtS(Math.max(...pr))} <span style={{ fontSize: 9, fontWeight: 400, color: "#5c4a3a" }}>per room</span></span>}
               {vac > 0 && <span className="badge b-red">{vac} Vacant</span>}
               {vac === 0 && items.length > 0 && <span className="badge b-green">{allWhole ? "Whole Unit" : "Full"}</span>}
               {unpaidRooms.length > 0 && <span className="badge b-red" title={unpaidRooms.map(r => r.tenant?.name || "Unknown").join(", ") + " unpaid"}>
@@ -152,11 +151,11 @@ export default function PropertiesList({
           {isExp && <div className="card-bd" style={{ animation: "fadeIn .15s" }}>
             {/* Property summary KPIs — responsive */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8, marginBottom: 14 }}>
-              {!allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#6b5e52", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Rooms</div><div style={{ fontSize: 18, fontWeight: 800 }}>{allRooms(p).length}</div></div>}
-              {!allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#6b5e52", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Occupied</div><div style={{ fontSize: 18, fontWeight: 800, color: _grn }}>{occRooms.length}</div></div>}
-              {allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center", gridColumn: "span 2" }}><div style={{ fontSize: 9, color: "#6b5e52", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Monthly Rent</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(wholeUnitRent)}<small style={{ fontSize: 9, color: "#6b5e52" }}>/mo</small></div></div>}
-              <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#6b5e52", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Projected</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(projRent)}<small style={{ fontSize: 9, color: "#6b5e52" }}>/mo</small></div></div>
-              <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#6b5e52", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>At Full</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(totalRent)}<small style={{ fontSize: 9, color: "#6b5e52" }}>/mo</small></div></div>
+              {!allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Rooms</div><div style={{ fontSize: 18, fontWeight: 800 }}>{allRooms(p).length}</div></div>}
+              {!allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Occupied</div><div style={{ fontSize: 18, fontWeight: 800, color: _grn }}>{occRooms.length}</div></div>}
+              {allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center", gridColumn: "span 2" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Monthly Rent</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(wholeUnitRent)}<small style={{ fontSize: 9, color: "#5c4a3a" }}>/mo</small></div></div>}
+              <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Projected</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(projRent)}<small style={{ fontSize: 9, color: "#5c4a3a" }}>/mo</small></div></div>
+              <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>At Full</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(totalRent)}<small style={{ fontSize: 9, color: "#5c4a3a" }}>/mo</small></div></div>
             </div>
 
             {/* Whole unit info */}
@@ -164,14 +163,14 @@ export default function PropertiesList({
               {(p.units || []).map(u => <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700 }}>{(p.units || []).length > 1 ? u.name : "Whole Unit"} &middot; {u.utils === "allIncluded" ? "All Utilities" : u.utils === "first100" ? "First $100 Utilities" : "Tenant Pays"} &middot; {u.clean || "Biweekly"} Clean</div>
-                  <div style={{ fontSize: 10, color: "#6b5e52", marginTop: 2 }}>Single lease &middot; {u.baths || 1} bath{u.baths !== 1 ? "s" : ""}</div>
+                  <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 2 }}>Single lease &middot; {u.baths || 1} bath{u.baths !== 1 ? "s" : ""}</div>
                 </div>
                 <button className="btn btn-out btn-sm" style={{ fontSize: 9, color: _grn, borderColor: hexToRgba(_grn, .2) }} onClick={() => { setTab("applications"); setBulkSel([]); }}>+ Find Tenant</button>
               </div>)}
             </div>}
 
             {/* Unit list */}
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", textTransform: "uppercase", letterSpacing: .8, marginBottom: 6 }}>{anyWhole && !allWhole ? "Units & Rooms" : "Rooms by Unit"}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#5c4a3a", textTransform: "uppercase", letterSpacing: .8, marginBottom: 6 }}>{anyWhole && !allWhole ? "Units & Rooms" : "Rooms by Unit"}</div>
             {(p.units || []).map(u => {
               const uIsWhole = (u.rentalMode || "byRoom") === "wholeHouse";
               const uRooms = u.rooms || [];
@@ -180,7 +179,7 @@ export default function PropertiesList({
               return (<div key={u.id} style={{ marginBottom: 10 }}>
                 {(p.units || []).length > 1 && <div style={{ fontSize: 10, fontWeight: 800, color: _acc, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4, padding: "3px 8px", background: hexToRgba(_acc, .06), borderRadius: 4, display: "inline-flex", alignItems: "center", gap: 6 }}>
                   {u.name}
-                  <span style={{ fontSize: 8, fontWeight: 500, color: "#6b5e52", textTransform: "none", letterSpacing: 0 }}>{uIsWhole ? "Whole Unit" : "By Room"}</span>
+                  <span style={{ fontSize: 8, fontWeight: 500, color: "#5c4a3a", textTransform: "none", letterSpacing: 0 }}>{uIsWhole ? "Whole Unit" : "By Room"}</span>
                 </div>}
 
                 {uIsWhole ? (
@@ -189,7 +188,7 @@ export default function PropertiesList({
                     <div className="row-i">
                       <div style={{ fontSize: 12, fontWeight: 600 }}>{u.name} &mdash; Whole Unit</div>
                       {uOcc
-                        ? <div style={{ fontSize: 10, color: "#6b5e52", marginTop: 1 }}>Occupied &middot; ends {fmtD(uLatestLe)}</div>
+                        ? <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 1 }}>Occupied &middot; ends {fmtD(uLatestLe)}</div>
                         : <div style={{ fontSize: 10, color: _red, fontWeight: 600, marginTop: 1 }}>Vacant &mdash; {fmtS(u.rent)}/mo</div>}
                     </div>
                     <div style={{ textAlign: "right", minWidth: 60, marginRight: 8 }}>
@@ -216,10 +215,10 @@ export default function PropertiesList({
                           <div style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                             {r.name}
                             <span className={"badge " + (r.pb ? "b-green" : "b-gray")} style={{ fontSize: 7 }}>{r.pb ? "Private" : "Shared"}</span>
-                            {r.sqft && <span style={{ fontSize: 9, color: "#6b5e52" }}>{r.sqft.toLocaleString()} sqft</span>}
+                            {r.sqft && <span style={{ fontSize: 9, color: "#5c4a3a" }}>{r.sqft.toLocaleString()} sqft</span>}
                           </div>
                           {occ
-                            ? <div style={{ fontSize: 10, color: "#6b5e52", marginTop: 1 }}>{r.tenant.name} &middot; ends {fmtD(r.le)}{dl && dl <= 90 ? <span style={{ color: dl <= 30 ? _red : _gold, fontWeight: 700, marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 2 }}><IconClock /> {dl}d</span> : null}</div>
+                            ? <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 1 }}>{r.tenant.name} &middot; ends {fmtD(r.le)}{dl && dl <= 90 ? <span style={{ color: dl <= 30 ? _red : _gold, fontWeight: 700, marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 2 }}><IconClock /> {dl}d</span> : null}</div>
                             : r.ownerOccupied ? <div style={{ fontSize: 10, color: _acc, fontWeight: 600, marginTop: 1 }}>Owner Occupied</div>
                             : <div style={{ fontSize: 10, color: _red, fontWeight: 600, marginTop: 1 }}>Vacant &mdash; {fmtS(r.rent)}/mo lost</div>}
                         </div>
@@ -248,7 +247,7 @@ export default function PropertiesList({
     })}
 
     {/* Empty state */}
-    {props.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52" }}>
+    {props.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#5c4a3a" }}>
       <div style={{ marginBottom: 12, color: "#8a7d74" }}><IconHome /></div>
       <h3 style={{ fontSize: 15 }}>No Properties</h3>
       <p style={{ fontSize: 12, marginTop: 4 }}>Add your first property above.</p>
