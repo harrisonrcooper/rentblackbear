@@ -1286,9 +1286,12 @@ export default function SmartImporter({
                                   {room.multiMode === "sequential" && (() => {
                                     const active = room.tenants.filter(t => !t.excluded);
                                     const withDates = active.filter(t => t.moveIn || t.leaseEnd);
-                                    if (!withDates.length) return <div style={{ fontSize: 10, color: "#7a7067", marginTop: 6 }}>Add move-in / lease-end dates to see the timeline</div>;
+                                    if (!withDates.length) return <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 6, fontWeight: 600 }}>Add move-in / lease-end dates to see the timeline</div>;
+                                    const ganttKey = `gantt-${pi}-${ui}-${ri}`;
+                                    const ganttHidden = expanded[ganttKey] === false;
+                                    const sorted = [...active].sort((a, b) => (a.moveIn || "").localeCompare(b.moveIn || ""));
                                     const allDates = [];
-                                    for (const t of withDates) {
+                                    for (const t of sorted) {
                                       if (t.moveIn && t.moveIn !== "MTM") allDates.push(t.moveIn);
                                       if (t.leaseEnd && t.leaseEnd !== "MTM") allDates.push(t.leaseEnd);
                                     }
@@ -1300,50 +1303,98 @@ export default function SmartImporter({
                                     const rangeMs = Math.max(toMs(maxD) - toMs(minD), 86400000);
                                     const pct = d => d ? Math.max(0, Math.min(100, ((toMs(d) - toMs(minD)) / rangeMs) * 100)) : 0;
                                     const todayPct = pct(todayStr);
-                                    const colors = [_ac, "#d4a853", "#6b8cae", "#c45c4a", "#8b7355"];
                                     const fmtD = d => { if (!d || d === "MTM") return "MTM"; const p = d.split("-"); return p[1] + "/" + p[2] + "/" + p[0].slice(2); };
+                                    const daysBetween = (a, b) => Math.round((toMs(b) - toMs(a)) / 86400000);
+                                    // Bar colors matching TenantTimeline
+                                    const getBarStyle = (t) => {
+                                      const isPast = t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr;
+                                      const isUpcoming = t.moveIn && t.moveIn > todayStr;
+                                      if (isPast) return { bg: "#FCA5A5", text: "#791F1F" };
+                                      if (isUpcoming) return { bg: "#B5D4F4", text: "#0C447C" };
+                                      return { bg: _ac, text: "#fff" };
+                                    };
+                                    // Find gaps between sequential tenants
+                                    const gaps = [];
+                                    for (let gi = 0; gi < sorted.length - 1; gi++) {
+                                      const prevEnd = sorted[gi].leaseEnd;
+                                      const nextStart = sorted[gi + 1].moveIn;
+                                      if (prevEnd && nextStart && prevEnd !== "MTM" && nextStart !== "MTM" && prevEnd < nextStart) {
+                                        gaps.push({ from: prevEnd, to: nextStart, days: daysBetween(prevEnd, nextStart) });
+                                      }
+                                    }
                                     return (
-                                      <div style={{ marginTop: 8, padding: "8px 0" }}>
-                                        {/* Timeline axis */}
-                                        <div style={{ position: "relative", height: active.length * 26 + 20, marginBottom: 4 }}>
-                                          {/* Background track */}
-                                          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 16, background: "rgba(0,0,0,.03)", borderRadius: 4 }} />
-                                          {/* Today marker */}
-                                          <div style={{ position: "absolute", left: todayPct + "%", top: 0, bottom: 0, width: 1, background: "#c45c4a", zIndex: 2 }} />
-                                          <div style={{ position: "absolute", left: todayPct + "%", bottom: 0, transform: "translateX(-50%)", fontSize: 8, fontWeight: 700, color: "#c45c4a", whiteSpace: "nowrap" }}>today</div>
-                                          {/* Tenant bars */}
-                                          {active.map((t, ti) => {
-                                            const start = t.moveIn && t.moveIn !== "MTM" ? pct(t.moveIn) : 0;
-                                            const end = t.leaseEnd && t.leaseEnd !== "MTM" ? pct(t.leaseEnd) : 100;
-                                            const isCurrent = !(t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) && !(t.moveIn && t.moveIn > todayStr);
-                                            const barColor = colors[ti % colors.length];
-                                            return (
-                                              <div key={ti} style={{ position: "absolute", top: ti * 26 + 2, left: start + "%", width: Math.max(end - start, 1) + "%", height: 20, display: "flex", alignItems: "center" }}>
-                                                <div style={{ width: "100%", height: 14, borderRadius: 3, background: isCurrent ? barColor : "rgba(0,0,0,.08)", opacity: isCurrent ? 1 : 0.6, position: "relative", overflow: "hidden" }}>
-                                                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", padding: "0 6px" }}>
-                                                    <span style={{ fontSize: 9, fontWeight: 700, color: isCurrent ? "#fff" : "#5c4a3a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.name}</span>
+                                      <div style={{ marginTop: 6 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: ganttHidden ? 0 : 6 }}>
+                                          <button onClick={() => setExpanded(p => ({ ...p, [ganttKey]: ganttHidden }))} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, fontWeight: 600, color: "#5c4a3a", padding: "2px 0", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+                                            <ICh open={!ganttHidden} /> Timeline
+                                          </button>
+                                          {/* Legend */}
+                                          {!ganttHidden && <div style={{ display: "flex", gap: 8, marginLeft: 8 }}>
+                                            {[[_ac, "Current"], ["#FCA5A5", "Past"], ["#B5D4F4", "Upcoming"]].map(([c, l]) => (
+                                              <div key={l} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 9, color: "#5c4a3a" }}>
+                                                <div style={{ width: 8, height: 8, borderRadius: 2, background: c }} />{l}
+                                              </div>
+                                            ))}
+                                          </div>}
+                                        </div>
+                                        {!ganttHidden && <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,.08)", borderRadius: 8, padding: "8px 10px" }}>
+                                          {/* Gantt bars */}
+                                          <div style={{ position: "relative", height: sorted.length * 30 + 14 }}>
+                                            {/* Today marker */}
+                                            <div style={{ position: "absolute", left: todayPct + "%", top: 0, bottom: 14, width: 1.5, background: "#c45c4a", zIndex: 3, opacity: .7 }} />
+                                            <div style={{ position: "absolute", left: todayPct + "%", bottom: 0, transform: "translateX(-50%)", fontSize: 8, fontWeight: 700, color: "#c45c4a", whiteSpace: "nowrap" }}>today</div>
+                                            {/* Gap zones */}
+                                            {gaps.map((g, gi) => {
+                                              const gLeft = pct(g.from);
+                                              const gRight = pct(g.to);
+                                              return <div key={"g" + gi} style={{ position: "absolute", left: gLeft + "%", width: Math.max(gRight - gLeft, 0.5) + "%", top: 0, bottom: 14, background: `rgba(${_acR},.08)`, border: `1px dashed rgba(${_acR},.3)`, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", zIndex: 1 }}>
+                                                {g.days > 7 && <span style={{ fontSize: 8, fontWeight: 700, color: _ac, whiteSpace: "nowrap" }}>{g.days}d gap</span>}
+                                              </div>;
+                                            })}
+                                            {/* Bars */}
+                                            {sorted.map((t, ti) => {
+                                              const start = t.moveIn && t.moveIn !== "MTM" ? pct(t.moveIn) : 0;
+                                              const end = t.leaseEnd && t.leaseEnd !== "MTM" ? pct(t.leaseEnd) : 100;
+                                              const bc = getBarStyle(t);
+                                              const barW = Math.max(end - start, 2);
+                                              return (
+                                                <div key={ti} style={{ position: "absolute", top: ti * 30 + 2, left: start + "%", width: barW + "%", height: 24, zIndex: 2 }}>
+                                                  <div style={{ width: "100%", height: "100%", borderRadius: 4, background: bc.bg, display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden" }}>
+                                                    <span style={{ fontSize: 9, fontWeight: 700, color: bc.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                                      {t.name}{t.moveIn ? " \u00B7 " + fmtD(t.moveIn) : ""}{t.leaseEnd && t.leaseEnd !== "MTM" ? " \u2013 " + fmtD(t.leaseEnd) : t.leaseEnd === "MTM" ? " \u00B7 MTM" : ""}
+                                                    </span>
                                                   </div>
                                                 </div>
+                                              );
+                                            })}
+                                          </div>
+                                          {/* Date summary rows */}
+                                          <div style={{ borderTop: "1px solid rgba(0,0,0,.06)", paddingTop: 6, marginTop: 2 }}>
+                                            {sorted.map((t, ti) => {
+                                              const bc = getBarStyle(t);
+                                              const isPast = t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr;
+                                              const isUpcoming = t.moveIn && t.moveIn > todayStr;
+                                              const label = isPast ? "PAST" : isUpcoming ? "UPCOMING" : "CURRENT";
+                                              return (
+                                                <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#1a1714", lineHeight: "20px" }}>
+                                                  <span style={{ width: 8, height: 8, borderRadius: 2, background: bc.bg, flexShrink: 0 }} />
+                                                  <span style={{ fontWeight: 600, minWidth: 80 }}>{t.name}</span>
+                                                  <span style={{ color: "#5c4a3a" }}>{t.moveIn ? fmtD(t.moveIn) : "no start"}</span>
+                                                  <span style={{ color: "#5c4a3a" }}>{"\u2192"}</span>
+                                                  <span style={{ color: "#5c4a3a" }}>{t.leaseEnd ? fmtD(t.leaseEnd) : "no end"}</span>
+                                                  <span style={{ fontSize: 8, fontWeight: 700, padding: "1px 6px", borderRadius: 100, background: isPast ? "rgba(252,165,165,.3)" : isUpcoming ? "rgba(181,212,244,.3)" : `rgba(${_acR},.15)`, color: isPast ? "#791F1F" : isUpcoming ? "#0C447C" : _ac }}>{label}</span>
+                                                </div>
+                                              );
+                                            })}
+                                            {gaps.length > 0 && gaps.map((g, gi) => (
+                                              <div key={"gl" + gi} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#5c4a3a", lineHeight: "20px" }}>
+                                                <span style={{ width: 8, height: 8, borderRadius: 2, background: `rgba(${_acR},.2)`, border: `1px dashed ${_ac}`, flexShrink: 0, boxSizing: "border-box" }} />
+                                                <span style={{ fontWeight: 600, color: _ac }}>{g.days}-day vacancy gap</span>
+                                                <span>{fmtD(g.from)} {"\u2192"} {fmtD(g.to)}</span>
                                               </div>
-                                            );
-                                          })}
-                                        </div>
-                                        {/* Date labels per tenant */}
-                                        <div style={{ marginTop: 4 }}>
-                                          {active.map((t, ti) => {
-                                            const isCurrent = !(t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) && !(t.moveIn && t.moveIn > todayStr);
-                                            return (
-                                              <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: isCurrent ? "#1a1714" : "#7a7067", lineHeight: "18px" }}>
-                                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: isCurrent ? colors[ti % colors.length] : "rgba(0,0,0,.15)", flexShrink: 0 }} />
-                                                <span style={{ fontWeight: 600, minWidth: 80 }}>{t.name}</span>
-                                                <span>{t.moveIn ? fmtD(t.moveIn) : "?"}</span>
-                                                <span style={{ color: "#9ca3af" }}>{"\u2192"}</span>
-                                                <span>{t.leaseEnd ? fmtD(t.leaseEnd) : "?"}</span>
-                                                {isCurrent && <span style={{ fontSize: 8, fontWeight: 700, color: _ac }}>CURRENT</span>}
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
+                                            ))}
+                                          </div>
+                                        </div>}
                                       </div>
                                     );
                                   })()}
