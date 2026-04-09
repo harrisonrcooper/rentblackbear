@@ -252,7 +252,7 @@ export default function LedgerImporter({
       const rawAmount = g(row, "amount");
       const rawAmountDue = g(row, "amountDue");
       const amount = parseMoneyStr(rawAmount);
-      if (amount <= 0) continue; // skip zero/negative amounts
+      if (amount === 0) continue; // skip zero amounts (negative = credits, keep them)
       const amountDue = parseMoneyStr(rawAmountDue);
       const amountPaid = Math.max(0, amount - amountDue);
       const status = (g(row, "status") || "").trim().toUpperCase();
@@ -478,6 +478,9 @@ export default function LedgerImporter({
       const newCharges = [];
       const newSdEntries = [];
       const newPastCreated = {}; // track past tenants created during this import
+      // Read latest charges for dupe detection (avoid stale closure)
+      let latestCharges = charges;
+      setCharges(cur => { latestCharges = cur; return cur; });
 
       for (const ch of active) {
         const override = matchOverrides[parsedCharges.indexOf(ch)];
@@ -503,8 +506,9 @@ export default function LedgerImporter({
           m.roomId = "past_" + archiveName.replace(/\s+/g, "_").toLowerCase();
         }
 
-        // Re-import guard: skip if identical charge already exists
-        const isDupe = charges.some(c => c.roomId === m.roomId && c.dueDate === ch.dueDate && c.category === ch.category && c.amount === ch.amount);
+        // Re-import guard: skip if identical charge already exists (check both existing + newly added)
+        const isDupe = latestCharges.some(c => c.roomId === m.roomId && c.dueDate === ch.dueDate && c.category === ch.category && c.amount === ch.amount)
+          || newCharges.some(c => c.roomId === m.roomId && c.dueDate === ch.dueDate && c.category === ch.category && c.amount === ch.amount);
         if (isDupe) {
           addLog(`Skipped duplicate: ${m.tenantName} ${ch.category} ${fmtMoney(ch.amount)} (${ch.dueDate})`, "warn");
           skipped++;
@@ -512,12 +516,13 @@ export default function LedgerImporter({
           continue;
         }
 
-        const isPaid = ch.status === "PAID";
+        const isPaid = ch.status === "PAID" || ch.amountPaid >= ch.amount;
         const isPastDue = ch.status === "PAST DUE";
 
         // Build charge object
         const chargeObj = {
           id: uidFn(),
+          workspace_id: settings?.workspace_id || null,
           roomId: m.roomId,
           tenantName: m.tenantName,
           propName: m.propName,
@@ -586,11 +591,12 @@ export default function LedgerImporter({
             if (existingIdx === -1) {
               merged.push(entry);
             } else {
-              // Update existing entry
+              // Append new deposits to existing entry, don't overwrite
+              const existingEntry = merged[existingIdx];
               merged[existingIdx] = {
-                ...merged[existingIdx],
-                amountHeld: entry.amountHeld,
-                deposits: entry.deposits,
+                ...existingEntry,
+                amountHeld: (existingEntry.amountHeld || 0) + (entry.amountHeld || 0),
+                deposits: [...(existingEntry.deposits || []), ...(entry.deposits || [])],
               };
             }
           }
@@ -640,13 +646,14 @@ export default function LedgerImporter({
         tick();
       }
 
-      // Persist explicitly to Supabase (don't rely on page.jsx auto-save timer)
-      await new Promise(resolve => {
-        setCharges(cur => { saveAppData("hq-charges", cur); return cur; });
-        if (setSdLedger) setSdLedger(cur => { if (cur) saveAppData("hq-sdledger", cur); return cur; });
-        if (setProps && rentsUpdated > 0) setProps(cur => { saveAppData("hq-props", cur); return cur; });
-        setTimeout(resolve, 100);
-      });
+      // Persist explicitly to Supabase
+      const saves = [];
+      setCharges(cur => { saves.push(saveAppData("hq-charges", cur)); return cur; });
+      if (setSdLedger) setSdLedger(cur => { if (cur) saves.push(saveAppData("hq-sdledger", cur)); return cur; });
+      if (setProps && rentsUpdated > 0) setProps(cur => { saves.push(saveAppData("hq-props", cur)); return cur; });
+      if (setArchive) setArchive(cur => { if (cur) saves.push(saveAppData("hq-archive", cur)); return cur; });
+      await new Promise(r => setTimeout(r, 50)); // let React flush state
+      try { await Promise.all(saves); } catch (e) { addLog(`Warning: some data may not have saved — ${e.message}`, "warn"); }
 
       if (setNotifs) {
         setNotifs(p => [{
@@ -692,7 +699,7 @@ export default function LedgerImporter({
         <div style={{ padding: "12px 24px", display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
           {steps.map((s, i) => (<div key={i} style={{ display: "flex", alignItems: "center", gap: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <div style={{ width: 22, height: 22, borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, background: i < step ? _ac : i === step ? _ac : "#e5e7eb", color: i <= step ? "#fff" : "#6b7280", flexShrink: 0 }}>
+              <div style={{ width: 22, height: 22, borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, background: i < step ? _ac : i === step ? _ac : "#e5e7eb", color: i <= step ? "#fff" : "#4b5563", flexShrink: 0 }}>
                 {i < step ? <IChk /> : i + 1}
               </div>
               {i === step && <span style={{ fontSize: 11, fontWeight: 700, color: "#1a1714", whiteSpace: "nowrap" }}>{s}</span>}
@@ -711,9 +718,11 @@ export default function LedgerImporter({
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
+              onMouseEnter={e => { if (!dragOver) { e.currentTarget.style.borderColor = _ac; e.currentTarget.style.background = _ac + "05"; } }}
+              onMouseLeave={e => { if (!dragOver) { e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.background = "#fafaf9"; } }}
               style={{ border: `2px dashed ${dragOver ? _ac : "#d1d5db"}`, borderRadius: 12, padding: "48px 24px", textAlign: "center", cursor: "pointer", background: dragOver ? _ac + "08" : "#fafaf9", transition: "all .15s" }}
             >
-              <div style={{ marginBottom: 12, color: dragOver ? _ac : "#6b7280" }}><IUp /></div>
+              <div style={{ marginBottom: 12, color: dragOver ? _ac : "#4b5563" }}><IUp /></div>
               <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>Drop your charge export CSV here</div>
               <div style={{ fontSize: 12, color: "#4b5563" }}>Accepts .csv, .xlsx, and .xls {"\u2014"} any spreadsheet format</div>
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) { setUploadError(""); processFile(f); } }} />
@@ -843,13 +852,16 @@ export default function LedgerImporter({
               </div>
             )}
 
-            {/* Skipped charges — un-skip support */}
-            {parsedCharges.some(c => c.skip) && (
-              <div style={{ marginBottom: 10, padding: "8px 12px", background: "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            {/* Bulk actions + skip count */}
+            <div style={{ marginBottom: 10, padding: "8px 12px", background: "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              {parsedCharges.some(c => c.skip) ? (
                 <span style={{ color: "#374151" }}>{parsedCharges.filter(c => c.skip).length} charge{parsedCharges.filter(c => c.skip).length !== 1 ? "s" : ""} skipped</span>
-                <button onClick={() => setParsedCharges(prev => prev.map(c => ({ ...c, skip: false })))} style={{ background: "none", border: "none", cursor: "pointer", color: _ac, fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}>Restore All</button>
+              ) : <span style={{ color: "#374151" }}>{parsedCharges.filter(c => !c.skip).length} charges</span>}
+              <div style={{ display: "flex", gap: 6 }}>
+                {matchStats.red > 0 && <button onClick={() => setParsedCharges(prev => prev.map((c, i) => (!c.skip && !(matchOverrides[i] || c.match)) ? { ...c, skip: true } : c))} style={{ background: "none", border: "none", cursor: "pointer", color: _red, fontSize: 11, fontWeight: 600, fontFamily: "inherit", whiteSpace: "nowrap" }}>Skip All Unmatched ({matchStats.red})</button>}
+                {parsedCharges.some(c => c.skip) && <button onClick={() => setParsedCharges(prev => prev.map(c => ({ ...c, skip: false })))} style={{ background: "none", border: "none", cursor: "pointer", color: _ac, fontSize: 11, fontWeight: 600, fontFamily: "inherit", whiteSpace: "nowrap" }}>Restore All</button>}
               </div>
-            )}
+            </div>
 
             {/* Charge list with match results */}
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}>
@@ -865,14 +877,14 @@ export default function LedgerImporter({
                   <div style={{ width: 8, height: 8, borderRadius: 99, background: tierColor, flexShrink: 0 }} title={isSkipped ? "Skipped" : tier === "green" ? "Exact match" : tier === "amber" ? "Close match (verify)" : "No match found"} />
                   {/* Charge info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: isSkipped ? "#9ca3af" : "#1a1714", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: isSkipped ? "line-through" : "none" }}>
+                    <div style={{ fontWeight: 600, color: isSkipped ? "#4b5563" : "#1a1714", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: isSkipped ? "line-through" : "none" }}>
                       {ch.parsed.tenantName || ch.leaseTitle}
                     </div>
-                    <div style={{ fontSize: 10, color: isSkipped ? "#9ca3af" : "#374151", textDecoration: isSkipped ? "line-through" : "none" }}>{ch.category} &middot; {fmtMoney(ch.amount)}</div>
+                    <div style={{ fontSize: 10, color: isSkipped ? "#4b5563" : "#374151", textDecoration: isSkipped ? "line-through" : "none" }}>{ch.category} &middot; {fmtMoney(ch.amount)}</div>
                   </div>
                   {/* Match result — dropdown or "Skipped" label */}
                   {isSkipped ? (
-                    <div style={{ minWidth: 160, maxWidth: 260, fontSize: 11, color: "#9ca3af", fontWeight: 600, fontStyle: "italic", padding: "6px 10px" }}>Skipped</div>
+                    <div style={{ minWidth: 160, maxWidth: 260, fontSize: 11, color: "#4b5563", fontWeight: 600, fontStyle: "italic", padding: "6px 10px" }}>Skipped</div>
                   ) : <select
                     value={m ? m.roomId : ""}
                     onChange={e => {
@@ -908,14 +920,14 @@ export default function LedgerImporter({
                       onClick={() => setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: false } : c))}
                       onMouseEnter={e => { e.currentTarget.style.background = _ac + "12"; e.currentTarget.style.borderColor = _ac; e.currentTarget.style.color = _ac; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b5e52"; }}
-                      style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 4, cursor: "pointer", color: "#6b5e52", fontSize: 10, padding: "4px 10px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
+                      style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 4, cursor: "pointer", color: "#6b5e52", fontSize: 10, padding: "6px 12px", minHeight: 36, fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
                     >Restore</button>
                   ) : (
                     <button
                       onClick={() => { if (!showSkipMsg) setShowSkipMsg(true); setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: true } : c)); }}
                       onMouseEnter={e => { e.currentTarget.style.background = _red + "10"; e.currentTarget.style.color = _red; e.currentTarget.style.borderColor = _red; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#6b7280"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                      style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "4px 10px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#4b5563"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                      style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "6px 12px", minHeight: 36, fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
                     >Skip</button>
                   )}
                 </div>);
@@ -966,12 +978,13 @@ export default function LedgerImporter({
 
             {/* Grouped by tenant */}
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+              {Object.keys(groupedByTenant).length === 0 && <div style={{ textAlign: "center", padding: 32, color: "#4b5563", fontSize: 12 }}>All charges were skipped. Go back to restore charges.</div>}
               {Object.entries(groupedByTenant).map(([key, group]) => (
                 <div key={key} style={{ borderBottom: "1px solid #f3f4f6" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: group.matched ? "#fafaf9" : _red + "08" }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714" }}>{group.tenantName}</div>
-                      <div style={{ fontSize: 10, color: "#4b5563" }}>{group.propName} &middot; {group.roomName}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{group.tenantName}</div>
+                      <div style={{ fontSize: 10, color: "#4b5563", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{group.propName} &middot; {group.roomName}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714" }}>{fmtMoney(group.charges.reduce((s, c) => s + c.amount, 0))}</div>
@@ -1105,8 +1118,14 @@ export default function LedgerImporter({
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-                {goTab && <button onClick={() => { onClose(); goTab("ledger"); }} style={btnOut(_ac)}>View Ledger</button>}
-                <button onClick={onClose} style={btnPrimary(_ac)}>Done</button>
+                {goTab && <button onClick={() => { onClose(); goTab("ledger"); }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = _ac; e.currentTarget.style.color = _ac; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#374151"; }}
+                  style={btnOut(_ac)}>View Ledger</button>}
+                <button onClick={onClose}
+                  onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
+                  onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                  style={btnPrimary(_ac)}>Done</button>
               </div>
             </>)}
           </>)}
