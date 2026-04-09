@@ -21,71 +21,76 @@ export default function ApplicationsTab({
   // Resolve property name from UUID for charges (P0 fix: use UUID not name string)
   const getPropNameFromId = (propId) => { const p = props.find(x => x.id === propId); return p ? (p.addr || p.name) : ""; };
 
-  const moveApp=(id,ns)=>{
+  // Core state update — no side effects, no confirmation
+  const doMoveApp = (id, ns) => {
     setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:todayStr,prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:todayStr}]};}));
-    if(ns==="approved"){
-      const app=apps.find(a=>a.id===id);
-      if(app?.email){
-        const rent=Number(app.termRent||app.negotiatedRent||0);
-        const sd=Number(app.termSD||rent);
-        const propName=getPropNameFromId(app.termPropId) || app.property || "";
-        // Auto-send portal invite
-        fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:propName,roomName:app.room,rent,moveIn:app.termMoveIn||app.moveIn})
-        }).catch(console.error);
-        // Auto-generate lease (with dedup)
-        if (!leaseCreatingRef.current.has(app.id)) {
-          leaseCreatingRef.current.add(app.id);
-          autoGenerateLease(app).finally(() => leaseCreatingRef.current.delete(app.id));
-        }
-        // Auto-generate charges (idempotent — only if not already created for this app)
-        if(createCharge && app.name && !chargesCreatedRef.current.has(app.id)){
-          chargesCreatedRef.current.add(app.id);
-          const mk=(app.termMoveIn||app.moveIn||todayStr).slice(0,7);
-          const roomName=app.room||"";
-          if(rent>0) createCharge({roomId:app.termRoomId||"",tenantName:app.name,propName,roomName,category:"Rent",desc:mk+" Rent",amount:rent,dueDate:mk+"-01",sent:false,sentDate:todayStr});
-          if(sd>0) createCharge({roomId:app.termRoomId||"",tenantName:app.name,propName,roomName,category:"Security Deposit",desc:"Security Deposit",amount:sd,dueDate:app.termMoveIn||todayStr,sent:false,sentDate:todayStr});
-        }
-        flashAuto(`${app.name} approved — lease, charges, and portal invite sent`);
-      }
-    }
-    if(ns==="denied"){
-      flashAuto("Applicant moved to denied");
-    }
   };
 
-  // Approve with confirmation (P0 fix: no accidental approvals)
-  const confirmApprove = (app) => {
+  // Execute approval side effects (lease, charges, portal invite)
+  const executeApproval = (app) => {
     const rent=Number(app.termRent||app.negotiatedRent||0);
     const sd=Number(app.termSD||rent);
-    showConfirm({
-      title: `Approve ${app.name}?`,
-      body: `This will:\n• Send a portal invite to ${app.email}\n• Generate a lease draft (${fmtS(rent)}/mo)\n• Create rent charge (${fmtS(rent)}) and security deposit charge (${fmtS(sd)})\n\nThis cannot be undone.`,
-      onConfirm: () => moveApp(app.id, "approved"),
-    });
+    const propName=getPropNameFromId(app.termPropId) || app.property || "";
+    // Auto-send portal invite
+    fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:propName,roomName:app.room,rent,moveIn:app.termMoveIn||app.moveIn})
+    }).catch(console.error);
+    // Auto-generate lease (with dedup)
+    if (!leaseCreatingRef.current.has(app.id)) {
+      leaseCreatingRef.current.add(app.id);
+      autoGenerateLease(app).finally(() => leaseCreatingRef.current.delete(app.id));
+    }
+    // Auto-generate charges (check existing charges, not just ref)
+    const existingCharges = charges.filter(c => c.tenantName === app.name);
+    const hasRentCharge = existingCharges.some(c => c.category === "Rent");
+    const hasSDCharge = existingCharges.some(c => c.category === "Security Deposit");
+    if(createCharge && app.name){
+      const mk=(app.termMoveIn||app.moveIn||todayStr).slice(0,7);
+      const roomName=app.room||"";
+      if(rent>0 && !hasRentCharge) createCharge({roomId:app.termRoomId||"",tenantName:app.name,propName,roomName,category:"Rent",desc:mk+" Rent",amount:rent,dueDate:mk+"-01",sent:false,sentDate:todayStr});
+      if(sd>0 && !hasSDCharge) createCharge({roomId:app.termRoomId||"",tenantName:app.name,propName,roomName,category:"Security Deposit",desc:"Security Deposit",amount:sd,dueDate:app.termMoveIn||todayStr,sent:false,sentDate:todayStr});
+    }
+    flashAuto(`${app.name} approved — lease, charges, and portal invite sent`);
   };
 
-  // Deny with confirmation + optional rejection email (P0 fix: rejection email)
-  const confirmDeny = (app) => {
-    showConfirm({
-      title: `Deny ${app.name}?`,
-      body: `This will move the application to Denied. Would you like to send a rejection email to ${app.email}?`,
-      danger: true,
-      onConfirm: () => {
-        moveApp(app.id, "denied");
-        // Send rejection email
-        if (app.email) {
-          fetch("/api/send-email", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              to: app.email,
-              subject: `Application Update — ${settings?.companyName || "Property Management"}`,
-              html: `<p>Hi ${(app.name || "").split(" ")[0]},</p><p>Thank you for your interest in renting with ${settings?.companyName || "us"}. After reviewing your application, we've decided to move forward with another applicant for this unit.</p><p>We appreciate your time and wish you the best in your housing search.</p><p>— ${settings?.companyName || "Property Management"}</p>`,
-            }),
-          }).catch(console.error);
-        }
-      },
-    });
+  // moveApp — intercepts approve/deny for confirmation, passes through everything else
+  const moveApp = (id, ns) => {
+    const app = apps.find(a => a.id === id);
+    if (ns === "approved" && app) {
+      const rent=Number(app.termRent||app.negotiatedRent||0);
+      const sd=Number(app.termSD||rent);
+      showConfirm({
+        title: `Approve ${app.name}?`,
+        body: `This will:\n\n- Send a portal invite to ${app.email}\n- Generate a lease draft (${fmtS(rent)}/mo)\n- Create rent charge (${fmtS(rent)}) + security deposit (${fmtS(sd)})\n\nThis cannot be undone.`,
+        onConfirm: () => { doMoveApp(id, "approved"); executeApproval(app); },
+      });
+      return;
+    }
+    if (ns === "denied" && app) {
+      showConfirm({
+        title: `Deny ${app.name}?`,
+        body: `This will move the application to Denied and send a rejection email to ${app.email || "(no email)"}.\n\nYou can restore denied applicants later.`,
+        danger: true,
+        onConfirm: () => {
+          doMoveApp(id, "denied");
+          if (app.email) {
+            fetch("/api/send-email", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: app.email,
+                subject: `Application Update — ${settings?.companyName || "Property Management"}`,
+                html: `<p>Hi ${(app.name || "").split(" ")[0]},</p><p>Thank you for your interest in renting with ${settings?.companyName || "us"}. After careful review, we've decided to move forward with another applicant for this unit.</p><p>We appreciate your time and wish you the best in your housing search.</p><p>— ${settings?.companyName || "Property Management"}</p>`,
+              }),
+            }).then(() => flashAuto(`Rejection email sent to ${app.email}`)).catch(console.error);
+          }
+          flashAuto(`${app.name} denied`);
+        },
+      });
+      return;
+    }
+    // All other status changes — no confirmation needed
+    doMoveApp(id, ns);
+    flashAuto(`${app.name} moved to ${SL[ns] || ns}`);
   };
   const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
   const scoreApp=(a)=>{
@@ -140,7 +145,7 @@ export default function ApplicationsTab({
     const steps=[leaseSigned,docsUploaded,sdPaid,firstMonthPaid];
     const count=steps.filter(Boolean).length;
     const pct=count/4*100;
-    const color=count===4?"#4a7c59":count>=3?"#e8903a":count>=1?"#d4a853":"#c45c4a";
+    const color=count===4?(_green||"#2d6a3f"):count>=3?(_gold||"#d4a853"):count>=1?(_gold||"#d4a853"):(_red||"#c45c4a");
     return{count,leaseSigned,docsUploaded,sdPaid,firstMonthPaid,pct,color,ready:count===4};
   };
 
@@ -400,10 +405,10 @@ export default function ApplicationsTab({
       </div>
       {expanded.followUp!==false&&visible.map(a=>(
         <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.05)"}}>
-          <span><strong>{a.name}</strong> — {SL[a.status]} · <span style={{color:daysSince(a.lastContact||a.submitted)>=5?"#c45c4a":"#5c4a3a",fontWeight:700}}>{daysSince(a.lastContact||a.submitted)}d</span></span>
+          <span><strong>{a.name}</strong> — {SL[a.status]} · <span style={{color:daysSince(a.lastContact||a.submitted)>=5?_red:"#5c4a3a",fontWeight:700}}>{daysSince(a.lastContact||a.submitted)}d</span></span>
           <div style={{display:"flex",gap:4}}>
             <button className="btn btn-out btn-sm" style={{fontSize:8}} onClick={()=>setModal({type:"app",data:a})}>Open</button>
-            <button className="btn btn-out btn-sm" style={{fontSize:8,color:"#c45c4a",padding:"4px 7px",borderColor:"rgba(196,92,74,.2)"}} title="Permanently dismiss" onClick={()=>dismissOne(a.id)}>x</button>
+            <button className="btn btn-out btn-sm" style={{fontSize:8,color:_red,padding:"4px 7px",borderColor:`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.2)`,minWidth:28,minHeight:28}} title="Permanently dismiss" onClick={()=>dismissOne(a.id)}><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
           </div>
         </div>
       ))}
@@ -415,8 +420,8 @@ export default function ApplicationsTab({
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,flex:1}}>
       {[
         {key:null,label:"Pipeline",value:allActiveApps.length,sub:"All active",color:null},
-        {key:"needsAction",label:"Needs Action",value:needsActionApps.length,sub:"Applied — awaiting review",color:needsActionApps.length?"#c45c4a":"#4a7c59"},
-        {key:"stale",label:"Follow Up",value:staleApps.length,sub:"No contact 3+ days",color:staleApps.length?"#d4a853":null},
+        {key:"needsAction",label:"Needs Action",value:needsActionApps.length,sub:"Applied — awaiting review",color:needsActionApps.length?_red:_green},
+        {key:"stale",label:"Follow Up",value:staleApps.length,sub:"No contact 3+ days",color:staleApps.length?_gold:null},
         {key:"denied",label:"Denied",value:deniedApps.length,sub:"All time",color:null},
       ].map(({key,label,value,sub,color})=>{
         const active=appKpiFilter===key;
@@ -435,7 +440,7 @@ export default function ApplicationsTab({
     <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff",flexShrink:0}}>
       <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Badge</span>
       <div onClick={()=>{const u={...settings,showAppBadge:settings.showAppBadge===false};setSettings(u);save("hq-settings",u);}}
-        style={{width:32,height:18,borderRadius:9,background:settings.showAppBadge!==false?"#4a7c59":"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+        style={{width:32,height:18,borderRadius:9,background:settings.showAppBadge!==false?_ac:"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
         <div style={{position:"absolute",top:2,left:settings.showAppBadge!==false?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
       </div>
     </div>
@@ -443,7 +448,7 @@ export default function ApplicationsTab({
   {/* Search + Controls */}
   <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
     <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search pipeline..." style={{flex:1,minWidth:160,padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-    {appKpiFilter&&<button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>setAppKpiFilter(null)}>✕ Clear filter</button>}
+    {appKpiFilter&&<button className="btn btn-out btn-sm" style={{color:_red,borderColor:`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",") || "196,92,74"},.2)`}} onClick={()=>setAppKpiFilter(null)}><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg> Clear filter</button>}
     {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
     <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
   </div>
@@ -476,14 +481,14 @@ export default function ApplicationsTab({
 
     {/* Portal Invite */}
     <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:240}}>
-      <div style={{display:"flex",alignItems:"center",background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,overflow:"hidden"}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:"1px solid rgba(74,124,89,.15)",flex:1,minWidth:0}}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" style={{flexShrink:0}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          <span style={{fontSize:11,color:"#4a7c59",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+      <div style={{display:"flex",alignItems:"center",background:`rgba(${_acR},.04)`,border:`1px solid rgba(${_acR},.2)`,borderRadius:8,overflow:"hidden"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:`1px solid rgba(${_acR},.15)`,flex:1,minWidth:0}}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={_ac} strokeWidth="2" style={{flexShrink:0}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span style={{fontSize:11,color:_ac,fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             {portalLinkToken?`${(settings.siteUrl||"https://rentblackbear.com")}/portal?token=${portalLinkToken.slice(0,12)}...`:"Portal invite — click Generate"}
           </span>
         </div>
-        {!portalLinkToken&&<button style={{padding:"8px 16px",border:"none",background:"rgba(74,124,89,.1)",color:"#4a7c59",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"background .15s"}}
+        {!portalLinkToken&&<button style={{padding:"8px 16px",border:"none",background:`rgba(${_acR},.1)`,color:_ac,fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"background .15s"}}
           onMouseEnter={e=>e.currentTarget.style.background="rgba(74,124,89,.2)"}
           onMouseLeave={e=>e.currentTarget.style.background="rgba(74,124,89,.1)"}
           onClick={async()=>{
@@ -500,11 +505,11 @@ export default function ApplicationsTab({
             setPortalLinkLoading(false);
           }}>{portalLinkLoading?"Generating...":"Generate"}</button>}
         {portalLinkToken&&<>
-          <button style={{padding:"8px 14px",border:"none",borderRight:"1px solid rgba(74,124,89,.15)",background:"transparent",color:"#4a7c59",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"background .15s"}}
+          <button style={{padding:"8px 14px",border:"none",borderRight:`1px solid rgba(${_acR},.15)`,background:"transparent",color:_ac,fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"background .15s"}}
             onMouseEnter={e=>e.currentTarget.style.background="rgba(74,124,89,.08)"}
             onMouseLeave={e=>e.currentTarget.style.background="transparent"}
             onClick={()=>{navigator.clipboard.writeText(`${settings.siteUrl||"https://rentblackbear.com"}/portal?token=${portalLinkToken}`);setModal({type:"genericLinkCopied"});}}>Copy</button>
-          <button style={{padding:"8px 14px",border:"none",borderRight:"1px solid rgba(74,124,89,.15)",background:"transparent",color:"#4a7c59",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"background .15s"}}
+          <button style={{padding:"8px 14px",border:"none",borderRight:`1px solid rgba(${_acR},.15)`,background:"transparent",color:_ac,fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"background .15s"}}
             onMouseEnter={e=>e.currentTarget.style.background="rgba(74,124,89,.08)"}
             onMouseLeave={e=>e.currentTarget.style.background="transparent"}
             onClick={()=>setModal({type:"emailPortalLink",to:"",name:"",token:portalLinkToken})}>Email Link</button>
@@ -552,14 +557,14 @@ export default function ApplicationsTab({
           </button>}
         </>);
       })()}
-      <button className="btn btn-out btn-sm" style={{color:"#9a7422",borderColor:"rgba(212,168,83,.3)"}}
+      <button className="btn btn-out btn-sm" style={{color:_gold,borderColor:"rgba(212,168,83,.3)"}}
         onClick={()=>setModal({type:"confirmAction",title:"Archive "+bulkSel.length+" Applicant"+(bulkSel.length>1?"s":""),
           body:"Move "+bulkSel.length+" applicant"+(bulkSel.length>1?"s":"")+" to Denied? They'll be hidden from the pipeline but stay in your records.",
           confirmLabel:"Archive "+bulkSel.length,confirmStyle:"btn-out",
           onConfirm:()=>{setApps(p=>p.map(a=>bulkSel.includes(a.id)?{...a,status:"denied",deniedReason:"Archived",deniedDate:TODAY.toISOString().split("T")[0],prevStage:a.status}:a));setBulkSel([]);setModal(null);}})}>
         Archive ({bulkSel.length})
       </button>
-      <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}}
+      <button className="btn btn-out btn-sm" style={{color:_red,borderColor:"rgba(196,92,74,.2)"}}
         onClick={()=>setModal({type:"confirmAction",title:"Delete "+bulkSel.length+" Applicant"+(bulkSel.length>1?"s":""),
           body:"Permanently delete "+bulkSel.length+" applicant"+(bulkSel.length>1?"s":"")+"? This cannot be undone and all their data will be removed.",
           confirmLabel:"Delete "+bulkSel.length,confirmStyle:"btn-red",
@@ -603,8 +608,8 @@ export default function ApplicationsTab({
             var isOnboarding=a.status==="onboarding";
             return(
             <div key={a.id} className="pipe-card" style={{
-              border:isOnboarding?"2px solid #4a7c59":"1px solid rgba(0,0,0,.07)",
-              borderLeft:isOnboarding?"2px solid #4a7c59":sc>=70?"3px solid #4a7c59":sc>=50?"3px solid #d4a853":"3px solid #c45c4a",
+              border:isOnboarding?`2px solid ${_ac}`:"1px solid rgba(0,0,0,.07)",
+              borderLeft:isOnboarding?`2px solid ${_ac}`:sc>=70?`3px solid ${_ac}`:sc>=50?`3px solid ${_gold}`:`3px solid ${_red}`,
               cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",
               padding:isOnboarding?"10px":"10px 10px 10px 30px",
             }} onClick={function(){setModal({type:"app",data:a});}}>
@@ -612,7 +617,7 @@ export default function ApplicationsTab({
               {/* Checkbox — only on non-onboarding, positioned cleanly */}
               {!isOnboarding&&<div style={{position:"absolute",left:8,top:12}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>}
 
-              {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?"#c45c4a":flags[0].type==="past"?"#9a7422":"#3b82f6",fontWeight:600,cursor:"pointer"}}
+              {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?_red:flags[0].type==="past"?_gold:_ac,fontWeight:600,cursor:"pointer"}}
                 onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>
                 {flags[0].type==="current"?"Current Tenant":flags[0].type==="past"?"Returning":flags[0].type==="dup"?"Duplicate":""} →
               </div>}
@@ -623,7 +628,7 @@ export default function ApplicationsTab({
                   {a._hasUnreadRefReply&&<span style={{fontSize:8,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"rgba(59,130,246,.12)",color:"#1d4ed8",whiteSpace:"nowrap"}}>● Reply</span>}
                 </div>
                 {!isOnboarding&&<div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
-                  <span style={{fontSize:7,fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a",background:sc>=70?"rgba(74,124,89,.08)":sc>=50?"rgba(212,168,83,.08)":"rgba(196,92,74,.08)",padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
+                  <span style={{fontSize:7,fontWeight:700,color:sc>=70?_ac:sc>=50?_gold:_red,background:sc>=70?`rgba(${_acR},.08)`:sc>=50?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`:`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.08)`,padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
                     onMouseEnter={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="block";}}
                     onMouseLeave={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="none";}}
                   >{sc}</span>
@@ -640,15 +645,15 @@ export default function ApplicationsTab({
                 const blocker=getBlocker(a);
                 if(!blocker)return null;
                 const isReady=blocker.includes("complete")||blocker.includes("Ready")||blocker.includes("decision needed");
-                return <div style={{fontSize:9,color:isReady?"#2d6a3f":"#7a7067",marginTop:3,lineHeight:1.3,fontStyle:"italic"}}>
-                  {isReady?"✓ ":""}{blocker}
+                return <div style={{fontSize:9,color:isReady?_green:"#7a7067",marginTop:3,lineHeight:1.3,fontStyle:"italic"}}>
+                  {isReady&&<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{display:"inline",verticalAlign:"middle",marginRight:2}}><polyline points="20 6 9 17 4 12"/></svg>}{blocker}
                 </div>;
               })()}
 
               {/* Invited — "Awaiting Reply" badge + re-invite button */}
               {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
                 <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 7px",borderRadius:99,flexShrink:0}}>Awaiting Reply</span>
-                <button style={{fontSize:9,padding:"3px 10px",background:"#d4a853",border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
+                <button style={{fontSize:9,padding:"3px 10px",background:_gold,border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
                   onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Re-invite</button>
               </div>}
 
@@ -712,7 +717,7 @@ export default function ApplicationsTab({
                   <div style={{display:"flex",gap:3,marginBottom:4}}>
                     {pills.map(p=>{
                       const bg=p.state==="done"?"rgba(74,124,89,.15)":p.state==="pending"?"rgba(212,168,83,.15)":"rgba(0,0,0,.05)";
-                      const col=p.state==="done"?"#2d6a3f":p.state==="pending"?"#9a7422":"#aaa";
+                      const col=p.state==="done"?_green:p.state==="pending"?_gold:"#aaa";
                       const bdr=p.state==="done"?"1px solid rgba(74,124,89,.25)":p.state==="pending"?"1px solid rgba(212,168,83,.3)":"1px solid transparent";
                       return(
                       <div key={p.key}
@@ -735,18 +740,18 @@ export default function ApplicationsTab({
                           const el=e.currentTarget;
                           el.style.transform="";el.style.boxShadow="";el.style.zIndex="";
                           el.style.background=p.state==="done"?"rgba(74,124,89,.15)":p.state==="pending"?"rgba(212,168,83,.15)":"rgba(0,0,0,.05)";
-                          el.style.color=p.state==="done"?"#2d6a3f":p.state==="pending"?"#9a7422":"#aaa";
+                          el.style.color=p.state==="done"?_green:p.state==="pending"?_gold:"#aaa";
                         }}>
                         {p.state==="done"?"✓ ":p.state==="pending"?"⋯ ":""}{p.label}
                       </div>);
                     })}
                   </div>
                   {/* Lease waiting indicator */}
-                  {leaseAmber&&<div style={{fontSize:7,color:"#9a7422",fontWeight:700,textAlign:"center",padding:"2px 0",background:"rgba(212,168,83,.08)",borderRadius:3,marginBottom:3}}>Awaiting tenant signature</div>}
+                  {leaseAmber&&<div style={{fontSize:7,color:_gold,fontWeight:700,textAlign:"center",padding:"2px 0",background:"rgba(212,168,83,.08)",borderRadius:3,marginBottom:3}}>Awaiting tenant signature</div>}
                   {!allDone&&!leaseAmber&&<div style={{height:3,borderRadius:2,background:"rgba(0,0,0,.06)"}}>
-                    <div style={{height:"100%",borderRadius:2,background:"#4a7c59",width:(doneCount/4*100)+"%",transition:"width .3s"}}/>
+                    <div style={{height:"100%",borderRadius:2,background:_ac,width:(doneCount/4*100)+"%",transition:"width .3s"}}/>
                   </div>}
-                  {allDone&&<div style={{fontSize:7,color:"#2d6a3f",fontWeight:800,textAlign:"center",padding:"2px 0",background:"rgba(74,124,89,.08)",borderRadius:3}}>Ready to Move In</div>}
+                  {allDone&&<div style={{fontSize:7,color:_green,fontWeight:800,textAlign:"center",padding:"2px 0",background:`rgba(${_acR},.08)`,borderRadius:3}}>Ready to Move In</div>}
                 </div>);
               })()}
 
@@ -754,16 +759,16 @@ export default function ApplicationsTab({
               {!isOnboarding&&a.status!=="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:8,color:"#5c4a3a",marginTop:5,overflow:"hidden"}}>
                 <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{a.source||""}</span>
                 <div style={{display:"flex",alignItems:"center",gap:4,minWidth:0,flexShrink:1}}>
-                  {d>0&&<span style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#888",fontWeight:700}}>{d}d</span>}
+                  {d>0&&<span style={{color:d>=5?_red:d>=3?_gold:"#888",fontWeight:700}}>{d}d</span>}
                   {canInvite&&<button
                     onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,168,83,.3)";e.currentTarget.style.color="#7a5a10";}}
-                    onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,168,83,.12)";e.currentTarget.style.color="#9a7422";}}
-                    style={{fontSize:7,padding:"3px 7px",background:"rgba(212,168,83,.12)",color:"#9a7422",border:"1px solid rgba(212,168,83,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}
+                    onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,168,83,.12)";e.currentTarget.style.color=_gold;}}
+                    style={{fontSize:7,padding:"3px 7px",background:"rgba(212,168,83,.12)",color:_gold,border:"1px solid rgba(212,168,83,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}
                     onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Continue — Invite to Apply</button>}
                   <button
-                    onMouseEnter={e=>{e.currentTarget.style.background="rgba(74,124,89,.25)";e.currentTarget.style.color="#2d6a3f";}}
-                    onMouseLeave={e=>{e.currentTarget.style.background="rgba(74,124,89,.1)";e.currentTarget.style.color="#4a7c59";}}
-                    style={{fontSize:7,padding:"3px 7px",background:"rgba(74,124,89,.1)",color:"#4a7c59",border:"1px solid rgba(74,124,89,.3)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,whiteSpace:"nowrap"}}
+                    onMouseEnter={e=>{e.currentTarget.style.background="rgba(74,124,89,.25)";e.currentTarget.style.color=_green;}}
+                    onMouseLeave={e=>{e.currentTarget.style.background="rgba(74,124,89,.1)";e.currentTarget.style.color=_ac;}}
+                    style={{fontSize:7,padding:"3px 7px",background:`rgba(${_acR},.1)`,color:_ac,border:"1px solid rgba(74,124,89,.3)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,whiteSpace:"nowrap"}}
                     title="Send portal invite — bypasses application requirement"
                     onClick={e=>{e.stopPropagation();setPiState("idle");setModal({type:"sendPortalInviteApp",data:a});}}>Portal Invite</button>
                 </div>
@@ -785,9 +790,9 @@ export default function ApplicationsTab({
           <input type="checkbox" checked={sel} onChange={e=>setBulkSel(p=>e.target.checked?[...p,a.id]:p.filter(x=>x!==a.id))} style={{width:14,height:14,cursor:"pointer"}}/>
         </td>
         <td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
-        <td><span style={{fontWeight:700,color:sc>=70?"#4a7c59":sc>=50?"#d4a853":"#c45c4a"}}>{sc}</span></td>
+        <td><span style={{fontWeight:700,color:sc>=70?_ac:sc>=50?_gold:_red}}>{sc}</span></td>
         <td><span className={`badge ${SC2[a.status]||"b-gray"}`}>{SL[a.status]||a.status}</span></td>
-        <td style={{color:d>=5?"#c45c4a":d>=3?"#d4a853":"#999",fontWeight:600}}>{d}d</td>
+        <td style={{color:d>=5?_red:d>=3?_gold:"#999",fontWeight:600}}>{d}d</td>
         <td style={{fontSize:10}}>{a.source||"—"}</td>
         <td onClick={e=>e.stopPropagation()}>
           {["pre-screened","called","new-lead"].includes(a.status)&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite</button>}
@@ -799,7 +804,7 @@ export default function ApplicationsTab({
     <button className="btn btn-out btn-sm" style={{width:"100%",color:"#6b5e52",marginBottom:4}} onClick={()=>setExpanded(p=>({...p,showDenied:!p.showDenied}))}>
       {expanded.showDenied?"▾ Hide":"▸ Show"} Denied ({deniedApps.length})
     </button>
-    {expanded.showDenied&&deniedApps.map(a=><div key={a.id} className="row" style={{opacity:.7}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · {fmtD(a.deniedDate)}{a.deniedReason?" · "+a.deniedReason:""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button><button className="btn btn-out btn-sm" onClick={()=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:x.prevStage||"pre-screened",deniedReason:null,deniedDate:null}:x))}>Restore</button></div>)}
+    {expanded.showDenied&&deniedApps.map(a=><div key={a.id} className="row" style={{opacity:.7}}><div className="row-dot" style={{background:_red}}/><div className="row-i"><div className="row-t">{a.name}</div><div className="row-s">{a.property} · {fmtD(a.deniedDate)}{a.deniedReason?" · "+a.deniedReason:""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button><button className="btn btn-out btn-sm" onClick={()=>setApps(p=>p.map(x=>x.id===a.id?{...x,status:x.prevStage||"pre-screened",deniedReason:null,deniedDate:null}:x))}>Restore</button></div>)}
   </div>}
 
 
@@ -807,9 +812,9 @@ export default function ApplicationsTab({
   {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["new-lead"].includes(a.status));
     if(totalVacant===0&&waitlistApps.length>0)return(
       <div style={{marginTop:8,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:14,background:"rgba(212,168,83,.03)"}}>
-        <div style={{fontSize:13,fontWeight:700,color:"#9a7422",marginBottom:8}}>Waitlist — No Vacant Rooms</div>
+        <div style={{fontSize:13,fontWeight:700,color:_gold,marginBottom:8}}>Waitlist — No Vacant Rooms</div>
         <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
-        {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:"#d4a853"}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
+        {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:_gold}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
       </div>);
     return null;})()}
 
@@ -821,7 +826,7 @@ export default function ApplicationsTab({
       <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>Waitlist — No Vacancies</div>
       <div style={{fontSize:10,color:"#6b5e52",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
       {waitlistApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
-        <div style={{width:20,fontSize:11,fontWeight:700,color:"#d4a853"}}>#{i+1}</div>
+        <div style={{width:20,fontSize:11,fontWeight:700,color:_gold}}>#{i+1}</div>
         <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>Score: {getScore(a)}</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div>
       </div>)}
     </div>:null;
@@ -830,12 +835,12 @@ export default function ApplicationsTab({
   {/* ── Renewal Requests — only shows if any exist ── */}
   {renewalRequests.length>0&&(
     <div style={{marginTop:24}}>
-      <div style={{fontSize:10,fontWeight:700,color:"#9a7422",textTransform:"uppercase",letterSpacing:1,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a7422" strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      <div style={{fontSize:10,fontWeight:700,color:_gold,textTransform:"uppercase",letterSpacing:1,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={_gold} strokeWidth="1.75"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
         Lease Renewal Requests ({renewalRequests.filter(r=>!r.read).length} pending)
       </div>
       {renewalRequests.map(req=>(
-        <div key={req.id} className="card" style={{marginBottom:8,borderLeft:"3px solid #d4a853"}}>
+        <div key={req.id} className="card" style={{marginBottom:8,borderLeft:`3px solid ${_gold}`}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px"}}>
             <div>
               <div style={{fontSize:13,fontWeight:700}}>{req.tenant_name}</div>
@@ -843,7 +848,7 @@ export default function ApplicationsTab({
               <div style={{fontSize:10,color:"#999",marginTop:2}}>{new Date(req.created_at).toLocaleDateString()}</div>
             </div>
             <div style={{display:"flex",gap:6}}>
-              {!req.read&&<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"rgba(212,168,83,.12)",color:"#9a7422"}}>PENDING</span>}
+              {!req.read&&<span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:99,background:"rgba(212,168,83,.12)",color:_gold}}>PENDING</span>}
               <button className="btn btn-out btn-sm" onClick={()=>goTab("messages")}>View in Messages</button>
             </div>
           </div>
