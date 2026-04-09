@@ -529,7 +529,7 @@ export default function ApplicationsTab({
   </div>
 
   {/* Bulk invite bar */}
-  {(appView==="pipeline"||appView==="list")&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:bulkSel.length?"rgba(212,168,83,.08)":"rgba(0,0,0,.02)",borderRadius:8,marginBottom:10,border:bulkSel.length?"1px solid rgba(212,168,83,.2)":"1px solid transparent",transition:"all .2s",flexWrap:"wrap"}}>
+  {(appView==="pipeline"||appView==="list")&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:bulkSel.length?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`:"rgba(0,0,0,.02)",borderRadius:8,marginBottom:10,border:bulkSel.length?"1px solid rgba(212,168,83,.2)":"1px solid transparent",transition:"all .2s",flexWrap:"wrap"}}>
     <input type="checkbox" checked={bulkSel.length>0&&bulkSel.length===activeApps.length} onChange={e=>{setBulkSel(e.target.checked?activeApps.map(a=>a.id):[]);}} style={{width:14,height:14,cursor:"pointer"}}/>
     <span style={{fontSize:11,color:"#6b5e52",flex:1,minWidth:80}}>{bulkSel.length>0?`${bulkSel.length} selected`:"Select applicants"}</span>
     {bulkSel.length>0&&<>
@@ -544,7 +544,7 @@ export default function ApplicationsTab({
             }}>
             Invite ({invitable.length})
           </button>}
-          {reinvitable.length>0&&<button className="btn btn-out btn-sm" style={{color:"#3b82f6",borderColor:"rgba(59,130,246,.25)"}}
+          {reinvitable.length>0&&<button className="btn btn-out btn-sm" style={{color:_ac,borderColor:`rgba(${_acR},.25)`}}
             onClick={()=>setModal({type:"confirmAction",title:`Reinvite ${reinvitable.length} Applicant${reinvitable.length>1?"s":""}`,
               body:`Resend the application link to ${reinvitable.length} invited applicant${reinvitable.length>1?"s":" ("+reinvitable[0].name+")"}?`,
               confirmLabel:"Reinvite",confirmStyle:"btn-gold",
@@ -610,14 +610,14 @@ export default function ApplicationsTab({
             <div key={a.id} className="pipe-card" style={{
               border:isOnboarding?`2px solid ${_ac}`:"1px solid rgba(0,0,0,.07)",
               borderLeft:isOnboarding?`2px solid ${_ac}`:sc>=70?`3px solid ${_ac}`:sc>=50?`3px solid ${_gold}`:`3px solid ${_red}`,
-              cursor:"pointer",background:isChecked?"rgba(212,168,83,.06)":"#fff",
+              cursor:"pointer",background:isChecked?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.06)`:"#fff",
               padding:isOnboarding?"10px":"10px 10px 10px 30px",
             }} onClick={function(){setModal({type:"app",data:a});}}>
 
               {/* Checkbox — only on non-onboarding, positioned cleanly */}
               {!isOnboarding&&<div style={{position:"absolute",left:8,top:12}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>}
 
-              {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?"rgba(196,92,74,.08)":flags[0].type==="past"?"rgba(212,168,83,.08)":"rgba(59,130,246,.08)",color:flags[0].type==="current"?_red:flags[0].type==="past"?_gold:_ac,fontWeight:600,cursor:"pointer"}}
+              {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.08)`:flags[0].type==="past"?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`:`rgba(${_acR},.08)`,color:flags[0].type==="current"?_red:flags[0].type==="past"?_gold:_ac,fontWeight:600,cursor:"pointer"}}
                 onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>
                 {flags[0].type==="current"?"Current Tenant":flags[0].type==="past"?"Returning":flags[0].type==="dup"?"Duplicate":""} →
               </div>}
@@ -625,7 +625,7 @@ export default function ApplicationsTab({
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
                   <div className="pipe-nm">{a.name}</div>
-                  {a._hasUnreadRefReply&&<span style={{fontSize:8,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"rgba(59,130,246,.12)",color:"#1d4ed8",whiteSpace:"nowrap"}}>● Reply</span>}
+                  {a._hasUnreadRefReply&&<span style={{fontSize:8,fontWeight:700,padding:"1px 6px",borderRadius:8,background:`rgba(${_acR},.12)`,color:_ac,whiteSpace:"nowrap"}}>● Reply</span>}
                 </div>
                 {!isOnboarding&&<div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
                   <span style={{fontSize:7,fontWeight:700,color:sc>=70?_ac:sc>=50?_gold:_red,background:sc>=70?`rgba(${_acR},.08)`:sc>=50?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`:`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.08)`,padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
@@ -652,7 +652,7 @@ export default function ApplicationsTab({
 
               {/* Invited — "Awaiting Reply" badge + re-invite button */}
               {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
-                <span style={{fontSize:8,fontWeight:700,color:"#3b82f6",background:"rgba(59,130,246,.1)",padding:"2px 7px",borderRadius:99,flexShrink:0}}>Awaiting Reply</span>
+                <span style={{fontSize:8,fontWeight:700,color:_ac,background:`rgba(${_acR},.1)`,padding:"2px 7px",borderRadius:99,flexShrink:0}}>Awaiting Reply</span>
                 <button style={{fontSize:9,padding:"3px 10px",background:_gold,border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
                   onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Re-invite</button>
               </div>}
@@ -747,7 +747,7 @@ export default function ApplicationsTab({
                     })}
                   </div>
                   {/* Lease waiting indicator */}
-                  {leaseAmber&&<div style={{fontSize:7,color:_gold,fontWeight:700,textAlign:"center",padding:"2px 0",background:"rgba(212,168,83,.08)",borderRadius:3,marginBottom:3}}>Awaiting tenant signature</div>}
+                  {leaseAmber&&<div style={{fontSize:7,color:_gold,fontWeight:700,textAlign:"center",padding:"2px 0",background:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`,borderRadius:3,marginBottom:3}}>Awaiting tenant signature</div>}
                   {!allDone&&!leaseAmber&&<div style={{height:3,borderRadius:2,background:"rgba(0,0,0,.06)"}}>
                     <div style={{height:"100%",borderRadius:2,background:_ac,width:(doneCount/4*100)+"%",transition:"width .3s"}}/>
                   </div>}
@@ -784,7 +784,7 @@ export default function ApplicationsTab({
   {/* List */}
   {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th style={{width:32}}></th><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody>
     {activeApps.sort((a,b)=>getScore(b)-getScore(a)).map(a=>{const sc=getScore(a);const d=daysSince(a.lastContact||a.submitted);const sel=bulkSel.includes(a.id);return(
-      <tr key={a.id} style={{cursor:"pointer",background:sel?"rgba(212,168,83,.07)":"",transition:"background .1s"}}
+      <tr key={a.id} style={{cursor:"pointer",background:sel?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.07)`:"",transition:"background .1s"}}
         onClick={()=>setModal({type:"app",data:a})}>
         <td style={{width:32}} onClick={e=>e.stopPropagation()}>
           <input type="checkbox" checked={sel} onChange={e=>setBulkSel(p=>e.target.checked?[...p,a.id]:p.filter(x=>x!==a.id))} style={{width:14,height:14,cursor:"pointer"}}/>
@@ -811,7 +811,7 @@ export default function ApplicationsTab({
   {/* ── Waitlist ── */}
   {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["new-lead"].includes(a.status));
     if(totalVacant===0&&waitlistApps.length>0)return(
-      <div style={{marginTop:8,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:14,background:"rgba(212,168,83,.03)"}}>
+      <div style={{marginTop:8,border:`2px solid rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.2)`,borderRadius:12,padding:14,background:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.03)`}}>
         <div style={{fontSize:13,fontWeight:700,color:_gold,marginBottom:8}}>Waitlist — No Vacant Rooms</div>
         <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
         {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:_gold}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
@@ -822,7 +822,7 @@ export default function ApplicationsTab({
   {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);
     if(totalVacant>0)return null;
     const waitlistApps=activeApps.filter(a=>["new-lead"].includes(a.status)).sort((a,b)=>getScore(b)-getScore(a));
-    return waitlistApps.length>0?<div style={{marginTop:16,border:"2px solid rgba(212,168,83,.2)",borderRadius:12,padding:16,background:"rgba(212,168,83,.03)"}}>
+    return waitlistApps.length>0?<div style={{marginTop:16,border:`2px solid rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.2)`,borderRadius:12,padding:16,background:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.03)`}}>
       <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>Waitlist — No Vacancies</div>
       <div style={{fontSize:10,color:"#6b5e52",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
       {waitlistApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
