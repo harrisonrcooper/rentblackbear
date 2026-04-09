@@ -66,7 +66,7 @@ const PATS = {
   doorCode: /^(door.?code|access|gate|key.?code|lock)/i,
   notes: /^(notes?|comments?|memo)/i,
   gender: /^(gender|sex)$/i,
-  occupationType: /^(occupation|type|category|employ|job)$/i,
+  occupationType: /^(occupation|occupation.?type|category|employ|job|tenant.?type)$/i,
   propertyType: /^(property.?type|prop.?type|building.?type|structure)$/i,
   coSigner: /^(co.?sign|cosign|guarantor)/i,
 };
@@ -675,6 +675,7 @@ export default function SmartImporter({
   const [importShake, setImportShake] = useState(false);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [importConfirmText, setImportConfirmText] = useState("");
+  const [parsing, setParsing] = useState(false);
 
   const todayStr = TODAY.toISOString().split("T")[0];
 
@@ -711,10 +712,12 @@ export default function SmartImporter({
     if (!["csv", "xlsx", "xls"].includes(ext)) { setFileErr("Please upload a spreadsheet file (.csv, .xlsx, or .xls)."); return; }
     if (file.size > 10 * 1024 * 1024) { setFileErr("File is too large (max 10MB). Try exporting fewer rows or splitting into multiple files."); return; }
     setFileName(file.name);
+    setParsing(true);
     const reader = new FileReader();
-    reader.onerror = () => setFileErr("Failed to read file.");
+    reader.onerror = () => { setParsing(false); setFileErr("Failed to read file."); };
 
     const handleParsed = ({ headers: h, rows }) => {
+      setParsing(false);
       if (!rows.length) { setFileErr("No data rows found."); return; }
 
       // Detect TurboTenant copy-paste format and pre-process
@@ -880,7 +883,7 @@ export default function SmartImporter({
     setStep(2); setDirty(false);
     const log = []; let ok = 0, err = 0, pC = 0, rC = 0;
     const roomMap = {};
-    const total = nTenants * 3; // props + charges + sync
+    const total = nTenants * 2; // charges + sync (Phase 1 is synchronous, no meaningful progress)
     setProgressTotal(total); let done = 0;
     const tick = () => { done++; setProgress(done); };
     const addLog = (msg, st = "ok") => { log.push({ msg, st }); setImportLog([...log]); };
@@ -935,7 +938,7 @@ export default function SmartImporter({
                 }
                 for (let ti = 0; ti < active.length; ti++) {
                   roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
-                  ok++; tick();
+                  ok++;
                 }
                 addLog(`  ${rd.name}: ${active.length} co-tenants (${active.map(t => t.name).join(", ")})`);
 
@@ -960,7 +963,7 @@ export default function SmartImporter({
                 }
                 for (let ti = 0; ti < active.length; ti++) {
                   roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
-                  ok++; tick();
+                  ok++;
                 }
                 addLog(`  ${rd.name}: ${current.name} (current), ${history.length} archived`);
 
@@ -980,7 +983,7 @@ export default function SmartImporter({
                     room.tenant = mkTenant(t);
                   }
                   roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent, sd };
-                  ok++; tick();
+                  ok++;
                 }
               }
             }
@@ -1147,6 +1150,11 @@ export default function SmartImporter({
             </div>
 
             {/* Upload zone */}
+            {parsing && <div style={{ textAlign: "center", padding: "40px 0", marginBottom: 16 }}>
+              <div style={{ width: 28, height: 28, border: `3px solid rgba(${_acR},.2)`, borderTop: `3px solid ${_ac}`, borderRadius: "50%", animation: "spin .8s linear infinite", margin: "0 auto 12px" }} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1714" }}>Parsing {fileName}...</div>
+              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+            </div>}
             {fileErr && <div style={{ background: "rgba(196,92,74,.06)", border: "1px solid rgba(196,92,74,.2)", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#c45c4a", fontWeight: 600 }}>{fileErr}</div>}
             <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragEnter={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop} onClick={() => fileRef.current?.click()}
               style={{ border: dragOver ? `2px solid ${_ac}` : "2px dashed rgba(0,0,0,.12)", borderRadius: 14, padding: "40px 40px", textAlign: "center", cursor: "pointer", background: dragOver ? `rgba(${_acR},.04)` : "transparent", transition: "all .15s" }}>
@@ -1405,7 +1413,7 @@ export default function SmartImporter({
                             {/* Bulk rent */}
                             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                               <span style={{ fontSize: 10, color: "#5c4a3a", fontWeight: 600 }}>All $</span>
-                              <input type="number" placeholder="rent" style={{ width: 50, fontSize: 10, padding: "2px 4px", border: "1px solid rgba(0,0,0,.08)", borderRadius: 4, fontFamily: "inherit" }}
+                              <input type="number" placeholder="rent" style={{ width: 65, fontSize: 10, padding: "4px 6px", border: "1px solid rgba(0,0,0,.08)", borderRadius: 4, fontFamily: "inherit", minHeight: 28 }}
                                 onBlur={e => { if (e.target.value) { setUnitRent(pi, ui, e.target.value); e.target.value = ""; } }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) { setUnitRent(pi, ui, e.target.value); e.target.value = ""; } }} />
                             </div>
                             {/* Owner-occupied toggle */}
@@ -1584,7 +1592,7 @@ export default function SmartImporter({
                                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                   {ti === 0 ? <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                                     <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", border: "none", borderBottom: "1px dashed rgba(0,0,0,.1)", background: "transparent", padding: "1px 4px", width: 90, fontFamily: "inherit" }} />
-                                    <select value="" onChange={e => { if (e.target.value) uRoom(pi, ui, ri, "name", e.target.value); }} style={{ fontSize: 9, padding: "2px 3px", border: "1px solid rgba(0,0,0,.1)", borderRadius: 3, color: "#5c4a3a", width: 16, minHeight: 20, cursor: "pointer", appearance: "none", textAlign: "center" }} title="Quick rename">
+                                    <select value="" onChange={e => { if (e.target.value) uRoom(pi, ui, ri, "name", e.target.value); }} style={{ fontSize: 9, padding: "4px 6px", border: "1px solid rgba(0,0,0,.1)", borderRadius: 3, color: "#5c4a3a", minWidth: 28, minHeight: 28, cursor: "pointer", appearance: "none", textAlign: "center" }} title="Quick rename">
                                       <option value="">...</option>
                                       <option value="Master">Master</option>
                                       <option value="Primary Suite">Primary Suite</option>
@@ -1728,7 +1736,7 @@ export default function SmartImporter({
             {/* Log */}
             <div ref={logRef} style={{ background: "#1a1714", borderRadius: 10, padding: 16, maxHeight: 280, overflowY: "auto", fontSize: 12, lineHeight: 1.7, fontFamily: "inherit" }}>
               {importLog.map((e, i) => (
-                <div key={i} style={{ color: e.st === "err" ? "#ef4444" : "rgba(255,255,255,.7)", display: "flex", gap: 6 }}>
+                <div key={i} style={{ color: e.st === "err" ? "#c45c4a" : "rgba(255,255,255,.7)", display: "flex", gap: 6 }}>
                   <span style={{ flexShrink: 0, color: e.st === "err" ? "#c45c4a" : _ac }}>{e.st === "ok" ? <IOk /> : <IX />}</span>
                   <span>{e.msg}</span>
                 </div>
@@ -1738,7 +1746,7 @@ export default function SmartImporter({
 
             {importDone && summary && (
               <div style={{ marginTop: 20, textAlign: "center" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: summary.err === 0 ? "#2d6a3f" : "#b8860b", marginBottom: 8 }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: summary.err === 0 ? _ac : "#b8860b", marginBottom: 8 }}>
                   {summary.err === 0 ? "Import Complete" : "Completed with Warnings"}
                 </div>
                 <div style={{ fontSize: 14, color: "#5c4a3a", marginBottom: 4 }}>
