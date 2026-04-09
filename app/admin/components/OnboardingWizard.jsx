@@ -33,7 +33,7 @@ const OTC_TYPES=["Move-In Fee","Admin Fee","Key Replacement","Lock Change","Clea
 // ─── Shared styles ───────────────────────────────────────────────────
 const TH={padding:"8px 12px",textAlign:"left",fontSize:11,fontWeight:600,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:".5px"};
 const TD={padding:"8px 12px",verticalAlign:"middle"};
-const INP={fontSize:13,padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.2)",fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
+const INP={fontSize:16,padding:"10px 12px",minHeight:44,borderRadius:6,border:"1px solid rgba(0,0,0,.2)",fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
 
 // ─── Main Component ──────────────────────────────────────────────────
 export default function OnboardingWizard({
@@ -480,7 +480,7 @@ function P2({tenantRows,sel,setSel,toggleSel,toggleAll,expandedId,setExpandedId,
 
     <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
       {[["all",`All (${totalTenants})`],["incomplete",`Incomplete (${ct.inc})`],["expired",`Expired (${ct.exp})`],["missing-email",`No Email (${ct.noE})`],["missing-rent",`No Rent (${ct.noR})`],["missing-phone",`No Phone (${ct.noP})`]].map(([k,l])=>(
-        <button key={k} onClick={()=>setFilter(k)} style={{fontSize:11,padding:"8px 14px",borderRadius:6,border:"1px solid",fontFamily:"inherit",cursor:"pointer",fontWeight:filter===k?600:400,borderColor:filter===k?_acc:"rgba(0,0,0,.12)",color:filter===k?_acc:"inherit",opacity:filter===k?1:.5,background:filter===k?accBg:"transparent",minHeight:36}}>{l}</button>
+        <button key={k} onClick={()=>setFilter(k)} style={{fontSize:11,padding:"8px 14px",borderRadius:6,border:"1px solid",fontFamily:"inherit",cursor:"pointer",fontWeight:filter===k?600:400,borderColor:filter===k?_acc:"rgba(0,0,0,.12)",color:filter===k?_acc:"inherit",opacity:filter===k?1:.5,background:filter===k?accBg:"transparent",minHeight:44}}>{l}</button>
       ))}
     </div>
 
@@ -686,7 +686,7 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
         {selCh.length>0&&<button onClick={()=>{markChargesPaid(selCh);setSelCh([]);}} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Mark {selCh.length} as Paid</button>}
       </div>
       <div style={{fontSize:12,background:"rgba(0,0,0,.03)",padding:"8px 12px",borderRadius:6,maxHeight:200,overflowY:"auto"}}>{unpaid.map(c=>(
-        <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.06)",cursor:"pointer",minHeight:36}}>
+        <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.06)",cursor:"pointer",minHeight:44}}>
           <input type="checkbox" checked={selCh.includes(c.id)} onChange={e=>setSelCh(p=>e.target.checked?[...p,c.id]:p.filter(x=>x!==c.id))} style={{width:18,height:18}}/>
           <span style={{flex:1}}>{c.tenantName} {"\u2014"} {c.category}</span><span style={{fontWeight:500}}>{fmtS(c.amount)}</span><span style={{fontSize:11,color:"#7a7067"}}>{c.dueDate}</span>
         </label>))}</div>

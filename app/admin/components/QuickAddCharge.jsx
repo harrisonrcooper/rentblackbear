@@ -93,7 +93,7 @@ export default function QuickAddCharge({ charges, props, onAdd, onCancel, uid, T
             {DEF_QUICK_CATS.map(c => (
               <button key={c} onClick={() => pickCategory(c)}
                 style={{
-                  fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6,
+                  fontSize: 11, fontWeight: 600, padding: "5px 12px", minHeight: 44, borderRadius: 6,
                   border: "1px solid " + (category === c ? "#1a1714" : "rgba(0,0,0,.1)"),
                   background: category === c ? "#1a1714" : "#fff",
                   color: category === c ? "#f5f0e8" : "#5c4a3a",
@@ -102,7 +102,7 @@ export default function QuickAddCharge({ charges, props, onAdd, onCancel, uid, T
             ))}
             <button onClick={() => setShowAllCats(!showAllCats)}
               style={{
-                fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6,
+                fontSize: 11, fontWeight: 600, padding: "5px 12px", minHeight: 44, borderRadius: 6,
                 border: "1px solid " + (showAllCats || (category && !DEF_QUICK_CATS.includes(category)) ? "#1a1714" : "rgba(0,0,0,.1)"),
                 background: (showAllCats || (category && !DEF_QUICK_CATS.includes(category))) ? "#1a1714" : "#fff",
                 color: (showAllCats || (category && !DEF_QUICK_CATS.includes(category))) ? "#f5f0e8" : "#5c4a3a",
@@ -116,7 +116,7 @@ export default function QuickAddCharge({ charges, props, onAdd, onCancel, uid, T
             </select>
           )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10 }}>
           <div className="fld">
             <label>Amount</label>
             <input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" style={{ width: "100%" }} />

@@ -677,9 +677,9 @@ export default function ApplyPage(){
               <div style={{marginTop:14,display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"rgba(212,168,83,.04)",border:"1px solid rgba(212,168,83,.15)",borderRadius:8}}>
                 <span style={{fontSize:12,color:"#5c4a3a",flex:1}}>Minor children (under 18) living here?</span>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <button onClick={()=>setD(p=>({...p,minorChildren:Math.max(0,(p.minorChildren||0)-1)}))} style={{width:26,height:26,borderRadius:"50%",border:"1px solid rgba(0,0,0,.12)",background:"#fff",cursor:"pointer",fontSize:16,fontWeight:700,color:"#1a1714",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+                  <button onClick={()=>setD(p=>({...p,minorChildren:Math.max(0,(p.minorChildren||0)-1)}))} style={{width:44,height:44,borderRadius:"50%",border:"1px solid rgba(0,0,0,.12)",background:"#fff",cursor:"pointer",fontSize:16,fontWeight:700,color:"#1a1714",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
                   <span style={{fontSize:16,fontWeight:800,minWidth:24,textAlign:"center",color:"#1a1714"}}>{d.minorChildren||0}</span>
-                  <button onClick={()=>setD(p=>({...p,minorChildren:(p.minorChildren||0)+1}))} style={{width:26,height:26,borderRadius:"50%",border:"1px solid rgba(0,0,0,.12)",background:"#fff",cursor:"pointer",fontSize:16,fontWeight:700,color:"#1a1714",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+                  <button onClick={()=>setD(p=>({...p,minorChildren:(p.minorChildren||0)+1}))} style={{width:44,height:44,borderRadius:"50%",border:"1px solid rgba(0,0,0,.12)",background:"#fff",cursor:"pointer",fontSize:16,fontWeight:700,color:"#1a1714",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
                 </div>
               </div>
             </div>);
@@ -885,7 +885,7 @@ export default function ApplyPage(){
                         <span style={{fontSize:9,color:"rgba(74,124,89,.9)",fontWeight:700}}>Uploaded</span>
                       </div>
                     </div>}
-                  <button style={{position:"absolute",top:-8,right:-8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
+                  <button style={{position:"absolute",top:-8,right:-8,width:36,height:36,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
                 </div>}
                 {!doc?.uploading&&!doc?.url&&<div className="upload" onClick={()=>ref_?.current?.click()} style={{marginBottom:6}}>
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9a8878" strokeWidth="1.5" style={{marginBottom:6}}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5"/></svg>
@@ -904,7 +904,7 @@ export default function ApplyPage(){
               <DocZone doc={back} label="Back of ID" type="PhotoID-Back" ref_={idBackRef}/>
             </>}
             <label style={{display:"flex",alignItems:"center",gap:8,marginTop:4,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
-              <input type="checkbox" checked={d.idUploadLater} onChange={e=>upd("idUploadLater",e.target.checked)} style={{width:16,height:16,cursor:"pointer"}}/>
+              <input type="checkbox" checked={d.idUploadLater} onChange={e=>upd("idUploadLater",e.target.checked)} style={{width:22,height:22,cursor:"pointer",flexShrink:0}}/>
               I'll upload my photo ID later (your application will be marked incomplete)
             </label>
             {errors.idFile&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:8}}>{errors.idFile}</div>}
@@ -994,7 +994,7 @@ export default function ApplyPage(){
                         <span style={{fontSize:9,color:"rgba(74,124,89,.9)",fontWeight:700}}>Uploaded</span>
                       </div>
                     </div>}
-                  <button style={{position:"absolute",top:-8,right:-8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
+                  <button style={{position:"absolute",top:-8,right:-8,width:36,height:36,borderRadius:"50%",background:"#c45c4a",border:"none",color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",fontWeight:700,lineHeight:1}} onClick={()=>deleteDoc(doc)}>x</button>
                 </>}
               </div>);
             })}
@@ -1006,7 +1006,7 @@ export default function ApplyPage(){
             <div style={{fontSize:10,color:"#6b5e52",marginTop:6}}>Last 2 pay stubs preferred. You can add multiple files.</div>
           </>}
           <label style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer",fontSize:13,fontWeight:400,color:"#5c4a3a",textTransform:"none",letterSpacing:0}}>
-            <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>{upd("incomeUploadLater",e.target.checked);if(e.target.checked)setErrors(p=>({...p,incomeProof:undefined}));}} style={{width:16,height:16,cursor:"pointer"}}/>
+            <input type="checkbox" checked={d.incomeUploadLater} onChange={e=>{upd("incomeUploadLater",e.target.checked);if(e.target.checked)setErrors(p=>({...p,incomeProof:undefined}));}} style={{width:22,height:22,cursor:"pointer",flexShrink:0}}/>
             I'll upload proof of income later
           </label>
           {errors.incomeProof&&<div className="err-msg" style={{animation:"shake .4s ease",marginTop:6}}>{errors.incomeProof}</div>}

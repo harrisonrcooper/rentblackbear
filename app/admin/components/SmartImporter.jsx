@@ -1184,7 +1184,7 @@ export default function SmartImporter({
                 <div style={{ width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: i < step ? _ac : i === step ? _ac : "rgba(0,0,0,.08)", color: i <= step ? _contrastAc : "#7a7067", transition: "all .25s", flexShrink: 0 }}>
                   {i < step ? <IOk /> : i + 1}
                 </div>
-                <span style={{ fontSize: 12, fontWeight: i === step ? 700 : 500, color: i <= step ? "#1a1714" : "#7a7067", marginLeft: 6, whiteSpace: "nowrap" }}>{s}</span>
+                <span style={{ fontSize: 12, fontWeight: i === step ? 700 : 500, color: i <= step ? "#1a1714" : "#7a7067", marginLeft: 6, whiteSpace: "normal", textAlign: "center" }}>{s}</span>
                 {i < steps.length - 1 && <div style={{ flex: 1, height: 2, background: i < step ? _ac : "rgba(0,0,0,.1)", margin: "0 10px", borderRadius: 1, transition: "background .25s" }} />}
               </div>
             ))}
@@ -1246,7 +1246,7 @@ export default function SmartImporter({
             </div>}
             {fileErr && <div style={{ background: "rgba(196,92,74,.06)", border: "1px solid rgba(196,92,74,.2)", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: _red, fontWeight: 600 }}>{fileErr}</div>}
             <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragEnter={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop} onClick={() => fileRef.current?.click()}
-              style={{ border: dragOver ? `2px solid ${_ac}` : "2px dashed rgba(0,0,0,.15)", borderRadius: 14, padding: "40px 40px", textAlign: "center", cursor: "pointer", background: dragOver ? `rgba(${_acR},.04)` : "transparent", transition: "all .15s" }}>
+              style={{ border: dragOver ? `2px solid ${_ac}` : "2px dashed rgba(0,0,0,.15)", borderRadius: 14, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: dragOver ? `rgba(${_acR},.04)` : "transparent", transition: "all .15s" }}>
               <IUp />
               <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1714", marginTop: 10 }}>{dragOver ? "Drop file here" : "Upload your spreadsheet"}</div>
               <div style={{ fontSize: 12, color: "#7a7067", marginTop: 4 }}>Accepts .csv, .xlsx, and .xls — any spreadsheet format</div>

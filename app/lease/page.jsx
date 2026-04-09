@@ -31,16 +31,24 @@ function SigCanvas({onSave,height=140,label="Draw your signature"}){
   const end=(e)=>{e.preventDefault();drawing.current=false;};
   const clear=()=>{const canvas=canvasRef.current;const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);if(onSave)onSave(null);};
   const save=()=>{if(onSave)onSave(canvasRef.current.toDataURL());};
+  // Sync canvas internal resolution with displayed CSS size
+  useEffect(()=>{
+    const canvas=canvasRef.current;if(!canvas)return;
+    const sync=()=>{canvas.width=canvas.clientWidth;canvas.height=canvas.clientHeight;};
+    sync();
+    const ro=new ResizeObserver(sync);ro.observe(canvas);
+    return()=>ro.disconnect();
+  },[]);
   return(
     <div>
       <div style={{fontSize:11,color:"#6b5e52",marginBottom:6,fontWeight:600}}>{label}</div>
-      <canvas ref={canvasRef} width={600} height={height}
+      <canvas ref={canvasRef}
         style={{border:"1.5px solid rgba(0,0,0,.15)",borderRadius:8,cursor:"crosshair",touchAction:"none",width:"100%",height,display:"block",background:"#fafaf8"}}
         onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
         onTouchStart={start} onTouchMove={move} onTouchEnd={end}/>
       <div style={{display:"flex",gap:8,marginTop:8}}>
-        <button onClick={clear} style={{fontSize:11,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,padding:"5px 12px",cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
-        <button onClick={save} style={{fontSize:11,fontWeight:700,color:"#fff",background:"#4a7c59",border:"none",borderRadius:6,padding:"5px 16px",cursor:"pointer",fontFamily:"inherit"}}>Save Signature</button>
+        <button onClick={clear} style={{fontSize:11,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,padding:"10px 16px",minHeight:44,cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
+        <button onClick={save} style={{fontSize:11,fontWeight:700,color:"#fff",background:"#4a7c59",border:"none",borderRadius:6,padding:"10px 16px",minHeight:44,cursor:"pointer",fontFamily:"inherit"}}>Save Signature</button>
       </div>
     </div>
   );
@@ -286,12 +294,12 @@ export default function LeasePage(){
       <div style={{maxWidth:760,margin:"0 auto",padding:"24px 16px 60px"}}>
 
         {/* Instructions banner */}
-        <div style={{padding:"14px 20px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.25)",borderRadius:10,marginBottom:16,fontSize:12,color:"#9a7422",lineHeight:1.7}}>
+        <div style={{padding:"14px 20px",background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.25)",borderRadius:10,marginBottom:16,fontSize:14,color:"#9a7422",lineHeight:1.7}}>
           <strong>Please read your entire lease before signing.</strong> Your signature at the bottom will serve as your initials for all sections marked with an initials line. Make sure you understand and agree to all terms before proceeding.
         </div>
 
         {/* Lease document */}
-        <div ref={docRef} style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",padding:"32px 40px",marginBottom:20}}>
+        <div ref={docRef} style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.08)",padding:"32px clamp(16px, 4vw, 40px)",marginBottom:20}}>
 
           {/* Document header */}
           <div style={{textAlign:"center",marginBottom:32,paddingBottom:24,borderBottom:"2px solid #1a1714"}}>
@@ -301,14 +309,14 @@ export default function LeasePage(){
           </div>
 
           {/* Parties */}
-          <div style={{display:"flex",gap:16,marginBottom:28}}>
-            <div style={{flex:1,padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Property Manager</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:16,marginBottom:28}}>
+            <div style={{flex:"1 1 250px",padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Property Manager</div>
               <div style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>{template?.landlordName||lease?.landlordName||"Carolina Cooper"}</div>
               <div style={{fontSize:11,color:"#6b5e52"}}>{template?.company||"Black Bear Rentals"}</div>
             </div>
-            <div style={{flex:1,padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Resident</div>
+            <div style={{flex:"1 1 250px",padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Resident</div>
               <div style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>{lease?.tenantName||""}</div>
               <div style={{fontSize:11,color:"#6b5e52"}}>{lease?.propertyAddress||""} · {lease?.room||""}</div>
             </div>
@@ -321,7 +329,7 @@ export default function LeasePage(){
               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               <span style={{fontSize:10,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:1}}>Your Lease Summary</span>
             </div>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+            <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
               <tbody>
                 {[
                   ["Tenant",lease?.tenantName||"—",""],
@@ -344,7 +352,7 @@ export default function LeasePage(){
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
           <div style={{marginBottom:28,borderBottom:"0.5px solid rgba(0,0,0,.07)"}}/>
 
@@ -354,10 +362,10 @@ export default function LeasePage(){
           {activeSections.map((sec,i)=>(
             <div key={sec.id} style={{marginBottom:28}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                <div style={{width:24,height:24,borderRadius:"50%",background:"#1a1714",color:"#d4a853",fontSize:10,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"Georgia,serif"}}>{i+1}</div>
+                <div style={{width:24,height:24,borderRadius:"50%",background:"#1a1714",color:"#d4a853",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"Georgia,serif"}}>{i+1}</div>
                 <div style={{fontSize:13,fontWeight:700,color:"#1a1714",fontFamily:"Georgia,serif",textTransform:"uppercase",letterSpacing:.3}}>{sec.title}</div>
               </div>
-              <div style={{paddingLeft:34,fontSize:12,lineHeight:1.85,color:"#2c2420",fontFamily:"Georgia,serif"}}
+              <div style={{paddingLeft:34,fontSize:14,lineHeight:1.85,color:"#2c2420",fontFamily:"Georgia,serif"}}
                 dangerouslySetInnerHTML={{__html:fillVars(sec.content,varData)}}/>
               {sec.requiresInitials&&(
                 <div style={{paddingLeft:34,marginTop:14}}>
@@ -368,7 +376,7 @@ export default function LeasePage(){
                      </div>
                     :signingStarted&&signature
                       ?<button onClick={()=>setInitialedSecs(p=>{const n=new Set(p);n.add(sec.id);return n;})}
-                          style={{display:"inline-flex",alignItems:"center",gap:6,padding:"8px 16px",background:"#1a1714",color:"#d4a853",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}}>
+                          style={{display:"inline-flex",alignItems:"center",gap:6,padding:"12px 16px",minHeight:44,background:"#1a1714",color:"#d4a853",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}}>
                           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                           Click to Initial This Section
                         </button>
@@ -428,7 +436,7 @@ export default function LeasePage(){
                  </div>
                </div>
                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                 <button onClick={()=>{setSignature(null);setSigningStarted(false);setInitialedSecs(new Set());}} style={{fontSize:10,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"4px 12px",cursor:"pointer",fontFamily:"inherit"}}>Re-draw Signature</button>
+                 <button onClick={()=>{setSignature(null);setSigningStarted(false);setInitialedSecs(new Set());}} style={{fontSize:10,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"10px 16px",minHeight:44,cursor:"pointer",fontFamily:"inherit"}}>Re-draw Signature</button>
                  {!signingStarted&&<button onClick={()=>{setSigningStarted(true);window.scrollTo({top:0,behavior:"smooth"});}}
                    style={{fontSize:12,fontWeight:700,color:"#fff",background:"#1a1714",border:"none",borderRadius:8,padding:"10px 20px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2.5" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>

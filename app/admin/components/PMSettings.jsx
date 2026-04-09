@@ -36,7 +36,7 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
             {etOpen&&<div style={{padding:"16px"}}>
               {/* Tab row */}
               <div style={{display:"flex",gap:4,marginBottom:16,flexWrap:"wrap"}}>
-                {TEMPLATES.map(t=><button key={t.key} onClick={()=>setEtTab(t.key)} style={{fontSize:10,fontWeight:700,padding:"5px 12px",borderRadius:6,border:"1px solid "+(etTab===t.key?"#1a1714":"rgba(0,0,0,.1)"),background:etTab===t.key?"#1a1714":"#fff",color:etTab===t.key?"#f5f0e8":"#5c4a3a",cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>)}
+                {TEMPLATES.map(t=><button key={t.key} onClick={()=>setEtTab(t.key)} style={{fontSize:10,fontWeight:700,padding:"8px 12px",minHeight:44,borderRadius:6,border:"1px solid "+(etTab===t.key?"#1a1714":"rgba(0,0,0,.1)"),background:etTab===t.key?"#1a1714":"#fff",color:etTab===t.key?"#f5f0e8":"#5c4a3a",cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>)}
               </div>
               {/* Subject */}
               <div className="fld">
@@ -109,7 +109,7 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
                 <div style={{fontSize:10,color:"#6b5e52",marginTop:1}}>{desc}</div>
               </div>
               <button onClick={()=>setSettings(p=>{const u={...p,[key]:!p[key]};save("hq-settings",u);return u;})} style={{
-                flexShrink:0,marginLeft:12,width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",
+                flexShrink:0,marginLeft:12,width:44,minHeight:44,borderRadius:12,border:"none",cursor:"pointer",
                 background:settings[key]!==false?"#4a7c59":"rgba(0,0,0,.1)",
                 transition:"background .2s",position:"relative",
               }}>
@@ -244,7 +244,7 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
           <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Sets the default answer to {"\u201c"}Allow a couple in this bedroom?{"\u201d"} when reviewing new applicants. Can be overridden per-property or per-application.</p>
           <div style={{display:"flex",gap:8}}>
             {[{val:false,label:"No \u2014 1 adult per bedroom",sub:"Default for most co-living setups"},{val:true,label:"Yes \u2014 couples OK by default",sub:"Can still deny per-applicant"}].map(({val,label,sub})=>(
-              <button key={String(val)} style={{flex:1,padding:"10px 12px",borderRadius:8,border:"2px solid "+((settings.couplesDefault||false)===val?(val?"rgba(74,124,89,.7)":"rgba(196,92,74,.5)"):"rgba(0,0,0,.08)"),background:(settings.couplesDefault||false)===val?(val?"rgba(74,124,89,.06)":"rgba(196,92,74,.04)"):"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}
+              <button key={String(val)} style={{flex:1,padding:"10px 12px",minHeight:44,borderRadius:8,border:"2px solid "+((settings.couplesDefault||false)===val?(val?"rgba(74,124,89,.7)":"rgba(196,92,74,.5)"):"rgba(0,0,0,.08)"),background:(settings.couplesDefault||false)===val?(val?"rgba(74,124,89,.06)":"rgba(196,92,74,.04)"):"#fff",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}
                 onClick={()=>{const u={...settings,couplesDefault:val};setSettings(u);save("hq-settings",u);}}>
                 <div style={{fontSize:12,fontWeight:700,color:(settings.couplesDefault||false)===val?(val?"#2d6a3f":"#c45c4a"):"#1a1714",marginBottom:2}}>{label}</div>
                 <div style={{fontSize:10,color:"#6b5e52"}}>{sub}</div>

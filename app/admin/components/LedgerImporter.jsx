@@ -696,13 +696,13 @@ export default function LedgerImporter({
         </div>
 
         {/* ── Step indicator ── */}
-        <div style={{ padding: "12px 24px", display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
+        <div style={{ padding: "12px 24px", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
           {steps.map((s, i) => (<div key={i} style={{ display: "flex", alignItems: "center", gap: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <div style={{ width: 22, height: 22, borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, background: i < step ? _ac : i === step ? _ac : "#e5e7eb", color: i <= step ? "#fff" : "#4b5563", flexShrink: 0 }}>
                 {i < step ? <IChk /> : i + 1}
               </div>
-              {i === step && <span style={{ fontSize: 11, fontWeight: 700, color: "#1a1714", whiteSpace: "nowrap" }}>{s}</span>}
+              {i === step && <span style={{ fontSize: 11, fontWeight: 700, color: "#1a1714", whiteSpace: "normal" }}>{s}</span>}
             </div>
             {i < steps.length - 1 && <div style={{ width: 16, height: 1, background: i < step ? _ac : "#e5e7eb", margin: "0 2px", flexShrink: 0 }} />}
           </div>))}
@@ -743,7 +743,7 @@ export default function LedgerImporter({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {uniqueCats.map(cat => {
                 const count = catCounts[cat] || 0;
-                return (<div key={cat} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                return (<div key={cat} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb", flexWrap: "wrap" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1714" }}>{cat}</div>
                     <div style={{ fontSize: 11, color: "#4b5563" }}>{count} charge{count !== 1 ? "s" : ""}</div>
@@ -787,7 +787,7 @@ export default function LedgerImporter({
                         if (e.target.value === "__custom__") { setShowCustomCatFor(cat); setCustomCatInput(""); return; }
                         setCatMap(prev => ({ ...prev, [cat]: e.target.value }));
                       }}
-                      style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${catMap[cat] ? "#d1d5db" : _red}`, fontSize: 12, fontFamily: "inherit", minWidth: 180, background: catMap[cat] ? "#fff" : _red + "08" }}
+                      style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${catMap[cat] ? "#d1d5db" : _red}`, fontSize: 12, fontFamily: "inherit", minWidth: 0, width: "100%", background: catMap[cat] ? "#fff" : _red + "08" }}
                     >
                       <option value="">{"\u2014"} Select charge type {"\u2014"}</option>
                       {[...CHARGE_CATS, ...(CHARGE_CATS.includes("Other") ? [] : ["Other"])].map(c => <option key={c} value={c}>{c}</option>)}
@@ -872,7 +872,7 @@ export default function LedgerImporter({
                 const tier = isSkipped ? "skip" : !m ? "red" : conf >= 0.85 ? "green" : "amber";
                 const tierColor = isSkipped ? "#d1d5db" : tier === "green" ? _ac : tier === "amber" ? _gold : _red;
 
-                return (<div key={idx} data-charge-idx={idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid #f3f4f6", fontSize: 12, opacity: isSkipped ? .45 : 1, background: isSkipped ? "rgba(0,0,0,.02)" : tier === "red" ? "rgba(196,92,74,.05)" : "transparent", borderLeft: tier === "red" ? "3px solid " + _red : "3px solid transparent" }}>
+                return (<div key={idx} data-charge-idx={idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid #f3f4f6", fontSize: 12, opacity: isSkipped ? .45 : 1, background: isSkipped ? "rgba(0,0,0,.02)" : tier === "red" ? "rgba(196,92,74,.05)" : "transparent", borderLeft: tier === "red" ? "3px solid " + _red : "3px solid transparent", flexWrap: "wrap" }}>
                   {/* Confidence dot */}
                   <div style={{ width: 8, height: 8, borderRadius: 99, background: tierColor, flexShrink: 0 }} title={isSkipped ? "Skipped" : tier === "green" ? "Exact match" : tier === "amber" ? "Close match (verify)" : "No match found"} />
                   {/* Charge info */}
@@ -884,7 +884,7 @@ export default function LedgerImporter({
                   </div>
                   {/* Match result — dropdown or "Skipped" label */}
                   {isSkipped ? (
-                    <div style={{ minWidth: 160, maxWidth: 260, fontSize: 11, color: "#4b5563", fontWeight: 600, fontStyle: "italic", padding: "6px 10px" }}>Skipped</div>
+                    <div style={{ minWidth: 0, flex: "1 1 160px", fontSize: 11, color: "#4b5563", fontWeight: 600, fontStyle: "italic", padding: "6px 10px" }}>Skipped</div>
                   ) : <select
                     value={m ? m.roomId : ""}
                     onChange={e => {
@@ -897,7 +897,7 @@ export default function LedgerImporter({
                       const room = allRooms.find(r => r.roomId === e.target.value);
                       if (room) setMatchOverrides(prev => ({ ...prev, [idx]: { ...room, confidence: 1.0 } }));
                     }}
-                    style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? (m.isNewPast ? "#6b5e52" : "#d1d5db") : _red), fontSize: 11, fontFamily: "inherit", background: m ? (m.isNewPast ? "rgba(107,94,82,.06)" : "#fff") : _red + "08", maxWidth: 260, minWidth: 160 }}
+                    style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? (m.isNewPast ? "#6b5e52" : "#d1d5db") : _red), fontSize: 11, fontFamily: "inherit", background: m ? (m.isNewPast ? "rgba(107,94,82,.06)" : "#fff") : _red + "08", minWidth: 0, flex: "1 1 160px" }}
                   >
                     <option value="">Assign tenant...</option>
                     {allRooms.filter(r => !r.isPast && !r.isFuture).map(r => (
@@ -1176,8 +1176,8 @@ export default function LedgerImporter({
 
 // ── Shared button styles ─────────────────────────────────────────
 function btnPrimary(accent) {
-  return { padding: "8px 16px", borderRadius: 6, border: "none", background: accent, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 };
+  return { padding: "8px 16px", borderRadius: 6, border: "none", background: accent, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 44 };
 }
 function btnOut(accent) {
-  return { padding: "8px 16px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" };
+  return { padding: "8px 16px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 44 };
 }

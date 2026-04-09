@@ -67,7 +67,7 @@ export default function QuickAddPayment({ charges, props, onRecord, onCancel, ui
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Record Payment
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10 }}>
           <div className="fld">
             <label>Tenant</label>
             <select value={selTenant} onChange={e => handleTenantChange(e.target.value)} style={{ width: "100%" }}>

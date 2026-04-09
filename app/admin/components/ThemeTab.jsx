@@ -74,7 +74,7 @@ export default function ThemeTab({
           <div><div style={{fontSize:13,fontWeight:700,color:_acc}}>{_acc.toUpperCase()}</div><div style={{fontSize:10,color:"#6b5e52",marginTop:2}}>Click to pick a custom color</div></div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",marginLeft:"auto"}}>
             {["#4a7c59","#3b6ea5","#b85c38","#2a7d7b","#2c3e50","#7c3aed","#b45309"].map(c=>(
-              <div key={c} onClick={()=>applyAdminAccent(c)} style={{width:22,height:22,borderRadius:"50%",background:c,cursor:"pointer",border:"2px solid "+(_acc===c?"#1a1714":"transparent"),transition:"border .15s"}}/>
+              <div key={c} onClick={()=>applyAdminAccent(c)} style={{width:22,height:22,minWidth:44,minHeight:44,borderRadius:"50%",background:c,cursor:"pointer",border:"2px solid "+(_acc===c?"#1a1714":"transparent"),transition:"border .15s",display:"inline-flex",alignItems:"center",justifyContent:"center"}}/>
             ))}
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function ThemeTab({
     </>}
 
     {tSub==="site"&&<>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:6,marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         <button className="btn btn-green" onClick={pushToSite}>Push to Site</button>
         <button className="btn btn-gold" onClick={saveCurrentTheme}>Save Theme</button>
         <button className="btn btn-out" onClick={exportTheme}>Export CSS</button>
@@ -168,14 +168,14 @@ export default function ThemeTab({
           </div>
         </>}
       </div></div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,alignItems:"start"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:20,alignItems:"start"}}>
         <div className="card"><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:14}}>Color Tokens</h3>
           {Object.entries(THEME_LABELS).map(([k,label])=>(
           <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
             <div style={{width:28,height:28,borderRadius:6,background:theme[k],border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}><input type="color" value={theme[k]} onChange={e=>setTheme({...theme,[k]:e.target.value})} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/></div>
             <span style={{fontSize:11,fontWeight:600,flex:1}}>{label}</span>
-            <input value={theme[k]} onChange={e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value))setTheme({...theme,[k]:e.target.value});}} style={{width:80,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"monospace"}}/>
+            <input value={theme[k]} onChange={e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value))setTheme({...theme,[k]:e.target.value});}} style={{width:80,minWidth:60,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"monospace"}}/>
           </div>))}
         </div></div>
         <div style={{position:"sticky",top:80}}>

@@ -405,10 +405,10 @@ export default function ApplicationsTab({
       </div>
       {expanded.followUp!==false&&visible.map(a=>(
         <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",fontSize:11,borderBottom:"1px solid rgba(0,0,0,.05)"}}>
-          <span><strong>{a.name}</strong> — {SL[a.status]} · <span style={{color:daysSince(a.lastContact||a.submitted)>=5?_red:"#5c4a3a",fontWeight:700}}>{daysSince(a.lastContact||a.submitted)}d</span></span>
+          <span style={{minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}><strong>{a.name}</strong> — {SL[a.status]} · <span style={{color:daysSince(a.lastContact||a.submitted)>=5?_red:"#5c4a3a",fontWeight:700}}>{daysSince(a.lastContact||a.submitted)}d</span></span>
           <div style={{display:"flex",gap:4}}>
             <button className="btn btn-out btn-sm" style={{fontSize:8}} onClick={()=>setModal({type:"app",data:a})}>Open</button>
-            <button className="btn btn-out btn-sm" style={{fontSize:8,color:_red,padding:"4px 7px",borderColor:`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.2)`,minWidth:28,minHeight:28}} title="Permanently dismiss" onClick={()=>dismissOne(a.id)}><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
+            <button className="btn btn-out btn-sm" style={{fontSize:8,color:_red,padding:"4px 7px",borderColor:`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.2)`,minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center"}} title="Permanently dismiss" onClick={()=>dismissOne(a.id)}><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
           </div>
         </div>
       ))}
@@ -417,7 +417,7 @@ export default function ApplicationsTab({
 
   {/* KPIs — clickable filters */}
   <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,flex:1}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,flex:1}}>
       {[
         {key:null,label:"Pipeline",value:allActiveApps.length,sub:"All active",color:null},
         {key:"needsAction",label:"Needs Action",value:needsActionApps.length,sub:"Applied — awaiting review",color:needsActionApps.length?_red:_green},
@@ -440,9 +440,10 @@ export default function ApplicationsTab({
     <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff",flexShrink:0}}>
       <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Badge</span>
       <div onClick={()=>{const u={...settings,showAppBadge:settings.showAppBadge===false};setSettings(u);save("hq-settings",u);}}
-        style={{width:32,height:18,borderRadius:9,background:settings.showAppBadge!==false?_ac:"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+        style={{minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+        <div style={{width:32,height:18,borderRadius:9,background:settings.showAppBadge!==false?_ac:"rgba(0,0,0,.12)",position:"relative",transition:"background .2s"}}>
         <div style={{position:"absolute",top:2,left:settings.showAppBadge!==false?14:2,width:14,height:14,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
-      </div>
+      </div></div>
     </div>
   </div>
   {/* Search + Controls */}
@@ -460,7 +461,7 @@ export default function ApplicationsTab({
     {(()=>{
       const AB={padding:"8px 14px",border:"none",background:"transparent",fontWeight:600,fontSize:11,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",transition:"background .15s",color:"#5c4a3a"};
       return(
-      <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:240}}>
+      <div style={{display:"flex",flexDirection:"column",gap:2,flex:"1 1 280px"}}>
         <div style={{display:"flex",alignItems:"center",background:"#fff",border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden"}}>
           <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:"1px solid rgba(0,0,0,.08)",flex:1,minWidth:0}}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" style={{flexShrink:0}}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
@@ -480,7 +481,7 @@ export default function ApplicationsTab({
     })()}
 
     {/* Portal Invite */}
-    <div style={{display:"flex",flexDirection:"column",gap:2,flex:1,minWidth:240}}>
+    <div style={{display:"flex",flexDirection:"column",gap:2,flex:"1 1 280px"}}>
       <div style={{display:"flex",alignItems:"center",background:`rgba(${_acR},.04)`,border:`1px solid rgba(${_acR},.2)`,borderRadius:8,overflow:"hidden"}}>
         <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRight:`1px solid rgba(${_acR},.15)`,flex:1,minWidth:0}}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={_ac} strokeWidth="2" style={{flexShrink:0}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>

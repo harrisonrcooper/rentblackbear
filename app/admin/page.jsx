@@ -685,7 +685,7 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
   .side.open{left:0}
   .mob-header{display:none}
   .bot-bar{display:flex}
-  .mn{left:0;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
+  .mn{left:0!important;padding-bottom:calc(60px + env(safe-area-inset-bottom))}
   .cnt{padding:14px}
   .tbar{padding:10px 14px;top:0}
   .tbar h1{font-size:18px}
@@ -704,14 +704,19 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
   .mbg{align-items:flex-end}
   .mbox{max-width:100%!important;width:100%;border-radius:16px 16px 0 0;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease-out}
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-  .mft{flex-wrap:wrap}.mft button{flex:1;min-width:100px}
-  .fld input,.fld select,.fld textarea{font-size:14px!important;padding:10px 12px}
+  .mft{flex-wrap:wrap}.mft button{flex:1;min-width:100px;min-height:44px}
+  .fld input,.fld select,.fld textarea{font-size:16px!important;padding:10px 12px;min-height:44px}
   .sform-row{grid-template-columns:1fr}
-  .pay-tab{padding:10px 12px;font-size:12px!important}
+  .pay-tab{padding:10px 12px;font-size:12px!important;min-height:44px}
   .card-bd{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .btn{padding:8px 14px;font-size:11px}
-  .btn-sm{padding:6px 10px;font-size:9px}
-  select,input[type="date"]{font-size:12px!important;min-width:0}
+  .btn{padding:10px 14px;font-size:11px;min-height:44px}
+  .btn-sm{padding:8px 10px;font-size:10px;min-height:44px}
+  select,input[type="date"]{font-size:16px!important;min-width:0;min-height:44px}
+  input[type="checkbox"],input[type="radio"]{min-width:22px;min-height:22px}
+  .sn{min-height:44px}
+  .pipe-card{padding:12px 12px 12px 30px;min-height:44px}
+  .badge{padding:4px 10px;font-size:9px}
+  .st-pill{padding:5px 12px;font-size:10px}
 }
 
 /* Small phone */
@@ -722,7 +727,7 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
   .tbar h1{font-size:16px}
   .cnt{padding:10px}
   .pay-tab{padding:8px 6px;font-size:11px!important}
-  .btn{font-size:10px;padding:7px 10px}
+  .btn{font-size:10px;padding:8px 10px}
 }
 `;
 

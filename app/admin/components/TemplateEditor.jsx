@@ -72,12 +72,12 @@ function RichEditor({value,onChange}){
   const exec=(cmd,val)=>{editorRef.current?.focus();document.execCommand(cmd,false,val||null);onChange(editorRef.current?.innerHTML||"");};
   const tbtn=(label,cmd,opts={})=>(
     <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd,opts.val);}} title={opts.title||cmd}
-      style={{width:opts.w||26,height:26,borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",fontSize:opts.fs||11,fontFamily:"inherit",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:opts.bold?700:400,fontStyle:opts.italic?"italic":"normal",textDecoration:opts.underline?"underline":"none",padding:"0 4px"}}>{label}</button>
+      style={{width:opts.w||26,height:26,minWidth:44,minHeight:44,borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",fontSize:opts.fs||11,fontFamily:"inherit",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:opts.bold?700:400,fontStyle:opts.italic?"italic":"normal",textDecoration:opts.underline?"underline":"none",padding:"0 4px"}}>{label}</button>
   );
   const tsep=()=>(<div style={{width:1,background:"rgba(0,0,0,.1)",margin:"2px 4px"}}/>);
   const tsvg=(d,cmd,title,val)=>(
     <button key={cmd+title} onMouseDown={e=>{e.preventDefault();exec(cmd,val);}} title={title}
-      style={{width:26,height:26,borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+      style={{width:26,height:26,minWidth:44,minHeight:44,borderRadius:4,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
       <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
     </button>
   );
@@ -258,7 +258,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
         <h2 style={{fontSize:15,fontWeight:700,color:"#1a1714",margin:0}}>Lease Template Editor</h2>
         <p style={{fontSize:11,color:"#6b5e52",margin:"3px 0 0"}}>Use <strong>Edit Variables</strong> to adjust your policy numbers. Only edit legal wording if advised by your attorney.</p>
       </div>
-      <div style={{display:"flex",gap:8}}>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         <button className="btn btn-out btn-sm" onClick={()=>setPreviewOpen(true)} style={{display:"flex",alignItems:"center",gap:5}}>
           <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           Preview Full Lease
@@ -312,7 +312,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
               </div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}} onClick={e=>e.stopPropagation()}>
-              <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",userSelect:"none",fontSize:10,color:"#6b5e52"}}>
+              <label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",userSelect:"none",fontSize:10,color:"#6b5e52",minWidth:44,minHeight:44,justifyContent:"center"}}>
                 <button onClick={()=>updateSec(si,{active:!isActive})} style={{width:30,height:17,borderRadius:9,border:"none",cursor:"pointer",background:isActive?_acc:"#ccc",position:"relative",padding:0,transition:"background .15s",flexShrink:0}}>
                   <div style={{position:"absolute",width:13,height:13,borderRadius:"50%",background:"#fff",top:2,left:isActive?15:2,transition:"left .15s"}}/>
                 </button>
@@ -344,7 +344,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
                 ].map(t=>{
                   const active=mode===t.id;
                   return(<button key={t.id} onClick={()=>setSectionMode(p=>({...p,[sec.id]:t.id}))}
-                    style={{padding:"4px 12px",fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",background:active?_acc:"transparent",color:active?"#fff":"#9a8878",transition:"all .15s",whiteSpace:"nowrap"}}>
+                    style={{padding:"8px 12px",minHeight:44,fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",background:active?_acc:"transparent",color:active?"#fff":"#9a8878",transition:"all .15s",whiteSpace:"nowrap"}}>
                     {t.label}
                   </button>);
                 })}
@@ -355,7 +355,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
             {mode==="vars"&&hasVars&&(
               <div style={{background:`rgba(${_accRgb},.04)`,border:`1px solid rgba(${_accRgb},.15)`,borderRadius:8,padding:14}}>
                 <div style={{fontSize:10,fontWeight:700,color:_acc,textTransform:"uppercase",letterSpacing:.8,marginBottom:12}}>Policy Variables</div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}>
                   {SECTION_VARS[sec.id].map(v=>(
                     <div key={v.key}>
                       <label style={{fontSize:10,fontWeight:700,color:"#5c4a3a",display:"block",marginBottom:4}}>

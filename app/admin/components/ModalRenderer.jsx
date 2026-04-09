@@ -164,10 +164,10 @@ export default function ModalRenderer({
       {id:"inspections",label:"Inspections"},
     ];
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:typeof window!=="undefined"&&window.innerWidth<768?0:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
 
       {/* ── Sticky top bar ── */}
-      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"16px 32px 0",position:"sticky",top:0,zIndex:10}}>
+      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:typeof window!=="undefined"&&window.innerWidth<768?"12px 16px 0":"16px 32px 0",position:"sticky",top:0,zIndex:10}}>
         {/* Row 1: Back */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           <button onClick={()=>{setModal(null);setPortalInviteState("idle");}}
@@ -219,7 +219,7 @@ export default function ModalRenderer({
         </div>
 
         {/* ── Browser Tabs ── */}
-        <div style={{display:"flex",gap:0}}>
+        <div style={{display:"flex",gap:0,overflowX:"auto",WebkitOverflowScrolling:"touch",whiteSpace:"nowrap"}}>
           {TABS.map(t=>{
             const active=tenantProfileTab===t.id;
             return(
@@ -232,10 +232,10 @@ export default function ModalRenderer({
       </div>
 
       {/* ── Body ── */}
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"28px 32px 60px"}}>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:typeof window!=="undefined"&&window.innerWidth<768?"16px 12px 60px":"28px 32px 60px"}}>
 
         {/* ── SUMMARY TAB ── */}
-        {tenantProfileTab==="summary"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,alignItems:"start"}}>
+        {tenantProfileTab==="summary"&&<div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:16,alignItems:"start"}}>
           <div style={{display:"flex",flexDirection:"column",gap:16}}>
 
             {/* Lease expiry / M2M panel */}
@@ -250,7 +250,7 @@ export default function ModalRenderer({
                     <div style={{fontSize:11,color:"#5c4a3a"}}>{isM2M?`${fmtS(r.rent)}/mo · No fixed end date`:isExpired?`Expired ${fmtD(r.le)}`:`${dl} days remaining — ${fmtD(r.le)}`}</div>
                   </div>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:8}}>
                   {!isM2M&&<button onMouseEnter={e=>e.currentTarget.style.background="rgba(74,124,89,.15)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(74,124,89,.06)"} style={{padding:"10px",borderRadius:8,border:"1px solid rgba(74,124,89,.25)",background:"rgba(74,124,89,.06)",cursor:"pointer",fontFamily:"inherit",textAlign:"center",transition:"all .15s"}} onClick={()=>{const ne=new Date(TODAY);ne.setFullYear(ne.getFullYear()+1);setModal({type:"renewLease",room:r,prop,currentRent:r.rent,newRent:r.rent,newEnd:ne.toISOString().split("T")[0],mode:"renew",existingLease:null});}}>
                     <div style={{fontSize:11,fontWeight:700,color:"#4a7c59"}}>Renew 12 Months</div>
                     <div style={{fontSize:10,color:"#6b5e52"}}>{fmtS(r.rent)}/mo</div>
@@ -298,7 +298,7 @@ export default function ModalRenderer({
                           }}>Resend Email</button>}
                         </div>
                       </div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                      <div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:6}}>
                         {[["Period",fmtD(tLease.moveIn)+" \u2013 "+(tLease.leaseEndTbd?"TBD":fmtD(tLease.leaseEnd))],["Rent",fmtS(tLease.rent)+"/mo"],["SD",fmtS(tLease.sd)],["Property",tLease.property+(prop?.addr?" \u2014 "+prop.addr:"")]].map(([k,v])=>(
                           <div key={k}><div style={{fontSize:9,color:"#7a7067",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{k}</div><div style={{fontSize:12,fontWeight:600}}>{v}</div></div>
                         ))}
@@ -626,7 +626,7 @@ export default function ModalRenderer({
                   const csv=rows.map(row=>row.map(v=>`"${v}"`).join(",")).join("\n");
                   const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`charges-${r.tenant.name.replace(/\s/g,"-")}.csv`;a.click();
                 }}
-                style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,color:"#5c4a3a",fontFamily:"inherit",padding:"4px 8px",borderRadius:6,transition:"background .15s"}}
+                style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600,color:"#5c4a3a",fontFamily:"inherit",padding:"4px 8px",borderRadius:6,transition:"background .15s",minHeight:typeof window!=="undefined"&&window.innerWidth<768?44:undefined}}
                 onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.04)"}
                 onMouseLeave={e=>e.currentTarget.style.background="none"}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -791,7 +791,7 @@ export default function ModalRenderer({
         </div>}
 
         {/* ── HOME GUIDE TAB ── */}
-        {tenantProfileTab==="guide"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+        {tenantProfileTab==="guide"&&<div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:16}}>
           <div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",padding:"20px 24px"}}>
             <div style={{fontSize:14,fontWeight:700,marginBottom:14}}>House Rules</div>
             {houseRules.map((rule,i)=>(
@@ -840,7 +840,7 @@ export default function ModalRenderer({
             {/* Send new offer form */}
             <div className="card" style={{marginBottom:20}}><div className="card-bd" style={{padding:"20px 24px"}}>
               <div style={{fontSize:13,fontWeight:700,marginBottom:14}}>Send New Renewal Offer</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
+              <div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr 1fr",gap:12,marginBottom:12}}>
                 <div>
                   <label style={{fontSize:10,fontWeight:600,color:"#6b5e52",display:"block",marginBottom:4}}>Proposed Rent ($/mo)</label>
                   <input type="number" value={renewalForm.proposedRent} onChange={e=>setRenewalForm(f=>({...f,proposedRent:e.target.value}))} placeholder={r.rent||""} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
@@ -1001,7 +1001,7 @@ export default function ModalRenderer({
                   ?<div style={{fontSize:14,color:"#1a1714",marginBottom:8}}>
                     {r.tenant.moveIn?fmtD(r.tenant.moveIn):""} {r.le?" – "+fmtD(r.le):"(no end date)"}
                   </div>
-                  :<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
+                  :<div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:10,marginBottom:8}}>
                     <div><label style={{fontSize:11,fontWeight:700,color:"#5c4a3a",display:"block",marginBottom:4}}>Start Date</label><input type="date" value={ls.newLeStart||""} onChange={e=>updLs("newLeStart",e.target.value)} style={{width:"100%",padding:"9px 12px",border:"2px solid rgba(0,0,0,.1)",borderRadius:8,fontSize:13,fontFamily:"inherit",outline:"none"}}/></div>
                     <div><label style={{fontSize:11,fontWeight:700,color:"#5c4a3a",display:"block",marginBottom:4}}>End Date</label><input type="date" value={ls.newLeEnd||""} onChange={e=>updLs("newLeEnd",e.target.value)} style={{width:"100%",padding:"9px 12px",border:"2px solid rgba(0,0,0,.1)",borderRadius:8,fontSize:13,fontFamily:"inherit",outline:"none"}}/></div>
                   </div>
@@ -1141,7 +1141,7 @@ export default function ModalRenderer({
       </div>
 
       {/* Key details grid */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:12,marginBottom:16}}>
         {[["Tenant",l.tenantName],["Property",l.property],["Room",l.room],["Monthly Rent",fmtS(l.rent||0)+"/mo"],["Security Deposit",fmtS(l.sd||0)],["Prorated Rent",l.proratedRent>0?fmtS(l.proratedRent):"None"],["Lease Start",fmtD(l.leaseStart||l.moveIn)],["Lease End",fmtD(l.leaseEnd)],["Landlord",l.landlordName],["Email",l.tenantEmail]].filter(([,v])=>v).map(([k,v])=>(
           <div key={k} style={{background:"rgba(0,0,0,.02)",borderRadius:7,padding:"8px 12px"}}>
             <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.6,marginBottom:3}}>{k}</div>
@@ -1613,7 +1613,7 @@ export default function ModalRenderer({
         <div style={{fontSize:11,color:"#5c4a3a",marginBottom:12}}>This cannot be undone. The expense will be removed from all reports, overview, and Schedule E calculations.</div>
         <div style={{display:"flex",gap:8}}>
           <button className="btn btn-out btn-sm" onClick={()=>setModal(p=>({...p,_confirmDelete:false}))}>Keep it</button>
-          <button className="btn btn-sm" style={{background:"#c45c4a",color:"#fff",border:"none",padding:"6px 16px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setExpenses(p=>p.filter(x=>x.id!==modal.editId));setModal(null);}}>Yes, delete permanently</button>
+          <button className="btn btn-sm" style={{background:"#c45c4a",color:"#fff",border:"none",padding:"6px 16px",borderRadius:6,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",minHeight:typeof window!=="undefined"&&window.innerWidth<768?44:undefined}} onClick={()=>{setExpenses(p=>p.filter(x=>x.id!==modal.editId));setModal(null);}}>Yes, delete permanently</button>
         </div>
       </div>}
 
@@ -1629,7 +1629,7 @@ export default function ModalRenderer({
       <p style={{fontSize:12,color:"#5c4a3a",marginBottom:6}}><strong>{modal.description}</strong> will be permanently deleted.</p>
       <p style={{fontSize:11,color:"#7a7067",marginBottom:16}}>This cannot be undone. The expense will be removed from all reports, overview, and Schedule E calculations.</p>
       <div className="mft"><button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
-        <button className="btn btn-sm" style={{background:"#c45c4a",color:"#fff",border:"none",padding:"8px 20px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}} onClick={()=>{setExpenses(p=>p.filter(x=>x.id!==modal.expId));setModal(null);}}>Yes, delete permanently</button></div>
+        <button className="btn btn-sm" style={{background:"#c45c4a",color:"#fff",border:"none",padding:"8px 20px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",minHeight:typeof window!=="undefined"&&window.innerWidth<768?44:undefined}} onClick={()=>{setExpenses(p=>p.filter(x=>x.id!==modal.expId));setModal(null);}}>Yes, delete permanently</button></div>
     </div></div>
   )}
 
@@ -2009,7 +2009,7 @@ export default function ModalRenderer({
       </div>
     );
     const pillBtn=(active,onClick,label)=>(
-      <button onClick={onClick} style={{padding:"6px 14px",borderRadius:6,border:`2px solid ${active?"#1a1714":"rgba(0,0,0,.1)"}`,background:active?"#1a1714":"#fff",color:active?"#f5f0e8":"#5c4a3a",fontSize:12,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
+      <button onClick={onClick} style={{padding:"6px 14px",borderRadius:6,border:`2px solid ${active?"#1a1714":"rgba(0,0,0,.1)"}`,background:active?"#1a1714":"#fff",color:active?"#f5f0e8":"#5c4a3a",fontSize:12,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",minHeight:typeof window!=="undefined"&&window.innerWidth<768?44:undefined}}>
         {label}
       </button>
     );
@@ -2032,10 +2032,10 @@ export default function ModalRenderer({
     );
 
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:220,background:"#f5f4f1",zIndex:201,overflowY:"auto"}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,left:typeof window!=="undefined"&&window.innerWidth<768?0:220,background:"#f5f4f1",zIndex:201,overflowY:"auto"}}>
 
       {/* Sticky header */}
-      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:"12px 32px 0",position:"sticky",top:0,zIndex:10}}>
+      <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:typeof window!=="undefined"&&window.innerWidth<768?"12px 16px 0":"12px 32px 0",position:"sticky",top:0,zIndex:10}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <button onClick={()=>setModal(prev=>({...prev,type:"tenant",_rcRoom:undefined,_rcProp:undefined,_rcRent:undefined,_rcLateConfig:undefined,_rcErrs:undefined}))}
             onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"}
@@ -2176,7 +2176,7 @@ export default function ModalRenderer({
                 {pillBtn(lc.initialFeeType==="pctUnpaid",()=>updLc("initialFeeType","pctUnpaid"),"% Unpaid")}
               </div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:10}}>
               <div>
                 {lbl("Amount",true,errs.initialFee)}
                 {lc.initialFeeType==="flat"?dollarWrap("initialFee","initialFee","50"):pctWrap("initialFee","initialFee","10")}
@@ -2197,7 +2197,7 @@ export default function ModalRenderer({
             {checkbox(lc.dailyEnabled,()=>updLc("dailyEnabled",!lc.dailyEnabled),"Daily late fees")}
           </div>
           {lc.dailyEnabled&&<>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:10}}>
               <div>
                 {lbl("Amount",true,errs.dailyFee)}
                 {dollarWrap("dailyFee","dailyFee","5")}
@@ -3341,7 +3341,7 @@ export default function ModalRenderer({
           {!hasAnyDetail&&!a.skipRoomAssign&&<div style={{fontSize:11,color:"#9a7422",padding:"7px 10px",background:"rgba(212,168,83,.06)",border:"1px solid rgba(212,168,83,.15)",borderRadius:6}}>
             No room assigned yet. Go back to the applicant to set property, room, and move-in date.
           </div>}
-          {(hasAnyDetail||a.skipRoomAssign)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 16px"}}>
+          {(hasAnyDetail||a.skipRoomAssign)&&<div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:"6px 16px"}}>
             {a.skipRoomAssign
               ?<div style={{gridColumn:"1/-1",fontSize:11,color:"#4a7c59",padding:"7px 10px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.15)",borderRadius:6}}>
                 Room assignment skipped &#8212; will be confirmed at lease signing.
@@ -3492,7 +3492,7 @@ export default function ModalRenderer({
           {/* Signature preview */}
           <div style={{marginTop:8,padding:16,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.15)",borderRadius:10}}>
             <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>Signatures</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+            <div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:16}}>
               <div>
                 <div style={{fontSize:10,color:"#6b5e52",marginBottom:6}}>Property Manager</div>
                 {modal.pmSig
@@ -4886,7 +4886,7 @@ export default function ModalRenderer({
           <h3>Application Documents</h3>
           {idDocs.length>0&&<>
             <div style={{fontSize:10,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.8,marginBottom:8}}>Photo ID</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+            <div style={{display:"grid",gridTemplateColumns:typeof window!=="undefined"&&window.innerWidth<768?"1fr":"1fr 1fr",gap:8,marginBottom:12}}>
               {["PhotoID-Front","PhotoID-Back"].map(t=>{
                 const doc=docs.find(x=>x.type===t)||{type:t,label:t==="PhotoID-Front"?"Front of ID":"Back of ID"};
                 return<DocCard key={t} doc={doc}/>;

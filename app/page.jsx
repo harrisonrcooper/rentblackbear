@@ -200,7 +200,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 .cal-days-hd{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:3px}
 .cal-day-lb{font-size:8px;font-weight:700;color:#bbb;text-align:center;text-transform:uppercase;padding:3px 0}
 .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.cal-dy{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600}
+.cal-dy{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;min-height:44px}
 .cal-legend{display:flex;gap:16px;justify-content:center;margin-top:20px;flex-wrap:wrap}
 .cal-leg-i{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500}
 .cal-leg-d{width:12px;height:12px;border-radius:3px}
@@ -345,8 +345,8 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fefdfb;col
 .stk{position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(26,23,20,.97);backdrop-filter:blur(12px);border-top:1px solid rgba(212,168,83,.15);padding:10px 28px;display:flex;align-items:center;justify-content:center;gap:16px;transform:translateY(100%);transition:transform .3s;box-shadow:0 -4px 16px rgba(0,0,0,.12)}
 .stk.vis{transform:translateY(0)}
 .stk-txt{font-size:13px;color:var(--cr)}.stk-txt strong{color:var(--ac)}
-.stk-btn{padding:8px 24px;border-radius:7px;background:var(--ac);color:var(--dk);border:none;font-family:var(--fb);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
-.stk-x{background:none;border:none;color:rgba(245,240,232,.3);font-size:16px;cursor:pointer;padding:2px 6px}
+.stk-btn{padding:8px 24px;border-radius:7px;background:var(--ac);color:var(--dk);border:none;font-family:var(--fb);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:44px}
+.stk-x{background:none;border:none;color:rgba(245,240,232,.3);font-size:16px;cursor:pointer;padding:2px 6px;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
 
 /* Footer */
 .ftr{background:var(--dk);padding:40px;text-align:center}
@@ -373,7 +373,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 /* ─── Mobile (max 768px) ─── */
 @media(max-width:768px){
 /* Nav */
-.nav{padding:0 16px;height:60px}.nlinks{display:none}.nav-tog{display:block}
+.nav{padding:0 16px;height:60px}.nlinks{display:none}.nav-tog{display:block;padding:10px}
 .nlogo{font-size:18px}
 
 /* Hero */
@@ -430,7 +430,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 /* Calendar */
 .cal-grid{grid-template-columns:1fr;gap:12px}
 .cal-hd{font-size:16px}.cal-nav{gap:8px}
-.cal-dy{width:32px;height:32px;font-size:11px}
+.cal-dy{width:32px;height:32px;font-size:11px;min-height:44px}
 
 /* Map */
 .map-c{border-radius:12px}
@@ -474,19 +474,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .scr-btns{flex-direction:column;gap:8px}
 .scr-btn{padding:14px;font-size:14px;width:100%}
 .sform-row{flex-direction:column;gap:0}
-.sinp,.ssel,.stxt{font-size:14px;padding:12px 14px}
+.sinp,.ssel,.stxt{font-size:16px;padding:12px 14px}
 .scr-sub{font-size:14px;padding:14px}
 
 /* Chat */
 .cwin{right:10px;left:10px;width:auto;bottom:80px;max-height:70vh}
 .ctog{width:52px;height:52px;font-size:20px;bottom:16px;right:16px}
-.cinp{font-size:14px}
+.cinp{font-size:16px}
 
 /* Sticky bar */
 .stk{padding:10px 14px;gap:8px;flex-wrap:nowrap}
 .stk-txt{font-size:11px;white-space:nowrap}
-.stk-btn{font-size:11px;padding:8px 16px;white-space:nowrap}
-.stk-x{width:28px;height:28px;font-size:12px}
+.stk-btn{font-size:11px;padding:8px 16px;white-space:nowrap;min-height:44px}
+.stk-x{width:44px;height:44px;font-size:12px}
 
 /* Footer */
 .ftr{padding:24px 16px}.ftr p{font-size:10px}
@@ -742,7 +742,7 @@ function VirtualTour360({tourFolder,tourScenes,propertyName}){
         {floors.length>1&&<div style={{display:"flex",gap:5}}>
           {floors.map(f=>(
             <button key={f} onClick={()=>{setActiveFloor(f);const fs=scenes.find(s=>(s.floor||1)===f);if(fs)goScene(fs.id);}}
-              style={{padding:"5px 12px",borderRadius:5,border:"1px solid "+(activeFloor===f?"#d4a853":"rgba(255,255,255,.1)"),
+              style={{padding:"5px 12px",minHeight:44,borderRadius:5,border:"1px solid "+(activeFloor===f?"#d4a853":"rgba(255,255,255,.1)"),
                 background:activeFloor===f?"rgba(212,168,83,.15)":"transparent",
                 color:activeFloor===f?"#d4a853":"rgba(255,255,255,.4)",fontSize:10,fontWeight:700,
                 cursor:"pointer",letterSpacing:1,textTransform:"uppercase",fontFamily:"inherit"}}>
@@ -752,7 +752,7 @@ function VirtualTour360({tourFolder,tourScenes,propertyName}){
         </div>}
       </div>
       <div style={{display:"flex"}}>
-        <div style={{width:160,borderRight:"1px solid rgba(212,168,83,.08)",overflowY:"auto",maxHeight:420,flexShrink:0}}>
+        <div style={{width:"clamp(120px, 30vw, 160px)",borderRight:"1px solid rgba(212,168,83,.08)",overflowY:"auto",maxHeight:420,flexShrink:0}}>
           {floorScenes.map(s=>{
             const active=activeScene===s.id;
             return(
@@ -789,7 +789,7 @@ function VirtualTour360({tourFolder,tourScenes,propertyName}){
               ["−",()=>pannellumRef.current?.setHfov(Math.min(120,(pannellumRef.current.getHfov()||100)+15))]
             ].map(([lbl,fn])=>(
               <button key={lbl} onClick={fn}
-                style={{width:28,height:28,borderRadius:5,border:"1px solid rgba(255,255,255,.12)",
+                style={{width:44,height:44,borderRadius:5,border:"1px solid rgba(255,255,255,.12)",
                   background:"rgba(26,23,20,.8)",color:"rgba(255,255,255,.7)",fontSize:12,
                   cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",
                   fontFamily:"monospace",backdropFilter:"blur(4px)"}}>

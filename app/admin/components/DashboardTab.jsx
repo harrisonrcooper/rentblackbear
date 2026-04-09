@@ -354,11 +354,11 @@ export default function DashboardTab({
             <button className="btn btn-out btn-sm" onClick={openCreateCharge}>+ Charge</button>
             <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
             <button className="btn btn-out btn-sm" onClick={()=>goTab("applications")}>+ Application</button>
-            <button className="btn btn-out btn-sm" style={{borderColor:editMode?"#c45c4a":"rgba(0,0,0,.08)",color:editMode?"#c45c4a":"#5c4a3a",background:editMode?"rgba(196,92,74,.06)":"#fff"}} onClick={()=>setDashEditMode(e=>!e)}>{dashEditMode?"Done Editing":"Edit Widgets"}</button>
+            <button className="btn btn-out btn-sm" style={{borderColor:editMode?"#c45c4a":"rgba(0,0,0,.08)",color:editMode?"#c45c4a":"#5c4a3a",background:editMode?"rgba(196,92,74,.06)":"#fff",minHeight:44}} onClick={()=>setDashEditMode(e=>!e)}>{dashEditMode?"Done Editing":"Edit Widgets"}</button>
           </div>
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:16}}>
           <div className="card" style={{margin:0,cursor:"pointer"}} onClick={()=>setDrill(drill==="coll"?null:"coll")}><div className="card-bd" style={{textAlign:"center",padding:"14px 10px"}}>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Collected</div>
             <div style={{fontSize:22,fontWeight:800,color:"#4a7c59",marginBottom:2}}>{fmtS(mtdCollected)}</div>
@@ -402,12 +402,12 @@ export default function DashboardTab({
         </div></div>}
 
         <style>{`@keyframes widgetWiggle{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-0.8deg)}75%{transform:rotate(0.8deg)}}`}</style>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:12}}>
           {activeWidgets.map(id=>(
             <div key={id} draggable={editMode} onDragStart={()=>onDragStart(id)} onDragOver={e=>onDragOver(e,id)} onDrop={e=>onDrop(e,id)} onDragEnd={onDragEnd}
               style={{animation:editMode?"widgetWiggle .5s ease-in-out infinite":"none",animationDelay:Math.random()*.2+"s",cursor:editMode?"grab":"default",opacity:dragWidget===id?.4:1,outline:dragOver===id&&dragWidget!==id?"2px dashed #4a7c59":"none",outlineOffset:2,borderRadius:10,transition:"opacity .15s"}}>
               <div className="card" style={{margin:0,position:"relative",height:"100%"}}>
-                {editMode&&<button onClick={()=>removeWidget(id)} style={{position:"absolute",top:8,right:8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",color:"#fff",border:"none",cursor:"pointer",fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10,padding:0,lineHeight:1}}>x</button>}
+                {editMode&&<button onClick={()=>removeWidget(id)} style={{position:"absolute",top:8,right:8,width:22,height:22,borderRadius:"50%",background:"#c45c4a",color:"#fff",border:"none",cursor:"pointer",fontSize:13,fontWeight:800,minWidth:44,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",zIndex:10,padding:0,lineHeight:1}}>x</button>}
                 <div className="card-bd" style={{paddingRight:editMode?36:undefined}}>{renderWidget(id)}</div>
               </div>
             </div>

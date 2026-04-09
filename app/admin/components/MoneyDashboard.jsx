@@ -199,7 +199,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
           <button key={k} style={s.pill(period === k)} onClick={() => setPeriod(k)}>{l}</button>
         ))}
         {period === "custom" && (
-          <span style={{ display: "inline-flex", gap: 8, alignItems: "center", marginLeft: 4 }}>
+          <span style={{ display: "inline-flex", gap: 8, alignItems: "center", marginLeft: 4, flexWrap: "wrap" }}>
             <input type="date" value={customRange.from} onChange={e => setCustomRange(p => ({ ...p, from: e.target.value }))} style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit" }} />
             <span style={{ color: "#7a7067", fontSize: 12 }}>to</span>
             <input type="date" value={customRange.to} onChange={e => setCustomRange(p => ({ ...p, to: e.target.value }))} style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit" }} />
@@ -208,7 +208,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
       </div>
 
       {/* Section 1: KPI Strip */}
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", ...s.section }}>
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 4, ...s.section }}>
         {/* Collected */}
         <div style={s.kpi}>
           <div style={s.kpiAccent(_ac)} />
@@ -257,11 +257,11 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
       </div>
 
       {/* Section 2: Two-column */}
-      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 16, ...s.section }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 16, ...s.section }}>
         {/* Cash Flow Chart */}
         <div className="card"><div className="card-bd" style={{ padding: 22 }}>
           <h3 style={s.sectionTitle}>Cash Flow -- Trailing 12 Months</h3>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 180 }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}><div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 180, minWidth: 500 }}>
             {data.months.map((m, i) => (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <span style={{ fontSize: 9, fontWeight: 700, color: m.net >= 0 ? _ac : "#c45c4a", marginBottom: 2 }}>{m.net >= 0 ? "+" : ""}{fmt(m.net)}</span>
@@ -272,7 +272,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
                 <span style={{ fontSize: 9, color: "#7a7067", marginTop: 4 }}>{m.label}</span>
               </div>
             ))}
-          </div>
+          </div></div>
           <div style={{ display: "flex", gap: 20, marginTop: 14, fontSize: 12, color: "#6b5e52" }}>
             <span>Avg income: <b style={{ color: _ac }}>{fmt(data.avgInc)}/mo</b></span>
             <span>Avg expenses: <b style={{ color: "#6b5e52" }}>{fmt(data.avgExp)}/mo</b></span>

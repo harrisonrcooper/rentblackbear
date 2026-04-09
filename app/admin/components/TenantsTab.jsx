@@ -64,6 +64,15 @@ export default function TenantsTab({
   const fileRef = useRef(null);
   const shake = () => { setShaking(true); setTimeout(() => setShaking(false), 500); };
 
+  /* ── Mobile detection ────────────────────────────────────── */
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   /* ── [C1] Balance calc — uses roomId as primary key, falls back to tenantName ── */
   const tenantBalance = useMemo(() => {
     const bal = {};
@@ -406,7 +415,7 @@ export default function TenantsTab({
   /* ── Styles ────────────────────────────────────────────────── */
   const COLS = "40px 1fr 160px 120px 100px 160px";
   const HDR = { fontSize: 10, fontWeight: 700, color: "#6b5e52", textTransform: "uppercase", letterSpacing: .7 };
-  const chipS = (active) => ({ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 99, border: active ? `1px solid ${_ac}` : "1px solid rgba(0,0,0,.1)", background: active ? `rgba(${_acRgb},.1)` : "#fff", color: active ? _ac : "#6b5e52", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", whiteSpace: "nowrap" });
+  const chipS = (active) => ({ fontSize: 10, fontWeight: 600, padding: isMobile ? "6px 12px" : "3px 10px", borderRadius: 99, border: active ? `1px solid ${_ac}` : "1px solid rgba(0,0,0,.1)", background: active ? `rgba(${_acRgb},.1)` : "#fff", color: active ? _ac : "#6b5e52", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", whiteSpace: "nowrap", ...(isMobile ? { minHeight: 36 } : {}) });
   const btnSm = { fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", background: "#fff", color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", display: "inline-flex", alignItems: "center", gap: 4 };
   const leaseColor = (s) => s === "expired" ? "#dc2626" : s === "expiring-30" ? "#c45c4a" : s === "expiring-90" ? "#d4a853" : s === "month-to-month" ? "#6b5e52" : "#2d6a3f";
 
@@ -424,12 +433,12 @@ export default function TenantsTab({
 
     {/* ═══ Browser-tab header ═══ */}
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 0, flexWrap: "wrap", gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 0, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         {[["active", "Active", activeTenantCount], ["future", "Future", futureTenants.length], ["archive", "Past", pastTenants.length], ["archived", "Archived", archivedTenants.length]].map(([v, l, c]) => {
           const on = tenantView === v;
           return (
             <button key={v} onClick={() => { setDrill(v === "active" ? null : v); setTenantSel([]); setPage(0); setQuickFilter(null); }}
-              style={{ padding: "10px 22px", border: "1px solid rgba(0,0,0,.1)", borderBottom: on ? "none" : "1px solid rgba(0,0,0,.1)", borderRadius: "8px 8px 0 0", marginRight: 4, background: on ? "#fff" : "rgba(0,0,0,.04)", color: on ? "#1a1714" : "#7a7067", fontWeight: on ? 700 : 500, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all .15s", position: "relative", zIndex: on ? 2 : 1, boxShadow: on ? "0 -2px 0 0 " + _ac + " inset" : "none" }}>
+              style={{ padding: "10px 22px", border: "1px solid rgba(0,0,0,.1)", borderBottom: on ? "none" : "1px solid rgba(0,0,0,.1)", borderRadius: "8px 8px 0 0", marginRight: 4, background: on ? "#fff" : "rgba(0,0,0,.04)", color: on ? "#1a1714" : "#7a7067", fontWeight: on ? 700 : 500, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all .15s", position: "relative", zIndex: on ? 2 : 1, boxShadow: on ? "0 -2px 0 0 " + _ac + " inset" : "none", whiteSpace: "nowrap", flexShrink: 0 }}>
               {l} <span style={{ fontSize: 11, fontWeight: 400, opacity: .7 }}>({c})</span>
             </button>);
         })}
@@ -480,7 +489,7 @@ export default function TenantsTab({
       </div>
 
       {/* ═══ Column headers (active) ═══ */}
-      {tenantView === "active" && (
+      {tenantView === "active" && !isMobile && (
         <div style={{ display: "grid", gridTemplateColumns: COLS, padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <input type="checkbox" checked={allSelected} ref={el => { if (el) el.indeterminate = tenantSel.length > 0 && !allSelected; }} onChange={e => setTenantSel(e.target.checked ? pageRows.map(r => r.id) : [])} style={{ width: 14, height: 14, cursor: "pointer" }} />
@@ -492,9 +501,16 @@ export default function TenantsTab({
           <div style={HDR}>Portal <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: 9 }}>({tzShort})</span></div>
         </div>
       )}
+      {/* ═══ Mobile: select-all bar (active) ═══ */}
+      {tenantView === "active" && isMobile && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)", flexShrink: 0 }}>
+          <input type="checkbox" checked={allSelected} ref={el => { if (el) el.indeterminate = tenantSel.length > 0 && !allSelected; }} onChange={e => setTenantSel(e.target.checked ? pageRows.map(r => r.id) : [])} style={{ width: 22, height: 22, minWidth: 22, minHeight: 22, cursor: "pointer" }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#6b5e52" }}>Select all</span>
+        </div>
+      )}
 
       {/* ═══ Future column headers ═══ */}
-      {tenantView === "future" && (
+      {tenantView === "future" && !isMobile && (
         <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 160px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)", flexShrink: 0 }}>
           <div />
           <div style={HDR}>Tenant</div>
@@ -506,7 +522,7 @@ export default function TenantsTab({
       )}
 
       {/* ═══ Archive column headers ═══ */}
-      {(tenantView === "archive" || tenantView === "archived") && (
+      {(tenantView === "archive" || tenantView === "archived") && !isMobile && (
         <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 150px 160px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)", flexShrink: 0 }}>
           <div />
           <div style={HDR}>Tenant</div>
@@ -532,6 +548,41 @@ export default function TenantsTab({
         const lastActive = ob?.lastActive || null;
         /* [D2] Find lease for this tenant */
         const tLease = leases.find(l => l.tenantEmail === r.tenant?.email || l.tenantName === r.tenant?.name);
+
+        /* ── Mobile card layout ── */
+        if (isMobile) return (
+          <div key={r.id} style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: sel ? "rgba(74,124,89,.06)" : "#fff", cursor: "pointer", transition: "all .15s" }}
+            onClick={() => { setTenantProfileTab("summary"); setModal({ type: "tenant", data: r }); }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+              <div onClick={e => e.stopPropagation()} style={{ paddingTop: 2 }}>
+                <input type="checkbox" checked={sel} onChange={e => setTenantSel(p => e.target.checked ? [...p, r.id] : p.filter(x => x !== r.id))} style={{ width: 22, height: 22, minWidth: 22, minHeight: 22, cursor: "pointer" }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1714", marginBottom: 2, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  {r.tenant.name}
+                  {renewalRequests.some(rr => rr.tenant_name === r.tenant.name && !rr.read) && <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 99, background: "rgba(212,168,83,.15)", color: "#9a7422", whiteSpace: "nowrap" }}>RENEWAL REQUEST</span>}
+                </div>
+                <div style={{ fontSize: 12, color: "#5c4a3a", marginBottom: 4 }}>{prop ? getPropDisplayName(prop) : r.propName} · {r.name}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: leaseColor(ls) }}>
+                    {ls === "active" ? (r.le ? `Lease to ${fmtD(r.le)}` : "Active") : ls === "month-to-month" ? "Month-to-month" : ls === "expired" ? "Lease expired" : dl !== null ? `Expires ${dl}d` : ls}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginLeft: 32, alignItems: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", fontFamily: MONO }}>{fmtS(r.rent)}<span style={{ fontSize: 9, fontWeight: 400, color: "#7a7067" }}>/mo</span></div>
+              <span className={`badge ${pb.cls}`} style={{ fontSize: 9 }}>{pb.label}</span>
+              {bal > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: "#dc2626", fontFamily: MONO }}>{fmtS(bal)} due</div>}
+              {ob ? <span className="badge b-green" style={{ fontSize: 9 }}>Connected</span> : <span className="badge b-gray" style={{ fontSize: 9 }}>No portal</span>}
+              {!ob && r.tenant?.email && <button onClick={e => { e.stopPropagation(); setPiState("idle"); setModal({ type: "sendPortalInviteApp", data: { ...r.tenant, id: r.id, name: r.tenant.name, email: r.tenant.email, property: r.propName, room: r.name } }); }}
+                style={{ fontSize: 10, fontWeight: 600, padding: "8px 12px", minHeight: 44, borderRadius: 4, border: "1px solid rgba(74,124,89,.25)", background: "rgba(74,124,89,.08)", color: "#4a7c59", cursor: "pointer", fontFamily: "inherit", transition: "background .12s" }}>
+                Send Invite
+              </button>}
+            </div>
+          </div>);
+
+        /* ── Desktop grid layout ── */
         return (
           <div key={r.id} style={{ display: "grid", gridTemplateColumns: COLS, padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: sel ? "rgba(74,124,89,.06)" : "#fff", cursor: "pointer", transition: "all .15s" }}
             onMouseEnter={e => { e.currentTarget.style.background = sel ? "rgba(74,124,89,.08)" : "rgba(0,0,0,.03)"; e.currentTarget.style.boxShadow = "inset 3px 0 0 " + _ac; }}
@@ -623,6 +674,30 @@ export default function TenantsTab({
         const hasLease = tLease && tLease.status === "executed";
         const leaseLabel = hasLease ? "Lease signed" : tLease && tLease.status === "pending_tenant" ? "Pending signature" : "Set up lease";
         const leaseColor = hasLease ? "#2d6a3f" : "#c45c4a";
+
+        /* ── Mobile card layout ── */
+        if (isMobile) return (
+          <div key={r.id} style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: "#fff", cursor: "pointer", transition: "all .15s" }}
+            onClick={() => { setTenantProfileTab("summary"); setModal({ type: "tenant", data: r }); }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: `rgba(${_acRgb},.5)`, flexShrink: 0, marginTop: 6 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1714", marginBottom: 2, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  {r.tenant.name}
+                  <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 99, background: `rgba(${_acRgb},.12)`, color: _ac, whiteSpace: "nowrap" }}>UPCOMING</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#5c4a3a", marginBottom: 4 }}>{prop ? getPropDisplayName(prop) : r.propName} · {r.name}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: leaseColor }}>{leaseLabel}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginLeft: 18, alignItems: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", fontFamily: MONO }}>{fmtS(r.rent)}<span style={{ fontSize: 9, fontWeight: 400, color: "#5c4a3a" }}>/mo</span></div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: daysUntilMoveIn <= 7 ? "#c45c4a" : daysUntilMoveIn <= 30 ? "#9a7422" : "#3d3529" }}>{fmtD(r.tenant.moveIn)} ({daysUntilMoveIn}d away)</div>
+              {sd ? (sd.paid ? <span className="badge b-green" style={{ fontSize: 9 }}>Deposit Paid</span> : <span className="badge b-gold" style={{ fontSize: 9 }}>Deposit Partial</span>) : <span className="badge b-gray" style={{ fontSize: 9 }}>No Deposit</span>}
+            </div>
+          </div>);
+
+        /* ── Desktop grid layout ── */
         return (
           <div key={r.id} style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 160px", padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: "#fff", cursor: "pointer", transition: "all .15s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,.03)"; e.currentTarget.style.boxShadow = "inset 3px 0 0 " + _ac; }}
@@ -679,6 +754,30 @@ export default function TenantsTab({
       {/* ═══ Past + Archived rows [D3] ═══ */}
       {(tenantView === "archive" || tenantView === "archived") && <>{filteredArchive.map(a => {
         const isArch = a.isArchived;
+
+        /* ── Mobile card layout ── */
+        if (isMobile) return (
+          <div key={a.id} style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: "#fff", cursor: "pointer", transition: "all .15s" }}
+            onClick={() => setModal({ type: "archived", data: a })}>
+            <div style={{ marginBottom: 6 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1714", marginBottom: 2 }}>{a.name}</div>
+              <div style={{ fontSize: 12, color: "#5c4a3a", marginBottom: 2 }}>{a.propName} · {a.roomName}</div>
+              {a.reason && <div style={{ fontSize: 10, color: "#7a7067", fontStyle: "italic" }}>{a.reason}</div>}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{fmtS(a.rent)}<span style={{ fontSize: 10, fontWeight: 400, color: "#7a7067" }}>/mo</span></div>
+              <div style={{ fontSize: 10, color: "#7a7067" }}>{fmtD(a.moveIn)} &rarr; {fmtD(a.leaseEnd)}</div>
+              {isArch ? <span className="badge b-gray" style={{ fontSize: 9 }}>Archived</span> : <span className="badge b-gray" style={{ fontSize: 9 }}>Past</span>}
+              <div onClick={e => e.stopPropagation()}>
+                {isArch
+                  ? <button onClick={() => unarchiveTenant(a.id)} style={{ fontSize: 10, fontWeight: 600, padding: "8px 12px", minHeight: 44, borderRadius: 4, border: "1px solid rgba(0,0,0,.1)", background: "rgba(0,0,0,.04)", color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit" }}>Unarchive</button>
+                  : <button onClick={() => archiveTenant(a.id)} style={{ fontSize: 10, fontWeight: 600, padding: "8px 12px", minHeight: 44, borderRadius: 4, border: "1px solid rgba(0,0,0,.1)", background: "rgba(0,0,0,.04)", color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit" }}>Archive</button>
+                }
+              </div>
+            </div>
+          </div>);
+
+        /* ── Desktop grid layout ── */
         return (
           <div key={a.id} style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 150px 160px", padding: "14px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: "#fff", cursor: "pointer", transition: "all .15s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,.04)"; e.currentTarget.style.boxShadow = "inset 3px 0 0 #8a7d74"; }}

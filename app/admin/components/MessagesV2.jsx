@@ -81,7 +81,7 @@ const S = {
   threadListMobile: { width: "100%", display: "flex", flexDirection: "column", background: "rgba(245,244,242,.85)" },
   threadSearch: { padding: "12px 14px", borderBottom: "1px solid rgba(0,0,0,.04)" },
   threadScroll: { flex: 1, overflowY: "auto" },
-  threadItem: (active, unread, acc) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? hexToRgba(acc, .08) : "transparent", borderLeft: active ? "3px solid " + acc : "3px solid transparent", transition: "all .15s ease", position: "relative" }),
+  threadItem: (active, unread, acc) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? hexToRgba(acc, .08) : "transparent", borderLeft: active ? "3px solid " + acc : "3px solid transparent", transition: "all .15s ease", position: "relative", minHeight: 44 }),
   chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #f8f8fa 0%, #eeeef2 100%)", minWidth: 0 },
   chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "rgba(255,255,255,.92)", zIndex: 20, overflow: "visible", position: "relative" },
   chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "52px 20px 16px" },
@@ -782,7 +782,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
               <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 24 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={{ fontSize: 16, fontWeight: 700 }}>New Message</div>
-                  <button onClick={() => setComposeMode(false)} style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button onClick={() => setComposeMode(false)} style={{ width: 28, height: 28, minWidth: 44, minHeight: 44, borderRadius: 14, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
@@ -871,7 +871,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     {/* Tag button */}
                     <div style={{ position: "relative" }}>
-                      <button className="msg-header-btn" data-tip="Tags" onClick={() => setShowTagDropdown(!showTagDropdown)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: (threadTags[selectedThread] || []).length > 0 ? "rgba(74,124,89,.08)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <button className="msg-header-btn" data-tip="Tags" onClick={() => setShowTagDropdown(!showTagDropdown)} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: (threadTags[selectedThread] || []).length > 0 ? "rgba(74,124,89,.08)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={(threadTags[selectedThread] || []).length > 0 ? _acc : "#999"} strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                       </button>
                       {showTagDropdown && (
@@ -891,16 +891,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       )}
                     </div>
                     {/* Export PDF */}
-                    <button className="msg-header-btn" data-tip="Export" onClick={exportConversation} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip="Export" onClick={exportConversation} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
                     {/* Pin */}
-                    <button className="msg-header-btn" data-tip={pinnedThreads.has(selectedThread) ? "Unpin" : "Pin"} onClick={() => setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: pinnedThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip={pinnedThreads.has(selectedThread) ? "Unpin" : "Pin"} onClick={() => setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: pinnedThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill={pinnedThreads.has(selectedThread) ? "#d4a853" : "none"} stroke={pinnedThreads.has(selectedThread) ? "#d4a853" : "#999"} strokeWidth="2"><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>
                     </button>
                     {/* Assign */}
                     <div style={{ position: "relative" }}>
-                      <button className="msg-header-btn" data-tip="Assign" onClick={() => setShowAssignMenu(!showAssignMenu)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: assignedThreads[selectedThread] ? "rgba(74,124,89,.1)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <button className="msg-header-btn" data-tip="Assign" onClick={() => setShowAssignMenu(!showAssignMenu)} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: assignedThreads[selectedThread] ? "rgba(74,124,89,.1)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={assignedThreads[selectedThread] ? "#4a7c59" : "#999"} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                       </button>
                       {showAssignMenu && (
@@ -914,11 +914,11 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       )}
                     </div>
                     {/* Archive */}
-                    <button className="msg-header-btn" data-tip={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} onClick={() => { if (archivedThreads.has(selectedThread)) { setArchivedThreads(prev => { const next = new Set(prev); next.delete(selectedThread); return next; }); } else if (window.confirm("Archive this conversation with " + activeThread.tenantName + "? You can find it in the Archived filter.")) { setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; }); setSelectedThread(null); } }} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} onClick={() => { if (archivedThreads.has(selectedThread)) { setArchivedThreads(prev => { const next = new Set(prev); next.delete(selectedThread); return next; }); } else if (window.confirm("Archive this conversation with " + activeThread.tenantName + "? You can find it in the Archived filter.")) { setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; }); setSelectedThread(null); } }} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
                     </button>
                     {/* Info */}
-                    <button className="msg-header-btn" data-tip="Info" onClick={() => setShowTenantInfo(!showTenantInfo)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showTenantInfo ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip="Info" onClick={() => setShowTenantInfo(!showTenantInfo)} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showTenantInfo ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </button>
                   </div>
@@ -1233,20 +1233,20 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 <div style={S.chatInput}>
                   {/* File attach */}
                   <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: "none" }} onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => setAttachFile({ name: file.name, type: file.type, data: ev.target.result }); reader.readAsDataURL(file); e.target.value = ""; }} />
-                  <button onClick={() => fileInputRef.current?.click()} title="Attach file" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => fileInputRef.current?.click()} title="Attach file" style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                   </button>
                   {/* Note toggle */}
-                  <button onClick={() => setNoteMode(!noteMode)} title={noteMode ? "Switch to reply" : "Switch to internal note"} style={{ width: 36, height: 36, borderRadius: 8, border: noteMode ? "2px solid #d4a853" : "1px solid rgba(0,0,0,.1)", background: noteMode ? "rgba(212,168,83,.08)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => setNoteMode(!noteMode)} title={noteMode ? "Switch to reply" : "Switch to internal note"} style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: noteMode ? "2px solid #d4a853" : "1px solid rgba(0,0,0,.1)", background: noteMode ? "rgba(212,168,83,.08)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={noteMode ? "#9a7422" : "#999"} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                   </button>
                   {/* Canned toggle */}
-                  <button onClick={() => setShowCanned(!showCanned)} title="Quick replies" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showCanned ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => setShowCanned(!showCanned)} title="Quick replies" style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showCanned ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                   </button>
                   {/* Emoji picker */}
                   <div style={{ position: "relative" }}>
-                    <button onClick={() => setShowEmoji(!showEmoji)} title="Insert emoji" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showEmoji ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <button onClick={() => setShowEmoji(!showEmoji)} title="Insert emoji" style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showEmoji ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                     </button>
                     {showEmoji && (() => {
@@ -1283,7 +1283,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     })()}
                   </div>
                   {/* Sound toggle */}
-                  <button onClick={() => setSoundEnabled(!soundEnabled)} title={soundEnabled ? "Mute sounds" : "Unmute sounds"} style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: soundEnabled ? hexToRgba(_acc, .06) : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => setSoundEnabled(!soundEnabled)} title={soundEnabled ? "Mute sounds" : "Unmute sounds"} style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: soundEnabled ? hexToRgba(_acc, .06) : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {soundEnabled ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                     ) : (
@@ -1310,11 +1310,11 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                         Schedule
                       </button>
                     ) : (
-                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s ease", transform: replyText.trim() ? "scale(1)" : "scale(.9)" }}>
+                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 18, border: "none", background: replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s ease", transform: replyText.trim() ? "scale(1)" : "scale(.9)" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                       </button>
                     )}
-                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 28, height: 28, borderRadius: 14, border: "none", marginLeft: 2, background: showSchedule ? _acc : "rgba(0,0,0,.06)", color: showSchedule ? "#fff" : "#8e8e93", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
+                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 28, height: 28, minWidth: 44, minHeight: 44, borderRadius: 14, border: "none", marginLeft: 2, background: showSchedule ? _acc : "rgba(0,0,0,.06)", color: showSchedule ? "#fff" : "#8e8e93", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
                       <svg width="8" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 1l5 5 5-5"/></svg>
                     </button>
                   </div>

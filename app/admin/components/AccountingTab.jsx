@@ -122,9 +122,9 @@ export default function AccountingTab({
 
         {/* ── Global filter bar ── */}
         <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"12px 14px",marginBottom:14,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}} onClick={()=>setAcctDrop(null)}>
-          <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
+          <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,minHeight:44}}/>
           <span style={{fontSize:11,color:"#7a7067",flexShrink:0}}>to</span>
-          <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11}}/>
+          <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,minHeight:44}}/>
           <div style={{width:1,height:20,background:"rgba(0,0,0,.08)",flexShrink:0}}/>
           <MsDrop id="prop" label="Property" options={props.map(p=>({value:p.id,label:p.name}))} selected={acctPropIds} onToggle={v=>v==="__clear__"?setF("propIds",[]):setF("propIds",toggleArr(acctPropIds,v))}/>
           {acctSubTab==="income"&&<>
@@ -143,7 +143,7 @@ export default function AccountingTab({
         </div>
 
         {/* ── KPI strip ── */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:16}}>
           {[
             {label:"Gross Income",value:totalIncome,color:"#4a7c59",sub:filtIncome.length+" payments"},
             {label:"Total Expenses",value:totalExp,color:"#c45c4a",sub:filtExpenses.length+" line items"},
@@ -159,13 +159,13 @@ export default function AccountingTab({
         </div>
 
         {/* ── Sub-tabs ── */}
-        <div style={{display:"flex",gap:0,marginBottom:16,position:"relative",paddingBottom:0}}>
+        <div style={{display:"flex",gap:0,marginBottom:16,position:"relative",paddingBottom:0,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
           <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:"rgba(0,0,0,.08)",zIndex:0}}/>
           {[["overview","Overview"],["income","Income"],["expenses","Expenses"],["improvements","Capital Improvements"],["mortgages","Mortgages"],["vendors","Vendors"]].map(([k,l])=>(
             <button key={k} onClick={()=>{setAcctSubTab(k);setF("categories",[]);setF("tenants",[]);setF("vendors",[]);setAcctDrop(null);}}
               onMouseEnter={e=>{if(acctSubTab!==k){e.currentTarget.style.background="rgba(255,255,255,.6)";e.currentTarget.style.color="#3c3228";}}}
               onMouseLeave={e=>{if(acctSubTab!==k){e.currentTarget.style.background="transparent";e.currentTarget.style.color="#6b5e52";}}}
-              style={{padding:"10px 22px",fontSize:13,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#6b5e52",background:acctSubTab===k?"#fff":"transparent",border:acctSubTab===k?"1px solid rgba(0,0,0,.08)":"1px solid transparent",borderBottom:acctSubTab===k?"2px solid #fff":"2px solid transparent",borderRadius:"10px 10px 0 0",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap",position:"relative",zIndex:acctSubTab===k?3:1}}>
+              style={{padding:"10px 22px",fontSize:13,fontWeight:acctSubTab===k?700:500,color:acctSubTab===k?"#3c3228":"#6b5e52",background:acctSubTab===k?"#fff":"transparent",border:acctSubTab===k?"1px solid rgba(0,0,0,.08)":"1px solid transparent",borderBottom:acctSubTab===k?"2px solid #fff":"2px solid transparent",borderRadius:"10px 10px 0 0",cursor:"pointer",fontFamily:"inherit",marginBottom:-2,transition:"all .15s",whiteSpace:"nowrap",flexShrink:0,position:"relative",zIndex:acctSubTab===k?3:1}}>
               {l}
             </button>
           ))}
@@ -192,7 +192,7 @@ export default function AccountingTab({
             {acctOverviewMode==="property"&&<>
               <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:14}}>
                 <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>By Property — {acctFrom.slice(0,7)} to {acctTo.slice(0,7)}</div>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Property","Gross Income","Expenses","NOI","NOI Margin","Annual Debt Svc","DSCR"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Property"?"left":"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>)}
                   </tr></thead>
@@ -226,7 +226,7 @@ export default function AccountingTab({
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:700}}>{annualDebt>0?fmtS(annualDebt):"—"}</td>
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:dscr===null?"#999":dscr>=1.25?"#4a7c59":dscr>=1.0?"#d4a853":"#c45c4a"}}>{dscr!==null?dscr.toFixed(2)+"x":"—"}</td>
                   </tr></tfoot>
-                </table>
+                </table></div>
               </div>
 
               {/* Expense by category breakdown */}
@@ -235,7 +235,7 @@ export default function AccountingTab({
                 const sorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
                 const bySubcat={};filtExpenses.filter(e=>e.subcategory).forEach(e=>{bySubcat[e.subcategory]=(bySubcat[e.subcategory]||0)+e.amount;});
                 const subcatSorted=Object.entries(bySubcat).sort((a,b)=>b[1]-a[1]);
-                return(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                return(<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:10}}>
                   {[["By Schedule E Category",sorted],["By Subcategory (internal)",subcatSorted]].map(([title,items])=>(
                     <div key={title} style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
                       <div style={{padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:11,fontWeight:700,color:"#5c4a3a",background:"#faf9f7"}}>{title}</div>
@@ -269,7 +269,7 @@ export default function AccountingTab({
               return(<div key={pr.id} style={{marginBottom:16}}>
                 <div style={{fontSize:12,fontWeight:800,color:"#3c3228",marginBottom:8,paddingBottom:6,borderBottom:"2px solid rgba(0,0,0,.06)"}}>{getPropDisplayName(pr)}</div>
                 <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden",marginBottom:8}}>
-                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                  <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                     <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                       {["Unit / Room","Income","Expenses","NOI"].map(h=><th key={h} style={{padding:"8px 14px",textAlign:h==="Unit / Room"?"left":"right",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4}}>{h}</th>)}
                     </tr></thead>
@@ -294,7 +294,7 @@ export default function AccountingTab({
                         <td style={{padding:"8px 14px",textAlign:"right",color:"#c45c4a"}}>({fmtS(propWideAmt)})</td>
                       </tr>}
                     </tbody>
-                  </table>
+                  </table></div>
                 </div>
               </div>);
             })}
@@ -324,7 +324,7 @@ export default function AccountingTab({
               <div style={{fontSize:11,color:"#6b5e52"}}>{sorted.length} payment{sorted.length!==1?"s":""} · {fmtS(totalIncome)} collected</div>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+              <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                   {[["date","Date"],["property","Property"],["room","Room"],["tenant","Tenant"],["category","Category"],["method","Method"],["amount","Amount"]].map(([k,h])=>(
                     <th key={h} className="sort-hdr" onClick={()=>toggleSort(k)} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}{sortIcon(k)}</th>
@@ -348,7 +348,7 @@ export default function AccountingTab({
                   <td colSpan={6} style={{padding:"10px 14px",fontWeight:800,fontSize:12}}>Total Collected</td>
                   <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#4a7c59",fontSize:14}}>{fmtS(totalIncome)}</td>
                 </tr></tfoot>}
-              </table>
+              </table></div>
             </div>
           </>);
         })()}
@@ -391,7 +391,7 @@ export default function AccountingTab({
               </div>
             </div>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"visible"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+              <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                   {[["date","Date"],["property","Property"],["","Unit / Room"],["category","Category"],["subcategory","Subcategory"],["vendor","Vendor"],["description","Description"],["","Method"],["amount","Amount"],["","Receipt"],["","Action"]].filter(([k,h])=>{
                     if(h==="Action")return true;
@@ -402,7 +402,7 @@ export default function AccountingTab({
                       {h==="Action"?<span style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
                         <span>Action</span>
                         <div style={{position:"relative"}}>
-                          <button className="gear-btn" onClick={e=>{e.stopPropagation();setAcctDrop(acctDrop==="colvis"?null:"colvis");}}>⚙</button>
+                          <button className="gear-btn" style={{minWidth:44,minHeight:44,display:"inline-flex",alignItems:"center",justifyContent:"center"}} onClick={e=>{e.stopPropagation();setAcctDrop(acctDrop==="colvis"?null:"colvis");}}>⚙</button>
                           {acctDrop==="colvis"&&<div className="gear-panel" onClick={e=>e.stopPropagation()}>
                             <div style={{padding:"6px 12px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>Show / hide columns</div>
                             {["Unit / Room","Category","Subcategory","Vendor","Description","Method","Receipt"].map(col=>{
@@ -459,7 +459,7 @@ export default function AccountingTab({
                   <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#c45c4a",fontSize:14}}>{fmtS(totalExp)}</td>
                   <td colSpan={2}/>
                 </tr></tfoot>}
-              </table>
+              </table></div>
             </div>
           </>);
         })()}
@@ -479,7 +479,7 @@ export default function AccountingTab({
             {filtMg.length===0
               ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No mortgages on record. Add one to enable DSCR and Schedule E interest calculations.</div>
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Property","Lender","Account","Orig. Balance","Current Balance","Rate","Monthly P&I","Maturity",""].map(h=>(
                       <th key={h} style={{padding:"9px 14px",textAlign:["Orig. Balance","Current Balance","Rate","Monthly P&I"].includes(h)?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
@@ -515,7 +515,7 @@ export default function AccountingTab({
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800}}>{fmtS(filtMg.reduce((s,mg)=>s+(mg.monthlyPI||0),0))}/mo</td>
                     <td colSpan={2}/>
                   </tr></tfoot>
-                </table>
+                </table></div>
               </div>}
 
             {/* Est. annual interest note for Schedule E */}
@@ -531,7 +531,7 @@ export default function AccountingTab({
           return(<>
             <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"14px 16px",marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:800,color:"#3c3228",marginBottom:8}}>Expense vs. Capital Improvement — What's the difference?</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,fontSize:11}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:12,fontSize:11}}>
                 <div style={{padding:"10px 12px",borderRadius:8,background:"rgba(74,124,89,.04)",border:"1px solid rgba(74,124,89,.12)"}}>
                   <div style={{fontWeight:700,color:"#4a7c59",marginBottom:4}}>Expense (Schedule E)</div>
                   <div style={{color:"#5c4a3a",lineHeight:1.6}}>Deducted in full <strong>this year</strong>. Restores the property to its original condition — fixing what broke, not making it better. Examples: fixing a leaky faucet, repainting worn walls, replacing a broken appliance with a similar one, pest control, cleaning.</div>
@@ -550,7 +550,7 @@ export default function AccountingTab({
             {filtImprove.length===0
               ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No capital improvements recorded. New roof, HVAC, addition, appliances — log them here for your CPA.</div>
               :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Date","Property","Type","Subcategory","Description","Contractor","Receipt","Amount",""].map(h=>(
                       <th key={h} style={{padding:"9px 14px",textAlign:h==="Amount"?"right":"left",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.4,whiteSpace:"nowrap"}}>{h}</th>
@@ -593,7 +593,7 @@ export default function AccountingTab({
                     <td style={{padding:"10px 14px",textAlign:"right",fontWeight:800,color:"#3b82f6",fontSize:14}}>{fmtS(totalImprove)}</td>
                     <td/>
                   </tr></tfoot>
-                </table>
+                </table></div>
               </div>}
           </>);
         })()}

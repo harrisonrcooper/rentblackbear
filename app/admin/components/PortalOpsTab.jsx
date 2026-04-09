@@ -116,7 +116,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
   const fmtS = n => "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   /* ── Shared styles ── */
-  const sInput = { width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 12, fontFamily: "inherit" };
+  const sInput = { width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 16, fontFamily: "inherit", minHeight: 44 };
   const sLabel2 = { fontSize: 10, fontWeight: 600, color: _muted, display: "block", marginBottom: 4 };
   const sErr = { fontSize: 10, color: _red, fontWeight: 600, marginTop: 2 };
   const sBadge = (color) => ({ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 100, textTransform: "uppercase", letterSpacing: .5, background: color + "18", color });
@@ -342,7 +342,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: _ac, color: "#fff", padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, boxShadow: "0 4px 16px rgba(0,0,0,.2)", animation: "fadeIn .2s" }}>
+        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: _ac, color: "#fff", padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, boxShadow: "0 4px 16px rgba(0,0,0,.2)", animation: "fadeIn .2s", maxWidth: "calc(100vw - 40px)" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ marginRight: 6, verticalAlign: "middle" }}><polyline points="20 6 9 17 4 12" /></svg>
           {toast}
         </div>
@@ -457,7 +457,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
       {portalOpsTab === "doc-requests" && (<>
         <div className="card" style={{ marginBottom: 20 }}><div className="card-bd" style={{ padding: "20px 24px" }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Send Document Request</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10, marginBottom: 12 }}>
             <div>
               <label style={sLabel2}>Tenant</label>
               <select value={docReqForm.tenantId} onChange={e => setDocReqForm(f => ({ ...f, tenantId: e.target.value }))} style={{ ...sInput, animation: shakeField === "dr_tenant" ? "shake .5s" : "none" }}>
@@ -484,7 +484,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
               <label style={sLabel2}>Deadline</label>
               <input type="date" value={docReqForm.deadline} onChange={e => setDocReqForm(f => ({ ...f, deadline: e.target.value }))} style={sInput} />
             </div>
-            <div style={{ gridColumn: "1/4" }}>
+            <div style={{ gridColumn: "1/-1" }}>
               <label style={sLabel2}>Notes (optional)</label>
               <input value={docReqForm.notes} onChange={e => setDocReqForm(f => ({ ...f, notes: e.target.value }))} placeholder="Additional instructions..." style={sInput} />
             </div>
@@ -610,7 +610,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
           <button className="btn" style={{ background: _ac, color: "#fff", border: "none" }} onClick={saveSurvey}>Send Survey</button>
         </div></div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14 }}>
           <div className="card"><div className="card-bd" style={{ padding: 0 }}>
             <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(0,0,0,.06)", fontSize: 13, fontWeight: 700 }}>Sent Surveys ({surveys.filter(s => s.status === "pending").length})</div>
             {surveys.filter(s => s.status === "pending").length === 0 && <div style={{ padding: "30px 20px", textAlign: "center", color: _muted, fontSize: 12 }}>No pending surveys.</div>}
@@ -652,7 +652,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
       {portalOpsTab === "packages" && (<>
         <div className="card" style={{ marginBottom: 20 }}><div className="card-bd" style={{ padding: "20px 24px" }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Log Incoming Package</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10, marginBottom: 12 }}>
             <div>
               <label style={sLabel2}>Tenant</label>
               <select value={pkgForm.tenantId} onChange={e => setPkgForm(f => ({ ...f, tenantId: e.target.value }))} style={{ ...sInput, animation: shakeField === "pk_tenant" ? "shake .5s" : "none" }}>

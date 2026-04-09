@@ -53,7 +53,7 @@ export default function PaymentsTab({
     <button className="btn btn-gold btn-sm" onClick={openCreateCharge}>+ Charge</button>
     <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addCredit",roomId:"",amount:0,reason:""})}>+ Credit</button>
     <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"returnSD",roomId:"",deductions:[],returnAmount:0})}>Return Security Deposit</button>
-    <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff"}}>
+    <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",border:"1px solid rgba(0,0,0,.08)",borderRadius:6,background:"#fff",minHeight:44}}>
       <span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,whiteSpace:"nowrap"}}>Past-due badge</span>
       <div onClick={()=>{const u={...settings,showPayBadge:settings.showPayBadge===false};setSettings(u);save("hq-settings",u);}}
         style={{width:32,height:18,borderRadius:9,background:settings.showPayBadge!==false?"#4a7c59":"rgba(0,0,0,.12)",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
@@ -77,12 +77,12 @@ export default function PaymentsTab({
 
   {/* ── Overview ── */}
   {paySubTab==="overview"&&<>
-    <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
+    <div className="kgrid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))"}}>
       <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"pastdue"});}}><div className="kl">Past Due</div><div className="kv kb">{fmtS(pastDue.reduce((s,c)=>s+(c.amount-c.amountPaid),0))}</div><div className="ks">{pastDue.length} charge{pastDue.length!==1?"s":""} · {GRACE}d grace applied</div></div>
       <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"unpaid"});}}><div className="kl">Unpaid</div><div className="kv" style={{color:"#3b82f6"}}>{fmtS(unpaidCh.reduce((s,c)=>s+c.amount,0))}</div><div className="ks">{unpaidCh.length} charge{unpaidCh.length!==1?"s":""}</div></div>
       <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:""});}}><div className="kl">All Charges</div><div className="kv">{fmtS(totalCharged)}</div><div className="ks">{pCharges.length} charge{pCharges.length!==1?"s":""}</div></div>
     </div>
-    <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
+    <div className="kgrid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))"}}>
       <div className="kpi" style={{cursor:"pointer"}} onClick={()=>{setPaySubTab("charges");setPayFilters({...payFilters,status:"paid"});}}><div className="kl">Collected</div><div className="kv kg">{fmtS(totalPaid)}</div><div className="ks">{paidCh.length} charge{paidCh.length!==1?"s":""}</div></div>
       <div className="kpi" style={{cursor:"pointer"}} onClick={()=>setPaySubTab("deposits")}><div className="kl">In Transit</div><div className="kv kw">{fmtS(inTransit)}</div></div>
       <div className="kpi" style={{cursor:"pointer"}} onClick={()=>setPaySubTab("deposits")}><div className="kl">Deposited</div><div className="kv kg">{fmtS(deposited)}</div></div>
@@ -103,12 +103,12 @@ export default function PaymentsTab({
   {paySubTab==="charges"&&<>
     {/* Filters */}
     <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
-      <select value={payFilters.property} onChange={e=>setPayFilters({...payFilters,property:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}</select>
-      <select value={payFilters.tenant} onChange={e=>setPayFilters({...payFilters,tenant:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Tenants</option>{[...new Set(charges.map(c=>c.tenantName))].map(n=><option key={n} value={n}>{n}</option>)}</select>
-      <select value={payFilters.category} onChange={e=>setPayFilters({...payFilters,category:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Categories</option>{CHARGE_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
-      <select value={payFilters.status} onChange={e=>setPayFilters({...payFilters,status:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit"}}><option value="">All Status</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="pastdue">Past Due</option><option value="partial">Partial</option><option value="waived">Waived</option></select>
-      <input type="date" value={payFilters.dateFrom} onChange={e=>setPayFilters({...payFilters,dateFrom:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10}} placeholder="From"/>
-      <input type="date" value={payFilters.dateTo} onChange={e=>setPayFilters({...payFilters,dateTo:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10}} placeholder="To"/>
+      <select value={payFilters.property} onChange={e=>setPayFilters({...payFilters,property:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",minHeight:44}}><option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}</select>
+      <select value={payFilters.tenant} onChange={e=>setPayFilters({...payFilters,tenant:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",minHeight:44}}><option value="">All Tenants</option>{[...new Set(charges.map(c=>c.tenantName))].map(n=><option key={n} value={n}>{n}</option>)}</select>
+      <select value={payFilters.category} onChange={e=>setPayFilters({...payFilters,category:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",minHeight:44}}><option value="">All Categories</option>{CHARGE_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
+      <select value={payFilters.status} onChange={e=>setPayFilters({...payFilters,status:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",minHeight:44}}><option value="">All Status</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="pastdue">Past Due</option><option value="partial">Partial</option><option value="waived">Waived</option></select>
+      <input type="date" value={payFilters.dateFrom} onChange={e=>setPayFilters({...payFilters,dateFrom:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,minHeight:44}} placeholder="From"/>
+      <input type="date" value={payFilters.dateTo} onChange={e=>setPayFilters({...payFilters,dateTo:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,minHeight:44}} placeholder="To"/>
       <button className="btn btn-out btn-sm" onClick={()=>setPayFilters({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""})}>Reset</button>
     </div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -126,7 +126,8 @@ export default function PaymentsTab({
           {/* Month header */}
           <div style={{padding:"10px 14px 8px",fontSize:12,fontWeight:800,color:"#1a1714",borderBottom:"2px solid rgba(0,0,0,.08)"}}>{label}</div>
           {/* Column headers */}
-          <div style={{display:"grid",gridTemplateColumns:"90px 110px 1fr 80px 110px 80px",gap:0,padding:"6px 14px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,background:"rgba(0,0,0,.02)"}}>
+          <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div style={{display:"grid",gridTemplateColumns:"90px 110px 1fr 80px 110px 80px",gap:0,padding:"6px 14px",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,background:"rgba(0,0,0,.02)",minWidth:560}}>
             <div>Due Date</div><div>Category</div><div>Tenant / Room</div><div>Status</div><div>Deposit</div><div style={{textAlign:"right"}}>Amount</div>
           </div>
           {grpCharges.map(c=>{const st=chargeStatus(c);const lastPay=c.payments.length?c.payments[c.payments.length-1]:null;const isExp=expCharge===c.id;const rem=c.amount-c.amountPaid;const confId=`BB-${c.id.slice(0,8).toUpperCase()}`;
@@ -134,7 +135,7 @@ export default function PaymentsTab({
             const tRoom=allTenants.find(t=>t.id===c.roomId);
             return(
             <div key={c.id}>
-              <div style={{display:"grid",gridTemplateColumns:"90px 110px 1fr 80px 110px 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.04)",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"transparent",transition:"background .1s"}} onClick={()=>setExpCharge(isExp?null:c.id)}>
+              <div style={{display:"grid",gridTemplateColumns:"90px 110px 1fr 80px 110px 80px",gap:0,padding:"10px 14px",borderBottom:"1px solid rgba(0,0,0,.04)",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"transparent",transition:"background .1s",minWidth:560}} onClick={()=>setExpCharge(isExp?null:c.id)}>
                 <div style={{fontSize:11,fontWeight:600,color:"#3c3228"}}>{fmtD(c.dueDate)}</div>
                 <div style={{display:"flex",alignItems:"center"}}><span style={{fontSize:11,fontWeight:700,color:"#3c3228"}}>{c.category}</span></div>
                 <div style={{display:"flex",flexDirection:"column",gap:1}}>
@@ -248,7 +249,7 @@ export default function PaymentsTab({
           </div>}
         </div>}
             </div>);})}
-        </div>
+        </div></div>
       ));
     })()}
     {filteredCharges.length===0&&<div style={{textAlign:"center",padding:24,color:"#6b5e52"}}>No charges match your filters</div>}
@@ -332,12 +333,13 @@ export default function PaymentsTab({
         In Transit <span style={{fontSize:11,fontWeight:500,color:"#6b5e52"}}>({transit.length} payment{transit.length!==1?"s":""} waiting to clear)</span>
       </div>
       <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.07)",marginBottom:20,overflow:"hidden"}}>
+        <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
         {/* Col headers */}
-        <div style={{display:"grid",gridTemplateColumns:COL,padding:"8px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>
+        <div style={{display:"grid",gridTemplateColumns:COL,padding:"8px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,minWidth:580}}>
           <div>Deposit Date</div><div>Date Paid</div><div>Tenant / Room</div><div>Bank Account</div><div style={{textAlign:"right"}}>Amount</div>
         </div>
         {transit.map(p=>(
-          <div key={p.id} style={{display:"grid",gridTemplateColumns:COL,padding:"12px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center"}}>
+          <div key={p.id} style={{display:"grid",gridTemplateColumns:COL,padding:"12px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center",minWidth:580}}>
             <div><span style={{fontSize:11,fontWeight:700,color:"#d4a853"}}>In Transit</span><div style={{fontSize:9,color:"#6b5e52"}}>Est. {fmtD(p.date)}</div></div>
             <div style={{fontSize:11}}>{fmtD(p.date)}</div>
             <div>
@@ -351,7 +353,7 @@ export default function PaymentsTab({
             </div>
           </div>
         ))}
-      </div>
+      </div></div>
     </>}
 
     {/* ── Deposit Ledger section ── */}
@@ -366,7 +368,8 @@ export default function PaymentsTab({
               <div style={{fontSize:13,fontWeight:800,color:"#4a7c59"}}>{fmtS(mo.total)} <span style={{fontSize:10,fontWeight:500,color:"#6b5e52"}}>({mo.items.length})</span></div>
             </div>
             {/* Col headers */}
-            <div style={{display:"grid",gridTemplateColumns:COL,padding:"6px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>
+            <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+            <div style={{display:"grid",gridTemplateColumns:COL,padding:"6px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,minWidth:580}}>
               <div>Deposit Date</div><div>Date Paid</div><div>Tenant / Room</div><div>Bank Account</div><div style={{textAlign:"right"}}>Amount</div>
             </div>
             {mo.items.map(p=>{
@@ -376,7 +379,7 @@ export default function PaymentsTab({
               const confId=p.confId||`BB-${(p.chargeId||"").slice(0,6).toUpperCase()}-${Date.now().toString(36).slice(-3).toUpperCase()}`;
               return(
               <div key={p.id}>
-                <div style={{display:"grid",gridTemplateColumns:COL,padding:"12px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"#fff",transition:"background .1s"}}
+                <div style={{display:"grid",gridTemplateColumns:COL,padding:"12px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"#fff",transition:"background .1s",minWidth:580}}
                   onClick={()=>setExpCharge(isExp?null:"dep-"+p.id)}>
                   <div style={{fontSize:11,fontWeight:600}}>{fmtD(p.depositDate||p.date)}</div>
                   <div style={{fontSize:11}}>{fmtD(p.date)}</div>
@@ -421,7 +424,7 @@ export default function PaymentsTab({
                 </div>}
               </div>);
             })}
-          </div>
+          </div></div>
         );})}
       </div>
     </>}
@@ -430,12 +433,13 @@ export default function PaymentsTab({
     {(!depFilters.view||depFilters.view==="sd")&&<>
       <div style={{fontSize:13,fontWeight:800,color:"#1a1714",marginBottom:8}}>Security Deposits Held — Redstone FCU</div>
       <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.07)",overflow:"hidden",marginBottom:20}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"8px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5}}>
+        <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"8px 16px",background:"rgba(0,0,0,.02)",borderBottom:"1px solid rgba(0,0,0,.06)",fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,minWidth:580}}>
           <div>Tenant</div><div>Property</div><div>Room</div><div>Lease End</div><div style={{textAlign:"right"}}>Security Deposit</div>
         </div>
         {sdTenants.length===0&&<div style={{textAlign:"center",padding:24,color:"#6b5e52",fontSize:12}}>No security deposits on file.</div>}
         {sdTenants.map(r=>{const sdAmt=sdHeld(r.id,r.rent);const dl=r.le?Math.ceil((new Date(r.le+"T00:00:00")-TODAY)/(1e3*60*60*24)):null;return(
-          <div key={r.id} style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"11px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center"}}>
+          <div key={r.id} style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"11px 16px",borderBottom:"1px solid rgba(0,0,0,.04)",alignItems:"center",minWidth:580}}>
             <div style={{fontSize:12,fontWeight:700}}>{r.tenant.name}</div>
             <div style={{fontSize:11,color:"#5c4a3a"}}>{propDisplay(r.propName)}</div>
             <div style={{fontSize:11,color:"#5c4a3a"}}>{r.name}</div>
@@ -443,10 +447,11 @@ export default function PaymentsTab({
             <div style={{fontSize:13,fontWeight:800,color:settings.adminAccent||"#4a7c59",textAlign:"right"}}>{fmtS(sdAmt)}</div>
           </div>
         );})}
-        {sdTenants.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"10px 16px",borderTop:"2px solid rgba(0,0,0,.07)",background:"rgba(0,0,0,.02)"}}>
+        {sdTenants.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 120px 140px 140px 100px",padding:"10px 16px",borderTop:"2px solid rgba(0,0,0,.07)",background:"rgba(0,0,0,.02)",minWidth:580}}>
           <div style={{fontSize:12,fontWeight:800,gridColumn:"1/5"}}>Total Held</div>
           <div style={{fontSize:14,fontWeight:800,color:settings.adminAccent||"#4a7c59",textAlign:"right"}}>{fmtS(totalSD)}</div>
         </div>}
+        </div>
       </div>
 
       {/* SD Returns */}

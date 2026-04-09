@@ -76,7 +76,7 @@ export default function QuickAddExpense({ props, vendors, expenses, onAdd, onCan
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Add Expense
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10 }}>
           <div className="fld">
             <label>Date</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: "100%" }} />
@@ -128,7 +128,7 @@ export default function QuickAddExpense({ props, vendors, expenses, onAdd, onCan
           <div className="fld">
             <label>Receipt</label>
             <input type="file" accept="image/*,application/pdf" onChange={e => setReceipt(e.target.files?.[0] || null)}
-              style={{ fontSize: 11, padding: "6px 0" }} />
+              style={{ fontSize: 14, padding: "10px 0", minHeight: 44 }} />
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>

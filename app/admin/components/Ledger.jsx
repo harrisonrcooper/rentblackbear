@@ -46,7 +46,7 @@ const thS = (align) => ({
 const inputS = {
   fontSize: 12, padding: "6px 8px", borderRadius: 6,
   border: "1px solid #d1d5db", fontFamily: "inherit",
-  width: "100%", boxSizing: "border-box", height: 32, color: "#1a1714",
+  width: "100%", boxSizing: "border-box", minHeight: 44, color: "#1a1714",
   outline: "none", background: "#fff", WebkitAppearance: "auto", appearance: "auto",
 };
 
@@ -57,7 +57,7 @@ const selectS = {
 };
 
 const labelS = {
-  fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase",
+  fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase",
   letterSpacing: .6, marginBottom: 3, display: "block",
 };
 
@@ -83,7 +83,7 @@ const statusText = (status) => {
 const monoRight = { textAlign: "right", fontFamily: MONO, fontVariantNumeric: "tabular-nums" };
 
 const sectionLabel = {
-  fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase",
+  fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase",
   letterSpacing: 1, marginBottom: 8,
 };
 
@@ -95,14 +95,14 @@ const btnPrimary = {
   fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6,
   border: "none", background: "#1a1714", color: "#fff",
   cursor: "pointer", fontFamily: "inherit", display: "inline-flex",
-  alignItems: "center", gap: 4, height: 30, transition: "opacity .15s",
+  alignItems: "center", gap: 4, height: 30, minHeight: 44, transition: "opacity .15s",
 };
 
 const btnSecondary = {
   fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6,
   border: "1px solid #d1d5db", background: "#fff", color: "#374151",
   cursor: "pointer", fontFamily: "inherit", display: "inline-flex",
-  alignItems: "center", gap: 4, height: 30, transition: "all .15s",
+  alignItems: "center", gap: 4, height: 30, minHeight: 44, transition: "all .15s",
 };
 
 const btnDanger = {
@@ -112,7 +112,7 @@ const btnDanger = {
 const btnGhost = {
   background: "none", border: "none", cursor: "pointer", padding: 3,
   color: "#6b7280", display: "inline-flex", alignItems: "center",
-  transition: "color .15s",
+  transition: "color .15s", minWidth: 44, minHeight: 44, justifyContent: "center",
 };
 
 /* ==================================================================== */
@@ -156,7 +156,7 @@ export default function Ledger({
     <div data-ledger>
       <TipStyle _ac={_ac} />
       {/* Sub-tab bar -- clean underline style */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e5e7eb", marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e5e7eb", marginBottom: 16, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => goTab(t.key)}
             style={{
@@ -165,6 +165,7 @@ export default function Ledger({
               borderBottom: activeTab === t.key ? "2px solid #d4a853" : "2px solid transparent",
               color: activeTab === t.key ? "#1a1714" : "#6b7280",
               cursor: "pointer", marginBottom: -1, transition: "all .15s",
+              whiteSpace: "nowrap", flexShrink: 0,
             }}>
             {t.label}
           </button>
@@ -877,7 +878,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
           const toggle = (val) => { const sv = safeStr(val); setSelected(selected.map(safeStr).includes(sv) ? selected.map(safeStr).filter(v => v !== sv) : [...selected.map(safeStr), sv]); setPage(0); };
           return (
             <div data-multidrop style={{ position: "relative" }} onClick={e => e.stopPropagation()}>
-              <button onClick={e => { e.stopPropagation(); setOpenDrop(isOpen ? null : id); }} style={{ ...selectS, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: selected.length ? "#f3f4f6" : "#fff", fontWeight: selected.length ? 600 : 400, color: selected.length ? "#1a1714" : "#6b7280", minWidth: 100 }}>
+              <button onClick={e => { e.stopPropagation(); setOpenDrop(isOpen ? null : id); }} style={{ ...selectS, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: selected.length ? "#f3f4f6" : "#fff", fontWeight: selected.length ? 600 : 400, color: selected.length ? "#1a1714" : "#6b7280", minWidth: 100, minHeight: 44 }}>
                 {label}{selected.length > 0 && <span style={{ background: "#1a1714", color: "#fff", fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 3, marginLeft: 2 }}>{selected.length}</span>}
                 <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: "auto" }}><path d="M3 5l3 3 3-3"/></svg>
               </button>
@@ -987,7 +988,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
       <div>
         {/* Column toggle */}
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4, position: "relative" }}>
-          <button data-col-menu onClick={() => setShowColMenu(!showColMenu)} style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 4, padding: "3px 8px", fontSize: 10, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}>
+          <button data-col-menu onClick={() => setShowColMenu(!showColMenu)} style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 4, padding: "3px 8px", fontSize: 10, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit", minWidth: 44, minHeight: 44 }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             Columns
           </button>
@@ -2053,7 +2054,7 @@ function IncomeTab({ charges, expenses, props, TODAY, goTab, _ac, globalFilter, 
     <div>
       {/* Pinned widgets + picker */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "nowrap", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           {pinnedWidgets.map(id => <div key={id} style={{ position: "relative" }}>{renderWidget(id)}<button onClick={() => toggleWidget(id)} style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", color: "#d1d5db", fontSize: 10, lineHeight: 1, padding: 0 }} data-tip="Unpin widget"><IconX /></button></div>)}
         </div>
         <div style={{ position: "relative" }}>
@@ -2138,7 +2139,7 @@ function IncomeTab({ charges, expenses, props, TODAY, goTab, _ac, globalFilter, 
 
       {/* Aging buckets (always visible) */}
       <div style={sectionLabel}>Aging Buckets</div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, overflowX: "auto", WebkitOverflowScrolling: "touch", flexWrap: "nowrap" }}>
         {[
           { label: "Current", items: data.buckets.current, accent: "#2d6a3f" },
           { label: "31-60 Days", items: data.buckets.d30, accent: "#d4a853" },
@@ -2234,7 +2235,7 @@ function ExpensesTab({ expenses, props, vendors, settings, subcats, TODAY, setEx
   return (
     <div>
       {/* Summary strip */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, overflowX: "auto", WebkitOverflowScrolling: "touch", flexWrap: "nowrap" }}>
         {[
           { label: "Expenses (MTD)", value: fmt2(data.mtdTotal), accent: "#64748b" },
           { label: "Top Category", value: data.topCat, accent: "#6b7280", isText: true },
@@ -2414,7 +2415,7 @@ function VendorsTab({ vendors, expenses, setVendors, uid, TODAY, SCHED_E_CATS, g
   return (
     <div>
       {/* Summary strip */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, overflowX: "auto", WebkitOverflowScrolling: "touch", flexWrap: "nowrap" }}>
         {[
           { label: "Total Vendors", value: String(totalVendors), accent: "#64748b" },
           { label: "Total Spend (YTD)", value: fmt2(totalSpendYTD), accent: "#64748b" },
