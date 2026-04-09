@@ -1035,12 +1035,12 @@ export default function SmartImporter({
         const batch = syncTasks.slice(bi, bi + BATCH);
         await Promise.all(batch.map(async ({ t, rm, rent, sd }) => {
           try {
-            await syncTenantToSupabase({ name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, leaseEnd: t.leaseEnd, rent, sd, propName: rm.addr, roomName: rm.name, doorCode: t.doorCode || "", appDataRoomId: rm.id, charges });
+            const tenantId = await syncTenantToSupabase({ name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, leaseEnd: t.leaseEnd, rent, sd, propName: rm.addr, roomName: rm.name, doorCode: t.doorCode || "", appDataRoomId: rm.id, charges });
             if (t.moveIn || t.leaseEnd) {
               const lid = uid() + uid();
               const wsId = settings?.workspace_id || null;
               const ltId = settings?.leaseTemplateId || DEFAULT_LT_ID;
-              await supa("lease_instances", { method: "POST", prefer: "resolution=merge-duplicates", body: JSON.stringify({ id: lid, workspace_id: wsId, template_id: ltId, tenant_id: t.email || null, room_id: rm.id, property_id: rm.propId || null, variable_data: { id: lid, tenantName: t.name, tenantEmail: t.email, roomId: rm.id, LEASE_START: t.moveIn || "", LEASE_END: t.leaseEnd || "", MONTHLY_RENT: rent, SECURITY_DEPOSIT: sd }, status: "draft", updated_at: new Date().toISOString() }) });
+              await supa("lease_instances", { method: "POST", prefer: "resolution=merge-duplicates", body: JSON.stringify({ id: lid, workspace_id: wsId, template_id: ltId, tenant_id: tenantId || t.email || null, room_id: rm.id, property_id: rm.propId || null, variable_data: { id: lid, tenantName: t.name, tenantEmail: t.email, roomId: rm.id, LEASE_START: t.moveIn || "", LEASE_END: t.leaseEnd || "", MONTHLY_RENT: rent, SECURITY_DEPOSIT: sd }, status: "draft", updated_at: new Date().toISOString() }) });
             }
             tick();
           } catch (e) { addLog(`Sync error: ${t.name} — ${e.message || "failed"}`, "err"); err++; tick(); }
@@ -1330,10 +1330,10 @@ export default function SmartImporter({
             </div>
 
             {skipped.length > 0 && (
-              <div style={{ background: "rgba(196,92,74,.05)", border: "1px solid rgba(196,92,74,.15)", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#c45c4a" }}>
+              <div style={{ background: "rgba(196,92,74,.05)", border: "1px solid rgba(196,92,74,.15)", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#c45c4a", animation: "shake .4s ease-in-out" }}>
                 <strong>{skipped.length} row{skipped.length !== 1 ? "s" : ""} skipped:</strong>
-                {skipped.slice(0, 5).map((r, i) => <div key={i}>Line {r.line}: {r.reason}</div>)}
-                {skipped.length > 5 && <div>...and {skipped.length - 5} more</div>}
+                {skipped.slice(0, 5).map((r, i) => <div key={i} style={{ marginTop: 2 }}>Line {r.line}: {r.reason}</div>)}
+                {skipped.length > 5 && <div style={{ marginTop: 2 }}>...and {skipped.length - 5} more</div>}
               </div>
             )}
 
