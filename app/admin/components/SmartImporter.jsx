@@ -1390,7 +1390,7 @@ export default function SmartImporter({
                                               const barW = Math.max(end - start, 2);
                                               const editKey = `${pi}-${ui}-${ri}`;
                                               return (
-                                                <div key={ti} onClick={() => setEditingSet(prev => { const next = new Set(prev); next.add(editKey); return next; })} title={"Click to edit " + t.name} style={{ position: "absolute", top: ti * 30 + 2, left: start + "%", width: barW + "%", height: 24, zIndex: 2, cursor: "pointer" }}>
+                                                <div key={ti} onClick={() => setEditingSet(prev => { const next = new Set(prev); if (next.has(editKey)) next.delete(editKey); else next.add(editKey); return next; })} title={"Click to edit " + t.name} style={{ position: "absolute", top: ti * 30 + 2, left: start + "%", width: barW + "%", height: 24, zIndex: 2, cursor: "pointer" }}>
                                                   <div style={{ width: "100%", height: "100%", borderRadius: 4, background: bc.bg, display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", transition: "filter .1s" }}
                                                     onMouseEnter={e => { e.currentTarget.style.filter = "brightness(.92)"; }} onMouseLeave={e => { e.currentTarget.style.filter = ""; }}>
                                                     <span style={{ fontSize: 9, fontWeight: 700, color: bc.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -1412,7 +1412,7 @@ export default function SmartImporter({
                                               return (
                                                 <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#1a1714", lineHeight: "24px" }}>
                                                   <span style={{ width: 8, height: 8, borderRadius: 2, background: bc.bg, flexShrink: 0 }} />
-                                                  <span onClick={() => setEditingSet(prev => { const next = new Set(prev); next.add(`${pi}-${ui}-${ri}`); return next; })} style={{ fontWeight: 600, minWidth: 80, cursor: "pointer", borderBottom: "1px dashed transparent" }} title={"Click to edit " + t.name}
+                                                  <span onClick={() => setEditingSet(prev => { const next = new Set(prev); const k = `${pi}-${ui}-${ri}`; if (next.has(k)) next.delete(k); else next.add(k); return next; })} style={{ fontWeight: 600, minWidth: 80, cursor: "pointer", borderBottom: "1px dashed transparent" }} title={"Click to edit " + t.name}
                                                     onMouseEnter={e => { e.currentTarget.style.borderBottom = "1px dashed rgba(0,0,0,.2)"; }} onMouseLeave={e => { e.currentTarget.style.borderBottom = "1px dashed transparent"; }}>{t.name}</span>
                                                   <input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "moveIn", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(0,0,0,.08)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "#5c4a3a", minHeight: 24 }} title="Move-in date" />
                                                   <span style={{ color: "#5c4a3a" }}>{"\u2192"}</span>
