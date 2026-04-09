@@ -267,8 +267,9 @@ export default function OnboardingWizard({
   const accBg=`rgba(${_accRgb},.06)`,accBd=`rgba(${_accRgb},.15)`,accBgS=`rgba(${_accRgb},.12)`;
 
   const zoom=settings.adminZoom||1;
+  const font=settings.adminFont||"inherit";
   return(
-  <div style={{maxWidth:1100,margin:"0 auto",position:"relative",transform:zoom!==1?`scale(${zoom})`:"none",transformOrigin:"top left",width:zoom!==1?`${100/zoom}%`:"auto"}}>
+  <div style={{maxWidth:1100,margin:"0 auto",position:"relative",transform:zoom!==1?`scale(${zoom})`:"none",transformOrigin:"top left",width:zoom!==1?`${100/zoom}%`:"auto",fontFamily:font}}>
     {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:9999,padding:"10px 18px",borderRadius:8,background:_acc,color:_accContrast,fontSize:13,fontWeight:600,boxShadow:"0 4px 12px rgba(0,0,0,.15)",fontFamily:"inherit"}}>{toast}</div>}
 
     {/* Phase bar */}
@@ -309,7 +310,7 @@ export default function OnboardingWizard({
     {phase===4&&<P4 tenantRows={tenantRows} charges={charges} TODAY={TODAY} generateCharges={generateCharges} phase4Done={phase4Done} otcForm={otcForm} setOtcForm={setOtcForm} addOneTimeCharges={addOneTimeCharges} _acc={_acc} _gold={_gold} go={guardedSetPhase} lateFeeDefaults={lateFeeDefaults} createCharge={createCharge} flash={flash} confirm={confirm}/>}
 
     {/* ═══ PHASE 5 ═══ */}
-    {phase===5&&<P5 propRows={propRows} tenantRows={tenantRows} charges={charges} sdLedger={sdLedger} leases={leases} phase1Done={phase1Done} phase2Done={phase2Done} phase3Done={phase3Done} phase4Done={phase4Done} completeOnboarding={completeOnboarding} TODAY={TODAY} _acc={_acc} _accContrast={_accContrast} _red={_red} _gold={_gold} accBg={accBg} accBd={accBd} completeTenants={completeTenants} totalTenants={totalTenants}/>}
+    {phase===5&&<P5 propRows={propRows} tenantRows={tenantRows} charges={charges} sdLedger={sdLedger} leases={leases} phase1Done={phase1Done} phase2Done={phase2Done} phase3Done={phase3Done} phase4Done={phase4Done} completeOnboarding={completeOnboarding} TODAY={TODAY} _acc={_acc} _accContrast={_accContrast} _red={_red} _gold={_gold} accBg={accBg} accBd={accBd} completeTenants={completeTenants} totalTenants={totalTenants} lateFeeDefaults={lateFeeDefaults}/>}
   </div>);
 }
 
@@ -318,6 +319,8 @@ export default function OnboardingWizard({
 // ═══════════════════════════════════════════════════════════════════════
 function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFeeDefaults,_acc,accBg,accBd,_red,phase1Done,go,flash,saveProps}){
   const[bulkUtil,setBulkUtil]=useState("");
+  const[bulkAction,setBulkAction]=useState("");
+  const[bulkVal,setBulkVal]=useState("");
   const[expanded,setExpanded]=useState(null);
   const unitIds=propRows.flatMap(p=>p.units.map(u=>u.id));
   const PROP_TYPES=["SFH","Duplex","Triplex","Fourplex","Townhome","Apartment","ADU","Other"];
@@ -326,6 +329,21 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
     const patches=[];sel.forEach(uid=>{const pr=propRows.find(p=>p.units.some(u=>u.id===uid));if(pr)patches.push({propId:pr.id,unitId:uid,patch:{utils:bulkUtil}});});
     if(patches.length){bulkUpdateUnits(patches);flash(`Template applied to ${patches.length} unit${patches.length>1?"s":""}`);}
     setSel([]);setBulkUtil("");
+  };
+
+  const bulkApplyPropSetting=()=>{
+    if(!bulkAction||!bulkVal)return;
+    const propIds=new Set();
+    sel.forEach(uid=>{const pr=propRows.find(p=>p.units.some(u=>u.id===uid));if(pr)propIds.add(pr.id);});
+    const patch={};
+    if(bulkAction==="lateFee")patch.lateFeeInitial=Number(bulkVal);
+    else if(bulkAction==="grace")patch.lateFeeGraceDays=Number(bulkVal);
+    else if(bulkAction==="daily")patch.lateFeeDaily=Number(bulkVal);
+    else if(bulkAction==="dueDay")patch.defaultDueDay=Number(bulkVal);
+    else return;
+    saveProps(prev=>prev.map(p=>propIds.has(p.id)?{...p,...patch}:p));
+    flash(`Applied to ${propIds.size} propert${propIds.size>1?"ies":"y"}`);
+    setBulkAction("");setBulkVal("");setSel([]);
   };
 
   const updateProp=(propId,patch)=>saveProps(prev=>prev.map(p=>p.id!==propId?p:{...p,...patch}));
@@ -341,8 +359,11 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
     {sel.length>0&&(<div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:accBg,border:`1px solid ${accBd}`,borderRadius:8,marginBottom:12,flexWrap:"wrap"}}>
       <span style={{fontSize:12,fontWeight:600,color:_acc}}>{sel.length} unit{sel.length>1?"s":""} selected</span>
       <select value={bulkUtil} onChange={e=>setBulkUtil(e.target.value)} style={{...INP,width:"auto",minWidth:160}}><option value="">Set utility template...</option>{utilTemplates.map(t=><option key={t.key} value={t.key}>{t.name}</option>)}</select>
-      {bulkUtil&&<button onClick={bulkApplyUtil} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,minHeight:44,padding:"0 16px"}}>Apply to {sel.length}</button>}
-      <button onClick={()=>setSel([])} style={{fontSize:11,opacity:.4,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",minHeight:44}}>Clear</button>
+      {bulkUtil&&<button onClick={bulkApplyUtil} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,minHeight:44,padding:"0 16px"}}>Apply</button>}
+      <select value={bulkAction} onChange={e=>{setBulkAction(e.target.value);setBulkVal("");}} style={{...INP,width:"auto",minWidth:140}}><option value="">More actions...</option><option value="lateFee">Set late fee ($)</option><option value="grace">Set grace days</option><option value="daily">Set daily fee ($)</option><option value="dueDay">Set due day</option></select>
+      {bulkAction&&(bulkAction==="dueDay"?<select value={bulkVal} onChange={e=>setBulkVal(e.target.value)} style={{...INP,width:"auto",minWidth:80}}><option value="">Day...</option>{Array.from({length:28},(_,i)=><option key={i+1} value={i+1}>{ord(i+1)}</option>)}</select>:<input type="number" value={bulkVal} onChange={e=>setBulkVal(e.target.value)} placeholder={bulkAction==="grace"?"3":"50"} style={{...INP,width:70}}/>)}
+      {bulkAction&&bulkVal&&<button onClick={bulkApplyPropSetting} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,minHeight:44,padding:"0 16px"}}>Apply</button>}
+      <button onClick={()=>{setSel([]);setBulkUtil("");setBulkAction("");setBulkVal("");}} style={{fontSize:11,opacity:.4,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",minHeight:44}}>Clear</button>
     </div>)}
 
     {propRows.map(p=>(
@@ -770,7 +791,7 @@ function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcF
 // ═══════════════════════════════════════════════════════════════════════
 // PHASE 5 — Go Live
 // ═══════════════════════════════════════════════════════════════════════
-function P5({propRows,tenantRows,charges,sdLedger,leases,phase1Done,phase2Done,phase3Done,phase4Done,completeOnboarding,TODAY,_acc,_accContrast,_red,_gold,accBg,accBd,completeTenants,totalTenants}){
+function P5({propRows,tenantRows,charges,sdLedger,leases,phase1Done,phase2Done,phase3Done,phase4Done,completeOnboarding,TODAY,_acc,_accContrast,_red,_gold,accBg,accBd,completeTenants,totalTenants,lateFeeDefaults}){
   const allReady=phase1Done&&phase2Done&&phase4Done;
   const mo=TODAY.toLocaleString("default",{month:"long",year:"numeric"});
   const noPhone=tenantRows.filter(r=>!r.hasPhone).length;
@@ -798,7 +819,7 @@ function P5({propRows,tenantRows,charges,sdLedger,leases,phase1Done,phase2Done,p
     ]},
     {section:"Charges",items:[
       {label:`${mo} charges generated`,ok:phase4Done},
-      {label:"Late fee rules configured",ok:true,info:true},
+      {label:"Late fee rules configured (global defaults or per-property)",ok:propRows.every(p=>p.lateFeeInitial!=null)||!!(lateFeeDefaults?.amount),info:true},
       ...(tenantRows.filter(r=>r.lateConfig&&!r.lateConfig.enabled).length>0?[{label:`${tenantRows.filter(r=>r.lateConfig&&!r.lateConfig.enabled).length} on payment plan (late fee exempt)`,ok:true,info:true}]:[]),
     ]},
   ];

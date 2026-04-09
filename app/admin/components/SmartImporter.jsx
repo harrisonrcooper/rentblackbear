@@ -1019,10 +1019,10 @@ export default function SmartImporter({
                 if (createCharge && t.name && rent > 0 && !existingRentForRoom) {
                   const mk = (t.moveIn || todayStr).slice(0, 7);
                   const dueDay = rm.recurringDueDay || 1;
-                  createCharge({ roomId: rm.id, tenantName: t.name, propName: rm.addr, roomName: rm.name, category: "Rent", desc: mk + " Rent", amount: rent, dueDate: mk + "-" + String(dueDay).padStart(2, "0"), sent: true, sentDate: todayStr });
+                  createCharge({ roomId: rm.id, tenantName: t.name, propName: rm.addr, roomName: rm.name, category: "Rent", desc: mk + " Rent", amount: rent, dueDate: mk + "-" + String(dueDay).padStart(2, "0"), sent: true, sentDate: todayStr, noLateFee: true, historical: true });
                 }
                 if (createCharge && t.name && sd > 0 && !existingSdForRoom) {
-                  createCharge({ roomId: rm.id, tenantName: t.name, propName: rm.addr, roomName: rm.name, category: "Security Deposit", desc: "Security Deposit", amount: sd, dueDate: t.moveIn || todayStr, sent: true, sentDate: todayStr });
+                  createCharge({ roomId: rm.id, tenantName: t.name, propName: rm.addr, roomName: rm.name, category: "Security Deposit", desc: "Security Deposit", amount: sd, dueDate: t.moveIn || todayStr, sent: true, sentDate: todayStr, noLateFee: true, historical: true });
                   if (setSdLedger) {
                     setSdLedger(prev => {
                       // Re-import guard: skip if SD entry already exists for this room
