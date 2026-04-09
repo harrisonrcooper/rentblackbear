@@ -122,7 +122,7 @@ export default function OnboardingWizard({
   }),[props]);
 
   // Phase completion
-  const phase1Done=useMemo(()=>propRows.every(p=>p.units.every(u=>u.utils)),[propRows]);
+  const phase1Done=useMemo(()=>propRows.every(p=>p.type&&p.units.every(u=>u.utils)),[propRows]);
   const phase2Done=useMemo(()=>completeTenants===totalTenants&&totalTenants>0,[completeTenants,totalTenants]);
   const phase3Done=useMemo(()=>{
     if(tenantRows.some(r=>r.balanceOwed>0)&&!charges.some(c=>c.category==="Balance Forward"))return false;
@@ -266,8 +266,9 @@ export default function OnboardingWizard({
   // ═══════════════════════════════════════════════════════════════════
   const accBg=`rgba(${_accRgb},.06)`,accBd=`rgba(${_accRgb},.15)`,accBgS=`rgba(${_accRgb},.12)`;
 
+  const zoom=settings.adminZoom||1;
   return(
-  <div style={{maxWidth:1100,margin:"0 auto",position:"relative"}}>
+  <div style={{maxWidth:1100,margin:"0 auto",position:"relative",transform:zoom!==1?`scale(${zoom})`:"none",transformOrigin:"top left",width:zoom!==1?`${100/zoom}%`:"auto"}}>
     {toast&&<div style={{position:"fixed",top:16,right:16,zIndex:9999,padding:"10px 18px",borderRadius:8,background:_acc,color:_accContrast,fontSize:13,fontWeight:600,boxShadow:"0 4px 12px rgba(0,0,0,.15)",fontFamily:"inherit"}}>{toast}</div>}
 
     {/* Phase bar */}
@@ -296,7 +297,7 @@ export default function OnboardingWizard({
     </div>
 
     {/* ═══ PHASE 1 ═══ */}
-    {phase===1&&<P1 propRows={propRows} utilTemplates={utilTemplates} sel={sel} setSel={setSel} updateUnit={updateUnit} bulkUpdateUnits={bulkUpdateUnits} lateFeeDefaults={lateFeeDefaults} _acc={_acc} accBg={accBg} accBd={accBd} _red={_red} phase1Done={phase1Done} go={guardedSetPhase} flash={flash}/>}
+    {phase===1&&<P1 propRows={propRows} utilTemplates={utilTemplates} sel={sel} setSel={setSel} updateUnit={updateUnit} bulkUpdateUnits={bulkUpdateUnits} lateFeeDefaults={lateFeeDefaults} _acc={_acc} accBg={accBg} accBd={accBd} _red={_red} phase1Done={phase1Done} go={guardedSetPhase} flash={flash} saveProps={saveProps}/>}
 
     {/* ═══ PHASE 2 ═══ */}
     {phase===2&&<P2 tenantRows={tenantRows} sel={sel} setSel={setSel} toggleSel={toggleSel} toggleAll={toggleAll} expandedId={expandedId} setExpandedId={setExpandedId} bulkApplyToSelected={bulkApplyToSelected} updateRoom={updateRoom} completeTenants={completeTenants} totalTenants={totalTenants} _acc={_acc} _red={_red} _gold={_gold} accBg={accBg} accBd={accBd} TODAY={TODAY} go={guardedSetPhase} flash={flash} setDirtyTenant={setDirtyTenant} lateFeeDefaults={lateFeeDefaults}/>}
@@ -305,7 +306,7 @@ export default function OnboardingWizard({
     {phase===3&&<P3 tenantRows={tenantRows} charges={charges} sdLedger={sdLedger} leases={leases} createBalanceForwards={createBalanceForwards} recordHistoricalDeposits={recordHistoricalDeposits} markLeasesExecuted={markLeasesExecuted} markChargesPaid={markChargesPaid} saving={saving} _acc={_acc} _red={_red} _gold={_gold} accBg={accBg} go={guardedSetPhase}/>}
 
     {/* ═══ PHASE 4 ═══ */}
-    {phase===4&&<P4 tenantRows={tenantRows} charges={charges} TODAY={TODAY} generateCharges={generateCharges} phase4Done={phase4Done} otcForm={otcForm} setOtcForm={setOtcForm} addOneTimeCharges={addOneTimeCharges} _acc={_acc} _gold={_gold} go={guardedSetPhase} lateFeeDefaults={lateFeeDefaults}/>}
+    {phase===4&&<P4 tenantRows={tenantRows} charges={charges} TODAY={TODAY} generateCharges={generateCharges} phase4Done={phase4Done} otcForm={otcForm} setOtcForm={setOtcForm} addOneTimeCharges={addOneTimeCharges} _acc={_acc} _gold={_gold} go={guardedSetPhase} lateFeeDefaults={lateFeeDefaults} createCharge={createCharge} flash={flash} confirm={confirm}/>}
 
     {/* ═══ PHASE 5 ═══ */}
     {phase===5&&<P5 propRows={propRows} tenantRows={tenantRows} charges={charges} sdLedger={sdLedger} leases={leases} phase1Done={phase1Done} phase2Done={phase2Done} phase3Done={phase3Done} phase4Done={phase4Done} completeOnboarding={completeOnboarding} TODAY={TODAY} _acc={_acc} _accContrast={_accContrast} _red={_red} _gold={_gold} accBg={accBg} accBd={accBd} completeTenants={completeTenants} totalTenants={totalTenants}/>}
@@ -315,10 +316,11 @@ export default function OnboardingWizard({
 // ═══════════════════════════════════════════════════════════════════════
 // PHASE 1 — Property Finalization (P1-2, P1-3, P4-1, P4-2 fixes)
 // ═══════════════════════════════════════════════════════════════════════
-function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFeeDefaults,_acc,accBg,accBd,_red,phase1Done,go,flash}){
+function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFeeDefaults,_acc,accBg,accBd,_red,phase1Done,go,flash,saveProps}){
   const[bulkUtil,setBulkUtil]=useState("");
   const[expanded,setExpanded]=useState(null);
   const unitIds=propRows.flatMap(p=>p.units.map(u=>u.id));
+  const PROP_TYPES=["SFH","Duplex","Triplex","Fourplex","Townhome","Apartment","ADU","Other"];
 
   const bulkApplyUtil=()=>{if(!bulkUtil)return;
     const patches=[];sel.forEach(uid=>{const pr=propRows.find(p=>p.units.some(u=>u.id===uid));if(pr)patches.push({propId:pr.id,unitId:uid,patch:{utils:bulkUtil}});});
@@ -326,10 +328,12 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
     setSel([]);setBulkUtil("");
   };
 
+  const updateProp=(propId,patch)=>saveProps(prev=>prev.map(p=>p.id!==propId?p:{...p,...patch}));
+
   return(<div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
       <div><h2 style={{fontSize:18,fontWeight:700,margin:0}}>Property Configuration</h2>
-        <p style={{fontSize:13,opacity:.45,margin:"4px 0 0"}}>Set utility templates for each property/unit. Late fees default to {fmtS(lateFeeDefaults.amount)} after {ord(lateFeeDefaults.grace)} day, +{fmtS(lateFeeDefaults.daily)}/day (configurable per-tenant in Phase 2).</p>
+        <p style={{fontSize:13,opacity:.45,margin:"4px 0 0"}}>Configure address, type, utilities, late fees, and due dates per property.</p>
       </div>
       {phase1Done&&<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Complete</span>}
     </div>
@@ -341,20 +345,53 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
       <button onClick={()=>setSel([])} style={{fontSize:11,opacity:.4,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",minHeight:44}}>Clear</button>
     </div>)}
 
-    <div style={{border:"1px solid rgba(128,128,128,.12)",borderRadius:10,overflow:"hidden"}}>
+    {propRows.map(p=>(
+    <div key={p.id} style={{border:"1px solid rgba(128,128,128,.12)",borderRadius:10,overflow:"hidden",marginBottom:12}}>
+      {/* Property header — editable address, type, late fee, due date */}
+      <div style={{padding:"12px 16px",background:"rgba(128,128,128,.04)",display:"flex",flexWrap:"wrap",gap:10,alignItems:"flex-end"}}>
+        <div style={{flex:2,minWidth:180}}>
+          <label style={{fontSize:10,fontWeight:600,opacity:.4,display:"block",marginBottom:3}}>Address</label>
+          <input value={p.addr||p.name||""} onChange={e=>updateProp(p.id,{addr:e.target.value})} style={{...INP,fontWeight:600}}/>
+        </div>
+        <div style={{minWidth:120}}>
+          <label style={{fontSize:10,fontWeight:600,opacity:.4,display:"block",marginBottom:3}}>Type</label>
+          <select value={p.type||""} onChange={e=>updateProp(p.id,{type:e.target.value})} style={{...INP,border:p.type?INP.border:`1.5px solid ${_red}`}}>
+            <option value="">Select...</option>{PROP_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div style={{minWidth:100}}>
+          <label style={{fontSize:10,fontWeight:600,opacity:.4,display:"block",marginBottom:3}}>Default Due Day</label>
+          <select value={p.defaultDueDay||""} onChange={e=>updateProp(p.id,{defaultDueDay:Number(e.target.value)||null})} style={INP}>
+            <option value="">1st</option>{Array.from({length:28},(_,i)=><option key={i+1} value={i+1}>{ord(i+1)}</option>)}
+          </select>
+        </div>
+        <div style={{minWidth:90}}>
+          <label style={{fontSize:10,fontWeight:600,opacity:.4,display:"block",marginBottom:3}}>Late Fee ($)</label>
+          <input type="number" value={p.lateFeeInitial??""} onChange={e=>updateProp(p.id,{lateFeeInitial:e.target.value?Number(e.target.value):null})} placeholder={String(lateFeeDefaults.amount)} style={INP}/>
+        </div>
+        <div style={{minWidth:80}}>
+          <label style={{fontSize:10,fontWeight:600,opacity:.4,display:"block",marginBottom:3}}>Grace Days</label>
+          <input type="number" value={p.lateFeeGraceDays??""} onChange={e=>updateProp(p.id,{lateFeeGraceDays:e.target.value?Number(e.target.value):null})} placeholder={String(lateFeeDefaults.grace)} style={INP}/>
+        </div>
+        <div style={{minWidth:80}}>
+          <label style={{fontSize:10,fontWeight:600,opacity:.4,display:"block",marginBottom:3}}>Daily ($)</label>
+          <input type="number" value={p.lateFeeDaily??""} onChange={e=>updateProp(p.id,{lateFeeDaily:e.target.value?Number(e.target.value):null})} placeholder={String(lateFeeDefaults.daily)} style={INP}/>
+        </div>
+      </div>
+
+      {/* Unit table */}
       <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:600}}>
-        <thead><tr style={{background:"rgba(128,128,128,.04)"}}>
-          <th style={{...TH,width:44}}><input type="checkbox" checked={sel.length===unitIds.length&&unitIds.length>0} onChange={()=>setSel(sel.length===unitIds.length?[]:unitIds)} style={{width:18,height:18}}/></th>
-          <th style={TH}>Property</th><th style={TH}>Unit</th><th style={TH}>Mode</th><th style={TH}>Rooms</th><th style={TH}>Utility Template</th><th style={{...TH,width:44}}></th>
+        <thead><tr style={{background:"rgba(128,128,128,.02)"}}>
+          <th style={{...TH,width:44}}></th>
+          <th style={TH}>Unit</th><th style={TH}>Mode</th><th style={TH}>Rooms</th><th style={TH}>Utility Template</th><th style={{...TH,width:44}}></th>
         </tr></thead>
-        <tbody>{propRows.map(p=>p.units.map(u=>{
+        <tbody>{p.units.map(u=>{
           const isExp=expanded===u.id,hasUtil=!!u.utils;
           return[
           <tr key={u.id} style={{borderTop:"1px solid rgba(128,128,128,.08)"}}>
             <td style={TD}><input type="checkbox" checked={sel.includes(u.id)} onChange={()=>setSel(p2=>p2.includes(u.id)?p2.filter(x=>x!==u.id):[...p2,u.id])} style={{width:18,height:18}}/></td>
-            <td style={{...TD,fontWeight:600}}>{p.displayName}</td>
-            <td style={TD}>{u.name||"Main"}</td>
+            <td style={{...TD,fontWeight:500}}>{u.name||"Main"}</td>
             <td style={TD}><span style={{fontSize:11,padding:"2px 8px",borderRadius:4,background:"rgba(128,128,128,.08)"}}>{(u.rentalMode||"byRoom")==="wholeHouse"?"Whole Unit":"By Room"}</span></td>
             <td style={TD}>{(u.rooms||[]).length}</td>
             <td style={TD}>
@@ -367,16 +404,15 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
           isExp&&(u.rooms||[]).map(r=>(
             <tr key={r.id} style={{background:"rgba(128,128,128,.03)",borderTop:"1px solid rgba(128,128,128,.04)"}}>
               <td style={TD}></td>
-              <td style={{...TD,paddingLeft:32,opacity:.6,fontSize:12}}>{r.name}</td>
+              <td style={{...TD,paddingLeft:16,opacity:.6,fontSize:12}}>{r.name}</td>
               <td style={{...TD,fontSize:12,opacity:.6}}>{r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}</td>
-              <td style={TD}></td>
               <td style={{...TD,fontSize:12}}>{r.rent?fmtS(r.rent):"\u2014"}</td>
               <td style={{...TD,fontSize:12,opacity:.6}}>{r.utils?UTIL_LABELS[r.utils]||r.utils:"Inherits unit"}</td>
               <td style={TD}></td>
             </tr>))];
-        }))}</tbody>
+        })}</tbody>
       </table></div>
-    </div>
+    </div>))}
 
     <div style={{display:"flex",justifyContent:"flex-end",marginTop:20}}>
       <button onClick={()=>go(2)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13,minHeight:44}}>Tenants <IcoArrow/></button>
@@ -482,7 +518,7 @@ function TenantDetail({row,updateRoom,_acc,_red,_gold,TODAY,flash,setDirtyTenant
     rent:row.rent||"",le:row.le||"",m2m:row.m2m,recurringDueDay:row.recurringDueDay||"",
     lateFeeExempt:row.lateConfig?!row.lateConfig.enabled:false,
     coSignerName:row.coSigner?.name||"",coSignerPhone:row.coSigner?.phone||"",coSignerEmail:row.coSigner?.email||"",coSignerRelation:row.coSigner?.relation||"",
-    paymentPlanActive:row.paymentPlan?.active||false,paymentPlanNotes:row.paymentPlan?.notes||"",
+    paymentPlanActive:row.paymentPlan?.active||false,paymentPlanNotes:row.paymentPlan?.notes||"",paymentPlanAmount:row.paymentPlan?.amount||"",paymentPlanFreq:row.paymentPlan?.frequency||"monthly",paymentPlanCount:row.paymentPlan?.count||"",
   });
   const[errs,setErrs]=useState({});
   const[dirty,setDirty]=useState(false);
@@ -506,7 +542,7 @@ function TenantDetail({row,updateRoom,_acc,_red,_gold,TODAY,flash,setDirtyTenant
       rent:Number(f.rent)||r.rent,le:f.m2m?null:f.le,m2m:f.m2m,
       recurringDueDay:f.recurringDueDay?Number(f.recurringDueDay):null,
       lateConfig:{...(r.lateConfig||{}),enabled:!f.lateFeeExempt},
-      paymentPlan:f.paymentPlanActive?{active:true,notes:f.paymentPlanNotes}:null,
+      paymentPlan:f.paymentPlanActive?{active:true,notes:f.paymentPlanNotes,amount:Number(f.paymentPlanAmount)||null,frequency:f.paymentPlanFreq||"monthly",count:Number(f.paymentPlanCount)||null}:null,
       tenant:{...r.tenant,name:f.name,email:f.email,phone:f.phone,moveIn:f.moveIn,occupationType:f.occupation,doorCode:f.doorCode,
         coSigner:f.coSignerName?{name:f.coSignerName,phone:f.coSignerPhone,email:f.coSignerEmail,relation:f.coSignerRelation}:null},
     }));
@@ -552,7 +588,16 @@ function TenantDetail({row,updateRoom,_acc,_red,_gold,TODAY,flash,setDirtyTenant
       </div>
     </div>
     {!f.lateFeeExempt&&<div style={{fontSize:11,opacity:.35,marginBottom:14}}>Late fee: {fmtS(lateFeeDefaults.amount)} after {ord(lateFeeDefaults.grace)} day, +{fmtS(lateFeeDefaults.daily)}/day (change in PM Settings)</div>}
-    {f.paymentPlanActive&&<div style={{marginBottom:14}}><label style={{fontSize:11,fontWeight:500,opacity:.45,marginBottom:3,display:"block"}}>Payment Plan Notes</label><input type="text" value={f.paymentPlanNotes} onChange={e=>set("paymentPlanNotes",e.target.value)} placeholder="e.g. $200/mo extra until balance paid" style={{...INP,width:"100%"}}/></div>}
+    {f.paymentPlanActive&&<div style={{marginBottom:14,padding:12,background:"rgba(128,128,128,.04)",borderRadius:8,border:"1px solid rgba(128,128,128,.1)"}}>
+      <div style={{fontSize:12,fontWeight:600,marginBottom:10}}>Payment Plan Details</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:10}}>
+        <div style={{flex:1,minWidth:100}}><label style={{fontSize:10,opacity:.45,display:"block",marginBottom:3}}>Amount per Payment</label><input type="number" value={f.paymentPlanAmount} onChange={e=>set("paymentPlanAmount",e.target.value)} placeholder="e.g. 200" style={INP}/></div>
+        <div style={{flex:1,minWidth:120}}><label style={{fontSize:10,opacity:.45,display:"block",marginBottom:3}}>Frequency</label><select value={f.paymentPlanFreq} onChange={e=>set("paymentPlanFreq",e.target.value)} style={INP}><option value="weekly">Weekly</option><option value="biweekly">Bi-weekly</option><option value="monthly">Monthly</option></select></div>
+        <div style={{flex:1,minWidth:100}}><label style={{fontSize:10,opacity:.45,display:"block",marginBottom:3}}>Number of Payments</label><input type="number" value={f.paymentPlanCount} onChange={e=>set("paymentPlanCount",e.target.value)} placeholder="e.g. 6" style={INP}/></div>
+      </div>
+      <div><label style={{fontSize:10,opacity:.45,display:"block",marginBottom:3}}>Notes</label><input type="text" value={f.paymentPlanNotes} onChange={e=>set("paymentPlanNotes",e.target.value)} placeholder="e.g. Approved by PM on 4/1, no late fees during plan" style={{...INP,width:"100%"}}/></div>
+      <div style={{fontSize:10,opacity:.35,marginTop:6}}>Late fees auto-disabled while payment plan is active</div>
+    </div>}
     <div style={{marginBottom:14}}>
       <div style={{fontSize:12,fontWeight:600,opacity:.6,marginBottom:8}}>Co-Signer</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
@@ -636,7 +681,7 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
 // ═══════════════════════════════════════════════════════════════════════
 // PHASE 4 — Charges
 // ═══════════════════════════════════════════════════════════════════════
-function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcForm,addOneTimeCharges,_acc,_gold,go,lateFeeDefaults}){
+function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcForm,addOneTimeCharges,_acc,_gold,go,lateFeeDefaults,createCharge,flash,confirm}){
   const mk=`${TODAY.getFullYear()}-${(TODAY.getMonth()+1).toString().padStart(2,"0")}`;
   const mo=TODAY.toLocaleString("default",{month:"long",year:"numeric"});
   const has=new Set(charges.filter(c=>c.category==="Rent"&&c.dueDate?.startsWith(mk)).map(c=>c.roomId));
@@ -686,6 +731,35 @@ function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcF
       {otcForm.roomIds.length>0&&<div style={{marginTop:8,fontSize:12,opacity:.5}}>{otcForm.roomIds.map(rid=>{const r=tenantRows.find(x=>x.roomId===rid);return r?r.tenant.name:"";}).filter(Boolean).join(", ")} <button onClick={()=>setOtcForm(f=>({...f,roomIds:[]}))} style={{marginLeft:8,fontSize:11,opacity:.4,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>clear</button></div>}
     </div>
 
+    {/* Prior-month charge generation */}
+    {(()=>{
+      const tenantsWithHistory=tenantRows.filter(r=>{if(!r.tenant.moveIn||!r.rent)return false;const mi=new Date(r.tenant.moveIn+"T00:00:00");return mi<new Date(TODAY.getFullYear(),TODAY.getMonth(),1);});
+      if(!tenantsWithHistory.length)return null;
+      return(
+      <div style={{marginTop:16,padding:16,background:"rgba(128,128,128,.04)",borderRadius:10,border:"1px solid rgba(128,128,128,.08)"}}>
+        <div style={{fontSize:13,fontWeight:600,marginBottom:4}}>Back-Rent Generation</div>
+        <div style={{fontSize:12,opacity:.5,marginBottom:12}}>{tenantsWithHistory.length} tenant{tenantsWithHistory.length>1?"s":""} moved in before this month. Generate charges for missed months.</div>
+        <button onClick={()=>{
+          let count=0;
+          tenantsWithHistory.forEach(row=>{
+            const mi=new Date(row.tenant.moveIn+"T00:00:00");const dd=row.recurringDueDay||1;
+            let cur=new Date(mi.getFullYear(),mi.getMonth(),1);
+            const thisMonth=new Date(TODAY.getFullYear(),TODAY.getMonth(),1);
+            while(cur<thisMonth){
+              const mmk=`${cur.getFullYear()}-${(cur.getMonth()+1).toString().padStart(2,"0")}`;
+              const moLabel=cur.toLocaleString("default",{month:"long",year:"numeric"});
+              const exists=charges.some(c=>c.category==="Rent"&&c.roomId===row.roomId&&c.dueDate?.startsWith(mmk));
+              if(!exists){createCharge({roomId:row.roomId,tenantName:row.tenant.name,propName:row.propName,roomName:row.roomName,category:"Rent",desc:`${moLabel} Rent`,amount:row.rent,dueDate:`${mmk}-${String(dd).padStart(2,"0")}`,sent:true,sentDate:TODAY.toISOString().split("T")[0],historical:true,noLateFee:true});count++;}
+              cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+            }
+          });
+          if(count)flash(`${count} back-rent charge${count>1?"s":""} generated (marked as historical)`);
+          else flash("All prior months already have charges");
+        }} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Generate Prior-Month Charges</button>
+        <div style={{fontSize:10,opacity:.35,marginTop:6}}>These are marked as historical and will not trigger late fees or reminders</div>
+      </div>);
+    })()}
+
     <div style={{display:"flex",justifyContent:"space-between",marginTop:20}}>
       <button onClick={()=>go(3)} className="btn btn-out" style={{fontSize:13,minHeight:44}}>Back</button>
       <button onClick={()=>go(5)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13,minHeight:44}}>Go Live <IcoArrow/></button>
@@ -706,6 +780,7 @@ function P5({propRows,tenantRows,charges,sdLedger,leases,phase1Done,phase2Done,p
   const checks=[
     {section:"Properties",items:[
       {label:"All properties have addresses",ok:propRows.every(p=>p.addr)},
+      {label:"All properties have type set",ok:propRows.every(p=>p.type)},
       {label:"All units have utility templates",ok:propRows.every(p=>p.units.every(u=>u.utils))},
       {label:`${propRows.length} propert${propRows.length===1?"y":"ies"} configured`,ok:true,info:true},
     ]},
