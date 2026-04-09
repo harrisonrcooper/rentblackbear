@@ -45,6 +45,8 @@ export default function DashboardTab({
         const nextRentTotal=nextRentCharges.filter(c=>c.category==="Rent").reduce((s,c)=>s+c.amount,0);
         const appsByStage={"new-lead":0,"applied":0,"approved":0,"onboarding":0};
         apps.filter(a=>a.status!=="denied").forEach(a=>{if(appsByStage[a.status]!==undefined)appsByStage[a.status]++;});
+        const todayStr=TODAY.toISOString().split("T")[0];
+        const futureTenantsList=(allTenants||[]).filter(r=>r.tenant?.moveIn&&r.tenant.moveIn>todayStr).sort((a,b)=>(a.tenant.moveIn||"").localeCompare(b.tenant.moveIn||""));
         const defWidgets=settings.dashWidgets||["pendingActions","financialAlerts","pastDue","leaseExp","vacancy","maintenance","mtdCollection","recentActivity","appPipeline","upcomingRent"];
         const activeWidgets=widgetList||defWidgets;
         const editMode=dashEditMode;
@@ -67,6 +69,7 @@ export default function DashboardTab({
           {id:"dscr",label:"DSCR"},{id:"rocks",label:"Traction Rocks"},
           {id:"pendingActions",label:"Pending Actions"},
           {id:"financialAlerts",label:"Financial Alerts"},
+          {id:"upcomingMoveIns",label:"Upcoming Move-Ins"},
         ];
         const availableToAdd=ALL_WIDGETS.filter(w=>!activeWidgets.includes(w.id));
         const NeedsData=({label,goTo,field})=>(<div style={{padding:"10px 0"}}>
@@ -316,6 +319,22 @@ export default function DashboardTab({
                 <div style={{fontSize:9,color:"#6b5e52"}}>{(settings.announcements||[]).filter(a=>!a.expiresAt||new Date(a.expiresAt)>new Date()).length} active</div>
               </div>
             </div>
+          </>);
+          case "upcomingMoveIns":return(<>
+            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Upcoming Move-Ins</div>
+            {futureTenantsList.length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>No upcoming move-ins</div>}
+            {futureTenantsList.slice(0,6).map(r=>{
+              const daysTo=Math.ceil((new Date(r.tenant.moveIn+"T00:00:00")-TODAY)/86400000);
+              return(<div key={r.id} className="row" style={{cursor:"pointer",padding:"6px 0"}} onClick={()=>{goTab("tenants");setTimeout(()=>setDrill("future"),0);}}>
+                <div className="row-dot" style={{background:daysTo<=7?"#c45c4a":daysTo<=30?"#d4a853":"#4a7c59"}}/>
+                <div className="row-i">
+                  <div className="row-t" style={{fontSize:12}}>{r.tenant.name}</div>
+                  <div className="row-s">{r.propName} &middot; {r.name} &middot; {fmtD(r.tenant.moveIn)}</div>
+                </div>
+                <span className="badge" style={{background:daysTo<=7?"rgba(196,92,74,.08)":daysTo<=30?"rgba(212,168,83,.1)":"rgba(74,124,89,.1)",color:daysTo<=7?"#c45c4a":daysTo<=30?"#9a7422":"#4a7c59",flexShrink:0}}>{daysTo}d</span>
+              </div>);
+            })}
+            {futureTenantsList.length>6&&<div style={{fontSize:10,color:"#6b5e52",paddingTop:6,cursor:"pointer"}} onClick={()=>{goTab("tenants");setTimeout(()=>setDrill("future"),0);}}>+{futureTenantsList.length-6} more</div>}
           </>);
           default:return null;
         }};

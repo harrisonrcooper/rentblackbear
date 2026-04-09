@@ -183,12 +183,17 @@ export default function PropertiesList({
                   <span style={{ fontSize: 8, fontWeight: 500, color: "#3d2e22", textTransform: "none", letterSpacing: 0 }}>{uIsWhole ? "Whole Unit" : "By Room"}</span>
                 </div>}
 
-                {uIsWhole ? (
+                {uIsWhole ? (() => {
+                  const wholeRep = (u.rooms || []).find(r => r.tenant);
+                  const wholeIsFuture = wholeRep && wholeRep.tenant?.moveIn && wholeRep.tenant.moveIn > TODAY.toISOString().split("T")[0];
+                  return (
                   <div className="row" style={{ padding: "10px 12px", marginBottom: 3, cursor: "default" }}>
-                    <div className="row-dot" style={{ background: uOcc ? _grn : _red, flexShrink: 0 }} />
+                    <div className="row-dot" style={{ background: wholeIsFuture ? hexToRgba(_grn, .5) : uOcc ? _grn : _red, flexShrink: 0 }} />
                     <div className="row-i">
                       <div style={{ fontSize: 12, fontWeight: 600 }}>{u.name} &mdash; Whole Unit</div>
-                      {uOcc
+                      {wholeIsFuture
+                        ? <div style={{ fontSize: 10, color: "#065F46", fontWeight: 600, marginTop: 1 }}>Incoming: {wholeRep.tenant.name} on {fmtD(wholeRep.tenant.moveIn)}</div>
+                        : uOcc
                         ? <div style={{ fontSize: 10, color: "#3d2e22", marginTop: 1 }}>Occupied &middot; ends {fmtD(uLatestLe)}</div>
                         : <div style={{ fontSize: 10, color: _red, fontWeight: 600, marginTop: 1 }}>Vacant &mdash; {fmtS(u.rent)}/mo</div>}
                     </div>
@@ -201,24 +206,28 @@ export default function PropertiesList({
                     }}>
                       {uOcc ? <><IconUser /> View Tenant</> : u.ownerOccupied ? <><IconKey /> Owner</> : "+ Find Tenant"}
                     </button>
-                  </div>
-                ) : (
+                  </div>);
+                })() : (
                   <>
                     {uRooms.length === 0 && <div style={{ fontSize: 11, color: "#7a7067", padding: "6px 0" }}>No rooms &mdash; edit property to add</div>}
                     {uRooms.map(r => {
                       const occ = r.st === "occupied" && r.tenant;
+                      const isFuture = occ && r.tenant.moveIn && r.tenant.moveIn > TODAY.toISOString().split("T")[0];
                       const pd = (payments[r.id] && payments[r.id][MO]) || 0;
                       const dl = r.le ? Math.ceil((new Date(r.le + "T00:00:00") - TODAY) / (1e3 * 60 * 60 * 24)) : null;
+                      const daysToMoveIn = isFuture ? Math.ceil((new Date(r.tenant.moveIn + "T00:00:00") - TODAY) / (1e3 * 60 * 60 * 24)) : null;
                       const tenantData = { ...r, propName: p.addr || p.name, propUtils: u.utils || p.utils, propClean: u.clean || p.clean, unitName: u.name, unitLabel: u.label };
-                      return (<div key={r.id} className="row" style={{ padding: "10px 12px", marginBottom: 3, cursor: "default", background: occ && dl && dl <= 30 ? hexToRgba(_red, .02) : occ && dl && dl <= 90 ? hexToRgba(_gold, .02) : "#fff" }}>
-                        <div className="row-dot" style={{ background: occ ? _grn : _red, flexShrink: 0 }} />
+                      return (<div key={r.id} className="row" style={{ padding: "10px 12px", marginBottom: 3, cursor: "default", background: isFuture ? hexToRgba(_grn, .03) : occ && dl && dl <= 30 ? hexToRgba(_red, .02) : occ && dl && dl <= 90 ? hexToRgba(_gold, .02) : "#fff" }}>
+                        <div className="row-dot" style={{ background: isFuture ? hexToRgba(_grn, .5) : occ ? _grn : _red, flexShrink: 0 }} />
                         <div className="row-i">
                           <div style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                             {r.name}
                             <span className={"badge " + (r.pb ? "b-green" : "b-gray")} style={{ fontSize: 7 }}>{r.pb ? "Private" : "Shared"}</span>
                             {r.sqft && <span style={{ fontSize: 9, color: "#3d2e22" }}>{r.sqft.toLocaleString()} sqft</span>}
                           </div>
-                          {occ
+                          {isFuture
+                            ? <div style={{ fontSize: 10, color: "#065F46", fontWeight: 600, marginTop: 1 }}>Incoming: {r.tenant.name} on {fmtD(r.tenant.moveIn)}<span style={{ color: daysToMoveIn <= 7 ? _red : daysToMoveIn <= 30 ? _gold : _grn, fontWeight: 700, marginLeft: 4 }}>({daysToMoveIn}d)</span></div>
+                            : occ
                             ? <div style={{ fontSize: 10, color: "#3d2e22", marginTop: 1 }}>{r.tenant.name} &middot; ends {fmtD(r.le)}{dl && dl <= 90 ? <span style={{ color: dl <= 30 ? _red : _gold, fontWeight: 700, marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 2 }}><IconClock /> {dl}d</span> : null}</div>
                             : r.ownerOccupied ? <div style={{ fontSize: 10, color: _acc, fontWeight: 600, marginTop: 1 }}>Owner Occupied</div>
                             : <div style={{ fontSize: 10, color: _red, fontWeight: 600, marginTop: 1 }}>Vacant &mdash; {fmtS(r.rent)}/mo lost</div>}

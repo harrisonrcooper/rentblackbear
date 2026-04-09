@@ -655,7 +655,7 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
 /* ══════════════════════════════════════════════════════════ */
 
 export default function SmartImporter({
-  props, setProps, settings, uid, createCharge, setCharges, setNotifs, setSdLedger,
+  props, setProps, settings, uid, createCharge, setCharges, setNotifs, setSdLedger, setArchive,
   charges, TODAY, onClose, goTab, onImportComplete,
 }) {
   const _ac = settings?.adminAccent || "#4a7c59";
@@ -1004,6 +1004,17 @@ export default function SmartImporter({
                   roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
                   ok++;
                 }
+                // Archive past tenants so they appear in Past tab
+                if (setArchive && history.length > 0) {
+                  const archiveEntries = history.map(h => ({
+                    id: uid(), name: h.name, email: h.email || "", phone: h.phone || "",
+                    roomName: rd.name, propName: prop.addr || pd.addr, propId: prop.id,
+                    rent: h.rent || 0, moveIn: h.moveIn || "", leaseEnd: h.leaseEnd || "",
+                    terminatedDate: h.leaseEnd || todayStr, reason: "Imported (past tenant)",
+                    isArchived: false, archivedOn: todayStr,
+                  }));
+                  setArchive(prev => [...archiveEntries, ...(prev || [])]);
+                }
                 addLog(`  ${rd.name}: ${current.name} (current tenant), ${history.length} past tenant${history.length>1?"s":""} saved to history (${history.map(h=>h.name).join(", ")})`);
 
               } else {
@@ -1082,6 +1093,7 @@ export default function SmartImporter({
         setProps(cur => { saveAppData("hq-props", cur); return cur; });
         setCharges(cur => { saveAppData("hq-charges", cur); return cur; });
         setSdLedger(cur => { if (cur) saveAppData("hq-sdledger", cur); return cur; });
+        if (setArchive) setArchive(cur => { if (cur) saveAppData("hq-archive", cur); return cur; });
         // Give React a tick to flush state updates before proceeding to sync
         setTimeout(resolve, 100);
       });

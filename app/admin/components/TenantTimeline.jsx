@@ -58,7 +58,10 @@ export default function TenantTimeline({
   const pillS = (on) => ({ padding: "4px 10px", fontSize: 10, fontWeight: 600, borderRadius: 20, border: on ? `1px solid ${_ac}` : "1px solid rgba(0,0,0,.12)", cursor: "pointer", fontFamily: "inherit", transition: "all .12s", background: on ? _ac : "transparent", color: on ? "#fff" : "#5c4a3a" });
   const toggleS = (on) => ({ padding: "6px 14px", fontSize: 11, fontWeight: 600, border: "none", borderRight: "1px solid rgba(0,0,0,.08)", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", background: on ? _ac : "transparent", color: on ? "#fff" : "#5c4a3a" });
   const subTogS = (on) => ({ padding: "4px 12px", fontSize: 10, fontWeight: 600, border: "none", borderRight: "1px solid rgba(0,0,0,.08)", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", background: on ? _ac : "transparent", color: on ? "#fff" : "#5c4a3a" });
+  const isFutureRoom = useCallback((r) => r.tenant?.moveIn && r.tenant.moveIn > TODAY_STR, [TODAY_STR]);
+
   const barColor = (r) => {
+    if (isFutureRoom(r)) return { bg: "#A7F3D0", text: "#065F46" }; // incoming
     if (!r.le && r.tenant) return { bg: "#C8B8E8", text: "#4C2882" }; // M2M
     const dl = r.le ? daysUntil(r.le) : null;
     if (dl !== null && dl <= 0) return { bg: "#FCA5A5", text: "#791F1F" }; // expired
@@ -141,8 +144,9 @@ export default function TenantTimeline({
           const todayX = dateToX(TODAY_STR);
           const renderRow = (r, showProp = false) => {
             const isOcc = r.st === "occupied" && r.tenant;
+            const isFuture = isOcc && isFutureRoom(r);
             const isVac = !isOcc;
-            const isM2M = isOcc && !r.le;
+            const isM2M = isOcc && !r.le && !isFuture;
             const leX = r.le ? dateToX(r.le) : null;
             const moveInX = r.tenant?.moveIn ? dateToX(r.tenant.moveIn) : null;
             const dl = r.le ? daysUntil(r.le) : null;
@@ -155,7 +159,8 @@ export default function TenantTimeline({
                 <div style={{ width: 140, flexShrink: 0, padding: "4px 12px" }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#1a1714", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
                   {showProp && <div style={{ fontSize: 9, color: _ac, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.propName}</div>}
-                  {isOcc && <div style={{ fontSize: 9, color: "#6b5e52", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.tenant.name}{r.tenant.moveIn ? " · since " + fmtD(r.tenant.moveIn) : ""}</div>}
+                  {isFuture && <div style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Incoming: {r.tenant.name} &middot; {fmtD(r.tenant.moveIn)}</div>}
+                  {isOcc && !isFuture && <div style={{ fontSize: 9, color: "#6b5e52", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.tenant.name}{r.tenant.moveIn ? " \u00B7 since " + fmtD(r.tenant.moveIn) : ""}</div>}
                   {isVac && <div style={{ fontSize: 9, color: _ac, fontWeight: 600 }}>Vacant</div>}
                 </div>
                 <div style={{ flex: 1, position: "relative", height: 36, display: "flex", alignItems: "center" }}>
@@ -164,6 +169,15 @@ export default function TenantTimeline({
                   {/* Vacant bar */}
                   {isVac && <div style={{ position: "absolute", left: "0%", right: "0%", height: 16, borderRadius: 3, background: `rgba(${_acRgb},.15)`, border: `1px solid rgba(${_acRgb},.3)`, display: "flex", alignItems: "center", paddingLeft: 6 }}>
                     <span style={{ fontSize: 9, color: _ac, fontWeight: 600 }}>Available now</span>
+                  </div>}
+                  {/* Future/incoming bar */}
+                  {isFuture && moveInX !== null && <div style={{ position: "absolute", left: todayX + "%", width: Math.max(1, moveInX - todayX) + "%", height: 16, top: 10, borderRadius: 3, background: "repeating-linear-gradient(45deg, rgba(167,243,208,.3), rgba(167,243,208,.3) 4px, transparent 4px, transparent 8px)", border: "1px dashed #065F46", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
+                    <span style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap" }}>Incoming {fmtD(r.tenant.moveIn)}</span>
+                  </div>}
+                  {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX + "%", width: Math.max(1, leX - moveInX) + "%", height: 20, top: 8, borderRadius: 3, background: bc.bg, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
+                    onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
+                    onMouseLeave={e => e.currentTarget.style.filter = ""}>
+                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
                   </div>}
                   {/* M2M bar */}
                   {isM2M && moveInX !== null && <div style={{ position: "absolute", left: moveInX + "%", right: "0%", height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
@@ -198,7 +212,7 @@ export default function TenantTimeline({
         })()}
         {/* Legend */}
         <div style={{ padding: "8px 16px", display: "flex", gap: 12, borderTop: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.01)", flexWrap: "wrap" }}>
-          {[["#B5D4F4", "Active"], ["#FDE68A", "Expiring 90d"], ["#FCA5A5", "Expiring 30d / Expired"], ["#C8B8E8", "Month-to-month"], [`rgba(${_acRgb},.15)`, "Available"]].map(([c, l]) => (
+          {[["#A7F3D0", "Incoming"], ["#B5D4F4", "Active"], ["#FDE68A", "Expiring 90d"], ["#FCA5A5", "Expiring 30d / Expired"], ["#C8B8E8", "Month-to-month"], [`rgba(${_acRgb},.15)`, "Available"]].map(([c, l]) => (
             <div key={l} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52" }}>
               <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />{l}
             </div>
@@ -216,27 +230,30 @@ export default function TenantTimeline({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10 }}>
           {sortedFiltered.map(r => {
             const isVac = r.st === "vacant" || !r.tenant;
-            const isM2M = !isVac && !r.le;
+            const isFut = !isVac && isFutureRoom(r);
+            const isM2M = !isVac && !isFut && !r.le;
             const dl = r.le ? daysUntil(r.le) : null;
-            const isExpired = dl !== null && dl <= 0;
-            const badgeColor = isVac ? _ac : isM2M ? "#4C2882" : isExpired ? "#791F1F" : dl <= 30 ? "#A32D2D" : dl <= 90 ? "#633806" : "#0C447C";
-            const badgeBg = isVac ? `rgba(${_acRgb},.1)` : isM2M ? "#EDE5F8" : isExpired ? "#FCEBEB" : dl <= 30 ? "#FCEBEB" : dl <= 90 ? "#FAEEDA" : "#E6F1FB";
-            const tenure = r.tenant?.moveIn ? Math.max(0, Math.ceil((TODAY - new Date(r.tenant.moveIn + "T00:00:00")) / (86400000 * 30))) : null;
+            const isExpired = dl !== null && dl <= 0 && !isFut;
+            const daysToMoveIn = isFut ? Math.ceil((new Date(r.tenant.moveIn + "T00:00:00") - TODAY) / 86400000) : null;
+            const badgeColor = isVac ? _ac : isFut ? "#065F46" : isM2M ? "#4C2882" : isExpired ? "#791F1F" : dl <= 30 ? "#A32D2D" : dl <= 90 ? "#633806" : "#0C447C";
+            const badgeBg = isVac ? `rgba(${_acRgb},.1)` : isFut ? "#D1FAE5" : isM2M ? "#EDE5F8" : isExpired ? "#FCEBEB" : dl <= 30 ? "#FCEBEB" : dl <= 90 ? "#FAEEDA" : "#E6F1FB";
+            const tenure = !isFut && r.tenant?.moveIn ? Math.max(0, Math.ceil((TODAY - new Date(r.tenant.moveIn + "T00:00:00")) / (86400000 * 30))) : null;
             return (
-              <div key={r.id} style={{ background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.07)", padding: "12px 14px", cursor: "pointer", transition: "all .15s" }}
+              <div key={r.id} style={{ background: "#fff", borderRadius: 10, border: isFut ? "1px solid rgba(6,95,70,.2)" : "1px solid rgba(0,0,0,.07)", padding: "12px 14px", cursor: "pointer", transition: "all .15s" }}
                 onClick={() => openTenant(r)}
                 onMouseEnter={e => e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,.08)"}
                 onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}>
                 <div style={{ fontSize: 10, color: "#6b5e52", marginBottom: 2 }}>{r.propName}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2, color: "#1a1714" }}>{r.name}</div>
-                {r.tenant && <div style={{ fontSize: 11, color: "#5c4a3a", marginBottom: 4 }}>{r.tenant.name}{r.tenant.occupationType ? " · " + r.tenant.occupationType : ""}</div>}
-                {r.tenant && tenure !== null && <div style={{ fontSize: 9, color: "#9ca3af", marginBottom: 6 }}>Moved in {fmtD(r.tenant.moveIn)} ({tenure} mo)</div>}
+                {r.tenant && <div style={{ fontSize: 11, color: "#5c4a3a", marginBottom: 4 }}>{r.tenant.name}{!isFut && r.tenant.occupationType ? " \u00B7 " + r.tenant.occupationType : ""}</div>}
+                {!isFut && r.tenant && tenure !== null && <div style={{ fontSize: 9, color: "#5c4a3a", marginBottom: 6 }}>Moved in {fmtD(r.tenant.moveIn)} ({tenure} mo)</div>}
+                {isFut && <div style={{ fontSize: 9, color: "#065F46", fontWeight: 600, marginBottom: 6 }}>Moves in {fmtD(r.tenant.moveIn)}</div>}
                 {!r.tenant && <div style={{ fontSize: 11, color: _ac, fontWeight: 600, marginBottom: 8 }}>Vacant</div>}
-                <div style={{ fontSize: 28, fontWeight: 700, color: badgeColor, lineHeight: 1 }}>{isVac ? "0" : isM2M ? "\u221E" : isExpired ? Math.abs(dl) : dl != null ? dl : "\u2014"}</div>
-                <div style={{ fontSize: 10, color: "#6b5e52", marginBottom: 8 }}>{isM2M ? "month-to-month" : isExpired ? "days past lease end" : "days until lease ends"}</div>
-                {r.le && <div style={{ fontSize: 10, color: "#6b5e52", marginBottom: 4 }}>{isExpired ? "Expired" : "Ends"} {fmtD(r.le)}</div>}
+                <div style={{ fontSize: 28, fontWeight: 700, color: badgeColor, lineHeight: 1 }}>{isVac ? "0" : isFut ? daysToMoveIn : isM2M ? "\u221E" : isExpired ? Math.abs(dl) : dl != null ? dl : "\u2014"}</div>
+                <div style={{ fontSize: 10, color: "#6b5e52", marginBottom: 8 }}>{isFut ? "days until move-in" : isM2M ? "month-to-month" : isExpired ? "days past lease end" : "days until lease ends"}</div>
+                {r.le && !isFut && <div style={{ fontSize: 10, color: "#6b5e52", marginBottom: 4 }}>{isExpired ? "Expired" : "Ends"} {fmtD(r.le)}</div>}
                 <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: badgeBg, color: badgeColor, fontWeight: 600 }}>
-                  {isVac ? "Available now" : isM2M ? "Month-to-month" : isExpired ? "Expired / Holdover" : dl <= 30 ? "Expiring soon" : dl <= 90 ? "Coming up" : "Active"}
+                  {isVac ? "Available now" : isFut ? "Incoming" : isM2M ? "Month-to-month" : isExpired ? "Expired / Holdover" : dl <= 30 ? "Expiring soon" : dl <= 90 ? "Coming up" : "Active"}
                 </span>
               </div>);
           })}
@@ -293,12 +310,13 @@ export default function TenantTimeline({
 
       {/* ═══ KANBAN ═══ */}
       {ttView === "kanban" && <div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 10 }}>
           {[
-            { id: "active", label: "Active", color: "#0C447C", bg: "#E6F1FB", border: "rgba(12,68,124,.15)", filter: r => r.st === "occupied" && r.tenant && ((r.le && daysUntil(r.le) > 90) || !r.le) },
-            { id: "exp90", label: "Expiring 90d", color: "#633806", bg: "#FAEEDA", border: "rgba(212,168,83,.25)", filter: r => r.st === "occupied" && r.tenant && r.le && daysUntil(r.le) <= 90 && daysUntil(r.le) > 30 },
-            { id: "exp30", label: "Expiring 30d", color: "#791F1F", bg: "#FCEBEB", border: "rgba(196,92,74,.2)", filter: r => r.st === "occupied" && r.tenant && r.le && daysUntil(r.le) <= 30 && daysUntil(r.le) > 0 },
-            { id: "expired", label: "Expired / Holdover", color: "#4C2882", bg: "#EDE5F8", border: "rgba(76,40,130,.15)", filter: r => r.st === "occupied" && r.tenant && r.le && daysUntil(r.le) <= 0 },
+            { id: "incoming", label: "Incoming", color: "#065F46", bg: "#D1FAE5", border: "rgba(6,95,70,.2)", filter: r => r.st === "occupied" && r.tenant && isFutureRoom(r) },
+            { id: "active", label: "Active", color: "#0C447C", bg: "#E6F1FB", border: "rgba(12,68,124,.15)", filter: r => r.st === "occupied" && r.tenant && !isFutureRoom(r) && ((r.le && daysUntil(r.le) > 90) || !r.le) },
+            { id: "exp90", label: "Expiring 90d", color: "#633806", bg: "#FAEEDA", border: "rgba(212,168,83,.25)", filter: r => r.st === "occupied" && r.tenant && !isFutureRoom(r) && r.le && daysUntil(r.le) <= 90 && daysUntil(r.le) > 30 },
+            { id: "exp30", label: "Expiring 30d", color: "#791F1F", bg: "#FCEBEB", border: "rgba(196,92,74,.2)", filter: r => r.st === "occupied" && r.tenant && !isFutureRoom(r) && r.le && daysUntil(r.le) <= 30 && daysUntil(r.le) > 0 },
+            { id: "expired", label: "Expired / Holdover", color: "#4C2882", bg: "#EDE5F8", border: "rgba(76,40,130,.15)", filter: r => r.st === "occupied" && r.tenant && !isFutureRoom(r) && r.le && daysUntil(r.le) <= 0 },
             { id: "avail", label: "Available", color: "#27500A", bg: `rgba(${_acRgb},.06)`, border: `rgba(${_acRgb},.2)`, filter: r => r.st === "vacant" || !r.tenant },
           ].map(col => {
             const colRooms = sortedFiltered.filter(col.filter);
@@ -311,7 +329,9 @@ export default function TenantTimeline({
                 {colRooms.length === 0 && <div style={{ fontSize: 10, color: "#aaa", padding: "4px 0" }}>None</div>}
                 {colRooms.map(r => {
                   const dl = r.le ? daysUntil(r.le) : null;
-                  const isM2M = r.tenant && !r.le;
+                  const isFut = isFutureRoom(r);
+                  const isM2M = r.tenant && !r.le && !isFut;
+                  const daysToMoveIn = isFut ? Math.ceil((new Date(r.tenant.moveIn + "T00:00:00") - TODAY) / 86400000) : null;
                   return (
                     <div key={r.id} style={{ background: "#fff", borderRadius: 7, border: "0.5px solid rgba(0,0,0,.07)", padding: "8px 10px", marginBottom: 6, cursor: "pointer", transition: "all .15s" }}
                       onClick={() => openTenant(r)}
@@ -320,9 +340,12 @@ export default function TenantTimeline({
                       <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 2, color: "#1a1714" }}>{r.name}</div>
                       <div style={{ fontSize: 10, color: "#6b5e52", marginBottom: 5 }}>{r.propName}</div>
                       {r.tenant && <div style={{ fontSize: 10, color: "#5c4a3a", marginBottom: 4 }}>{r.tenant.name}</div>}
+                      {isFut && <div style={{ fontSize: 10, fontWeight: 600, color: "#065F46" }}>
+                        Moves in {fmtD(r.tenant.moveIn)} &middot; {daysToMoveIn}d
+                      </div>}
                       {isM2M && <div style={{ fontSize: 10, fontWeight: 600, color: "#4C2882" }}>Month-to-month</div>}
-                      {r.le && <div style={{ fontSize: 10, fontWeight: 600, color: col.color }}>
-                        {dl !== null && dl <= 0 ? `Expired ${Math.abs(dl)}d ago` : `Ends ${fmtD(r.le)}`}{dl !== null && dl > 0 ? ` · ${dl}d` : ""}
+                      {r.le && !isFut && <div style={{ fontSize: 10, fontWeight: 600, color: col.color }}>
+                        {dl !== null && dl <= 0 ? `Expired ${Math.abs(dl)}d ago` : `Ends ${fmtD(r.le)}`}{dl !== null && dl > 0 ? ` \u00B7 ${dl}d` : ""}
                       </div>}
                       {!r.le && !r.tenant && <div style={{ fontSize: 10, color: _ac, fontWeight: 600 }}>Ready now</div>}
                     </div>);

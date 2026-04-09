@@ -39,6 +39,7 @@ export default function TenantsTab({
   const _ac = settings?.adminAccent || "#4a7c59";
   const _acRgb = settings?.adminAccentRgb || "74,124,89";
   const tenantView = drill || "active";
+  const TODAY_STR = TODAY.toISOString().split("T")[0];
 
   /* ── Local state ──────────────────────────────────────────── */
   const [sortCol, setSortCol] = useState("name");
@@ -75,6 +76,22 @@ export default function TenantsTab({
     return bal;
   }, [charges]);
 
+  /* ── Future tenants — moveIn > today ──────────────────────── */
+  const futureTenants = useMemo(() => allTenants.filter(r => r.tenant?.moveIn && r.tenant.moveIn > TODAY_STR), [allTenants, TODAY_STR]);
+  const activeTenantCount = allTenants.length - futureTenants.length;
+
+  /* ── SD paid status for future tenants ─────────────────────── */
+  const sdStatus = useMemo(() => {
+    const map = {};
+    (charges || []).forEach(c => {
+      if (c.category !== "Security Deposit" || c.voided || c.deleted) return;
+      if (!c.roomId) return;
+      const paid = (c.amountPaid || 0) >= (c.amount || 0);
+      map[c.roomId] = { paid, amount: c.amount || 0, amountPaid: c.amountPaid || 0 };
+    });
+    return map;
+  }, [charges]);
+
   const leaseStatus = useCallback((r) => {
     if (!r?.le) return "month-to-month";
     const dl = Math.ceil((new Date(r.le + "T00:00:00") - TODAY) / (1e3 * 60 * 60 * 24));
@@ -88,6 +105,8 @@ export default function TenantsTab({
   const filteredActive = useMemo(() => {
     let list = allTenants.filter(r => {
       if (!r.tenant) return false;
+      /* Exclude future tenants from active view */
+      if (r.tenant.moveIn && r.tenant.moveIn > TODAY_STR) return false;
       if (tenantPropFilter !== "all" && r.propId !== tenantPropFilter) return false;
       if (tenantSearch) { const q = tenantSearch.toLowerCase(); if (![r.tenant?.name, r.tenant?.email, r.tenant?.phone, r.propName, r.name].some(v => (v || "").toLowerCase().includes(q))) return false; }
       return true;
@@ -98,6 +117,15 @@ export default function TenantsTab({
     if (quickFilter === "new") list = list.filter(r => { if (!r.tenant?.moveIn) return false; const d = Math.ceil((TODAY - new Date(r.tenant.moveIn + "T00:00:00")) / (1e3 * 60 * 60 * 24)); return d >= 0 && d <= 90; });
     return list;
   }, [allTenants, tenantPropFilter, tenantSearch, quickFilter, leaseStatus, tenantBalance, obStatuses, TODAY]);
+
+  /* ── Future tenants filtering ─────────────────────────────── */
+  const filteredFuture = useMemo(() => {
+    return futureTenants.filter(r => {
+      if (tenantPropFilter !== "all" && r.propId !== tenantPropFilter) return false;
+      if (tenantSearch) { const q = tenantSearch.toLowerCase(); if (![r.tenant?.name, r.tenant?.email, r.tenant?.phone, r.propName, r.name].some(v => (v || "").toLowerCase().includes(q))) return false; }
+      return true;
+    }).sort((a, b) => (a.tenant?.moveIn || "").localeCompare(b.tenant?.moveIn || ""));
+  }, [futureTenants, tenantPropFilter, tenantSearch]);
 
   /* ── Sorting ──────────────────────────────────────────────── */
   const sortedActive = useMemo(() => {
@@ -154,6 +182,7 @@ export default function TenantsTab({
     let expiring = 0, pastdue = 0, noportal = 0, newT = 0;
     allTenants.forEach(r => {
       if (!r.tenant) return;
+      if (r.tenant.moveIn && r.tenant.moveIn > TODAY_STR) return; /* skip future */
       const s = leaseStatus(r);
       if (s === "expiring-30" || s === "expiring-90" || s === "expired") expiring++;
       if ((tenantBalance[r.id] || 0) > 0) pastdue++;
@@ -396,7 +425,7 @@ export default function TenantsTab({
     {/* ═══ Browser-tab header ═══ */}
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 0, flexWrap: "wrap", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
-        {[["active", "Active", allTenants.length], ["archive", "Past", pastTenants.length], ["archived", "Archived", archivedTenants.length]].map(([v, l, c]) => {
+        {[["active", "Active", activeTenantCount], ["future", "Future", futureTenants.length], ["archive", "Past", pastTenants.length], ["archived", "Archived", archivedTenants.length]].map(([v, l, c]) => {
           const on = tenantView === v;
           return (
             <button key={v} onClick={() => { setDrill(v === "active" ? null : v); setTenantSel([]); setPage(0); setQuickFilter(null); }}
@@ -461,6 +490,18 @@ export default function TenantsTab({
           <SortHdrCell col="rent" sortCol={sortCol} sortDir={sortDir} toggleSort={toggleSort} hdrStyle={HDR}>Rent</SortHdrCell>
           <SortHdrCell col="balance" sortCol={sortCol} sortDir={sortDir} toggleSort={toggleSort} hdrStyle={HDR}>Balance</SortHdrCell>
           <div style={HDR}>Portal <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, fontSize: 9 }}>({tzShort})</span></div>
+        </div>
+      )}
+
+      {/* ═══ Future column headers ═══ */}
+      {tenantView === "future" && (
+        <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 120px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)" }}>
+          <div />
+          <div style={HDR}>Tenant</div>
+          <div style={HDR}>Contact</div>
+          <div style={HDR}>Rent</div>
+          <div style={HDR}>Move-In</div>
+          <div style={HDR}>SD Status</div>
         </div>
       )}
 
@@ -568,6 +609,67 @@ export default function TenantsTab({
           )}
         </div>
       )}
+
+      {/* ═══ Future rows ═══ */}
+      {tenantView === "future" && <>{filteredFuture.map(r => {
+        if (!r.tenant) return null;
+        const prop = props.find(p => p.id === r.propId);
+        const daysUntilMoveIn = Math.ceil((new Date(r.tenant.moveIn + "T00:00:00") - TODAY) / (1e3 * 60 * 60 * 24));
+        const sd = sdStatus[r.id];
+        const tLease = leases.find(l => l.tenantEmail === r.tenant?.email || l.tenantName === r.tenant?.name);
+        const leaseLabel = tLease ? (tLease.status === "executed" ? "Signed" : tLease.status === "pending_tenant" ? "Pending signature" : tLease.status === "draft" ? "Draft" : tLease.status) : "No lease";
+        return (
+          <div key={r.id} style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 120px", padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,.05)", background: "#fff", cursor: "pointer", transition: "all .15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,0,0,.03)"; e.currentTarget.style.boxShadow = "inset 3px 0 0 " + _ac; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.boxShadow = "none"; }}
+            onClick={() => { setTenantProfileTab("summary"); setModal({ type: "tenant", data: r }); }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: `rgba(${_acRgb},.5)`, flexShrink: 0 }} />
+            </div>
+            {/* Tenant */}
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", marginBottom: 1, display: "flex", alignItems: "center", gap: 6 }}>
+                {r.tenant.name}
+                <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 6px", borderRadius: 99, background: `rgba(${_acRgb},.12)`, color: _ac, whiteSpace: "nowrap" }}>UPCOMING</span>
+              </div>
+              <div style={{ fontSize: 11, color: "#5c4a3a", marginBottom: 3 }}>{prop ? getPropDisplayName(prop) : r.propName} &middot; {r.name}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 9, fontWeight: 600, color: _ac }}>{leaseLabel}</span>
+                {tLease && tLease.status === "executed" && (
+                  <button onClick={e => { e.stopPropagation(); setTenantProfileTab("summary"); setModal({ type: "tenant", data: r }); }} style={{ fontSize: 9, fontWeight: 600, color: _ac, background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 2 }}><IconFile /> Lease</button>
+                )}
+              </div>
+            </div>
+            {/* Contact */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
+              <div style={{ fontSize: 11, color: "#3b82f6", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.tenant.email || "\u2014"}</div>
+              <div style={{ fontSize: 11, color: "#5c4a3a" }}>{r.tenant.phone || "\u2014"}</div>
+            </div>
+            {/* Rent */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", fontFamily: MONO }}>{fmtS(r.rent)}<span style={{ fontSize: 9, fontWeight: 400, color: "#7a7067" }}>/mo</span></div>
+            </div>
+            {/* Move-In */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1714" }}>{fmtD(r.tenant.moveIn)}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: daysUntilMoveIn <= 7 ? "#c45c4a" : daysUntilMoveIn <= 30 ? "#9a7422" : _ac }}>{daysUntilMoveIn}d away</div>
+            </div>
+            {/* SD Status */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
+              {sd ? (
+                sd.paid
+                  ? <span className="badge b-green" style={{ alignSelf: "flex-start", fontSize: 9 }}>SD Paid</span>
+                  : <><span className="badge b-gold" style={{ alignSelf: "flex-start", fontSize: 9 }}>SD Partial</span><div style={{ fontSize: 9, color: "#5c4a3a" }}>{fmtS(sd.amountPaid)} of {fmtS(sd.amount)}</div></>
+              ) : (
+                <span className="badge b-gray" style={{ alignSelf: "flex-start", fontSize: 9 }}>No SD</span>
+              )}
+            </div>
+          </div>);
+      })}
+        {filteredFuture.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52" }}>
+          {futureTenants.length === 0 ? "No upcoming tenants." : "No future tenants match your search."}
+        </div>}
+      </>}
 
       {/* ═══ Past + Archived rows [D3] ═══ */}
       {(tenantView === "archive" || tenantView === "archived") && <>{filteredArchive.map(a => {

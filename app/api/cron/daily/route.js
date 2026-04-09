@@ -383,7 +383,119 @@ export async function GET(req) {
       }
     }
 
-    // ── 8. SCHEDULED MESSAGES — send any that are past due ──────────
+    // ── 8. FUTURE TENANT AUTO-TRANSITION ────────────────────────────
+    // When move-in date arrives, notify PM for review
+    for (let pi = 0; pi < updatedProps.length; pi++) {
+      const prop = updatedProps[pi];
+      for (const room of allRooms(prop)) {
+        if (room.st !== "occupied" || !room.tenant || !room.tenant.moveIn) continue;
+        const moveIn = new Date(room.tenant.moveIn + "T00:00:00");
+        if (moveIn > TODAY) continue; // still future
+        if (room.tenant.transitioned) continue; // already handled
+        // Mark as transitioned and notify PM
+        const pIdx = updatedProps.findIndex(p => p.id === prop.id);
+        if (pIdx >= 0) {
+          const updated = JSON.parse(JSON.stringify(updatedProps[pIdx]));
+          for (const u of updated.units || []) {
+            for (const r of u.rooms || []) {
+              if (r.id === room.id && r.tenant) { r.tenant.transitioned = true; }
+            }
+          }
+          updatedProps[pIdx] = updated;
+          propsChanged = true;
+        }
+        updatedNotifs.unshift({
+          id: uid(), type: "move-in", roomId: room.id,
+          msg: `${room.tenant.name} move-in date has arrived (${fmtD(room.tenant.moveIn)}) — ${prop.name} ${room.name}. Review and confirm active status.`,
+          date: todayStr, read: false, urgent: true,
+        });
+        notifsChanged = true;
+        log.push(`Move-in arrived: ${room.tenant.name} @ ${prop.name} ${room.name}`);
+      }
+    }
+
+    // ── 9. ONBOARDING CHAIN — 7 days before move-in ──────────────────
+    // Trigger: door code reminder, portal invite (if not already connected), welcome email
+    for (const prop of updatedProps) {
+      for (const room of allRooms(prop)) {
+        if (room.st !== "occupied" || !room.tenant || !room.tenant.moveIn) continue;
+        const moveIn = new Date(room.tenant.moveIn + "T00:00:00");
+        const daysUntilMoveIn = Math.ceil((moveIn - TODAY) / 86400000);
+        if (daysUntilMoveIn !== 7) continue;
+        if (room.tenant.onboardingTriggered) continue; // already triggered
+
+        const firstName = room.tenant.name?.split(" ")[0] || "there";
+        const tenantEmail = room.tenant.email;
+
+        // Mark as triggered
+        const pIdx = updatedProps.findIndex(p => p.id === prop.id);
+        if (pIdx >= 0) {
+          const updated = JSON.parse(JSON.stringify(updatedProps[pIdx]));
+          for (const u of updated.units || []) {
+            for (const r of u.rooms || []) {
+              if (r.id === room.id && r.tenant) { r.tenant.onboardingTriggered = true; }
+            }
+          }
+          updatedProps[pIdx] = updated;
+          propsChanged = true;
+        }
+
+        // Notify PM about door code
+        updatedNotifs.unshift({
+          id: uid(), type: "onboarding", roomId: room.id,
+          msg: `Onboarding: ${room.tenant.name} moves in 7 days (${fmtD(room.tenant.moveIn)}) — ${prop.name} ${room.name}. Set door code${room.tenant.doorCode ? " (current: " + room.tenant.doorCode + ")" : ""}, send portal invite, welcome email.`,
+          date: todayStr, read: false, urgent: false,
+        });
+        notifsChanged = true;
+
+        // Send welcome email to tenant
+        if (tenantEmail) {
+          const doorLine = room.tenant.doorCode ? `<p><strong>Door Code:</strong> ${room.tenant.doorCode}</p>` : "";
+          await sendEmail(tenantEmail,
+            `Welcome to ${prop.name} — Move-In ${fmtD(room.tenant.moveIn)}`,
+            emailWrap(`<p>Hi ${firstName},</p>
+            <p>Your move-in date at <strong>${prop.name} — ${room.name}</strong> is coming up on <strong>${fmtD(room.tenant.moveIn)}</strong> (7 days from now).</p>
+            ${doorLine}
+            <p>Here is what to expect:</p>
+            <ul>
+              <li>Move-in is anytime after 3:00 PM on your move-in date</li>
+              <li>Please bring a valid government ID</li>
+              <li>Access your tenant portal for payments and documents: <a href="${portalLink}">Access Portal</a></li>
+            </ul>
+            <p>If you have any questions, reply to this email or text us at ${s.phone || "(850) 696-8101"}.</p>
+            <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+            s
+          );
+          log.push(`Welcome email sent: ${room.tenant.name} — moves in ${fmtD(room.tenant.moveIn)}`);
+
+          // Send portal invite if they don't have a portal account yet
+          try {
+            const puCheck = await fetch(`${SUPA_URL}/rest/v1/portal_users?email=eq.${encodeURIComponent(tenantEmail)}&select=id`, {
+              headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+            });
+            const puData = await puCheck.json();
+            if (!Array.isArray(puData) || puData.length === 0) {
+              // No portal account — send invite email
+              await sendEmail(tenantEmail,
+                `Set Up Your Tenant Portal — ${s.companyName || "Black Bear Rentals"}`,
+                emailWrap(`<p>Hi ${firstName},</p>
+                <p>Your tenant portal is ready. Use it to pay rent, view your lease, and submit maintenance requests.</p>
+                <p><a href="${portalLink}" style="display:inline-block;padding:12px 24px;background:#4a7c59;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">Set Up Portal</a></p>
+                <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+                s
+              );
+              log.push(`Portal invite sent: ${room.tenant.name}`);
+            } else {
+              log.push(`Portal invite skipped (already has account): ${room.tenant.name}`);
+            }
+          } catch (portalErr) {
+            log.push(`Portal invite check error: ${portalErr.message}`);
+          }
+        }
+      }
+    }
+
+    // ── 10. SCHEDULED MESSAGES — send any that are past due ──────────
     try {
       const smRes = await fetch(`${SUPA_URL}/rest/v1/scheduled_messages?sent=eq.false&scheduled_at=lte.${new Date().toISOString()}&select=*`, {
         headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
