@@ -33,6 +33,7 @@ const FIELDS = [
   { key: "gender", label: "Gender" },
   { key: "occupationType", label: "Occupation Type" },
   { key: "propertyType", label: "Property Type" },
+  { key: "coSigner", label: "Co-Signer" },
 ];
 
 const PTYPES = ["SFH","Townhome","Duplex","Triplex","Fourplex","ADU","Apartment"];
@@ -42,6 +43,9 @@ const PRESETS = {
   propOS: { name: "name", email: "email", phone: "phone", propertyAddress: "property address", unit: "unit", room: "room", rent: "rent", moveIn: "move-in (yyyy-mm-dd)", leaseEnd: "lease end (yyyy-mm-dd)", sd: "security deposit", doorCode: "door code", notes: "notes", gender: "gender", occupationType: "occupation type" },
   turboTenant: { name: "tenant name", email: "email", phone: "phone number", propertyAddress: "property", unit: "unit", rent: "rent amount", moveIn: "lease start", leaseEnd: "lease end" },
   appFolio: { name: "tenant", email: "email", phone: "phone", propertyAddress: "property address", unit: "unit name", rent: "market rent", moveIn: "move in", leaseEnd: "lease to" },
+  buildium: { name: "tenant name", email: "email", phone: "phone", propertyAddress: "property", unit: "unit", rent: "rent", leaseTerm: "lease dates", sd: "security deposit" },
+  innago: { name: "first name", lastName: "last name", email: "email", phone: "phone", propertyAddress: "property address", unit: "unit", room: "bed", rent: "rent", moveIn: "lease start", leaseEnd: "lease end", sd: "security dep" },
+  stessa: { name: "tenant", email: "email", phone: "phone", propertyAddress: "property", unit: "unit", rent: "monthly rent", moveIn: "lease start", leaseEnd: "lease end" },
 };
 
 const PATS = {
@@ -64,6 +68,7 @@ const PATS = {
   gender: /^(gender|sex)$/i,
   occupationType: /^(occupation|type|category|employ|job)$/i,
   propertyType: /^(property.?type|prop.?type|building.?type|structure)$/i,
+  coSigner: /^(co.?sign|cosign|guarantor)/i,
 };
 
 /* ── Helpers ── */
@@ -153,9 +158,14 @@ function normalizeDate(s) {
   if (/month.to.month/i.test(str)) return "MTM";
   // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-  // MM/DD/YYYY or M/D/YYYY
+  // MM/DD/YYYY or M/D/YYYY — detect DD/MM when first number > 12
   const mdy = str.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
-  if (mdy) return `${mdy[3]}-${mdy[1].padStart(2,"0")}-${mdy[2].padStart(2,"0")}`;
+  if (mdy) {
+    let m = parseInt(mdy[1]), d = parseInt(mdy[2]);
+    // If first number > 12, it must be DD/MM (European format)
+    if (m > 12 && d <= 12) { const tmp = m; m = d; d = tmp; }
+    return `${mdy[3]}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  }
   // "Jan 15, 2026" or "January 15 2026"
   const named = str.match(/^([a-z]+)\s+(\d{1,2}),?\s+(\d{4})$/i);
   if (named && MONTH_MAP[named[1].toLowerCase()]) return `${named[3]}-${String(MONTH_MAP[named[1].toLowerCase()]).padStart(2,"0")}-${named[2].padStart(2,"0")}`;
@@ -177,6 +187,17 @@ function normalizeNameOrder(name) {
 
 /* ── Junk row detection ── */
 const JUNK_NAMES = /^(total|subtotal|grand\s*total|sum|count|average|avg|—|--|n\/a)$/i;
+
+/* ── Co-tenant split: "Ray Holt + Kevin Cozner" or "Ray Holt & Kevin Cozner" ── */
+function splitCoTenants(name) {
+  if (!name) return [name];
+  const parts = name.split(/\s+(?:\+|&|and)\s+/i);
+  // Only split if each part looks like a name (2+ words, starts with capital)
+  if (parts.length > 1 && parts.every(p => /^[A-Z][a-z]+/.test(p.trim()) && p.trim().includes(" "))) {
+    return parts.map(p => p.trim());
+  }
+  return [name];
+}
 
 /* ── Split combined lease term: "03/05/2025 – 02/28/2027" → [moveIn, leaseEnd] ── */
 function splitLeaseTerm(s) {
@@ -505,14 +526,29 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
     moveIn = normalizeDate(moveIn);
     leaseEnd = normalizeDate(leaseEnd);
 
-    grouped[na].units[un].rooms[rn].push({
-      name, email: g("email"), phone: fmtPhone(g("phone")),
-      rent: parseRent(g("rent")), rentRaw: g("rent"),
-      moveIn, leaseEnd,
-      sd: g("sd"), doorCode: g("doorCode"), notes: g("notes"),
-      gender: g("gender"), occupationType: g("occupationType"), propertyType: g("propertyType"),
-      _line: row._line, excluded: false, sdAutoFilled: false,
-    });
+    // Composite cell extraction: if email/phone not mapped, try to extract from name or notes
+    let email = g("email"), phone = g("phone");
+    if (!email || !phone) {
+      // Check all unmapped cell values for embedded email/phone
+      const allVals = [name, g("notes"), g("contactInfo")].join(" ");
+      if (!email) { const em = allVals.match(/[\w.+-]+@[\w.-]+\.\w{2,}/); if (em) email = em[0]; }
+      if (!phone) { const ph = allVals.match(/\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/); if (ph) phone = ph[0]; }
+      // Strip extracted email/phone from name if they were embedded
+      if (email && name.includes(email)) name = name.replace(email, "").replace(/\s*-\s*$/, "").replace(/^\s*-\s*/, "").trim();
+      if (phone && name.includes(phone)) name = name.replace(phone, "").replace(/\s*-\s*$/, "").replace(/^\s*-\s*/, "").trim();
+    }
+
+    const coNames = splitCoTenants(name);
+    for (const cn of coNames) {
+      grouped[na].units[un].rooms[rn].push({
+        name: cn, email: coNames.length > 1 && cn !== coNames[0] ? "" : email, phone: coNames.length > 1 && cn !== coNames[0] ? "" : fmtPhone(phone),
+        rent: parseRent(g("rent")), rentRaw: g("rent"),
+        moveIn, leaseEnd,
+        sd: g("sd"), doorCode: g("doorCode"), notes: g("notes"),
+        gender: g("gender"), occupationType: g("occupationType"), propertyType: g("propertyType"), coSigner: g("coSigner"),
+        _line: row._line, excluded: false, sdAutoFilled: false,
+      });
+    }
   }
 
   const structure = []; const labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -542,6 +578,19 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
         for (const t of tenants) {
           if (!t.rent) warnings.push({ type: "no-rent", msg: `No rent for ${t.name}` });
           if (t.leaseEnd && t.leaseEnd < todayStr) warnings.push({ type: "past-lease", msg: `Lease ended ${t.leaseEnd} for ${t.name}` });
+          // Duplicate detection: check if tenant already exists in any existing property
+          if (existing) {
+            for (const eu of (existing.units || [])) {
+              for (const er of (eu.rooms || [])) {
+                if (er.tenant?.name && er.tenant.name.toLowerCase() === t.name.toLowerCase()) {
+                  warnings.push({ type: "duplicate", msg: `${t.name} already exists in ${rn} — possible re-import` });
+                }
+                if (er.coTenants) for (const ct of er.coTenants) {
+                  if (ct.name && ct.name.toLowerCase() === t.name.toLowerCase()) warnings.push({ type: "duplicate", msg: `${t.name} already exists as co-tenant — possible re-import` });
+                }
+              }
+            }
+          }
         }
         // Multiple tenants in same room: detect overlap vs sequential, auto-suggest mode
         let multiMode = null;
@@ -930,7 +979,8 @@ export default function SmartImporter({
         return updated;
       });
 
-      // Phase 2: Charges + SD Ledger
+      // Phase 2: Charges + SD Ledger (sync, no network)
+      const syncTasks = [];
       for (const pd of structure) {
         for (const ud of pd.units) {
           for (const rd of ud.rooms) {
@@ -948,7 +998,6 @@ export default function SmartImporter({
                 }
                 if (createCharge && t.name && sd > 0) {
                   createCharge({ roomId: rm.id, tenantName: t.name, propName: rm.addr, roomName: rm.name, category: "Security Deposit", desc: "Security Deposit", amount: sd, dueDate: t.moveIn || todayStr, sent: false, sentDate: todayStr });
-                  // SD Ledger entry
                   if (setSdLedger) {
                     setSdLedger(prev => [...(prev || []), {
                       id: uid(), roomId: rm.id, tenantName: t.name, propName: rm.addr, roomName: rm.name,
@@ -960,20 +1009,29 @@ export default function SmartImporter({
                 tick();
               } catch (e) { addLog(`Charge error: ${t.name} — ${e.message}`, "err"); err++; tick(); }
 
-              // Phase 3: Sync + Lease
-              try {
-                await syncTenantToSupabase({ name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, leaseEnd: t.leaseEnd, rent, sd, propName: rm.addr, roomName: rm.name, doorCode: t.doorCode || "", appDataRoomId: rm.id, charges });
-                if (t.moveIn || t.leaseEnd) {
-                  const lid = uid() + uid();
-                  const wsId = settings?.workspace_id || null;
-                  const ltId = settings?.leaseTemplateId || DEFAULT_LT_ID;
-                  await supa("lease_instances", { method: "POST", prefer: "resolution=merge-duplicates", body: JSON.stringify({ id: lid, workspace_id: wsId, template_id: ltId, tenant_id: t.email || null, room_id: rm.id, property_id: rm.propId || null, variable_data: { id: lid, tenantName: t.name, tenantEmail: t.email, roomId: rm.id, LEASE_START: t.moveIn || "", LEASE_END: t.leaseEnd || "", MONTHLY_RENT: rent, SECURITY_DEPOSIT: sd }, status: "draft", updated_at: new Date().toISOString() }) });
-                }
-                tick();
-              } catch (e) { addLog(`Sync error: ${t.name} — ${e.message || "failed"}`, "err"); err++; tick(); }
+              // Queue sync + lease for batched execution
+              syncTasks.push({ t, rm, rent, sd });
             }
           }
         }
+      }
+
+      // Phase 3: Sync + Lease in batches of 5
+      const BATCH = 5;
+      for (let bi = 0; bi < syncTasks.length; bi += BATCH) {
+        const batch = syncTasks.slice(bi, bi + BATCH);
+        await Promise.all(batch.map(async ({ t, rm, rent, sd }) => {
+          try {
+            await syncTenantToSupabase({ name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, leaseEnd: t.leaseEnd, rent, sd, propName: rm.addr, roomName: rm.name, doorCode: t.doorCode || "", appDataRoomId: rm.id, charges });
+            if (t.moveIn || t.leaseEnd) {
+              const lid = uid() + uid();
+              const wsId = settings?.workspace_id || null;
+              const ltId = settings?.leaseTemplateId || DEFAULT_LT_ID;
+              await supa("lease_instances", { method: "POST", prefer: "resolution=merge-duplicates", body: JSON.stringify({ id: lid, workspace_id: wsId, template_id: ltId, tenant_id: t.email || null, room_id: rm.id, property_id: rm.propId || null, variable_data: { id: lid, tenantName: t.name, tenantEmail: t.email, roomId: rm.id, LEASE_START: t.moveIn || "", LEASE_END: t.leaseEnd || "", MONTHLY_RENT: rent, SECURITY_DEPOSIT: sd }, status: "draft", updated_at: new Date().toISOString() }) });
+            }
+            tick();
+          } catch (e) { addLog(`Sync error: ${t.name} — ${e.message || "failed"}`, "err"); err++; tick(); }
+        }));
       }
 
       if (setNotifs) setNotifs(p => [{ id: uid(), type: "system", msg: `Import: ${ok} tenants, ${pC} properties created`, date: todayStr, read: false, urgent: false }, ...(p || [])]);
@@ -1010,7 +1068,7 @@ export default function SmartImporter({
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }} onClick={handleClose}>
-      <div onClick={e => e.stopPropagation()} onAnimationEnd={() => setModalShake(false)} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 880, maxHeight: "93vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,.3)", animation: modalShake ? "shake .4s ease-in-out" : "none" }}>
+      <div onClick={e => e.stopPropagation()} onAnimationEnd={() => setModalShake(false)} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 880, maxHeight: "93vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,.3)", animation: modalShake ? "shake .4s ease-in-out" : "none", fontFamily: settings?.adminFont || "inherit", zoom: settings?.adminZoom ? settings.adminZoom / 100 : undefined }}>
 
         {/* Header */}
         <div style={{ padding: "18px 24px 14px", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
@@ -1535,7 +1593,7 @@ export default function SmartImporter({
                                   </div>
                                   {ti === 0 && room.warnings.filter(w => !(room.multiMode && (w.type === "co-living" || w.type === "transition"))).map((w, wi) => (
                                     <span key={wi} onClick={e => { e.stopPropagation(); setConfirmModal({ title: "Needs Review", body: w.msg, onConfirm: null }); }} style={{ fontSize: 9, fontWeight: 700, color: "#b8860b", background: "rgba(184,134,11,.08)", padding: "3px 8px", borderRadius: 100, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>
-                                      <IW /> {w.type === "no-rent" ? "No rent" : w.type === "past-lease" ? "Expired" : w.type === "co-living" ? "Co-living" : w.type === "transition" ? "Transition" : w.type === "occupied" ? "Occupied" : "Review"}
+                                      <IW /> {w.type === "no-rent" ? "No rent" : w.type === "past-lease" ? "Expired" : w.type === "co-living" ? "Co-living" : w.type === "transition" ? "Transition" : w.type === "occupied" ? "Occupied" : w.type === "duplicate" ? "Duplicate" : "Review"}
                                     </span>
                                   ))}
                                   {t.sdAutoFilled && <span style={{ fontSize: 9, color: "#5c4a3a" }}>SD={fmtMoney(t.sd)}</span>}
@@ -1635,8 +1693,8 @@ export default function SmartImporter({
 
             <div style={{ display: "flex", gap: 8, marginTop: 16, alignItems: "center" }}>
               <button onClick={() => {
-                if (dirty) { setConfirmModal({ title: "Go back?", body: "Your edits on this page will be lost.", onConfirm: () => { setStep(0); setStructure([]); setShowMapper(false); setSkipped([]); setConfirmModal(null); }, danger: false }); return; }
-                setStep(0); setStructure([]); setShowMapper(false); setSkipped([]);
+                if (dirty) { setConfirmModal({ title: "Go back?", body: "Your review edits will be lost. The uploaded file will be kept so you can re-map columns.", onConfirm: () => { setStep(0); setStructure([]); setSkipped([]); setShowMapper(csvRows.length > 0); setConfirmModal(null); }, danger: false }); return; }
+                setStep(0); setStructure([]); setSkipped([]); setShowMapper(csvRows.length > 0);
               }} style={btn}>Back</button>
               <button onClick={() => { setShowImportConfirm(true); setImportConfirmText(""); }} disabled={nTenants === 0} style={{ ...btnP, fontSize: 13, padding: "10px 24px", opacity: nTenants === 0 ? 0.4 : 1 }}>
                 Import {nTenants} Tenant{nTenants !== 1 ? "s" : ""}
