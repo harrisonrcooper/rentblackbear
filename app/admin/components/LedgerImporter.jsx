@@ -854,24 +854,26 @@ export default function LedgerImporter({
             {/* Charge list with match results */}
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 8 }}>
               {parsedCharges.map((ch, idx) => {
-                if (ch.skip) return null;
+                const isSkipped = ch.skip;
                 const m = matchOverrides[idx] || ch.match;
                 const conf = m ? m.confidence : 0;
-                const tier = !m ? "red" : conf >= 0.85 ? "green" : "amber";
-                const tierColor = tier === "green" ? _ac : tier === "amber" ? _gold : _red;
+                const tier = isSkipped ? "skip" : !m ? "red" : conf >= 0.85 ? "green" : "amber";
+                const tierColor = isSkipped ? "#d1d5db" : tier === "green" ? _ac : tier === "amber" ? _gold : _red;
 
-                return (<div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid #f3f4f6", fontSize: 12 }}>
+                return (<div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid #f3f4f6", fontSize: 12, opacity: isSkipped ? .45 : 1, background: isSkipped ? "rgba(0,0,0,.02)" : "transparent" }}>
                   {/* Confidence dot */}
-                  <div style={{ width: 8, height: 8, borderRadius: 99, background: tierColor, flexShrink: 0 }} title={tier === "green" ? "Exact match" : tier === "amber" ? "Close match (verify)" : "No match found"} />
+                  <div style={{ width: 8, height: 8, borderRadius: 99, background: tierColor, flexShrink: 0 }} title={isSkipped ? "Skipped" : tier === "green" ? "Exact match" : tier === "amber" ? "Close match (verify)" : "No match found"} />
                   {/* Charge info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: "#1a1714", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontWeight: 600, color: isSkipped ? "#9ca3af" : "#1a1714", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: isSkipped ? "line-through" : "none" }}>
                       {ch.parsed.tenantName || ch.leaseTitle}
                     </div>
-                    <div style={{ fontSize: 10, color: "#374151" }}>{ch.category} &middot; {fmtMoney(ch.amount)}</div>
+                    <div style={{ fontSize: 10, color: isSkipped ? "#9ca3af" : "#374151", textDecoration: isSkipped ? "line-through" : "none" }}>{ch.category} &middot; {fmtMoney(ch.amount)}</div>
                   </div>
-                  {/* Match result — always a dropdown so PM can reassign */}
-                  <select
+                  {/* Match result — dropdown or "Skipped" label */}
+                  {isSkipped ? (
+                    <div style={{ minWidth: 160, maxWidth: 260, fontSize: 11, color: "#9ca3af", fontWeight: 600, fontStyle: "italic", padding: "6px 10px" }}>Skipped</div>
+                  ) : <select
                     value={m ? m.roomId : ""}
                     onChange={e => {
                       if (!e.target.value) { setMatchOverrides(prev => { const n = { ...prev }; delete n[idx]; return n; }); return; }
@@ -899,22 +901,39 @@ export default function LedgerImporter({
                     ))}
                     <option disabled>---</option>
                     <option value={"_newpast_" + idx}>Import as past tenant ({ch.parsed.tenantName || ch.leaseTitle || "Unknown"})</option>
-                  </select>
-                  {/* Skip button */}
-                  <button
-                    onClick={() => { if (!showSkipMsg) setShowSkipMsg(true); setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: true } : c)); }}
-                    onMouseEnter={e => { e.currentTarget.style.background = _red + "10"; e.currentTarget.style.color = _red; e.currentTarget.style.borderColor = _red; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#6b7280"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                    style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "4px 10px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
-                  >Skip</button>
+                  </select>}
+                  {/* Skip / Restore button */}
+                  {isSkipped ? (
+                    <button
+                      onClick={() => setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: false } : c))}
+                      onMouseEnter={e => { e.currentTarget.style.background = _ac + "12"; e.currentTarget.style.borderColor = _ac; e.currentTarget.style.color = _ac; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b5e52"; }}
+                      style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 4, cursor: "pointer", color: "#6b5e52", fontSize: 10, padding: "4px 10px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
+                    >Restore</button>
+                  ) : (
+                    <button
+                      onClick={() => { if (!showSkipMsg) setShowSkipMsg(true); setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: true } : c)); }}
+                      onMouseEnter={e => { e.currentTarget.style.background = _red + "10"; e.currentTarget.style.color = _red; e.currentTarget.style.borderColor = _red; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#6b7280"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                      style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "4px 10px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
+                    >Skip</button>
+                  )}
                 </div>);
               })}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
-              <button onClick={() => setStep(1)} style={btnOut(_ac)}>Back</button>
-              <button onClick={() => setStep(3)} style={btnPrimary(_ac)}>Continue to Review</button>
-            </div>
+            {(() => {
+              const unresolvedCount = parsedCharges.filter(c => !c.skip && !(matchOverrides[parsedCharges.indexOf(c)] || c.match)).length;
+              return (<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 20 }}>
+                <div>
+                  {unresolvedCount > 0 && <span style={{ fontSize: 11, color: _red, fontWeight: 600 }}>{unresolvedCount} unmatched charge{unresolvedCount !== 1 ? "s" : ""} — assign a tenant or skip to continue</span>}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setStep(1)} style={btnOut(_ac)}>Back</button>
+                  <button disabled={unresolvedCount > 0} onClick={() => setStep(3)} style={{ ...btnPrimary(_ac), opacity: unresolvedCount > 0 ? .4 : 1, cursor: unresolvedCount > 0 ? "not-allowed" : "pointer" }}>Continue to Review</button>
+                </div>
+              </div>);
+            })()}
           </>)}
           </>)}
 
