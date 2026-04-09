@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useRef, useEffect } from "react";
 
 const allRooms = (p) => (p.units || []).flatMap(u => (u.rooms || []).map(r => ({ ...r, unitName: u.name, propName: p.addr || p.name, propId: p.id })));
 
@@ -69,6 +69,27 @@ export default function TenantTimeline({
     if (dl !== null && dl <= 90) return { bg: "#FDE68A", text: "#633806" }; // exp90
     return { bg: "#B5D4F4", text: "#0C447C" }; // active
   };
+
+  /* ── Gantt horizontal scroll via mouse wheel ───────────────── */
+  const ganttRef = useRef(null);
+  const lastWheelTs = useRef(0);
+  const offsetRef = useRef(setTtMonthOffset);
+  offsetRef.current = setTtMonthOffset;
+  useEffect(() => {
+    const el = ganttRef.current;
+    if (!el) return;
+    const handler = (e) => {
+      const delta = e.deltaX || e.deltaY;
+      if (!delta) return;
+      const now = Date.now();
+      if (now - lastWheelTs.current < 200) return;
+      lastWheelTs.current = now;
+      e.preventDefault();
+      offsetRef.current(o => o + (delta > 0 ? 1 : -1));
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [ttView]); // re-attach when view changes
 
   /* ── Empty state guard ─────────────────────────────────────── */
   if (!props.length) return (
@@ -140,7 +161,7 @@ export default function TenantTimeline({
           </div>
         </div>
         {/* Rows */}
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+        <div ref={ganttRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, cursor: "grab" }}>
         {(() => {
           const todayX = dateToX(TODAY_STR);
           const renderRow = (r, showProp = false) => {
