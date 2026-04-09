@@ -867,8 +867,12 @@ export default function LedgerImporter({
                     style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? "#d1d5db" : _red), fontSize: 11, fontFamily: "inherit", background: m ? "#fff" : _red + "08", maxWidth: 260, minWidth: 160 }}
                   >
                     <option value="">Assign tenant...</option>
-                    {allRooms.filter(r => !r.isPast).map(r => (
+                    {allRooms.filter(r => !r.isPast && !r.isFuture).map(r => (
                       <option key={r.roomId} value={r.roomId}>{r.tenantName} {"\u2014"} {r.roomName}</option>
+                    ))}
+                    {allRooms.some(r => r.isFuture) && <option disabled>--- Future Tenants ---</option>}
+                    {allRooms.filter(r => r.isFuture).map(r => (
+                      <option key={"fut-" + r.roomId} value={r.roomId}>{r.tenantName} {"\u2014"} {r.roomName} (incoming)</option>
                     ))}
                     {allRooms.some(r => r.isPast) && <option disabled>--- Past Tenants ---</option>}
                     {allRooms.filter(r => r.isPast).map(r => (
