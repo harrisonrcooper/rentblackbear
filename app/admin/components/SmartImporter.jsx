@@ -794,6 +794,18 @@ export default function SmartImporter({
   const nRooms = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.length, 0), 0);
   const nTenants = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.tenants.filter(t => !t.excluded).length, 0), 0), 0);
   const nWarn = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.warnings.filter(w => !(r.multiMode && (w.type === "co-living" || w.type === "transition"))).length, 0), 0), 0);
+  // Count sequential rooms with date overlaps — these BLOCK import
+  const seqOverlaps = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => {
+    if (r.multiMode !== "sequential" || r.tenants.length < 2) return s3;
+    const active = r.tenants.filter(t => !t.excluded);
+    const sorted = [...active].filter(t => t.moveIn).sort((a, b) => (a.moveIn || "").localeCompare(b.moveIn || ""));
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const prevEnd = sorted[i].leaseEnd;
+      const nextStart = sorted[i + 1].moveIn;
+      if (prevEnd && nextStart && prevEnd !== "MTM" && prevEnd > nextStart) return s3 + 1;
+    }
+    return s3;
+  }, 0), 0), 0);
   const totalRent = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.tenants.filter(t => !t.excluded).reduce((s4, t) => s4 + (Number(t.rent) || 0), 0), 0), 0), 0);
   const totalSD = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.tenants.filter(t => !t.excluded).reduce((s4, t) => s4 + (parseRent(t.sd) || Number(t.rent) || 0), 0), 0), 0), 0);
 
@@ -1615,6 +1627,7 @@ export default function SmartImporter({
                                                 <span>{fmtD(g.from)} {"\u2192"} {fmtD(g.to)}</span>
                                               </div>
                                             ))}
+                                            {overlaps.length > 0 && <div style={{ background: "rgba(196,92,74,.08)", border: "1px solid rgba(196,92,74,.2)", borderRadius: 6, padding: "6px 10px", marginTop: 4, fontSize: 11, color: _red, fontWeight: 600 }}>Overlapping leases block import {"\u2014"} fix the dates above or switch to &ldquo;Co-tenants&rdquo; mode</div>}
                                             {overlaps.length > 0 && overlaps.map((o, oi) => (
                                               <div key={"ol" + oi} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: _red, lineHeight: "20px" }}>
                                                 <span style={{ width: 8, height: 8, borderRadius: 2, background: "rgba(196,92,74,.2)", border: "1px dashed #c45c4a", flexShrink: 0, boxSizing: "border-box" }} />
@@ -1760,7 +1773,8 @@ export default function SmartImporter({
                 if (dirty) { setConfirmModal({ title: "Go back?", body: "Your review edits will be lost. The uploaded file will be kept so you can re-map columns.", onConfirm: () => { setStep(0); setStructure([]); setSkipped([]); setShowMapper(csvRows.length > 0); setConfirmModal(null); }, danger: false }); return; }
                 setStep(0); setStructure([]); setSkipped([]); setShowMapper(csvRows.length > 0);
               }} style={btn}>Back</button>
-              <button onClick={() => { setShowImportConfirm(true); setImportConfirmText(""); }} disabled={nTenants === 0} style={{ ...btnP, fontSize: 13, padding: "10px 24px", opacity: nTenants === 0 ? 0.4 : 1 }}>
+              {seqOverlaps > 0 && <span style={{ fontSize: 12, color: _red, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><IW /> {seqOverlaps} sequential room{seqOverlaps > 1 ? "s" : ""} with overlapping leases {"\u2014"} fix dates or switch to co-tenant mode</span>}
+              <button onClick={() => { setShowImportConfirm(true); setImportConfirmText(""); }} disabled={nTenants === 0 || seqOverlaps > 0} style={{ ...btnP, fontSize: 13, padding: "10px 24px", opacity: (nTenants === 0 || seqOverlaps > 0) ? 0.4 : 1 }}>
                 Import {nTenants} Tenant{nTenants !== 1 ? "s" : ""}
               </button>
             </div>
