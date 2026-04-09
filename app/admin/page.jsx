@@ -503,6 +503,7 @@ const S=`
 @keyframes fieldShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 .field-err input,.field-err select,.field-err textarea{border-color:#c45c4a!important;background:rgba(196,92,74,.03)!important;animation:fieldShake .35s ease}
 .field-err-label{color:#c45c4a!important}
+.ob-row-hover:hover{background:rgba(128,128,128,.04)!important}
 .err-msg{font-size:10px;color:#c45c4a;margin-top:3px;font-weight:600}
 .acct-row:hover{background:rgba(212,168,83,.06)!important}
 .sort-hdr{cursor:pointer;user-select:none;transition:color .15s}.sort-hdr:hover{color:#3c3228!important}
@@ -1074,7 +1075,8 @@ export default function Page(){
         if(r.st==="occupied"&&r.tenant&&!existing.has(r.id)){
           const moveIn=r.tenant.moveIn?new Date(r.tenant.moveIn+"T00:00:00"):null;
           if(!moveIn||moveIn<=new Date(targetDate.getFullYear(),targetDate.getMonth()+1,0)){
-            createCharge({roomId:r.id,tenantName:r.tenant.name,propName:pr.name,roomName:r.name,category:"Rent",desc:`${moLabel} Rent`,amount:r.rent,dueDate:`${mk}-01`,sent:true,sentDate:TODAY.toISOString().split("T")[0]});
+            const dueDay=r.recurringDueDay||1;
+            createCharge({roomId:r.id,tenantName:r.tenant.name,propName:pr.name,roomName:r.name,category:"Rent",desc:`${moLabel} Rent`,amount:r.rent,dueDate:`${mk}-${String(dueDay).padStart(2,"0")}`,sent:true,sentDate:TODAY.toISOString().split("T")[0]});
             n++;newChargeNames.push(`${r.tenant.name} - ${moLabel}`);
           }
         }
@@ -1534,7 +1536,7 @@ export default function Page(){
         save={save} uid={uid} createCharge={createCharge} TODAY={TODAY}
         allTenants={allTenants} goTab={goTab}
         supa={supa} showConfirm={showConfirm}
-        onComplete={()=>{const u={...settings,onboardingActive:false,onboardingCompletedAt:TODAY.toISOString()};setSettings(u);save("hq-settings",u);}}
+        onComplete={()=>{/* wizard handles settings save internally */}}
       />}
 
       {/* ═══ DASHBOARD ═══ */}
