@@ -607,9 +607,9 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
   const visibleColCount = visibleCols.length + 1; /* +1 for checkbox */
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 200px)" }}>
       {/* Quick-add bar */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 10, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 10, alignItems: "center", flexShrink: 0 }}>
         {[["payment", "Payment"], ["expense", "Record Expense"], ["charge", "Charge"], ["returnsd", "Return SD"], ["credit", "Credit"]].map(([k, l]) => k === "payment" ? (
           <button key={k} onClick={() => setActiveModal({ type: "payment", charge: null })}
             onMouseEnter={e => { e.currentTarget.style.background = _ac + "12"; e.currentTarget.style.borderColor = _ac; e.currentTarget.style.color = _ac; }}
@@ -862,7 +862,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
       )}
 
       {/* Search */}
-      <div style={{ position: "relative", marginBottom: 8 }}>
+      <div style={{ position: "relative", marginBottom: 8, flexShrink: 0 }}>
         <div style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)" }}><IconSearch /></div>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }}
           placeholder="Search all transactions..."
@@ -901,7 +901,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
             </div>);
         };
         return (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8, alignItems: "center", flexShrink: 0 }}>
           {[["all", "All"], ["charges", "Charges"], ["payments", "Payments"], ["expenses", "Expenses"], ["credits", "Credits"]].map(([v, l]) => (
             <button key={v} onClick={e => { e.stopPropagation(); setTypeFilter(v); setPage(0); }} style={{
               fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 4,
@@ -999,7 +999,8 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
             ))}
           </div>}
         </div>
-        {/* Month-grouped rows */}
+        {/* Month-grouped rows — scrollable */}
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
         {monthGroups.length === 0 && <div style={{ textAlign: "center", padding: 32, color: "#6b7280", fontSize: 12 }}>No transactions found</div>}
         {monthGroups.map(group => (
           <div key={group.ym} style={{ ...cardS, marginBottom: 12 }}>
@@ -1343,10 +1344,11 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
             </div>
           </div>
         ))}
+        </div>{/* close scroll container */}
       </div>
 
       {/* Footer */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: "#6b7280" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, fontSize: 11, color: "#6b7280", flexShrink: 0 }}>
         <span>{filtered.length} transaction{filtered.length !== 1 ? "s" : ""}</span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {totalPages > 1 && (

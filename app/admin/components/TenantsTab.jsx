@@ -442,10 +442,10 @@ export default function TenantsTab({
     </div>
 
     {/* ═══ Table card ═══ */}
-    <div className="card" style={{ borderRadius: "0 8px 8px 8px", marginBottom: 14 }}><div className="card-bd" style={{ padding: 0 }}>
+    <div className="card" style={{ borderRadius: "0 8px 8px 8px", marginBottom: 14, display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 200px)", overflow: "hidden" }}><div className="card-bd" style={{ padding: 0, display: "flex", flexDirection: "column", overflow: "hidden", flex: 1 }}>
 
       {/* Search + filter + quick filters */}
-      <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+      <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0 }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: tenantView === "active" ? 8 : 0 }}>
           <div style={{ position: "relative", flex: 1, minWidth: 180 }}>
             <div style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}><IconSearch /></div>
@@ -481,7 +481,7 @@ export default function TenantsTab({
 
       {/* ═══ Column headers (active) ═══ */}
       {tenantView === "active" && (
-        <div style={{ display: "grid", gridTemplateColumns: COLS, padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: COLS, padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center" }}>
             <input type="checkbox" checked={allSelected} ref={el => { if (el) el.indeterminate = tenantSel.length > 0 && !allSelected; }} onChange={e => setTenantSel(e.target.checked ? pageRows.map(r => r.id) : [])} style={{ width: 14, height: 14, cursor: "pointer" }} />
           </div>
@@ -495,7 +495,7 @@ export default function TenantsTab({
 
       {/* ═══ Future column headers ═══ */}
       {tenantView === "future" && (
-        <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 160px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 100px 120px 160px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)", flexShrink: 0 }}>
           <div />
           <div style={HDR}>Tenant</div>
           <div style={HDR}>Contact</div>
@@ -507,7 +507,7 @@ export default function TenantsTab({
 
       {/* ═══ Archive column headers ═══ */}
       {(tenantView === "archive" || tenantView === "archived") && (
-        <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 150px 160px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 160px 150px 160px", padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,.08)", background: "rgba(0,0,0,.02)", flexShrink: 0 }}>
           <div />
           <div style={HDR}>Tenant</div>
           <div style={HDR}>Contact</div>
@@ -515,6 +515,9 @@ export default function TenantsTab({
           <div style={HDR}>{tenantView === "archived" ? "Archived" : "Actions"}</div>
         </div>
       )}
+
+      {/* ═══ Scrollable rows area ═══ */}
+      <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
 
       {/* ═══ Active rows ═══ */}
       {tenantView === "active" && <>{pageRows.map(r => {
@@ -726,6 +729,7 @@ export default function TenantsTab({
             : "No past tenants yet."}
         </div>}
       </>}
+      </div>{/* close scroll container */}
     </div></div>
 
     {/* ═══ Nuke link ═══ */}
