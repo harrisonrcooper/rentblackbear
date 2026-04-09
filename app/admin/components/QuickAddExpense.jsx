@@ -128,7 +128,7 @@ export default function QuickAddExpense({ props, vendors, expenses, onAdd, onCan
           <div className="fld">
             <label>Receipt</label>
             <input type="file" accept="image/*,application/pdf" onChange={e => setReceipt(e.target.files?.[0] || null)}
-              style={{ fontSize: 14, padding: "10px 0", minHeight: 44 }} />
+              style={{ fontSize: 16, padding: "10px 0", minHeight: 44 }} />
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>

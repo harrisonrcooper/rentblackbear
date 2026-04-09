@@ -27,7 +27,7 @@ export default function ThemeTab({
     <div className="sec-hd"><div><h2>Theme Editor</h2><p>Customize your admin interface and public site colors</p></div></div>
     <div style={{display:"flex",gap:0,marginBottom:20,border:"1px solid rgba(0,0,0,.07)",borderRadius:9,overflow:"hidden",width:"fit-content"}}>
       {[["admin","Admin Interface"],["site","Public Site"]].map(([k,lb])=>(
-        <button key={k} onClick={()=>setTSub(k)} style={{padding:"8px 22px",fontSize:12,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",background:tSub===k?_acc:"#fff",color:tSub===k?"#fff":"#5c4a3a",borderRight:k==="admin"?"1px solid rgba(0,0,0,.07)":"none"}}>
+        <button key={k} onClick={()=>setTSub(k)} style={{padding:"8px 22px",fontSize:12,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",background:tSub===k?_acc:"#fff",color:tSub===k?"#fff":"#5c4a3a",borderRight:k==="admin"?"1px solid rgba(0,0,0,.07)":"none",minHeight:44}}>
           {lb}
         </button>
       ))}
@@ -85,7 +85,7 @@ export default function ThemeTab({
         <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Changes the typeface across the entire admin interface.</p>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {ADMIN_FONTS.map(f=>{const isActive=_font===f.stack;return(
-            <button key={f.name} onClick={()=>applyAdminFont(f)} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid "+(isActive?_acc:"rgba(0,0,0,.08)"),background:isActive?_acc+"12":"#fff",cursor:"pointer",fontFamily:f.stack,fontSize:13,fontWeight:isActive?700:400,color:isActive?_acc:"#1a1714",transition:"all .15s"}}>
+            <button key={f.name} onClick={()=>applyAdminFont(f)} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid "+(isActive?_acc:"rgba(0,0,0,.08)"),background:isActive?_acc+"12":"#fff",cursor:"pointer",fontFamily:f.stack,fontSize:13,fontWeight:isActive?700:400,color:isActive?_acc:"#1a1714",transition:"all .15s",minHeight:44}}>
               {f.name}
             </button>);})}
       </div></div></div>
@@ -95,7 +95,7 @@ export default function ThemeTab({
         <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Scales the entire admin interface. Takes effect instantly.</p>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {[[0.9,"90% — Compact"],[1,"100% — Default"],[1.15,"115% — Large"],[1.3,"130% — Largest"]].map(([z,lb])=>(
-            <button key={z} onClick={()=>applyAdminZoom(z)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid "+(_zoom===z?_acc:"rgba(0,0,0,.08)"),background:_zoom===z?_acc+"12":"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:_zoom===z?700:400,fontSize:13,color:_zoom===z?_acc:"#1a1714",transition:"all .15s"}}>
+            <button key={z} onClick={()=>applyAdminZoom(z)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid "+(_zoom===z?_acc:"rgba(0,0,0,.08)"),background:_zoom===z?_acc+"12":"#fff",cursor:"pointer",fontFamily:"inherit",fontWeight:_zoom===z?700:400,fontSize:13,color:_zoom===z?_acc:"#1a1714",transition:"all .15s",minHeight:44}}>
               {lb}
             </button>
           ))}
@@ -125,7 +125,7 @@ export default function ThemeTab({
                 const pos=cur.indexOf(t.id);
                 return(
                 <button key={t.id} onClick={()=>toggle(t.id)}
-                  style={{padding:"7px 14px",borderRadius:8,border:`1.5px solid ${on?_acc:"rgba(0,0,0,.08)"}`,background:on?_acc+"18":"#fff",cursor:!on&&cur.length>=4?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:on?700:400,color:on?_acc:"#5c4a3a",opacity:!on&&cur.length>=4?.4:1,transition:"all .15s",display:"flex",alignItems:"center",gap:6}}>
+                  style={{padding:"7px 14px",borderRadius:8,border:`1.5px solid ${on?_acc:"rgba(0,0,0,.08)"}`,background:on?_acc+"18":"#fff",cursor:!on&&cur.length>=4?"not-allowed":"pointer",fontFamily:"inherit",fontSize:12,fontWeight:on?700:400,color:on?_acc:"#5c4a3a",opacity:!on&&cur.length>=4?.4:1,transition:"all .15s",display:"flex",alignItems:"center",gap:6,minHeight:44}}>
                   {on&&<span style={{width:16,height:16,borderRadius:"50%",background:_acc,color:"#fff",fontSize:9,fontWeight:800,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{pos+1}</span>}
                   {t.label}
                 </button>);
@@ -175,7 +175,7 @@ export default function ThemeTab({
           <div key={k} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
             <div style={{width:28,height:28,borderRadius:6,background:theme[k],border:"1px solid rgba(0,0,0,.1)",cursor:"pointer",position:"relative",overflow:"hidden",flexShrink:0}}><input type="color" value={theme[k]} onChange={e=>setTheme({...theme,[k]:e.target.value})} style={{position:"absolute",inset:-4,width:"calc(100% + 8px)",height:"calc(100% + 8px)",opacity:0,cursor:"pointer"}}/></div>
             <span style={{fontSize:11,fontWeight:600,flex:1}}>{label}</span>
-            <input value={theme[k]} onChange={e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value))setTheme({...theme,[k]:e.target.value});}} style={{width:80,minWidth:60,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"monospace"}}/>
+            <input value={theme[k]} onChange={e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value))setTheme({...theme,[k]:e.target.value});}} style={{width:80,minWidth:60,padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:16,fontFamily:"monospace"}}/>
           </div>))}
         </div></div>
         <div style={{position:"sticky",top:80}}>

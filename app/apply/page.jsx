@@ -78,7 +78,7 @@ function DateDrop({value,onChange,hasErr,mode="movein"}){
   };
   const selStyle={
     flex:1,padding:"13px 8px",border:`2px solid ${hasErr?"var(--rd)":"rgba(0,0,0,.08)"}`,
-    borderRadius:10,fontSize:15,fontFamily:"inherit",outline:"none",
+    borderRadius:10,fontSize:16,fontFamily:"inherit",outline:"none",
     background:"#fff",color:(!yr&&!mo&&!dy)?"#999":"#3d3529",appearance:"none",
     WebkitAppearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")",
     backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:28,
@@ -164,7 +164,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 
 /* Counter */
 .counter{display:flex;align-items:center;gap:16px;margin-bottom:16px}
-.counter-btn{width:40px;height:40px;border-radius:50%;border:2px solid rgba(0,0,0,.1);background:#fff;font-size:20px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .15s;color:#3d3529}
+.counter-btn{width:44px;height:44px;border-radius:50%;border:2px solid rgba(0,0,0,.1);background:#fff;font-size:20px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:all .15s;color:#3d3529}
 .counter-btn:hover{border-color:var(--ac);color:var(--ac)}
 .counter-val{font-size:28px;font-weight:700;min-width:40px;text-align:center}
 

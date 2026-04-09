@@ -63,7 +63,7 @@ export default function PaymentsTab({
   </div>
 
   {/* Sub-tabs — matches accounting tab style */}
-  <div style={{display:"flex",gap:0,marginBottom:16,position:"relative"}}>
+  <div style={{display:"flex",gap:0,marginBottom:16,position:"relative",overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
     <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:"rgba(0,0,0,.08)",zIndex:0}}/>
     {[["overview","Overview"],["charges","Charges"],["deposits","Deposits"]].map(([k,l])=>(
       <button key={k} onClick={()=>{setPaySubTab(k);setExpCharge(null);}}
@@ -103,12 +103,12 @@ export default function PaymentsTab({
   {paySubTab==="charges"&&<>
     {/* Filters */}
     <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
-      <select value={payFilters.property} onChange={e=>setPayFilters({...payFilters,property:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",minHeight:44}}><option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}</select>
-      <select value={payFilters.tenant} onChange={e=>setPayFilters({...payFilters,tenant:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",minHeight:44}}><option value="">All Tenants</option>{[...new Set(charges.map(c=>c.tenantName))].map(n=><option key={n} value={n}>{n}</option>)}</select>
-      <select value={payFilters.category} onChange={e=>setPayFilters({...payFilters,category:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",minHeight:44}}><option value="">All Categories</option>{CHARGE_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
-      <select value={payFilters.status} onChange={e=>setPayFilters({...payFilters,status:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,fontFamily:"inherit",minHeight:44}}><option value="">All Status</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="pastdue">Past Due</option><option value="partial">Partial</option><option value="waived">Waived</option></select>
-      <input type="date" value={payFilters.dateFrom} onChange={e=>setPayFilters({...payFilters,dateFrom:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,minHeight:44}} placeholder="From"/>
-      <input type="date" value={payFilters.dateTo} onChange={e=>setPayFilters({...payFilters,dateTo:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:10,minHeight:44}} placeholder="To"/>
+      <select value={payFilters.property} onChange={e=>setPayFilters({...payFilters,property:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:16,fontFamily:"inherit",minHeight:44}}><option value="">All Properties</option>{props.map(p=><option key={p.id} value={p.name}>{getPropDisplayName(p)}</option>)}</select>
+      <select value={payFilters.tenant} onChange={e=>setPayFilters({...payFilters,tenant:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:16,fontFamily:"inherit",minHeight:44}}><option value="">All Tenants</option>{[...new Set(charges.map(c=>c.tenantName))].map(n=><option key={n} value={n}>{n}</option>)}</select>
+      <select value={payFilters.category} onChange={e=>setPayFilters({...payFilters,category:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:16,fontFamily:"inherit",minHeight:44}}><option value="">All Categories</option>{CHARGE_CATS.map(c=><option key={c} value={c}>{c}</option>)}</select>
+      <select value={payFilters.status} onChange={e=>setPayFilters({...payFilters,status:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:16,fontFamily:"inherit",minHeight:44}}><option value="">All Status</option><option value="paid">Paid</option><option value="unpaid">Unpaid</option><option value="pastdue">Past Due</option><option value="partial">Partial</option><option value="waived">Waived</option></select>
+      <input type="date" value={payFilters.dateFrom} onChange={e=>setPayFilters({...payFilters,dateFrom:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:16,minHeight:44}} placeholder="From"/>
+      <input type="date" value={payFilters.dateTo} onChange={e=>setPayFilters({...payFilters,dateTo:e.target.value})} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.06)",fontSize:16,minHeight:44}} placeholder="To"/>
       <button className="btn btn-out btn-sm" onClick={()=>setPayFilters({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""})}>Reset</button>
     </div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -291,7 +291,7 @@ export default function PaymentsTab({
     return(<>
     {/* KPI cards — clickable filters */}
     <div style={{marginBottom:16}}>
-      <div className="kgrid" style={{gridTemplateColumns:"repeat(3,1fr)",marginBottom:6}}>
+      <div className="kgrid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",marginBottom:6}}>
         {[
           {key:"transit",label:"In Transit",val:fmtS(totalTransit),sub:transit.length+" pending",color:"#d4a853"},
           {key:"deposited",label:"Deposited",val:fmtS(totalDeposited),sub:filtered.length+" deposits",color:"#4a7c59"},

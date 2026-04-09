@@ -451,7 +451,7 @@ export default function Reports({
               return (
                 <div key={pr.id} style={{ background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)", padding: "16px", marginBottom: 10 }}>
                   <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 12 }}>{getPropDisplayName(pr)}</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(80px,1fr))", gap: 8, marginBottom: 12 }}>
                     {[
                       ["NOI", fmtParen(prNOI), prNOI >= 0 ? _grn : _red],
                       ["Debt Service", fmt(prDebt), "#9a7422"],
@@ -655,7 +655,7 @@ export default function Reports({
               </button>
             </div>
             {/* Key metrics preview */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(80px,1fr))", gap: 8, marginBottom: 14 }}>
               {[
                 { label: "Occupancy", value: occRate + "%", color: occRate >= 90 ? _grn : _red },
                 { label: "Monthly Rent", value: "$" + totalMonthlyRent.toLocaleString(), color: "#1a1714" },

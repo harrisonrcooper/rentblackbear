@@ -415,7 +415,7 @@ export default function TenantsTab({
   /* ── Styles ────────────────────────────────────────────────── */
   const COLS = "40px 1fr 160px 120px 100px 160px";
   const HDR = { fontSize: 10, fontWeight: 700, color: "#6b5e52", textTransform: "uppercase", letterSpacing: .7 };
-  const chipS = (active) => ({ fontSize: 10, fontWeight: 600, padding: isMobile ? "6px 12px" : "3px 10px", borderRadius: 99, border: active ? `1px solid ${_ac}` : "1px solid rgba(0,0,0,.1)", background: active ? `rgba(${_acRgb},.1)` : "#fff", color: active ? _ac : "#6b5e52", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", whiteSpace: "nowrap", ...(isMobile ? { minHeight: 36 } : {}) });
+  const chipS = (active) => ({ fontSize: 10, fontWeight: 600, padding: isMobile ? "6px 12px" : "3px 10px", borderRadius: 99, border: active ? `1px solid ${_ac}` : "1px solid rgba(0,0,0,.1)", background: active ? `rgba(${_acRgb},.1)` : "#fff", color: active ? _ac : "#6b5e52", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", whiteSpace: "nowrap", ...(isMobile ? { minHeight: 44 } : {}) });
   const btnSm = { fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", background: "#fff", color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", display: "inline-flex", alignItems: "center", gap: 4 };
   const leaseColor = (s) => s === "expired" ? "#dc2626" : s === "expiring-30" ? "#c45c4a" : s === "expiring-90" ? "#d4a853" : s === "month-to-month" ? "#6b5e52" : "#2d6a3f";
 

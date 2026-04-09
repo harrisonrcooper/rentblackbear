@@ -710,8 +710,8 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           <div style={{ ...(isMobile ? S.threadListMobile : S.threadList), display: isMobile && mobileShowChat ? "none" : "flex" }}>
             <div style={S.threadSearch}>
               <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "none", fontSize: 12, fontFamily: "inherit", outline: "none", background: "rgba(0,0,0,.06)" }} />
-                <button onClick={() => { setComposeMode(true); setComposeRecipient(null); setComposeSubject(""); setComposeBody(""); }} title="New message" style={{ width: 34, height: 34, minWidth: 34, borderRadius: 10, border: "none", background: _acc, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "none", fontSize: 16, fontFamily: "inherit", outline: "none", background: "rgba(0,0,0,.06)" }} />
+                <button onClick={() => { setComposeMode(true); setComposeRecipient(null); setComposeSubject(""); setComposeBody(""); }} title="New message" style={{ width: 34, height: 34, minWidth: 44, minHeight: 44, borderRadius: 10, border: "none", background: _acc, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
               </div>
@@ -821,7 +821,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 </div>
                 <div style={{ marginBottom: 16, flex: 1, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", marginBottom: 4, textTransform: "uppercase", letterSpacing: .3 }}>Message</div>
-                  <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} placeholder="Type your message..." style={{ flex: 1, minHeight: 120, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" }} />
+                  <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} placeholder="Type your message..." style={{ flex: 1, minHeight: 120, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 16, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" }} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <button onClick={() => setComposeMode(false)} className="btn btn-out btn-sm">Cancel</button>
@@ -849,7 +849,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 <div style={S.chatHeader}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      {isMobile && <button onClick={() => setMobileShowChat(false)} style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 2 }}>
+                      {isMobile && <button onClick={() => setMobileShowChat(false)} style={{ width: 44, height: 44, borderRadius: 8, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 2 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1714" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
                       </button>}
                       <div style={{ width: 34, height: 34, minWidth: 34, minHeight: 34, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, position: "relative", flexShrink: 0, boxShadow: "0 2px 8px " + hexToRgba(_acc, .2) }}>
@@ -859,7 +859,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 14, fontWeight: 700 }}>{activeThread.tenantName}</span>
-                          <button onClick={e => { e.stopPropagation(); if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 10, color: _acc, background: hexToRgba(_acc, .06), border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: "2px 8px", borderRadius: 4, lineHeight: 1.2 }}>View Profile &rarr;</button>
+                          <button onClick={e => { e.stopPropagation(); if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 10, color: _acc, background: hexToRgba(_acc, .06), border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: "8px 12px", minHeight: 44, borderRadius: 4, lineHeight: 1.2 }}>View Profile &rarr;</button>
                         </div>
                         <div style={{ fontSize: 10, color: "#8e8e93" }}>
                           {activeThread.propertyName}{activeThread.roomName ? " · " + activeThread.roomName : ""}
@@ -972,13 +972,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                           {/* Edit/Delete/React actions for outbound — appear on hover */}
                           {(isOut || isNote) && isHovered && !isEditing && !isDeleted && (
                             <div style={{ display: "flex", gap: 2, alignItems: "center", marginRight: 6, alignSelf: "center" }}>
-                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, minWidth: 44, minHeight: 44, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                               </button>
-                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 26, height: 26, minWidth: 44, minHeight: 44, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
-                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); if (window.confirm("Delete this message? This cannot be undone.")) deleteMsg(msg.id); }} title="Delete" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); if (window.confirm("Delete this message? This cannot be undone.")) deleteMsg(msg.id); }} title="Delete" style={{ width: 26, height: 26, minWidth: 44, minHeight: 44, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               </button>
                             </div>
@@ -1079,7 +1079,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <div style={{ padding: "8px 16px", borderTop: "1px solid " + hexToRgba(_acc, .15), background: hexToRgba(_acc, .03), display: "flex", gap: 8, alignItems: "center" }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     <span style={{ fontSize: 11, fontWeight: 600, color: _acc }}>Schedule for:</span>
-                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid " + hexToRgba(_acc, .2), fontSize: 11, fontFamily: "inherit", background: "#fff" }} />
+                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid " + hexToRgba(_acc, .2), fontSize: 16, fontFamily: "inherit", background: "#fff" }} />
                     <button onClick={() => { setShowSchedule(false); setScheduleTime(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#999" }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
@@ -1299,7 +1299,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       onKeyDown={async e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (showSlashMenu) { const filtered = SLASH_COMMANDS.filter(c => c.cmd.startsWith(replyText.trim())); if (filtered.length === 1) insertSlashCommand(filtered[0].cmd); } else if (replyText.trim().startsWith("/")) { await executeSlashCommand(); } else { sendReply(); } } }}
                       placeholder={noteMode ? "Write an internal note..." : "Type a message... (/ for commands)"}
                       rows={1}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 20, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1px solid rgba(0,0,0,.08)", fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "rgba(0,0,0,.04)", minHeight: 44, maxHeight: 120, lineHeight: 1.5, transition: "border-color .15s" }}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 20, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1px solid rgba(0,0,0,.08)", fontSize: 16, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "rgba(0,0,0,.04)", minHeight: 44, maxHeight: 120, lineHeight: 1.5, transition: "border-color .15s" }}
                     />
                   </div>
                   {/* Send / Schedule button group */}

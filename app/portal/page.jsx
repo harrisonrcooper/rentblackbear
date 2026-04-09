@@ -275,7 +275,7 @@ export default function TenantPortal() {
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ textAlign: "right" }}><div style={{ fontSize: 12, color: "#f5f0e8", fontWeight: 600 }}>{tenant?.name}</div><div style={{ fontSize: 10, color: "rgba(255,255,255,.35)" }}>{tenant?.property?.name}</div></div>
           <NotificationCenter notifOpen={notifOpen} setNotifOpen={setNotifOpen} notifRef={notifRef} notifItems={notifItems} newNotifCount={newNotifCount} markNotifsRead={markNotifsRead} C={C} t={t} />
-          <button onClick={signOut} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.4)", padding: 4, display: "flex" }}><IcLogout s={16} /></button>
+          <button onClick={signOut} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.4)", padding: 4, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}><IcLogout s={16} /></button>
         </div>
       </div>
       {/* Top Nav */}

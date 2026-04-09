@@ -74,7 +74,7 @@ export default function PropertiesList({
             <li>Charges referencing these properties will remain but be unlinked</li>
           </ul>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>Type DELETE to confirm</div>
-          <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #fca5a5", fontSize: 13, fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" }} />
+          <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #fca5a5", fontSize: 16, fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" }} />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button onClick={() => { setShowNuke(false); setNukeConfirm(""); }} className="btn btn-out" style={{ fontSize: 12 }}>Cancel</button>
             <button disabled={nukeConfirm !== "DELETE"} onClick={nukeAllProps} className="btn" style={{ background: nukeConfirm === "DELETE" ? "#dc2626" : "#fca5a5", color: "#fff", border: "none", fontSize: 12, opacity: nukeConfirm === "DELETE" ? 1 : .5 }}><IconX /> Delete All Properties</button>
@@ -259,7 +259,7 @@ export default function PropertiesList({
     {/* ═══ Nuke link ═══ */}
     {props.length > 0 && (
       <div style={{ textAlign: "right", marginBottom: 10 }}>
-        <button onClick={() => setShowNuke(true)} style={{ fontSize: 9, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>Reset all property data</button>
+        <button onClick={() => setShowNuke(true)} style={{ fontSize: 9, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", minHeight: 44 }}>Reset all property data</button>
       </div>
     )}
 

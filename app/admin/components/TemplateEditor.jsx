@@ -363,9 +363,9 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
                       </label>
                       {v.type==="time"
                         ?<input type="time" value={policy[v.key]||""} onChange={e=>{setPolicy(p=>({...p,[v.key]:e.target.value}));setDirtySecs(p=>{const n=new Set(p);n.add(sec.id);return n;});}}
-                            style={{width:"100%",padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
+                            style={{width:"100%",padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:16,fontFamily:"inherit"}}/>
                         :<input type="number" value={policy[v.key]??""} onChange={e=>{setPolicy(p=>({...p,[v.key]:Number(e.target.value)}));setDirtySecs(p=>{const n=new Set(p);n.add(sec.id);return n;});}}
-                            style={{width:"100%",padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:12,fontFamily:"inherit"}}/>
+                            style={{width:"100%",padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.1)",fontSize:16,fontFamily:"inherit"}}/>
                       }
                       {v.hint&&<div style={{fontSize:9,color:"#9a8878",marginTop:3}}>{v.hint}</div>}
                     </div>
@@ -402,25 +402,25 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
             {/* Actions */}
             <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap",alignItems:"center"}}>
               <button onClick={()=>saveSection(sec.id)} disabled={!dirtySecs.has(sec.id)||savingSec[sec.id]}
-                style={{padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,border:"none",background:dirtySecs.has(sec.id)?_acc:"rgba(0,0,0,.08)",color:dirtySecs.has(sec.id)?"#fff":"#9a8878",cursor:dirtySecs.has(sec.id)?"pointer":"not-allowed",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,transition:"all .2s"}}>
+                style={{padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,border:"none",background:dirtySecs.has(sec.id)?_acc:"rgba(0,0,0,.08)",color:dirtySecs.has(sec.id)?"#fff":"#9a8878",cursor:dirtySecs.has(sec.id)?"pointer":"not-allowed",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,transition:"all .2s",minHeight:44}}>
                 <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 {savingSec[sec.id]?"Saving...":"Save Section"}
               </button>
-              <button onClick={()=>revertSection(si)} style={{padding:"5px 12px",fontSize:10,fontWeight:700,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",color:"#6b5e52",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+              <button onClick={()=>revertSection(si)} style={{padding:"5px 12px",fontSize:10,fontWeight:700,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",color:"#6b5e52",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minHeight:44}}>
                 <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
                 Revert to Default
               </button>
               <div style={{width:1,background:"rgba(0,0,0,.1)",height:16,margin:"0 2px"}}/>
-              <button onClick={()=>moveSec(si,-1)} disabled={si===0} style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:si===0?"not-allowed":"pointer",opacity:si===0?.4:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+              <button onClick={()=>moveSec(si,-1)} disabled={si===0} style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:si===0?"not-allowed":"pointer",opacity:si===0?.4:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minHeight:44}}>
                 <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>Up
               </button>
-              <button onClick={()=>moveSec(si,1)} disabled={si===sections.length-1} style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:si===sections.length-1?"not-allowed":"pointer",opacity:si===sections.length-1?.4:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+              <button onClick={()=>moveSec(si,1)} disabled={si===sections.length-1} style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:si===sections.length-1?"not-allowed":"pointer",opacity:si===sections.length-1?.4:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minHeight:44}}>
                 <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>Down
               </button>
-              <button onClick={()=>dupSec(si)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+              <button onClick={()=>dupSec(si)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(0,0,0,.1)",background:"#fff",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4,minHeight:44}}>
                 <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Duplicate
               </button>
-              <button onClick={()=>delSec(si)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(196,92,74,.25)",background:"rgba(196,92,74,.04)",color:"#c45c4a",cursor:"pointer",fontFamily:"inherit",marginLeft:"auto",display:"flex",alignItems:"center",gap:4}}>
+              <button onClick={()=>delSec(si)} style={{padding:"4px 10px",fontSize:10,borderRadius:6,border:"1px solid rgba(196,92,74,.25)",background:"rgba(196,92,74,.04)",color:"#c45c4a",cursor:"pointer",fontFamily:"inherit",marginLeft:"auto",display:"flex",alignItems:"center",gap:4,minHeight:44}}>
                 <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>Delete
               </button>
             </div>

@@ -709,7 +709,7 @@ export default function SmartImporter({
   const _contrastAc = (()=>{const r=parseInt(_ac.slice(1,3),16),g=parseInt(_ac.slice(3,5),16),b=parseInt(_ac.slice(5,7),16);return(r*.299+g*.587+b*.114)>150?"#1a1714":"#f5f0e8";})();
   const btn = { padding: "8px 16px", borderRadius: 7, border: "1px solid rgba(0,0,0,.12)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: "#fff", color: "#1a1714", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 44, transition: "all .1s" };
   const btnP = { ...btn, background: _ac, color: _contrastAc, border: "none" };
-  const fld = { width: "100%", padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.15)", fontSize: 12, fontFamily: "inherit", color: "#1a1714", minHeight: 44 };
+  const fld = { width: "100%", padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.15)", fontSize: 16, fontFamily: "inherit", color: "#1a1714", minHeight: 44 };
   const lbl = { fontSize: 10, fontWeight: 700, color: "#5c4a3a", marginBottom: 3, display: "block" };
 
   // Template

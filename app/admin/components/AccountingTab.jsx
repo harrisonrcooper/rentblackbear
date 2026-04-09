@@ -122,9 +122,9 @@ export default function AccountingTab({
 
         {/* ── Global filter bar ── */}
         <div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",padding:"12px 14px",marginBottom:14,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}} onClick={()=>setAcctDrop(null)}>
-          <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,minHeight:44}}/>
+          <input type="date" value={acctFrom} onChange={e=>setF("from",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:16,minHeight:44}}/>
           <span style={{fontSize:11,color:"#7a7067",flexShrink:0}}>to</span>
-          <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:11,minHeight:44}}/>
+          <input type="date" value={acctTo} onChange={e=>setF("to",e.target.value)} onClick={e=>e.stopPropagation()} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:16,minHeight:44}}/>
           <div style={{width:1,height:20,background:"rgba(0,0,0,.08)",flexShrink:0}}/>
           <MsDrop id="prop" label="Property" options={props.map(p=>({value:p.id,label:p.name}))} selected={acctPropIds} onToggle={v=>v==="__clear__"?setF("propIds",[]):setF("propIds",toggleArr(acctPropIds,v))}/>
           {acctSubTab==="income"&&<>
@@ -610,7 +610,7 @@ export default function AccountingTab({
             </div>
             {vendors.length===0
               ?<div style={{textAlign:"center",padding:36,color:"#7a7067",background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",fontSize:11}}>No vendors saved yet. You can save vendors while adding expenses, or add them here.</div>
-              :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}>
+              :<div style={{background:"#fff",borderRadius:10,border:"1px solid rgba(0,0,0,.06)",overflow:"hidden"}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                   <thead><tr style={{background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.06)"}}>
                     {["Vendor / Payee","Phone","Email","Notes",""].map(h=>(
@@ -634,7 +634,7 @@ export default function AccountingTab({
                     ))}
                   </tbody>
                 </table>
-              </div>}
+              </div></div>}
           </>);
         })()}
         </>);

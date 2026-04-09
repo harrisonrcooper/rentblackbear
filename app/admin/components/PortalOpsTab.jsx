@@ -387,7 +387,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
       {portalOpsTab === "utilities" && (<>
         <div className="card" style={{ marginBottom: 20 }}><div className="card-bd" style={{ padding: "20px 24px" }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Enter Monthly Utility Bill</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 10, marginBottom: 12 }}>
             <div style={{ gridColumn: "1/3" }}>
               <label style={sLabel2}>Property</label>
               <select value={utilBillForm.propId} onChange={e => setUtilBillForm(f => ({ ...f, propId: e.target.value }))} style={{ ...sInput, animation: shakeField === "ub_prop" ? "shake .5s" : "none" }}>

@@ -438,7 +438,7 @@ export default function LeasePage(){
                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                  <button onClick={()=>{setSignature(null);setSigningStarted(false);setInitialedSecs(new Set());}} style={{fontSize:10,color:"#6b5e52",background:"none",border:"1px solid rgba(0,0,0,.1)",borderRadius:5,padding:"10px 16px",minHeight:44,cursor:"pointer",fontFamily:"inherit"}}>Re-draw Signature</button>
                  {!signingStarted&&<button onClick={()=>{setSigningStarted(true);window.scrollTo({top:0,behavior:"smooth"});}}
-                   style={{fontSize:12,fontWeight:700,color:"#fff",background:"#1a1714",border:"none",borderRadius:8,padding:"10px 20px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
+                   style={{fontSize:12,fontWeight:700,color:"#fff",background:"#1a1714",border:"none",borderRadius:8,padding:"10px 20px",minHeight:44,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2.5" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                    Start Signing — Initial Each Section
                  </button>}

@@ -198,8 +198,8 @@ export default function LeaseModal({
             <div style={{fontSize:10,fontWeight:700,color:"#9a7422"}}>PARTIES</div>
             {leaseForm._lockedFromApp&&(
               locked
-                ?<button onClick={()=>setLeaseForm(p=>({...p,_partiesEditing:true}))} style={{fontSize:10,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.1)",border:"0.5px solid rgba(212,168,83,.3)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Edit</button>
-                :<button onClick={()=>setLeaseForm(p=>({...p,_partiesEditing:false}))} style={{fontSize:10,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.08)",border:"0.5px solid rgba(74,124,89,.2)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Lock</button>
+                ?<button onClick={()=>setLeaseForm(p=>({...p,_partiesEditing:true}))} style={{fontSize:10,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.1)",border:"0.5px solid rgba(212,168,83,.3)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit",minHeight:44}}>Edit</button>
+                :<button onClick={()=>setLeaseForm(p=>({...p,_partiesEditing:false}))} style={{fontSize:10,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.08)",border:"0.5px solid rgba(74,124,89,.2)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit",minHeight:44}}>Lock</button>
             )}
           </div>
           <div className="fr">
@@ -292,7 +292,7 @@ export default function LeaseModal({
               <option value="custom">Custom — write your own</option>
             </select>
             {leaseForm._errors?.utilitiesMode&&!leaseForm.utilitiesMode&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginBottom:4}}>{leaseForm._errors.utilitiesMode}</div>}
-            {leaseForm.utilitiesMode==="custom"&&<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} placeholder="Write your custom utilities clause..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/>}
+            {leaseForm.utilitiesMode==="custom"&&<textarea value={leaseForm.utilitiesClause||""} onChange={e=>setLeaseForm(p=>({...p,utilitiesClause:e.target.value}))} rows={3} placeholder="Write your custom utilities clause..." style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:16,fontFamily:"inherit",resize:"vertical"}}/>}
             {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5,marginBottom:4}}>{leaseForm.utilitiesClause}</div>}
             {leaseForm.utilitiesMode&&leaseForm.roomId&&(()=>{
               const saveUtilPreset=()=>{const lp=properties.find(p=>p.id===(leaseForm.propertyId||properties.find(pp=>getPropDisplayName(pp)===leaseForm.property)?.id));if(!lp||!leaseForm.roomId)return;const updatedUnits=(lp.units||[]).map(u=>({...u,utils:u.rooms&&u.rooms.some(r=>r.id===leaseForm.roomId)?leaseForm.utilitiesMode:u.utils,rooms:(u.rooms||[]).map(r=>r.id===leaseForm.roomId?{...r,utils:leaseForm.utilitiesMode}:r)}));const updatedProps=properties.map(p=>p.id===lp.id?{...p,units:updatedUnits}:p);setProperties(updatedProps);setLeaseForm(p=>({...p,_utilPresetSaved:true}));};
@@ -321,8 +321,8 @@ export default function LeaseModal({
                 <div style={{fontSize:10,fontWeight:700,color:"#1d4ed8"}}>LEASE TERMS · Pre-filled from application · Editable</div>
                 {leaseForm._lockedFromApp&&(
                   locked
-                    ?<button onClick={()=>setLeaseForm(p=>({...p,_leaseEditing:true}))} style={{fontSize:10,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.1)",border:"0.5px solid rgba(212,168,83,.3)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Edit</button>
-                    :<button onClick={()=>setLeaseForm(p=>({...p,_leaseEditing:false}))} style={{fontSize:10,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.08)",border:"0.5px solid rgba(74,124,89,.2)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit"}}>Lock</button>
+                    ?<button onClick={()=>setLeaseForm(p=>({...p,_leaseEditing:true}))} style={{fontSize:10,fontWeight:700,color:"#9a7422",background:"rgba(212,168,83,.1)",border:"0.5px solid rgba(212,168,83,.3)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit",minHeight:44}}>Edit</button>
+                    :<button onClick={()=>setLeaseForm(p=>({...p,_leaseEditing:false}))} style={{fontSize:10,fontWeight:700,color:"#4a7c59",background:"rgba(74,124,89,.08)",border:"0.5px solid rgba(74,124,89,.2)",borderRadius:5,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit",minHeight:44}}>Lock</button>
                 )}
               </div>
               <div className="fr">

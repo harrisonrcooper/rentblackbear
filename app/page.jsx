@@ -402,7 +402,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 /* Modal */
 .mo{padding:0;align-items:flex-end}
 .modal{margin:0;border-radius:18px 18px 0 0;max-height:92vh;overflow-y:auto}
-.mx{top:12px;right:12px;width:36px;height:36px;font-size:16px}
+.mx{top:12px;right:12px;width:44px;height:44px;font-size:16px}
 .mgal{grid-template-columns:1fr;height:260px}.mside{display:none}
 .mbody{padding:20px 16px}
 .mtp{flex-direction:column;gap:16px}
@@ -803,12 +803,12 @@ function VirtualTour360({tourFolder,tourScenes,propertyName}){
         <div style={{fontSize:9,color:"rgba(255,255,255,.25)",letterSpacing:.5}}>Click and drag to look around</div>
         <div style={{display:"flex",gap:5}}>
           <button disabled={!prev} onClick={()=>prev&&goScene(prev.id)}
-            style={{padding:"4px 10px",borderRadius:5,border:"1px solid rgba(255,255,255,.08)",background:"transparent",
+            style={{padding:"4px 10px",minHeight:44,borderRadius:5,border:"1px solid rgba(255,255,255,.08)",background:"transparent",
               color:prev?"rgba(255,255,255,.5)":"rgba(255,255,255,.15)",fontSize:10,cursor:prev?"pointer":"default",fontFamily:"inherit"}}>
             Prev
           </button>
           <button disabled={!next} onClick={()=>next&&goScene(next.id)}
-            style={{padding:"4px 10px",borderRadius:5,border:"1px solid "+(next?"#d4a853":"rgba(255,255,255,.08)"),
+            style={{padding:"4px 10px",minHeight:44,borderRadius:5,border:"1px solid "+(next?"#d4a853":"rgba(255,255,255,.08)"),
               background:next?"rgba(212,168,83,.08)":"transparent",
               color:next?"#d4a853":"rgba(255,255,255,.15)",fontSize:10,cursor:next?"pointer":"default",fontFamily:"inherit"}}>
             Next
@@ -1003,7 +1003,7 @@ function LeaseNowModal({room,prop,onClose}){
                 const selected=selDate===dateStr;
                 return(<div key={day} onClick={()=>!blk&&setSelDate(dateStr)}
                   style={{textAlign:"center",padding:"8px 2px",borderRadius:6,cursor:blk?"not-allowed":"pointer",
-                    fontSize:12,fontWeight:selected?800:400,
+                    fontSize:12,fontWeight:selected?800:400,minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",
                     background:selected?"#d4a853":blk?"rgba(0,0,0,.04)":"transparent",
                     color:selected?"#1a1714":blk?"#ccc":"#1a1714",
                     transition:"all .1s"}}
@@ -1077,19 +1077,19 @@ function LeaseNowModal({room,prop,onClose}){
                 <input type={type} placeholder={placeholder} value={form[key]}
                   onChange={e=>setForm({...form,[key]:key==="phone"?fmtPhone(e.target.value):e.target.value})}
                   onBlur={()=>setTouched({...touched,[key]:true})}
-                  style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs[key]?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:12,fontFamily:"inherit",boxSizing:"border-box"}}/>
+                  style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs[key]?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:16,fontFamily:"inherit",boxSizing:"border-box"}}/>
                 {errTxt(key)}
               </div>
             ))}
             <select value={form.source} onChange={e=>setForm({...form,source:e.target.value})} onBlur={()=>setTouched({...touched,source:true})}
-              style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs.source?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:12,fontFamily:"inherit",marginBottom:8,boxSizing:"border-box"}}>
+              style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs.source?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:16,fontFamily:"inherit",marginBottom:8,boxSizing:"border-box"}}>
               <option value="">How did you hear about us? *</option>
               {["Roomies.com","Google Search","Facebook / Instagram","Friend / Referral","Zillow / Apartments.com","Craigslist","Drive-by / Sign","Military / Contractor Network","NASA / Redstone Network","Other"].map(s=><option key={s}>{s}</option>)}
             </select>
             {errTxt("source")}
             <textarea placeholder="Why are you leaving your current residence? *" value={form.reason}
               onChange={e=>setForm({...form,reason:e.target.value})} onBlur={()=>setTouched({...touched,reason:true})}
-              rows={3} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs.reason?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:12,fontFamily:"inherit",resize:"vertical",marginBottom:4,boxSizing:"border-box"}}/>
+              rows={3} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid "+(errs.reason?"#c45c4a":"rgba(0,0,0,.1)"),fontSize:16,fontFamily:"inherit",resize:"vertical",marginBottom:4,boxSizing:"border-box"}}/>
             {errTxt("reason")}
             {subErr&&<div style={{color:"#c45c4a",fontSize:11,marginBottom:8,padding:"6px 10px",background:"rgba(196,92,74,.04)",borderRadius:6,border:"1px solid rgba(196,92,74,.12)"}}>{subErr}</div>}
             <div style={{fontSize:9,color:"#bbb",marginTop:4}}>

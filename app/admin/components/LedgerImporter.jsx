@@ -776,7 +776,7 @@ export default function LedgerImporter({
                           }
                           if (e.key === "Escape") { setShowCustomCatFor(null); setCustomCatInput(""); }
                         }}
-                        style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + _ac, fontSize: 12, fontFamily: "inherit", width: 140 }}
+                        style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + _ac, fontSize: 16, fontFamily: "inherit", width: 140 }}
                       />
                       <button onClick={() => { setShowCustomCatFor(null); setCustomCatInput(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#4b5563", fontSize: 14 }}><IX /></button>
                     </div>
@@ -787,7 +787,7 @@ export default function LedgerImporter({
                         if (e.target.value === "__custom__") { setShowCustomCatFor(cat); setCustomCatInput(""); return; }
                         setCatMap(prev => ({ ...prev, [cat]: e.target.value }));
                       }}
-                      style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${catMap[cat] ? "#d1d5db" : _red}`, fontSize: 12, fontFamily: "inherit", minWidth: 0, width: "100%", background: catMap[cat] ? "#fff" : _red + "08" }}
+                      style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${catMap[cat] ? "#d1d5db" : _red}`, fontSize: 16, fontFamily: "inherit", minWidth: 0, width: "100%", background: catMap[cat] ? "#fff" : _red + "08" }}
                     >
                       <option value="">{"\u2014"} Select charge type {"\u2014"}</option>
                       {[...CHARGE_CATS, ...(CHARGE_CATS.includes("Other") ? [] : ["Other"])].map(c => <option key={c} value={c}>{c}</option>)}
@@ -897,7 +897,7 @@ export default function LedgerImporter({
                       const room = allRooms.find(r => r.roomId === e.target.value);
                       if (room) setMatchOverrides(prev => ({ ...prev, [idx]: { ...room, confidence: 1.0 } }));
                     }}
-                    style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? (m.isNewPast ? "#6b5e52" : "#d1d5db") : _red), fontSize: 11, fontFamily: "inherit", background: m ? (m.isNewPast ? "rgba(107,94,82,.06)" : "#fff") : _red + "08", minWidth: 0, flex: "1 1 160px" }}
+                    style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? (m.isNewPast ? "#6b5e52" : "#d1d5db") : _red), fontSize: 16, fontFamily: "inherit", background: m ? (m.isNewPast ? "rgba(107,94,82,.06)" : "#fff") : _red + "08", minWidth: 0, flex: "1 1 160px" }}
                   >
                     <option value="">Assign tenant...</option>
                     {allRooms.filter(r => !r.isPast && !r.isFuture).map(r => (
@@ -920,14 +920,14 @@ export default function LedgerImporter({
                       onClick={() => setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: false } : c))}
                       onMouseEnter={e => { e.currentTarget.style.background = _ac + "12"; e.currentTarget.style.borderColor = _ac; e.currentTarget.style.color = _ac; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b5e52"; }}
-                      style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 4, cursor: "pointer", color: "#6b5e52", fontSize: 10, padding: "6px 12px", minHeight: 36, fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
+                      style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 4, cursor: "pointer", color: "#6b5e52", fontSize: 10, padding: "6px 12px", minHeight: 44, fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
                     >Restore</button>
                   ) : (
                     <button
                       onClick={() => { if (!showSkipMsg) setShowSkipMsg(true); setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: true } : c)); }}
                       onMouseEnter={e => { e.currentTarget.style.background = _red + "10"; e.currentTarget.style.color = _red; e.currentTarget.style.borderColor = _red; }}
                       onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#4b5563"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                      style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "6px 12px", minHeight: 36, fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
+                      style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "6px 12px", minHeight: 44, fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
                     >Skip</button>
                   )}
                 </div>);
@@ -1055,7 +1055,7 @@ export default function LedgerImporter({
                 type="month"
                 value={cutoffDate ? cutoffDate.slice(0, 7) : ""}
                 onChange={e => setCutoffDate(e.target.value + "-01")}
-                style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 14, fontFamily: "inherit", width: "100%" }}
+                style={{ padding: "8px 12px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit", width: "100%" }}
               />
 
               {cutoffDate && (() => {

@@ -44,14 +44,14 @@ const thS = (align) => ({
 });
 
 const inputS = {
-  fontSize: 12, padding: "6px 8px", borderRadius: 6,
+  fontSize: 16, padding: "6px 8px", borderRadius: 6,
   border: "1px solid #d1d5db", fontFamily: "inherit",
   width: "100%", boxSizing: "border-box", minHeight: 44, color: "#1a1714",
   outline: "none", background: "#fff", WebkitAppearance: "auto", appearance: "auto",
 };
 
 const selectS = {
-  fontSize: 11, padding: "4px 6px", borderRadius: 6,
+  fontSize: 16, padding: "4px 6px", borderRadius: 6,
   border: "1px solid #d1d5db", fontFamily: "inherit", color: "#374151",
   height: 28, outline: "none",
 };
@@ -632,7 +632,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
       {quickAdd === "expense" && (
         <div style={{ ...cardS, marginBottom: 10, padding: 14 }}>
           <div style={sectionLabel}>Add Expense</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 8 }}>
             <div>
               <label style={labelS}>Date</label>
               <input type="date" value={expDate} onChange={e => setExpDate(e.target.value)} style={inputS} />
@@ -657,7 +657,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
               </select>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 10 }}>
             <div>
               <label style={labelS}>Subcategory <button onClick={() => setManageModal("subcats")} style={{ background: "none", border: "none", cursor: "pointer", color: _ac, fontSize: 9, fontWeight: 600, textDecoration: "underline", fontFamily: "inherit", padding: 0, marginLeft: 4 }}>Manage</button></label>
               <select value={expSubcat} onChange={e => setExpSubcat(e.target.value)} style={inputS}>
@@ -694,7 +694,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
       {quickAdd === "charge" && (
         <div style={{ ...cardS, marginBottom: 10, padding: 14 }}>
           <div style={sectionLabel}>Create Charge</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 8 }}>
             <div>
               <label style={labelS}>Tenant</label>
               <select value={chgTenant} onChange={e => {
@@ -791,11 +791,11 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
             {sdDeductionItems.length === 0 && <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 10, padding: "8px 10px", background: "#f9fafb", borderRadius: 4 }}>No deductions — full deposit will be returned.</div>}
             {sdDeductionItems.map((d, i) => (
               <div key={d.id} style={{ display: "grid", gridTemplateColumns: "140px 1fr 100px 28px", gap: 6, marginBottom: 4, alignItems: "center" }}>
-                <select value={d.type} onChange={e => updateDeductionItem(d.id, "type", e.target.value)} style={{ ...inputS, height: 28, fontSize: 11 }}>
+                <select value={d.type} onChange={e => updateDeductionItem(d.id, "type", e.target.value)} style={{ ...inputS, fontSize: 11 }}>
                   {DEDUCTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <input value={d.description} onChange={e => updateDeductionItem(d.id, "description", e.target.value)} placeholder="Description" style={{ ...inputS, height: 28, fontSize: 11 }} />
-                <div style={{ display: "flex", alignItems: "center", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden", height: 28 }}>
+                <input value={d.description} onChange={e => updateDeductionItem(d.id, "description", e.target.value)} placeholder="Description" style={{ ...inputS, fontSize: 11 }} />
+                <div style={{ display: "flex", alignItems: "center", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden", minHeight: 44 }}>
                   <span style={{ padding: "0 6px", background: "#f9fafb", color: "#6b7280", fontSize: 11, borderRight: "1px solid #d1d5db", height: "100%", display: "flex", alignItems: "center" }}>$</span>
                   <input type="number" value={d.amount} onChange={e => updateDeductionItem(d.id, "amount", e.target.value)} placeholder="0" style={{ border: "none", padding: "0 6px", fontSize: 11, fontFamily: MONO, width: "100%", outline: "none", height: "100%" }} />
                 </div>
