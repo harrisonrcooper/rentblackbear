@@ -95,6 +95,9 @@ export default function Reports({
     { id: "tenantledger", icon: <RIcon d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" d2="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 0 3-3h7z" />, title: "Tenant Ledger", desc: "Full charge and payment history per tenant \u2014 printable statement" },
     { id: "leadsource", icon: <RIcon d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" d2="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />, title: "Lead Source Analytics", desc: "Which channels convert best \u2014 pipeline, approvals, denials by source" },
     { id: "tenantquality", icon: <RIcon d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />, title: "Tenant Quality by Source", desc: "Avg tenure, lease completion rate, and broke-lease % by acquisition channel" },
+    { id: "taxprep", icon: <RIcon d="M9 11l3 3L22 4" d2="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />, title: "Tax Prep Package", desc: "Schedule E + P&L for every property in one export \u2014 hand this to your CPA" },
+    { id: "lenderpacket", icon: <RIcon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" d2="M14 2v6h6M16 13H8M16 17H8M10 9H8" />, title: "Lender Packet", desc: "Rent roll + DSCR + trailing 12 + cash flow \u2014 one download for your banker" },
+    { id: "periodcompare", icon: <RIcon d="M18 20V10M12 20V4M6 20v-6" />, title: "Period Comparison", desc: "Side-by-side P&L \u2014 this year vs last year, or any two date ranges" },
   ];
 
   // ── Table wrapper for mobile scroll ──────────────────────────────
@@ -526,6 +529,252 @@ export default function Reports({
         })()}
 
         {/* ── Tenant Quality by Source ── */}
+        {/* ── Tax Prep Package ── */}
+        {activeReport === "taxprep" && (() => {
+          const year = rFrom.slice(0, 4);
+          // Build bundled CSV: one file with all properties, all Schedule E lines
+          const allRows = [];
+          rProps.forEach(pr => {
+            const prInc = propIncome(pr);
+            const prExp = [...rExpenses.filter(e => e.propId === pr.id), ...rExpenses.filter(e => e.propId === "shared").map(e => ({ ...e, amount: sharedExpAlloc(e.amount) }))];
+            const expByLine = {}; prExp.forEach(e => { expByLine[e.category] = (expByLine[e.category] || 0) + e.amount; });
+            // Mortgage interest estimate
+            const mg = rMortgages.filter(m => m.propId === pr.id);
+            const simpleMgInterest = mg.reduce((s, m) => {
+              if (!m.currentBalance || !m.interestRate) return s;
+              return s + (m.currentBalance * (m.interestRate / 100) / 12) * periodMonths;
+            }, 0);
+            if (simpleMgInterest > 0 && !expByLine["Mortgage Interest"]) expByLine["Mortgage Interest"] = simpleMgInterest;
+            const totalExp = Object.values(expByLine).reduce((s, v) => s + v, 0);
+            allRows.push({ Property: getPropDisplayName(pr), Line: "3 - Gross Rents", Amount: fmt(prInc) });
+            SCHED_E_CATS.forEach(({ label: cat }) => { if (expByLine[cat]) allRows.push({ Property: getPropDisplayName(pr), Line: cat, Amount: fmt(expByLine[cat]) }); });
+            allRows.push({ Property: getPropDisplayName(pr), Line: "22 - Total Expenses", Amount: fmt(totalExp) });
+            allRows.push({ Property: getPropDisplayName(pr), Line: "Net Income / (Loss)", Amount: fmt(prInc - totalExp) });
+          });
+          // Also build P&L summary rows
+          const pnlRows = rProps.map(pr => ({
+            Property: getPropDisplayName(pr), Income: fmt(propIncome(pr)), Expenses: fmt(propTotalExp(pr)),
+            NOI: fmt(propNOI(pr)), Margin: propIncome(pr) > 0 ? Math.round(propNOI(pr) / propIncome(pr) * 100) + "%" : "0%",
+          }));
+
+          const exportAll = () => {
+            // Export Schedule E CSV
+            exportCSV(allRows, ["Property", "Line", "Amount"], `schedule-e-all-properties-${year}`);
+            // Export P&L CSV after a brief delay so browser handles both downloads
+            setTimeout(() => exportCSV(pnlRows, ["Property", "Income", "Expenses", "NOI", "Margin"], `pnl-all-properties-${year}`), 300);
+          };
+
+          // Check for incomplete data
+          const warnings = [];
+          rProps.forEach(pr => {
+            const mg = rMortgages.filter(m => m.propId === pr.id);
+            const hasMgExp = rExpenses.some(e => e.propId === pr.id && e.category === "Mortgage Interest");
+            if (mg.length > 0 && !hasMgExp) warnings.push(`${getPropDisplayName(pr)}: Mortgage interest is estimated. Replace with 1098 amount.`);
+            const prExp = rExpenses.filter(e => e.propId === pr.id);
+            if (prExp.length === 0) warnings.push(`${getPropDisplayName(pr)}: No expenses recorded for this period.`);
+          });
+
+          return (<>
+            <div style={{ padding: "14px 16px", background: "rgba(212,168,83,.06)", borderRadius: 10, border: "1px solid rgba(212,168,83,.2)", marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#9a7422", marginBottom: 6 }}>Tax Prep Package &mdash; {year}</div>
+              <div style={{ fontSize: 11, color: "#6b5e52", lineHeight: 1.6, marginBottom: 10 }}>
+                Downloads Schedule E summary + P&L for {rProps.length === props.length ? "all" : rProps.length} propert{rProps.length === 1 ? "y" : "ies"}.
+                Hand both files to your CPA for Schedule E filing. Cash-basis accounting.
+              </div>
+              <button className="btn btn-gold btn-sm" style={{ fontWeight: 700, fontSize: 12, padding: "8px 20px" }} onClick={exportAll}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: "middle" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Tax Package (2 CSVs)
+              </button>
+            </div>
+            {warnings.length > 0 && <div style={{ padding: "10px 14px", background: "rgba(196,92,74,.04)", borderRadius: 8, border: "1px solid rgba(196,92,74,.15)", marginBottom: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#c45c4a", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Review Before Filing</div>
+              {warnings.map((w, i) => <div key={i} style={{ fontSize: 11, color: "#8b4a3a", padding: "3px 0" }}>{w}</div>)}
+            </div>}
+            {/* Preview: per-property summary */}
+            {rProps.map(pr => {
+              const inc = propIncome(pr); const exp = propTotalExp(pr); const noi = inc - exp;
+              return (<div key={pr.id} style={{ background: "#fff", borderRadius: 8, border: "1px solid rgba(0,0,0,.06)", padding: "12px 16px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div><div style={{ fontWeight: 700, fontSize: 12 }}>{getPropDisplayName(pr)}</div><div style={{ fontSize: 10, color: "#6b5e52", marginTop: 2 }}>Income {fmt(inc)} &middot; Expenses {fmt(exp)}</div></div>
+                <div style={{ textAlign: "right" }}><div style={{ fontWeight: 800, fontSize: 15, color: noi >= 0 ? _grn : _red }}>{fmtParen(noi)}</div><div style={{ fontSize: 9, color: "#6b5e52" }}>NOI</div></div>
+              </div>);
+            })}
+          </>);
+        })()}
+
+        {/* ── Lender Packet ── */}
+        {activeReport === "lenderpacket" && (() => {
+          const year = rFrom.slice(0, 4);
+          // Rent roll data
+          const rrRows = rProps.flatMap(pr => (pr.units || []).flatMap(u => {
+            if (u.ownerOccupied) return [];
+            const isWhole = (u.rentalMode || "byRoom") === "wholeHouse";
+            if (isWhole) { const rep = (u.rooms || []).find(r => r.tenant); return [{ Property: getPropDisplayName(pr), Unit: u.name || pr.name, Tenant: rep?.tenant?.name || "Vacant", Rent: rep?.tenant ? "$" + (u.rent || 0) : "$0", LeaseEnd: rep?.le || "", Status: rep ? "Occupied" : "Vacant" }]; }
+            return (u.rooms || []).filter(r => !r.ownerOccupied).map(r => ({ Property: getPropDisplayName(pr), Unit: r.name, Tenant: r.tenant?.name || "Vacant", Rent: "$" + r.rent, LeaseEnd: r.le || "", Status: r.st === "occupied" ? "Occupied" : "Vacant" }));
+          }));
+          // Trailing 12 data
+          const t12 = []; const now = TODAY;
+          for (let i = 11; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+            const label = d.toLocaleString("en-US", { month: "short", year: "numeric" });
+            const inc = charges.flatMap(c => (c.payments || []).filter(p => (p.date || "").slice(0, 7) === ym).map(p => p.amount)).reduce((s, a) => s + a, 0);
+            t12.push({ Month: label, Collected: fmt(inc) });
+          }
+          // Cash flow summary
+          const fcf = totalNOI - periodDebt;
+          const cfRows = [
+            { Item: "Gross Rent Collected", Amount: fmt(totalIncome) },
+            { Item: "Operating Expenses", Amount: fmt(-totalExp) },
+            { Item: "NOI", Amount: fmtParen(totalNOI) },
+            { Item: "Debt Service (P&I)", Amount: fmt(-periodDebt) },
+            { Item: "Free Cash Flow", Amount: fmtParen(fcf) },
+            { Item: "DSCR", Amount: rDSCR != null ? rDSCR.toFixed(2) + "x" : "N/A" },
+          ];
+
+          const exportAll = () => {
+            exportCSV(rrRows, ["Property", "Unit", "Tenant", "Rent", "LeaseEnd", "Status"], `rent-roll-${year}`);
+            setTimeout(() => exportCSV(t12, ["Month", "Collected"], `trailing-12-income-${year}`), 200);
+            setTimeout(() => exportCSV(cfRows, ["Item", "Amount"], `cash-flow-dscr-${year}`), 400);
+          };
+
+          const occRooms = rProps.flatMap(p => allRooms(p)).filter(r => !r.ownerOccupied);
+          const occupied = occRooms.filter(r => r.st === "occupied" || r.tenant).length;
+          const occRate = occRooms.length > 0 ? Math.round(occupied / occRooms.length * 100) : 0;
+          const totalMonthlyRent = occRooms.filter(r => r.tenant).reduce((s, r) => s + (r.rent || 0), 0);
+
+          return (<>
+            <div style={{ padding: "14px 16px", background: "rgba(74,124,89,.04)", borderRadius: 10, border: "1px solid rgba(74,124,89,.2)", marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: _grn, marginBottom: 6 }}>Lender Packet &mdash; {year}</div>
+              <div style={{ fontSize: 11, color: "#6b5e52", lineHeight: 1.6, marginBottom: 10 }}>
+                Downloads rent roll, trailing 12-month income, and cash flow with DSCR.
+                Three CSVs your banker can open directly.
+              </div>
+              <button className="btn btn-green btn-sm" style={{ fontWeight: 700, fontSize: 12, padding: "8px 20px" }} onClick={exportAll}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: "middle" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Lender Packet (3 CSVs)
+              </button>
+            </div>
+            {/* Key metrics preview */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 14 }}>
+              {[
+                { label: "Occupancy", value: occRate + "%", color: occRate >= 90 ? _grn : _red },
+                { label: "Monthly Rent", value: "$" + totalMonthlyRent.toLocaleString(), color: "#1a1714" },
+                { label: "DSCR", value: rDSCR != null ? rDSCR.toFixed(2) + "x" : "N/A", color: rDSCR && rDSCR >= 1.25 ? _grn : _red },
+                { label: "Free Cash Flow", value: fmtParen(fcf), color: fcf >= 0 ? _grn : _red },
+              ].map(k => <div key={k.label} style={{ background: "#fff", borderRadius: 8, padding: "12px 14px", border: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>{k.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: k.color }}>{k.value}</div>
+              </div>)}
+            </div>
+            <div style={{ fontSize: 10, color: "#6b5e52", padding: "8px 12px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
+              {rDSCR != null && rDSCR >= 1.25 ? "DSCR meets typical lender threshold (1.25x)." : rDSCR != null ? "DSCR is below the typical 1.25x lender threshold." : "Add mortgage data in Ledger to calculate DSCR."}
+            </div>
+          </>);
+        })()}
+
+        {/* ── Period Comparison ── */}
+        {activeReport === "periodcompare" && (() => {
+          // Compare current filter period vs same-length prior period
+          const fromD = new Date(rFrom + "T00:00:00"), toD = new Date(rTo + "T00:00:00");
+          const days = Math.max(1, Math.round((toD - fromD) / 864e5));
+          const priorTo = new Date(fromD.getTime() - 864e5); // day before rFrom
+          const priorFrom = new Date(priorTo.getTime() - days * 864e5);
+          const pFrom = priorFrom.toISOString().slice(0, 10);
+          const pTo = priorTo.toISOString().slice(0, 10);
+          const pLabel = pFrom.slice(0, 7) + " to " + pTo.slice(0, 7);
+          const cLabel = rFrom.slice(0, 7) + " to " + rTo.slice(0, 7);
+
+          // Prior period data
+          const pPayments = charges.flatMap(c => (c.payments || []).map(p => ({
+            ...p, propName: c.propName, category: c.category
+          }))).filter(p => p.date >= pFrom && p.date <= pTo && p.category !== "Security Deposit");
+          const pExpenses = expenses.filter(e => e.date >= pFrom && e.date <= pTo);
+          const pIncome = pPayments.reduce((s, p) => s + p.amount, 0);
+          const pExp = pExpenses.reduce((s, e) => s + e.amount, 0);
+          const pNOI = pIncome - pExp;
+
+          const delta = (cur, prev) => {
+            if (prev === 0 && cur === 0) return { pct: 0, dir: "flat" };
+            if (prev === 0) return { pct: 100, dir: "up" };
+            const p = Math.round((cur - prev) / Math.abs(prev) * 100);
+            return { pct: Math.abs(p), dir: p > 0 ? "up" : p < 0 ? "down" : "flat" };
+          };
+
+          const rows = [
+            { metric: "Gross Income", current: totalIncome, prior: pIncome, goodDir: "up" },
+            { metric: "Total Expenses", current: totalExp, prior: pExp, goodDir: "down" },
+            { metric: "NOI", current: totalNOI, prior: pNOI, goodDir: "up" },
+          ];
+
+          // Per-property comparison
+          const propRows = rProps.map(pr => {
+            const cInc = propIncome(pr); const cExp = propTotalExp(pr);
+            const pPropInc = pPayments.filter(p => p.propName === pr.name).reduce((s, p) => s + p.amount, 0);
+            const pPropExp = pExpenses.filter(e => e.propId === pr.id || e.propId === "shared").reduce((s, e) => s + (e.propId === "shared" ? sharedExpAlloc(e.amount) : e.amount), 0);
+            return { name: getPropDisplayName(pr), cInc, cExp, cNOI: cInc - cExp, pInc: pPropInc, pExp: pPropExp, pNOI: pPropInc - pPropExp };
+          });
+
+          const DeltaBadge = ({ cur, prev, goodDir }) => {
+            const d = delta(cur, prev);
+            if (d.dir === "flat") return <span style={{ fontSize: 10, color: "#999" }}>--</span>;
+            const isGood = d.dir === goodDir;
+            const color = isGood ? _grn : _red;
+            const arrow = d.dir === "up" ? "\u25B2" : "\u25BC";
+            return <span style={{ fontSize: 10, fontWeight: 700, color }}>{arrow} {d.pct}%</span>;
+          };
+
+          return (<>
+            <div style={{ fontSize: 11, color: "#6b5e52", marginBottom: 14, padding: "10px 14px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
+              Comparing <strong>{cLabel}</strong> vs <strong>{pLabel}</strong> (prior equivalent period). Adjust the date range above to change comparison windows.
+            </div>
+            {/* Portfolio summary */}
+            <TW>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
+                  <th style={{ ...thS, textAlign: "left" }}>Metric</th>
+                  <th style={{ ...thS, textAlign: "right" }}>{cLabel}</th>
+                  <th style={{ ...thS, textAlign: "right" }}>{pLabel}</th>
+                  <th style={{ ...thS, textAlign: "center" }}>Change</th>
+                </tr></thead>
+                <tbody>
+                  {rows.map((r, i) => <tr key={r.metric} style={trAlt(i)}>
+                    <td style={{ ...tdS, fontWeight: 700 }}>{r.metric}</td>
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 700 }}>{fmt(r.current)}</td>
+                    <td style={{ ...tdS, textAlign: "right", color: "#6b5e52" }}>{fmt(r.prior)}</td>
+                    <td style={{ ...tdS, textAlign: "center" }}><DeltaBadge cur={r.current} prev={r.prior} goodDir={r.goodDir} /></td>
+                  </tr>)}
+                </tbody>
+              </table>
+            </TW>
+            {/* Per-property breakdown */}
+            {rProps.length > 1 && <>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>By Property</div>
+              <TW>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
+                    <th style={{ ...thS, textAlign: "left" }}>Property</th>
+                    <th style={{ ...thS, textAlign: "right" }}>Income (Now)</th>
+                    <th style={{ ...thS, textAlign: "right" }}>Income (Prior)</th>
+                    <th style={{ ...thS, textAlign: "right" }}>NOI (Now)</th>
+                    <th style={{ ...thS, textAlign: "right" }}>NOI (Prior)</th>
+                    <th style={{ ...thS, textAlign: "center" }}>NOI Change</th>
+                  </tr></thead>
+                  <tbody>
+                    {propRows.map((pr, i) => <tr key={pr.name} style={trAlt(i)}>
+                      <td style={{ ...tdS, fontWeight: 600 }}>{pr.name}</td>
+                      <td style={{ ...tdS, textAlign: "right" }}>{fmt(pr.cInc)}</td>
+                      <td style={{ ...tdS, textAlign: "right", color: "#6b5e52" }}>{fmt(pr.pInc)}</td>
+                      <td style={{ ...tdS, textAlign: "right", fontWeight: 700, color: pr.cNOI >= 0 ? _grn : _red }}>{fmtParen(pr.cNOI)}</td>
+                      <td style={{ ...tdS, textAlign: "right", color: "#6b5e52" }}>{fmtParen(pr.pNOI)}</td>
+                      <td style={{ ...tdS, textAlign: "center" }}><DeltaBadge cur={pr.cNOI} prev={pr.pNOI} goodDir="up" /></td>
+                    </tr>)}
+                  </tbody>
+                </table>
+              </TW>
+            </>}
+          </>);
+        })()}
+
         {activeReport === "tenantquality" && (() => {
           const allSources = [...new Set((apps || []).map(a => a.source || "Unknown"))];
           return (<>

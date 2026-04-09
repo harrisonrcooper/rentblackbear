@@ -45,7 +45,7 @@ export default function DashboardTab({
         const nextRentTotal=nextRentCharges.filter(c=>c.category==="Rent").reduce((s,c)=>s+c.amount,0);
         const appsByStage={"new-lead":0,"applied":0,"approved":0,"onboarding":0};
         apps.filter(a=>a.status!=="denied").forEach(a=>{if(appsByStage[a.status]!==undefined)appsByStage[a.status]++;});
-        const defWidgets=settings.dashWidgets||["pendingActions","pastDue","leaseExp","vacancy","maintenance","mtdCollection","recentActivity","appPipeline","upcomingRent"];
+        const defWidgets=settings.dashWidgets||["pendingActions","financialAlerts","pastDue","leaseExp","vacancy","maintenance","mtdCollection","recentActivity","appPipeline","upcomingRent"];
         const activeWidgets=widgetList||defWidgets;
         const editMode=dashEditMode;
         const dragWidget=dashDragWidget;
@@ -66,6 +66,7 @@ export default function DashboardTab({
           {id:"propBreakdown",label:"Revenue by Property"},{id:"roe",label:"Return on Equity"},{id:"profitability",label:"Profitability by Property"},
           {id:"dscr",label:"DSCR"},{id:"rocks",label:"Traction Rocks"},
           {id:"pendingActions",label:"Pending Actions"},
+          {id:"financialAlerts",label:"Financial Alerts"},
         ];
         const availableToAdd=ALL_WIDGETS.filter(w=>!activeWidgets.includes(w.id));
         const NeedsData=({label,goTo,field})=>(<div style={{padding:"10px 0"}}>
@@ -139,13 +140,13 @@ export default function DashboardTab({
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>YTD Expenses</div>
             <div style={{fontSize:24,fontWeight:800,color:"#c45c4a",marginBottom:4}}>{fmtS(ytdExpenses)}</div>
             <div style={{fontSize:11,color:"#6b5e52",marginBottom:6}}>Spent Jan – {TODAY.toLocaleString("default",{month:"short"})} {TODAY.getFullYear()}</div>
-            {ytdExpenses===0&&<div style={{fontSize:10,color:"#6b5e52"}}>No expenses yet. <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("accounting")}>Add in Accounting</button></div>}
+            {ytdExpenses===0&&<div style={{fontSize:10,color:"#6b5e52"}}>No expenses yet. <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("ledger")}>Add in Ledger</button></div>}
           </>);
           case "noi":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Net Operating Income</div>
             <div style={{fontSize:24,fontWeight:800,color:ytdNOI>=0?"#4a7c59":"#c45c4a",marginBottom:4}}>{fmtS(ytdNOI)}</div>
             <div style={{fontSize:11,color:"#6b5e52",marginBottom:6}}>YTD · {fmtS(ytdCollected)} revenue minus {fmtS(ytdExpenses)} expenses</div>
-            {ytdExpenses===0&&<div style={{fontSize:10,color:"#6b5e52"}}>Add expenses in <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("accounting")}>Accounting</button> for accurate NOI</div>}
+            {ytdExpenses===0&&<div style={{fontSize:10,color:"#6b5e52"}}>Add expenses in <button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("ledger")}>Ledger</button> for accurate NOI</div>}
           </>);
           case "vacancyCost":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Vacancy Cost</div>
@@ -203,7 +204,7 @@ export default function DashboardTab({
           </>);
           case "dscr":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>DSCR</div>
-            {mortgages.length===0?<NeedsData label="DSCR" goTo="accounting" field="mortgage data in Accounting"/>:
+            {mortgages.length===0?<NeedsData label="DSCR" goTo="ledger" field="mortgage data in Ledger"/>:
               mortgages.map(mg=>{
                 const propInc=ytdCharges.filter(c=>c.propName===mg.propName).reduce((s,c)=>s+c.amountPaid,0)*(12/Math.max(TODAY.getMonth()+1,1));
                 const annDebt=(mg.payment||0)*12;const dscr=annDebt>0?(propInc/annDebt).toFixed(2):null;
@@ -222,6 +223,81 @@ export default function DashboardTab({
               <span className={"badge "+(r.status==="on-track"?"b-green":r.status==="off-track"?"b-red":"b-gray")} style={{fontSize:8,flexShrink:0}}>{r.status}</span>
             </div>)}
           </>);
+          case "financialAlerts":{
+            // ── Anomaly detection: compare current month vs prior 3-month avg ──
+            const alerts=[];
+            const curM=TODAY.getMonth(),curY=TODAY.getFullYear();
+            const ymOf=d=>(d||"").slice(0,7);
+            const curYM=`${curY}-${String(curM+1).padStart(2,"0")}`;
+
+            // Helper: get 3 prior months as YYYY-MM strings
+            const prior3=[];
+            for(let i=1;i<=3;i++){const d=new Date(curY,curM-i,1);prior3.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`);}
+
+            // 1. Collection rate drop
+            const collRate=mtdExpected>0?mtdCollected/mtdExpected:1;
+            if(collRate<0.9&&mtdExpected>0){
+              alerts.push({severity:"high",msg:`Collection rate at ${Math.round(collRate*100)}% this month`,sub:`${fmtS(mtdExpected-mtdCollected)} outstanding of ${fmtS(mtdExpected)} expected`,action:"payments"});
+            }
+
+            // 2. Expense spike by category (current month vs prior 3-month avg, >50% increase)
+            const curMonthExp=expenses.filter(e=>ymOf(e.date)===curYM);
+            const priorExp=expenses.filter(e=>prior3.includes(ymOf(e.date)));
+            const catTotals={};
+            curMonthExp.forEach(e=>{catTotals[e.category]=(catTotals[e.category]||0)+e.amount;});
+            const priorCatAvg={};
+            priorExp.forEach(e=>{priorCatAvg[e.category]=(priorCatAvg[e.category]||0)+e.amount;});
+            Object.keys(priorCatAvg).forEach(k=>{priorCatAvg[k]=priorCatAvg[k]/3;});
+            Object.entries(catTotals).forEach(([cat,amt])=>{
+              const avg=priorCatAvg[cat]||0;
+              if(avg>50&&amt>avg*1.5){
+                const pctUp=Math.round((amt/avg-1)*100);
+                alerts.push({severity:"medium",msg:`${cat} expenses up ${pctUp}%`,sub:`${fmtS(amt)} this month vs ${fmtS(Math.round(avg))} avg prior 3 months`,action:"ledger"});
+              }
+            });
+
+            // 3. Properties with negative NOI (trailing 3 months)
+            const t3Months=[curYM,...prior3.slice(0,2)];
+            props.forEach(pr=>{
+              const prPayments=charges.flatMap(c=>c.propName===pr.name?(c.payments||[]).filter(p=>t3Months.includes(ymOf(p.date))).map(p=>p.amount):[]);
+              const prIncome=prPayments.reduce((s,a)=>s+a,0);
+              const prExp=expenses.filter(e=>(e.propId===pr.id||e.propId==="shared")&&t3Months.includes(ymOf(e.date))).reduce((s,e)=>s+(e.propId==="shared"?e.amount/(props.length||1):e.amount),0);
+              const months=t3Months.length;
+              const avgNOI=(prIncome-prExp)/months;
+              if(avgNOI<0&&prIncome>0){
+                alerts.push({severity:"high",msg:`${getPropDisplayName(pr)} bleeding money`,sub:`Avg NOI ${fmtS(Math.round(avgNOI))}/mo over past ${months} months`,action:"money"});
+              }
+            });
+
+            // 4. Tenants with balance > 1 month rent
+            const highBalance=charges.filter(c=>{
+              const st=chargeStatus(c);
+              return(st==="pastdue"||st==="partial")&&(c.amount-c.amountPaid)>=(c.category==="Rent"?c.amount*0.9:500);
+            });
+            const tenantBalances={};
+            highBalance.forEach(c=>{tenantBalances[c.tenantName]=(tenantBalances[c.tenantName]||0)+(c.amount-c.amountPaid);});
+            Object.entries(tenantBalances).forEach(([name,bal])=>{
+              if(bal>=500)alerts.push({severity:"high",msg:`${name} owes ${fmtS(bal)}`,sub:"Multiple past-due charges",action:"payments"});
+            });
+
+            // Sort by severity
+            const sevOrder={high:0,medium:1,low:2};
+            alerts.sort((a,b)=>(sevOrder[a.severity]||2)-(sevOrder[b.severity]||2));
+
+            return(<>
+              <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Financial Alerts</div>
+              {alerts.length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>No anomalies detected</div>}
+              {alerts.slice(0,6).map((a,i)=><div key={i} className="row" style={{cursor:"pointer",padding:"6px 0"}} onClick={()=>goTab(a.action||"money")}>
+                <div className="row-dot" style={{background:a.severity==="high"?"#c45c4a":a.severity==="medium"?"#d4a853":"#6b5e52"}}/>
+                <div className="row-i">
+                  <div className="row-t" style={{fontSize:12,fontWeight:600}}>{a.msg}</div>
+                  <div className="row-s">{a.sub}</div>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" strokeLinecap="round" style={{flexShrink:0}}><polyline points="9 18 15 12 9 6"/></svg>
+              </div>)}
+              {alerts.length>6&&<div style={{fontSize:10,color:"#6b5e52",paddingTop:6}}>+{alerts.length-6} more</div>}
+            </>);
+          }
           case "pendingActions":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Pending Actions</div>
             <div style={{display:"flex",gap:8}}>

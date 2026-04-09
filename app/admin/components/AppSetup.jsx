@@ -382,5 +382,234 @@ export default function AppSetup({ screenQs, setScreenQs, appFields, setAppField
             </div>);
           })()}
         </div>}
+        {/* ══════════════════════════════════════════════════════════════
+           SECTION 6 — EMAIL TEMPLATES EDITOR
+        ══════════════════════════════════════════════════════════════ */}
+        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,emailTemplates:!p.emailTemplates}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:14}}>{expanded.emailTemplates?"\u25BC":"\u25B6"}</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:700}}>Email Templates</div>
+                <div style={{fontSize:9,color:"#6b5e52"}}>Auto-response emails for pre-screen, application, references, and more</div>
+              </div>
+            </div>
+          </div>
+          {expanded.emailTemplates&&(()=>{
+            const tpl=settings.emailTemplates||DEF_SETTINGS.emailTemplates;
+            const upd=(key,val)=>setSettings(s=>({...s,emailTemplates:{...(s.emailTemplates||DEF_SETTINGS.emailTemplates),[key]:val}}));
+            const TOKENS=["{name}","{firstName}","{property}","{room}","{amount}","{pmName}","{companyName}","{phone}","{email}","{city}","{applicantName}","{applicantFirstName}","{refName}","{refFirstName}","{docLabel}","{portalLink}","{dueDate}","{category}"];
+            const GROUPS=[
+              {title:"Pre-Screen Notifications",items:[
+                {label:"Admin Notification",subjectKey:"prescreenSubject",bodyKey:"prescreenBody",desc:"Sent to you when someone passes the pre-screen"},
+                {label:"Tenant Confirmation",subjectKey:"prescreenTenantSubject",bodyKey:"prescreenTenantBody",desc:"Sent to the applicant after passing pre-screen"},
+              ]},
+              {title:"Application Notifications",items:[
+                {label:"Admin Notification",subjectKey:"applicationSubject",bodyKey:"applicationBody",desc:"Sent to you when a full application is submitted"},
+                {label:"Rejection Email",subjectKey:"rejectionSubject",bodyKey:"rejectionBody",desc:"Sent to applicant when denied",defaults:{subjectKey:"Application Update \u2014 {companyName}",bodyKey:"Hi {firstName},\n\nThank you for your interest in {property}. After careful review, we are unable to approve your application at this time.\n\nIf you have any questions, please contact us at {phone}.\n\nBest regards,\n{pmName}\n{companyName}"}},
+                {label:"Approval Email",subjectKey:"approvalSubject",bodyKey:"approvalBody",desc:"Sent to applicant when approved",defaults:{subjectKey:"You're Approved! \u2014 {companyName}",bodyKey:"Hi {firstName},\n\nGreat news! Your application for {property} has been approved.\n\nNext steps:\n1. We'll send your lease for e-signing\n2. Security deposit and first month's rent will be due before move-in\n3. You'll receive your portal invite with door code and move-in details\n\nQuestions? Reply to this email or call {phone}.\n\nWelcome aboard!\n{pmName}\n{companyName}"}},
+              ]},
+              {title:"Reference Requests",items:[
+                {label:"Employer Reference",subjectKey:"refEmployerSubject",bodyKey:"refEmployerBody",desc:"Sent to employer references"},
+                {label:"Personal Reference",subjectKey:"refPersonalSubject",bodyKey:"refPersonalBody",desc:"Sent to personal references"},
+                {label:"Landlord Reference",subjectKey:"refLandlordSubject",bodyKey:"refLandlordBody",desc:"Sent to previous landlords"},
+              ]},
+              {title:"Document & Lease",items:[
+                {label:"Document Re-upload Request",subjectKey:"reuploadSubject",bodyKey:"reuploadBody",desc:"Sent when a document needs to be re-uploaded"},
+                {label:"Lease Signed",subjectKey:"leaseSignedSubject",bodyKey:"leaseSignedBody",desc:"Sent to you when a lease is signed"},
+                {label:"Payment Received",subjectKey:"paymentSubject",bodyKey:"paymentBody",desc:"Sent to you when a payment is received"},
+              ]},
+            ];
+            return(
+            <div style={{padding:16,background:"#fff"}}>
+              <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:16,padding:"10px 12px",background:"rgba(0,0,0,.02)",borderRadius:8}}>
+                <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5,width:"100%",marginBottom:4}}>Available Template Variables</div>
+                {TOKENS.map(t=><span key={t} onClick={()=>navigator.clipboard.writeText(t)} style={{fontSize:10,padding:"2px 7px",borderRadius:4,background:"rgba(212,168,83,.1)",color:"#9a7422",cursor:"pointer",fontFamily:"monospace",fontWeight:600}} title="Click to copy">{t}</span>)}
+              </div>
+              {GROUPS.map(g=>(
+                <div key={g.title} style={{marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#9a7422",textTransform:"uppercase",letterSpacing:.8,marginBottom:8,paddingBottom:4,borderBottom:"1px solid rgba(212,168,83,.15)"}}>{g.title}</div>
+                  {g.items.map(item=>{
+                    const isExp=expanded["tpl_"+item.subjectKey];
+                    const subjectVal=tpl[item.subjectKey]||(item.defaults?.subjectKey)||"";
+                    const bodyVal=tpl[item.bodyKey]||(item.defaults?.bodyKey)||"";
+                    return(
+                    <div key={item.subjectKey} style={{border:"1px solid rgba(0,0,0,.04)",borderRadius:8,marginBottom:6,overflow:"hidden"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",cursor:"pointer",background:isExp?"rgba(0,0,0,.01)":"transparent"}} onClick={()=>setExpanded(p=>({...p,["tpl_"+item.subjectKey]:!p["tpl_"+item.subjectKey]}))}>
+                        <span style={{fontSize:10,color:"#6b5e52"}}>{isExp?"\u25BE":"\u25B8"}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:12,fontWeight:600}}>{item.label}</div>
+                          <div style={{fontSize:9,color:"#6b5e52"}}>{item.desc}</div>
+                        </div>
+                        <span style={{fontSize:9,color:subjectVal?"#4a7c59":"#c45c4a",fontWeight:600}}>{subjectVal?"Configured":"Not set"}</span>
+                      </div>
+                      {isExp&&<div style={{padding:"10px 12px",borderTop:"1px solid rgba(0,0,0,.04)"}}>
+                        <div style={{marginBottom:8}}>
+                          <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Subject Line</div>
+                          <input value={subjectVal} onChange={e=>upd(item.subjectKey,e.target.value)} placeholder="Email subject..." style={{width:"100%",padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:12,fontFamily:"inherit"}}/>
+                        </div>
+                        <div>
+                          <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.5,marginBottom:3}}>Body</div>
+                          <textarea value={bodyVal} onChange={e=>upd(item.bodyKey,e.target.value)} rows={6} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit",resize:"vertical",lineHeight:1.6}}/>
+                        </div>
+                      </div>}
+                    </div>);
+                  })}
+                </div>
+              ))}
+              <div style={{display:"flex",gap:8,marginTop:8}}>
+                <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-settings",settings);showAlert({title:"Email templates saved",body:"All email template changes have been saved."});}}>Save Email Templates</button>
+                <button className="btn btn-out" onClick={()=>{showConfirm({title:"Reset Email Templates?",body:"This will revert all email templates to their defaults. Your custom copy will be lost.",confirmLabel:"Reset",danger:true,onConfirm:()=>setSettings(s=>({...s,emailTemplates:DEF_SETTINGS.emailTemplates}))});}}>Reset to Defaults</button>
+              </div>
+            </div>);
+          })()}
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════
+           SECTION 7 — SCREENING CHECKLIST TEMPLATE
+        ══════════════════════════════════════════════════════════════ */}
+        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,screenChecklist:!p.screenChecklist}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:14}}>{expanded.screenChecklist?"\u25BC":"\u25B6"}</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:700}}>Screening Checklist</div>
+                <div style={{fontSize:9,color:"#6b5e52"}}>What must be verified before approving an applicant</div>
+              </div>
+            </div>
+            <span style={{fontSize:10,color:"#6b5e52",fontWeight:600}}>{(settings.screeningChecklist||[]).filter(c=>c.enabled).length} items active</span>
+          </div>
+          {expanded.screenChecklist&&(()=>{
+            const DEF_CHECKLIST=[
+              {id:"bg-check",label:"Background Check",enabled:true,required:true,mode:"api",desc:"Criminal background screening via RentPrep or similar"},
+              {id:"credit-check",label:"Credit Check",enabled:true,required:true,mode:"api",desc:"Credit report and FICO score",threshold:650},
+              {id:"income-verify",label:"Income Verification",enabled:true,required:true,mode:"document",desc:"Verify income meets minimum threshold",docType:"PayStub",multiplier:3},
+              {id:"references",label:"References",enabled:true,required:true,mode:"api",desc:"Contact and verify references",refCount:2},
+              {id:"id-verify",label:"ID Verification",enabled:true,required:true,mode:"document",desc:"Government-issued photo ID (front and back)",docType:"PhotoID"},
+              {id:"pay-stubs",label:"Pay Stubs / Proof of Income",enabled:true,required:false,mode:"document",desc:"Recent pay stubs or offer letter",docType:"PayStub"},
+            ];
+            const checklist=settings.screeningChecklist||DEF_CHECKLIST;
+            const updChecklist=(list)=>setSettings(s=>({...s,screeningChecklist:list}));
+            const updItem=(idx,key,val)=>{const n=[...checklist];n[idx]={...n[idx],[key]:val};updChecklist(n);};
+            const addCustom=()=>updChecklist([...checklist,{id:uid(),label:"New Verification Item",enabled:true,required:false,mode:"manual",desc:"",custom:true}]);
+            const deleteItem=(idx)=>updChecklist(checklist.filter((_,i)=>i!==idx));
+            const MODE_LABELS={manual:"Manual Checkbox",document:"Document Upload",api:"External API / Service"};
+            const MODE_COLORS={manual:"#3b82f6",document:"#d4a853",api:"#4a7c59"};
+            return(
+            <div style={{padding:16,background:"#fff"}}>
+              {checklist.length===0&&<div style={{textAlign:"center",padding:20,color:"#6b5e52"}}>
+                <p style={{fontSize:12,marginBottom:8}}>No checklist items configured.</p>
+                <button className="btn btn-gold" onClick={()=>updChecklist(DEF_CHECKLIST)}>Load Default Checklist</button>
+              </div>}
+              {checklist.map((item,i)=>(
+                <div key={item.id} style={{border:"1px solid rgba(0,0,0,.04)",borderRadius:8,marginBottom:6,background:item.enabled?"#fff":"#faf9f7",opacity:item.enabled?1:.6}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px"}}>
+                    <button onClick={()=>updItem(i,"enabled",!item.enabled)} style={{padding:"3px 8px",borderRadius:6,border:"none",fontSize:9,fontWeight:800,cursor:"pointer",background:item.enabled?"rgba(74,124,89,.1)":"rgba(0,0,0,.04)",color:item.enabled?"#4a7c59":"#bbb",minWidth:32}}>{item.enabled?"ON":"OFF"}</button>
+                    <div style={{flex:1,minWidth:0}}>
+                      {item.custom?<input value={item.label} onChange={e=>updItem(i,"label",e.target.value)} style={{width:"100%",padding:"4px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:12,fontFamily:"inherit",fontWeight:600}}/>:<div style={{fontSize:12,fontWeight:600}}>{item.label}</div>}
+                      <div style={{fontSize:9,color:"#6b5e52",marginTop:1}}>{item.desc}</div>
+                    </div>
+                    <select value={item.mode} onChange={e=>updItem(i,"mode",e.target.value)} style={{padding:"3px 8px",borderRadius:6,border:"none",fontSize:9,fontWeight:700,cursor:"pointer",background:(MODE_COLORS[item.mode]||"#999")+"18",color:MODE_COLORS[item.mode]||"#999"}}>
+                      <option value="manual">Manual</option>
+                      <option value="document">Document</option>
+                      <option value="api">API</option>
+                    </select>
+                    <button onClick={()=>updItem(i,"required",!item.required)} style={{padding:"3px 7px",borderRadius:6,border:"none",fontSize:9,fontWeight:700,cursor:"pointer",background:item.required?"rgba(196,92,74,.1)":"rgba(0,0,0,.04)",color:item.required?"#c45c4a":"#999"}}>{item.required?"Required":"Optional"}</button>
+                    {item.custom&&<button style={{background:"none",border:"none",color:"#c45c4a",cursor:"pointer",fontSize:13,padding:"0 2px"}} onClick={()=>deleteItem(i)}>{"\u2715"}</button>}
+                  </div>
+                  {/* Threshold/config row for specific item types */}
+                  {item.enabled&&(item.id==="credit-check"||item.threshold!=null)&&<div style={{padding:"0 12px 10px",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:9,fontWeight:700,color:"#6b5e52"}}>Min Credit Score:</span>
+                    <input type="number" value={item.threshold||650} onChange={e=>updItem(i,"threshold",Number(e.target.value))} style={{width:60,padding:"4px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+                  </div>}
+                  {item.enabled&&(item.id==="income-verify"||item.multiplier!=null)&&<div style={{padding:"0 12px 10px",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:9,fontWeight:700,color:"#6b5e52"}}>Income must be at least</span>
+                    <input type="number" value={item.multiplier||3} onChange={e=>updItem(i,"multiplier",Number(e.target.value))} style={{width:40,padding:"4px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+                    <span style={{fontSize:9,color:"#6b5e52"}}>x monthly rent</span>
+                  </div>}
+                  {item.enabled&&(item.id==="references"||item.refCount!=null)&&<div style={{padding:"0 12px 10px",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:9,fontWeight:700,color:"#6b5e52"}}>References required:</span>
+                    <input type="number" value={item.refCount||2} min={1} max={5} onChange={e=>updItem(i,"refCount",Number(e.target.value))} style={{width:40,padding:"4px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+                  </div>}
+                  {item.enabled&&item.custom&&item.mode==="document"&&<div style={{padding:"0 12px 10px"}}>
+                    <input value={item.docType||""} onChange={e=>updItem(i,"docType",e.target.value)} placeholder="Document type label (e.g. Military Orders)" style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}}/>
+                  </div>}
+                  {item.enabled&&item.custom&&<div style={{padding:"0 12px 10px"}}>
+                    <input value={item.desc||""} onChange={e=>updItem(i,"desc",e.target.value)} placeholder="Description shown in pipeline checklist..." style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}}/>
+                  </div>}
+                </div>
+              ))}
+              {checklist.length>0&&<>
+                <button className="btn btn-out" style={{width:"100%",marginTop:8}} onClick={addCustom}>+ Add Custom Verification Item</button>
+                <div style={{display:"flex",gap:8,marginTop:10}}>
+                  <button className="btn btn-green" style={{flex:1}} onClick={()=>{save("hq-settings",{...settings,screeningChecklist:checklist});showAlert({title:"Screening checklist saved",body:"The checklist template will be used for all new applicants. Existing applicants are not affected."});}}>Save Checklist</button>
+                  <button className="btn btn-out" onClick={()=>{showConfirm({title:"Reset Checklist?",body:"This will revert to the 6 default verification items.",confirmLabel:"Reset",danger:true,onConfirm:()=>updChecklist(DEF_CHECKLIST)});}}>Reset</button>
+                </div>
+              </>}
+              <div style={{fontSize:9,color:"#6b5e52",marginTop:8,textAlign:"center"}}>This template becomes the per-applicant checklist in the Applications pipeline</div>
+            </div>);
+          })()}
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════
+           SECTION 8 — APPLY PAGE SETTINGS
+        ══════════════════════════════════════════════════════════════ */}
+        <div style={{marginTop:8,border:"1px solid rgba(0,0,0,.06)",borderRadius:12,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(0,0,0,.02)",cursor:"pointer"}} onClick={()=>setExpanded(p=>({...p,applyPageSettings:!p.applyPageSettings}))}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:14}}>{expanded.applyPageSettings?"\u25BC":"\u25B6"}</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:700}}>Apply Page Settings</div>
+                <div style={{fontSize:9,color:"#6b5e52"}}>Application fee, screening packages, and live page link</div>
+              </div>
+            </div>
+          </div>
+          {expanded.applyPageSettings&&<div style={{padding:16,background:"#fff"}}>
+            <div className="fr" style={{marginBottom:16}}>
+              <div className="fld">
+                <label>Application / Screening Fee ($)</label>
+                <input type="number" value={settings.applicationFee||59} onChange={e=>setSettings(s=>({...s,applicationFee:Number(e.target.value)}))} style={{fontFamily:"inherit"}}/>
+                <div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>Charged to the applicant at submission. Covers background check and credit report.</div>
+              </div>
+              <div className="fld">
+                <label>Default Screening Package</label>
+                <select value={settings.defaultScreenPkg||"credit-bg"} onChange={e=>setSettings(s=>({...s,defaultScreenPkg:e.target.value}))} style={{fontFamily:"inherit"}}>
+                  <option value="credit-bg">Credit + Background Check ($59)</option>
+                  <option value="credit-only">Credit Only ($35)</option>
+                  <option value="full">Full Screen: Credit + BG + Income ($79)</option>
+                  <option value="none">No Screening (Free Apply)</option>
+                </select>
+                <div style={{fontSize:9,color:"#6b5e52",marginTop:2}}>What screening services run automatically when an application is submitted</div>
+              </div>
+            </div>
+            <div className="fr" style={{marginBottom:16}}>
+              <div className="fld">
+                <label>Co-Applicant Flow</label>
+                <select value={settings.coApplicantEnabled===false?"off":"on"} onChange={e=>setSettings(s=>({...s,coApplicantEnabled:e.target.value==="on"}))} style={{fontFamily:"inherit"}}>
+                  <option value="on">Enabled (applicants can add a partner/co-signer)</option>
+                  <option value="off">Disabled</option>
+                </select>
+              </div>
+              <div className="fld">
+                <label>Auto-Send Reference Emails</label>
+                <select value={settings.autoSendRefs===false?"manual":"auto"} onChange={e=>setSettings(s=>({...s,autoSendRefs:e.target.value==="auto"}))} style={{fontFamily:"inherit"}}>
+                  <option value="auto">Automatic (send immediately on submission)</option>
+                  <option value="manual">Manual (PM sends from pipeline)</option>
+                </select>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              <a href={`${settings.siteUrl||"https://rentblackbear.com"}/apply`} target="_blank" rel="noreferrer" className="btn btn-out" style={{flex:1,textAlign:"center",textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                View Live Apply Page
+              </a>
+              <a href={`${settings.siteUrl||"https://rentblackbear.com"}`} target="_blank" rel="noreferrer" className="btn btn-out" style={{flex:1,textAlign:"center",textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                View Public Site
+              </a>
+            </div>
+            <button className="btn btn-green" style={{width:"100%"}} onClick={()=>{save("hq-settings",settings);showAlert({title:"Apply page settings saved",body:"Fee, screening package, and other settings have been saved."});}}>Save Apply Page Settings</button>
+          </div>}
+        </div>
       </>);
 }
