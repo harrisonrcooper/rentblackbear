@@ -1215,14 +1215,13 @@ export default function SmartImporter({
                               {room.tenants.length > 1 && (
                                 <div style={{ padding: "6px 12px", fontSize: 11, color: "#5c4a3a", background: "rgba(212,168,83,.06)", borderBottom: "1px solid rgba(212,168,83,.15)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                   <IW />
-                                  <strong>{room.tenants.length} tenants in {room.name}</strong>
-                                  {room.warnings.find(w => w.type === "transition") && <span style={{ fontSize: 10, color: "#5c4a3a" }}>— Lease transition: one leaves, next moves in</span>}
-                                  {room.warnings.find(w => w.type === "co-living") && <span style={{ fontSize: 10, color: "#b8860b" }}>— Overlapping leases: co-living or couple?</span>}
-                                  {!room.warnings.find(w => w.type === "transition" || w.type === "co-living") && <span style={{ fontSize: 10, color: "#7a7067" }}>— No lease dates to compare</span>}
+                                  <strong style={{ color: "#1a1714" }}>{room.tenants.length} tenants assigned to {room.name}</strong>
+                                  <span style={{ fontSize: 11, color: "#5c4a3a" }}>— Is one replacing the other, or do they share the room? Use Skip or Move to fix.</span>
                                 </div>
                               )}
                               {room.tenants.map((t, ti) => (
-                                <div key={ti} style={{ padding: "7px 12px", opacity: t.excluded ? 0.35 : 1, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                <div key={ti} style={{ padding: "8px 12px", opacity: t.excluded ? 0.35 : 1, background: editingSet.has(`${pi}-${ui}-${ri}`) ? "rgba(0,0,0,.015)" : "transparent", borderRadius: editingSet.has(`${pi}-${ui}-${ri}`) ? 8 : 0, marginBottom: editingSet.has(`${pi}-${ui}-${ri}`) ? 4 : 0, border: editingSet.has(`${pi}-${ui}-${ri}`) ? "1px solid rgba(0,0,0,.06)" : "none" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                   {ti === 0 ? <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                                     <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", border: "none", borderBottom: "1px dashed rgba(0,0,0,.1)", background: "transparent", padding: "1px 4px", width: 90, fontFamily: "inherit" }} />
                                     <select value="" onChange={e => { if (e.target.value) uRoom(pi, ui, ri, "name", e.target.value); }} style={{ fontSize: 9, padding: "2px 3px", border: "1px solid rgba(0,0,0,.1)", borderRadius: 3, color: "#5c4a3a", width: 16, minHeight: 20, cursor: "pointer", appearance: "none", textAlign: "center" }} title="Quick rename">
@@ -1247,39 +1246,42 @@ export default function SmartImporter({
                                       <IW /> {w.type === "no-rent" ? "No rent" : w.type === "past-lease" ? "Expired" : w.type === "co-living" ? "Co-living" : w.type === "transition" ? "Transition" : w.type === "occupied" ? "Occupied" : "Review"}
                                     </span>
                                   ))}
-                                  {t.sdAutoFilled && <span style={{ fontSize: 9, color: "#7a7067" }}>SD={fmtMoney(t.sd)}</span>}
-                                  <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: "#5c4a3a", cursor: "pointer", minHeight: 32, fontWeight: 600 }}>
-                                    <input type="checkbox" checked={!!t.excluded} onChange={() => toggleSkip(pi, ui, ri, ti)} /> Skip
-                                  </label>
-                                  {/* Private bath */}
-                                  {ti === 0 && <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, color: room.privateBath ? _ac : "#5c4a3a", cursor: "pointer", minHeight: 28, fontWeight: 600 }}>
-                                    <input type="checkbox" checked={!!room.privateBath} onChange={() => togglePrivateBath(pi, ui, ri)} />
-                                    <span>Private Bath</span>
-                                  </label>}
-                                  {/* Move to unit */}
-                                  {ti === 0 && prop.units.length > 1 && (
-                                    <select value="" onChange={e => { if (e.target.value !== "") moveTenantToUnit(pi, ui, ri, ti, Number(e.target.value)); }} style={{ fontSize: 10, padding: "3px 6px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
-                                      <option value="">Move to...</option>
-                                      {prop.units.map((u2, ui2) => ui2 !== ui ? <option key={ui2} value={ui2}>{u2.name}</option> : null)}
-                                    </select>
-                                  )}
-                                  {/* Delete room */}
-                                  {ti === 0 && <button onClick={() => delRoom(pi, ui, ri)} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", fontSize: 9, padding: "2px", minHeight: 24, minWidth: 24, display: "flex", alignItems: "center", justifyContent: "center" }} title="Delete room"><IX /></button>}
-                                  {ti === 0 && <button onClick={() => setEditingSet(prev => { const next = new Set(prev); const key = `${pi}-${ui}-${ri}`; if (next.has(key)) next.delete(key); else next.add(key); return next; })} style={{ ...btn, fontSize: 10, padding: "3px 10px", minHeight: 28, marginLeft: "auto" }}>{editingSet.has(`${pi}-${ui}-${ri}`) ? "Close" : "Edit"}</button>}
+                                  {t.sdAutoFilled && <span style={{ fontSize: 9, color: "#5c4a3a" }}>SD={fmtMoney(t.sd)}</span>}
+                                  {/* Right-aligned: Skip + Delete + Edit */}
+                                  <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                                    <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: "#5c4a3a", cursor: "pointer", minHeight: 28, fontWeight: 600 }}>
+                                      <input type="checkbox" checked={!!t.excluded} onChange={() => toggleSkip(pi, ui, ri, ti)} /> Skip
+                                    </label>
+                                    {ti === 0 && <button onClick={() => delRoom(pi, ui, ri)} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", padding: "2px", minHeight: 28, minWidth: 28, display: "flex", alignItems: "center", justifyContent: "center" }} title="Delete room"><IX /></button>}
+                                    {ti === 0 && <button onClick={() => setEditingSet(prev => { const next = new Set(prev); const key = `${pi}-${ui}-${ri}`; if (next.has(key)) next.delete(key); else next.add(key); return next; })} style={{ ...btn, fontSize: 10, padding: "3px 10px", minHeight: 28 }}>{editingSet.has(`${pi}-${ui}-${ri}`) ? "Close" : "Edit"}</button>}
+                                  </div>
+                                  </div>{/* close inner flex row */}
                                 </div>
                               ))}
 
                               {/* Inline edit */}
                               {editingSet.has(`${pi}-${ui}-${ri}`) && room.tenants.filter(t => !t.excluded).map((t, ti) => (
                                 <div key={`e${ti}`} style={{ margin: "4px 12px 8px", padding: 12, background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
-                                  {room.tenants.length > 1 && <div style={{ fontSize: 11, fontWeight: 700, color: "#5c4a3a", marginBottom: 6 }}>{t.name}</div>}
-                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
+                                  {room.tenants.length > 1 && <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1714", marginBottom: 8 }}>{t.name}</div>}
+                                  {/* Room options (only on first tenant) */}
+                                  {ti === 0 && <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center", paddingBottom: 8, borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+                                    <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: room.privateBath ? _ac : "#5c4a3a", cursor: "pointer", fontWeight: 600 }}>
+                                      <input type="checkbox" checked={!!room.privateBath} onChange={() => togglePrivateBath(pi, ui, ri)} /> Private Bath
+                                    </label>
+                                    {prop.units.length > 1 && (
+                                      <select value="" onChange={e => { if (e.target.value !== "") moveTenantToUnit(pi, ui, ri, ti, Number(e.target.value)); }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
+                                        <option value="">Move to unit...</option>
+                                        {prop.units.map((u2, ui2) => ui2 !== ui ? <option key={ui2} value={ui2}>{u2.name}</option> : null)}
+                                      </select>
+                                    )}
+                                  </div>}
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
                                     <div><label style={lbl}>Move-In</label><input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, ti, "moveIn", e.target.value)} style={fld} /></div>
                                     <div><label style={lbl}>Lease End</label><input type="date" value={t.leaseEnd || ""} onChange={e => uTen(pi, ui, ri, ti, "leaseEnd", e.target.value)} style={fld} /></div>
                                     <div><label style={lbl}>Security Deposit</label><input type="number" value={t.sd || ""} onChange={e => uTen(pi, ui, ri, ti, "sd", e.target.value)} style={fld} placeholder="$" /></div>
                                     <div><label style={lbl}>Door Code</label><input value={t.doorCode || ""} onChange={e => uTen(pi, ui, ri, ti, "doorCode", e.target.value)} style={fld} /></div>
                                   </div>
-                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 10 }}>
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, marginTop: 10 }}>
                                     <div><label style={lbl}>Email</label><input value={t.email || ""} onChange={e => uTen(pi, ui, ri, ti, "email", e.target.value)} style={fld} /></div>
                                     <div><label style={lbl}>Phone</label><input value={t.phone || ""} onBlur={e => uTen(pi, ui, ri, ti, "phone", fmtPhone(e.target.value))} onChange={e => uTen(pi, ui, ri, ti, "phone", e.target.value)} style={fld} /></div>
                                     <div><label style={lbl}>Occupation</label>
