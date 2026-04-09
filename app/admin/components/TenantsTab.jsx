@@ -685,14 +685,14 @@ export default function TenantsTab({
               <div style={{ fontSize: 11, color: "#5c4a3a", marginBottom: 2 }}>{a.propName} · {a.roomName}</div>
               {a.reason && <div style={{ fontSize: 10, color: "#7a7067", fontStyle: "italic" }}>{a.reason}</div>}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 3, justifyContent: "center" }}>
-              <div style={{ fontSize: 11, color: "#5c4a3a" }}>{a.email || "\u2014"}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3, justifyContent: "center", overflow: "hidden" }}>
+              <div style={{ fontSize: 11, color: "#5c4a3a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.email || "\u2014"}</div>
               <div style={{ fontSize: 11, color: "#5c4a3a" }}>{a.phone || "\u2014"}</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 3, justifyContent: "center" }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>{fmtS(a.rent)}<span style={{ fontSize: 10, fontWeight: 400, color: "#7a7067" }}>/mo</span></div>
               <div style={{ fontSize: 10, color: "#7a7067" }}>{fmtD(a.moveIn)} &rarr; {fmtD(a.leaseEnd)}</div>
-              <div style={{ fontSize: 10, color: "#7a7067" }}>Terminated {fmtD(a.terminatedDate)}</div>
+              {a.terminatedDate && <div style={{ fontSize: 10, color: "#7a7067" }}>{a.reason === "Moved out" ? "Moved out" : "Ended"} {fmtD(a.terminatedDate)}</div>}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4, justifyContent: "center" }} onClick={e => e.stopPropagation()}>
               {isArch

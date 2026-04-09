@@ -1004,16 +1004,19 @@ export default function SmartImporter({
                   roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
                   ok++;
                 }
-                // Archive past tenants so they appear in Past tab
+                // Archive only truly past tenants (leaseEnd < today) to Past tab
                 if (setArchive && history.length > 0) {
-                  const archiveEntries = history.map(h => ({
-                    id: uid(), name: h.name, email: h.email || "", phone: h.phone || "",
-                    roomName: rd.name, propName: prop.addr || pd.addr, propId: prop.id,
-                    rent: h.rent || 0, moveIn: h.moveIn || "", leaseEnd: h.leaseEnd || "",
-                    terminatedDate: h.leaseEnd || todayStr, reason: "Imported (past tenant)",
-                    isArchived: false, archivedOn: todayStr,
-                  }));
-                  setArchive(prev => [...archiveEntries, ...(prev || [])]);
+                  const pastOnly = history.filter(h => h.leaseEnd && h.leaseEnd !== "MTM" && h.leaseEnd < todayStr);
+                  if (pastOnly.length > 0) {
+                    const archiveEntries = pastOnly.map(h => ({
+                      id: uid(), name: h.name, email: h.email || "", phone: h.phone || "",
+                      roomName: rd.name, propName: prop.addr || pd.addr, propId: prop.id,
+                      rent: h.rent || 0, moveIn: h.moveIn || "", leaseEnd: h.leaseEnd || "",
+                      terminatedDate: h.leaseEnd || todayStr, reason: "Moved out",
+                      isArchived: false, archivedOn: todayStr,
+                    }));
+                    setArchive(prev => [...archiveEntries, ...(prev || [])]);
+                  }
                 }
                 addLog(`  ${rd.name}: ${current.name} (current tenant), ${history.length} past tenant${history.length>1?"s":""} saved to history (${history.map(h=>h.name).join(", ")})`);
 
