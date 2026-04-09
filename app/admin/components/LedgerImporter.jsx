@@ -807,18 +807,18 @@ export default function LedgerImporter({
               </div>
             ) : (<>
 
-            {/* Legend */}
-            <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#4b5563", marginBottom: 10 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 99, background: _ac, display: "inline-block" }} /> {matchStats.green} exact match</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 99, background: _gold, display: "inline-block" }} /> {matchStats.amber} close match</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 99, background: _red, display: "inline-block" }} /> {matchStats.red} no match</span>
-            </div>
-
-            {/* Stats bar */}
-            <div style={{ display: "flex", gap: 2, height: 6, borderRadius: 3, overflow: "hidden", marginBottom: 16 }}>
-              {matchStats.green > 0 && <div style={{ flex: matchStats.green, background: _ac, borderRadius: 3 }} />}
-              {matchStats.amber > 0 && <div style={{ flex: matchStats.amber, background: _gold, borderRadius: 3 }} />}
-              {matchStats.red > 0 && <div style={{ flex: matchStats.red, background: _red, borderRadius: 3 }} />}
+            {/* Legend + Stats bar — sticky */}
+            <div style={{ position: "sticky", top: -20, zIndex: 5, background: "#fff", paddingTop: 4, paddingBottom: 10, marginLeft: -24, marginRight: -24, paddingLeft: 24, paddingRight: 24 }}>
+              <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#4b5563", marginBottom: 8 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 99, background: _ac, display: "inline-block" }} /> {matchStats.green} exact match</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 99, background: _gold, display: "inline-block" }} /> {matchStats.amber} close match</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 99, background: _red, display: "inline-block" }} /> {matchStats.red} no match</span>
+              </div>
+              <div style={{ display: "flex", gap: 2, height: 6, borderRadius: 3, overflow: "hidden" }}>
+                {matchStats.green > 0 && <div style={{ flex: matchStats.green, background: _ac, borderRadius: 3 }} />}
+                {matchStats.amber > 0 && <div style={{ flex: matchStats.amber, background: _gold, borderRadius: 3 }} />}
+                {matchStats.red > 0 && <div style={{ flex: matchStats.red, background: _red, borderRadius: 3 }} />}
+              </div>
             </div>
 
             {/* One-time skip reassurance */}
