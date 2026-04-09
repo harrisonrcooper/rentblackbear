@@ -558,7 +558,7 @@ export default function SmartImporter({
   const [skipped, setSkipped] = useState([]);
   const [merges, setMerges] = useState([]);
   const [expanded, setExpanded] = useState({});
-  const [editing, setEditing] = useState(null);
+  const [editingSet, setEditingSet] = useState(new Set());
   const [dragOver, setDragOver] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressTotal, setProgressTotal] = useState(0);
@@ -693,18 +693,21 @@ export default function SmartImporter({
     setStructure(p => p.map((x, i) => {
       if (i !== pi) return x;
       const units = JSON.parse(JSON.stringify(x.units));
-      const tenant = units[fromUi].rooms[ri].tenants[ti];
-      // Remove from source
+      const tenant = { ...units[fromUi].rooms[ri].tenants[ti] };
+      const roomName = units[fromUi].rooms[ri].name;
+      // Remove tenant from source room
       units[fromUi].rooms[ri].tenants.splice(ti, 1);
-      // If room is now empty, remove it
-      if (units[fromUi].rooms[ri].tenants.length === 0) units[fromUi].rooms.splice(ri, 1);
-      // Add to target unit — find or create a room
-      const targetRoom = units[toUi].rooms.find(r => r.tenants.length === 0) || null;
-      if (targetRoom) {
-        targetRoom.tenants.push(tenant);
-      } else {
-        units[toUi].rooms.push({ _id: uid(), name: "Bedroom " + (units[toUi].rooms.length + 1), tenants: [tenant], warnings: [] });
+      // Keep the room even if empty (PM might want the room structure)
+      // Only remove if it was a single-tenant room and now truly empty
+      if (units[fromUi].rooms[ri].tenants.length === 0) {
+        // Mark as vacant instead of deleting
+        // Keep the room — PM can delete it manually if they want
       }
+      // Add to target unit — create a new room with the same name or next number
+      const newRoomName = units[toUi].rooms.some(r => r.name === roomName)
+        ? "Bedroom " + (units[toUi].rooms.length + 1)
+        : roomName;
+      units[toUi].rooms.push({ _id: uid(), name: newRoomName, tenants: [tenant], warnings: [] });
       return { ...x, units };
     }));
   };
@@ -1183,7 +1186,7 @@ export default function SmartImporter({
                         <div key={ui} style={{ marginTop: 10 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                             <input value={unit.name} onChange={e => uUnit(pi, ui, "name", e.target.value)} onClick={e => e.stopPropagation()} style={{ fontSize: 12, fontWeight: 700, color: "#5c4a3a", border: "none", borderBottom: "1px dashed rgba(0,0,0,.15)", background: "transparent", padding: "2px 4px", width: 100, fontFamily: "inherit" }} />
-                            <span style={{ fontSize: 10, color: "#9ca3af" }}>{unit.rooms.length} room{unit.rooms.length !== 1 ? "s" : ""}</span>
+                            <span style={{ fontSize: 11, color: "#5c4a3a" }}>{unit.rooms.length} room{unit.rooms.length !== 1 ? "s" : ""}</span>
                             {/* Room naming convention */}
                             <select onChange={e => { if (e.target.value) applyRoomNaming(pi, ui, e.target.value); e.target.value = ""; }} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
                               <option value="">Rename rooms...</option>
@@ -1222,7 +1225,7 @@ export default function SmartImporter({
                                 <div key={ti} style={{ padding: "7px 12px", opacity: t.excluded ? 0.35 : 1, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                   {ti === 0 ? <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                                     <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", border: "none", borderBottom: "1px dashed rgba(0,0,0,.1)", background: "transparent", padding: "1px 4px", width: 90, fontFamily: "inherit" }} />
-                                    <select value="" onChange={e => { if (e.target.value) uRoom(pi, ui, ri, "name", e.target.value); }} style={{ fontSize: 8, padding: "1px 2px", border: "1px solid rgba(0,0,0,.06)", borderRadius: 3, color: "#9ca3af", width: 16, minHeight: 20, cursor: "pointer", appearance: "none", textAlign: "center" }} title="Quick rename">
+                                    <select value="" onChange={e => { if (e.target.value) uRoom(pi, ui, ri, "name", e.target.value); }} style={{ fontSize: 9, padding: "2px 3px", border: "1px solid rgba(0,0,0,.1)", borderRadius: 3, color: "#5c4a3a", width: 16, minHeight: 20, cursor: "pointer", appearance: "none", textAlign: "center" }} title="Quick rename">
                                       <option value="">...</option>
                                       <option value="Master">Master</option>
                                       <option value="Primary Suite">Primary Suite</option>
@@ -1237,7 +1240,7 @@ export default function SmartImporter({
                                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                                     <span style={{ fontSize: 11, color: "#5c4a3a" }}>$</span>
                                     <input type="number" value={t.rent || ""} onChange={e => uTen(pi, ui, ri, ti, "rent", e.target.value)} style={{ fontSize: 12, fontWeight: 700, color: t.rent ? "#1a1714" : "#c45c4a", border: "none", borderBottom: "1px dashed rgba(0,0,0,.1)", background: "transparent", padding: "1px 4px", width: 55, fontFamily: "inherit", textAlign: "right" }} placeholder="0" />
-                                    <span style={{ fontSize: 9, color: "#9ca3af" }}>/mo</span>
+                                    <span style={{ fontSize: 10, color: "#5c4a3a" }}>/mo</span>
                                   </div>
                                   {ti === 0 && room.warnings.map((w, wi) => (
                                     <span key={wi} onClick={e => { e.stopPropagation(); setConfirmModal({ title: "Needs Review", body: w.msg, onConfirm: null }); }} style={{ fontSize: 9, fontWeight: 700, color: "#b8860b", background: "rgba(184,134,11,.08)", padding: "3px 8px", borderRadius: 100, cursor: "pointer", display: "flex", alignItems: "center", gap: 3 }}>
@@ -1245,7 +1248,7 @@ export default function SmartImporter({
                                     </span>
                                   ))}
                                   {t.sdAutoFilled && <span style={{ fontSize: 9, color: "#7a7067" }}>SD={fmtMoney(t.sd)}</span>}
-                                  <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, color: "#9ca3af", cursor: "pointer", minHeight: 32 }}>
+                                  <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: "#5c4a3a", cursor: "pointer", minHeight: 32, fontWeight: 600 }}>
                                     <input type="checkbox" checked={!!t.excluded} onChange={() => toggleSkip(pi, ui, ri, ti)} /> Skip
                                   </label>
                                   {/* Private bath */}
@@ -1262,12 +1265,12 @@ export default function SmartImporter({
                                   )}
                                   {/* Delete room */}
                                   {ti === 0 && <button onClick={() => delRoom(pi, ui, ri)} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", fontSize: 9, padding: "2px", minHeight: 24, minWidth: 24, display: "flex", alignItems: "center", justifyContent: "center" }} title="Delete room"><IX /></button>}
-                                  {ti === 0 && <button onClick={() => setEditing(editing === `${pi}-${ui}-${ri}` ? null : `${pi}-${ui}-${ri}`)} style={{ ...btn, fontSize: 10, padding: "3px 10px", minHeight: 28 }}>{editing === `${pi}-${ui}-${ri}` ? "Close" : "Edit"}</button>}
+                                  {ti === 0 && <button onClick={() => setEditingSet(prev => { const next = new Set(prev); const key = `${pi}-${ui}-${ri}`; if (next.has(key)) next.delete(key); else next.add(key); return next; })} style={{ ...btn, fontSize: 10, padding: "3px 10px", minHeight: 28, marginLeft: "auto" }}>{editingSet.has(`${pi}-${ui}-${ri}`) ? "Close" : "Edit"}</button>}
                                 </div>
                               ))}
 
                               {/* Inline edit */}
-                              {editing === `${pi}-${ui}-${ri}` && room.tenants.filter(t => !t.excluded).map((t, ti) => (
+                              {editingSet.has(`${pi}-${ui}-${ri}`) && room.tenants.filter(t => !t.excluded).map((t, ti) => (
                                 <div key={`e${ti}`} style={{ margin: "4px 12px 8px", padding: 12, background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
                                   {room.tenants.length > 1 && <div style={{ fontSize: 11, fontWeight: 700, color: "#5c4a3a", marginBottom: 6 }}>{t.name}</div>}
                                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
@@ -1291,7 +1294,7 @@ export default function SmartImporter({
 
                               {/* No tenants (vacant room) */}
                               {room.tenants.length === 0 && (
-                                <div style={{ padding: "8px 12px", fontSize: 11, color: "#9ca3af", fontStyle: "italic" }}>
+                                <div style={{ padding: "8px 12px", fontSize: 11, color: "#7a7067", fontStyle: "italic" }}>
                                   <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 11, color: "#5c4a3a", border: "none", borderBottom: "1px dashed rgba(0,0,0,.1)", background: "transparent", padding: "1px 4px", width: 100, fontFamily: "inherit" }} /> — vacant
                                 </div>
                               )}
@@ -1299,13 +1302,13 @@ export default function SmartImporter({
                           ))}
 
                           {/* Add vacant room */}
-                          <button onClick={() => addRoom(pi, ui)} style={{ marginLeft: 20, marginTop: 4, background: "none", border: "1px dashed rgba(0,0,0,.1)", borderRadius: 6, padding: "4px 12px", fontSize: 10, color: "#7a7067", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 32 }}>
+                          <button onClick={() => addRoom(pi, ui)} style={{ marginLeft: 20, marginTop: 4, background: "none", border: "1px dashed rgba(0,0,0,.1)", borderRadius: 6, padding: "4px 12px", fontSize: 11, color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 32, fontWeight: 600 }}>
                             <IPlus /> Add vacant room
                           </button>
                         </div>
                       ))}
                       {/* Add unit */}
-                      <button onClick={() => addUnit(pi)} style={{ marginTop: 8, background: "none", border: "1px dashed rgba(0,0,0,.1)", borderRadius: 6, padding: "4px 12px", fontSize: 10, color: "#7a7067", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 32 }}>
+                      <button onClick={() => addUnit(pi)} style={{ marginTop: 8, background: "none", border: "1px dashed rgba(0,0,0,.1)", borderRadius: 6, padding: "4px 12px", fontSize: 11, color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 32, fontWeight: 600 }}>
                         <IPlus /> Add unit
                       </button>
                     </div>
