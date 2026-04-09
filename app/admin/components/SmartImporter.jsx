@@ -569,6 +569,8 @@ export default function SmartImporter({
   const [bulkApplied, setBulkApplied] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { title, body, onConfirm, danger }
   const [confirmShake, setConfirmShake] = useState(false);
+  const [modalShake, setModalShake] = useState(false);
+  const [importShake, setImportShake] = useState(false);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [importConfirmText, setImportConfirmText] = useState("");
 
@@ -576,6 +578,7 @@ export default function SmartImporter({
 
   const handleClose = useCallback(() => {
     if (dirty && step < 2) {
+      setModalShake(true);
       setConfirmModal({ title: "Leave without saving?", body: "You have unsaved import data. Your progress will be lost.", onConfirm: onClose, danger: true, confirmLabel: "Leave" });
       return;
     }
@@ -954,7 +957,7 @@ export default function SmartImporter({
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }} onClick={handleClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 880, maxHeight: "93vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,.3)" }}>
+      <div onClick={e => e.stopPropagation()} onAnimationEnd={() => setModalShake(false)} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 880, maxHeight: "93vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,.3)", animation: modalShake ? "shake .4s ease-in-out" : "none" }}>
 
         {/* Header */}
         <div style={{ padding: "18px 24px 14px", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
@@ -1636,8 +1639,8 @@ export default function SmartImporter({
 
       {/* ── Import Confirmation Modal (type IMPORT) ── */}
       {showImportConfirm && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setShowImportConfirm(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 14, maxWidth: 480, width: "100%", padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => { if (importConfirmText !== "IMPORT") { setImportShake(true); } else { setShowImportConfirm(false); } }}>
+          <div onClick={e => e.stopPropagation()} onAnimationEnd={() => setImportShake(false)} style={{ background: "#fff", borderRadius: 14, maxWidth: 480, width: "100%", padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,.25)", animation: importShake ? "shake .4s ease-in-out" : "none" }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: "#1a1714", marginBottom: 12 }}>Confirm Import</div>
             <div style={{ fontSize: 13, color: "#5c4a3a", lineHeight: 1.7, marginBottom: 16 }}>
               This will create the following in your account:
@@ -1696,9 +1699,9 @@ export default function SmartImporter({
               )}
             </div>
           </div>
-          <style>{`@keyframes shake { 0%,100%{transform:translateX(0)} 15%{transform:translateX(-8px)} 30%{transform:translateX(7px)} 45%{transform:translateX(-6px)} 60%{transform:translateX(4px)} 75%{transform:translateX(-2px)} }`}</style>
         </div>
       )}
+      <style>{`@keyframes shake { 0%,100%{transform:translateX(0)} 15%{transform:translateX(-8px)} 30%{transform:translateX(7px)} 45%{transform:translateX(-6px)} 60%{transform:translateX(4px)} 75%{transform:translateX(-2px)} }`}</style>
     </div>
   );
 }
