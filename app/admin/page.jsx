@@ -1769,7 +1769,7 @@ export default function Page(){
       </>}
 
       {/* ═══ PROPERTIES ═══ */}
-      {tab==="properties"&&<PropertiesList settings={settings} properties={props} setProperties={setProps} payments={payments} leaseableItems={leaseableItems} expanded={expanded} setExpanded={setExpanded} editProp={editProp} setEditProp={setEditProp} setIsNewProp={setIsNewProp} setTab={setTab} setModal={setModal} setBulkSel={setBulkSel} fmtS={fmtS} fmtD={fmtD} PROP_TYPES={PROP_TYPES} getPropDisplayName={getPropDisplayName} TODAY={TODAY} MO={MO} save={save} />}
+      {tab==="properties"&&<PropertiesList settings={settings} properties={props} setProperties={setProps} payments={payments} leaseableItems={leaseableItems} expanded={expanded} setExpanded={setExpanded} editProp={editProp} setEditProp={setEditProp} setIsNewProp={setIsNewProp} setTab={setTab} setModal={setModal} setBulkSel={setBulkSel} fmtS={fmtS} fmtD={fmtD} PROP_TYPES={PROP_TYPES} getPropDisplayName={getPropDisplayName} TODAY={TODAY} MO={MO} save={save} charges={charges} showConfirm={showConfirm} onDeleteProp={id=>{setProps(prev=>{const next=prev.filter(x=>x.id!==id);save("hq-props",next);return next;});setEditProp(null);}} />}
 
       {/* ═══ PM SETTINGS ═══ */}
       {tab==="pm-settings"&&<PMSettings settings={settings} setSettings={setSettings} save={save} expanded={expanded} setExpanded={setExpanded} DEF_SETTINGS={DEF_SETTINGS} SigCanvas={SigCanvas} />}

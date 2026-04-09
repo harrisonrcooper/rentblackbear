@@ -35,7 +35,7 @@ export default function PropertiesList({
   settings, properties, setProperties, payments, leaseableItems,
   expanded, setExpanded, editProp, setEditProp, setIsNewProp,
   setTab, setModal, setBulkSel, fmtS, fmtD, PROP_TYPES, getPropDisplayName, TODAY, MO,
-  save,
+  save, charges, showConfirm, onDeleteProp,
 }) {
   const [dragPropIdx, setDragPropIdx] = useState(null);
   const [dragOverPropIdx, setDragOverPropIdx] = useState(null);
@@ -112,6 +112,9 @@ export default function PropertiesList({
               <button className="btn btn-out btn-sm" onClick={e => { e.stopPropagation(); setIsNewProp(false); setEditProp(p); }} style={{ display: "flex", alignItems: "center", gap: 3 }}>
                 <IconEdit /> Edit
               </button>
+              {onDeleteProp && <button className="btn btn-out btn-sm" onClick={e => { e.stopPropagation(); const occ = allRooms(p).filter(r=>r.st==="occupied").length; const linked = (charges||[]).filter(c=>c.propName===(p.addr||p.name)).length; if(occ>0){if(showConfirm)showConfirm({title:"Cannot Delete",body:(p.addr||p.name)+" has "+occ+" occupied room"+(occ!==1?"s":"")+". Remove all tenants first.",onConfirm:null});return;} if(showConfirm)showConfirm({title:"Delete "+(p.addr||p.name)+"?",body:"This is permanent."+(linked?" "+linked+" charge record"+(linked!==1?"s":"")+" reference this property.":""),confirmLabel:"Delete Property",danger:true,onConfirm:()=>onDeleteProp(p.id)}); }} style={{ display: "flex", alignItems: "center", gap: 3, color: "#c45c4a" }}>
+                <IconX /> Delete
+              </button>}
             </div>
           </div>
 
