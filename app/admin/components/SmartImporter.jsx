@@ -576,7 +576,7 @@ export default function SmartImporter({
 
   const handleClose = useCallback(() => {
     if (dirty && step < 2) {
-      setConfirmModal({ title: "Leave without saving?", body: "You have unsaved import data. Your progress will be lost.", onConfirm: onClose, danger: true });
+      setConfirmModal({ title: "Leave without saving?", body: "You have unsaved import data. Your progress will be lost.", onConfirm: onClose, danger: true, confirmLabel: "Leave" });
       return;
     }
     onClose();
@@ -1688,7 +1688,7 @@ export default function SmartImporter({
               {confirmModal.onConfirm && (
                 <button onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}
                   style={{ ...btn, background: confirmModal.danger ? "#c45c4a" : _ac, color: "#fff", border: "none" }}>
-                  {confirmModal.danger ? "Leave" : "Continue"}
+                  {confirmModal.confirmLabel || (confirmModal.danger ? "Delete" : "Continue")}
                 </button>
               )}
               {!confirmModal.onConfirm && (
