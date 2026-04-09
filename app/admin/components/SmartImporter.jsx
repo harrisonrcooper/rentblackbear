@@ -522,6 +522,16 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
       if (!moveIn) moveIn = start;
       if (!leaseEnd) leaseEnd = end;
     }
+    // Try extracting dates from notes if move-in/lease-end are empty
+    if ((!moveIn || !leaseEnd) && g("notes")) {
+      const notes = String(g("notes"));
+      // Match patterns like "moves in Jan 15, 2026" or "lease ends 03/01/2027" or "start: 2026-01-15"
+      const datePatterns = notes.match(/(\d{1,2}[/\-]\d{1,2}[/\-]\d{4}|\d{4}-\d{2}-\d{2}|[A-Z][a-z]+ \d{1,2},?\s+\d{4})/g);
+      if (datePatterns && datePatterns.length >= 1) {
+        if (!moveIn) moveIn = datePatterns[0];
+        if (!leaseEnd && datePatterns.length >= 2) leaseEnd = datePatterns[1];
+      }
+    }
     // Normalize date formats
     moveIn = normalizeDate(moveIn);
     leaseEnd = normalizeDate(leaseEnd);
@@ -1596,7 +1606,7 @@ export default function SmartImporter({
                                       <IW /> {w.type === "no-rent" ? "No rent" : w.type === "past-lease" ? "Expired" : w.type === "co-living" ? "Co-living" : w.type === "transition" ? "Transition" : w.type === "occupied" ? "Occupied" : w.type === "duplicate" ? "Duplicate" : "Review"}
                                     </span>
                                   ))}
-                                  {t.sdAutoFilled && <span style={{ fontSize: 9, color: "#5c4a3a" }}>SD={fmtMoney(t.sd)}</span>}
+                                  {t.sdAutoFilled && <span style={{ fontSize: 9, fontWeight: 600, color: "#b8860b", background: "rgba(184,134,11,.08)", padding: "2px 6px", borderRadius: 100 }} title="Security deposit auto-set to match rent. Edit to change.">SD={fmtMoney(t.sd)} (auto)</span>}
                                   {/* Right-aligned: Skip + Delete + Edit */}
                                   <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                                     <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: "#5c4a3a", cursor: "pointer", minHeight: 28, fontWeight: 600 }}>
@@ -1719,7 +1729,7 @@ export default function SmartImporter({
             <div ref={logRef} style={{ background: "#1a1714", borderRadius: 10, padding: 16, maxHeight: 280, overflowY: "auto", fontSize: 12, lineHeight: 1.7, fontFamily: "inherit" }}>
               {importLog.map((e, i) => (
                 <div key={i} style={{ color: e.st === "err" ? "#ef4444" : "rgba(255,255,255,.7)", display: "flex", gap: 6 }}>
-                  <span style={{ flexShrink: 0, color: e.st === "err" ? "#ef4444" : "#a3e635" }}>{e.st === "ok" ? <IOk /> : <IX />}</span>
+                  <span style={{ flexShrink: 0, color: e.st === "err" ? "#c45c4a" : _ac }}>{e.st === "ok" ? <IOk /> : <IX />}</span>
                   <span>{e.msg}</span>
                 </div>
               ))}
