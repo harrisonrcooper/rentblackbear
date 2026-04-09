@@ -925,9 +925,12 @@ export default function SmartImporter({
         const updated = JSON.parse(JSON.stringify(prev));
         for (const pd of structure) {
           let prop;
-          if (pd.isExisting && pd.existingId) {
-            prop = updated.find(p => p.id === pd.existingId);
-            if (!prop) { addLog(`Property not found: ${pd.addr}`, "err"); err++; continue; }
+          // Always re-check against current props (catches re-import after first import)
+          const existingMatch = pd.isExisting && pd.existingId
+            ? updated.find(p => p.id === pd.existingId)
+            : updated.find(p => normAddr(p.addr || p.name) === normAddr(pd.addr));
+          if (existingMatch) {
+            prop = existingMatch;
             addLog(`Using existing: ${pd.addr}`);
           } else {
             prop = { id: uid(), name: "", addr: pd.addr, type: pd.type, sqft: 0, lat: 0, lng: 0, photos: [], units: [] };
@@ -996,7 +999,7 @@ export default function SmartImporter({
                   roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
                   ok++;
                 }
-                addLog(`  ${rd.name}: ${current.name} (current), ${history.length} archived`);
+                addLog(`  ${rd.name}: ${current.name} (current tenant), ${history.length} past tenant${history.length>1?"s":""} saved to history (${history.map(h=>h.name).join(", ")})`);
 
               } else {
                 // Separate rooms (default): each tenant gets own room
