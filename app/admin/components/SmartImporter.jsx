@@ -500,23 +500,23 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
           if (!t.rent) warnings.push({ type: "no-rent", msg: `No rent for ${t.name}` });
           if (t.leaseEnd && t.leaseEnd < todayStr) warnings.push({ type: "past-lease", msg: `Lease ended ${t.leaseEnd} for ${t.name}` });
         }
-        // Multiple tenants in same room: check if leases overlap or are sequential transitions
+        // Multiple tenants in same room: detect overlap vs sequential, auto-suggest mode
+        let multiMode = null;
         if (tenants.length > 1) {
-          // Sort by move-in date
           const sorted = [...tenants].filter(t => t.moveIn).sort((a, b) => (a.moveIn || "").localeCompare(b.moveIn || ""));
           let hasOverlap = false;
           for (let ti = 0; ti < sorted.length - 1; ti++) {
             const curEnd = sorted[ti].leaseEnd;
             const nextStart = sorted[ti + 1].moveIn;
-            // If current has no end date or end is after next start, it's an overlap
             if (curEnd && nextStart && curEnd !== "MTM" && curEnd > nextStart) { hasOverlap = true; break; }
-            // If neither has dates, we can't tell — assume transition
             if (!curEnd && !nextStart) { hasOverlap = true; break; }
           }
           if (hasOverlap) {
-            warnings.push({ type: "co-living", msg: `${tenants.length} tenants in ${rn} with overlapping leases — co-living?` });
+            warnings.push({ type: "co-living", msg: `${tenants.length} tenants in ${rn} with overlapping leases` });
+            multiMode = "co-tenant";
           } else {
-            warnings.push({ type: "transition", msg: `${tenants.length} tenants in ${rn} — lease transition (sequential dates). All will be imported as separate rooms.` });
+            warnings.push({ type: "transition", msg: `${tenants.length} tenants in ${rn} with sequential leases` });
+            multiMode = "sequential";
           }
         }
         if (existing) {
@@ -525,7 +525,7 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
             if (er?.tenant?.name && er.st === "occupied") warnings.push({ type: "occupied", msg: `${rn} occupied by ${er.tenant.name}` });
           }
         }
-        unit.rooms.push({ _id: uid(), name: rn, tenants, warnings });
+        unit.rooms.push({ _id: uid(), name: rn, tenants, warnings, multiMode });
       }
       prop.units.push(unit);
     });
@@ -687,6 +687,12 @@ export default function SmartImporter({
   // Delete a room
   const delRoom = (pi, ui, ri) => { setDirty(true); setStructure(p => p.map((x, i) => i === pi ? { ...x, units: x.units.map((u, j) => j === ui ? { ...u, rooms: u.rooms.filter((_, k) => k !== ri) } : u) } : x)); };
 
+  // Set multi-tenant mode for a room (co-tenant, sequential, separate) — toggle off if same mode clicked
+  const setRoomMode = (pi, ui, ri, mode) => {
+    setDirty(true);
+    setStructure(p => p.map((x, i) => i === pi ? { ...x, units: x.units.map((u, j) => j === ui ? { ...u, rooms: u.rooms.map((r, k) => k === ri ? { ...r, multiMode: r.multiMode === mode ? null : mode } : r) } : u) } : x));
+  };
+
   // Move a tenant to a different unit within the same property
   const moveTenantToUnit = (pi, fromUi, ri, ti, toUi) => {
     setDirty(true);
@@ -799,27 +805,77 @@ export default function SmartImporter({
             for (const rd of ud.rooms) {
               const active = rd.tenants.filter(t => !t.excluded);
               if (!active.length && rd.tenants.length === 0) {
-                // Vacant room added by user
                 const room = { id: uid(), name: rd.name, rent: 0, sqft: 0, pb: false, st: "vacant", le: "", tenant: null, desc: "", photos: [] };
                 unit.rooms.push(room); rC++;
                 addLog(`  Vacant room: ${rd.name}`);
                 continue;
               }
-              for (let ti = 0; ti < active.length; ti++) {
-                const t = active[ti];
-                const rent = Number(t.rent) || 0;
-                const sd = parseRent(t.sd) || rent;
-                let room = ti === 0 ? unit.rooms.find(r => r.name.toLowerCase() === rd.name.toLowerCase()) : null;
-                const roomName = ti === 0 ? rd.name : `${rd.name} (${t.name})`;
+
+              const mode = rd.multiMode || (active.length > 1 ? "separate" : null);
+              const mkTenant = t => ({ name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, gender: t.gender, occupationType: t.occupationType, doorCode: t.doorCode, notes: t.notes });
+
+              if (mode === "co-tenant" && active.length > 1) {
+                // Co-tenants: all share one room
+                const primary = active[0];
+                const rent = Number(primary.rent) || 0;
+                const coTenants = active.slice(1).map(t => ({ ...mkTenant(t), rent: Number(t.rent) || 0, leaseEnd: t.leaseEnd }));
+                let room = unit.rooms.find(r => r.name.toLowerCase() === rd.name.toLowerCase());
                 if (!room) {
-                  room = { id: uid(), name: roomName, rent, sqft: 0, pb: false, st: "occupied", le: t.leaseEnd || "", tenant: { name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, gender: t.gender, occupationType: t.occupationType, doorCode: t.doorCode, notes: t.notes }, desc: "", photos: [] };
+                  room = { id: uid(), name: rd.name, rent, sqft: 0, pb: false, st: "occupied", le: primary.leaseEnd || "", tenant: mkTenant(primary), coTenants, desc: "", photos: [] };
                   unit.rooms.push(room); rC++;
                 } else {
-                  room.rent = rent || room.rent; room.le = t.leaseEnd || room.le; room.st = "occupied";
-                  room.tenant = { name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, gender: t.gender, occupationType: t.occupationType, doorCode: t.doorCode, notes: t.notes };
+                  room.rent = rent || room.rent; room.le = primary.leaseEnd || room.le; room.st = "occupied";
+                  room.tenant = mkTenant(primary); room.coTenants = coTenants;
                 }
-                roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, addr: prop.addr || pd.addr, name: room.name, rent, sd };
-                ok++; tick();
+                for (let ti = 0; ti < active.length; ti++) {
+                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
+                  ok++; tick();
+                }
+                addLog(`  ${rd.name}: ${active.length} co-tenants (${active.map(t => t.name).join(", ")})`);
+
+              } else if (mode === "sequential" && active.length > 1) {
+                // Sequential: current tenant active, others archived
+                const sorted = [...active].sort((a, b) => (a.moveIn || "").localeCompare(b.moveIn || ""));
+                let currentIdx = sorted.length - 1;
+                for (let si = 0; si < sorted.length; si++) {
+                  const t = sorted[si];
+                  if (t.moveIn && t.moveIn <= todayStr && (!t.leaseEnd || t.leaseEnd === "MTM" || t.leaseEnd >= todayStr)) { currentIdx = si; break; }
+                }
+                const current = sorted[currentIdx];
+                const history = sorted.filter((_, si) => si !== currentIdx).map(t => ({ ...mkTenant(t), rent: Number(t.rent) || 0, leaseEnd: t.leaseEnd }));
+                const rent = Number(current.rent) || 0;
+                let room = unit.rooms.find(r => r.name.toLowerCase() === rd.name.toLowerCase());
+                if (!room) {
+                  room = { id: uid(), name: rd.name, rent, sqft: 0, pb: false, st: "occupied", le: current.leaseEnd || "", tenant: mkTenant(current), tenantHistory: history, desc: "", photos: [] };
+                  unit.rooms.push(room); rC++;
+                } else {
+                  room.rent = rent || room.rent; room.le = current.leaseEnd || room.le; room.st = "occupied";
+                  room.tenant = mkTenant(current); room.tenantHistory = history;
+                }
+                for (let ti = 0; ti < active.length; ti++) {
+                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
+                  ok++; tick();
+                }
+                addLog(`  ${rd.name}: ${current.name} (current), ${history.length} archived`);
+
+              } else {
+                // Separate rooms (default): each tenant gets own room
+                for (let ti = 0; ti < active.length; ti++) {
+                  const t = active[ti];
+                  const rent = Number(t.rent) || 0;
+                  const sd = parseRent(t.sd) || rent;
+                  let room = ti === 0 ? unit.rooms.find(r => r.name.toLowerCase() === rd.name.toLowerCase()) : null;
+                  const roomName = ti === 0 ? rd.name : `${rd.name} (${t.name})`;
+                  if (!room) {
+                    room = { id: uid(), name: roomName, rent, sqft: 0, pb: false, st: "occupied", le: t.leaseEnd || "", tenant: mkTenant(t), desc: "", photos: [] };
+                    unit.rooms.push(room); rC++;
+                  } else {
+                    room.rent = rent || room.rent; room.le = t.leaseEnd || room.le; room.st = "occupied";
+                    room.tenant = mkTenant(t);
+                  }
+                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, addr: prop.addr || pd.addr, name: room.name, rent, sd };
+                  ok++; tick();
+                }
               }
             }
           }
@@ -1211,12 +1267,21 @@ export default function SmartImporter({
 
                           {unit.rooms.map((room, ri) => (
                             <div key={ri} style={{ marginLeft: 20, borderLeft: room.tenants.length > 1 ? `2px solid rgba(212,168,83,.4)` : `2px solid rgba(0,0,0,.05)`, marginBottom: 3 }}>
-                              {/* Multi-tenant indicator */}
+                              {/* Multi-tenant mode selector */}
                               {room.tenants.length > 1 && (
-                                <div style={{ padding: "6px 12px", fontSize: 11, color: "#5c4a3a", background: "rgba(212,168,83,.06)", borderBottom: "1px solid rgba(212,168,83,.15)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                  <IW />
-                                  <strong style={{ color: "#1a1714" }}>{room.tenants.length} tenants assigned to {room.name}</strong>
-                                  <span style={{ fontSize: 11, color: "#5c4a3a" }}>— Is one replacing the other, or do they share the room? Use Skip or Move to fix.</span>
+                                <div style={{ padding: "8px 12px", fontSize: 11, color: "#5c4a3a", background: "rgba(212,168,83,.06)", borderBottom: "1px solid rgba(212,168,83,.15)" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                                    <IW />
+                                    <strong style={{ color: "#1a1714" }}>{room.tenants.length} tenants in {room.name}</strong>
+                                  </div>
+                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                                    {[["co-tenant", "Co-tenants (share room)"], ["sequential", "Sequential (one after other)"], ["separate", "Separate rooms"]].map(([mode, label]) => (
+                                      <button key={mode} onClick={() => setRoomMode(pi, ui, ri, mode)} style={{ ...btn, fontSize: 10, padding: "4px 12px", minHeight: 32, background: room.multiMode === mode ? _ac : "#fff", color: room.multiMode === mode ? "#fff" : "#1a1714", borderColor: room.multiMode === mode ? _ac : "rgba(0,0,0,.1)" }}>{label}</button>
+                                    ))}
+                                    <span style={{ fontSize: 10, color: "#7a7067", marginLeft: 4 }}>
+                                      {room.multiMode === "co-tenant" ? "Both imported to same room as co-tenants" : room.multiMode === "sequential" ? "Current tenant active, past tenants archived" : room.multiMode === "separate" ? "Each tenant gets their own room" : "Choose how to handle"}
+                                    </span>
+                                  </div>
                                 </div>
                               )}
                               {room.tenants.map((t, ti) => (
@@ -1234,7 +1299,7 @@ export default function SmartImporter({
                                   </div>
                                     : <span style={{ width: 100, fontSize: 10, color: "#7a7067" }}>(shared room)</span>}
                                   <span style={{ fontSize: 12, color: "#5c4a3a" }}>—</span>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", flex: 1 }}>{t.name}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", flex: 1, display: "flex", alignItems: "center", gap: 6 }}>{t.name}{room.multiMode === "sequential" && room.tenants.length > 1 && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: (t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "rgba(0,0,0,.05)" : `rgba(${_acR},.1)`, color: (t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "#7a7067" : _ac }}>{(t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "PAST" : (t.moveIn && t.moveIn > todayStr) ? "UPCOMING" : "CURRENT"}</span>}{room.multiMode === "co-tenant" && room.tenants.length > 1 && ti > 0 && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: `rgba(${_acR},.1)`, color: _ac }}>CO-TENANT</span>}</span>
                                   {t.email && <span style={{ fontSize: 10, color: "#7a7067" }}>{t.email}</span>}
                                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                                     <span style={{ fontSize: 11, color: "#5c4a3a" }}>$</span>
