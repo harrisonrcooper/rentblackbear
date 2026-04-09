@@ -961,6 +961,8 @@ export default function SmartImporter({
 
               const mode = rd.multiMode || (active.length > 1 ? "separate" : null);
               const mkTenant = t => ({ name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, gender: t.gender, occupationType: t.occupationType, doorCode: t.doorCode, notes: t.notes, coSigner: t.coSigner || null });
+              const isM2M = le => !le || le === "MTM";
+              const roomLe = le => isM2M(le) ? "" : le;
 
               if (mode === "co-tenant" && active.length > 1) {
                 // Co-tenants: all share one room
@@ -969,10 +971,10 @@ export default function SmartImporter({
                 const coTenants = active.slice(1).map(t => ({ ...mkTenant(t), rent: Number(t.rent) || 0, leaseEnd: t.leaseEnd }));
                 let room = unit.rooms.find(r => r.name.toLowerCase() === rd.name.toLowerCase());
                 if (!room) {
-                  room = { id: uid(), name: rd.name, rent, sqft: 0, pb: false, st: "occupied", le: primary.leaseEnd || "", tenant: mkTenant(primary), coTenants, desc: "", photos: [] };
+                  room = { id: uid(), name: rd.name, rent, sqft: 0, pb: false, st: "occupied", le: roomLe(primary.leaseEnd), m2m: isM2M(primary.leaseEnd), tenant: mkTenant(primary), coTenants, desc: "", photos: [] };
                   unit.rooms.push(room); rC++;
                 } else {
-                  room.rent = rent || room.rent; room.le = primary.leaseEnd || room.le; room.st = "occupied";
+                  room.rent = rent || room.rent; room.le = roomLe(primary.leaseEnd); room.m2m = isM2M(primary.leaseEnd); room.st = "occupied";
                   room.tenant = mkTenant(primary); room.coTenants = coTenants;
                 }
                 for (let ti = 0; ti < active.length; ti++) {
@@ -999,10 +1001,10 @@ export default function SmartImporter({
                 const rent = Number(current.rent) || 0;
                 let room = unit.rooms.find(r => r.name.toLowerCase() === rd.name.toLowerCase());
                 if (!room) {
-                  room = { id: uid(), name: rd.name, rent, sqft: 0, pb: false, st: "occupied", le: current.leaseEnd || "", tenant: mkTenant(current), tenantHistory: history, desc: "", photos: [] };
+                  room = { id: uid(), name: rd.name, rent, sqft: 0, pb: false, st: "occupied", le: roomLe(current.leaseEnd), m2m: isM2M(current.leaseEnd), tenant: mkTenant(current), tenantHistory: history, desc: "", photos: [] };
                   unit.rooms.push(room); rC++;
                 } else {
-                  room.rent = rent || room.rent; room.le = current.leaseEnd || room.le; room.st = "occupied";
+                  room.rent = rent || room.rent; room.le = roomLe(current.leaseEnd); room.m2m = isM2M(current.leaseEnd); room.st = "occupied";
                   room.tenant = mkTenant(current); room.tenantHistory = history;
                 }
                 // Store incoming future tenant on the room
@@ -1038,10 +1040,10 @@ export default function SmartImporter({
                   let room = ti === 0 ? unit.rooms.find(r => r.name.toLowerCase() === rd.name.toLowerCase()) : null;
                   const roomName = ti === 0 ? rd.name : `${rd.name} (${t.name})`;
                   if (!room) {
-                    room = { id: uid(), name: roomName, rent, sqft: 0, pb: false, st: "occupied", le: t.leaseEnd || "", tenant: mkTenant(t), desc: "", photos: [] };
+                    room = { id: uid(), name: roomName, rent, sqft: 0, pb: false, st: "occupied", le: roomLe(t.leaseEnd), m2m: isM2M(t.leaseEnd), tenant: mkTenant(t), desc: "", photos: [] };
                     unit.rooms.push(room); rC++;
                   } else {
-                    room.rent = rent || room.rent; room.le = t.leaseEnd || room.le; room.st = "occupied";
+                    room.rent = rent || room.rent; room.le = roomLe(t.leaseEnd); room.m2m = isM2M(t.leaseEnd); room.st = "occupied";
                     room.tenant = mkTenant(t);
                   }
                   roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent, sd };
