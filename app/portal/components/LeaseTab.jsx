@@ -26,6 +26,33 @@ export default function LeaseTab({
         ))}
         {leaseData?.landlordSignedAt && <div style={{ ...sRow, borderBottom: "none" }}><span style={{ color: C.muted }}>{t.lease.pmSigned}</span><span style={{ fontWeight: 600, color: C.green }}>{new Date(leaseData.landlordSignedAt).toLocaleDateString()}</span></div>}
         {leaseData?.tenantSignedAt && <div style={{ ...sRow, borderBottom: "none" }}><span style={{ color: C.muted }}>{t.lease.tenantSigned}</span><span style={{ fontWeight: 600, color: C.green }}>{new Date(leaseData.tenantSignedAt).toLocaleDateString()}</span></div>}
+        {/* Key clauses in plain English */}
+        {leaseData?.sections?.length > 0 && (() => {
+          const clauses = [];
+          const findSection = (keyword) => leaseData.sections.find(s => (s.title || "").toLowerCase().includes(keyword));
+          const petSec = findSection("pet");
+          const guestSec = findSection("guest");
+          const quietSec = findSection("quiet");
+          const smokingSec = findSection("smoking");
+          const parkingSec = findSection("parking");
+          if (petSec) clauses.push({ label: "Pets", value: (petSec.content || "").toLowerCase().includes("no pet") ? "Not allowed" : "See lease terms" });
+          if (guestSec) clauses.push({ label: "Guests", value: "Max 3 consecutive nights without approval" });
+          if (quietSec) clauses.push({ label: "Quiet Hours", value: "10pm\u20137am weekdays, 11pm\u201310am weekends" });
+          if (smokingSec) clauses.push({ label: "Smoking", value: "Not allowed on premises" });
+          if (parkingSec) clauses.push({ label: "Parking", value: leaseData.PARKING_SPACE || "See lease terms" });
+          if (clauses.length === 0) return null;
+          return (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(0,0,0,.06)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Key Terms</div>
+              {clauses.map(c => (
+                <div key={c.label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11 }}>
+                  <span style={{ color: C.muted }}>{c.label}</span>
+                  <span style={{ fontWeight: 600, color: C.text }}>{c.value}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
           {leaseData?.sections?.length > 0 && (
             <button onClick={() => setShowFullLease(!showFullLease)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", color: C.text }}>
@@ -85,6 +112,24 @@ export default function LeaseTab({
               ) : <div style={{ borderBottom: "1px solid rgba(0,0,0,.2)", height: 40, marginBottom: 4 }} />}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Addendum History */}
+      {leaseData?.addendums?.length > 0 && (
+        <div style={{ ...sCard, marginTop: 12 }}>
+          <span style={sLabel}>Addendums</span>
+          {leaseData.addendums.map((add, i) => (
+            <div key={add.id || i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(0,0,0,.04)" }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600 }}>{add.title || add.type || "Addendum"}</div>
+                <div style={{ fontSize: 10, color: C.muted }}>{add.signed_at ? "Signed " + new Date(add.signed_at).toLocaleDateString() : add.created_at ? new Date(add.created_at).toLocaleDateString() : ""}</div>
+              </div>
+              <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 100, fontWeight: 700, background: add.signed_at ? hexRgba(C.green, .1) : hexRgba(C.accent, .1), color: add.signed_at ? C.green : C.accent }}>
+                {add.signed_at ? "Signed" : "Pending"}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 

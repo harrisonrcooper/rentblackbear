@@ -4627,9 +4627,8 @@ export default function Page(){
       />}
       {/* ═══ IDEA BOARD ═══ */}
       {tab==="ideas"&&<IdeasTab
-        ideas={ideas} setIdeas={setIdeas} ideaView={ideaView} setIdeaView={setIdeaView} ideaFilter={ideaFilter} setIdeaFilter={setIdeaFilter}
-        showNewCat={showNewCat} setShowNewCat={setShowNewCat} newCatInput={newCatInput} setNewCatInput={setNewCatInput}
-        expanded={expanded} setExpanded={setExpanded} setModal={setModal} uid={uid}
+        ideas={ideas} setIdeas={setIdeas} props={props} settings={settings} uid={uid} goTab={goTab}
+        setRocks={setRocks} setMaint={setMaint} setImprovements={setImprovements} showConfirm={showConfirm}
       />}
 
       {tab==="portal-ops"&&<PortalOpsTab settings={settings} properties={props} uid={uid} allTenants={allTenants} utilityBills={utilityBills} setUtilityBills={setUtilityBills} docRequests={docRequests} setDocRequests={setDocRequests} amenities={amenities} setAmenities={setAmenities} amenityBookings={amenityBookings} setAmenityBookings={setAmenityBookings} surveys={surveys} setSurveys={setSurveys} surveyResults={surveyResults} packages={packages} setPackages={setPackages} />}

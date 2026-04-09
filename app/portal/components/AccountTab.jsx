@@ -160,28 +160,10 @@ export default function AccountTab({
         </div>
       </div>
 
-      {packages.length > 0 && (
-        <div style={sCard}>
-          <span style={sLabel}>{t.packages?.title || "Packages"}</span>
-          {packages.map(pkg => (
-            <div key={pkg.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(0,0,0,.04)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={pkg.status === "pending" ? C.accent : C.green} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>{pkg.description || pkg.carrier}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>{pkg.carrier}{pkg.locker ? " \u2014 " + pkg.locker : ""} {"\u2014"} {fmtD(pkg.received_at?.split?.("T")?.[0])}</div>
-                </div>
-              </div>
-              <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 100, fontWeight: 700, background: pkg.status === "pending" ? hexRgba(C.accent, .12) : hexRgba(C.green, .12), color: pkg.status === "pending" ? C.accent : C.green }}>{pkg.status === "pending" ? (t.packages?.pending || "Ready") : (t.packages?.pickedUp || "Picked Up")}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
       <div style={sCard}>
-        <span style={sLabel}>{t.auditLog?.title || "Activity History"}</span>
+        <span style={sLabel}>Recent Activity</span>
         {fullAuditLog.length === 0 && <div style={{ fontSize: 12, color: "#999" }}>{t.auditLog?.noActivity || "No activity recorded yet."}</div>}
-        {(auditExpanded ? fullAuditLog : fullAuditLog.slice(0, 8)).map(entry => {
+        {(auditExpanded ? fullAuditLog : fullAuditLog.slice(0, 5)).map(entry => {
           const iconMap = { charge: "M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6", payment: "M20 6L9 17l-5-5", maintenance: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z", lease: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6", document: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6", guest: "M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", insurance: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" };
           const colorMap = { charge: C.accent, payment: C.green, maintenance: "#3b82f6", lease: C.accent, document: C.muted, guest: C.muted, insurance: C.green };
           return (
@@ -194,7 +176,7 @@ export default function AccountTab({
             </div>
           );
         })}
-        {fullAuditLog.length > 8 && !auditExpanded && <button onClick={() => setAuditExpanded(true)} style={{ width: "100%", marginTop: 8, padding: "8px", borderRadius: 6, border: "1.5px solid rgba(0,0,0,.08)", background: "transparent", cursor: "pointer", fontSize: 10, fontWeight: 600, color: C.accent }}>{t.auditLog?.viewAll || "View All"} ({fullAuditLog.length})</button>}
+        {fullAuditLog.length > 5 && !auditExpanded && <button onClick={() => setAuditExpanded(true)} style={{ width: "100%", marginTop: 8, padding: "8px", borderRadius: 6, border: "1.5px solid rgba(0,0,0,.08)", background: "transparent", cursor: "pointer", fontSize: 10, fontWeight: 600, color: C.accent }}>View All ({fullAuditLog.length})</button>}
       </div>
 
       <button onClick={() => { if (window.confirm("Are you sure you want to sign out?")) signOut(); }} style={{ width: "100%", padding: "13px", borderRadius: 12, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>

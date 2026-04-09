@@ -13,6 +13,29 @@ export default function MaintenanceTab({
       <div style={sCard}>
         <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 14 }}>{t.maintenance.submitRequest}</div>
         {maintSuccess && <div style={{ background: hexRgba(C.green, .08), border: `1px solid ${hexRgba(C.green, .2)}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.green, marginBottom: 14 }}>{t.maintenance.success}</div>}
+        {/* Common issues quick-select */}
+        {!maintForm.title && (
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: C.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Common Issues</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {[
+                { title: "AC not cooling", priority: "high", icon: "M8 16a4 4 0 1 1 8 0M12 4v4M4.93 7.93l2.83 2.83M2 16h4M17.24 10.76l2.83-2.83M18 16h4" },
+                { title: "Toilet running", priority: "medium", icon: "M3 13h18M3 17h18M5 9l2-6h10l2 6" },
+                { title: "Leaky faucet", priority: "medium", icon: "M12 2v6M6 8h12M5 22h14M12 14v4" },
+                { title: "Pest issue", priority: "high", icon: "M12 2a8 8 0 0 1 8 8c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 8-8z" },
+                { title: "Light bulb out", priority: "low", icon: "M9 18h6M10 22h4M12 2a7 7 0 0 1 4 12.9V18H8v-3.1A7 7 0 0 1 12 2z" },
+                { title: "Clogged drain", priority: "medium", icon: "M12 2v10M8 6l4 4 4-4M4 18h16M6 14l2 4M18 14l-2 4" },
+                { title: "Lock issue", priority: "high", icon: "M7 11V7a5 5 0 0 1 10 0v4M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z" },
+                { title: "Appliance broken", priority: "medium", icon: "M3 3h18v18H3zM3 9h18M9 3v6" },
+              ].map(issue => (
+                <button key={issue.title} onClick={() => setMaintForm(p => ({ ...p, title: issue.title, priority: issue.priority }))} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600, color: C.text, fontFamily: "inherit" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={issue.icon}/></svg>
+                  {issue.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.maintenance.whatIsIssue}</label><input value={maintForm.title} onChange={e => setMaintForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Leaky faucet in bathroom" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13 }} /></div>
         <div style={{ marginBottom: 12 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.maintenance.details}</label><textarea value={maintForm.desc} onChange={e => setMaintForm(p => ({ ...p, desc: e.target.value }))} placeholder="Describe the issue..." rows={3} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 13, resize: "vertical" }} /></div>
         <div style={{ marginBottom: 16 }}>

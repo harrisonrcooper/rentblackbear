@@ -14,6 +14,7 @@ export default function PaymentsTab({
   installmentForm, setInstallmentForm, createInstallmentPlan,
   cancelScheduledPayment,
   supabase,
+  utilities, utilityConfig, getUtilityShare,
 }) {
   return (
     <div style={{ animation: "fadeIn .2s" }}>
@@ -68,6 +69,14 @@ export default function PaymentsTab({
                 </div>
               );
             })}
+            {/* Late fee explainer */}
+            {(c.category === "Late Fee" || (c.description || "").toLowerCase().includes("late fee")) && (
+              <div style={{ background: hexRgba(C.red, .04), border: "1px solid " + hexRgba(C.red, .12), borderRadius: 8, padding: "8px 12px", marginTop: 8, fontSize: 10, color: C.muted, lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 700, color: C.red, marginBottom: 2 }}>How this was calculated</div>
+                {pmSettings?.lateFeeGraceDays ? "Rent was not paid within " + pmSettings.lateFeeGraceDays + " days of the due date. " : ""}
+                $50 initial late fee + $5/day for each additional day until paid.
+              </div>
+            )}
             {canPay && !stripeSecret && <button onClick={() => startPayment(c)} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 8 }}>{t.payments.payOnline} {fmt(c.amount - c.amount_paid)}</button>}
             {stripeSecret && payingCharge?.id === c.id && (
               <div style={{ marginTop: 16, borderTop: "1px solid rgba(0,0,0,.06)", paddingTop: 16 }}>
@@ -79,6 +88,61 @@ export default function PaymentsTab({
           </div>
         );
       })}
+
+      {/* Rent Ledger */}
+      {charges.filter(c => c.category === "Rent" || (c.description || "").toLowerCase().includes("rent")).length > 0 && (
+        <div style={{ ...sCard, marginTop: 16 }}>
+          <span style={sLabel}>Rent Ledger</span>
+          <div style={{ fontSize: 10, borderBottom: "1px solid rgba(0,0,0,.06)", display: "grid", gridTemplateColumns: "1fr 70px 70px 70px", gap: 0, padding: "6px 0" }}>
+            <div style={{ fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5 }}>Period</div>
+            <div style={{ fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, textAlign: "right" }}>Charged</div>
+            <div style={{ fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, textAlign: "right" }}>Paid</div>
+            <div style={{ fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: .5, textAlign: "right" }}>Balance</div>
+          </div>
+          {charges.filter(c => c.category === "Rent" || (c.description || "").toLowerCase().includes("rent")).map(c => {
+            const bal = c.amount - (c.amount_paid || 0);
+            return (
+              <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1fr 70px 70px 70px", gap: 0, padding: "6px 0", borderBottom: "1px solid rgba(0,0,0,.04)", fontSize: 11 }}>
+                <div style={{ fontWeight: 600 }}>{c.description || fmtD(c.due_date)}</div>
+                <div style={{ textAlign: "right" }}>{fmt(c.amount)}</div>
+                <div style={{ textAlign: "right", color: C.green }}>{fmt(c.amount_paid || 0)}</div>
+                <div style={{ textAlign: "right", fontWeight: 700, color: bal > 0 ? C.red : C.green }}>{bal > 0 ? fmt(bal) : fmt(0)}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Utility Cost Trend */}
+      {(utilities || []).length > 1 && getUtilityShare && (
+        <div style={{ ...sCard, marginTop: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={sLabel}>Your Utility Share</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: C.text }}>{fmt(getUtilityShare(utilities[0]).share)}<span style={{ fontSize: 10, fontWeight: 500, color: C.muted }}>/mo</span></span>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 50 }}>
+            {(() => {
+              const recent = utilities.slice(0, 6).reverse();
+              const maxShare = Math.max(...recent.map(u => getUtilityShare(u).share), 1);
+              return recent.map((u, i) => {
+                const share = getUtilityShare(u).share;
+                const h = (share / maxShare) * 40 + 4;
+                const isLast = i === recent.length - 1;
+                return (
+                  <div key={u.id || i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                    <div style={{ width: "100%", height: h, background: isLast ? C.accent : hexRgba(C.accent, .25), borderRadius: "3px 3px 0 0" }} title={u.billing_month + ": " + fmt(share)} />
+                    <div style={{ fontSize: 8, color: "#999" }}>{(u.billing_month || "").slice(5)}</div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+          <div style={{ fontSize: 9, color: C.muted, textAlign: "right", marginTop: 4 }}>
+            Avg: {fmt(utilities.slice(0, 6).reduce((s, u) => s + getUtilityShare(u).share, 0) / Math.min(utilities.length, 6))}/mo
+            {" \u2014 "}First ${utilityConfig?.coverageAmount || 100} covered
+          </div>
+        </div>
+      )}
 
       {/* Auto-Pay Enrollment */}
       <div style={{ ...sCard, marginTop: 16 }}>
