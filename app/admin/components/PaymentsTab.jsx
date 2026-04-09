@@ -2,7 +2,7 @@
 import { saveAppData as save } from "@/lib/supabase-client";
 
 const TODAY=new Date();const MO=TODAY.toLocaleString("default",{month:"long",year:"numeric"});
-const CHARGE_CATS=["Rent","Last Month Rent","Utility Overage","Late Fee","Security Deposit","Balance Forward","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Admin Fee","Pet Violation","Smoking Violation","Guest Violation"];
+const DEF_CHARGE_CATS=["Rent","Last Month Rent","Utilities","Late Fee","Security Deposit","Balance Forward","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Admin Fee","Pet Violation","Smoking Violation","Guest Violation"];
 const ACH_METHODS=["Bank Transfer","Stripe/ACH"];
 
 export default function PaymentsTab({
@@ -13,6 +13,7 @@ export default function PaymentsTab({
   getChargesForPeriod,chargeStatus,fmtD,fmtS,
   getPropDisplayName,propDisplay,roomSubLine,allRooms,
   openCreateCharge,GRACE,
+  CHARGE_CATS=DEF_CHARGE_CATS,
 }){
   const pCharges=getChargesForPeriod(payPeriod);
   const pastDue=pCharges.filter(c=>chargeStatus(c)==="pastdue");

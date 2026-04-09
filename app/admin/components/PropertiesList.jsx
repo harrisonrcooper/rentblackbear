@@ -59,22 +59,26 @@ export default function PropertiesList({
   return (<>
     <div className="sec-hd"><div><h2>Manage Properties</h2><p>Click any property for details, or edit to manage rooms</p></div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        {props.length > 0 && <button className="btn btn-out" onClick={() => setShowNuke(!showNuke)} style={{ color: "#c45c4a", borderColor: "rgba(196,92,74,.3)", fontSize: 12 }}><IconX /> Delete All</button>}
         <button className="btn btn-gold" onClick={() => { setIsNewProp(true); setEditProp({}); }}>+ Add Property</button>
       </div>
     </div>
 
     {showNuke && (
-      <div style={{ background: "rgba(196,92,74,.04)", border: "1px solid rgba(196,92,74,.2)", borderRadius: 10, padding: "16px 20px", marginBottom: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#c45c4a", marginBottom: 6 }}>Delete All Properties</div>
-        <div style={{ fontSize: 12, color: "#5c4a3a", lineHeight: 1.7, marginBottom: 12 }}>
-          This will permanently delete all {props.length} properties and their rooms. Tenants will lose their property assignments. Charges referencing these properties will remain but be unlinked.
-        </div>
-        <div style={{ fontSize: 12, color: "#c45c4a", fontWeight: 600, marginBottom: 8 }}>Type <strong>DELETE</strong> to confirm</div>
-        <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid rgba(196,92,74,.3)", fontSize: 13, fontFamily: "inherit", marginBottom: 12, boxSizing: "border-box" }} />
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setShowNuke(false); setNukeConfirm(""); }} className="btn btn-out" style={{ fontSize: 12 }}>Cancel</button>
-          <button disabled={nukeConfirm !== "DELETE"} onClick={nukeAllProps} className="btn" style={{ background: nukeConfirm === "DELETE" ? "#c45c4a" : "rgba(196,92,74,.4)", color: "#fff", border: "none", fontSize: 12, opacity: nukeConfirm === "DELETE" ? 1 : .5 }}><IconX /> Delete All Properties</button>
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => { setShowNuke(false); setNukeConfirm(""); }}>
+        <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 10, maxWidth: 440, width: "100%", boxShadow: "0 16px 48px rgba(0,0,0,.2)", padding: 24 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>Reset All Property Data</div>
+          <div style={{ fontSize: 12, color: "#3d2e22", marginBottom: 6 }}>This will permanently:</div>
+          <ul style={{ fontSize: 12, color: "#3d2e22", marginBottom: 16, paddingLeft: 20, lineHeight: 1.8 }}>
+            <li>Delete all {props.length} properties and their rooms</li>
+            <li>Tenants will lose their property assignments</li>
+            <li>Charges referencing these properties will remain but be unlinked</li>
+          </ul>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>Type DELETE to confirm</div>
+          <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #fca5a5", fontSize: 13, fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" }} />
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <button onClick={() => { setShowNuke(false); setNukeConfirm(""); }} className="btn btn-out" style={{ fontSize: 12 }}>Cancel</button>
+            <button disabled={nukeConfirm !== "DELETE"} onClick={nukeAllProps} className="btn" style={{ background: nukeConfirm === "DELETE" ? "#dc2626" : "#fca5a5", color: "#fff", border: "none", fontSize: 12, opacity: nukeConfirm === "DELETE" ? 1 : .5 }}><IconX /> Delete All Properties</button>
+          </div>
         </div>
       </div>
     )}
@@ -119,17 +123,17 @@ export default function PropertiesList({
           <div className="card-hd" onClick={() => setExpanded(x => ({ ...x, ["prop-" + p.id]: !x["prop-" + p.id] }))}>
             <div>
               <h3 style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ color: "#8a7d74", cursor: "grab", flexShrink: 0 }}><IconGrip /></span>
-                <span style={{ color: "#8a7d74", flexShrink: 0 }}>{isExp ? <IconChevDown /> : <IconChevRight />}</span>
+                <span style={{ color: "#6b5e54", cursor: "grab", flexShrink: 0 }}><IconGrip /></span>
+                <span style={{ color: "#6b5e54", flexShrink: 0 }}>{isExp ? <IconChevDown /> : <IconChevRight />}</span>
                 {p.addr || p.name}
               </h3>
-              <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 2 }}>
+              <div style={{ fontSize: 10, color: "#3d2e22", marginTop: 2 }}>
                 {p.addr} &middot; {(PROP_TYPES[p.type] || PROP_TYPES.SFH).label} &middot; {allWhole ? "Whole Unit" : anyWhole ? "Mixed" : allRooms(p).length + "br"} &middot; {(p.units || []).length > 1 ? (p.units || []).length + " units" : "1 unit"} &middot; {(p.units || [])[0]?.utils === "allIncluded" ? "All Utils" : "Tenant Pays"}
               </div>
             </div>
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {allWhole && wholeUnitRent > 0 && <span style={{ fontWeight: 800, color: _gold, marginRight: 4 }}>{fmtS(wholeUnitRent)}/mo <span style={{ fontSize: 9, fontWeight: 400, color: "#5c4a3a" }}>whole unit</span></span>}
-              {!allWhole && pr.length > 0 && <span style={{ fontWeight: 800, marginRight: 4 }}>{fmtS(Math.min(...pr))}&ndash;{fmtS(Math.max(...pr))} <span style={{ fontSize: 9, fontWeight: 400, color: "#5c4a3a" }}>per room</span></span>}
+              {allWhole && wholeUnitRent > 0 && <span style={{ fontWeight: 800, color: _gold, marginRight: 4 }}>{fmtS(wholeUnitRent)}/mo <span style={{ fontSize: 9, fontWeight: 400, color: "#3d2e22" }}>whole unit</span></span>}
+              {!allWhole && pr.length > 0 && <span style={{ fontWeight: 800, marginRight: 4 }}>{fmtS(Math.min(...pr))}&ndash;{fmtS(Math.max(...pr))} <span style={{ fontSize: 9, fontWeight: 400, color: "#3d2e22" }}>per room</span></span>}
               {vac > 0 && <span className="badge b-red">{vac} Vacant</span>}
               {vac === 0 && items.length > 0 && <span className="badge b-green">{allWhole ? "Whole Unit" : "Full"}</span>}
               {unpaidRooms.length > 0 && <span className="badge b-red" title={unpaidRooms.map(r => r.tenant?.name || "Unknown").join(", ") + " unpaid"}>
@@ -141,9 +145,6 @@ export default function PropertiesList({
               <button className="btn btn-out btn-sm" onClick={e => { e.stopPropagation(); setIsNewProp(false); setEditProp(p); }} style={{ display: "flex", alignItems: "center", gap: 3 }}>
                 <IconEdit /> Edit
               </button>
-              {onDeleteProp && <button className="btn btn-out btn-sm" onClick={e => { e.stopPropagation(); const occ = allRooms(p).filter(r=>r.st==="occupied").length; const linked = (charges||[]).filter(c=>c.propName===(p.addr||p.name)).length; if(occ>0){if(showConfirm)showConfirm({title:"Cannot Delete",body:(p.addr||p.name)+" has "+occ+" occupied room"+(occ!==1?"s":"")+". Remove all tenants first.",onConfirm:null});return;} if(showConfirm)showConfirm({title:"Delete "+(p.addr||p.name)+"?",body:"This is permanent."+(linked?" "+linked+" charge record"+(linked!==1?"s":"")+" reference this property.":""),confirmLabel:"Delete Property",danger:true,onConfirm:()=>onDeleteProp(p.id)}); }} style={{ display: "flex", alignItems: "center", gap: 3, color: "#c45c4a" }}>
-                <IconX /> Delete
-              </button>}
             </div>
           </div>
 
@@ -151,11 +152,11 @@ export default function PropertiesList({
           {isExp && <div className="card-bd" style={{ animation: "fadeIn .15s" }}>
             {/* Property summary KPIs — responsive */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8, marginBottom: 14 }}>
-              {!allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Rooms</div><div style={{ fontSize: 18, fontWeight: 800 }}>{allRooms(p).length}</div></div>}
-              {!allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Occupied</div><div style={{ fontSize: 18, fontWeight: 800, color: _grn }}>{occRooms.length}</div></div>}
-              {allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center", gridColumn: "span 2" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Monthly Rent</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(wholeUnitRent)}<small style={{ fontSize: 9, color: "#5c4a3a" }}>/mo</small></div></div>}
-              <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Projected</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(projRent)}<small style={{ fontSize: 9, color: "#5c4a3a" }}>/mo</small></div></div>
-              <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#5c4a3a", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>At Full</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(totalRent)}<small style={{ fontSize: 9, color: "#5c4a3a" }}>/mo</small></div></div>
+              {!allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#3d2e22", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Rooms</div><div style={{ fontSize: 18, fontWeight: 800 }}>{allRooms(p).length}</div></div>}
+              {!allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#3d2e22", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Occupied</div><div style={{ fontSize: 18, fontWeight: 800, color: _grn }}>{occRooms.length}</div></div>}
+              {allWhole && <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center", gridColumn: "span 2" }}><div style={{ fontSize: 9, color: "#3d2e22", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Monthly Rent</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(wholeUnitRent)}<small style={{ fontSize: 9, color: "#3d2e22" }}>/mo</small></div></div>}
+              <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#3d2e22", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Projected</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(projRent)}<small style={{ fontSize: 9, color: "#3d2e22" }}>/mo</small></div></div>
+              <div style={{ background: "#faf9f7", borderRadius: 8, padding: 10, textAlign: "center" }}><div style={{ fontSize: 9, color: "#3d2e22", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>At Full</div><div style={{ fontSize: 18, fontWeight: 800 }}>{fmtS(totalRent)}<small style={{ fontSize: 9, color: "#3d2e22" }}>/mo</small></div></div>
             </div>
 
             {/* Whole unit info */}
@@ -163,14 +164,14 @@ export default function PropertiesList({
               {(p.units || []).map(u => <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700 }}>{(p.units || []).length > 1 ? u.name : "Whole Unit"} &middot; {u.utils === "allIncluded" ? "All Utilities" : u.utils === "first100" ? "First $100 Utilities" : "Tenant Pays"} &middot; {u.clean || "Biweekly"} Clean</div>
-                  <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 2 }}>Single lease &middot; {u.baths || 1} bath{u.baths !== 1 ? "s" : ""}</div>
+                  <div style={{ fontSize: 10, color: "#3d2e22", marginTop: 2 }}>Single lease &middot; {u.baths || 1} bath{u.baths !== 1 ? "s" : ""}</div>
                 </div>
                 <button className="btn btn-out btn-sm" style={{ fontSize: 9, color: _grn, borderColor: hexToRgba(_grn, .2) }} onClick={() => { setTab("applications"); setBulkSel([]); }}>+ Find Tenant</button>
               </div>)}
             </div>}
 
             {/* Unit list */}
-            <div style={{ fontSize: 10, fontWeight: 700, color: "#5c4a3a", textTransform: "uppercase", letterSpacing: .8, marginBottom: 6 }}>{anyWhole && !allWhole ? "Units & Rooms" : "Rooms by Unit"}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#3d2e22", textTransform: "uppercase", letterSpacing: .8, marginBottom: 6 }}>{anyWhole && !allWhole ? "Units & Rooms" : "Rooms by Unit"}</div>
             {(p.units || []).map(u => {
               const uIsWhole = (u.rentalMode || "byRoom") === "wholeHouse";
               const uRooms = u.rooms || [];
@@ -179,7 +180,7 @@ export default function PropertiesList({
               return (<div key={u.id} style={{ marginBottom: 10 }}>
                 {(p.units || []).length > 1 && <div style={{ fontSize: 10, fontWeight: 800, color: _acc, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4, padding: "3px 8px", background: hexToRgba(_acc, .06), borderRadius: 4, display: "inline-flex", alignItems: "center", gap: 6 }}>
                   {u.name}
-                  <span style={{ fontSize: 8, fontWeight: 500, color: "#5c4a3a", textTransform: "none", letterSpacing: 0 }}>{uIsWhole ? "Whole Unit" : "By Room"}</span>
+                  <span style={{ fontSize: 8, fontWeight: 500, color: "#3d2e22", textTransform: "none", letterSpacing: 0 }}>{uIsWhole ? "Whole Unit" : "By Room"}</span>
                 </div>}
 
                 {uIsWhole ? (
@@ -188,7 +189,7 @@ export default function PropertiesList({
                     <div className="row-i">
                       <div style={{ fontSize: 12, fontWeight: 600 }}>{u.name} &mdash; Whole Unit</div>
                       {uOcc
-                        ? <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 1 }}>Occupied &middot; ends {fmtD(uLatestLe)}</div>
+                        ? <div style={{ fontSize: 10, color: "#3d2e22", marginTop: 1 }}>Occupied &middot; ends {fmtD(uLatestLe)}</div>
                         : <div style={{ fontSize: 10, color: _red, fontWeight: 600, marginTop: 1 }}>Vacant &mdash; {fmtS(u.rent)}/mo</div>}
                     </div>
                     <div style={{ textAlign: "right", minWidth: 60, marginRight: 8 }}>
@@ -215,10 +216,10 @@ export default function PropertiesList({
                           <div style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                             {r.name}
                             <span className={"badge " + (r.pb ? "b-green" : "b-gray")} style={{ fontSize: 7 }}>{r.pb ? "Private" : "Shared"}</span>
-                            {r.sqft && <span style={{ fontSize: 9, color: "#5c4a3a" }}>{r.sqft.toLocaleString()} sqft</span>}
+                            {r.sqft && <span style={{ fontSize: 9, color: "#3d2e22" }}>{r.sqft.toLocaleString()} sqft</span>}
                           </div>
                           {occ
-                            ? <div style={{ fontSize: 10, color: "#5c4a3a", marginTop: 1 }}>{r.tenant.name} &middot; ends {fmtD(r.le)}{dl && dl <= 90 ? <span style={{ color: dl <= 30 ? _red : _gold, fontWeight: 700, marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 2 }}><IconClock /> {dl}d</span> : null}</div>
+                            ? <div style={{ fontSize: 10, color: "#3d2e22", marginTop: 1 }}>{r.tenant.name} &middot; ends {fmtD(r.le)}{dl && dl <= 90 ? <span style={{ color: dl <= 30 ? _red : _gold, fontWeight: 700, marginLeft: 4, display: "inline-flex", alignItems: "center", gap: 2 }}><IconClock /> {dl}d</span> : null}</div>
                             : r.ownerOccupied ? <div style={{ fontSize: 10, color: _acc, fontWeight: 600, marginTop: 1 }}>Owner Occupied</div>
                             : <div style={{ fontSize: 10, color: _red, fontWeight: 600, marginTop: 1 }}>Vacant &mdash; {fmtS(r.rent)}/mo lost</div>}
                         </div>
@@ -246,9 +247,16 @@ export default function PropertiesList({
       );
     })}
 
+    {/* ═══ Nuke link ═══ */}
+    {props.length > 0 && (
+      <div style={{ textAlign: "right", marginBottom: 10 }}>
+        <button onClick={() => setShowNuke(true)} style={{ fontSize: 9, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>Reset all property data</button>
+      </div>
+    )}
+
     {/* Empty state */}
-    {props.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#5c4a3a" }}>
-      <div style={{ marginBottom: 12, color: "#8a7d74" }}><IconHome /></div>
+    {props.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#3d2e22" }}>
+      <div style={{ marginBottom: 12, color: "#6b5e54" }}><IconHome /></div>
       <h3 style={{ fontSize: 15 }}>No Properties</h3>
       <p style={{ fontSize: 12, marginTop: 4 }}>Add your first property above.</p>
     </div>}

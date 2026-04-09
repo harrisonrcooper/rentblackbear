@@ -921,8 +921,13 @@ export default function SmartImporter({
 
     try {
       // Phase 1: Create property structure
-      setProps(prev => {
-        const updated = JSON.parse(JSON.stringify(prev));
+      // NOTE: Build updated array outside setProps to avoid React calling the updater twice,
+      // which would double-count ok/pC/rC and duplicate log entries.
+      let latestProps;
+      setProps(cur => { latestProps = cur; return cur; });
+      await new Promise(r => setTimeout(r, 0)); // flush to read latest
+      const updated = JSON.parse(JSON.stringify(latestProps || []));
+      {
         for (const pd of structure) {
           let prop;
           // Always re-check against current props (catches re-import after first import)
@@ -1023,8 +1028,8 @@ export default function SmartImporter({
             }
           }
         }
-        return updated;
-      });
+      }
+      setProps(updated);
 
       // Phase 2: Charges + SD Ledger (sync, no network)
       const syncTasks = [];

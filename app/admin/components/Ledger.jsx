@@ -16,6 +16,7 @@ const IconEdit = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="non
 const IconTrash = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>;
 const IconLock = () => <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>;
 const IconExport = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 3, verticalAlign: "middle" }}><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>;
+const IconUpload = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
 const IconPhone = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>;
 const IconMail = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
 const IconGrip = () => <svg width="10" height="10" viewBox="0 0 16 16" fill="#9ca3af"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>;
@@ -126,7 +127,7 @@ export default function Ledger({
   charges = [], expenses = [], credits = [], sdLedger = [], mortgages = [], improvements = [], props = [], vendors = [], settings, subcats = {},
   TODAY, setCharges, setExpenses, setCredits, setVendors, setMortgages, setImprovements, setSubcats,
   createCharge, recordPayment, setModal, uid, adminGoTab,
-  CHARGE_CATS = ["Rent","Last Month Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"],
+  CHARGE_CATS = ["Rent","Last Month Rent","Utilities","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"],
   SCHED_E_CATS = [{cat:"Advertising",hint:"Listing fees, signage"},{cat:"Auto & Travel",hint:"Mileage"},{cat:"Cleaning & Maintenance",hint:"Routine cleaning"},{cat:"Commissions",hint:"Leasing agent fees"},{cat:"Insurance",hint:"Hazard, liability"},{cat:"Legal & Professional Fees",hint:"CPA, attorney"},{cat:"Management Fees",hint:"PM software"},{cat:"Mortgage Interest",hint:"Interest from 1098"},{cat:"Other Interest",hint:"Hard money"},{cat:"Repairs",hint:"Fixes that restore"},{cat:"Supplies",hint:"Cleaning supplies, tools"},{cat:"Taxes \u2014 Property",hint:"Annual property tax"},{cat:"Utilities",hint:"Electric, gas, water"},{cat:"Depreciation",hint:"Calculated by CPA"},{cat:"Other",hint:"Catch-all"}],
   IMPROVEMENT_TYPES = ["Addition","Appliance","Flooring","HVAC","Landscaping","Plumbing","Electrical","Roof","Windows","Other"],
 }) {
@@ -443,7 +444,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
     if (cat === "Rent") return monthName + " Rent";
     if (cat === "Late Fee") return monthName + " Late Fee";
     if (cat === "Security Deposit") return "Security Deposit";
-    if (cat === "Utility Overage") return monthName + " Utility Overage";
+    if (cat === "Utilities") return monthName + " Utilities";
     return cat;
   };
   const submitCharge = () => {
@@ -712,7 +713,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
             <div>
               <label style={labelS}>Category</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {["Rent", "Late Fee", "Utility Overage", "Security Deposit"].map(cat => (
+                {["Rent", "Late Fee", "Utilities", "Security Deposit"].map(cat => (
                   <button key={cat} onClick={() => {
                     setChgCat(cat);
                     if (cat === "Rent" && chgTenant) {
@@ -730,9 +731,9 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
                     cursor: "pointer", fontFamily: "inherit",
                   }}>{cat}</button>
                 ))}
-                <select value={!["Rent", "Late Fee", "Utility Overage", "Security Deposit"].includes(chgCat) ? chgCat : ""} onChange={e => { setChgCat(e.target.value); setChgAmount(""); setChgDesc(autoDesc(e.target.value, chgTenant)); }} style={{ fontSize: 10, padding: "3px 6px", borderRadius: 4, border: !["Rent", "Late Fee", "Utility Overage", "Security Deposit", ""].includes(chgCat) ? "1px solid #1a1714" : "1px solid #d1d5db", background: !["Rent", "Late Fee", "Utility Overage", "Security Deposit", ""].includes(chgCat) ? "#1a1714" : "#fff", color: !["Rent", "Late Fee", "Utility Overage", "Security Deposit", ""].includes(chgCat) ? "#fff" : "#374151", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>
+                <select value={!["Rent", "Late Fee", "Utilities", "Security Deposit"].includes(chgCat) ? chgCat : ""} onChange={e => { setChgCat(e.target.value); setChgAmount(""); setChgDesc(autoDesc(e.target.value, chgTenant)); }} style={{ fontSize: 10, padding: "3px 6px", borderRadius: 4, border: !["Rent", "Late Fee", "Utilities", "Security Deposit", ""].includes(chgCat) ? "1px solid #1a1714" : "1px solid #d1d5db", background: !["Rent", "Late Fee", "Utilities", "Security Deposit", ""].includes(chgCat) ? "#1a1714" : "#fff", color: !["Rent", "Late Fee", "Utilities", "Security Deposit", ""].includes(chgCat) ? "#fff" : "#374151", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>
                   <option value="">Other...</option>
-                  {CHARGE_CATS.filter(c => !["Rent", "Late Fee", "Utility Overage", "Security Deposit"].includes(c)).map(c => <option key={c} value={c}>{c}</option>)}
+                  {CHARGE_CATS.filter(c => !["Rent", "Late Fee", "Utilities", "Security Deposit"].includes(c)).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             </div>
@@ -1716,7 +1717,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
                   <div style={{ marginBottom: 14 }}>
                     <label style={{ ...labelS, marginBottom: 6 }}>Category *</label>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {["Rent", "Security Deposit", "Utility Overage", "Late Fee", "Cleaning Fee", "Other"].map(cat => (
+                      {["Rent", "Security Deposit", "Utilities", "Late Fee", "Cleaning Fee", "Other"].map(cat => (
                         <button key={cat} onClick={() => setEditData(p => ({ ...p, category: cat }))} style={{ padding: "5px 14px", borderRadius: 4, border: (editData.category || c.category) === cat ? "1.5px solid #1a1714" : "1.5px solid #d1d5db", background: (editData.category || c.category) === cat ? "#1a1714" : "#fff", color: (editData.category || c.category) === cat ? "#fff" : "#374151", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{cat}</button>
                       ))}
                     </div>

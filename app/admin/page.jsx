@@ -21,6 +21,7 @@ import Ledger from "./components/Ledger";
 import ApplicationsTab from "./components/ApplicationsTab";
 import ModalRenderer from "./components/ModalRenderer";
 import SmartImporter from "./components/SmartImporter";
+import LedgerImporter from "./components/LedgerImporter";
 import OnboardingWizard from "./components/OnboardingWizard";
 import TenantsTab from "./components/TenantsTab";
 import PaymentsTab from "./components/PaymentsTab";
@@ -234,7 +235,7 @@ const updateRoomInProp=(prop,roomId,updater)=>({...prop,units:(prop.units||[]).m
 
 
 const DEF_PAYMENTS={};// {roomId: {month: amount}} - quick lookup (computed from charges)
-const CHARGE_CATS=["Rent","Last Month Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
+const DEF_CHARGE_CATS=["Rent","Prorated Rent","Last Month Rent","Utilities","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
 const PAY_METHODS=["Zelle","Venmo","Cash","Check","CashApp","Bank Transfer","Stripe/ACH","Credit Card","Other"];
 const ACH_METHODS=["Bank Transfer","Stripe/ACH"]; // locked — no edit on paid charges
 const SCHED_E_CATS=[
@@ -782,6 +783,7 @@ export default function Page(){
   const[modal,setModal]=useState(null);
   const[confirmDialog,setConfirmDialog]=useState(null);
   const[showSmartImport,setShowSmartImport]=useState(false);
+  const[showLedgerImport,setShowLedgerImport]=useState(false);
   // Helper: show a centered confirm/alert modal instead of browser native dialogs
   const showConfirm=({title,body,onConfirm,confirmLabel="Confirm",danger=false})=>setConfirmDialog({title,body,onConfirm,confirmLabel,danger});
   const showAlert=({title,body})=>setConfirmDialog({title,body,onConfirm:null,confirmLabel:null,danger:false});
@@ -911,6 +913,15 @@ export default function Page(){
     fetch(SUPA_URL+"/rest/v1/messages?direction=eq.inbound&subject=like.Lease Renewal:*&order=created_at.desc",{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setRenewalRequests(d);}).catch(()=>{});
     fetch(SUPA_URL+"/rest/v1/messages?direction=eq.inbound&read=eq.false&select=id",{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setUnreadMsgCount(d.length);}).catch(()=>{});
     }catch(e){console.error("Admin init error:",e);}
+    // One-time migration: rename "Utility Overage" → "Utilities" on existing charges
+    setCharges(prev => {
+      const needsMigration = prev.some(c => c.category === "Utility Overage");
+      if (!needsMigration) return prev;
+      const updated = prev.map(c => c.category === "Utility Overage" ? { ...c, category: "Utilities" } : c);
+      save("hq-charges", updated);
+      return updated;
+    });
+
     console.log("Admin init complete, setting loaded=true");
     setLoaded(true);
   })();},[]);
@@ -932,6 +943,9 @@ export default function Page(){
     db.saveInspections(inspections),
     save("hq-dismissed-followups",dismissedFollowUps),
   ]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,renewalOffers,inspections,loaded,dismissedFollowUps]);
+
+  // ─── Charge categories (defaults + custom from settings) ──────
+  const CHARGE_CATS=useMemo(()=>{const custom=settings?.customChargeCats||[];return[...DEF_CHARGE_CATS,...custom.filter(c=>!DEF_CHARGE_CATS.includes(c))];},[settings?.customChargeCats]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   // ── Load onboarding statuses for approved/onboarding applicants ──────
@@ -1599,6 +1613,7 @@ export default function Page(){
         getChargesForPeriod={getChargesForPeriod} chargeStatus={chargeStatus}
         fmtD={fmtD} fmtS={fmtS} getPropDisplayName={getPropDisplayName} propDisplay={propDisplay}
         roomSubLine={roomSubLine} allRooms={allRooms} openCreateCharge={openCreateCharge} GRACE={GRACE}
+        CHARGE_CATS={CHARGE_CATS}
       />}
 
       {/* ═══ TENANT TIMELINE ═══ */}
@@ -1709,7 +1724,10 @@ export default function Page(){
       {tab==="money"&&<MoneyDashboard charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} props={props} settings={settings} vendors={vendors} improvements={improvements} goTab={goTab} setModal={setModal} createCharge={createCharge} TODAY={TODAY} />}
 
       {/* ═══ LEDGER ═══ */}
-      {tab==="ledger"&&<Ledger charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} improvements={improvements} props={props} vendors={vendors} settings={settings} subcats={subcats} TODAY={TODAY} setCharges={setCharges} setExpenses={setExpenses} setCredits={setCredits} setVendors={setVendors} setMortgages={setMortgages} setImprovements={setImprovements} setSubcats={setSubcats} createCharge={createCharge} recordPayment={recordPayment} setModal={setModal} uid={uid} adminGoTab={goTab} CHARGE_CATS={CHARGE_CATS} SCHED_E_CATS={SCHED_E_CATS} IMPROVEMENT_TYPES={IMPROVEMENT_TYPES} />}
+      {tab==="ledger"&&<>
+        <div className="sec-hd"><div><h2>Ledger</h2></div><div style={{display:"flex",gap:8,alignItems:"center"}}><button className="btn btn-out" onClick={()=>setShowLedgerImport(true)} style={{fontSize:12,display:"flex",alignItems:"center",gap:4}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Import Charges</button></div></div>
+        <Ledger charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} improvements={improvements} props={props} vendors={vendors} settings={settings} subcats={subcats} TODAY={TODAY} setCharges={setCharges} setExpenses={setExpenses} setCredits={setCredits} setVendors={setVendors} setMortgages={setMortgages} setImprovements={setImprovements} setSubcats={setSubcats} createCharge={createCharge} recordPayment={recordPayment} setModal={setModal} uid={uid} adminGoTab={goTab} CHARGE_CATS={CHARGE_CATS} SCHED_E_CATS={SCHED_E_CATS} IMPROVEMENT_TYPES={IMPROVEMENT_TYPES} />
+      </>}
 
       {/* Accounting tab removed — features in Dashboard + Reports */}
       {tab==="reports"&&<Reports settings={settings} properties={props} charges={charges} expenses={expenses} mortgages={mortgages} sdLedger={sdLedger} apps={apps} archive={archive} SCHED_E_CATS={SCHED_E_CATS} getPropDisplayName={getPropDisplayName} propDisplay={propDisplay} chargeStatus={chargeStatus} uid={uid} />}
@@ -2052,6 +2070,7 @@ export default function Page(){
 
   {/* ═══ MODALS ═══ */}
   {showSmartImport&&<SmartImporter props={props} setProps={setProps} settings={settings} uid={uid} createCharge={createCharge} setCharges={setCharges} setNotifs={setNotifs} setSdLedger={setSdLedger} charges={charges} TODAY={TODAY} onClose={()=>setShowSmartImport(false)} goTab={goTab} onImportComplete={()=>{const u={...settings,onboardingActive:true};setSettings(u);save("hq-settings",u);}} />}
+  {showLedgerImport&&<LedgerImporter props={props} setProps={setProps} settings={settings} setSettings={setSettings} charges={charges} setCharges={setCharges} setSdLedger={setSdLedger} setNotifs={setNotifs} createCharge={createCharge} uid={uid} TODAY={TODAY} onClose={()=>setShowLedgerImport(false)} goTab={goTab} CHARGE_CATS={CHARGE_CATS} />}
 
   <ModalRenderer
     modal={modal} setModal={setModal}
@@ -2076,6 +2095,7 @@ export default function Page(){
     docs={docs}
     renewalOffers={renewalOffers} setRenewalOffers={setRenewalOffers}
     renewalForm={renewalForm} setRenewalForm={setRenewalForm}
+    renewalRequests={renewalRequests}
     inspections={inspections}
     occLeases={occLeases}
     tenantProfileTab={tenantProfileTab} setTenantProfileTab={setTenantProfileTab}
@@ -2099,6 +2119,7 @@ export default function Page(){
     getPropDisplayName={getPropDisplayName}
     propDisplay={propDisplay}
     confirmDialog={confirmDialog} setConfirmDialog={setConfirmDialog}
+    CHARGE_CATS={CHARGE_CATS}
   />
 
 

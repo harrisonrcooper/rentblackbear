@@ -8,7 +8,7 @@ const fmtS=n=>"$"+Number(n).toLocaleString();
 const fmtD=d=>{if(!d)return"\u2014";const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;};
 const TODAY=new Date();const MO=TODAY.toLocaleString("default",{month:"long",year:"numeric"});
 const uid=()=>Math.random().toString(36).slice(2,9);
-const CHARGE_CATS=["Rent","Last Month Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
+const DEF_CHARGE_CATS=["Rent","Last Month Rent","Utilities","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
 const PAY_METHODS=["Zelle","Venmo","Cash","Check","CashApp","Bank Transfer","Stripe/ACH","Credit Card","Other"];
 const SCHED_E_CATS=[
   {id:1,label:"Advertising",hint:"IRS Line 5 — ads, listing fees, signage"},
@@ -66,6 +66,7 @@ export default function ModalRenderer({
   docs,
   renewalOffers, setRenewalOffers,
   renewalForm, setRenewalForm,
+  renewalRequests = [],
   inspections,
   occLeases,
   tenantProfileTab, setTenantProfileTab,
@@ -89,6 +90,7 @@ export default function ModalRenderer({
   getPropDisplayName,
   propDisplay,
   confirmDialog, setConfirmDialog,
+  CHARGE_CATS = DEF_CHARGE_CATS,
 }) {
   if (!modal) return null;
 
@@ -135,7 +137,7 @@ export default function ModalRenderer({
       }catch(e){setPortalInviteState("error");}
     };
     const TI=({d,d2,size=16,stroke="#6b5e52"})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><path d={d}/>{d2&&<path d={d2}/>}</svg>;
-    const catIcons={"Rent":{d:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",d2:"M9 22V12h6v10",color:"#3b82f6"},"Late Fee":{d:"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z",d2:"M12 9v4M12 17h.01",color:"#c45c4a"},"Security Deposit":{d:"M19 11H5M19 11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2M19 11V9a7 7 0 1 0-14 0v2",color:"#7c3aed"},"Utility Overage":{d:"M13 2L3 14h9l-1 8 10-12h-9l1-8z",color:"#9a7422"},"Damage Charge":{d:"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",color:"#c45c4a"}};
+    const catIcons={"Rent":{d:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",d2:"M9 22V12h6v10",color:"#3b82f6"},"Late Fee":{d:"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z",d2:"M12 9v4M12 17h.01",color:"#c45c4a"},"Security Deposit":{d:"M19 11H5M19 11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2M19 11V9a7 7 0 1 0-14 0v2",color:"#7c3aed"},"Utilities":{d:"M13 2L3 14h9l-1 8 10-12h-9l1-8z",color:"#9a7422"},"Damage Charge":{d:"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z",color:"#c45c4a"}};
     const isExpiring=dl!==null&&dl>=0&&dl<=(settings.m2mNoticeDays||90);
     const isExpired=dl!==null&&dl<0;
     const isM2M=r.m2m||(!r.le);
@@ -1939,7 +1941,7 @@ export default function ModalRenderer({
     const DAILY_START_OPTS=[4,5,6,7,8,10,14];
     const STOP_AFTER_OPTS=[7,10,14,21,30,45,60,90];
 
-    const CATS=["Rent","Utility Overage","Other"];
+    const CATS=["Rent","Utilities","Other"];
 
     const save=()=>{
       const e={};
@@ -2543,7 +2545,7 @@ export default function ModalRenderer({
     const errs=modal.chErrs||{};
     const fromTenant=!!modal._fromTenant;
     const showDesc=!!modal._showDesc;
-    const cats=["Rent","Security Deposit","Utility Overage","Late Fee","Damage Charge","Cleaning Fee","Other"];
+    const cats=["Rent","Security Deposit","Utilities","Late Fee","Damage Charge","Cleaning Fee","Other"];
     const submit=()=>{
       const e={};
       if(!modal.roomId)e.roomId="Select a tenant";

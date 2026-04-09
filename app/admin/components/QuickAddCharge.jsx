@@ -1,10 +1,10 @@
 "use client";
 import { useState, useMemo } from "react";
 
-const CHARGE_CATS = ["Rent","Last Month Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
-const QUICK_CATS = ["Rent","Late Fee","Utility Overage","Security Deposit"];
+const DEF_CHARGE_CATS = ["Rent","Last Month Rent","Utilities","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
+const DEF_DEF_QUICK_CATS = ["Rent","Late Fee","Utilities","Security Deposit"];
 
-export default function QuickAddCharge({ charges, props, onAdd, onCancel, uid, TODAY }) {
+export default function QuickAddCharge({ charges, props, onAdd, onCancel, uid, TODAY, CHARGE_CATS = DEF_CHARGE_CATS }) {
   const today = TODAY || new Date().toISOString().slice(0, 10);
   const [roomId, setRoomId] = useState("");
   const [category, setCategory] = useState("");
@@ -90,7 +90,7 @@ export default function QuickAddCharge({ charges, props, onAdd, onCancel, uid, T
         <div className="fld" style={{ marginBottom: 10 }}>
           <label>Category</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
-            {QUICK_CATS.map(c => (
+            {DEF_QUICK_CATS.map(c => (
               <button key={c} onClick={() => pickCategory(c)}
                 style={{
                   fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6,
@@ -103,16 +103,16 @@ export default function QuickAddCharge({ charges, props, onAdd, onCancel, uid, T
             <button onClick={() => setShowAllCats(!showAllCats)}
               style={{
                 fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6,
-                border: "1px solid " + (showAllCats || (category && !QUICK_CATS.includes(category)) ? "#1a1714" : "rgba(0,0,0,.1)"),
-                background: (showAllCats || (category && !QUICK_CATS.includes(category))) ? "#1a1714" : "#fff",
-                color: (showAllCats || (category && !QUICK_CATS.includes(category))) ? "#f5f0e8" : "#5c4a3a",
+                border: "1px solid " + (showAllCats || (category && !DEF_QUICK_CATS.includes(category)) ? "#1a1714" : "rgba(0,0,0,.1)"),
+                background: (showAllCats || (category && !DEF_QUICK_CATS.includes(category))) ? "#1a1714" : "#fff",
+                color: (showAllCats || (category && !DEF_QUICK_CATS.includes(category))) ? "#f5f0e8" : "#5c4a3a",
                 cursor: "pointer", fontFamily: "inherit",
               }}>Other</button>
           </div>
           {showAllCats && (
             <select value={category} onChange={e => pickCategory(e.target.value)} style={{ width: "100%", marginTop: 6 }}>
               <option value="">Select category...</option>
-              {CHARGE_CATS.filter(c => !QUICK_CATS.includes(c)).map(c => <option key={c} value={c}>{c}</option>)}
+              {CHARGE_CATS.filter(c => !DEF_QUICK_CATS.includes(c)).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
         </div>
