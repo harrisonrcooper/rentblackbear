@@ -1236,6 +1236,24 @@ export default function SmartImporter({
                     <button onClick={e => { e.stopPropagation(); rmProp(pi); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", padding: 6, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}><IX /></button>
                   </div>
 
+                  {/* Collapsed summary — tenant names by room */}
+                  {!open && pT > 0 && (
+                    <div style={{ padding: "6px 16px 8px", borderTop: "1px solid rgba(0,0,0,.04)", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {prop.units.map((unit, ui) => unit.rooms.map((room, ri) => {
+                        const active = room.tenants.filter(t => !t.excluded);
+                        if (!active.length) return null;
+                        return active.map((t, ti) => (
+                          <span key={`${ui}-${ri}-${ti}`} style={{ fontSize: 10, padding: "3px 10px", borderRadius: 100, background: "rgba(0,0,0,.04)", color: "#1a1714", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <span style={{ fontSize: 9, color: "#5c4a3a" }}>{room.name}</span>
+                            <span style={{ color: "#5c4a3a" }}>{"\u00B7"}</span>
+                            {t.name}
+                            {t.rent > 0 && <span style={{ color: "#5c4a3a" }}>${t.rent}</span>}
+                          </span>
+                        ));
+                      }))}
+                    </div>
+                  )}
+
                   {open && (
                     <div style={{ padding: "4px 16px 14px", borderTop: "1px solid rgba(0,0,0,.04)" }}>
                       {prop.units.map((unit, ui) => (
@@ -1465,18 +1483,24 @@ export default function SmartImporter({
                               {editingSet.has(`${pi}-${ui}-${ri}`) && room.tenants.filter(t => !t.excluded).map((t, ti) => (
                                 <div key={`e${ti}`} style={{ margin: "4px 12px 8px", padding: 12, background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
                                   {room.tenants.length > 1 && <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1714", marginBottom: 8 }}>{t.name}</div>}
-                                  {/* Room options (only on first tenant) */}
-                                  {ti === 0 && <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center", paddingBottom: 8, borderBottom: "1px solid rgba(0,0,0,.06)" }}>
-                                    <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: room.privateBath ? _ac : "#5c4a3a", cursor: "pointer", fontWeight: 600 }}>
+                                  {/* Room + move options — available for every tenant */}
+                                  <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center", paddingBottom: 8, borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+                                    {ti === 0 && <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: room.privateBath ? _ac : "#5c4a3a", cursor: "pointer", fontWeight: 600 }}>
                                       <input type="checkbox" checked={!!room.privateBath} onChange={() => togglePrivateBath(pi, ui, ri)} /> Private Bath
-                                    </label>
+                                    </label>}
                                     {prop.units.length > 1 && (
                                       <select value="" onChange={e => { if (e.target.value !== "") moveTenantToUnit(pi, ui, ri, ti, Number(e.target.value)); }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
                                         <option value="">Move to unit...</option>
                                         {prop.units.map((u2, ui2) => ui2 !== ui ? <option key={ui2} value={ui2}>{u2.name}</option> : null)}
                                       </select>
                                     )}
-                                  </div>}
+                                    {unit.rooms.length > 1 && (
+                                      <select value="" onChange={e => { if (e.target.value !== "") { const toRi = Number(e.target.value); setDirty(true); setStructure(p => p.map((x, i) => { if (i !== pi) return x; const units = JSON.parse(JSON.stringify(x.units)); const tenant = { ...units[ui].rooms[ri].tenants[ti] }; units[ui].rooms[ri].tenants.splice(ti, 1); units[ui].rooms[toRi].tenants.push(tenant); return { ...x, units }; })); } }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
+                                        <option value="">Move to room...</option>
+                                        {unit.rooms.map((r2, ri2) => ri2 !== ri ? <option key={ri2} value={ri2}>{r2.name}</option> : null)}
+                                      </select>
+                                    )}
+                                  </div>
                                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
                                     <div><label style={lbl}>Move-In</label><input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, ti, "moveIn", e.target.value)} style={fld} /></div>
                                     <div><label style={lbl}>Lease End</label><input type="date" value={t.leaseEnd || ""} onChange={e => uTen(pi, ui, ri, ti, "leaseEnd", e.target.value)} style={fld} /></div>
