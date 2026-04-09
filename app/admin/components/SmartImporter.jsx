@@ -939,6 +939,14 @@ export default function SmartImporter({
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [importLog]);
 
+  // Warn on browser refresh/close if there's unsaved import data
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = e => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
   /* ═══════════════════════════════════════════════ */
   /*  RENDER                                         */
   /* ═══════════════════════════════════════════════ */
