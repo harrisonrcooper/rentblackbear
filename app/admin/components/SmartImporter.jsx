@@ -312,8 +312,14 @@ function preprocessTurboTenantRows(rows, headers) {
   });
 }
 
+// Check if a string looks like a real street address (has a number + street name)
+function isRealAddress(addr) {
+  if (!addr) return false;
+  return /^\d+\s+\w/.test(addr.trim());
+}
+
 function buildStructure(rows, colMap, existingProps, uid, todayStr) {
-  const grouped = {}; const skipped = [];
+  const grouped = {}; const skipped = []; const mergeLog = [];
 
   for (const row of rows) {
     const g = k => row[colMap[k]] || "";
@@ -321,9 +327,64 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
     if (!name) { skipped.push({ line: row._line, reason: "Missing tenant name" }); continue; }
     if (!addr) { skipped.push({ line: row._line, reason: `No property address for "${name}"` }); continue; }
 
-    const na = normAddr(addr);
+    let na = normAddr(addr);
     let un = g("unit") || "Main";
     let rn = g("room");
+
+    // ── Smart merge: if address doesn't look right, try to match a known property ──
+
+    // Case 1: Address has a trailing letter that's actually a unit (e.g. "3026 Turf Ave NW B")
+    if (!grouped[na]) {
+      const trailingUnit = na.match(/^(.+?)\s+([a-z])$/i);
+      if (trailingUnit) {
+        const baseAddr = trailingUnit[1].trim();
+        // Check if base address exists in grouped
+        const matchKey = Object.keys(grouped).find(k => k === baseAddr || normAddr(k) === baseAddr);
+        if (matchKey) {
+          na = matchKey;
+          un = trailingUnit[2].toUpperCase();
+          mergeLog.push({ from: addr, to: grouped[matchKey].raw, reason: `"${trailingUnit[2].toUpperCase()}" extracted as unit` });
+        }
+      }
+    }
+
+    // Case 2: Address doesn't look like a real address (no street number — e.g. "Crestview B2")
+    if (!grouped[na] && !isRealAddress(addr)) {
+      // Try to find a matching property by partial name match
+      const matchKey = Object.keys(grouped).find(k => {
+        const raw = grouped[k].raw.toLowerCase();
+        const addrLow = addr.toLowerCase().replace(/[.,#]/g, "");
+        // Check if any word from the non-address appears in an existing property
+        return addrLow.split(/\s+/).some(w => w.length > 3 && raw.includes(w));
+      });
+      if (matchKey) {
+        // Try to extract unit+room from the non-address string
+        const ur = parseUnitRoom(addr.replace(/[^A-Z0-9]/gi, ""));
+        if (ur.unit) un = ur.unit;
+        if (ur.room) rn = ur.room;
+        mergeLog.push({ from: addr, to: grouped[matchKey].raw, reason: "Partial name match — not a full address" });
+        na = matchKey;
+      } else {
+        // Can't match — flag it but still create the entry (PM will reassign)
+        skipped.push({ line: row._line, reason: `"${addr}" doesn't look like a full address for "${name}". You can reassign this tenant in the review step.`, soft: true });
+      }
+    }
+
+    // Case 3: Address matches an existing property after normalization with trailing stuff stripped
+    if (!grouped[na]) {
+      // Try stripping everything after the directional (NW/NE/SW/SE) + extra words
+      const stripped = na.replace(/\s+(nw|ne|sw|se)\s+.*$/i, (m, dir) => " " + dir);
+      if (stripped !== na) {
+        const matchKey = Object.keys(grouped).find(k => k === stripped);
+        if (matchKey) {
+          // Whatever was after the directional might be a unit
+          const extra = na.replace(stripped, "").trim();
+          if (extra && /^[a-z]$/i.test(extra)) un = extra.toUpperCase();
+          mergeLog.push({ from: addr, to: grouped[matchKey].raw, reason: `Stripped extra text after direction` });
+          na = matchKey;
+        }
+      }
+    }
     // Normalize room formats: "1" → "Bedroom 1", "R1" → "Bedroom 1", "Room 1" → "Bedroom 1"
     if (rn) {
       const trimmed = rn.trim();
@@ -420,7 +481,7 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
     });
     structure.push(prop);
   }
-  return { structure, skipped };
+  return { structure, skipped, mergeLog };
 }
 
 /* ══════════════════════════════════════════════════════════ */
@@ -445,6 +506,7 @@ export default function SmartImporter({
   const [showMapper, setShowMapper] = useState(false);
   const [structure, setStructure] = useState([]);
   const [skipped, setSkipped] = useState([]);
+  const [merges, setMerges] = useState([]);
   const [expanded, setExpanded] = useState({});
   const [editing, setEditing] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -517,8 +579,8 @@ export default function SmartImporter({
           room: "_room",
         };
         setColMap(ttMap);
-        const { structure: s, skipped: sk } = buildStructure(processed, ttMap, props, uid, todayStr);
-        setStructure(s); setSkipped(sk); setStep(1);
+        const { structure: s, skipped: sk, mergeLog: ml } = buildStructure(processed, ttMap, props, uid, todayStr);
+        setStructure(s); setSkipped(sk); setMerges(ml||[]); setStep(1);
         return;
       }
 
@@ -526,8 +588,8 @@ export default function SmartImporter({
       const am = autoMap(h);
       setColMap(am);
       if (am.name && am.propertyAddress) {
-        const { structure: s, skipped: sk } = buildStructure(rows, am, props, uid, todayStr);
-        setStructure(s); setSkipped(sk); setStep(1);
+        const { structure: s, skipped: sk, mergeLog: ml } = buildStructure(rows, am, props, uid, todayStr);
+        setStructure(s); setSkipped(sk); setMerges(ml||[]); setStep(1);
       } else { setShowMapper(true); }
     };
 
@@ -544,8 +606,8 @@ export default function SmartImporter({
 
   const doMap = () => {
     if (!colMap.name || !colMap.propertyAddress) return;
-    const { structure: s, skipped: sk } = buildStructure(csvRows, colMap, props, uid, todayStr);
-    setStructure(s); setSkipped(sk); setShowMapper(false); setStep(1);
+    const { structure: s, skipped: sk, mergeLog: ml } = buildStructure(csvRows, colMap, props, uid, todayStr);
+    setStructure(s); setSkipped(sk); setMerges(ml||[]); setShowMapper(false); setStep(1);
   };
 
   // Counts
@@ -886,6 +948,14 @@ export default function SmartImporter({
                 <strong>{skipped.length} row{skipped.length !== 1 ? "s" : ""} skipped:</strong>
                 {skipped.slice(0, 5).map((r, i) => <div key={i}>Line {r.line}: {r.reason}</div>)}
                 {skipped.length > 5 && <div>...and {skipped.length - 5} more</div>}
+              </div>
+            )}
+
+            {/* Merge log */}
+            {merges.length > 0 && (
+              <div style={{ background: `rgba(${_acR},.05)`, border: `1px solid rgba(${_acR},.15)`, borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "#5c4a3a" }}>
+                <strong style={{ color: _ac }}>Auto-merged {merges.length} row{merges.length !== 1 ? "s" : ""}:</strong>
+                {merges.map((m, i) => <div key={i} style={{ marginTop: 2, fontSize: 11 }}>"{m.from}" → <strong>{m.to}</strong> <span style={{ color: "#9ca3af" }}>({m.reason})</span></div>)}
               </div>
             )}
 
