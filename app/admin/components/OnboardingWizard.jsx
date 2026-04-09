@@ -815,7 +815,7 @@ function P5({propRows,tenantRows,charges,sdLedger,leases,phase1Done,phase2Done,p
     {section:"Financial Records",items:[
       {label:`${(sdLedger||[]).length} security deposit${(sdLedger||[]).length===1?"":"s"} recorded`,ok:(sdLedger||[]).length>0||!tenantRows.some(r=>r.depositPaid),info:true},
       ...(balFwd>0?[{label:`${balFwd} balance forward entr${balFwd===1?"y":"ies"}`,ok:true,info:true}]:[]),
-      {label:`${execLeases} lease record${execLeases===1?"":"s"}`,ok:execLeases>0,info:true},
+      {label:`${execLeases} of ${totalTenants} lease record${execLeases===1?"":"s"}`,ok:execLeases>=totalTenants,info:execLeases>0&&execLeases<totalTenants,warn:execLeases===0&&totalTenants>0},
     ]},
     {section:"Charges",items:[
       {label:`${mo} charges generated`,ok:phase4Done},

@@ -101,7 +101,7 @@ export async function GET(req) {
             desc: room.recurringDesc || `${moLabel} ${room.recurringCategory || "Rent"}`,
             amount: room.rent,
             amountPaid: 0,
-            dueDate: `${mk}-${String(room.recurringDueDay || 1).padStart(2, "0")}`,
+            dueDate: `${mk}-${String(room.recurringDueDay || prop.defaultDueDay || 1).padStart(2, "0")}`,
             createdDate: todayStr,
             payments: [], waived: false, noLateFee: false,
           });
@@ -112,19 +112,19 @@ export async function GET(req) {
     }
 
     // ── 2. LATE FEES ──────────────────────────────────────────────────
-    // getLateConfig: reads per-room lateConfig, falls back to settings-level defaults.
-    // null on any field means "inherit from settings". SaaS-safe — works for any PM.
-    function getLateConfig(room, s) {
+    // getLateConfig: reads per-room lateConfig, falls back to property-level, then settings-level defaults.
+    // Cascade: room.lateConfig → prop.lateFeeX → settings.lateFeeX → hardcoded default
+    function getLateConfig(room, prop, s) {
       const lc = room.lateConfig || {};
       return {
         enabled:         lc.enabled !== false,
-        graceDays:       lc.graceDays       ?? (s.lateFeeGraceDays   ?? 3),
+        graceDays:       lc.graceDays       ?? prop?.lateFeeGraceDays ?? (s.lateFeeGraceDays   ?? 3),
         initialEnabled:  lc.initialEnabled  !== false,
-        initialFee:      lc.initialFee      ?? (s.lateFeeInitial     ?? 50),
+        initialFee:      lc.initialFee      ?? prop?.lateFeeInitial  ?? (s.lateFeeInitial     ?? 50),
         initialFeeType:  lc.initialFeeType  ?? "flat",    // "flat"|"pctRent"|"pctUnpaid"
         initialApplyDays:lc.initialApplyDays?? 3,         // days after due date
         dailyEnabled:    lc.dailyEnabled    !== false,
-        dailyFee:        lc.dailyFee        ?? (s.lateFeeDaily       ?? 5),
+        dailyFee:        lc.dailyFee        ?? prop?.lateFeeDaily    ?? (s.lateFeeDaily       ?? 5),
         dailyStartDays:  lc.dailyStartDays  ?? 6,         // days after due date
         limitEnabled:    !!lc.limitEnabled,
         limitStopAfterDays: lc.limitStopAfterDays ?? null,
@@ -133,16 +133,17 @@ export async function GET(req) {
       };
     }
 
-    // Build a roomId → room lookup for lateConfig resolution
+    // Build roomId → room and roomId → prop lookups for config resolution
     const roomLookup = {};
+    const roomPropLookup = {};
     for (const prop of updatedProps) {
-      for (const room of allRooms(prop)) roomLookup[room.id] = room;
+      for (const room of allRooms(prop)) { roomLookup[room.id] = room; roomPropLookup[room.id] = prop; }
     }
 
     for (const charge of updatedCharges) {
       if (charge.category !== "Rent" || charge.waived || charge.noLateFee || charge.amountPaid >= charge.amount) continue;
       const room = roomLookup[charge.roomId];
-      const lc = getLateConfig(room || {}, s);
+      const lc = getLateConfig(room || {}, roomPropLookup[charge.roomId] || {}, s);
       if (!lc.enabled) continue;
 
       const daysOverdue = Math.ceil((TODAY - new Date(charge.dueDate + "T00:00:00")) / 86400000);

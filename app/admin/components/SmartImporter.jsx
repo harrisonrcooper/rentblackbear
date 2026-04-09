@@ -250,7 +250,7 @@ function autoMap(headers) {
   // Try preset matching first (TurboTenant, AppFolio, etc.)
   for (const [presetKey, preset] of Object.entries(PRESETS)) {
     const matched = applyPreset(presetKey, headers);
-    if (Object.keys(matched).length >= 3) return matched; // good enough match
+    if (Object.keys(matched).length >= 3) { matched._preset = presetKey; return matched; }
   }
   // Fall back to regex pattern matching
   const m = {};
@@ -681,6 +681,7 @@ export default function SmartImporter({
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [importConfirmText, setImportConfirmText] = useState("");
   const [parsing, setParsing] = useState(false);
+  const [detectedPreset, setDetectedPreset] = useState(null);
 
   const todayStr = TODAY.toISOString().split("T")[0];
 
@@ -753,6 +754,7 @@ export default function SmartImporter({
 
       setHeaders(h); setCsvRows(rows); setDirty(true);
       const am = autoMap(h);
+      if (am._preset) { setDetectedPreset(am._preset); delete am._preset; }
       setColMap(am);
       if (am.name && am.propertyAddress) {
         const { structure: s, skipped: sk, mergeLog: ml } = buildStructure(rows, am, props, uid, todayStr);
@@ -1247,6 +1249,7 @@ export default function SmartImporter({
                   } else {
                     setHeaders(headers); setCsvRows(rows); setDirty(true);
                     const am = autoMap(headers);
+                    if (am._preset) { setDetectedPreset(am._preset); delete am._preset; }
                     setColMap(am);
                     if (am.name && am.propertyAddress) {
                       const { structure: s, skipped: sk, mergeLog: ml } = buildStructure(rows, am, props, uid, todayStr);
@@ -1351,6 +1354,7 @@ export default function SmartImporter({
           {step === 1 && (<>
             {/* Summary card */}
             <div style={{ background: `rgba(${_acR},.05)`, border: `1px solid rgba(${_acR},.15)`, borderRadius: 10, padding: "14px 18px", marginBottom: 14 }}>
+              {detectedPreset && <div style={{ fontSize: 11, fontWeight: 600, color: _ac, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}><IOk /> Detected {detectedPreset === "propOS" ? "PropOS" : detectedPreset === "turboTenant" ? "TurboTenant" : detectedPreset === "appFolio" ? "AppFolio" : detectedPreset === "buildium" ? "Buildium" : detectedPreset === "innago" ? "Innago" : detectedPreset === "stessa" ? "Stessa" : detectedPreset} format {"\u2014"} {Object.keys(colMap).length} columns auto-mapped</div>}
               <div style={{ fontSize: 14, fontWeight: 700, color: "inherit", marginBottom: 6 }}>
                 {nProps} {nProps === 1 ? "property" : "properties"} · {nRooms} rooms · {nTenants} tenants
               </div>
@@ -1588,9 +1592,9 @@ export default function SmartImporter({
                                                   <span style={{ width: 8, height: 8, borderRadius: 2, background: bc.bg, flexShrink: 0 }} />
                                                   <span onClick={() => { const k = `${pi}-${ui}-${ri}-${realTi >= 0 ? realTi : ti}`; setEditingSet(prev => { const next = new Set(prev); if (next.has(k)) next.delete(k); else next.add(k); return next; }); }} style={{ fontWeight: 600, minWidth: 80, cursor: "pointer", borderBottom: "1px dashed transparent" }} title={"Click to edit " + t.name}
                                                     onMouseEnter={e => { e.currentTarget.style.borderBottom = "1px dashed rgba(0,0,0,.2)"; }} onMouseLeave={e => { e.currentTarget.style.borderBottom = "1px dashed transparent"; }}>{t.name}</span>
-                                                  <input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "moveIn", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(128,128,128,.12)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "inherit", opacity: .6, minHeight: 24 }} title="Move-in date" />
+                                                  <input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "moveIn", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(128,128,128,.12)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "inherit", opacity: .6, minHeight: 36 }} title="Move-in date" />
                                                   <span style={{ color: "inherit", opacity: .6 }}>{"\u2192"}</span>
-                                                  <input type="date" value={t.leaseEnd === "MTM" ? "" : (t.leaseEnd || "")} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "leaseEnd", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(128,128,128,.12)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "inherit", opacity: .6, minHeight: 24 }} title="Lease end date" />
+                                                  <input type="date" value={t.leaseEnd === "MTM" ? "" : (t.leaseEnd || "")} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "leaseEnd", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(128,128,128,.12)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "inherit", opacity: .6, minHeight: 36 }} title="Lease end date" />
                                                   <span style={{ fontSize: 8, fontWeight: 700, padding: "1px 6px", borderRadius: 100, background: isPast ? "rgba(196,92,74,.12)" : isUpcoming ? "rgba(59,110,165,.12)" : `rgba(${_acR},.15)`, color: isPast ? _red : isUpcoming ? "rgba(59,110,165,.85)" : _ac }}>{label}</span>
                                                 </div>
                                               );
