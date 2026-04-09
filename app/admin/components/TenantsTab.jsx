@@ -34,7 +34,7 @@ export default function TenantsTab({
   setModal, setArchive, setProps, setCharges,
   setPayments, setMaint, setLeases, setNotifs, createCharge,
   setTenantProfileTab, setPiState,
-  fmtD, fmtS, getPropDisplayName, TODAY, MO,
+  fmtD, fmtS, getPropDisplayName, TODAY, MO, onSmartImport,
 }) {
   const _ac = settings?.adminAccent || "#4a7c59";
   const _acRgb = settings?.adminAccentRgb || "74,124,89";
@@ -406,7 +406,7 @@ export default function TenantsTab({
         })}
       </div>
       <div style={{ display: "flex", gap: 6, marginBottom: 2 }}>
-        <button style={btnSm} onClick={() => { setShowImport(true); setImportStep(0); setImportRows([]); setImportFile(null); setImportResult(null); setImportMappings([]); }}><IconImport /> Import</button>
+        <button style={btnSm} onClick={() => onSmartImport ? onSmartImport() : null}><IconImport /> Import</button>
         <button style={btnSm} onClick={exportCSV}><IconExport /> Export</button>
         <button className="btn btn-green btn-sm" onClick={() => setModal({ type: "addExistingTenant", propId: "", unitId: "", roomId: "", form: { name: "", email: "", phone: "", moveIn: TODAY.toISOString().split("T")[0], leaseEnd: "", rent: "", sd: "", doorCode: "", notes: "", gender: "", occupationType: "" } })}>+ Add Tenant</button>
       </div>

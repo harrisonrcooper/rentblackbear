@@ -54,6 +54,8 @@ const PATS = {
   moveIn: /^(move.?in|start.?date|lease.?start|begin)/i,
   leaseEnd: /^(lease.?end|end.?date|move.?out|expir)/i,
   leaseTerm: /^(lease.?term|term|lease.?dates?|duration)/i,
+  contactInfo: /^(contact.?info|contact)/i,
+  leaseComposite: /^(lease)$/i,
   sd: /^(security|deposit|sd$|security.?dep)/i,
   doorCode: /^(door.?code|access|gate|key.?code|lock)/i,
   notes: /^(notes?|comments?|memo)/i,
@@ -159,10 +161,156 @@ function applyPreset(key, headers) {
   return m;
 }
 
-const normAddr = s => (s||"").trim().replace(/\s+/g," ").replace(/[.,#]/g,"").toLowerCase();
+const normAddr = s => {
+  let a = (s||"").trim().replace(/\s+/g," ").replace(/[.,#]/g,"").toLowerCase();
+  // Strip city/state/zip if appended (e.g. "3026 Turf AVE NW Huntsville AL 35816")
+  a = a.replace(/\s+(huntsville|madison|decatur|athens)\s+(al|alabama)\s*\d{0,5}\s*$/i, "");
+  // Normalize street abbreviations
+  a = a.replace(/\bdrive\b/gi, "dr").replace(/\bavenue\b/gi, "ave").replace(/\bstreet\b/gi, "st").replace(/\bboulevard\b/gi, "blvd").replace(/\blane\b/gi, "ln").replace(/\bcourt\b/gi, "ct");
+  return a.trim();
+};
 const fmtPhone = v => { const d = (v||"").replace(/\D/g,""); return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : v; };
 const fmtMoney = n => { const v = Number(n); return isNaN(v) ? "$0" : "$" + v.toLocaleString(); };
 const parseRent = s => Number(String(s||"").replace(/[^0-9.]/g,"")) || 0;
+
+/* ── Composite field parsers (TurboTenant copy-paste) ── */
+
+// Split "email(phone)" → { email, phone }
+function parseContactInfo(str) {
+  if (!str) return { email: "", phone: "" };
+  const s = String(str).trim();
+  // Pattern: email followed by (xxx) xxx-xxxx or (xxx)xxx-xxxx
+  const m = s.match(/^(.+?)\((\d{3})\)\s*(\d{3})[- ]?(\d{4})$/);
+  if (m) return { email: m[1].trim(), phone: `(${m[2]}) ${m[3]}-${m[4]}` };
+  // Just email, no phone
+  if (s.includes("@") && !s.includes("(")) return { email: s, phone: "" };
+  // Just phone
+  const digits = s.replace(/\D/g, "");
+  if (digits.length === 10 && !s.includes("@")) return { email: "", phone: fmtPhone(s) };
+  return { email: s, phone: "" };
+}
+
+// Split "ADDRESS, UNIT, ROOM - TENANT NAME" → { address, unit, room, tenantName }
+function parseLeaseColumn(str) {
+  if (!str) return { address: "", unit: "", room: "", tenantName: "" };
+  let s = String(str).trim();
+
+  // Handle UB-R3, UB-MB patterns BEFORE splitting on dash (so we don't confuse unit-room dash with name dash)
+  // Replace UB-R3 with U.B-R.3 temporarily to protect it from dash splitting
+  s = s.replace(/\bU([A-Z])-(?=R\d|MB|Master)/gi, "U$1~");
+
+  // Split on " - " or "- " to separate address+room from tenant name
+  // Look for dash followed by a capital letter (name start)
+  let addressPart = s, tenantName = "";
+  const dashMatch = s.match(/^(.*?)[\s]*-[\s]*([A-Z][a-z].*)/);
+  if (dashMatch) {
+    addressPart = dashMatch[1].trim();
+    tenantName = dashMatch[2].trim();
+  }
+
+  // Restore UB~R3 → UB-R3
+  addressPart = addressPart.replace(/U([A-Z])~/gi, "U$1-");
+  tenantName = tenantName.replace(/U([A-Z])~/gi, "U$1-");
+
+  // Strip city/state/zip from address part
+  addressPart = addressPart.replace(/,?\s*(Huntsville|Madison|Decatur|Athens)\s+(AL|Alabama)\s*\d{0,5}\s*$/i, "").trim();
+
+  // Strip tenant name if it leaked into room or address (e.g. "2 Manvith Amara" or "3026 Turf Ave. NW B, 2 Manvith Amara")
+  // Detect: string ending with two+ capitalized words that look like a name, optionally after a number
+  const nameInAddr = addressPart.match(/^(.*?(?:\d|NW|NE|SW|SE))\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*$/);
+  if (nameInAddr && !tenantName) {
+    addressPart = nameInAddr[1].trim();
+    tenantName = nameInAddr[2].trim();
+  }
+
+  // Handle "address B2" pattern (no comma before unit code)
+  // e.g. "908 Lee DR NW B2" → address="908 Lee DR NW", unit+room="B2"
+  const addrUnitMatch = addressPart.match(/^(.+?\b(?:NW|NE|SW|SE|N|S|E|W)\b)\s+([A-Z]\d+|U[A-Z]-?(?:R\d+|MB|Master))$/i);
+  if (addrUnitMatch) {
+    addressPart = addrUnitMatch[1];
+    const ur = parseUnitRoom(addrUnitMatch[2]);
+    if (ur.unit || ur.room) {
+      // Prepend to parts
+      addressPart = addrUnitMatch[1] + "," + addrUnitMatch[2];
+    }
+  }
+
+  // Split address part by commas
+  const parts = addressPart.split(",").map(p => p.trim()).filter(Boolean);
+  let address = "", unit = "", room = "";
+
+  if (parts.length >= 3) {
+    address = parts[0]; unit = parts[1]; room = parts[2];
+  } else if (parts.length === 2) {
+    address = parts[0];
+    const val = parts[1];
+    const unitRoom = parseUnitRoom(val);
+    if (unitRoom.unit && unitRoom.room) {
+      unit = unitRoom.unit; room = unitRoom.room;
+    } else if (/^\d+$/.test(val) || /^master$|^primary/i.test(val)) {
+      room = val;
+    } else if (/^[A-Z]$/i.test(val)) {
+      unit = val;
+    } else if (/^[A-Z][a-z]+ [A-Z]/.test(val) && !tenantName) {
+      tenantName = val; // tenant name in room position
+    } else {
+      room = val;
+    }
+  } else {
+    address = parts[0] || "";
+  }
+
+  // Handle "address B, 2" where B stuck to address (e.g. "3026 Turf Ave. NW B")
+  if (!unit && !room && address) {
+    const m = address.match(/^(.+?)\s+([A-Z])$/i);
+    if (m) { address = m[1]; unit = m[2]; }
+  }
+
+  return { address: address.trim(), unit: unit.trim(), room: room.trim(), tenantName: tenantName.trim() };
+}
+
+// Parse combined unit+room codes: "B1" → {unit:"B", room:"1"}, "UB-R3" → {unit:"B", room:"3"}, "UB-MB" → {unit:"B", room:"Master"}
+function parseUnitRoom(val) {
+  if (!val) return { unit: "", room: "" };
+  const s = val.trim();
+  // "UB-R3" or "UB-MB" pattern (U=unit prefix, B=unit, R/MB=room)
+  const ubr = s.match(/^U([A-Z])-?(R(\d+)|MB|Master)$/i);
+  if (ubr) return { unit: ubr[1], room: ubr[3] ? ubr[3] : "Master" };
+  // "B1", "A3" pattern (single letter + number)
+  const ln = s.match(/^([A-Z])(\d+)$/i);
+  if (ln) return { unit: ln[1].toUpperCase(), room: ln[2] };
+  // "A1" already handled by ln above
+  return { unit: "", room: "" };
+}
+
+// Detect TurboTenant copy-paste format
+function isTurboTenantPaste(headers) {
+  const h = headers.map(s => s.toLowerCase().trim());
+  return h.includes("name") && h.includes("contact info") && h.includes("lease");
+}
+
+// Pre-process rows from TurboTenant paste format into standard fields
+function preprocessTurboTenantRows(rows, headers) {
+  return rows.map(row => {
+    const newRow = { ...row, _line: row._line };
+    const contactRaw = row["Contact Info"] || row["contact info"] || "";
+    const leaseRaw = row["Lease"] || row["lease"] || "";
+
+    // Parse contact info → email + phone
+    const contact = parseContactInfo(contactRaw);
+    newRow["_email"] = contact.email;
+    newRow["_phone"] = contact.phone;
+
+    // Parse lease column → address + unit + room + tenant name
+    const lease = parseLeaseColumn(leaseRaw);
+    newRow["_address"] = lease.address;
+    newRow["_unit"] = lease.unit;
+    newRow["_room"] = lease.room;
+    newRow["_leaseTenantName"] = lease.tenantName;
+
+    return newRow;
+  });
+}
 
 function buildStructure(rows, colMap, existingProps, uid, todayStr) {
   const grouped = {}; const skipped = [];
@@ -343,13 +491,37 @@ export default function SmartImporter({
     if (!file) return;
     setFileErr("");
     const ext = file.name.toLowerCase().split(".").pop();
-    if (!["csv", "xlsx", "xls"].includes(ext)) { setFileErr("Please upload a .csv or .xlsx file."); return; }
+    if (!["csv", "xlsx", "xls"].includes(ext)) { setFileErr("Please upload a spreadsheet file (.csv, .xlsx, or .xls)."); return; }
     setFileName(file.name);
     const reader = new FileReader();
     reader.onerror = () => setFileErr("Failed to read file.");
 
     const handleParsed = ({ headers: h, rows }) => {
       if (!rows.length) { setFileErr("No data rows found."); return; }
+
+      // Detect TurboTenant copy-paste format and pre-process
+      if (isTurboTenantPaste(h)) {
+        const processed = preprocessTurboTenantRows(rows, h);
+        // Add virtual columns to headers
+        const virtualHeaders = [...h, "_email", "_phone", "_address", "_unit", "_room"];
+        setHeaders(virtualHeaders);
+        setCsvRows(processed);
+        setDirty(true);
+        // Auto-map using virtual columns
+        const ttMap = {
+          name: "Name",
+          email: "_email",
+          phone: "_phone",
+          propertyAddress: "_address",
+          unit: "_unit",
+          room: "_room",
+        };
+        setColMap(ttMap);
+        const { structure: s, skipped: sk } = buildStructure(processed, ttMap, props, uid, todayStr);
+        setStructure(s); setSkipped(sk); setStep(1);
+        return;
+      }
+
       setHeaders(h); setCsvRows(rows); setDirty(true);
       const am = autoMap(h);
       setColMap(am);
@@ -523,7 +695,7 @@ export default function SmartImporter({
   /* ═══════════════════════════════════════════════ */
   /*  RENDER                                         */
   /* ═══════════════════════════════════════════════ */
-  const steps = ["Upload CSV", "Review & Confirm", "Importing"];
+  const steps = ["Upload Spreadsheet", "Review & Confirm", "Importing"];
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.55)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 }} onClick={handleClose}>
@@ -559,7 +731,7 @@ export default function SmartImporter({
               <div style={{ fontSize: 12, color: "#5c4a3a", lineHeight: 1.7, marginBottom: 10 }}>
                 Download the template, fill it in, and upload it back. Not all fields are required — but <strong>each tenant needs their property address in its own cell</strong> so we can auto-create your properties.
               </div>
-              <button onClick={downloadTemplate} style={{ ...btn, background: _ac, color: "#fff", border: "none", fontSize: 12 }}><IDl /> Download Template (CSV)</button>
+              <button onClick={downloadTemplate} style={{ ...btn, background: _ac, color: "#fff", border: "none", fontSize: 12 }}><IDl /> Download Template</button>
             </div>
 
             {/* Example table */}
@@ -601,7 +773,7 @@ export default function SmartImporter({
               style={{ border: dragOver ? `2px solid ${_ac}` : "2px dashed rgba(0,0,0,.12)", borderRadius: 14, padding: "40px 40px", textAlign: "center", cursor: "pointer", background: dragOver ? `rgba(${_acR},.04)` : "transparent", transition: "all .15s" }}>
               <IUp />
               <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1714", marginTop: 10 }}>{dragOver ? "Drop file here" : "Upload your spreadsheet"}</div>
-              <div style={{ fontSize: 12, color: "#7a7067", marginTop: 4 }}>CSV or Excel (.xlsx) — any format, we'll figure it out</div>
+              <div style={{ fontSize: 12, color: "#7a7067", marginTop: 4 }}>Accepts .csv, .xlsx, and .xls — any spreadsheet format</div>
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={e => processFile(e.target.files?.[0])} style={{ display: "none" }} />
             </div>
 

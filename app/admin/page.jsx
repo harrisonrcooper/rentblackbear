@@ -20,6 +20,7 @@ import MoneyDashboard from "./components/MoneyDashboard";
 import Ledger from "./components/Ledger";
 import ApplicationsTab from "./components/ApplicationsTab";
 import ModalRenderer from "./components/ModalRenderer";
+import SmartImporter from "./components/SmartImporter";
 import TenantsTab from "./components/TenantsTab";
 import PaymentsTab from "./components/PaymentsTab";
 import TimelineTab from "./components/TimelineTab";
@@ -777,6 +778,7 @@ export default function Page(){
   const[loaded,setLoaded]=useState(false);
   const[modal,setModal]=useState(null);
   const[confirmDialog,setConfirmDialog]=useState(null);
+  const[showSmartImport,setShowSmartImport]=useState(false);
   // Helper: show a centered confirm/alert modal instead of browser native dialogs
   const showConfirm=({title,body,onConfirm,confirmLabel="Confirm",danger=false})=>setConfirmDialog({title,body,onConfirm,confirmLabel,danger});
   const showAlert=({title,body})=>setConfirmDialog({title,body,onConfirm:null,confirmLabel:null,danger:false});
@@ -2026,6 +2028,8 @@ export default function Page(){
   })()}
 
   {/* ═══ MODALS ═══ */}
+  {showSmartImport&&<SmartImporter props={props} setProps={setProps} settings={settings} uid={uid} createCharge={createCharge} setCharges={setCharges} setNotifs={setNotifs} setSdLedger={setSdLedger} charges={charges} TODAY={TODAY} onClose={()=>setShowSmartImport(false)} goTab={goTab} />}
+
   <ModalRenderer
     modal={modal} setModal={setModal}
     apps={apps} setApps={setApps}
