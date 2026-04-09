@@ -822,7 +822,7 @@ export default function LedgerImporter({
             ) : (<>
 
             {/* Legend + Stats bar — sticky */}
-            <div style={{ position: "sticky", top: -20, zIndex: 5, background: "#fff", paddingTop: 4, paddingBottom: 10, marginLeft: -24, marginRight: -24, paddingLeft: 24, paddingRight: 24 }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 5, background: "#fff", paddingTop: 8, paddingBottom: 10, marginLeft: -24, marginRight: -24, paddingLeft: 24, paddingRight: 24, borderBottom: "1px solid rgba(0,0,0,.06)" }}>
               <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#4b5563", marginBottom: 8 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 99, background: _ac, display: "inline-block" }} /> {matchStats.green} exact match</span>
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 99, background: _gold, display: "inline-block" }} /> {matchStats.amber} close match</span>
