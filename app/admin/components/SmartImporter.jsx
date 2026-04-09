@@ -16,7 +16,8 @@ const IPlus = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" 
 
 /* ── Constants ── */
 const FIELDS = [
-  { key: "name", label: "Name", required: true },
+  { key: "name", label: "Name / First Name", required: true },
+  { key: "lastName", label: "Last Name" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
   { key: "propertyAddress", label: "Property Address", required: true },
@@ -35,7 +36,7 @@ const FIELDS = [
 ];
 
 const PTYPES = ["SFH","Townhome","Duplex","Triplex","Fourplex","ADU","Apartment"];
-const LT_ID = "2d9d0941-2802-468a-a6e8-b2cceacf78d1";
+const DEFAULT_LT_ID = "2d9d0941-2802-468a-a6e8-b2cceacf78d1";
 
 const PRESETS = {
   propOS: { name: "name", email: "email", phone: "phone", propertyAddress: "property address", unit: "unit", room: "room", rent: "rent", moveIn: "move-in (yyyy-mm-dd)", leaseEnd: "lease end (yyyy-mm-dd)", sd: "security deposit", doorCode: "door code", notes: "notes", gender: "gender", occupationType: "occupation type" },
@@ -45,14 +46,15 @@ const PRESETS = {
 
 const PATS = {
   name: /^(name|tenant.?name|full.?name|resident|first.?name|tenant)$/i,
+  lastName: /^(last.?name|surname|family.?name)$/i,
   email: /^(e.?mail|email.?addr)/i,
   phone: /^(phone|tel|mobile|cell|phone.?num)/i,
   propertyAddress: /^(address|property.?addr|property$|street|location)/i,
   unit: /^(unit|unit.?(name|#|num|number))/i,
   room: /^(room|room.?(name|#|num|number)|bedroom|bed)/i,
-  rent: /^(rent|monthly.?rent|amount|rate|price)/i,
-  moveIn: /^(move.?in|start.?date|lease.?start|begin)/i,
-  leaseEnd: /^(lease.?end|end.?date|move.?out|expir)/i,
+  rent: /^(rent|monthly.?rent|amount|rate|price|rent.?amount)/i,
+  moveIn: /^(move.?in|start.?date|lease.?start|begin|move.?in.?date)/i,
+  leaseEnd: /^(lease.?end|end.?date|move.?out|expir|lease.?exp)/i,
   leaseTerm: /^(lease.?term|term|lease.?dates?|duration)/i,
   contactInfo: /^(contact.?info|contact)/i,
   leaseComposite: /^(lease)$/i,
@@ -144,17 +146,37 @@ function generateSyntheticHeaders(firstRow, colCount) {
 }
 
 /* ── Convert date formats: "MM/DD/YYYY" → "YYYY-MM-DD", handle "Month-to-Month" ── */
+const MONTH_MAP = { jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,sept:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12 };
 function normalizeDate(s) {
   if (!s) return "";
   const str = String(s).trim();
   if (/month.to.month/i.test(str)) return "MTM";
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   // MM/DD/YYYY or M/D/YYYY
   const mdy = str.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
   if (mdy) return `${mdy[3]}-${mdy[1].padStart(2,"0")}-${mdy[2].padStart(2,"0")}`;
-  // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  // "Jan 15, 2026" or "January 15 2026"
+  const named = str.match(/^([a-z]+)\s+(\d{1,2}),?\s+(\d{4})$/i);
+  if (named && MONTH_MAP[named[1].toLowerCase()]) return `${named[3]}-${String(MONTH_MAP[named[1].toLowerCase()]).padStart(2,"0")}-${named[2].padStart(2,"0")}`;
+  // "15 Jan 2026"
+  const dmy = str.match(/^(\d{1,2})\s+([a-z]+)\s+(\d{4})$/i);
+  if (dmy && MONTH_MAP[dmy[2].toLowerCase()]) return `${dmy[3]}-${String(MONTH_MAP[dmy[2].toLowerCase()]).padStart(2,"0")}-${dmy[1].padStart(2,"0")}`;
   return str;
 }
+
+/* ── Normalize "LastName, FirstName" → "FirstName LastName" ── */
+function normalizeNameOrder(name) {
+  if (!name) return name;
+  const s = String(name).trim();
+  // "Garcia, Maria" → "Maria Garcia"
+  const m = s.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)$/);
+  if (m) return m[2] + " " + m[1];
+  return s;
+}
+
+/* ── Junk row detection ── */
+const JUNK_NAMES = /^(total|subtotal|grand\s*total|sum|count|average|avg|—|--|n\/a)$/i;
 
 /* ── Split combined lease term: "03/05/2025 – 02/28/2027" → [moveIn, leaseEnd] ── */
 function splitLeaseTerm(s) {
@@ -199,6 +221,12 @@ function parseXLSX(buffer) {
 }
 
 function autoMap(headers) {
+  // Try preset matching first (TurboTenant, AppFolio, etc.)
+  for (const [presetKey, preset] of Object.entries(PRESETS)) {
+    const matched = applyPreset(presetKey, headers);
+    if (Object.keys(matched).length >= 3) return matched; // good enough match
+  }
+  // Fall back to regex pattern matching
   const m = {};
   for (const h of headers) { const n = h.toLowerCase().trim(); for (const [k, p] of Object.entries(PATS)) { if (p.test(n) && !m[k]) { m[k] = h; break; } } }
   return m;
@@ -213,10 +241,16 @@ function applyPreset(key, headers) {
 
 const normAddr = s => {
   let a = (s||"").trim().replace(/\s+/g," ").replace(/[.,#]/g,"").toLowerCase();
-  // Strip city/state/zip if appended (e.g. "3026 Turf AVE NW Huntsville AL 35816")
-  a = a.replace(/\s+(huntsville|madison|decatur|athens)\s+(al|alabama)\s*\d{0,5}\s*$/i, "");
+  // Strip city/state/zip generically: "City ST 12345" or "City, ST 12345" at end
+  a = a.replace(/[,\s]+[a-z]{2,}\s+[a-z]{2}\s*\d{5}(-\d{4})?\s*$/i, "");
+  // Also strip bare "City ST" at end (no zip) — only if preceded by a directional
+  a = a.replace(/(\b(?:nw|ne|sw|se|n|s|e|w)\b)\s+[a-z]+\s+[a-z]{2}\s*$/i, "$1");
   // Normalize street abbreviations
-  a = a.replace(/\bdrive\b/gi, "dr").replace(/\bavenue\b/gi, "ave").replace(/\bstreet\b/gi, "st").replace(/\bboulevard\b/gi, "blvd").replace(/\blane\b/gi, "ln").replace(/\bcourt\b/gi, "ct");
+  a = a.replace(/\bdrive\b/g, "dr").replace(/\bavenue\b/g, "ave").replace(/\bstreet\b/g, "st")
+    .replace(/\bboulevard\b/g, "blvd").replace(/\blane\b/g, "ln").replace(/\bcourt\b/g, "ct")
+    .replace(/\broad\b/g, "rd").replace(/\bcircle\b/g, "cir").replace(/\bplace\b/g, "pl")
+    .replace(/\bhighway\b/g, "hwy").replace(/\bterrace\b/g, "ter").replace(/\btrail\b/g, "trl")
+    .replace(/\bparkway\b/g, "pkwy").replace(/\bway\b/g, "way");
   return a.trim();
 };
 const fmtPhone = v => { const d = (v||"").replace(/\D/g,""); return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : v; };
@@ -262,8 +296,9 @@ function parseLeaseColumn(str) {
   addressPart = addressPart.replace(/U([A-Z])~/gi, "U$1-");
   tenantName = tenantName.replace(/U([A-Z])~/gi, "U$1-");
 
-  // Strip city/state/zip from address part
-  addressPart = addressPart.replace(/,?\s*(Huntsville|Madison|Decatur|Athens)\s+(AL|Alabama)\s*\d{0,5}\s*$/i, "").trim();
+  // Strip city/state/zip from address part (generic: "City ST 12345")
+  addressPart = addressPart.replace(/[,\s]+[A-Za-z]+\s+[A-Z]{2}\s*\d{5}(-\d{4})?\s*$/i, "").trim();
+  addressPart = addressPart.replace(/,?\s*[A-Za-z]+\s+(AL|Alabama|GA|Georgia|TN|Tennessee|FL|Florida|TX|Texas|CA|California|NY|NC|SC|VA|OH|IL|PA|MI|IN|WI|MN|MO|MD|MA|AZ|CO|OR|WA|NV|NJ|CT)\s*\d{0,5}\s*$/i, "").trim();
 
   // Strip tenant name if it leaked into room or address (e.g. "2 Manvith Amara" or "3026 Turf Ave. NW B, 2 Manvith Amara")
   // Detect: string ending with two+ capitalized words that look like a name, optionally after a number
@@ -373,8 +408,16 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
 
   for (const row of rows) {
     const g = k => row[colMap[k]] || "";
-    const name = g("name"), addr = g("propertyAddress");
+    // Merge first + last name if both mapped
+    let name = g("name");
+    const lastName = colMap.lastName ? (row[colMap.lastName] || "") : "";
+    if (lastName && name) name = name + " " + lastName;
+    // Normalize "LastName, FirstName" → "FirstName LastName"
+    name = normalizeNameOrder(name);
+    const addr = g("propertyAddress");
     if (!name) { skipped.push({ line: row._line, reason: "Missing tenant name" }); continue; }
+    // Filter junk rows (TOTAL, SUBTOTAL, etc.)
+    if (JUNK_NAMES.test(name.trim())) { skipped.push({ line: row._line, reason: `Skipped summary row "${name}"` }); continue; }
     if (!addr) { skipped.push({ line: row._line, reason: `No property address for "${name}"` }); continue; }
 
     let na = normAddr(addr);
@@ -607,6 +650,7 @@ export default function SmartImporter({
     setFileErr("");
     const ext = file.name.toLowerCase().split(".").pop();
     if (!["csv", "xlsx", "xls"].includes(ext)) { setFileErr("Please upload a spreadsheet file (.csv, .xlsx, or .xls)."); return; }
+    if (file.size > 10 * 1024 * 1024) { setFileErr("File is too large (max 10MB). Try exporting fewer rows or splitting into multiple files."); return; }
     setFileName(file.name);
     const reader = new FileReader();
     reader.onerror = () => setFileErr("Failed to read file.");
@@ -831,7 +875,7 @@ export default function SmartImporter({
                   room.tenant = mkTenant(primary); room.coTenants = coTenants;
                 }
                 for (let ti = 0; ti < active.length; ti++) {
-                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
+                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
                   ok++; tick();
                 }
                 addLog(`  ${rd.name}: ${active.length} co-tenants (${active.map(t => t.name).join(", ")})`);
@@ -856,7 +900,7 @@ export default function SmartImporter({
                   room.tenant = mkTenant(current); room.tenantHistory = history;
                 }
                 for (let ti = 0; ti < active.length; ti++) {
-                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
+                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
                   ok++; tick();
                 }
                 addLog(`  ${rd.name}: ${current.name} (current), ${history.length} archived`);
@@ -876,7 +920,7 @@ export default function SmartImporter({
                     room.rent = rent || room.rent; room.le = t.leaseEnd || room.le; room.st = "occupied";
                     room.tenant = mkTenant(t);
                   }
-                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, addr: prop.addr || pd.addr, name: room.name, rent, sd };
+                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent, sd };
                   ok++; tick();
                 }
               }
@@ -921,7 +965,9 @@ export default function SmartImporter({
                 await syncTenantToSupabase({ name: t.name, email: t.email, phone: t.phone, moveIn: t.moveIn, leaseEnd: t.leaseEnd, rent, sd, propName: rm.addr, roomName: rm.name, doorCode: t.doorCode || "", appDataRoomId: rm.id, charges });
                 if (t.moveIn || t.leaseEnd) {
                   const lid = uid() + uid();
-                  await supa("lease_instances", { method: "POST", prefer: "resolution=merge-duplicates", body: JSON.stringify({ id: lid, workspace_id: null, template_id: LT_ID, tenant_id: t.email || null, room_id: rm.id, property_id: null, variable_data: { id: lid, tenantName: t.name, tenantEmail: t.email, roomId: rm.id, LEASE_START: t.moveIn || "", LEASE_END: t.leaseEnd || "", MONTHLY_RENT: rent, SECURITY_DEPOSIT: sd }, status: "draft", updated_at: new Date().toISOString() }) });
+                  const wsId = settings?.workspace_id || null;
+                  const ltId = settings?.leaseTemplateId || DEFAULT_LT_ID;
+                  await supa("lease_instances", { method: "POST", prefer: "resolution=merge-duplicates", body: JSON.stringify({ id: lid, workspace_id: wsId, template_id: ltId, tenant_id: t.email || null, room_id: rm.id, property_id: rm.propId || null, variable_data: { id: lid, tenantName: t.name, tenantEmail: t.email, roomId: rm.id, LEASE_START: t.moveIn || "", LEASE_END: t.leaseEnd || "", MONTHLY_RENT: rent, SECURITY_DEPOSIT: sd }, status: "draft", updated_at: new Date().toISOString() }) });
                 }
                 tick();
               } catch (e) { addLog(`Sync error: ${t.name} — ${e.message || "failed"}`, "err"); err++; tick(); }
@@ -949,6 +995,13 @@ export default function SmartImporter({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
+
+  // Escape key closes modal
+  useEffect(() => {
+    const handler = e => { if (e.key === "Escape") handleClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleClose]);
 
   /* ═══════════════════════════════════════════════ */
   /*  RENDER                                         */
@@ -1044,7 +1097,8 @@ export default function SmartImporter({
                 style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px dashed rgba(0,0,0,.12)", fontSize: 12, fontFamily: "inherit", color: "#1a1714", resize: "vertical", background: "rgba(0,0,0,.015)" }}
                 onPaste={e => {
                   const text = e.clipboardData.getData("text");
-                  if (!text || !text.includes("\t")) return; // not tab-separated
+                  if (!text) return;
+                  if (!text.includes("\t")) { setFileErr("Pasted data must be tab-separated. Copy rows directly from a spreadsheet or browser table, not plain text."); return; }
                   e.preventDefault();
                   // Parse tab-separated pasted data
                   const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.trim());
@@ -1114,7 +1168,7 @@ export default function SmartImporter({
                 <div style={{ fontSize: 13, color: "#5c4a3a", lineHeight: 1.6 }}>
                   We found {headers.length} columns and {csvRows.length} rows in <strong>{fileName}</strong>.
                   Click each column header to tell us what it contains.
-                  {Object.keys(colMap).length > 0 && <span style={{ color: "#2d6a3f", fontWeight: 600 }}> We auto-detected {Object.keys(colMap).length} — verify they're correct.</span>}
+                  {Object.keys(colMap).length > 0 && <span style={{ color: _ac, fontWeight: 600 }}> We auto-detected {Object.keys(colMap).length} — verify they're correct.</span>}
                 </div>
               </div>
 
@@ -1155,7 +1209,7 @@ export default function SmartImporter({
                     })}
                   </tr></thead>
                   <tbody>
-                    {csvRows.slice(0, 3).map((row, i) => (
+                    {csvRows.slice(0, 5).map((row, i) => (
                       <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,.015)" }}>
                         {headers.map(h => (
                           <td key={h} style={{ padding: "7px 10px", color: "#1a1714", borderBottom: "1px solid rgba(0,0,0,.04)", whiteSpace: "nowrap", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", fontSize: 12 }}>{row[h] || <span style={{ color: "#ccc" }}>—</span>}</td>
@@ -1169,7 +1223,7 @@ export default function SmartImporter({
               {/* Status */}
               <div style={{ display: "flex", gap: 12, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ fontSize: 12, color: "#5c4a3a" }}>
-                  <strong style={{ color: "#2d6a3f" }}>{Object.keys(colMap).length}</strong> of {headers.length} columns mapped
+                  <strong style={{ color: _ac }}>{Object.keys(colMap).length}</strong> of {headers.length} columns mapped
                 </div>
                 {!colMap.name && <span style={{ fontSize: 11, color: "#c45c4a", fontWeight: 600 }}>Name column is required — click a header to assign it</span>}
                 {colMap.name && !colMap.propertyAddress && <span style={{ fontSize: 11, color: "#c45c4a", fontWeight: 600 }}>Property address column is required</span>}
@@ -1224,7 +1278,7 @@ export default function SmartImporter({
                   <input type="date" style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", minHeight: 32 }} onChange={e => bulkSet(k, e.target.value)} />
                 </div>
               ))}
-              {bulkApplied && <span style={{ fontSize: 11, color: "#2d6a3f", fontWeight: 600 }}>{bulkApplied}</span>}
+              {bulkApplied && <span style={{ fontSize: 11, color: _ac, fontWeight: 600 }}>{bulkApplied}</span>}
             </div>
 
             {/* Property tree */}
@@ -1243,7 +1297,7 @@ export default function SmartImporter({
                     <select value={prop.type} onClick={e => e.stopPropagation()} onChange={e => uProp(pi, "type", e.target.value)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", minHeight: 32 }}>
                       {PTYPES.map(t => <option key={t}>{t}</option>)}
                     </select>
-                    <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 100, background: prop.isExisting ? "rgba(45,106,63,.1)" : `rgba(${_acR},.1)`, color: prop.isExisting ? "#2d6a3f" : _ac }}>{prop.isExisting ? "EXISTS" : "NEW"}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 100, background: prop.isExisting ? `rgba(${_acR},.1)` : `rgba(${_acR},.1)`, color: prop.isExisting ? "#2d6a3f" : _ac }}>{prop.isExisting ? "EXISTS" : "NEW"}</span>
                     <button onClick={e => { e.stopPropagation(); rmProp(pi); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", padding: 6, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}><IX /></button>
                   </div>
 
@@ -1291,7 +1345,7 @@ export default function SmartImporter({
                               <input type="checkbox" checked={!!unit.ownerOccupied} onChange={() => toggleOwnerOccupied(pi, ui)} /> Owner-occupied
                             </label>
                             {/* Delete unit */}
-                            {prop.units.length > 1 && <button onClick={() => delUnit(pi, ui)} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", fontSize: 9, padding: "2px 4px" }}><IX /></button>}
+                            {prop.units.length > 1 && <button onClick={() => { const tc = unit.rooms.reduce((s, r) => s + r.tenants.filter(t => !t.excluded).length, 0); setConfirmModal({ title: "Delete " + unit.name + "?", body: tc ? tc + " tenant" + (tc !== 1 ? "s" : "") + " in this unit will be removed from import." : "This empty unit will be removed.", onConfirm: () => delUnit(pi, ui), danger: true }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", fontSize: 9, padding: "4px 6px", minHeight: 28, minWidth: 28, display: "flex", alignItems: "center", justifyContent: "center" }} title="Delete unit"><IX /></button>}
                           </div>
 
                           {unit.rooms.map((room, ri) => (
@@ -1511,29 +1565,29 @@ export default function SmartImporter({
                                       <input type="checkbox" checked={!!room.privateBath} onChange={() => togglePrivateBath(pi, ui, ri)} /> Private Bath
                                     </label>}
                                     {prop.units.length > 1 && (
-                                      <select value="" onChange={e => { if (e.target.value !== "") moveTenantToUnit(pi, ui, ri, ti, Number(e.target.value)); }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
+                                      <select value="" onChange={e => { if (e.target.value !== "") moveTenantToUnit(pi, ui, ri, origTi, Number(e.target.value)); }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
                                         <option value="">Move to unit...</option>
                                         {prop.units.map((u2, ui2) => ui2 !== ui ? <option key={ui2} value={ui2}>{u2.name}</option> : null)}
                                       </select>
                                     )}
                                     {unit.rooms.length > 1 && (
-                                      <select value="" onChange={e => { if (e.target.value !== "") { const toRi = Number(e.target.value); setDirty(true); setStructure(p => p.map((x, i) => { if (i !== pi) return x; const units = JSON.parse(JSON.stringify(x.units)); const tenant = { ...units[ui].rooms[ri].tenants[ti] }; units[ui].rooms[ri].tenants.splice(ti, 1); units[ui].rooms[toRi].tenants.push(tenant); return { ...x, units }; })); } }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
+                                      <select value="" onChange={e => { if (e.target.value !== "") { const toRi = Number(e.target.value); setDirty(true); setStructure(p => p.map((x, i) => { if (i !== pi) return x; const units = JSON.parse(JSON.stringify(x.units)); const tenant = { ...units[ui].rooms[ri].tenants[origTi] }; units[ui].rooms[ri].tenants.splice(origTi, 1); units[ui].rooms[toRi].tenants.push(tenant); return { ...x, units }; })); } }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.1)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 28 }}>
                                         <option value="">Move to room...</option>
                                         {unit.rooms.map((r2, ri2) => ri2 !== ri ? <option key={ri2} value={ri2}>{r2.name}</option> : null)}
                                       </select>
                                     )}
                                   </div>
                                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
-                                    <div><label style={lbl}>Move-In</label><input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, ti, "moveIn", e.target.value)} style={fld} /></div>
-                                    <div><label style={lbl}>Lease End</label><input type="date" value={t.leaseEnd || ""} onChange={e => uTen(pi, ui, ri, ti, "leaseEnd", e.target.value)} style={fld} /></div>
-                                    <div><label style={lbl}>Security Deposit</label><input type="number" value={t.sd || ""} onChange={e => uTen(pi, ui, ri, ti, "sd", e.target.value)} style={fld} placeholder="$" /></div>
-                                    <div><label style={lbl}>Door Code</label><input value={t.doorCode || ""} onChange={e => uTen(pi, ui, ri, ti, "doorCode", e.target.value)} style={fld} /></div>
+                                    <div><label style={lbl}>Move-In</label><input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, origTi, "moveIn", e.target.value)} style={fld} /></div>
+                                    <div><label style={lbl}>Lease End</label><input type="date" value={t.leaseEnd || ""} onChange={e => uTen(pi, ui, ri, origTi, "leaseEnd", e.target.value)} style={fld} /></div>
+                                    <div><label style={lbl}>Security Deposit</label><input type="number" value={t.sd || ""} onChange={e => uTen(pi, ui, ri, origTi, "sd", e.target.value)} style={fld} placeholder="$" /></div>
+                                    <div><label style={lbl}>Door Code</label><input value={t.doorCode || ""} onChange={e => uTen(pi, ui, ri, origTi, "doorCode", e.target.value)} style={fld} /></div>
                                   </div>
                                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, marginTop: 10 }}>
-                                    <div><label style={lbl}>Email</label><input value={t.email || ""} onChange={e => uTen(pi, ui, ri, ti, "email", e.target.value)} style={fld} /></div>
-                                    <div><label style={lbl}>Phone</label><input value={t.phone || ""} onBlur={e => uTen(pi, ui, ri, ti, "phone", fmtPhone(e.target.value))} onChange={e => uTen(pi, ui, ri, ti, "phone", e.target.value)} style={fld} /></div>
+                                    <div><label style={lbl}>Email</label><input value={t.email || ""} onChange={e => uTen(pi, ui, ri, origTi, "email", e.target.value)} style={fld} /></div>
+                                    <div><label style={lbl}>Phone</label><input value={t.phone || ""} onBlur={e => uTen(pi, ui, ri, origTi, "phone", fmtPhone(e.target.value))} onChange={e => uTen(pi, ui, ri, origTi, "phone", e.target.value)} style={fld} /></div>
                                     <div><label style={lbl}>Occupation</label>
-                                      <select value={t.occupationType || ""} onChange={e => uTen(pi, ui, ri, ti, "occupationType", e.target.value)} style={fld}>
+                                      <select value={t.occupationType || ""} onChange={e => uTen(pi, ui, ri, origTi, "occupationType", e.target.value)} style={fld}>
                                         <option value="">—</option>
                                         {["Intern","DoD Contractor","Military","Remote Worker","Student","Travel Nurse","Other"].map(o => <option key={o}>{o}</option>)}
                                       </select>
