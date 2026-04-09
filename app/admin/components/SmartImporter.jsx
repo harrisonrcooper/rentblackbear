@@ -1313,13 +1313,18 @@ export default function SmartImporter({
                                       if (isUpcoming) return { bg: "#B5D4F4", text: "#0C447C" };
                                       return { bg: _ac, text: "#fff" };
                                     };
-                                    // Find gaps between sequential tenants
+                                    // Find gaps AND overlaps between sequential tenants
                                     const gaps = [];
+                                    const overlaps = [];
                                     for (let gi = 0; gi < sorted.length - 1; gi++) {
                                       const prevEnd = sorted[gi].leaseEnd;
                                       const nextStart = sorted[gi + 1].moveIn;
-                                      if (prevEnd && nextStart && prevEnd !== "MTM" && nextStart !== "MTM" && prevEnd < nextStart) {
-                                        gaps.push({ from: prevEnd, to: nextStart, days: daysBetween(prevEnd, nextStart) });
+                                      if (prevEnd && nextStart && prevEnd !== "MTM" && nextStart !== "MTM") {
+                                        if (prevEnd < nextStart) {
+                                          gaps.push({ from: prevEnd, to: nextStart, days: daysBetween(prevEnd, nextStart) });
+                                        } else if (prevEnd > nextStart) {
+                                          overlaps.push({ from: nextStart, to: prevEnd, days: daysBetween(nextStart, prevEnd), tenantA: sorted[gi].name, tenantB: sorted[gi + 1].name });
+                                        }
                                       }
                                     }
                                     return (
@@ -1330,9 +1335,9 @@ export default function SmartImporter({
                                           </button>
                                           {/* Legend */}
                                           {!ganttHidden && <div style={{ display: "flex", gap: 8, marginLeft: 8 }}>
-                                            {[[_ac, "Current"], ["#FCA5A5", "Past"], ["#B5D4F4", "Upcoming"]].map(([c, l]) => (
+                                            {[[_ac, "Current"], ["#FCA5A5", "Past"], ["#B5D4F4", "Upcoming"], ...(gaps.length ? [[`rgba(${_acR},.2)`, "Vacancy"]] : []), ...(overlaps.length ? [["rgba(196,92,74,.2)", "Overlap"]] : [])].map(([c, l]) => (
                                               <div key={l} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 9, color: "#5c4a3a" }}>
-                                                <div style={{ width: 8, height: 8, borderRadius: 2, background: c }} />{l}
+                                                <div style={{ width: 8, height: 8, borderRadius: 2, background: c, border: l === "Vacancy" ? `1px dashed ${_ac}` : l === "Overlap" ? "1px dashed #c45c4a" : "none", boxSizing: "border-box" }} />{l}
                                               </div>
                                             ))}
                                           </div>}
@@ -1349,6 +1354,14 @@ export default function SmartImporter({
                                               const gRight = pct(g.to);
                                               return <div key={"g" + gi} style={{ position: "absolute", left: gLeft + "%", width: Math.max(gRight - gLeft, 0.5) + "%", top: 0, bottom: 14, background: `rgba(${_acR},.08)`, border: `1px dashed rgba(${_acR},.3)`, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", zIndex: 1 }}>
                                                 {g.days > 7 && <span style={{ fontSize: 8, fontWeight: 700, color: _ac, whiteSpace: "nowrap" }}>{g.days}d gap</span>}
+                                              </div>;
+                                            })}
+                                            {/* Overlap zones */}
+                                            {overlaps.map((o, oi) => {
+                                              const oLeft = pct(o.from);
+                                              const oRight = pct(o.to);
+                                              return <div key={"o" + oi} style={{ position: "absolute", left: oLeft + "%", width: Math.max(oRight - oLeft, 0.5) + "%", top: 0, bottom: 14, background: "rgba(196,92,74,.1)", border: "1px dashed rgba(196,92,74,.4)", borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", zIndex: 4 }}>
+                                                <span style={{ fontSize: 8, fontWeight: 700, color: "#c45c4a", whiteSpace: "nowrap" }}>{o.days}d overlap</span>
                                               </div>;
                                             })}
                                             {/* Bars */}
@@ -1391,6 +1404,14 @@ export default function SmartImporter({
                                                 <span style={{ width: 8, height: 8, borderRadius: 2, background: `rgba(${_acR},.2)`, border: `1px dashed ${_ac}`, flexShrink: 0, boxSizing: "border-box" }} />
                                                 <span style={{ fontWeight: 600, color: _ac }}>{g.days}-day vacancy gap</span>
                                                 <span>{fmtD(g.from)} {"\u2192"} {fmtD(g.to)}</span>
+                                              </div>
+                                            ))}
+                                            {overlaps.length > 0 && overlaps.map((o, oi) => (
+                                              <div key={"ol" + oi} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#c45c4a", lineHeight: "20px" }}>
+                                                <span style={{ width: 8, height: 8, borderRadius: 2, background: "rgba(196,92,74,.2)", border: "1px dashed #c45c4a", flexShrink: 0, boxSizing: "border-box" }} />
+                                                <span style={{ fontWeight: 600 }}>{o.days}-day overlap</span>
+                                                <span>{o.tenantA} {"\u00D7"} {o.tenantB}</span>
+                                                <span style={{ color: "#5c4a3a" }}>{fmtD(o.from)} {"\u2192"} {fmtD(o.to)}</span>
                                               </div>
                                             ))}
                                           </div>
