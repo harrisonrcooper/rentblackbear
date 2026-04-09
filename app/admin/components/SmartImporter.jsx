@@ -982,7 +982,7 @@ export default function SmartImporter({
                 addLog(`  ${rd.name}: ${active.length} co-tenants (${active.map(t => t.name).join(", ")})`);
 
               } else if (mode === "sequential" && active.length > 1) {
-                // Sequential: current tenant active, others archived
+                // Sequential: current tenant active, future tenants stored as incoming, past archived
                 const sorted = [...active].sort((a, b) => (a.moveIn || "").localeCompare(b.moveIn || ""));
                 let currentIdx = sorted.length - 1;
                 for (let si = 0; si < sorted.length; si++) {
@@ -990,7 +990,12 @@ export default function SmartImporter({
                   if (t.moveIn && t.moveIn <= todayStr && (!t.leaseEnd || t.leaseEnd === "MTM" || t.leaseEnd >= todayStr)) { currentIdx = si; break; }
                 }
                 const current = sorted[currentIdx];
-                const history = sorted.filter((_, si) => si !== currentIdx).map(t => ({ ...mkTenant(t), rent: Number(t.rent) || 0, leaseEnd: t.leaseEnd }));
+                const others = sorted.filter((_, si) => si !== currentIdx);
+                const futureTenants = others.filter(t => t.moveIn && t.moveIn > todayStr);
+                const pastTenants = others.filter(t => !t.moveIn || t.moveIn <= todayStr);
+                const history = pastTenants.map(t => ({ ...mkTenant(t), rent: Number(t.rent) || 0, leaseEnd: t.leaseEnd }));
+                // Pick the soonest future tenant as incomingTenant
+                const incoming = futureTenants.length > 0 ? futureTenants[0] : null;
                 const rent = Number(current.rent) || 0;
                 let room = unit.rooms.find(r => r.name.toLowerCase() === rd.name.toLowerCase());
                 if (!room) {
@@ -1000,8 +1005,12 @@ export default function SmartImporter({
                   room.rent = rent || room.rent; room.le = current.leaseEnd || room.le; room.st = "occupied";
                   room.tenant = mkTenant(current); room.tenantHistory = history;
                 }
+                // Store incoming future tenant on the room
+                if (incoming) {
+                  room.incomingTenant = { ...mkTenant(incoming), rent: Number(incoming.rent) || 0, leaseEnd: incoming.leaseEnd || "", sd: parseRent(incoming.sd) || Number(incoming.rent) || 0 };
+                }
                 for (let ti = 0; ti < active.length; ti++) {
-                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0 };
+                  roomMap[`${pd._id}-${ud._id}-${rd._id}-${ti}`] = { id: room.id, propId: prop.id, addr: prop.addr || pd.addr, name: room.name, rent: Number(active[ti].rent) || 0, sd: parseRent(active[ti].sd) || Number(active[ti].rent) || 0, recurringDueDay: room.recurringDueDay };
                   ok++;
                 }
                 // Archive only truly past tenants (leaseEnd < today) to Past tab
@@ -1018,7 +1027,7 @@ export default function SmartImporter({
                     setArchive(prev => [...archiveEntries, ...(prev || [])]);
                   }
                 }
-                addLog(`  ${rd.name}: ${current.name} (current tenant), ${history.length} past tenant${history.length>1?"s":""} saved to history (${history.map(h=>h.name).join(", ")})`);
+                addLog(`  ${rd.name}: ${current.name} (current)${incoming ? ", " + incoming.name + " (incoming)" : ""}${history.length > 0 ? ", " + history.length + " past" : ""}`);
 
               } else {
                 // Separate rooms (default): each tenant gets own room

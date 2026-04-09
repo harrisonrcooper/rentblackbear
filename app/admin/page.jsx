@@ -1363,7 +1363,16 @@ export default function Page(){
       if(!occupiedRoom)return[];
       return[{...occupiedRoom,name:u.name||(p.addr||p.name)+(" Unit"),propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:true}];
     }
-    return(u.rooms||[]).filter(r=>r.tenant&&!r.ownerOccupied).map(r=>({...r,propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false}));
+    const result=[];
+    (u.rooms||[]).forEach(r=>{
+      if(r.ownerOccupied)return;
+      if(r.tenant)result.push({...r,propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false});
+      /* Include incoming future tenants as virtual entries so they appear in the Future tab */
+      if(r.incomingTenant){
+        result.push({...r,id:r.id+"_incoming",tenant:r.incomingTenant,rent:r.incomingTenant.rent||r.rent,le:r.incomingTenant.leaseEnd||"",propName:p.addr||p.name,propId:p.id,unitId:u.id,unitName:u.name,propUtils:u.utils||p.utils,propClean:u.clean||p.clean,isWholeUnit:false,isIncoming:true});
+      }
+    });
+    return result;
   }));
   const occLeases=props.flatMap(pr=>(pr.units||[]).flatMap(u=>{
     if(u.ownerOccupied)return[];
