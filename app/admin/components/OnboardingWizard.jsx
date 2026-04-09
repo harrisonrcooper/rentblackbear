@@ -33,7 +33,7 @@ const OTC_TYPES=["Move-In Fee","Admin Fee","Key Replacement","Lock Change","Clea
 // ─── Shared styles ───────────────────────────────────────────────────
 const TH={padding:"8px 12px",textAlign:"left",fontSize:11,fontWeight:600,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:".5px"};
 const TD={padding:"8px 12px",verticalAlign:"middle"};
-const INP={fontSize:13,padding:"6px 10px",borderRadius:6,border:"1px solid rgba(128,128,128,.25)",fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
+const INP={fontSize:13,padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.2)",fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
 
 // ─── Main Component ──────────────────────────────────────────────────
 export default function OnboardingWizard({
@@ -277,20 +277,20 @@ export default function OnboardingWizard({
       {PHASES.map((p,i)=>{const st=phaseStatus(p.id),active=phase===p.id;return(
         <div key={p.id} style={{display:"flex",alignItems:"center",flex:1,minWidth:0}}>
           <button onClick={()=>guardedSetPhase(p.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,border:"none",cursor:"pointer",background:active?accBgS:"transparent",color:active?_acc:st==="done"?_acc:"inherit",opacity:active||st==="done"?1:.45,fontWeight:active?700:500,fontSize:13,fontFamily:"inherit",transition:"all .15s",minHeight:44,minWidth:44,whiteSpace:"nowrap"}}>
-            <span style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:st==="done"?_acc:active?accBgS:"rgba(128,128,128,.12)",color:st==="done"?_accContrast:active?_acc:"inherit",fontSize:11,fontWeight:700,flexShrink:0}}>
+            <span style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:st==="done"?_acc:active?accBgS:"rgba(0,0,0,.1)",color:st==="done"?_accContrast:active?_acc:"inherit",fontSize:11,fontWeight:700,flexShrink:0}}>
               {st==="done"?<IcoCheck/>:p.id}
             </span>
             <span>{p.label}</span>
           </button>
-          {i<4&&<div style={{flex:1,height:2,background:st==="done"?_acc:"rgba(128,128,128,.15)",margin:"0 4px",borderRadius:1,minWidth:8}}/>}
+          {i<4&&<div style={{flex:1,height:2,background:st==="done"?_acc:"rgba(0,0,0,.12)",margin:"0 4px",borderRadius:1,minWidth:8}}/>}
         </div>);})}
     </div>
 
     {/* Progress */}
-    <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"rgba(128,128,128,.04)",borderRadius:10,marginBottom:24,border:"1px solid rgba(128,128,128,.1)"}}>
+    <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:"rgba(0,0,0,.03)",borderRadius:10,marginBottom:24,border:"1px solid rgba(0,0,0,.08)"}}>
       <div style={{flex:1}}>
         <div style={{fontSize:13,fontWeight:600,marginBottom:4}}>Onboarding Progress</div>
-        <div style={{height:6,background:"rgba(128,128,128,.1)",borderRadius:3,overflow:"hidden"}}>
+        <div style={{height:6,background:"rgba(0,0,0,.08)",borderRadius:3,overflow:"hidden"}}>
           <div style={{height:"100%",width:`${(doneCount/5)*100}%`,background:_acc,borderRadius:3,transition:"width .3s"}}/>
         </div>
       </div>
@@ -367,9 +367,9 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
     </div>)}
 
     {propRows.map(p=>(
-    <div key={p.id} style={{border:"1px solid rgba(128,128,128,.12)",borderRadius:10,overflow:"hidden",marginBottom:12}}>
+    <div key={p.id} style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:10,overflow:"hidden",marginBottom:12}}>
       {/* Property header — editable address, type, late fee, due date */}
-      <div style={{padding:"12px 16px",background:"rgba(128,128,128,.04)",display:"flex",flexWrap:"wrap",gap:10,alignItems:"flex-end"}}>
+      <div style={{padding:"12px 16px",background:"rgba(0,0,0,.03)",display:"flex",flexWrap:"wrap",gap:10,alignItems:"flex-end"}}>
         <div style={{flex:2,minWidth:180}}>
           <label style={{fontSize:10,fontWeight:600,color:"#5c4a3a",display:"block",marginBottom:3}}>Address</label>
           <input value={p.addr||p.name||""} onChange={e=>updateProp(p.id,{addr:e.target.value})} style={{...INP,fontWeight:600}}/>
@@ -403,17 +403,17 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
       {/* Unit table */}
       <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:600}}>
-        <thead><tr style={{background:"rgba(128,128,128,.02)"}}>
+        <thead><tr style={{background:"rgba(0,0,0,.02)"}}>
           <th style={{...TH,width:44}}></th>
           <th style={TH}>Unit</th><th style={TH}>Mode</th><th style={TH}>Rooms</th><th style={TH}>Utility Template</th><th style={{...TH,width:44}}></th>
         </tr></thead>
         <tbody>{p.units.map(u=>{
           const isExp=expanded===u.id,hasUtil=!!u.utils;
           return[
-          <tr key={u.id} style={{borderTop:"1px solid rgba(128,128,128,.08)"}}>
+          <tr key={u.id} style={{borderTop:"1px solid rgba(0,0,0,.06)"}}>
             <td style={TD}><input type="checkbox" checked={sel.includes(u.id)} onChange={()=>setSel(p2=>p2.includes(u.id)?p2.filter(x=>x!==u.id):[...p2,u.id])} style={{width:18,height:18}}/></td>
             <td style={{...TD,fontWeight:500}}>{u.name||"Main"}</td>
-            <td style={TD}><span style={{fontSize:11,padding:"2px 8px",borderRadius:4,background:"rgba(128,128,128,.08)"}}>{(u.rentalMode||"byRoom")==="wholeHouse"?"Whole Unit":"By Room"}</span></td>
+            <td style={TD}><span style={{fontSize:11,padding:"2px 8px",borderRadius:4,background:"rgba(0,0,0,.06)"}}>{(u.rentalMode||"byRoom")==="wholeHouse"?"Whole Unit":"By Room"}</span></td>
             <td style={TD}>{(u.rooms||[]).length}</td>
             <td style={TD}>
               <select value={u.utils||""} onChange={e=>updateUnit(p.id,u.id,{utils:e.target.value})} style={{...INP,width:"auto",minWidth:160,border:hasUtil?INP.border:`1.5px solid ${_red}`,background:hasUtil?"":"rgba(196,92,74,.04)"}}>
@@ -423,7 +423,7 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
             <td style={TD}><button onClick={()=>setExpanded(isExp?null:u.id)} style={{background:"none",border:"none",cursor:"pointer",minHeight:44,minWidth:44,display:"flex",alignItems:"center",justifyContent:"center"}}><IcoExpand open={isExp}/></button></td>
           </tr>,
           isExp&&(u.rooms||[]).map(r=>(
-            <tr key={r.id} style={{background:"rgba(128,128,128,.03)",borderTop:"1px solid rgba(128,128,128,.04)"}}>
+            <tr key={r.id} style={{background:"rgba(0,0,0,.02)",borderTop:"1px solid rgba(0,0,0,.03)"}}>
               <td style={TD}></td>
               <td style={{...TD,paddingLeft:16,color:"#5c4a3a",fontSize:12}}>{r.name}</td>
               <td style={{...TD,fontSize:12,color:"#5c4a3a"}}>{r.st==="occupied"?r.tenant?.name||"Occupied":"Vacant"}</td>
@@ -465,7 +465,7 @@ function P2({tenantRows,sel,setSel,toggleSel,toggleAll,expandedId,setExpandedId,
       <div><h2 style={{fontSize:18,fontWeight:700,margin:0}}>Tenant Finalization</h2>
         <p style={{fontSize:13,color:"#5c4a3a",margin:"4px 0 0"}}>Review and complete tenant profiles. {completeTenants} of {totalTenants} ready.</p></div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <div style={{width:80,height:6,background:"rgba(128,128,128,.1)",borderRadius:3,overflow:"hidden"}}>
+        <div style={{width:80,height:6,background:"rgba(0,0,0,.08)",borderRadius:3,overflow:"hidden"}}>
           <div style={{height:"100%",width:`${totalTenants?(completeTenants/totalTenants)*100:0}%`,background:completeTenants===totalTenants?_acc:_gold,borderRadius:3,transition:"width .3s"}}/>
         </div>
         <span style={{fontSize:12,fontWeight:600,color:completeTenants===totalTenants?_acc:"inherit",opacity:completeTenants===totalTenants?1:.5}}>{completeTenants}/{totalTenants}</span>
@@ -480,7 +480,7 @@ function P2({tenantRows,sel,setSel,toggleSel,toggleAll,expandedId,setExpandedId,
 
     <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
       {[["all",`All (${totalTenants})`],["incomplete",`Incomplete (${ct.inc})`],["expired",`Expired (${ct.exp})`],["missing-email",`No Email (${ct.noE})`],["missing-rent",`No Rent (${ct.noR})`],["missing-phone",`No Phone (${ct.noP})`]].map(([k,l])=>(
-        <button key={k} onClick={()=>setFilter(k)} style={{fontSize:11,padding:"8px 14px",borderRadius:6,border:"1px solid",fontFamily:"inherit",cursor:"pointer",fontWeight:filter===k?600:400,borderColor:filter===k?_acc:"rgba(128,128,128,.15)",color:filter===k?_acc:"inherit",opacity:filter===k?1:.5,background:filter===k?accBg:"transparent",minHeight:36}}>{l}</button>
+        <button key={k} onClick={()=>setFilter(k)} style={{fontSize:11,padding:"8px 14px",borderRadius:6,border:"1px solid",fontFamily:"inherit",cursor:"pointer",fontWeight:filter===k?600:400,borderColor:filter===k?_acc:"rgba(0,0,0,.12)",color:filter===k?_acc:"inherit",opacity:filter===k?1:.5,background:filter===k?accBg:"transparent",minHeight:36}}>{l}</button>
       ))}
     </div>
 
@@ -496,16 +496,16 @@ function P2({tenantRows,sel,setSel,toggleSel,toggleAll,expandedId,setExpandedId,
       <button onClick={()=>{setSel([]);setBulkType("");setBulkVal("");}} style={{fontSize:11,color:"#5c4a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",marginLeft:"auto",minHeight:44}}>Clear</button>
     </div>)}
 
-    <div style={{border:"1px solid rgba(128,128,128,.12)",borderRadius:10,overflow:"hidden"}}>
+    <div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:10,overflow:"hidden"}}>
       <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:700}}>
-        <thead><tr style={{background:"rgba(128,128,128,.04)"}}>
+        <thead><tr style={{background:"rgba(0,0,0,.03)"}}>
           <th style={{...TH,width:44}}><input type="checkbox" checked={sel.length===filtered.length&&filtered.length>0} onChange={()=>toggleAll(filtered)} style={{width:18,height:18}}/></th>
           <th style={TH}>Tenant</th><th style={TH}>Property</th><th style={TH}>Room</th><th style={TH}>Rent</th><th style={TH}>Move-in</th><th style={TH}>Lease End</th><th style={TH}>Status</th><th style={{...TH,width:44}}></th>
         </tr></thead>
         <tbody>
           {filtered.map(row=>{const isExp=expandedId===row.roomId;return[
-            <tr key={row.roomId} className="ob-row-hover" style={{borderTop:"1px solid rgba(128,128,128,.08)",cursor:"pointer",background:isExp?"rgba(128,128,128,.03)":"transparent"}} onClick={()=>setExpandedId(isExp?null:row.roomId)}>
+            <tr key={row.roomId} className="ob-row-hover" style={{borderTop:"1px solid rgba(0,0,0,.06)",cursor:"pointer",background:isExp?"rgba(0,0,0,.02)":"transparent"}} onClick={()=>setExpandedId(isExp?null:row.roomId)}>
               <td style={TD} onClick={e=>e.stopPropagation()}><input type="checkbox" checked={sel.includes(row.roomId)} onChange={()=>toggleSel(row.roomId)} style={{width:18,height:18}}/></td>
               <td style={{...TD,fontWeight:600}}>{row.tenant.name||"\u2014"}{row.coTenants?.length?<span style={{fontSize:10,color:"#5c4a3a",marginLeft:4}}>+{row.coTenants.length}</span>:null}</td>
               <td style={{...TD,fontSize:12}}>{row.propName}</td>
@@ -580,7 +580,7 @@ function TenantDetail({row,updateRoom,_acc,_red,_gold,TODAY,flash,setDirtyTenant
     </div>);};
 
   return(
-  <div className="ob-tenant-detail" style={{padding:"16px 20px 20px",background:"rgba(128,128,128,.03)",borderTop:"1px solid rgba(128,128,128,.06)"}}>
+  <div className="ob-tenant-detail" style={{padding:"16px 20px 20px",background:"rgba(0,0,0,.02)",borderTop:"1px solid rgba(0,0,0,.06)"}}>
     {dirty&&<div style={{fontSize:11,color:_gold,fontWeight:500,marginBottom:8}}>Unsaved changes</div>}
     <div style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:14}}>
       {fld("Name","name")}{fld("Email","email","email")}{fld("Phone","phone","tel")}{fld("Occupation","occupation","select",{options:OCC_TYPES})}
@@ -609,7 +609,7 @@ function TenantDetail({row,updateRoom,_acc,_red,_gold,TODAY,flash,setDirtyTenant
       </div>
     </div>
     {!f.lateFeeExempt&&<div style={{fontSize:11,color:"#7a7067",marginBottom:14}}>Late fee: {fmtS(lateFeeDefaults.amount)} after {ord(lateFeeDefaults.grace)} day, +{fmtS(lateFeeDefaults.daily)}/day (change in PM Settings)</div>}
-    {f.paymentPlanActive&&<div style={{marginBottom:14,padding:12,background:"rgba(128,128,128,.04)",borderRadius:8,border:"1px solid rgba(128,128,128,.1)"}}>
+    {f.paymentPlanActive&&<div style={{marginBottom:14,padding:12,background:"rgba(0,0,0,.03)",borderRadius:8,border:"1px solid rgba(0,0,0,.08)"}}>
       <div style={{fontSize:12,fontWeight:600,marginBottom:10}}>Payment Plan Details</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:10}}>
         <div style={{flex:1,minWidth:100}}><label style={{fontSize:10,color:"#5c4a3a",display:"block",marginBottom:3}}>Amount per Payment</label><input type="number" value={f.paymentPlanAmount} onChange={e=>set("paymentPlanAmount",e.target.value)} placeholder="e.g. 200" style={INP}/></div>
@@ -646,20 +646,20 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
   const[selCh,setSelCh]=useState([]);
   const noHist=!needsBal.length&&!needsDep.length&&!drafts.length&&!unpaid.length;
 
-  const section=(title,desc,content)=><div style={{border:"1px solid rgba(128,128,128,.12)",borderRadius:10,padding:16,marginBottom:16}}>{content}</div>;
+  const section=(title,desc,content)=><div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:10,padding:16,marginBottom:16}}>{content}</div>;
 
   return(<div>
     <h2 style={{fontSize:18,fontWeight:700,margin:"0 0 4px"}}>Historical Data Import</h2>
     <p style={{fontSize:13,color:"#5c4a3a",margin:"0 0 20px"}}>Record pre-existing deposits, balances, and leases from your previous system</p>
 
-    {noHist&&<div style={{padding:"32px 20px",textAlign:"center",background:"rgba(128,128,128,.04)",borderRadius:10,marginBottom:20}}><div style={{fontSize:14,color:"#7a7067",marginBottom:4}}>No historical data to import</div><div style={{fontSize:12,color:"#7a7067"}}>All imported tenants appear to be new{"\u2014"}skip to charges</div></div>}
+    {noHist&&<div style={{padding:"32px 20px",textAlign:"center",background:"rgba(0,0,0,.03)",borderRadius:10,marginBottom:20}}><div style={{fontSize:14,color:"#7a7067",marginBottom:4}}>No historical data to import</div><div style={{fontSize:12,color:"#7a7067"}}>All imported tenants appear to be new{"\u2014"}skip to charges</div></div>}
 
     {needsDep.length>0&&section("Deposits","",<div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
         <div><div style={{fontSize:14,fontWeight:600}}>Security Deposits</div><div style={{fontSize:12,color:"#7a7067"}}>{needsDep.length} tenant{needsDep.length>1?"s":""} with deposits from prior system</div></div>
         {depDone?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Recorded</span>:<button onClick={recordHistoricalDeposits} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Record All Deposits</button>}
       </div>
-      <div style={{fontSize:12,color:"#7a7067",background:"rgba(128,128,128,.04)",padding:"8px 12px",borderRadius:6}}>{needsDep.map(r=><div key={r.roomId} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(128,128,128,.06)"}}><span>{r.tenant.name}</span><span style={{fontWeight:500}}>{fmtS(r.depositAmount||r.rent)}</span></div>)}</div>
+      <div style={{fontSize:12,color:"#7a7067",background:"rgba(0,0,0,.03)",padding:"8px 12px",borderRadius:6}}>{needsDep.map(r=><div key={r.roomId} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}><span>{r.tenant.name}</span><span style={{fontWeight:500}}>{fmtS(r.depositAmount||r.rent)}</span></div>)}</div>
     </div>)}
 
     {needsBal.length>0&&section("Balances","",<div>
@@ -667,7 +667,7 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
         <div><div style={{fontSize:14,fontWeight:600}}>Outstanding Balances</div><div style={{fontSize:12,color:"#7a7067"}}>{needsBal.length} tenant{needsBal.length>1?"s":""} with balances from prior system</div></div>
         {hasBal?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Recorded</span>:<button onClick={createBalanceForwards} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Create Balance Forwards</button>}
       </div>
-      <div style={{fontSize:12,color:"#7a7067",background:"rgba(128,128,128,.04)",padding:"8px 12px",borderRadius:6}}>{needsBal.map(r=><div key={r.roomId} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(128,128,128,.06)"}}><span>{r.tenant.name}</span><span style={{fontWeight:500,color:_red}}>{fmtS(r.balanceOwed)}</span></div>)}</div>
+      <div style={{fontSize:12,color:"#7a7067",background:"rgba(0,0,0,.03)",padding:"8px 12px",borderRadius:6}}>{needsBal.map(r=><div key={r.roomId} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}><span>{r.tenant.name}</span><span style={{fontWeight:500,color:_red}}>{fmtS(r.balanceOwed)}</span></div>)}</div>
     </div>)}
 
     {drafts.length>0&&section("Leases","",<div>
@@ -685,8 +685,8 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
         <div><div style={{fontSize:14,fontWeight:600}}>Pre-Existing Payments</div><div style={{fontSize:12,color:"#7a7067"}}>Mark charges that were already paid in your old system</div></div>
         {selCh.length>0&&<button onClick={()=>{markChargesPaid(selCh);setSelCh([]);}} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Mark {selCh.length} as Paid</button>}
       </div>
-      <div style={{fontSize:12,background:"rgba(128,128,128,.04)",padding:"8px 12px",borderRadius:6,maxHeight:200,overflowY:"auto"}}>{unpaid.map(c=>(
-        <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(128,128,128,.06)",cursor:"pointer",minHeight:36}}>
+      <div style={{fontSize:12,background:"rgba(0,0,0,.03)",padding:"8px 12px",borderRadius:6,maxHeight:200,overflowY:"auto"}}>{unpaid.map(c=>(
+        <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.06)",cursor:"pointer",minHeight:36}}>
           <input type="checkbox" checked={selCh.includes(c.id)} onChange={e=>setSelCh(p=>e.target.checked?[...p,c.id]:p.filter(x=>x!==c.id))} style={{width:18,height:18}}/>
           <span style={{flex:1}}>{c.tenantName} {"\u2014"} {c.category}</span><span style={{fontWeight:500}}>{fmtS(c.amount)}</span><span style={{fontSize:11,color:"#7a7067"}}>{c.dueDate}</span>
         </label>))}</div>
@@ -723,17 +723,17 @@ function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcF
       {phase4Done?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Generated</span>:<button onClick={generateCharges} className="btn" style={{background:_acc,color:"#fff",fontSize:13,minHeight:44}}>Generate All Charges</button>}
     </div>
 
-    <div style={{border:"1px solid rgba(128,128,128,.12)",borderRadius:10,overflow:"hidden",marginTop:16}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+    <div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:10,overflow:"hidden",marginTop:16}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:600}}>
-        <thead><tr style={{background:"rgba(128,128,128,.04)"}}><th style={TH}>Tenant</th><th style={TH}>Property</th><th style={TH}>Rent</th><th style={TH}>Due Day</th><th style={TH}>Amount</th><th style={TH}>Prorated</th><th style={TH}>Status</th></tr></thead>
-        <tbody>{preview.map(r=><tr key={r.roomId} style={{borderTop:"1px solid rgba(128,128,128,.08)"}}>
+        <thead><tr style={{background:"rgba(0,0,0,.03)"}}><th style={TH}>Tenant</th><th style={TH}>Property</th><th style={TH}>Rent</th><th style={TH}>Due Day</th><th style={TH}>Amount</th><th style={TH}>Prorated</th><th style={TH}>Status</th></tr></thead>
+        <tbody>{preview.map(r=><tr key={r.roomId} style={{borderTop:"1px solid rgba(0,0,0,.06)"}}>
           <td style={{...TD,fontWeight:500}}>{r.tenant.name}</td><td style={{...TD,fontSize:12}}>{r.propName}</td><td style={TD}>{fmtS(r.rent)}</td><td style={TD}>{ord(r.dueDay)}</td><td style={{...TD,fontWeight:600}}>{fmtS(r.chargeAmount)}</td>
           <td style={TD}>{r.prorated?<span style={{fontSize:11,color:_gold}}>{r.days} days</span>:"\u2014"}</td>
           <td style={TD}>{r.exists?<span style={{fontSize:11,color:_acc,fontWeight:500,display:"flex",alignItems:"center",gap:3}}><IcoCheck/> Created</span>:<span style={{fontSize:11,color:"#7a7067"}}>Pending</span>}</td>
         </tr>)}{preview.length===0&&<tr><td colSpan={7} style={{...TD,textAlign:"center",color:"#7a7067",padding:24}}>No tenants with rent amounts set</td></tr>}</tbody>
       </table></div></div>
 
-    <div style={{marginTop:16,padding:16,background:"rgba(128,128,128,.04)",borderRadius:10,border:"1px solid rgba(128,128,128,.08)"}}>
+    <div style={{marginTop:16,padding:16,background:"rgba(0,0,0,.03)",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>
       <div style={{fontSize:13,fontWeight:600,marginBottom:8}}>Late Fee Configuration</div>
       <div style={{fontSize:12,color:"#5c4a3a"}}>
         <div>Default: {fmtS(lateFeeDefaults.amount)} after {ord(lateFeeDefaults.grace)} day, +{fmtS(lateFeeDefaults.daily)}/day</div>
@@ -741,7 +741,7 @@ function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcF
       </div>
     </div>
 
-    <div style={{marginTop:16,padding:16,background:"rgba(128,128,128,.04)",borderRadius:10,border:"1px solid rgba(128,128,128,.08)"}}>
+    <div style={{marginTop:16,padding:16,background:"rgba(0,0,0,.03)",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>
       <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>One-Time Charges</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"flex-end"}}>
         <div><label style={{fontSize:11,color:"#5c4a3a",display:"block",marginBottom:3}}>Type</label><select value={otcForm.type} onChange={e=>setOtcForm(f=>({...f,type:e.target.value}))} style={{...INP,width:"auto",minWidth:140}}><option value="">Select...</option>{OTC_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
@@ -757,7 +757,7 @@ function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcF
       const tenantsWithHistory=tenantRows.filter(r=>{if(!r.tenant.moveIn||!r.rent)return false;const mi=new Date(r.tenant.moveIn+"T00:00:00");return mi<new Date(TODAY.getFullYear(),TODAY.getMonth(),1);});
       if(!tenantsWithHistory.length)return null;
       return(
-      <div style={{marginTop:16,padding:16,background:"rgba(128,128,128,.04)",borderRadius:10,border:"1px solid rgba(128,128,128,.08)"}}>
+      <div style={{marginTop:16,padding:16,background:"rgba(0,0,0,.03)",borderRadius:10,border:"1px solid rgba(0,0,0,.06)"}}>
         <div style={{fontSize:13,fontWeight:600,marginBottom:4}}>Back-Rent Generation</div>
         <div style={{fontSize:12,color:"#7a7067",marginBottom:12}}>{tenantsWithHistory.length} tenant{tenantsWithHistory.length>1?"s":""} moved in before this month. Generate charges for missed months.</div>
         <button onClick={()=>{
@@ -840,7 +840,7 @@ function P5({propRows,tenantRows,charges,sdLedger,leases,phase1Done,phase2Done,p
       </div>)}
     </div>)}
 
-    <div style={{padding:20,background:allReady?accBg:"rgba(128,128,128,.04)",borderRadius:10,border:`1px solid ${allReady?accBd:"rgba(128,128,128,.08)"}`,marginTop:20,textAlign:"center"}}>
+    <div style={{padding:20,background:allReady?accBg:"rgba(0,0,0,.03)",borderRadius:10,border:`1px solid ${allReady?accBd:"rgba(0,0,0,.06)"}`,marginTop:20,textAlign:"center"}}>
       <div style={{fontSize:15,fontWeight:700,color:allReady?_acc:"inherit",opacity:allReady?1:.6,marginBottom:4}}>{allReady?"Ready to go live":"Some items need attention"}</div>
       <div style={{fontSize:13,color:"#5c4a3a",marginBottom:16}}>{totalTenants} tenant{totalTenants===1?"":"s"}, {propRows.length} propert{propRows.length===1?"y":"ies"}{allReady?", all configured":""}</div>
       {allReady&&<button onClick={completeOnboarding} className="btn" style={{background:_acc,color:_accContrast,fontSize:14,padding:"10px 32px",minHeight:44}}>Complete Onboarding</button>}

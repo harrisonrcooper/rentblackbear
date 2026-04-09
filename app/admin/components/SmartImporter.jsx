@@ -709,7 +709,7 @@ export default function SmartImporter({
   const _contrastAc = (()=>{const r=parseInt(_ac.slice(1,3),16),g=parseInt(_ac.slice(3,5),16),b=parseInt(_ac.slice(5,7),16);return(r*.299+g*.587+b*.114)>150?"#1a1714":"#f5f0e8";})();
   const btn = { padding: "8px 16px", borderRadius: 7, border: "1px solid rgba(0,0,0,.12)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: "#fff", color: "#1a1714", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 44, transition: "all .1s" };
   const btnP = { ...btn, background: _ac, color: _contrastAc, border: "none" };
-  const fld = { width: "100%", padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(128,128,128,.2)", fontSize: 12, fontFamily: "inherit", color: "#1a1714", minHeight: 44 };
+  const fld = { width: "100%", padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.15)", fontSize: 12, fontFamily: "inherit", color: "#1a1714", minHeight: 44 };
   const lbl = { fontSize: 10, fontWeight: 700, color: "#5c4a3a", marginBottom: 3, display: "block" };
 
   // Template
@@ -1139,7 +1139,7 @@ export default function SmartImporter({
       <div onClick={e => e.stopPropagation()} onAnimationEnd={() => setModalShake(false)} style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 880, maxHeight: "93vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(0,0,0,.3)", animation: modalShake ? "shake .4s ease-in-out" : "none", fontFamily: settings?.adminFont || "inherit", zoom: settings?.adminZoom && settings.adminZoom > 1 ? settings.adminZoom / 100 : undefined }}>
 
         {/* Header */}
-        <div style={{ padding: "18px 24px 14px", borderBottom: "1px solid rgba(128,128,128,.1)" }}>
+        <div style={{ padding: "18px 24px 14px", borderBottom: "1px solid rgba(0,0,0,.08)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: "#1a1714" }}>Move In</div>
             <button onClick={handleClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", padding: 6, minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}><IX /></button>
@@ -1147,11 +1147,11 @@ export default function SmartImporter({
           <div style={{ display: "flex", gap: 0 }}>
             {steps.map((s, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
-                <div style={{ width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: i < step ? _ac : i === step ? _ac : "rgba(128,128,128,.1)", color: i <= step ? _contrastAc : "#7a7067", transition: "all .25s", flexShrink: 0 }}>
+                <div style={{ width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: i < step ? _ac : i === step ? _ac : "rgba(0,0,0,.08)", color: i <= step ? _contrastAc : "#7a7067", transition: "all .25s", flexShrink: 0 }}>
                   {i < step ? <IOk /> : i + 1}
                 </div>
                 <span style={{ fontSize: 12, fontWeight: i === step ? 700 : 500, color: i <= step ? "#1a1714" : "#7a7067", marginLeft: 6, whiteSpace: "nowrap" }}>{s}</span>
-                {i < steps.length - 1 && <div style={{ flex: 1, height: 2, background: i < step ? _ac : "rgba(128,128,128,.12)", margin: "0 10px", borderRadius: 1, transition: "background .25s" }} />}
+                {i < steps.length - 1 && <div style={{ flex: 1, height: 2, background: i < step ? _ac : "rgba(0,0,0,.1)", margin: "0 10px", borderRadius: 1, transition: "background .25s" }} />}
               </div>
             ))}
           </div>
@@ -1174,11 +1174,11 @@ export default function SmartImporter({
             {/* Example table */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#5c4a3a", marginBottom: 6 }}>What your spreadsheet should look like:</div>
-              <div style={{ overflowX: "auto", border: "1px solid rgba(128,128,128,.12)", borderRadius: 8 }}>
+              <div style={{ overflowX: "auto", border: "1px solid rgba(0,0,0,.1)", borderRadius: 8 }}>
                 <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse", fontFamily: "inherit" }}>
-                  <thead><tr style={{ background: "rgba(128,128,128,.06)" }}>
+                  <thead><tr style={{ background: "rgba(0,0,0,.06)" }}>
                     {["Name","Property Address","Unit","Room","Rent","Lease Term"].map(h => (
-                      <th key={h} style={{ padding: "7px 10px", textAlign: "left", fontWeight: 700, color: "#1a1714", borderBottom: "2px solid rgba(128,128,128,.15)", whiteSpace: "nowrap", fontSize: 10 }}>{h}{(h === "Name" || h === "Property Address") && <span style={{ color: _red }}> *</span>}</th>
+                      <th key={h} style={{ padding: "7px 10px", textAlign: "left", fontWeight: 700, color: "#1a1714", borderBottom: "2px solid rgba(0,0,0,.12)", whiteSpace: "nowrap", fontSize: 10 }}>{h}{(h === "Name" || h === "Property Address") && <span style={{ color: _red }}> *</span>}</th>
                     ))}
                   </tr></thead>
                   <tbody>
@@ -1187,8 +1187,8 @@ export default function SmartImporter({
                       ["Jane Doe","123 Main St","Unit A","Bedroom 2","750","2025-09-01 – 2026-08-31"],
                       ["Bob Lee","456 Oak Ave","Main","Primary Suite","1200","Month-to-Month"],
                     ].map((r, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "rgba(128,128,128,.03)" }}>
-                        {r.map((c, j) => <td key={j} style={{ padding: "6px 10px", color: "#1a1714", borderBottom: "1px solid rgba(128,128,128,.06)", whiteSpace: "nowrap", fontSize: 11 }}>{c || <span style={{ color: "#ccc" }}>—</span>}</td>)}
+                      <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,.02)" }}>
+                        {r.map((c, j) => <td key={j} style={{ padding: "6px 10px", color: "#1a1714", borderBottom: "1px solid rgba(0,0,0,.06)", whiteSpace: "nowrap", fontSize: 11 }}>{c || <span style={{ color: "#ccc" }}>—</span>}</td>)}
                       </tr>
                     ))}
                   </tbody>
@@ -1212,7 +1212,7 @@ export default function SmartImporter({
             </div>}
             {fileErr && <div style={{ background: "rgba(196,92,74,.06)", border: "1px solid rgba(196,92,74,.2)", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: _red, fontWeight: 600 }}>{fileErr}</div>}
             <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragEnter={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop} onClick={() => fileRef.current?.click()}
-              style={{ border: dragOver ? `2px solid ${_ac}` : "2px dashed rgba(128,128,128,.18)", borderRadius: 14, padding: "40px 40px", textAlign: "center", cursor: "pointer", background: dragOver ? `rgba(${_acR},.04)` : "transparent", transition: "all .15s" }}>
+              style={{ border: dragOver ? `2px solid ${_ac}` : "2px dashed rgba(0,0,0,.15)", borderRadius: 14, padding: "40px 40px", textAlign: "center", cursor: "pointer", background: dragOver ? `rgba(${_acR},.04)` : "transparent", transition: "all .15s" }}>
               <IUp />
               <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1714", marginTop: 10 }}>{dragOver ? "Drop file here" : "Upload your spreadsheet"}</div>
               <div style={{ fontSize: 12, color: "#7a7067", marginTop: 4 }}>Accepts .csv, .xlsx, and .xls — any spreadsheet format</div>
@@ -1225,7 +1225,7 @@ export default function SmartImporter({
               <textarea
                 placeholder="Select rows in TurboTenant / AppFolio / any table → Ctrl+C → paste here"
                 rows={3}
-                style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px dashed rgba(128,128,128,.18)", fontSize: 12, fontFamily: "inherit", color: "#1a1714", resize: "vertical", background: "rgba(128,128,128,.03)" }}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px dashed rgba(0,0,0,.15)", fontSize: 12, fontFamily: "inherit", color: "#1a1714", resize: "vertical", background: "rgba(0,0,0,.02)" }}
                 onPaste={e => {
                   const text = e.clipboardData.getData("text");
                   if (!text) return;
@@ -1305,14 +1305,14 @@ export default function SmartImporter({
               </div>
 
               {/* Data preview with clickable headers */}
-              <div style={{ overflowX: "auto", marginBottom: 16, border: "1px solid rgba(128,128,128,.12)", borderRadius: 10 }}>
+              <div style={{ overflowX: "auto", marginBottom: 16, border: "1px solid rgba(0,0,0,.1)", borderRadius: 10 }}>
                 <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                   <thead><tr>
                     {headers.map(h => {
                       const assignedKey = reverseMap[h];
                       const isRequired = assignedKey && FIELDS.find(f => f.key === assignedKey)?.required;
                       return (
-                        <th key={h} style={{ padding: 0, borderBottom: "2px solid rgba(128,128,128,.12)", background: assignedKey ? `rgba(${_acR},.08)` : "rgba(128,128,128,.04)", position: "relative" }}>
+                        <th key={h} style={{ padding: 0, borderBottom: "2px solid rgba(0,0,0,.1)", background: assignedKey ? `rgba(${_acR},.08)` : "rgba(0,0,0,.03)", position: "relative" }}>
                           <select
                             value={assignedKey || ""}
                             onChange={e => {
@@ -1342,9 +1342,9 @@ export default function SmartImporter({
                   </tr></thead>
                   <tbody>
                     {csvRows.slice(0, 5).map((row, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "rgba(128,128,128,.03)" }}>
+                      <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,.02)" }}>
                         {headers.map(h => (
-                          <td key={h} style={{ padding: "7px 10px", color: "#1a1714", borderBottom: "1px solid rgba(128,128,128,.06)", whiteSpace: "nowrap", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", fontSize: 12 }}>{row[h] || <span style={{ color: "#ccc" }}>—</span>}</td>
+                          <td key={h} style={{ padding: "7px 10px", color: "#1a1714", borderBottom: "1px solid rgba(0,0,0,.06)", whiteSpace: "nowrap", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", fontSize: 12 }}>{row[h] || <span style={{ color: "#ccc" }}>—</span>}</td>
                         ))}
                       </tr>
                     ))}
@@ -1403,12 +1403,12 @@ export default function SmartImporter({
             )}
 
             {/* Bulk apply */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center", position: "sticky", top: -20, background: "#fff", padding: "8px 0", zIndex: 5, borderBottom: "1px solid rgba(128,128,128,.06)" }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center", position: "sticky", top: -20, background: "#fff", padding: "8px 0", zIndex: 5, borderBottom: "1px solid rgba(0,0,0,.06)" }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: "#5c4a3a" }}>Apply to all:</span>
               {[["moveIn", "Move-In"], ["leaseEnd", "Lease End"]].map(([k, l]) => (
                 <div key={k} style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   <label style={{ fontSize: 11, color: "#5c4a3a" }}>{l}</label>
-                  <input type="date" style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(128,128,128,.18)", fontFamily: "inherit", minHeight: 36 }} onChange={e => bulkSet(k, e.target.value)} />
+                  <input type="date" style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.15)", fontFamily: "inherit", minHeight: 36 }} onChange={e => bulkSet(k, e.target.value)} />
                 </div>
               ))}
               {bulkApplied && <span style={{ fontSize: 11, color: _ac, fontWeight: 600 }}>{bulkApplied}</span>}
@@ -1419,15 +1419,15 @@ export default function SmartImporter({
               const open = expanded[pi];
               const pT = prop.units.reduce((s, u) => s + u.rooms.reduce((s2, r) => s2 + r.tenants.filter(t => !t.excluded).length, 0), 0);
               return (
-                <div key={pi} style={{ border: "1px solid rgba(128,128,128,.12)", borderRadius: 10, marginBottom: 8, overflow: "hidden" }}>
-                  <div onClick={() => setExpanded(p => ({ ...p, [pi]: !p[pi] }))} style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "rgba(128,128,128,.03)", minHeight: 48 }}>
+                <div key={pi} style={{ border: "1px solid rgba(0,0,0,.1)", borderRadius: 10, marginBottom: 8, overflow: "hidden" }}>
+                  <div onClick={() => setExpanded(p => ({ ...p, [pi]: !p[pi] }))} style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: "rgba(0,0,0,.02)", minHeight: 48 }}>
                     <ICh open={open} />
                     <IH />
                     <div style={{ flex: 1, minWidth: 0 }} onClick={e => e.stopPropagation()}>
                       <input value={prop.addr} onChange={e => renamePropAddr(pi, e.target.value)} style={{ fontSize: 14, fontWeight: 700, color: "#1a1714", border: "none", borderBottom: "1px dashed transparent", background: "transparent", padding: "1px 2px", width: "100%", fontFamily: "inherit" }} onFocus={e => { e.currentTarget.style.borderBottom = "1px dashed rgba(0,0,0,.2)"; }} onBlur={e => { e.currentTarget.style.borderBottom = "1px dashed transparent"; }} />
                       <div style={{ fontSize: 11, color: "#7a7067" }}>{prop.units.length} unit{prop.units.length !== 1 ? "s" : ""} · {pT} tenant{pT !== 1 ? "s" : ""}</div>
                     </div>
-                    <select value={prop.type} onClick={e => e.stopPropagation()} onChange={e => uProp(pi, "type", e.target.value)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 5, border: "1px solid rgba(128,128,128,.15)", fontFamily: "inherit", minHeight: 36 }}>
+                    <select value={prop.type} onClick={e => e.stopPropagation()} onChange={e => uProp(pi, "type", e.target.value)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 5, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", minHeight: 36 }}>
                       {PTYPES.map(t => <option key={t}>{t}</option>)}
                     </select>
                     <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 10px", borderRadius: 100, background: prop.isExisting ? `rgba(${_acR},.1)` : `rgba(${_acR},.1)`, color: _ac }}>{prop.isExisting ? "EXISTS" : "NEW"}</span>
@@ -1436,12 +1436,12 @@ export default function SmartImporter({
 
                   {/* Collapsed summary — tenant names by room */}
                   {!open && pT > 0 && (
-                    <div style={{ padding: "6px 16px 8px", borderTop: "1px solid rgba(128,128,128,.06)", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <div style={{ padding: "6px 16px 8px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {prop.units.map((unit, ui) => unit.rooms.map((room, ri) => {
                         const active = room.tenants.filter(t => !t.excluded);
                         if (!active.length) return null;
                         return active.map((t, ti) => (
-                          <span key={`${ui}-${ri}-${ti}`} style={{ fontSize: 10, padding: "3px 10px", borderRadius: 100, background: "rgba(128,128,128,.06)", color: "#1a1714", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <span key={`${ui}-${ri}-${ti}`} style={{ fontSize: 10, padding: "3px 10px", borderRadius: 100, background: "rgba(0,0,0,.06)", color: "#1a1714", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             <span style={{ fontSize: 9, color: "#5c4a3a" }}>{room.name}</span>
                             <span style={{ color: "#5c4a3a" }}>{"\u00B7"}</span>
                             {t.name}
@@ -1453,14 +1453,14 @@ export default function SmartImporter({
                   )}
 
                   {open && (
-                    <div style={{ padding: "4px 16px 14px", borderTop: "1px solid rgba(128,128,128,.06)" }}>
+                    <div style={{ padding: "4px 16px 14px", borderTop: "1px solid rgba(0,0,0,.06)" }}>
                       {prop.units.map((unit, ui) => (
                         <div key={ui} style={{ marginTop: 10 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                             <input value={unit.name} onChange={e => uUnit(pi, ui, "name", e.target.value)} onClick={e => e.stopPropagation()} style={{ fontSize: 12, fontWeight: 700, color: "#5c4a3a", border: "none", borderBottom: "1px dashed rgba(0,0,0,.15)", background: "transparent", padding: "2px 4px", width: 100, fontFamily: "inherit" }} />
                             <span style={{ fontSize: 11, color: "#5c4a3a" }}>{unit.rooms.length} room{unit.rooms.length !== 1 ? "s" : ""}</span>
                             {/* Room naming convention */}
-                            <select onChange={e => { if (e.target.value) applyRoomNaming(pi, ui, e.target.value); e.target.value = ""; }} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, border: "1px solid rgba(128,128,128,.15)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 36 }}>
+                            <select onChange={e => { if (e.target.value) applyRoomNaming(pi, ui, e.target.value); e.target.value = ""; }} style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 36 }}>
                               <option value="">Rename rooms...</option>
                               <option value="bedroom">Bedroom 1, 2, 3...</option>
                               <option value="br">BR1, BR2, BR3...</option>
@@ -1470,7 +1470,7 @@ export default function SmartImporter({
                             {/* Bulk rent */}
                             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                               <span style={{ fontSize: 10, color: "#5c4a3a", fontWeight: 600 }}>All $</span>
-                              <input type="number" placeholder="rent" style={{ width: 65, fontSize: 10, padding: "4px 6px", border: "1px solid rgba(128,128,128,.12)", borderRadius: 4, fontFamily: "inherit", minHeight: 36 }}
+                              <input type="number" placeholder="rent" style={{ width: 65, fontSize: 10, padding: "4px 6px", border: "1px solid rgba(0,0,0,.1)", borderRadius: 4, fontFamily: "inherit", minHeight: 36 }}
                                 onBlur={e => { if (e.target.value) { setUnitRent(pi, ui, e.target.value); e.target.value = ""; } }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) { setUnitRent(pi, ui, e.target.value); e.target.value = ""; } }} />
                             </div>
                             {/* Owner-occupied toggle */}
@@ -1482,7 +1482,7 @@ export default function SmartImporter({
                           </div>
 
                           {unit.rooms.map((room, ri) => (
-                            <div key={ri} style={{ marginLeft: 16, marginBottom: 8, border: "1px solid rgba(128,128,128,.12)", borderRadius: 8, background: ri % 2 === 0 ? "transparent" : "rgba(0,0,0,.01)", overflow: "hidden" }}>
+                            <div key={ri} style={{ marginLeft: 16, marginBottom: 8, border: "1px solid rgba(0,0,0,.1)", borderRadius: 8, background: ri % 2 === 0 ? "transparent" : "rgba(0,0,0,.01)", overflow: "hidden" }}>
                               {/* Multi-tenant mode selector */}
                               {room.tenants.length > 1 && (
                                 <div style={{ padding: "8px 12px", fontSize: 11, color: "#5c4a3a", background: "rgba(212,168,83,.06)", borderBottom: "1px solid rgba(212,168,83,.15)" }}>
@@ -1492,7 +1492,7 @@ export default function SmartImporter({
                                   </div>
                                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                                     {[["co-tenant", "Co-tenants (share room)", "Couples or roommates sharing the same room"], ["sequential", "Sequential (one after other)", "One lease ends, next begins \u2014 current tenant stays active, others archived"], ["separate", "Separate rooms", "Creates a separate room entry for each tenant"]].map(([mode, label, tip]) => (
-                                      <button key={mode} title={tip} onClick={() => setRoomMode(pi, ui, ri, mode)} style={{ ...btn, fontSize: 10, padding: "4px 12px", minHeight: 36, background: room.multiMode === mode ? _ac : "rgba(255,255,255,.95)", color: room.multiMode === mode ? _contrastAc : "inherit", borderColor: room.multiMode === mode ? _ac : "rgba(128,128,128,.15)" }}>{label}</button>
+                                      <button key={mode} title={tip} onClick={() => setRoomMode(pi, ui, ri, mode)} style={{ ...btn, fontSize: 10, padding: "4px 12px", minHeight: 36, background: room.multiMode === mode ? _ac : "rgba(255,255,255,.95)", color: room.multiMode === mode ? _contrastAc : "inherit", borderColor: room.multiMode === mode ? _ac : "rgba(0,0,0,.12)" }}>{label}</button>
                                     ))}
                                     <span style={{ fontSize: 10, color: "#7a7067", marginLeft: 4 }}>
                                       {room.multiMode === "co-tenant" ? "Both imported to same room as co-tenants" : room.multiMode === "sequential" ? "Current tenant active, past tenants archived" : room.multiMode === "separate" ? "Each tenant gets their own room" : "Choose how to handle"}
@@ -1558,7 +1558,7 @@ export default function SmartImporter({
                                             ))}
                                           </div>}
                                         </div>
-                                        {!ganttHidden && <div style={{ background: "#fff", border: "1px solid rgba(128,128,128,.12)", borderRadius: 8, padding: "8px 10px" }}>
+                                        {!ganttHidden && <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,.1)", borderRadius: 8, padding: "8px 10px" }}>
                                           {/* Gantt bars */}
                                           <div style={{ position: "relative", height: sorted.length * 30 + 14 }}>
                                             {/* Today marker */}
@@ -1601,7 +1601,7 @@ export default function SmartImporter({
                                             })}
                                           </div>
                                           {/* Date summary rows */}
-                                          <div style={{ borderTop: "1px solid rgba(128,128,128,.1)", paddingTop: 6, marginTop: 2 }}>
+                                          <div style={{ borderTop: "1px solid rgba(0,0,0,.08)", paddingTop: 6, marginTop: 2 }}>
                                             {sorted.map((t, ti) => {
                                               const bc = getBarStyle(t);
                                               const isPast = t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr;
@@ -1613,9 +1613,9 @@ export default function SmartImporter({
                                                   <span style={{ width: 8, height: 8, borderRadius: 2, background: bc.bg, flexShrink: 0 }} />
                                                   <span onClick={() => { const k = `${pi}-${ui}-${ri}-${realTi >= 0 ? realTi : ti}`; setEditingSet(prev => { const next = new Set(prev); if (next.has(k)) next.delete(k); else next.add(k); return next; }); }} style={{ fontWeight: 600, minWidth: 80, cursor: "pointer", borderBottom: "1px dashed transparent" }} title={"Click to edit " + t.name}
                                                     onMouseEnter={e => { e.currentTarget.style.borderBottom = "1px dashed rgba(0,0,0,.2)"; }} onMouseLeave={e => { e.currentTarget.style.borderBottom = "1px dashed transparent"; }}>{t.name}</span>
-                                                  <input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "moveIn", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(128,128,128,.12)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "#5c4a3a", minHeight: 36 }} title="Move-in date" />
+                                                  <input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "moveIn", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(0,0,0,.1)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "#5c4a3a", minHeight: 36 }} title="Move-in date" />
                                                   <span style={{ color: "#5c4a3a" }}>{"\u2192"}</span>
-                                                  <input type="date" value={t.leaseEnd === "MTM" ? "" : (t.leaseEnd || "")} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "leaseEnd", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(128,128,128,.12)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "#5c4a3a", minHeight: 36 }} title="Lease end date" />
+                                                  <input type="date" value={t.leaseEnd === "MTM" ? "" : (t.leaseEnd || "")} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "leaseEnd", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(0,0,0,.1)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "#5c4a3a", minHeight: 36 }} title="Lease end date" />
                                                   <span style={{ fontSize: 8, fontWeight: 700, padding: "1px 6px", borderRadius: 100, background: isPast ? "rgba(196,92,74,.12)" : isUpcoming ? "rgba(59,110,165,.12)" : `rgba(${_acR},.15)`, color: isPast ? _red : isUpcoming ? "rgba(59,110,165,.85)" : _ac }}>{label}</span>
                                                 </div>
                                               );
@@ -1646,11 +1646,11 @@ export default function SmartImporter({
                               {room.tenants.map((t, ti) => {
                                 const isEditing = editingSet.has(`${pi}-${ui}-${ri}`) || editingSet.has(`${pi}-${ui}-${ri}-${ti}`);
                                 return (
-                                <div key={ti} style={{ padding: "8px 12px", opacity: t.excluded ? 0.35 : 1, background: isEditing ? "rgba(128,128,128,.03)" : "transparent", borderRadius: isEditing ? 8 : 0, marginBottom: isEditing ? 4 : 0, border: isEditing ? "1px solid rgba(128,128,128,.1)" : "none" }}>
+                                <div key={ti} style={{ padding: "8px 12px", opacity: t.excluded ? 0.35 : 1, background: isEditing ? "rgba(0,0,0,.02)" : "transparent", borderRadius: isEditing ? 8 : 0, marginBottom: isEditing ? 4 : 0, border: isEditing ? "1px solid rgba(0,0,0,.08)" : "none" }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                   {ti === 0 ? <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                                    <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", border: "none", borderBottom: "1px dashed rgba(128,128,128,.15)", background: "transparent", padding: "1px 4px", width: 90, fontFamily: "inherit" }} />
-                                    <select value="" onChange={e => { if (e.target.value) uRoom(pi, ui, ri, "name", e.target.value); }} style={{ fontSize: 9, padding: "4px 6px", border: "1px solid rgba(128,128,128,.15)", borderRadius: 3, color: "#5c4a3a", minWidth: 36, minHeight: 36, cursor: "pointer", appearance: "none", textAlign: "center" }} title="Quick rename">
+                                    <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", border: "none", borderBottom: "1px dashed rgba(0,0,0,.12)", background: "transparent", padding: "1px 4px", width: 90, fontFamily: "inherit" }} />
+                                    <select value="" onChange={e => { if (e.target.value) uRoom(pi, ui, ri, "name", e.target.value); }} style={{ fontSize: 9, padding: "4px 6px", border: "1px solid rgba(0,0,0,.12)", borderRadius: 3, color: "#5c4a3a", minWidth: 36, minHeight: 36, cursor: "pointer", appearance: "none", textAlign: "center" }} title="Quick rename">
                                       <option value="">...</option>
                                       <option value="Master">Master</option>
                                       <option value="Primary Suite">Primary Suite</option>
@@ -1660,11 +1660,11 @@ export default function SmartImporter({
                                   </div>
                                     : <span style={{ width: 100, fontSize: 10, color: "#7a7067" }}>(shared room)</span>}
                                   <span style={{ fontSize: 12, color: "#5c4a3a" }}>—</span>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", flex: 1, display: "flex", alignItems: "center", gap: 6 }}>{t.name}{room.multiMode === "sequential" && room.tenants.length > 1 && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: (t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "rgba(128,128,128,.08)" : `rgba(${_acR},.1)`, color: (t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "inherit" : _ac, opacity: (t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? .5 : 1 }}>{(t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "PAST" : (t.moveIn && t.moveIn > todayStr) ? "UPCOMING" : "CURRENT"}</span>}{room.multiMode === "co-tenant" && room.tenants.length > 1 && ti > 0 && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: `rgba(${_acR},.1)`, color: _ac }}>CO-TENANT</span>}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", flex: 1, display: "flex", alignItems: "center", gap: 6 }}>{t.name}{room.multiMode === "sequential" && room.tenants.length > 1 && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: (t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "rgba(0,0,0,.06)" : `rgba(${_acR},.1)`, color: (t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "inherit" : _ac, opacity: (t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? .5 : 1 }}>{(t.leaseEnd && t.leaseEnd !== "MTM" && t.leaseEnd < todayStr) ? "PAST" : (t.moveIn && t.moveIn > todayStr) ? "UPCOMING" : "CURRENT"}</span>}{room.multiMode === "co-tenant" && room.tenants.length > 1 && ti > 0 && <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: `rgba(${_acR},.1)`, color: _ac }}>CO-TENANT</span>}</span>
                                   {t.email && <span style={{ fontSize: 10, color: "#7a7067" }}>{t.email}</span>}
                                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                                     <span style={{ fontSize: 11, color: "#5c4a3a" }}>$</span>
-                                    <input type="number" value={t.rent || ""} onChange={e => uTen(pi, ui, ri, ti, "rent", e.target.value)} style={{ fontSize: 12, fontWeight: 700, color: t.rent ? "#1a1714" : "#c45c4a", border: "none", borderBottom: "1px dashed rgba(128,128,128,.15)", background: "transparent", padding: "1px 4px", width: 55, fontFamily: "inherit", textAlign: "right" }} placeholder="0" />
+                                    <input type="number" value={t.rent || ""} onChange={e => uTen(pi, ui, ri, ti, "rent", e.target.value)} style={{ fontSize: 12, fontWeight: 700, color: t.rent ? "#1a1714" : "#c45c4a", border: "none", borderBottom: "1px dashed rgba(0,0,0,.12)", background: "transparent", padding: "1px 4px", width: 55, fontFamily: "inherit", textAlign: "right" }} placeholder="0" />
                                     <span style={{ fontSize: 10, color: "#5c4a3a" }}>/mo</span>
                                   </div>
                                   {ti === 0 && room.warnings.filter(w => !(room.multiMode && (w.type === "co-living" || w.type === "transition"))).map((w, wi) => (
@@ -1691,21 +1691,21 @@ export default function SmartImporter({
                                 const showEdit = editingSet.has(`${pi}-${ui}-${ri}`) || editingSet.has(`${pi}-${ui}-${ri}-${origTi}`);
                                 if (!showEdit) return null;
                                 return (
-                                <div key={`e${ti}`} style={{ margin: "4px 12px 8px", padding: 12, background: "rgba(128,128,128,.04)", borderRadius: 8 }}>
+                                <div key={`e${ti}`} style={{ margin: "4px 12px 8px", padding: 12, background: "rgba(0,0,0,.03)", borderRadius: 8 }}>
                                   {room.tenants.length > 1 && <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1714", marginBottom: 8 }}>{t.name}</div>}
                                   {/* Room + move options — available for every tenant */}
-                                  <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center", paddingBottom: 8, borderBottom: "1px solid rgba(128,128,128,.1)" }}>
+                                  <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center", paddingBottom: 8, borderBottom: "1px solid rgba(0,0,0,.08)" }}>
                                     {ti === 0 && <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: room.privateBath ? _ac : "inherit", opacity: room.privateBath ? 1 : .6, cursor: "pointer", fontWeight: 600 }}>
                                       <input type="checkbox" checked={!!room.privateBath} onChange={() => togglePrivateBath(pi, ui, ri)} /> Private Bath
                                     </label>}
                                     {prop.units.length > 1 && (
-                                      <select value="" onChange={e => { if (e.target.value !== "") moveTenantToUnit(pi, ui, ri, origTi, Number(e.target.value)); }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(128,128,128,.15)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 36 }}>
+                                      <select value="" onChange={e => { if (e.target.value !== "") moveTenantToUnit(pi, ui, ri, origTi, Number(e.target.value)); }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 36 }}>
                                         <option value="">Move to unit...</option>
                                         {prop.units.map((u2, ui2) => ui2 !== ui ? <option key={ui2} value={ui2}>{u2.name}</option> : null)}
                                       </select>
                                     )}
                                     {unit.rooms.length > 1 && (
-                                      <select value="" onChange={e => { if (e.target.value !== "") { const toRi = Number(e.target.value); setDirty(true); setStructure(p => p.map((x, i) => { if (i !== pi) return x; const units = JSON.parse(JSON.stringify(x.units)); const tenant = { ...units[ui].rooms[ri].tenants[origTi] }; units[ui].rooms[ri].tenants.splice(origTi, 1); units[ui].rooms[toRi].tenants.push(tenant); return { ...x, units }; })); } }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(128,128,128,.15)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 36 }}>
+                                      <select value="" onChange={e => { if (e.target.value !== "") { const toRi = Number(e.target.value); setDirty(true); setStructure(p => p.map((x, i) => { if (i !== pi) return x; const units = JSON.parse(JSON.stringify(x.units)); const tenant = { ...units[ui].rooms[ri].tenants[origTi] }; units[ui].rooms[ri].tenants.splice(origTi, 1); units[ui].rooms[toRi].tenants.push(tenant); return { ...x, units }; })); } }} style={{ fontSize: 11, padding: "4px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", color: "#5c4a3a", minHeight: 36 }}>
                                         <option value="">Move to room...</option>
                                         {unit.rooms.map((r2, ri2) => ri2 !== ri ? <option key={ri2} value={ri2}>{r2.name}</option> : null)}
                                       </select>
@@ -1735,20 +1735,20 @@ export default function SmartImporter({
                               {/* No tenants (vacant room) */}
                               {room.tenants.length === 0 && (
                                 <div style={{ padding: "8px 12px", fontSize: 11, color: "#7a7067", fontStyle: "italic" }}>
-                                  <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 11, color: "#5c4a3a", border: "none", borderBottom: "1px dashed rgba(128,128,128,.15)", background: "transparent", padding: "1px 4px", width: 100, fontFamily: "inherit" }} /> — vacant
+                                  <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 11, color: "#5c4a3a", border: "none", borderBottom: "1px dashed rgba(0,0,0,.12)", background: "transparent", padding: "1px 4px", width: 100, fontFamily: "inherit" }} /> — vacant
                                 </div>
                               )}
                             </div>
                           ))}
 
                           {/* Add vacant room */}
-                          <button onClick={() => addRoom(pi, ui)} style={{ marginLeft: 20, marginTop: 4, background: "none", border: "1px dashed rgba(128,128,128,.15)", borderRadius: 6, padding: "4px 12px", fontSize: 11, color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 36, fontWeight: 600 }}>
+                          <button onClick={() => addRoom(pi, ui)} style={{ marginLeft: 20, marginTop: 4, background: "none", border: "1px dashed rgba(0,0,0,.12)", borderRadius: 6, padding: "4px 12px", fontSize: 11, color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 36, fontWeight: 600 }}>
                             <IPlus /> Add vacant room
                           </button>
                         </div>
                       ))}
                       {/* Add unit */}
-                      <button onClick={() => addUnit(pi)} style={{ marginTop: 8, background: "none", border: "1px dashed rgba(128,128,128,.15)", borderRadius: 6, padding: "4px 12px", fontSize: 11, color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 36, fontWeight: 600 }}>
+                      <button onClick={() => addUnit(pi)} style={{ marginTop: 8, background: "none", border: "1px dashed rgba(0,0,0,.12)", borderRadius: 6, padding: "4px 12px", fontSize: 11, color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, minHeight: 36, fontWeight: 600 }}>
                         <IPlus /> Add unit
                       </button>
                     </div>
@@ -1758,7 +1758,7 @@ export default function SmartImporter({
             })}
 
             {/* Import confirmation */}
-            <div style={{ marginTop: 16, background: "rgba(128,128,128,.04)", borderRadius: 10, padding: "16px 18px", border: "1px solid rgba(128,128,128,.1)" }}>
+            <div style={{ marginTop: 16, background: "rgba(0,0,0,.03)", borderRadius: 10, padding: "16px 18px", border: "1px solid rgba(0,0,0,.08)" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", marginBottom: 6 }}>This will create:</div>
               <div style={{ fontSize: 12, color: "#5c4a3a", lineHeight: 1.8 }}>
                 {structure.filter(p => !p.isExisting).length > 0 && <div>{structure.filter(p => !p.isExisting).length} new {structure.filter(p => !p.isExisting).length === 1 ? "property" : "properties"}</div>}
@@ -1788,15 +1788,15 @@ export default function SmartImporter({
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1714" }}>{importDone ? "Complete" : "Importing..."}</span>
                 <span style={{ fontSize: 12, color: "#5c4a3a" }}>{Math.min(progress, progressTotal)} of {progressTotal}</span>
               </div>
-              <div style={{ height: 6, background: "rgba(128,128,128,.1)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", background: _ac, width: `${progressTotal ? Math.min((progress / progressTotal) * 100, 100) : 0}%`, borderRadius: 3, transition: "width .3s" }} />
+              <div style={{ height: 8, background: "rgba(0,0,0,.08)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", background: _ac, width: `${progressTotal ? Math.min((progress / progressTotal) * 100, 100) : 0}%`, borderRadius: 4, transition: "width .3s" }} />
               </div>
             </div>
 
             {/* Log */}
             <div ref={logRef} style={{ background: "#1a1714", borderRadius: 10, padding: 16, maxHeight: 280, overflowY: "auto", fontSize: 12, lineHeight: 1.7, fontFamily: "inherit" }}>
               {importLog.map((e, i) => (
-                <div key={i} style={{ color: e.st === "err" ? "#c45c4a" : "rgba(255,255,255,.7)", display: "flex", gap: 6 }}>
+                <div key={i} style={{ color: e.st === "err" ? "#c45c4a" : "#e8e2d9", display: "flex", gap: 6 }}>
                   <span style={{ flexShrink: 0, color: e.st === "err" ? "#c45c4a" : _ac }}>{e.st === "ok" ? <IOk /> : <IX />}</span>
                   <span>{e.msg}</span>
                 </div>
@@ -1835,7 +1835,7 @@ export default function SmartImporter({
             <div style={{ fontSize: 13, color: "#5c4a3a", lineHeight: 1.7, marginBottom: 16 }}>
               This will create the following in your account:
             </div>
-            <div style={{ background: "rgba(128,128,128,.05)", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#1a1714", lineHeight: 1.8 }}>
+            <div style={{ background: "rgba(0,0,0,.04)", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#1a1714", lineHeight: 1.8 }}>
               <div><strong>{structure.filter(p => !p.isExisting).length}</strong> new properties</div>
               <div><strong>{nRooms}</strong> rooms</div>
               <div><strong>{nTenants}</strong> tenant records with lease drafts</div>
@@ -1850,7 +1850,7 @@ export default function SmartImporter({
               onChange={e => setImportConfirmText(e.target.value.toUpperCase())}
               placeholder="Type IMPORT"
               autoFocus
-              style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: importConfirmText === "IMPORT" ? `2px solid ${_ac}` : "2px solid rgba(128,128,128,.15)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", textAlign: "center", letterSpacing: 2, color: "#1a1714", marginBottom: 16, transition: "border .15s" }}
+              style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: importConfirmText === "IMPORT" ? `2px solid ${_ac}` : "2px solid rgba(0,0,0,.12)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", textAlign: "center", letterSpacing: 2, color: "#1a1714", marginBottom: 16, transition: "border .15s" }}
             />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setShowImportConfirm(false)} style={btn}>Cancel</button>
