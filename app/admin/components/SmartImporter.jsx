@@ -81,9 +81,18 @@ function parseCSV(text) {
     r.push(c.trim());
     return r;
   };
-  const headers = parse(lines[0]);
+  let headers = parse(lines[0]);
+  let dataStart = 1;
+
+  // Check if first row is actually data (no headers)
+  if (looksLikeData(headers)) {
+    const colCount = headers.length;
+    headers = generateSyntheticHeaders(headers, colCount);
+    dataStart = 0; // first row is data, not headers
+  }
+
   const rows = [];
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = dataStart; i < lines.length; i++) {
     const vals = parse(lines[i]);
     if (vals.every(v => !v)) continue;
     const row = {}; headers.forEach((h, j) => { row[h] = vals[j] || ""; }); row._line = i + 1;
@@ -99,6 +108,39 @@ function findHeaderRow(data) {
     if (filled >= 3) return i;
   }
   return 0;
+}
+
+/* ── Detect if a row looks like data (not headers) ── */
+// Headers are short labels like "Name", "Email", "Lease Term"
+// Data has emails, phone numbers, addresses, long strings
+function looksLikeData(row) {
+  const vals = Array.isArray(row) ? row : Object.values(row);
+  const strings = vals.map(v => String(v || "").trim()).filter(Boolean);
+  if (!strings.length) return false;
+  // If any cell contains an email, phone pattern, or street address — it's data
+  const hasEmail = strings.some(s => /@/.test(s) && s.length > 10);
+  const hasPhone = strings.some(s => /\(\d{3}\)/.test(s) || /\d{3}[-.]?\d{3}[-.]?\d{4}/.test(s));
+  const hasAddress = strings.some(s => /^\d+\s+\w/.test(s) && (s.includes("Dr") || s.includes("Ave") || s.includes("St") || s.includes("NW") || s.includes("NE") || s.includes("Blvd") || s.includes("Ln")));
+  const hasLongStrings = strings.filter(s => s.length > 25).length >= 2;
+  return hasEmail || hasPhone || hasAddress || hasLongStrings;
+}
+
+// Generate synthetic headers for headerless data
+function generateSyntheticHeaders(firstRow, colCount) {
+  // Try to guess what each column is based on the data
+  const vals = Array.isArray(firstRow) ? firstRow : Object.values(firstRow);
+  const headers = [];
+  for (let i = 0; i < colCount; i++) {
+    const v = String(vals[i] || "").trim();
+    if (/^[A-Z][a-z]+\s+[A-Z]/.test(v) && !v.includes("@") && v.length < 40) headers.push("Name");
+    else if (/@/.test(v) && /\(?\d{3}\)?/.test(v)) headers.push("Contact Info");
+    else if (/@/.test(v)) headers.push("Email");
+    else if (/^\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(v.replace(/\D/g, "").length === 10 ? v : "")) headers.push("Phone");
+    else if (/^\d+\s+\w/.test(v) && (v.includes("Dr") || v.includes("Ave") || v.includes("St") || v.includes("NW") || v.includes("Ln"))) headers.push("Lease");
+    else if (/last active/i.test(v)) headers.push("Tenant Portal Access");
+    else headers.push("Column " + (i + 1));
+  }
+  return headers;
 }
 
 /* ── Convert date formats: "MM/DD/YYYY" → "YYYY-MM-DD", handle "Month-to-Month" ── */
@@ -134,10 +176,18 @@ function parseXLSX(buffer) {
 
   // Smart: find actual header row (skip titles, empty rows)
   const hIdx = findHeaderRow(data);
-  const headers = (data[hIdx] || []).map(h => String(h).trim()).filter(h => h);
+  let headers = (data[hIdx] || []).map(h => String(h).trim()).filter(h => h);
+  let dataStart = hIdx + 1;
+
+  // Check if detected header row is actually data
+  if (looksLikeData(data[hIdx])) {
+    const colCount = headers.length;
+    headers = generateSyntheticHeaders(data[hIdx], colCount);
+    dataStart = hIdx; // this row is data
+  }
 
   const rows = [];
-  for (let i = hIdx + 1; i < data.length; i++) {
+  for (let i = dataStart; i < data.length; i++) {
     const vals = data[i];
     if (!vals || vals.every(v => !v && v !== 0)) continue;
     const row = {};
@@ -839,8 +889,68 @@ export default function SmartImporter({
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={e => processFile(e.target.files?.[0])} style={{ display: "none" }} />
             </div>
 
+            {/* Paste zone */}
+            <div style={{ marginTop: 16, textAlign: "center" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#7a7067", marginBottom: 8 }}>or paste directly from your browser</div>
+              <textarea
+                placeholder="Select rows in TurboTenant / AppFolio / any table → Ctrl+C → paste here"
+                rows={3}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px dashed rgba(0,0,0,.12)", fontSize: 12, fontFamily: "inherit", color: "#1a1714", resize: "vertical", background: "rgba(0,0,0,.015)" }}
+                onPaste={e => {
+                  const text = e.clipboardData.getData("text");
+                  if (!text || !text.includes("\t")) return; // not tab-separated
+                  e.preventDefault();
+                  // Parse tab-separated pasted data
+                  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.trim());
+                  if (lines.length < 2) { setFileErr("Paste needs at least a header row and one data row."); return; }
+                  const parseRow = line => line.split("\t").map(c => c.trim());
+                  const firstRowVals = parseRow(lines[0]);
+                  let headers, dataStart;
+
+                  // Detect if first row is data (no headers)
+                  if (looksLikeData(firstRowVals)) {
+                    headers = generateSyntheticHeaders(firstRowVals, firstRowVals.length);
+                    dataStart = 0;
+                  } else {
+                    headers = firstRowVals;
+                    dataStart = 1;
+                  }
+
+                  const rows = [];
+                  for (let i = dataStart; i < lines.length; i++) {
+                    const vals = parseRow(lines[i]);
+                    if (vals.every(v => !v)) continue;
+                    const row = {};
+                    headers.forEach((h, j) => { row[h] = vals[j] || ""; });
+                    row._line = i + 1;
+                    rows.push(row);
+                  }
+                  if (!rows.length) { setFileErr("No data rows found in pasted content."); return; }
+                  setFileName("Pasted data");
+                  // Use the same handleParsed logic
+                  if (isTurboTenantPaste(headers)) {
+                    const processed = preprocessTurboTenantRows(rows, headers);
+                    const virtualHeaders = [...headers, "_email", "_phone", "_address", "_unit", "_room"];
+                    setHeaders(virtualHeaders); setCsvRows(processed); setDirty(true);
+                    const ttMap = { name: "Name", email: "_email", phone: "_phone", propertyAddress: "_address", unit: "_unit", room: "_room" };
+                    setColMap(ttMap);
+                    const { structure: s, skipped: sk, mergeLog: ml } = buildStructure(processed, ttMap, props, uid, todayStr);
+                    setStructure(s); setSkipped(sk); setMerges(ml||[]); setStep(1);
+                  } else {
+                    setHeaders(headers); setCsvRows(rows); setDirty(true);
+                    const am = autoMap(headers);
+                    setColMap(am);
+                    if (am.name && am.propertyAddress) {
+                      const { structure: s, skipped: sk, mergeLog: ml } = buildStructure(rows, am, props, uid, todayStr);
+                      setStructure(s); setSkipped(sk); setMerges(ml||[]); setStep(1);
+                    } else { setShowMapper(true); }
+                  }
+                }}
+              />
+            </div>
+
             <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 12, textAlign: "center" }}>
-              Also works with TurboTenant, AppFolio, Buildium, and Stessa exports
+              Works with TurboTenant, AppFolio, Buildium, Stessa, or any spreadsheet
             </div>
           </>)}
 
