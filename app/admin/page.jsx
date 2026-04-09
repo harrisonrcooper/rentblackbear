@@ -15,6 +15,8 @@ import LeasesTab from "./components/LeasesTab";
 import ThemeTab from "./components/ThemeTab";
 import ScorecardTab from "./components/ScorecardTab";
 import IdeasTab from "./components/IdeasTab";
+import MoneyDashboard from "./components/MoneyDashboard";
+import Ledger from "./components/Ledger";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
@@ -2236,21 +2238,14 @@ export default function Page(){
   const[viewingLease,setViewingLease]=useState(null); // {lease, room}
   const[leaseSigErr,setLeaseSigErr]=useState(false);
 
-  // ── Portal Ops state (form states moved to PortalOpsTab component) ──
-  const[utilityBills,setUtilityBills]=useState([]);
-  const[docRequests,setDocRequests]=useState([]);
-  const[amenities,setAmenities]=useState([]);
-  const[amenityBookings,setAmenityBookings]=useState([]);
-  const[surveys,setSurveys]=useState([]);
-  const[surveyResults,setSurveyResults]=useState([]);
-  const[packages,setPackages]=useState([]);
+  // ── Portal Ops state — data now managed inside PortalOpsTab via direct Supabase writes ──
   const[renewalOffers,setRenewalOffers]=useState([]);
   const[renewalForm,setRenewalForm]=useState({tenantId:"",proposedRent:"",term:"12",note:""});
   const[inspections,setInspections]=useState([]);
 
   useEffect(()=>{console.log("Admin init starting...");(async()=>{
     try{
-    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu,_ub,_dr,_am,_ab,_sv,_sr,_pk,_ro,_insp]=await Promise.all([
+    const[p,pay,mt,a,d,t,n,rk,iss,sc,st,th,id,ar,ch,cr,sd,svt,mo,sq,af,ls,lt,ex,mg,vn,im,sbc,dfu,_ro,_insp]=await Promise.all([
       db.loadProps(DEF_PROPS),db.loadPayments(DEF_PAYMENTS),db.loadMaint([]),
       db.loadApps(),db.loadDocs(),db.loadTxns(),db.loadNotifs(),
       db.loadRocks(),db.loadIssues(),db.loadScorecard(),
@@ -2262,9 +2257,8 @@ export default function Page(){
       supa("lease_templates?is_active=eq.true&workspace_id=is.null&type=eq.standard&order=created_at.asc").then(r=>r.json()).then(d=>Array.isArray(d)?d:[]).catch(()=>[]),
       db.loadExpenses(),db.loadMortgages(),db.loadVendors(),db.loadImprovements(),
       db.loadSubcats(STARTER_SUBCATS_BY_CAT),load("hq-dismissed-followups",[]),
-      db.loadUtilityBills([]),db.loadDocRequests([]),db.loadAmenities([]),
-      db.loadAmenityBookings([]),db.loadSurveys([]),db.loadSurveyResults([]),
-      db.loadPackages([]),db.loadRenewalOffers(),db.loadInspections([])
+      // Portal ops data (utility bills, doc requests, amenities, surveys, packages) now loaded inside PortalOpsTab directly from Supabase tables
+      db.loadRenewalOffers(),db.loadInspections([])
     ]);
     // Migrate old props format (rooms[]) to new (units[]) if needed
     const migratedProps=migrateProps(p);
@@ -2313,7 +2307,7 @@ export default function Page(){
     const hasDoorCode=(af||[]).some(f=>f.key==="doorCode");
     const migratedAf=(()=>{if(hasDoorCode||(af||[]).length===0)return af||[];const idx=af.findIndex(f=>f.key==="selectedRoom");const insertAt=idx>=0?idx+1:af.findIndex(f=>f.section==="Move-In & Property")+1;const at=insertAt<0?af.length:insertAt;return[...af.slice(0,at),DOOR_CODE_APP_FIELD,...af.slice(at)];})();
     if(!hasDoorCode&&(af||[]).length>0){save("hq-app-fields",migratedAf);}
-    setAppFields(migratedAf);setLeases(ls);setLeaseTemplates(lt);setLeaseTemplate(lt[0]||null);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setUtilityBills(_ub||[]);setDocRequests(_dr||[]);setAmenities(_am||[]);setAmenityBookings(_ab||[]);setSurveys(_sv||[]);setSurveyResults(_sr||[]);setPackages(_pk||[]);setRenewalOffers(_ro||[]);setInspections(_insp||[]);setWidgetList(null);
+    setAppFields(migratedAf);setLeases(ls);setLeaseTemplates(lt);setLeaseTemplate(lt[0]||null);setExpenses(ex);setMortgages(mg);setVendors(vn);setImprovements(im);setSubcats(Array.isArray(sbc)?STARTER_SUBCATS_BY_CAT:sbc);setDismissedFollowUps(Array.isArray(dfu)?dfu:[]);setRenewalOffers(_ro||[]);setInspections(_insp||[]);setWidgetList(null);
     // Load renewal requests + unread message count
     fetch(SUPA_URL+"/rest/v1/messages?direction=eq.inbound&subject=like.Lease Renewal:*&order=created_at.desc",{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setRenewalRequests(d);}).catch(()=>{});
     fetch(SUPA_URL+"/rest/v1/messages?direction=eq.inbound&read=eq.false&select=id",{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}}).then(r=>r.json()).then(d=>{if(Array.isArray(d))setUnreadMsgCount(d.length);}).catch(()=>{});
@@ -2335,13 +2329,10 @@ export default function Page(){
     // Tier 2: config stays in app_data
     db.saveSettings(settings),db.saveTheme(theme),db.saveSavedThemes(savedThemes),
     db.saveScreenQs(screenQs),db.saveAppFields(appFields),db.saveSubcats(subcats),
-    // Tier 3: portal-adjacent data in app_data
-    db.saveUtilityBills(utilityBills),db.saveDocRequests(docRequests),
-    db.saveAmenities(amenities),db.saveAmenityBookings(amenityBookings),
-    db.saveSurveys(surveys),db.saveSurveyResults(surveyResults),
-    db.savePackages(packages),db.saveInspections(inspections),
+    // Portal ops data (utility bills, doc requests, amenities, surveys, packages) now saved directly to Supabase tables inside PortalOpsTab
+    db.saveInspections(inspections),
     save("hq-dismissed-followups",dismissedFollowUps),
-  ]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,utilityBills,docRequests,amenities,amenityBookings,surveys,surveyResults,packages,renewalOffers,inspections,loaded,dismissedFollowUps]);
+  ]);},800);return()=>clearTimeout(t);}},[props,payments,maint,apps,docs,txns,notifs,rocks,issues,scorecard,settings,theme,ideas,archive,charges,credits,sdLedger,savedThemes,monthly,screenQs,appFields,expenses,mortgages,vendors,improvements,subcats,renewalOffers,inspections,loaded,dismissedFollowUps]);
 
   // ─── Metrics ──────────────────────────────────────────────────
   // ── Load onboarding statuses for approved/onboarding applicants ──────
@@ -2649,6 +2640,8 @@ export default function Page(){
     {id:"maintenance",i:<IconWrench/>,l:"Maintenance",badge:m.openMaint||null},
     {id:"leases",i:<IconFile/>,l:"Templates",badge:pendingLeases||null},
     {id:"documents",i:<IconFolder/>,l:"Documents"},
+    {id:"money",i:<IconDollar/>,l:"Money"},
+    {id:"ledger",i:<IconBook/>,l:"Ledger"},
     {id:"accounting",i:<IconBook/>,l:"Accounting"},
     {id:"reports",i:<IconTrending/>,l:"Reports"},
     {id:"properties",i:<IconHome/>,l:"Properties"},
@@ -2672,7 +2665,7 @@ export default function Page(){
     {label:"Tenants",ids:["tenants","portal","payments","timeline","portal-ops"]},
     {label:"Operations",ids:["maintenance"]},
     {label:"Documents",ids:["leases","documents"]},
-    {label:"Financials",ids:["accounting","add-expense","reports"]},
+    {label:"Financials",ids:["money","ledger","accounting","add-expense","reports"]},
     {label:"Portfolio",ids:["properties"]},
     {label:"Communications",ids:["messages","announcements","notifications"]},
     {label:"Settings",ids:["pm-settings","theme"]},
@@ -4555,6 +4548,12 @@ export default function Page(){
         })}
       </>}
 
+      {/* ═══ MONEY DASHBOARD ═══ */}
+      {tab==="money"&&<MoneyDashboard charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} props={props} settings={settings} vendors={vendors} improvements={improvements} goTab={goTab} setModal={setModal} createCharge={createCharge} TODAY={TODAY} />}
+
+      {/* ═══ LEDGER ═══ */}
+      {tab==="ledger"&&<Ledger charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} improvements={improvements} props={props} vendors={vendors} settings={settings} subcats={subcats} TODAY={TODAY} setCharges={setCharges} setExpenses={setExpenses} setCredits={setCredits} setVendors={setVendors} setMortgages={setMortgages} setImprovements={setImprovements} setSubcats={setSubcats} createCharge={createCharge} recordPayment={recordPayment} setModal={setModal} uid={uid} adminGoTab={goTab} CHARGE_CATS={CHARGE_CATS} SCHED_E_CATS={SCHED_E_CATS} IMPROVEMENT_TYPES={IMPROVEMENT_TYPES} />}
+
       {/* ═══ ACCOUNTING ═══ */}
       {tab==="accounting"&&<AccountingTab settings={settings} properties={props} charges={charges} expenses={expenses} setExpenses={setExpenses} mortgages={mortgages} vendors={vendors} improvements={improvements} setImprovements={setImprovements} payments={payments} save={save} setModal={setModal} uid={uid} allRooms={allRooms} getPropDisplayName={getPropDisplayName} SCHED_E_CAT_LABELS={SCHED_E_CAT_LABELS} />}
       {tab==="reports"&&<Reports settings={settings} properties={props} charges={charges} expenses={expenses} mortgages={mortgages} sdLedger={sdLedger} apps={apps} archive={archive} SCHED_E_CATS={SCHED_E_CATS} getPropDisplayName={getPropDisplayName} propDisplay={propDisplay} chargeStatus={chargeStatus} uid={uid} />}
@@ -4628,10 +4627,11 @@ export default function Page(){
       {/* ═══ IDEA BOARD ═══ */}
       {tab==="ideas"&&<IdeasTab
         ideas={ideas} setIdeas={setIdeas} props={props} settings={settings} uid={uid} goTab={goTab}
-        setRocks={setRocks} setMaint={setMaint} setImprovements={setImprovements} showConfirm={showConfirm}
+        setRocks={setRocks} setMaint={setMaint} setImprovements={setImprovements} setIssues={setIssues} setExpenses={setExpenses}
+        showConfirm={showConfirm}
       />}
 
-      {tab==="portal-ops"&&<PortalOpsTab settings={settings} properties={props} uid={uid} allTenants={allTenants} utilityBills={utilityBills} setUtilityBills={setUtilityBills} docRequests={docRequests} setDocRequests={setDocRequests} amenities={amenities} setAmenities={setAmenities} amenityBookings={amenityBookings} setAmenityBookings={setAmenityBookings} surveys={surveys} setSurveys={setSurveys} surveyResults={surveyResults} packages={packages} setPackages={setPackages} />}
+      {tab==="portal-ops"&&<PortalOpsTab settings={settings} properties={props} allTenants={allTenants} onDirtyChange={(dirty)=>{if(dirty&&templateEditorDirty)return;/* portal ops dirty tracking */}} />}
 
       </div>
     </div>
