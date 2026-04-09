@@ -21,6 +21,7 @@ import Ledger from "./components/Ledger";
 import ApplicationsTab from "./components/ApplicationsTab";
 import ModalRenderer from "./components/ModalRenderer";
 import SmartImporter from "./components/SmartImporter";
+import OnboardingWizard from "./components/OnboardingWizard";
 import TenantsTab from "./components/TenantsTab";
 import PaymentsTab from "./components/PaymentsTab";
 import TimelineTab from "./components/TimelineTab";
@@ -50,6 +51,7 @@ const IconMail=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" s
 const IconMegaphone=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>;
 const IconPortalOps=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M6 8h4 M6 11h3"/><circle cx="17" cy="9" r="2"/></svg>;
 const IconTimeline=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>;
+const IconOnboarding=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>;
 const IconSettings=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 
 // ─── Storage ────────────────────────────────────────────────────────
@@ -1225,6 +1227,7 @@ export default function Page(){
   const pendingLeases=leases.filter(l=>l.status==="pending_tenant"||l.status==="pending_landlord").length;
   const tabs=[
     {id:"dashboard",i:<IconDashboard/>,l:"Dashboard"},
+    ...(settings.onboardingActive?[{id:"onboarding",i:<IconOnboarding/>,l:"Onboarding",badge:null}]:[]),
     {id:"scorecard",i:<IconTrending/>,l:"Scorecard"},
     {id:"rocks",i:<IconTarget/>,l:"Rocks"},
     {id:"issues",i:<IconAlert/>,l:"Issues"},
@@ -1307,6 +1310,12 @@ export default function Page(){
     if(!allIds().includes("announcements")){const ms=cfg.findIndex(s=>s.ids.includes("messages"));if(ms>=0)cfg[ms].ids.push("announcements");else cfg.push({label:"Communications",ids:["announcements"]});}
     if(!allIds().includes("leases")) cfg.push({label:"Documents",ids:["leases"]});
     if(!allIds().includes("documents")){const ls=cfg.findIndex(s=>s.ids.includes("leases"));if(ls>=0&&!cfg[ls].ids.includes("documents"))cfg[ls].ids.push("documents");else if(!allIds().includes("documents"))cfg.push({label:"Documents",ids:["documents"]});}
+    // Auto-inject onboarding tab after dashboard when active
+    if(settings.onboardingActive&&!allIds().includes("onboarding")){
+      const dashSec=cfg.findIndex(s=>s.ids.includes("dashboard"));
+      if(dashSec>=0){const di=cfg[dashSec].ids.indexOf("dashboard");cfg[dashSec].ids.splice(di+1,0,"onboarding");}
+      else cfg.unshift({label:"Setup",ids:["onboarding"]});
+    }
     return cfg;
   })();
   const setSidebarConfig=(cfg)=>{const u={...settings,sidebarConfig:cfg};setSettings(u);save("hq-settings",u);};
@@ -1515,6 +1524,18 @@ export default function Page(){
     <div className="mn" style={{zoom:_zoom,left:220*_zoom}}>
       <div className="tbar"><div><h1><span style={{color:"#d4a853",display:"flex",alignItems:"center"}}>{(tabs.find(t=>t.id===tab)||{}).i}</span> {(tabs.find(t=>t.id===tab)||{}).l}</h1><div className="tbar-sub">{MO}</div></div></div>
       <div className="cnt">
+
+      {/* ═══ ONBOARDING ═══ */}
+      {tab==="onboarding"&&<OnboardingWizard
+        props={props} setProps={setProps} charges={charges} setCharges={setCharges}
+        sdLedger={sdLedger} setSdLedger={setSdLedger}
+        settings={settings} setSettings={setSettings}
+        leases={leases} setLeases={setLeases}
+        save={save} uid={uid} createCharge={createCharge} TODAY={TODAY}
+        allTenants={allTenants} goTab={goTab}
+        supa={supa}
+        onComplete={()=>{const u={...settings,onboardingActive:false,onboardingCompletedAt:TODAY.toISOString()};setSettings(u);save("hq-settings",u);}}
+      />}
 
       {/* ═══ DASHBOARD ═══ */}
       {tab==="dashboard"&&<DashboardTab
@@ -2028,7 +2049,7 @@ export default function Page(){
   })()}
 
   {/* ═══ MODALS ═══ */}
-  {showSmartImport&&<SmartImporter props={props} setProps={setProps} settings={settings} uid={uid} createCharge={createCharge} setCharges={setCharges} setNotifs={setNotifs} setSdLedger={setSdLedger} charges={charges} TODAY={TODAY} onClose={()=>setShowSmartImport(false)} goTab={goTab} />}
+  {showSmartImport&&<SmartImporter props={props} setProps={setProps} settings={settings} uid={uid} createCharge={createCharge} setCharges={setCharges} setNotifs={setNotifs} setSdLedger={setSdLedger} charges={charges} TODAY={TODAY} onClose={()=>setShowSmartImport(false)} goTab={goTab} onImportComplete={()=>{const u={...settings,onboardingActive:true};setSettings(u);save("hq-settings",u);}} />}
 
   <ModalRenderer
     modal={modal} setModal={setModal}

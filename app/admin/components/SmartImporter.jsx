@@ -642,7 +642,7 @@ function buildStructure(rows, colMap, existingProps, uid, todayStr) {
 
 export default function SmartImporter({
   props, setProps, settings, uid, createCharge, setCharges, setNotifs, setSdLedger,
-  charges, TODAY, onClose, goTab,
+  charges, TODAY, onClose, goTab, onImportComplete,
 }) {
   const _ac = settings?.adminAccent || "#4a7c59";
   const _acR = settings?.adminAccentRgb || "74,124,89";
@@ -1050,6 +1050,7 @@ export default function SmartImporter({
       if (setNotifs) setNotifs(p => [{ id: uid(), type: "system", msg: `Import: ${ok} tenants, ${pC} properties created`, date: todayStr, read: false, urgent: false }, ...(p || [])]);
       setSummary({ ok, err, pC, rC, totalRent, totalSD });
       setImportDone(true);
+      if (onImportComplete) onImportComplete({ ok, err, pC, rC });
     } catch (e) {
       addLog(`Fatal: ${e.message}`, "err");
       setSummary({ ok, err: err + 1, pC, rC, totalRent, totalSD });
