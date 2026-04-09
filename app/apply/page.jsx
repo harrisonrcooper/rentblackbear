@@ -209,7 +209,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:#3d35
 /* Yes/No */
 .yn-row{display:flex;gap:8px;margin-bottom:16px}
 .yn-q{font-size:13px;font-weight:600;color:#3d3529;margin-bottom:8px}
-.yn-btn{flex:1;padding:12px;border:2px solid rgba(0,0,0,.08);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#5c4a3a}
+.yn-btn{flex:1;padding:12px;border:2px solid rgba(0,0,0,.08);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;background:#fff;color:#5c4a3a;min-height:44px}
 .yn-btn.yes{border-color:var(--gn);background:rgba(74,124,89,.06);color:var(--gn)}
 .yn-btn.no{border-color:var(--rd);background:rgba(196,92,74,.06);color:var(--rd)}
 

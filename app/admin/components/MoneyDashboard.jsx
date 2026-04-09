@@ -273,7 +273,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
               </div>
             ))}
           </div></div>
-          <div style={{ display: "flex", gap: 20, marginTop: 14, fontSize: 12, color: "#6b5e52" }}>
+          <div style={{ display: "flex", gap: 20, marginTop: 14, fontSize: 12, color: "#6b5e52", flexWrap: "wrap" }}>
             <span>Avg income: <b style={{ color: _ac }}>{fmt(data.avgInc)}/mo</b></span>
             <span>Avg expenses: <b style={{ color: "#6b5e52" }}>{fmt(data.avgExp)}/mo</b></span>
             <span>Net: <b style={{ color: data.avgInc - data.avgExp >= 0 ? _ac : "#c45c4a" }}>{fmt(data.avgInc - data.avgExp)}/mo</b></span>
@@ -316,7 +316,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
                       {p.occupied}/{p.total} occupied
                     </span>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 20px", fontSize: 12, marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: "10px 20px", fontSize: 12, marginBottom: 16 }}>
                     {[
                       ["Revenue (MTD)", fmt(p.rev), "#1a1714"],
                       ["Expenses (MTD)", fmt(p.exp), "#1a1714"],
@@ -355,7 +355,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
               </div>
             ))}
             {data.pastDueSorted.length > 8 && (
-              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0 0", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0", minHeight: 44, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
                 View all {data.pastDueSorted.length} {Ic.arrow}
               </button>
             )}
@@ -376,7 +376,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
               );
             })}
             {data.soon.length > 8 && (
-              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0 0", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0", minHeight: 44, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
                 View all {data.soon.length} {Ic.arrow}
               </button>
             )}
@@ -395,7 +395,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
               </div>
             ))}
             {data.transit.length > 8 && (
-              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0 0", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0", minHeight: 44, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
                 View all {data.transit.length} {Ic.arrow}
               </button>
             )}

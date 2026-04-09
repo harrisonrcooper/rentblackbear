@@ -296,7 +296,7 @@ export default function LeaseModal({
             {leaseForm.utilitiesMode&&leaseForm.utilitiesMode!=="custom"&&<div style={{fontSize:10,color:"#6b5e52",padding:"6px 8px",background:"rgba(0,0,0,.02)",borderRadius:5,border:"0.5px solid rgba(0,0,0,.06)",lineHeight:1.5,marginBottom:4}}>{leaseForm.utilitiesClause}</div>}
             {leaseForm.utilitiesMode&&leaseForm.roomId&&(()=>{
               const saveUtilPreset=()=>{const lp=properties.find(p=>p.id===(leaseForm.propertyId||properties.find(pp=>getPropDisplayName(pp)===leaseForm.property)?.id));if(!lp||!leaseForm.roomId)return;const updatedUnits=(lp.units||[]).map(u=>({...u,utils:u.rooms&&u.rooms.some(r=>r.id===leaseForm.roomId)?leaseForm.utilitiesMode:u.utils,rooms:(u.rooms||[]).map(r=>r.id===leaseForm.roomId?{...r,utils:leaseForm.utilitiesMode}:r)}));const updatedProps=properties.map(p=>p.id===lp.id?{...p,units:updatedUnits}:p);setProperties(updatedProps);setLeaseForm(p=>({...p,_utilPresetSaved:true}));};
-              return(<button onClick={saveUtilPreset} style={{marginLeft:"auto",padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>{leaseForm._utilPresetSaved?"Preset saved":"Save as preset for this room"}</button>);
+              return(<button onClick={saveUtilPreset} style={{marginLeft:"auto",padding:"5px 14px",minHeight:44,fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._utilPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._utilPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>{leaseForm._utilPresetSaved?"Preset saved":"Save as preset for this room"}</button>);
             })()}
           </>;
       })()}
@@ -370,7 +370,7 @@ export default function LeaseModal({
                     <span>Lease End</span>
                     {!locked&&<label style={{display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontWeight:400}}>
                       <span style={{fontSize:10,color:"#6b5e52"}}>TBD</span>
-                      <button onClick={()=>setLeaseForm(p=>({...p,leaseEndTbd:!p.leaseEndTbd,leaseEnd:p.leaseEndTbd?p.leaseEnd:"",_leaseEndTbdChanged:true}))} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:leaseForm.leaseEndTbd?"#d4a853":"#ccc",position:"relative",padding:0,transition:"background .15s",flexShrink:0}}>
+                      <button onClick={()=>setLeaseForm(p=>({...p,leaseEndTbd:!p.leaseEndTbd,leaseEnd:p.leaseEndTbd?p.leaseEnd:"",_leaseEndTbdChanged:true}))} style={{width:30,height:16,minWidth:44,minHeight:44,borderRadius:8,border:"none",cursor:"pointer",background:leaseForm.leaseEndTbd?"#d4a853":"#ccc",position:"relative",padding:0,transition:"background .15s",flexShrink:0}}>
                         <div style={{position:"absolute",width:12,height:12,borderRadius:"50%",background:"#fff",top:2,left:leaseForm.leaseEndTbd?16:2,transition:"left .15s"}}/>
                       </button>
                     </label>}
@@ -450,7 +450,7 @@ export default function LeaseModal({
                           const isInvalid=tlCurLe&&leaseForm.moveIn&&(leaseForm.moveIn<tlCurLe||(newBuf>0&&newBufEnd&&leaseForm.moveIn<=newBufEnd));
                           const newMi=(leaseForm._moveInMode==="asap"||isInvalid)?_computeAsapMi(tlCurLe,newBuf):null;
                           setLeaseForm(p=>({...p,_bufferDays:newBuf,...(newMi?{..._applyAsapToForm(newMi,p.rent),_errors:{...(p._errors||{}),moveIn:null}}:{})}));
-                        }} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
+                        }} style={{width:15,height:15,minWidth:44,minHeight:44,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#8722;</button>
                         <span style={{fontSize:10,fontWeight:800,color:"#1a1714",minWidth:20,textAlign:"center"}}>{bufDays}d</span>
                         <button onClick={()=>{
                           const newBuf=(leaseForm._bufferDays??7)+1;
@@ -458,10 +458,10 @@ export default function LeaseModal({
                           const isInvalid=tlCurLe&&leaseForm.moveIn&&(leaseForm.moveIn<tlCurLe||(newBuf>0&&newBufEnd&&leaseForm.moveIn<=newBufEnd));
                           const newMi=(leaseForm._moveInMode==="asap"||isInvalid)?_computeAsapMi(tlCurLe,newBuf):null;
                           setLeaseForm(p=>({...p,_bufferDays:newBuf,...(newMi?{..._applyAsapToForm(newMi,p.rent),_errors:{...(p._errors||{}),moveIn:null}}:{})}));
-                        }} style={{width:15,height:15,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
+                        }} style={{width:15,height:15,minWidth:44,minHeight:44,borderRadius:3,border:"1px solid rgba(0,0,0,.12)",background:"#f5f5f5",cursor:"pointer",fontFamily:"inherit",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0,color:"#1a1714"}}>&#43;</button>
                       </div>
                       {/* Full timeline button */}
-                      <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(20,Math.floor(window.innerWidth/2)-340),y:40}}))} style={{fontSize:8,fontWeight:700,color:"#1d4ed8",background:"rgba(59,130,246,.07)",border:"0.5px solid rgba(59,130,246,.25)",borderRadius:5,padding:"2px 7px",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,lineHeight:1}}>
+                      <button onClick={()=>setModal(p=>({...p,_tlFloatOpen:true,_tlFloatPos:{x:Math.max(20,Math.floor(window.innerWidth/2)-340),y:40}}))} style={{fontSize:8,fontWeight:700,color:"#1d4ed8",background:"rgba(59,130,246,.07)",border:"0.5px solid rgba(59,130,246,.25)",borderRadius:5,padding:"8px 12px",minHeight:44,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3,lineHeight:1}}>
                         <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>
                         Full Timeline
                       </button>
@@ -567,7 +567,7 @@ export default function LeaseModal({
                       setProperties(updatedProps);
                       setLeaseForm(p=>({...p,_parkingPresetSaved:true}));
                     };
-                    const btnBase={padding:"7px 14px",fontSize:11,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",border:"1px solid"};
+                    const btnBase={padding:"7px 14px",minHeight:44,fontSize:11,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",transition:"all .15s",border:"1px solid"};
                     return(<>
                       <div style={{display:"flex",gap:8,marginTop:4}}>
                         <button onClick={()=>setLeaseForm(p=>({...p,parkingChoice:"yes",_errors:{...(p._errors||{}),parkingChoice:null}}))} style={{...btnBase,flex:1,background:pc==="yes"?"#4a7c59":"transparent",color:pc==="yes"?"#fff":"#6b5e52",borderColor:pc==="yes"?"#4a7c59":leaseForm._errors?.parkingChoice?"#c45c4a":"rgba(0,0,0,.15)"}}>Yes — Assigned Parking</button>
@@ -577,7 +577,7 @@ export default function LeaseModal({
                       {pc==="yes"&&<>
                         <input value={leaseForm.parking||""} onChange={e=>setLeaseForm(p=>({...p,parking:e.target.value,_errors:{...(p._errors||{}),parking:null},_parkingPresetSaved:false}))} placeholder="e.g. Space A1, right side of driveway" style={{marginTop:8,animation:leaseForm._errors?.parking?"shake .4s ease":undefined,borderColor:leaseForm._errors?.parking?"#c45c4a":undefined}}/>
                         {leaseForm._errors?.parking&&<div style={{color:"#c45c4a",fontSize:11,marginTop:4,animation:"shake .4s ease"}}>{leaseForm._errors.parking}</div>}
-                        {(leaseForm.parking||"").trim()&&leaseForm.roomId&&<button onClick={savePreset} style={{marginTop:6,marginLeft:"auto",padding:"5px 14px",fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._parkingPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._parkingPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
+                        {(leaseForm.parking||"").trim()&&leaseForm.roomId&&<button onClick={savePreset} style={{marginTop:6,marginLeft:"auto",padding:"5px 14px",minHeight:44,fontSize:10,fontWeight:700,borderRadius:6,cursor:"pointer",fontFamily:"inherit",border:"0.5px solid rgba(74,124,89,.3)",background:leaseForm._parkingPresetSaved?"#4a7c59":"rgba(74,124,89,.06)",color:leaseForm._parkingPresetSaved?"#fff":"#2d6a3f",transition:"all .3s",display:"block"}}>
                           {leaseForm._parkingPresetSaved?"Preset saved":"Save as preset for this room"}
                         </button>}
                       </>}
@@ -662,7 +662,7 @@ export default function LeaseModal({
                   </div>
                   <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden",flexShrink:0,marginLeft:12}}>
                     {[["std","Prorate move-in"],["full","First month upfront"]].map(([v,l])=>(
-                      <button key={v} onClick={()=>setLeaseForm(p=>({...p,prorationMethod:v}))} style={{padding:"5px 12px",fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",background:proMode===v?"#1a1714":"transparent",color:proMode===v?"#d4a853":"#9a8878",transition:"all .15s"}}>{l}</button>
+                      <button key={v} onClick={()=>setLeaseForm(p=>({...p,prorationMethod:v}))} style={{padding:"5px 12px",minHeight:44,fontSize:10,fontWeight:700,border:"none",cursor:"pointer",fontFamily:"inherit",background:proMode===v?"#1a1714":"transparent",color:proMode===v?"#d4a853":"#9a8878",transition:"all .15s"}}>{l}</button>
                     ))}
                   </div>
                 </div>
@@ -671,7 +671,7 @@ export default function LeaseModal({
                     <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>Require last month{"'"}s rent</div>
                     <div style={{fontSize:10,color:"#9a8878"}}>Optional &mdash; use for higher-risk move-ins</div>
                   </div>
-                  <button onClick={()=>setLeaseForm(p=>({...p,requireLastMonth:!p.requireLastMonth}))} style={{width:36,height:20,borderRadius:10,border:"none",cursor:"pointer",background:requireLast?"#4a7c59":"#ccc",position:"relative",flexShrink:0,transition:"background .2s",padding:0}}>
+                  <button onClick={()=>setLeaseForm(p=>({...p,requireLastMonth:!p.requireLastMonth}))} style={{width:36,height:20,minWidth:44,minHeight:44,borderRadius:10,border:"none",cursor:"pointer",background:requireLast?"#4a7c59":"#ccc",position:"relative",flexShrink:0,transition:"background .2s",padding:0}}>
                     <div style={{position:"absolute",width:16,height:16,borderRadius:"50%",background:"#fff",top:2,left:requireLast?18:2,transition:"left .2s"}}/>
                   </button>
                 </div>
@@ -709,9 +709,9 @@ export default function LeaseModal({
               </div>
 
               {/* 3-column phase breakdown */}
-              <div style={{display:"flex",gap:8,padding:"10px 10px 0"}}>
+              <div style={{display:"flex",flexWrap:"wrap",gap:8,padding:"10px 10px 0"}}>
                 {phases.map((ph,i)=>(
-                  <div key={i} style={{flex:1,border:`1px solid ${ph.border}`,borderRadius:8,overflow:"hidden",background:ph.bg,display:"flex",flexDirection:"column"}}>
+                  <div key={i} style={{flex:"1 1 200px",border:`1px solid ${ph.border}`,borderRadius:8,overflow:"hidden",background:ph.bg,display:"flex",flexDirection:"column"}}>
                     {/* Phase header */}
                     <div style={{padding:"7px 12px",borderBottom:`1px solid ${ph.border}`}}>
                       <div style={{fontSize:9,fontWeight:800,letterSpacing:.9,textTransform:"uppercase",color:ph.color}}>{ph.when}</div>
@@ -749,7 +749,7 @@ export default function LeaseModal({
             </div>);
           })()}
 
-          <div className="fld"><label>Internal Notes</label><textarea value={leaseForm.notes||""} onChange={e=>setLeaseForm(p=>({...p,notes:e.target.value}))} placeholder="Notes for your records only — not on the lease" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit",resize:"vertical"}}/></div>
+          <div className="fld"><label>Internal Notes</label><textarea value={leaseForm.notes||""} onChange={e=>setLeaseForm(p=>({...p,notes:e.target.value}))} placeholder="Notes for your records only — not on the lease" rows={2} style={{width:"100%",padding:"8px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.06)",fontSize:16,fontFamily:"inherit",resize:"vertical"}}/></div>
 
           {/* Error summary — only appears after clicking Continue, only shows real error messages */}
           {leaseForm._submitAttempted&&leaseForm._errors&&Object.values(leaseForm._errors).filter(v=>!!v).length>0&&(

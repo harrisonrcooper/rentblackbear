@@ -397,7 +397,7 @@ export default function DashboardTab({
         {dashEditMode&&availableToAdd.length>0&&<div className="card" style={{marginBottom:16,border:"1px solid rgba(74,124,89,.2)",background:"rgba(74,124,89,.02)"}}><div className="card-bd">
           <div style={{fontSize:10,fontWeight:700,color:"#4a7c59",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Add Widgets</div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {availableToAdd.map(w=><button key={w.id} onClick={()=>addWidget(w.id)} style={{padding:"6px 14px",borderRadius:7,border:"1px solid rgba(74,124,89,.3)",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600,color:"#4a7c59",fontFamily:"inherit"}}>+ {w.label}</button>)}
+            {availableToAdd.map(w=><button key={w.id} onClick={()=>addWidget(w.id)} style={{padding:"6px 14px",minHeight:44,borderRadius:7,border:"1px solid rgba(74,124,89,.3)",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600,color:"#4a7c59",fontFamily:"inherit"}}>+ {w.label}</button>)}
           </div>
         </div></div>}
 

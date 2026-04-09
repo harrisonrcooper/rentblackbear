@@ -458,7 +458,7 @@ export default function TenantsTab({
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: tenantView === "active" ? 8 : 0 }}>
           <div style={{ position: "relative", flex: 1, minWidth: 180 }}>
             <div style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}><IconSearch /></div>
-            <input value={tenantSearch} onChange={e => { setTenantSearch(e.target.value); setPage(0); }} placeholder="Search name, email or phone..." style={{ width: "100%", padding: "6px 10px 6px 28px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit" }} />
+            <input value={tenantSearch} onChange={e => { setTenantSearch(e.target.value); setPage(0); }} placeholder="Search name, email or phone..." style={{ width: "100%", padding: "6px 10px 6px 28px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 16, fontFamily: "inherit" }} />
           </div>
           <select value={tenantPropFilter} onChange={e => { setTenantPropFilter(e.target.value); setPage(0); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit", background: "#fff" }}>
             <option value="all">All Properties</option>
@@ -1007,12 +1007,12 @@ export default function TenantsTab({
           <div style={{ fontSize: 11, color: "#6b5e52", marginBottom: 12 }}>To: {bulkMsg.names.slice(0, 5).join(", ")}{bulkMsg.names.length > 5 ? ` +${bulkMsg.names.length - 5} more` : ""}</div>
           <div className="fld" style={{ marginBottom: 10 }}>
             <label>Subject *</label>
-            <input value={bulkSubject} onChange={e => { setBulkSubject(e.target.value); setBulkErrs(p => ({ ...p, subject: null })); }} placeholder="Message subject..." style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + (bulkErrs.subject ? "#c45c4a" : "rgba(0,0,0,.12)"), fontSize: 12, fontFamily: "inherit", boxSizing: "border-box" }} />
+            <input value={bulkSubject} onChange={e => { setBulkSubject(e.target.value); setBulkErrs(p => ({ ...p, subject: null })); }} placeholder="Message subject..." style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + (bulkErrs.subject ? "#c45c4a" : "rgba(0,0,0,.12)"), fontSize: 16, fontFamily: "inherit", boxSizing: "border-box" }} />
             {bulkErrs.subject && <div className="err-msg">{bulkErrs.subject}</div>}
           </div>
           <div className="fld" style={{ marginBottom: 16 }}>
             <label>Message *</label>
-            <textarea value={bulkBody} onChange={e => { setBulkBody(e.target.value); setBulkErrs(p => ({ ...p, body: null })); }} placeholder="Write your message..." rows={5} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + (bulkErrs.body ? "#c45c4a" : "rgba(0,0,0,.12)"), fontSize: 12, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+            <textarea value={bulkBody} onChange={e => { setBulkBody(e.target.value); setBulkErrs(p => ({ ...p, body: null })); }} placeholder="Write your message..." rows={5} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid " + (bulkErrs.body ? "#c45c4a" : "rgba(0,0,0,.12)"), fontSize: 16, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
             {bulkErrs.body && <div className="err-msg">{bulkErrs.body}</div>}
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

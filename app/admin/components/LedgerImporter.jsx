@@ -692,7 +692,7 @@ export default function LedgerImporter({
         {/* ── Header ── */}
         <div style={{ padding: "20px 24px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: 20, fontWeight: 700, color: "#1a1714" }}>Import Ledger</div>
-          {step < 5 && <button onClick={tryClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#4b5563" }}><IX /></button>}
+          {step < 5 && <button onClick={tryClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#4b5563", minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}><IX /></button>}
         </div>
 
         {/* ── Step indicator ── */}

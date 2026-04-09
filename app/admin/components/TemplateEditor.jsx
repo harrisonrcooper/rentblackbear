@@ -271,7 +271,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
     <div className="card" style={{padding:14,marginBottom:14}}>
       <div className="fld" style={{marginBottom:0}}>
         <label>Template Name</label>
-        <input value={template?.name||""} onChange={e=>{setTemplate(p=>({...(p||{}),name:e.target.value}));setNameDirty(true);}} placeholder="e.g. Alabama Co-Living Lease" style={{fontSize:13,fontWeight:600}}/>
+        <input value={template?.name||""} onChange={e=>{setTemplate(p=>({...(p||{}),name:e.target.value}));setNameDirty(true);}} placeholder="e.g. Alabama Co-Living Lease" style={{fontSize:16,fontWeight:600}}/>
       </div>
     </div>
 
@@ -336,7 +336,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
 
             {/* Mode tabs [P6-1] uses _acc instead of hardcoded dark */}
             <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
-              <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
+              <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflowX:"auto"}}>
                 {[
                   ...(hasVars?[{id:"vars",label:"Edit Variables"}]:[]),
                   {id:"legal",label:"Edit Legal Wording"},
@@ -452,7 +452,7 @@ export default function TemplateEditor({template,setTemplate,settings,showAlert,
           <div style={{padding:"8px 14px",background:"rgba(0,0,0,.03)",borderBottom:"1px solid rgba(0,0,0,.08)"}}>
             <div style={{fontSize:9,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1}}>Table of Contents</div>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",padding:"8px 0"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",padding:"8px 0"}}>
             {sections.filter(s=>s.active!==false).map((sec,i)=>(
               <div key={sec.id} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 14px"}}>
                 <span style={{fontSize:9,fontWeight:800,color:_acc,minWidth:18}}>{i+1}.</span>

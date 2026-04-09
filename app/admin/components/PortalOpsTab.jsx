@@ -518,7 +518,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
       {portalOpsTab === "amenities" && (<>
         <div className="card" style={{ marginBottom: 20 }}><div className="card-bd" style={{ padding: "20px 24px" }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Add Shared Amenity</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10, marginBottom: 12 }}>
             <div>
               <label style={sLabel2}>Property</label>
               <select value={amenityForm.propId} onChange={e => setAmenityForm(f => ({ ...f, propId: e.target.value }))} style={{ ...sInput, animation: shakeField === "am_prop" ? "shake .5s" : "none" }}>
@@ -583,7 +583,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
       {portalOpsTab === "surveys" && (<>
         <div className="card" style={{ marginBottom: 20 }}><div className="card-bd" style={{ padding: "20px 24px" }}>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Trigger Survey</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10, marginBottom: 12 }}>
             <div>
               <label style={sLabel2}>Tenant</label>
               <select value={surveyForm.tenantId} onChange={e => setSurveyForm(f => ({ ...f, tenantId: e.target.value }))} style={{ ...sInput, animation: shakeField === "sv_tenant" ? "shake .5s" : "none" }}>

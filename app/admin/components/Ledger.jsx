@@ -610,7 +610,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
   return (
     <div style={{ display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 200px)" }}>
       {/* Quick-add bar */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 10, alignItems: "center", flexShrink: 0 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10, alignItems: "center", flexShrink: 0 }}>
         {[["payment", "Payment"], ["expense", "Record Expense"], ["charge", "Charge"], ["returnsd", "Return SD"], ["credit", "Credit"]].map(([k, l]) => k === "payment" ? (
           <button key={k} onClick={() => setActiveModal({ type: "payment", charge: null })}
             onMouseEnter={e => { e.currentTarget.style.background = _ac + "12"; e.currentTarget.style.borderColor = _ac; e.currentTarget.style.color = _ac; }}
@@ -838,7 +838,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
       {quickAdd === "credit" && (
         <div style={{ ...cardS, marginBottom: 10, padding: 14 }}>
           <div style={sectionLabel}>Add Credit</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 10 }}>
             <div>
               <label style={labelS}>Tenant</label>
               <select value={crTenant} onChange={e => setCrTenant(e.target.value)} style={inputS}>
@@ -867,7 +867,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
         <div style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)" }}><IconSearch /></div>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }}
           placeholder="Search all transactions..."
-          style={{ width: "100%", padding: "6px 8px 6px 28px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", height: 32, color: "#1a1714", outline: "none" }} />
+          style={{ width: "100%", padding: "6px 8px 6px 28px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit", boxSizing: "border-box", height: 32, color: "#1a1714", outline: "none" }} />
       </div>
 
       {/* Filter row */}
@@ -1136,7 +1136,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
                                         ) : (
                                         /* ── External payment: timeline tracker ── */
                                         <div key={pi} style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 6, padding: "16px 20px", marginBottom: 6 }}>
-                                          <div style={{ display: "grid", gridTemplateColumns: "180px 1fr auto", alignItems: "start", gap: 16 }}>
+                                          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}><div style={{ display: "grid", gridTemplateColumns: "180px 1fr auto", alignItems: "start", gap: 16, minWidth: 480 }}>
                                             <div>
                                               <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1714", marginBottom: 2 }}>{p.confId ? "PAYMENT #" + p.confId : "Payment #" + (pi + 1)}</div>
                                               <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1714" }}>{r._src.tenantName}</div>
@@ -1162,7 +1162,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
                                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                                               </button>
                                             </div>
-                                          </div>
+                                          </div></div>
                                           <div style={{ fontSize: 9, color: "#6b7280", marginTop: 8, fontStyle: "italic" }}>Processed via {p.method} — cannot be edited</div>
                                         </div>);
                                       })}
@@ -1264,16 +1264,16 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
                             <div>
                               {editingId === r._src.id ? (
                                 <div>
-                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Date</label><input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Amount</label><input type="number" value={editData.amount} onChange={e => setEditData(p => ({ ...p, amount: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Category</label><select value={editData.category} onChange={e => setEditData(p => ({ ...p, category: e.target.value, subcategory: "" }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }}>{SCHED_E_CATS.map(c => <option key={c.label||c.cat} value={c.label||c.cat}>{c.label||c.cat}</option>)}</select></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Subcategory</label><select value={editData.subcategory} onChange={e => setEditData(p => ({ ...p, subcategory: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }}><option value="">None</option>{(subcats?.[editData.category] || []).map(sc => { const lbl = typeof sc === "object" ? (sc.label || sc.id || "") : sc; return <option key={lbl} value={lbl}>{lbl}</option>; })}</select></div>
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 8 }}>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Date</label><input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Amount</label><input type="number" value={editData.amount} onChange={e => setEditData(p => ({ ...p, amount: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Category</label><select value={editData.category} onChange={e => setEditData(p => ({ ...p, category: e.target.value, subcategory: "" }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }}>{SCHED_E_CATS.map(c => <option key={c.label||c.cat} value={c.label||c.cat}>{c.label||c.cat}</option>)}</select></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Subcategory</label><select value={editData.subcategory} onChange={e => setEditData(p => ({ ...p, subcategory: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }}><option value="">None</option>{(subcats?.[editData.category] || []).map(sc => { const lbl = typeof sc === "object" ? (sc.label || sc.id || "") : sc; return <option key={lbl} value={lbl}>{lbl}</option>; })}</select></div>
                                   </div>
-                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Vendor</label><input value={editData.vendor} onChange={e => setEditData(p => ({ ...p, vendor: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Description</label><input value={editData.description} onChange={e => setEditData(p => ({ ...p, description: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Method</label><input value={editData.paymentMethod} onChange={e => setEditData(p => ({ ...p, paymentMethod: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 8 }}>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Vendor</label><input value={editData.vendor} onChange={e => setEditData(p => ({ ...p, vendor: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Description</label><input value={editData.description} onChange={e => setEditData(p => ({ ...p, description: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Method</label><input value={editData.paymentMethod} onChange={e => setEditData(p => ({ ...p, paymentMethod: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
                                   </div>
                                   <div style={{ display: "flex", gap: 6 }}>
                                     <button style={btnPrimary} onClick={e => { e.stopPropagation(); saveEditExpense(); }}>Save</button>
@@ -1354,9 +1354,9 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {totalPages > 1 && (
             <>
-              <button style={{ ...btnSecondary, height: 24, fontSize: 10, padding: "2px 8px" }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</button>
+              <button style={{ ...btnSecondary, height: 24, minHeight: 44, fontSize: 10, padding: "2px 8px" }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</button>
               <span style={{ fontSize: 11, color: "#6b7280" }}>Page {page + 1} of {totalPages}</span>
-              <button style={{ ...btnSecondary, height: 24, fontSize: 10, padding: "2px 8px" }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
+              <button style={{ ...btnSecondary, height: 24, minHeight: 44, fontSize: 10, padding: "2px 8px" }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
             </>
           )}
         </div>
@@ -1364,8 +1364,8 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
 
       {/* ═══ MANAGE MODALS ═══ */}
       {manageModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setManageModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 10, maxWidth: 500, width: "100%", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 16px 48px rgba(0,0,0,.2)" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 0 }} onClick={() => setManageModal(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: "16px 16px 0 0", maxWidth: 500, width: "100%", maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", boxShadow: "0 16px 48px rgba(0,0,0,.2)" }}>
 
             {/* Manage Subcategories */}
             {manageModal === "subcats" && (() => {

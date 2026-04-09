@@ -448,7 +448,7 @@ export default function ApplicationsTab({
   </div>
   {/* Search + Controls */}
   <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-    <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search pipeline..." style={{flex:1,minWidth:160,padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+    <input value={appSearch} onChange={e=>setAppSearch(e.target.value)} placeholder="Search pipeline..." style={{flex:1,minWidth:160,padding:"7px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.08)",fontSize:16,fontFamily:"inherit"}}/>
     {appKpiFilter&&<button className="btn btn-out btn-sm" style={{color:_red,borderColor:`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",") || "196,92,74"},.2)`}} onClick={()=>setAppKpiFilter(null)}><svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg> Clear filter</button>}
     {[{v:"pipeline",l:"Pipeline"},{v:"list",l:"List"}].map(b=><button key={b.v} className={`btn ${appView===b.v?"btn-dk":"btn-out"} btn-sm`} onClick={()=>setAppView(b.v)}>{b.l}</button>)}
     <button className="btn btn-out btn-sm" onClick={()=>setModal({type:"addLead",name:"",phone:"",email:"",property:"",notes:"",source:"Phone / Direct Call"})}>+ Add Lead</button>
@@ -616,7 +616,7 @@ export default function ApplicationsTab({
             }} onClick={function(){setModal({type:"app",data:a});}}>
 
               {/* Checkbox — only on non-onboarding, positioned cleanly */}
-              {!isOnboarding&&<div style={{position:"absolute",left:8,top:12}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,cursor:"pointer"}}/></div>}
+              {!isOnboarding&&<div style={{position:"absolute",left:8,top:12}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,minWidth:22,minHeight:22,cursor:"pointer"}}/></div>}
 
               {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.08)`:flags[0].type==="past"?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`:`rgba(${_acR},.08)`,color:flags[0].type==="current"?_red:flags[0].type==="past"?_gold:_ac,fontWeight:600,cursor:"pointer"}}
                 onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>
@@ -654,7 +654,7 @@ export default function ApplicationsTab({
               {/* Invited — "Awaiting Reply" badge + re-invite button */}
               {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
                 <span style={{fontSize:8,fontWeight:700,color:_ac,background:`rgba(${_acR},.1)`,padding:"2px 7px",borderRadius:99,flexShrink:0}}>Awaiting Reply</span>
-                <button style={{fontSize:9,padding:"3px 10px",background:_gold,border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
+                <button style={{fontSize:9,padding:"8px 12px",minHeight:44,background:_gold,border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
                   onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Re-invite</button>
               </div>}
 
@@ -764,12 +764,12 @@ export default function ApplicationsTab({
                   {canInvite&&<button
                     onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,168,83,.3)";e.currentTarget.style.color="#7a5a10";}}
                     onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,168,83,.12)";e.currentTarget.style.color=_gold;}}
-                    style={{fontSize:7,padding:"3px 7px",background:"rgba(212,168,83,.12)",color:_gold,border:"1px solid rgba(212,168,83,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}
+                    style={{fontSize:7,padding:"8px 12px",minHeight:44,background:"rgba(212,168,83,.12)",color:_gold,border:"1px solid rgba(212,168,83,.35)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:90}}
                     onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Continue — Invite to Apply</button>}
                   <button
                     onMouseEnter={e=>{e.currentTarget.style.background="rgba(74,124,89,.25)";e.currentTarget.style.color=_green;}}
                     onMouseLeave={e=>{e.currentTarget.style.background="rgba(74,124,89,.1)";e.currentTarget.style.color=_ac;}}
-                    style={{fontSize:7,padding:"3px 7px",background:`rgba(${_acR},.1)`,color:_ac,border:"1px solid rgba(74,124,89,.3)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,whiteSpace:"nowrap"}}
+                    style={{fontSize:7,padding:"8px 12px",minHeight:44,background:`rgba(${_acR},.1)`,color:_ac,border:"1px solid rgba(74,124,89,.3)",borderRadius:4,cursor:"pointer",fontWeight:700,fontFamily:"inherit",transition:"all .15s",textAlign:"center",lineHeight:1.3,whiteSpace:"nowrap"}}
                     title="Send portal invite — bypasses application requirement"
                     onClick={e=>{e.stopPropagation();setPiState("idle");setModal({type:"sendPortalInviteApp",data:a});}}>Portal Invite</button>
                 </div>
@@ -783,7 +783,7 @@ export default function ApplicationsTab({
   </div>}
 
   {/* List */}
-  {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><table className="tbl"><thead><tr><th style={{width:32}}></th><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody>
+  {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table className="tbl"><thead><tr><th style={{width:32}}></th><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody>
     {activeApps.sort((a,b)=>getScore(b)-getScore(a)).map(a=>{const sc=getScore(a);const d=daysSince(a.lastContact||a.submitted);const sel=bulkSel.includes(a.id);return(
       <tr key={a.id} style={{cursor:"pointer",background:sel?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.07)`:"",transition:"background .1s"}}
         onClick={()=>setModal({type:"app",data:a})}>
@@ -798,7 +798,7 @@ export default function ApplicationsTab({
         <td onClick={e=>e.stopPropagation()}>
           {["pre-screened","called","new-lead"].includes(a.status)&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>setModal({type:"inviteApp",data:a})}>Invite</button>}
         </td></tr>);})}
-  </tbody></table></div></div>}
+  </tbody></table></div></div></div>}
 
   {/* Denied — collapsible */}
   {deniedApps.length>0&&<div style={{marginTop:14}}>

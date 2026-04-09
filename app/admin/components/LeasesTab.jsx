@@ -305,7 +305,7 @@ export default function LeasesTab({
                 </div>
                 <div className="fld" style={{ marginBottom: 8 }}>
                   <label>Body</label>
-                  <textarea value={notice.body} onChange={e => { const updated = (settings.noticeTemplates || []).map((n, i) => i === ni ? { ...n, body: e.target.value } : n); setSettings(s => ({ ...s, noticeTemplates: updated })); }} rows={6} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit", resize: "vertical", lineHeight: 1.6 }} />
+                  <textarea value={notice.body} onChange={e => { const updated = (settings.noticeTemplates || []).map((n, i) => i === ni ? { ...n, body: e.target.value } : n); setSettings(s => ({ ...s, noticeTemplates: updated })); }} rows={6} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 16, fontFamily: "inherit", resize: "vertical", lineHeight: 1.6 }} />
                 </div>
                 <div style={{ padding: "8px 10px", background: "rgba(0,0,0,.03)", borderRadius: 6, border: "1px solid rgba(0,0,0,.05)", marginBottom: 8 }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Available Tokens</div>
@@ -344,7 +344,7 @@ export default function LeasesTab({
                 }}
                 style={{ display: "flex", gap: 6, alignItems: "center", background: "#faf9f7", borderRadius: 6, padding: "6px 8px", border: "1px solid rgba(0,0,0,.06)", cursor: "grab" }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8a7d74" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-                <input value={rule} style={{ flex: 1, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 12, outline: "none", padding: 0 }}
+                <input value={rule} style={{ flex: 1, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 16, outline: "none", padding: 0 }}
                   onChange={e => { const next = [...rules]; next[i] = e.target.value; setSettings(s => ({ ...s, houseRules: next })); }} />
                 <button style={{ background: "none", border: "none", color: "#c45c4a", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1, flexShrink: 0, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => { const next = rules.filter((_, j) => j !== i); setSettings(s => ({ ...s, houseRules: next })); }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>

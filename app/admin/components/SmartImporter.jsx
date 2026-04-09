@@ -1259,7 +1259,7 @@ export default function SmartImporter({
               <textarea
                 placeholder="Select rows in TurboTenant / AppFolio / any table → Ctrl+C → paste here"
                 rows={3}
-                style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px dashed rgba(0,0,0,.15)", fontSize: 12, fontFamily: "inherit", color: "#1a1714", resize: "vertical", background: "rgba(0,0,0,.02)" }}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px dashed rgba(0,0,0,.15)", fontSize: 16, fontFamily: "inherit", color: "#1a1714", resize: "vertical", background: "rgba(0,0,0,.02)" }}
                 onPaste={e => {
                   const text = e.clipboardData.getData("text");
                   if (!text) return;

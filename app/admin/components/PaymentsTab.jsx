@@ -398,7 +398,7 @@ export default function PaymentsTab({
                 </div>
                 {/* Expanded detail */}
                 {isExp&&<div style={{padding:"16px 20px",background:"#f8f7f4",borderBottom:"2px solid rgba(0,0,0,.04)"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:12}}>
                     <div style={{background:"#fff",borderRadius:8,padding:"10px 14px"}}>
                       <div style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>Payment ID</div>
                       <div style={{fontSize:11,fontFamily:"monospace",fontWeight:700}}>{confId}</div>

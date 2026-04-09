@@ -181,7 +181,7 @@ export default function AccountingTab({
               <div style={{display:"flex",border:"1px solid rgba(0,0,0,.1)",borderRadius:6,overflow:"hidden"}}>
                 {[["property","Property"],["unit","Unit / Room"]].map(([k,l])=>(
                   <button key={k} onClick={()=>setAcctOverviewMode(k)}
-                    style={{padding:"5px 14px",fontSize:11,fontWeight:acctOverviewMode===k?700:500,background:acctOverviewMode===k?"#3c3228":"transparent",color:acctOverviewMode===k?"#fff":"#6b5e52",border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:k==="unit"?"1px solid rgba(0,0,0,.1)":"none"}}>
+                    style={{padding:"5px 14px",minHeight:44,fontSize:11,fontWeight:acctOverviewMode===k?700:500,background:acctOverviewMode===k?"#3c3228":"transparent",color:acctOverviewMode===k?"#fff":"#6b5e52",border:"none",cursor:"pointer",fontFamily:"inherit",borderLeft:k==="unit"?"1px solid rgba(0,0,0,.1)":"none"}}>
                     {l}
                   </button>
                 ))}
