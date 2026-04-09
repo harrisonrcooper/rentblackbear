@@ -6,7 +6,7 @@ import Announcements from "./components/Announcements";
 import Reports from "./components/Reports";
 import PropertiesList from "./components/PropertiesList";
 import PortalOpsTab from "./components/PortalOpsTab";
-import AccountingTab from "./components/AccountingTab";
+// AccountingTab removed — features moved to Dashboard (anomaly alerts) and Reports (tax prep / lender packet)
 import AppSetup from "./components/AppSetup";
 import WebsiteSettings from "./components/WebsiteSettings";
 import DashboardTab from "./components/DashboardTab";
@@ -17,6 +17,7 @@ import ScorecardTab from "./components/ScorecardTab";
 import IdeasTab from "./components/IdeasTab";
 import MoneyDashboard from "./components/MoneyDashboard";
 import Ledger from "./components/Ledger";
+import ApplicationsTab from "./components/ApplicationsTab";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
@@ -374,7 +375,7 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",pmName:"Carolina Cooper",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","accounting"],couplesDefault:false,
+const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",pmName:"Carolina Cooper",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","money"],couplesDefault:false,
   // Portfolio-wide late fee defaults — per-room lateConfig inherits these if fields are null
   lateFeeGraceDays:3,    // days after due before any fee applies
   lateFeeInitial:50,     // default one-time initial fee (flat $)
@@ -2132,11 +2133,7 @@ export default function Page(){
   const[credits,setCredits]=useState(DEF_CREDITS);
   const[sdLedger,setSdLedger]=useState(DEF_SD_LEDGER);
   const[paySubTab,setPaySubTab]=useState("overview");
-  const[acctSubTab,setAcctSubTab]=useState("overview");
-  const[acctSort,setAcctSort]=useState({col:"date",dir:"desc"});
-  const[acctDrop,setAcctDrop]=useState(null);
-  const[acctHideCols,setAcctHideCols]=useState({});
-  // acctDotMenu, acctFilters moved into AccountingTab component
+  // acctSubTab/acctSort/acctDrop/acctHideCols removed with Accounting tab
   const[reportPeriod,setReportPeriod]=useState({from:"",to:""});
   const[reportProp,setReportProp]=useState("all");
   const[activeReport,setActiveReport]=useState(null);
@@ -2145,7 +2142,7 @@ export default function Page(){
   const[vendors,setVendors]=useState([]);
   const[improvements,setImprovements]=useState([]);
   const[subcats,setSubcats]=useState(STARTER_SUBCATS_BY_CAT);
-  const[acctOverviewMode,setAcctOverviewMode]=useState("property"); // "property" | "unit"
+  // acctOverviewMode removed with Accounting tab
   const[payPeriod,setPayPeriod]=useState("mtd");
   const[payFilters,setPayFilters]=useState({property:"",tenant:"",category:"",status:"",dateFrom:"",dateTo:""});
   const[depFilters,setDepFilters]=useState({property:"",tenant:"",lease:"",dateFrom:"",dateTo:"",view:""});
@@ -2642,7 +2639,7 @@ export default function Page(){
     {id:"documents",i:<IconFolder/>,l:"Documents"},
     {id:"money",i:<IconDollar/>,l:"Money"},
     {id:"ledger",i:<IconBook/>,l:"Ledger"},
-    {id:"accounting",i:<IconBook/>,l:"Accounting"},
+    // accounting tab removed
     {id:"reports",i:<IconTrending/>,l:"Reports"},
     {id:"properties",i:<IconHome/>,l:"Properties"},
     {id:"pm-settings",i:<IconSettings/>,l:"PM Settings"},
@@ -2654,7 +2651,7 @@ export default function Page(){
     {id:"announcements",i:<IconMegaphone/>,l:"Announcements"},
     {id:"portal-ops",i:<IconPortalOps/>,l:"Portal Ops"},
     {id:"notifications",i:<IconBell/>,l:"Alerts",badge:m.unreadNotifs||null},
-    {id:"add-expense",i:<span>＋</span>,l:"Add Expense"},
+    // add-expense shortcut removed (use Ledger > Expenses instead)
   ];
 
   // Default sidebar config — can be customized per PM
@@ -2665,7 +2662,7 @@ export default function Page(){
     {label:"Tenants",ids:["tenants","portal","payments","timeline","portal-ops"]},
     {label:"Operations",ids:["maintenance"]},
     {label:"Documents",ids:["leases","documents"]},
-    {label:"Financials",ids:["money","ledger","accounting","add-expense","reports"]},
+    {label:"Financials",ids:["money","ledger","reports"]},
     {label:"Portfolio",ids:["properties"]},
     {label:"Communications",ids:["messages","announcements","notifications"]},
     {label:"Settings",ids:["pm-settings","theme"]},
@@ -2674,19 +2671,11 @@ export default function Page(){
   const rawSidebarConfig=settings.sidebarConfig||DEF_SIDEBAR;
   const sidebarConfig=(()=>{
     // Migrate old IDs to new ones
-    const ID_MAP={"site-settings":"pm-settings","settings_dummy":null,"configuration":"app-setup"};
+    const ID_MAP={"site-settings":"pm-settings","settings_dummy":null,"configuration":"app-setup","accounting":"money","add-expense":null};
     let cfg=rawSidebarConfig.map(s=>({...s,ids:s.ids.map(id=>ID_MAP[id]!==undefined?ID_MAP[id]:id).filter(Boolean)})).filter(s=>s.ids.length>0);
     const allIds=()=>cfg.flatMap(s=>s.ids);
     // Inject missing tabs into sensible locations
-    if(!allIds().includes("add-expense")){
-      cfg=cfg.map(s=>{
-        if(!s.ids.includes("accounting"))return s;
-        const ids=[...s.ids];
-        const ai=ids.indexOf("accounting");
-        if(!ids.includes("add-expense"))ids.splice(ai+1,0,"add-expense");
-        return{...s,ids};
-      });
-    }
+    // add-expense injection removed with accounting tab
     if(!allIds().includes("timeline")){
       cfg=cfg.map(s=>{
         if(!s.ids.includes("payments"))return s;
@@ -2773,7 +2762,7 @@ export default function Page(){
           dashboard:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>,
           tenants:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
           applications:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>,
-          accounting:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+          // accounting icon removed
           maintenance:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
           payments:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
           timeline:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>,
@@ -2781,8 +2770,8 @@ export default function Page(){
           properties:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
           reports:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
         };
-        const TAB_LABELS={dashboard:"Dashboard",tenants:"Tenants",applications:"Apply",accounting:"Money",maintenance:"Maint.",payments:"Ledger",timeline:"Timeline",leases:"Leases",properties:"Portfolio",reports:"Reports"};
-        const mobTabs=(settings.mobileTabs||["dashboard","tenants","applications","accounting"]).slice(0,4);
+        const TAB_LABELS={dashboard:"Dashboard",tenants:"Tenants",applications:"Apply",maintenance:"Maint.",payments:"Ledger",timeline:"Timeline",leases:"Leases",properties:"Portfolio",reports:"Reports",money:"Money"};
+        const mobTabs=(settings.mobileTabs||["dashboard","tenants","applications","money"]).slice(0,4);
         return[...mobTabs,{id:"__more__"}].map(t=>{
           const id=typeof t==="string"?t:t.id;
           const isMore=id==="__more__";
@@ -2885,10 +2874,7 @@ export default function Page(){
             }
             // Normal mode
             const label=(settings.sidebarLabels||{})[t.id]||t.l;
-            if(t.id==="add-expense"){return(
-            <button key={id} className="sn" onClick={()=>{goTab("accounting");setAcctSubTab("expenses");setTimeout(()=>setModal({type:"addExpense",form:{date:TODAY.toISOString().split("T")[0],propId:"",category:"",subcategory:"",description:"",vendor:"",amount:"",paymentMethod:"",notes:"",unitId:"",unitName:"",roomId:"",roomName:""},errs:{}}),100);}}>
-              <span className="sn-i">＋</span>{label}
-            </button>);}
+            // add-expense shortcut removed
             return(
             <button key={id} className={`sn ${tab===t.id?"on":""}`} onClick={()=>goTab(t.id)}>
               <span className="sn-i">{t.i}</span>{label}{t.badge&&<span className="sn-badge">{t.badge}</span>}
@@ -3912,7 +3898,26 @@ export default function Page(){
       })()}
 
       {/* ═══ APPLICATIONS ═══ */}
-      {tab==="applications"&&(()=>{
+      {tab==="applications"&&<ApplicationsTab
+        apps={apps} setApps={setApps} props={props} settings={settings} setSettings={setSettings}
+        charges={charges} leases={leases} setLeases={setLeases} archive={archive} obStatuses={obStatuses}
+        renewalRequests={renewalRequests} dismissedFollowUps={dismissedFollowUps}
+        setDismissedFollowUps={setDismissedFollowUps} expanded={expanded} setExpanded={setExpanded}
+        modal={modal} setModal={setModal} bulkSel={bulkSel} setBulkSel={setBulkSel}
+        appSearch={appSearch} setAppSearch={setAppSearch} appView={appView} setAppView={setAppView}
+        appKpiFilter={appKpiFilter} setAppKpiFilter={setAppKpiFilter}
+        portalLinkToken={portalLinkToken} setPortalLinkToken={setPortalLinkToken}
+        portalLinkLoading={portalLinkLoading} setPortalLinkLoading={setPortalLinkLoading}
+        setPiState={setPiState} goTab={goTab} setPaySubTab={setPaySubTab}
+        payFilters={payFilters} setPayFilters={setPayFilters}
+        save={save} fmtD={fmtD} fmtS={fmtS} allRooms={allRooms} findRoom={findRoom}
+        getPropDisplayName={getPropDisplayName} chargeStatus={chargeStatus}
+        TODAY={TODAY} uid={uid} showAlert={showAlert} showConfirm={showConfirm}
+        createCharge={createCharge} setProps={setProps} setNotifs={setNotifs} setCharges={setCharges}
+      />}
+
+      {false&&(()=>{
+        /* ═══ OLD INLINE APPLICATIONS (replaced by ApplicationsTab component) ═══ */
         const STAGES=["new-lead","applied","approved","onboarding"];
         const SL={"new-lead":"New Lead","pre-screened":"New Lead","called":"New Lead","invited":"New Lead","applied":"Applied","reviewing":"Applied","approved":"Approved","onboarding":"Onboarding","denied":"Denied"};
         const SC2={"new-lead":"b-blue","pre-screened":"b-blue","called":"b-blue","invited":"b-blue","applied":"b-gold","reviewing":"b-gold","approved":"b-green","onboarding":"b-green","denied":"b-red"};
@@ -4554,8 +4559,7 @@ export default function Page(){
       {/* ═══ LEDGER ═══ */}
       {tab==="ledger"&&<Ledger charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} improvements={improvements} props={props} vendors={vendors} settings={settings} subcats={subcats} TODAY={TODAY} setCharges={setCharges} setExpenses={setExpenses} setCredits={setCredits} setVendors={setVendors} setMortgages={setMortgages} setImprovements={setImprovements} setSubcats={setSubcats} createCharge={createCharge} recordPayment={recordPayment} setModal={setModal} uid={uid} adminGoTab={goTab} CHARGE_CATS={CHARGE_CATS} SCHED_E_CATS={SCHED_E_CATS} IMPROVEMENT_TYPES={IMPROVEMENT_TYPES} />}
 
-      {/* ═══ ACCOUNTING ═══ */}
-      {tab==="accounting"&&<AccountingTab settings={settings} properties={props} charges={charges} expenses={expenses} setExpenses={setExpenses} mortgages={mortgages} vendors={vendors} improvements={improvements} setImprovements={setImprovements} payments={payments} save={save} setModal={setModal} uid={uid} allRooms={allRooms} getPropDisplayName={getPropDisplayName} SCHED_E_CAT_LABELS={SCHED_E_CAT_LABELS} />}
+      {/* Accounting tab removed — features in Dashboard + Reports */}
       {tab==="reports"&&<Reports settings={settings} properties={props} charges={charges} expenses={expenses} mortgages={mortgages} sdLedger={sdLedger} apps={apps} archive={archive} SCHED_E_CATS={SCHED_E_CATS} getPropDisplayName={getPropDisplayName} propDisplay={propDisplay} chargeStatus={chargeStatus} uid={uid} />}
 
       {/* ═══ MESSAGES ═══ */}

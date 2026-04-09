@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { supa } from "@/lib/supabase-client";
 
 export default function ApplicationsTab({
-  apps, setApps, props: properties, settings, setSettings, charges, leases, archive,
+  apps, setApps, props: properties, settings, setSettings, charges, leases, setLeases, archive,
   obStatuses, renewalRequests, dismissedFollowUps, setDismissedFollowUps,
   expanded, setExpanded, modal, setModal, bulkSel, setBulkSel,
   appSearch, setAppSearch, appView, setAppView, appKpiFilter, setAppKpiFilter,
@@ -10,22 +11,81 @@ export default function ApplicationsTab({
   setPiState, goTab, setPaySubTab, payFilters, setPayFilters,
   save, fmtD, fmtS, allRooms, findRoom, getPropDisplayName, chargeStatus,
   TODAY, uid, showAlert, showConfirm,
+  createCharge, setProps, setNotifs, setCharges,
 }) {
   const props = properties;
   const STAGES=["new-lead","applied","approved","onboarding"];
   const SL={"new-lead":"New Lead","pre-screened":"New Lead","called":"New Lead","invited":"New Lead","applied":"Applied","reviewing":"Applied","approved":"Approved","onboarding":"Onboarding","denied":"Denied"};
   const SC2={"new-lead":"b-blue","pre-screened":"b-blue","called":"b-blue","invited":"b-blue","applied":"b-gold","reviewing":"b-gold","approved":"b-green","onboarding":"b-green","denied":"b-red"};
   const SI2={};
+  // Resolve property name from UUID for charges (P0 fix: use UUID not name string)
+  const getPropNameFromId = (propId) => { const p = props.find(x => x.id === propId); return p ? (p.addr || p.name) : ""; };
+
   const moveApp=(id,ns)=>{
-    setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:TODAY.toISOString().split("T")[0],prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:TODAY.toISOString().split("T")[0]}]};}));
+    setApps(p=>p.map(a=>{if(a.id!==id)return a;return{...a,status:ns,lastContact:todayStr,prevStage:a.status,history:[...(a.history||[]),{from:a.status,to:ns,date:todayStr}]};}));
     if(ns==="approved"){
       const app=apps.find(a=>a.id===id);
       if(app?.email){
+        const rent=Number(app.termRent||app.negotiatedRent||0);
+        const sd=Number(app.termSD||rent);
+        const propName=getPropNameFromId(app.termPropId) || app.property || "";
+        // Auto-send portal invite
         fetch("/api/portal-invite",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:app.property,roomName:app.room,rent:app.negotiatedRent||app.rent,moveIn:app.termMoveIn||app.moveIn})
-        }).then(r=>r.json()).then(d=>{if(d.ok)console.log("Portal invite auto-sent to",app.email);}).catch(console.error);
+          body:JSON.stringify({tenantName:app.name,tenantEmail:app.email,propertyName:propName,roomName:app.room,rent,moveIn:app.termMoveIn||app.moveIn})
+        }).catch(console.error);
+        // Auto-generate lease (with dedup)
+        if (!leaseCreatingRef.current.has(app.id)) {
+          leaseCreatingRef.current.add(app.id);
+          autoGenerateLease(app).finally(() => leaseCreatingRef.current.delete(app.id));
+        }
+        // Auto-generate charges (idempotent — only if not already created for this app)
+        if(createCharge && app.name && !chargesCreatedRef.current.has(app.id)){
+          chargesCreatedRef.current.add(app.id);
+          const mk=(app.termMoveIn||app.moveIn||todayStr).slice(0,7);
+          const roomName=app.room||"";
+          if(rent>0) createCharge({roomId:app.termRoomId||"",tenantName:app.name,propName,roomName,category:"Rent",desc:mk+" Rent",amount:rent,dueDate:mk+"-01",sent:false,sentDate:todayStr});
+          if(sd>0) createCharge({roomId:app.termRoomId||"",tenantName:app.name,propName,roomName,category:"Security Deposit",desc:"Security Deposit",amount:sd,dueDate:app.termMoveIn||todayStr,sent:false,sentDate:todayStr});
+        }
+        flashAuto(`${app.name} approved — lease, charges, and portal invite sent`);
       }
     }
+    if(ns==="denied"){
+      flashAuto("Applicant moved to denied");
+    }
+  };
+
+  // Approve with confirmation (P0 fix: no accidental approvals)
+  const confirmApprove = (app) => {
+    const rent=Number(app.termRent||app.negotiatedRent||0);
+    const sd=Number(app.termSD||rent);
+    showConfirm({
+      title: `Approve ${app.name}?`,
+      body: `This will:\n• Send a portal invite to ${app.email}\n• Generate a lease draft (${fmtS(rent)}/mo)\n• Create rent charge (${fmtS(rent)}) and security deposit charge (${fmtS(sd)})\n\nThis cannot be undone.`,
+      onConfirm: () => moveApp(app.id, "approved"),
+    });
+  };
+
+  // Deny with confirmation + optional rejection email (P0 fix: rejection email)
+  const confirmDeny = (app) => {
+    showConfirm({
+      title: `Deny ${app.name}?`,
+      body: `This will move the application to Denied. Would you like to send a rejection email to ${app.email}?`,
+      danger: true,
+      onConfirm: () => {
+        moveApp(app.id, "denied");
+        // Send rejection email
+        if (app.email) {
+          fetch("/api/send-email", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: app.email,
+              subject: `Application Update — ${settings?.companyName || "Property Management"}`,
+              html: `<p>Hi ${(app.name || "").split(" ")[0]},</p><p>Thank you for your interest in renting with ${settings?.companyName || "us"}. After reviewing your application, we've decided to move forward with another applicant for this unit.</p><p>We appreciate your time and wish you the best in your housing search.</p><p>— ${settings?.companyName || "Property Management"}</p>`,
+            }),
+          }).catch(console.error);
+        }
+      },
+    });
   };
   const daysSince=(d)=>{if(!d)return 999;return Math.floor((TODAY-new Date(d+"T00:00:00"))/(1e3*60*60*24));};
   const scoreApp=(a)=>{
@@ -83,8 +143,201 @@ export default function ApplicationsTab({
     const color=count===4?"#4a7c59":count>=3?"#e8903a":count>=1?"#d4a853":"#c45c4a";
     return{count,leaseSigned,docsUploaded,sdPaid,firstMonthPaid,pct,color,ready:count===4};
   };
+
+  // ══════════════════════════════════════════════════════════════
+  // AUTO-ADVANCE ENGINE
+  // Checks conditions per stage. When all met, auto-advances.
+  // PM can always manually advance (skip conditions).
+  // ══════════════════════════════════════════════════════════════
+
+  const LEASE_TEMPLATE_ID = "2d9d0941-2802-468a-a6e8-b2cceacf78d1";
+  const todayStr = TODAY.toISOString().split("T")[0];
+  const autoAdvanceRef = useRef(false);
+  const leaseCreatingRef = useRef(new Set()); // dedup: track app IDs with lease creation in flight
+  const convertingRef = useRef(new Set()); // dedup: track app IDs being converted
+  const chargesCreatedRef = useRef(new Set()); // dedup: track app IDs with charges already created
+  const [autoToast, setAutoToast] = useState(null);
+  const flashAuto = (msg) => { setAutoToast(msg); setTimeout(() => setAutoToast(null), 3000); };
+  const _ac = settings?.adminAccent || "#4a7c59";
+  const _acR = settings?.adminAccentRgb || "74,124,89";
+  const _gold = settings?.themeGold || "#d4a853";
+  const _green = settings?.themeGreen || "#2d6a3f";
+  const _red = settings?.themeRed || "#c45c4a";
+
+  // Get blocker text for an app — what's preventing auto-advance
+  const getBlocker = (a) => {
+    if (a.status === "new-lead" || a.status === "pre-screened" || a.status === "called") return "Waiting for PM to invite or reject";
+    if (a.status === "invited") return "Waiting for applicant to submit application";
+    if (a.status === "applied") {
+      // Check if refs have been sent
+      const refs = a.refsList || [];
+      const addrs = a.applicationData?.addresses || [];
+      const landlordRefs = addrs.filter(addr => addr.landlordEmail);
+      const allRefsSent = refs.every(r => r.emailStatus) && landlordRefs.every(a => a.landlordEmailStatus);
+      if (!allRefsSent) return "Reference emails need to be sent";
+      return "Screening in progress — auto-advances when complete";
+    }
+    if (a.status === "reviewing") {
+      const refs = a.refsList || [];
+      const addrs = a.applicationData?.addresses || [];
+      const allRefsComplete = refs.every(r => r.emailStatus === "verified" || r.emailStatus === "pending_review");
+      const allLandlordsComplete = addrs.filter(ad => ad.landlordEmail).every(ad => ad.landlordEmailStatus === "verified" || ad.landlordEmailStatus === "pending_review");
+      const bgDone = a.bgCheck === "passed" || a.bgCheck === "failed";
+      if (!allRefsComplete) { const pending = refs.filter(r => r.emailStatus === "sent"); return pending.length ? `Waiting on ${pending[0].firstName} ${pending[0].lastName} reference (sent ${daysSince(pending[0].sentAt)}d ago)` : "Waiting on references"; }
+      if (!allLandlordsComplete) { const pending = addrs.filter(ad => ad.landlordEmail && ad.landlordEmailStatus === "sent"); return pending.length ? `Waiting on landlord ref from ${pending[0].landlordFirstName || "previous address"} (sent ${daysSince(pending[0].landlordSentAt)}d ago)` : "Waiting on landlord references"; }
+      if (!bgDone) return "Background/credit check pending";
+      return "All screening complete — PM decision needed";
+    }
+    if (a.status === "approved") {
+      const appLease = leases.find(l => l.applicationId === a.id || (l.tenantEmail && l.tenantEmail === a.email));
+      if (!appLease) return "Lease needs to be generated";
+      if (appLease.status === "draft") return "Lease drafted — needs to be sent";
+      if (appLease.status === "pending_tenant") return `Lease sent — waiting for signature (${daysSince(appLease.updatedAt?.split("T")[0])}d)`;
+      return "Lease signed — advancing to move-in";
+    }
+    if (a.status === "onboarding") {
+      const ob = getOnboardingProgress(a);
+      if (!ob.leaseSigned) return "Waiting for lease signature";
+      if (!ob.sdPaid) return `Security deposit unpaid ($${a.termSD || a.termRent || "?"})`;
+      if (!ob.firstMonthPaid) return `First month rent unpaid ($${a.termRent || "?"})`;
+      if (!ob.docsUploaded) return "Move-in documents incomplete";
+      return "Ready to convert — all steps complete";
+    }
+    return "";
+  };
+
+  // ── Bridge: Approve → Auto-generate lease ──
+  const autoGenerateLease = async (app) => {
+    const rent = Number(app.termRent || app.negotiatedRent || 0);
+    const sd = Number(app.termSD || rent);
+    const leaseId = uid() + uid();
+    try {
+      await supa("lease_instances", {
+        method: "POST", prefer: "resolution=merge-duplicates",
+        body: JSON.stringify({
+          id: leaseId, workspace_id: null, template_id: LEASE_TEMPLATE_ID,
+          tenant_id: app.email || null, room_id: app.termRoomId || null, property_id: app.termPropId || null,
+          variable_data: {
+            id: leaseId, applicationId: app.id, tenantName: app.name, tenantEmail: app.email, tenantPhone: app.phone,
+            roomId: app.termRoomId || "", propertyId: app.termPropId || "",
+            LEASE_START: app.termMoveIn || app.moveIn || "", LEASE_END: "", MONTHLY_RENT: rent, SECURITY_DEPOSIT: sd,
+            DOOR_CODE: app.passcode || app.applicationData?.doorCode || "",
+          },
+          status: "draft", updated_at: new Date().toISOString(),
+        }),
+      });
+      // Reload leases to pick up the new one
+      if (setLeases) {
+        const r = await supa("lease_instances?order=created_at.desc");
+        const rows = await r.json();
+        if (Array.isArray(rows)) {
+          setLeases(rows.map(row => ({ ...(row.variable_data || {}), id: row.id, status: row.status, roomId: row.room_id || (row.variable_data?.roomId) || "", propertyId: row.property_id || (row.variable_data?.propertyId) || "" })));
+        }
+      }
+      return leaseId;
+    } catch (e) { console.error("Auto-generate lease error:", e); return null; }
+  };
+
+  // ── Bridge: All onboarding complete → Convert to tenant ──
+  const autoConvertToTenant = (app) => {
+    if (!setProps || !app.termRoomId) return;
+    const rent = Number(app.termRent || app.negotiatedRent || 0);
+    // Get lease end from lease record
+    const appLease = leases.find(l => l.applicationId === app.id || (l.tenantEmail === app.email && l.tenantEmail));
+    const leaseEnd = appLease?.LEASE_END || appLease?.variable_data?.LEASE_END || "";
+    setProps(prev => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      for (const prop of updated) {
+        for (const unit of (prop.units || [])) {
+          const room = (unit.rooms || []).find(r => r.id === app.termRoomId);
+          if (room) {
+            room.st = "occupied";
+            room.le = leaseEnd; // Set from lease record
+            room.rent = rent || room.rent;
+            room.tenant = {
+              name: app.name, email: app.email, phone: app.phone,
+              moveIn: app.termMoveIn || app.moveIn || todayStr,
+              gender: app.gender || app.applicationData?.gender || "",
+              occupationType: app.occupationType || app.applicationData?.occupationType || "",
+              doorCode: app.passcode || app.applicationData?.doorCode || "",
+              notes: "",
+            };
+          }
+        }
+      }
+      return updated;
+    });
+    // Send notification
+    if (setNotifs) {
+      setNotifs(p => [{ id: uid(), type: "lease", msg: `${app.name} is ready to move in — all onboarding steps complete`, date: todayStr, read: false, urgent: false }, ...(p || [])]);
+    }
+  };
+
+  // ── Auto-advance useEffect ──
+  useEffect(() => {
+    if (autoAdvanceRef.current) return; // prevent re-entry
+    let changed = false;
+    const updates = [];
+
+    for (const a of apps) {
+      if (a.status === "denied") continue;
+
+      // Applied → Reviewing: when all ref emails have been sent
+      if (a.status === "applied") {
+        const refs = a.refsList || [];
+        const addrs = a.applicationData?.addresses || [];
+        const landlordRefs = addrs.filter(addr => addr.landlordEmail);
+        const allRefsSent = (refs.length === 0 || refs.every(r => r.emailStatus)) && (landlordRefs.length === 0 || landlordRefs.every(ad => ad.landlordEmailStatus));
+        if (allRefsSent && (refs.length > 0 || landlordRefs.length > 0)) {
+          updates.push({ id: a.id, status: "reviewing" });
+          changed = true;
+        }
+      }
+
+      // Approved: auto-generate lease if none exists (with dedup)
+      if (a.status === "approved") {
+        const hasLease = leases.some(l => l.applicationId === a.id || (l.tenantEmail === a.email && l.tenantEmail));
+        if (!hasLease && a.email && (a.termRent || a.negotiatedRent) && !leaseCreatingRef.current.has(a.id)) {
+          leaseCreatingRef.current.add(a.id);
+          autoGenerateLease(a).finally(() => leaseCreatingRef.current.delete(a.id));
+        }
+      }
+
+      // Onboarding: check if all steps complete → convert (with dedup)
+      if (a.status === "onboarding") {
+        const ob = getOnboardingProgress(a);
+        if (ob.ready && !convertingRef.current.has(a.id)) {
+          convertingRef.current.add(a.id);
+          autoConvertToTenant(a);
+          updates.push({ id: a.id, status: "converted" });
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      autoAdvanceRef.current = true;
+      setApps(prev => {
+        const next = prev.map(a => {
+          const upd = updates.find(u => u.id === a.id);
+          if (!upd) return a;
+          return { ...a, status: upd.status, lastContact: todayStr, prevStage: a.status, history: [...(a.history || []), { from: a.status, to: upd.status, date: todayStr, note: "Auto-advanced" }] };
+        });
+        return next;
+      });
+      // Show toast for auto-advances
+      updates.forEach(u => {
+        const app = apps.find(a => a.id === u.id);
+        if (app) flashAuto(`${app.name} auto-advanced to ${u.status === "reviewing" ? "Screening" : u.status === "converted" ? "Converted" : u.status}`);
+      });
+      setTimeout(() => { autoAdvanceRef.current = false; }, 1000);
+    }
+  }, [apps, leases, charges]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ══════════════════════════════════════════════════════════════
+
   // All active (non-denied) apps — search only within pipeline
-  const allActiveApps=apps.filter(a=>a.status!=="denied");
+  const allActiveApps=apps.filter(a=>a.status!=="denied"&&a.status!=="converted");
   const staleApps=allActiveApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","onboarding"].includes(a.status));
   const needsActionApps=allActiveApps.filter(a=>a.status==="applied");
   const deniedApps=apps.filter(a=>a.status==="denied");
@@ -113,6 +366,25 @@ export default function ApplicationsTab({
   };
 
   return(<>
+  {/* Auto-advance toast */}
+  {autoToast && (
+    <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "#1a1714", color: "#fff", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, zIndex: 999, boxShadow: "0 4px 20px rgba(0,0,0,.2)", display: "flex", alignItems: "center", gap: 6 }}>
+      {autoToast}
+    </div>
+  )}
+
+  {/* Empty state */}
+  {apps.length === 0 && (
+    <div style={{ textAlign: "center", padding: "48px 20px" }}>
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" style={{ margin: "0 auto 12px" }}><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><path d="M9 2h6a1 1 0 011 1v2a1 1 0 01-1 1H9a1 1 0 01-1-1V3a1 1 0 011-1z"/></svg>
+      <div style={{ fontSize: 16, fontWeight: 700, color: "#1a1714", marginBottom: 6 }}>No applications yet</div>
+      <div style={{ fontSize: 13, color: "#7a7067", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>Share your listing link to start receiving applications. Pre-screened leads will appear here automatically.</div>
+      <div style={{ marginTop: 16 }}>
+        <button className="btn btn-out btn-sm" onClick={() => { const url = `${settings?.siteUrl || "https://rentblackbear.com"}/apply`; navigator.clipboard.writeText(url); flashAuto("Apply link copied to clipboard"); }}>Copy Apply Link</button>
+      </div>
+    </div>
+  )}
+
   {/* Follow-up alerts */}
   {(()=>{const visible=staleApps.filter(a=>!dismissedFollowUps.includes(a.id));if(staleApps.length===0)return null;
     if(visible.length===0)return null;
@@ -362,6 +634,16 @@ export default function ApplicationsTab({
               </div>
 
               <div className="pipe-sub">{(()=>{const p=a.termPropId?props.find(x=>x.id===a.termPropId):props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";const dispName=p?getPropDisplayName(p):(a.property||"—");return dispName+(addr&&!dispName.includes(addr)?" · "+addr:"")+(a.room&&!p?.units?.some(u=>(u.rentalMode||"byRoom")==="wholeHouse")?" · "+a.room:"");})()}</div>
+
+              {/* Blocker line — what's preventing auto-advance */}
+              {a.status!=="denied"&&a.status!=="new-lead"&&a.status!=="pre-screened"&&a.status!=="called"&&(()=>{
+                const blocker=getBlocker(a);
+                if(!blocker)return null;
+                const isReady=blocker.includes("complete")||blocker.includes("Ready")||blocker.includes("decision needed");
+                return <div style={{fontSize:9,color:isReady?"#2d6a3f":"#7a7067",marginTop:3,lineHeight:1.3,fontStyle:"italic"}}>
+                  {isReady?"✓ ":""}{blocker}
+                </div>;
+              })()}
 
               {/* Invited — "Awaiting Reply" badge + re-invite button */}
               {a.status==="invited"&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
