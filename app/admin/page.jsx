@@ -1533,7 +1533,7 @@ export default function Page(){
         leases={leases} setLeases={setLeases}
         save={save} uid={uid} createCharge={createCharge} TODAY={TODAY}
         allTenants={allTenants} goTab={goTab}
-        supa={supa}
+        supa={supa} showConfirm={showConfirm}
         onComplete={()=>{const u={...settings,onboardingActive:false,onboardingCompletedAt:TODAY.toISOString()};setSettings(u);save("hq-settings",u);}}
       />}
 

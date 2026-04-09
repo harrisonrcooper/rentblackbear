@@ -2,7 +2,7 @@
 import { saveAppData as save } from "@/lib/supabase-client";
 
 const TODAY=new Date();const MO=TODAY.toLocaleString("default",{month:"long",year:"numeric"});
-const CHARGE_CATS=["Rent","Last Month Rent","Utility Overage","Late Fee","Security Deposit","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Pet Violation","Smoking Violation","Guest Violation"];
+const CHARGE_CATS=["Rent","Last Month Rent","Utility Overage","Late Fee","Security Deposit","Balance Forward","Cleaning Fee","Damage Charge","Lock Change","Key Replacement","Move-In Fee","Move-Out Fee","Admin Fee","Pet Violation","Smoking Violation","Guest Violation"];
 const ACH_METHODS=["Bank Transfer","Stripe/ACH"];
 
 export default function PaymentsTab({
