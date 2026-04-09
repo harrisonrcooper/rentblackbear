@@ -1388,7 +1388,8 @@ export default function SmartImporter({
                                               const end = t.leaseEnd && t.leaseEnd !== "MTM" ? pct(t.leaseEnd) : 100;
                                               const bc = getBarStyle(t);
                                               const barW = Math.max(end - start, 2);
-                                              const editKey = `${pi}-${ui}-${ri}`;
+                                              const realTi = room.tenants.indexOf(t);
+                                              const editKey = `${pi}-${ui}-${ri}-${realTi >= 0 ? realTi : ti}`;
                                               return (
                                                 <div key={ti} onClick={() => setEditingSet(prev => { const next = new Set(prev); if (next.has(editKey)) next.delete(editKey); else next.add(editKey); return next; })} title={"Click to edit " + t.name} style={{ position: "absolute", top: ti * 30 + 2, left: start + "%", width: barW + "%", height: 24, zIndex: 2, cursor: "pointer" }}>
                                                   <div style={{ width: "100%", height: "100%", borderRadius: 4, background: bc.bg, display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", transition: "filter .1s" }}
@@ -1412,7 +1413,7 @@ export default function SmartImporter({
                                               return (
                                                 <div key={ti} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#1a1714", lineHeight: "24px" }}>
                                                   <span style={{ width: 8, height: 8, borderRadius: 2, background: bc.bg, flexShrink: 0 }} />
-                                                  <span onClick={() => setEditingSet(prev => { const next = new Set(prev); const k = `${pi}-${ui}-${ri}`; if (next.has(k)) next.delete(k); else next.add(k); return next; })} style={{ fontWeight: 600, minWidth: 80, cursor: "pointer", borderBottom: "1px dashed transparent" }} title={"Click to edit " + t.name}
+                                                  <span onClick={() => { const k = `${pi}-${ui}-${ri}-${realTi >= 0 ? realTi : ti}`; setEditingSet(prev => { const next = new Set(prev); if (next.has(k)) next.delete(k); else next.add(k); return next; }); }} style={{ fontWeight: 600, minWidth: 80, cursor: "pointer", borderBottom: "1px dashed transparent" }} title={"Click to edit " + t.name}
                                                     onMouseEnter={e => { e.currentTarget.style.borderBottom = "1px dashed rgba(0,0,0,.2)"; }} onMouseLeave={e => { e.currentTarget.style.borderBottom = "1px dashed transparent"; }}>{t.name}</span>
                                                   <input type="date" value={t.moveIn || ""} onChange={e => uTen(pi, ui, ri, realTi >= 0 ? realTi : ti, "moveIn", e.target.value)} style={{ fontSize: 10, padding: "1px 4px", border: "1px solid rgba(0,0,0,.08)", borderRadius: 4, fontFamily: "inherit", width: 105, color: "#5c4a3a", minHeight: 24 }} title="Move-in date" />
                                                   <span style={{ color: "#5c4a3a" }}>{"\u2192"}</span>
@@ -1443,8 +1444,10 @@ export default function SmartImporter({
                                   })()}
                                 </div>
                               )}
-                              {room.tenants.map((t, ti) => (
-                                <div key={ti} style={{ padding: "8px 12px", opacity: t.excluded ? 0.35 : 1, background: editingSet.has(`${pi}-${ui}-${ri}`) ? "rgba(0,0,0,.015)" : "transparent", borderRadius: editingSet.has(`${pi}-${ui}-${ri}`) ? 8 : 0, marginBottom: editingSet.has(`${pi}-${ui}-${ri}`) ? 4 : 0, border: editingSet.has(`${pi}-${ui}-${ri}`) ? "1px solid rgba(0,0,0,.06)" : "none" }}>
+                              {room.tenants.map((t, ti) => {
+                                const isEditing = editingSet.has(`${pi}-${ui}-${ri}`) || editingSet.has(`${pi}-${ui}-${ri}-${ti}`);
+                                return (
+                                <div key={ti} style={{ padding: "8px 12px", opacity: t.excluded ? 0.35 : 1, background: isEditing ? "rgba(0,0,0,.015)" : "transparent", borderRadius: isEditing ? 8 : 0, marginBottom: isEditing ? 4 : 0, border: isEditing ? "1px solid rgba(0,0,0,.06)" : "none" }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                   {ti === 0 ? <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                                     <input value={room.name} onChange={e => uRoom(pi, ui, ri, "name", e.target.value)} style={{ fontSize: 12, fontWeight: 600, color: "#1a1714", border: "none", borderBottom: "1px dashed rgba(0,0,0,.1)", background: "transparent", padding: "1px 4px", width: 90, fontFamily: "inherit" }} />
@@ -1476,15 +1479,19 @@ export default function SmartImporter({
                                     <label style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, color: "#5c4a3a", cursor: "pointer", minHeight: 28, fontWeight: 600 }}>
                                       <input type="checkbox" checked={!!t.excluded} onChange={() => toggleSkip(pi, ui, ri, ti)} /> Skip
                                     </label>
-                                    {ti === 0 && <button onClick={() => setEditingSet(prev => { const next = new Set(prev); const key = `${pi}-${ui}-${ri}`; if (next.has(key)) next.delete(key); else next.add(key); return next; })} style={{ ...btn, fontSize: 10, padding: "3px 10px", minHeight: 28 }}>{editingSet.has(`${pi}-${ui}-${ri}`) ? "Close" : "Edit"}</button>}
+                                    {ti === 0 && <button onClick={() => setEditingSet(prev => { const next = new Set(prev); const rk = `${pi}-${ui}-${ri}`; const anyOpen = next.has(rk) || room.tenants.some((_, i) => next.has(rk + "-" + i)); if (anyOpen) { next.delete(rk); room.tenants.forEach((_, i) => next.delete(rk + "-" + i)); } else { next.add(rk); } return next; })} style={{ ...btn, fontSize: 10, padding: "3px 10px", minHeight: 28 }}>{(editingSet.has(`${pi}-${ui}-${ri}`) || room.tenants.some((_, i) => editingSet.has(`${pi}-${ui}-${ri}-${i}`))) ? "Close" : "Edit"}</button>}
                                     {ti === 0 && <button onClick={() => { const tenantNames = room.tenants.filter(t => !t.excluded).map(t => t.name).join(", "); setConfirmModal({ title: "Delete " + room.name + "?", body: tenantNames ? tenantNames + " will be removed from import." : "This empty room will be removed.", onConfirm: () => delRoom(pi, ui, ri), danger: true }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#c45c4a", padding: "2px", minHeight: 28, minWidth: 28, display: "flex", alignItems: "center", justifyContent: "center" }} title="Delete room"><IX /></button>}
                                   </div>
                                   </div>{/* close inner flex row */}
                                 </div>
-                              ))}
+                              );})}
 
-                              {/* Inline edit */}
-                              {editingSet.has(`${pi}-${ui}-${ri}`) && room.tenants.filter(t => !t.excluded).map((t, ti) => (
+                              {/* Inline edit — show when room-level OR tenant-level key is in editingSet */}
+                              {room.tenants.filter(t => !t.excluded).map((t, ti) => {
+                                const origTi = room.tenants.indexOf(t);
+                                const showEdit = editingSet.has(`${pi}-${ui}-${ri}`) || editingSet.has(`${pi}-${ui}-${ri}-${origTi}`);
+                                if (!showEdit) return null;
+                                return (
                                 <div key={`e${ti}`} style={{ margin: "4px 12px 8px", padding: 12, background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
                                   {room.tenants.length > 1 && <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1714", marginBottom: 8 }}>{t.name}</div>}
                                   {/* Room + move options — available for every tenant */}
@@ -1522,7 +1529,8 @@ export default function SmartImporter({
                                     </div>
                                   </div>
                                 </div>
-                              ))}
+                              );
+                              })}
 
                               {/* No tenants (vacant room) */}
                               {room.tenants.length === 0 && (
