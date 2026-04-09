@@ -90,8 +90,14 @@ export default function DashboardTab({
           </>);
           case "vacancy":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Vacant Rooms</div>
-            {m.vacs.length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>Fully occupied</div>}
-            {m.vacs.map(r=><div key={r.id} className="row" style={{padding:"6px 0"}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t" style={{fontSize:12}}>{r.name}</div><div className="row-s">{r.propName} · {fmtS(r.rent)}/mo lost</div></div><button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("applications")}>Find Tenant</button></div>)}
+            {m.vacs.length===0&&(m.turnoverGaps||[]).length===0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600}}>Fully occupied — no gaps</div>}
+            {m.vacs.length===0&&(m.turnoverGaps||[]).length>0&&<div style={{fontSize:12,color:"#4a7c59",fontWeight:600,marginBottom:8}}>All rooms assigned</div>}
+            {m.vacs.map(r=><div key={r.id} className="row" style={{padding:"6px 0"}}><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t" style={{fontSize:12}}>{r.name}</div><div className="row-s">{r.propName} &middot; {fmtS(r.rent)}/mo lost</div></div><button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>goTab("applications")}>Find Tenant</button></div>)}
+            {(m.turnoverGaps||[]).length>0&&<>
+              <div style={{fontSize:10,fontWeight:700,color:"#d4a853",textTransform:"uppercase",letterSpacing:.8,marginTop:m.vacs.length?12:0,marginBottom:6}}>Turnover Gaps ({(m.turnoverGaps||[]).length})</div>
+              {(m.turnoverGaps||[]).map(g=><div key={g.roomId} className="row" style={{padding:"5px 0"}}><div className="row-dot" style={{background:"#d4a853"}}/><div className="row-i"><div className="row-t" style={{fontSize:11}}>{g.roomName} <span style={{fontWeight:400,color:"#5c4a3a"}}>{g.propName}</span></div><div className="row-s">{g.currentTenant} &rarr; {g.incomingTenant} &middot; {g.gapDays}d gap &middot; {fmtS(g.gapCost)} lost</div></div></div>)}
+              <div style={{fontSize:11,color:"#5c4a3a",marginTop:6,fontWeight:600}}>Total: {m.turnoverGapDays||0} gap days &middot; {fmtS(m.turnoverGapCost||0)} lost</div>
+            </>}
           </>);
           case "maintenance":return(<>
             <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:10}}>Open Maintenance ({openMaintItems.length})</div>

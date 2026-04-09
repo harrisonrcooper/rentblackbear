@@ -998,6 +998,24 @@ export default function Page(){
         }else vacs.push({...r,propName:pr.name});
       });
     }));
+    /* ── Turnover gap calculation ──────────────────────────── */
+    const turnoverGaps=[];
+    const todayStr=TODAY.toISOString().split("T")[0];
+    props.forEach(pr=>(pr.units||[]).forEach(u=>{
+      (u.rooms||[]).forEach(r=>{
+        if(!r.incomingTenant||!r.le||!r.incomingTenant.moveIn)return;
+        const leEnd=r.le;const moveIn=r.incomingTenant.moveIn;
+        if(moveIn>leEnd){
+          const gapDays=Math.ceil((new Date(moveIn+"T00:00:00")-new Date(leEnd+"T00:00:00"))/(1e3*60*60*24));
+          const dailyRent=Math.round((r.rent||0)/30);
+          const gapCost=dailyRent*gapDays;
+          turnoverGaps.push({roomId:r.id,roomName:r.name,propName:pr.addr||pr.name,currentTenant:r.tenant?.name||"",incomingTenant:r.incomingTenant.name,leaseEnd:leEnd,moveIn,gapDays,dailyRent,gapCost,rent:r.rent||0});
+        }
+      });
+    }));
+    const turnoverGapDays=turnoverGaps.reduce((s,g)=>s+g.gapDays,0);
+    const turnoverGapCost=turnoverGaps.reduce((s,g)=>s+g.gapCost,0);
+
     const openMaint=maint.filter(x=>x.status!=="resolved").length;
     const activeApps=apps.length;
     const unreadNotifs=notifs.filter(x=>!x.read).length;
@@ -1007,6 +1025,7 @@ export default function Page(){
       return{...pr,occCount:occR.length,vacCount:vacR.length,projected:prjR,fullOcc:fullR,collected:collR,occRooms:occR,vacRooms:vacR};
     });
     const needsAttention=apps.filter(a=>["new-lead","applied"].includes(a.status)).length;return{total,occ,full,proj,coll,due,vacs,expiring,unpaid,paid,openMaint,activeApps,unreadNotifs,needsAttention,propBreakdown,
+      turnoverGaps,turnoverGapDays,turnoverGapCost,
       occRate:total?Math.round(occ/total*100):0,collRate:due?Math.round(coll/due*100):0,lost:full-proj};
   },[props,payments,maint,apps,notifs]);
 

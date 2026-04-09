@@ -12,6 +12,7 @@ export default function ScorecardTab({
           <div className={`kpi ${drill==="sc-occ"?"active":""}`} onClick={()=>setDrill(drill==="sc-occ"?null:"sc-occ")}><div className="kl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{display:"inline",verticalAlign:"middle",marginRight:4}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Occupancy</div><div className="kv" style={{color:m.occRate>=90?"#4a7c59":"#c45c4a"}}>{m.occRate}%</div><div className="ks">{m.occ}/{m.total} rooms</div></div>
           <div className={`kpi ${drill==="sc-coll"?"active":""}`} onClick={()=>setDrill(drill==="sc-coll"?null:"sc-coll")}><div className="kl">Collection</div><div className="kv" style={{color:m.collRate>=90?"#4a7c59":"#c45c4a"}}>{m.collRate}%</div><div className="ks">{fmtS(m.coll)} / {fmtS(m.due)}</div></div>
           <div className={`kpi ${drill==="sc-vac"?"active":""}`} onClick={()=>setDrill(drill==="sc-vac"?null:"sc-vac")}><div className="kl">Vacancy</div><div className="kv" style={{color:m.lost>0?"#c45c4a":"#4a7c59"}}>{fmtS(m.lost)}</div><div className="ks">/month lost</div></div>
+          <div className={`kpi ${drill==="sc-gaps"?"active":""}`} onClick={()=>setDrill(drill==="sc-gaps"?null:"sc-gaps")}><div className="kl">Turnover Gaps</div><div className="kv" style={{color:(m.turnoverGapCost||0)>0?"#d4a853":"#4a7c59"}}>{fmtS(m.turnoverGapCost||0)}</div><div className="ks">{(m.turnoverGaps||[]).length} gap{(m.turnoverGaps||[]).length!==1?"s":""} &middot; {m.turnoverGapDays||0}d</div></div>
           <div className={`kpi ${drill==="sc-proj"?"active":""}`} onClick={()=>setDrill(drill==="sc-proj"?null:"sc-proj")}><div className="kl">Projected</div><div className="kv">{fmtS(m.proj)}</div><div className="ks">of {fmtS(m.full)}</div></div>
         </div>
 
@@ -43,6 +44,28 @@ export default function ScorecardTab({
           {m.vacs.length===0?<div style={{textAlign:"center",padding:20,color:"#4a7c59"}}>Fully occupied!</div>:
             m.vacs.map(r=><div key={r.id} className="row"><div className="row-dot" style={{background:"#c45c4a"}}/><div className="row-i"><div className="row-t">{r.name}</div><div className="row-s">{r.propName} · {r.pb?"Private":"Shared"}</div></div><div className="row-v kb">{fmtS(r.rent)}<div style={{fontSize:8,color:"#6b5e52"}}>lost/mo</div></div></div>)}
           <div style={{marginTop:10,padding:12,background:"rgba(196,92,74,.03)",borderRadius:8,fontSize:12}}><strong>Annual loss:</strong> {fmtS(m.lost*12)}</div>
+        </div></div>}
+
+        {/* Drill: Turnover Gaps */}
+        {drill==="sc-gaps"&&<div className="card" style={{marginBottom:14,animation:"fadeIn .2s"}}><div className="card-bd">
+          <div className="sec-hd"><div><h2>Turnover Gaps: {fmtS(m.turnoverGapCost||0)} lost</h2><p>{(m.turnoverGaps||[]).length} room{(m.turnoverGaps||[]).length!==1?"s":""} with gaps between tenants &middot; {m.turnoverGapDays||0} total gap days</p></div><button className="btn btn-sm btn-out" onClick={()=>setDrill(null)}>&#10005;</button></div>
+          {(m.turnoverGaps||[]).length===0?<div style={{textAlign:"center",padding:20,color:"#4a7c59"}}>No turnover gaps — all transitions are seamless!</div>:
+            (m.turnoverGaps||[]).map(g=><div key={g.roomId} className="row" style={{padding:"10px 12px",marginBottom:4}}>
+              <div className="row-dot" style={{background:"#d4a853"}}/>
+              <div className="row-i">
+                <div className="row-t" style={{fontSize:12}}>{g.roomName} <span style={{fontSize:10,fontWeight:400,color:"#5c4a3a"}}>{g.propName}</span></div>
+                <div style={{fontSize:10,color:"#5c4a3a",marginTop:2}}>{g.currentTenant} ends {new Date(g.leaseEnd+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})} &rarr; {g.incomingTenant} moves in {new Date(g.moveIn+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
+              </div>
+              <div style={{textAlign:"right",minWidth:80}}>
+                <div style={{fontSize:14,fontWeight:800,color:"#d4a853"}}>{g.gapDays}d</div>
+                <div style={{fontSize:10,color:"#5c4a3a"}}>{fmtS(g.gapCost)} lost</div>
+              </div>
+            </div>)}
+          {(m.turnoverGaps||[]).length>0&&<div style={{marginTop:10,padding:12,background:"rgba(212,168,83,.06)",borderRadius:8,border:"1px solid rgba(212,168,83,.15)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}><span style={{fontWeight:600}}>Total gap days</span><strong>{m.turnoverGapDays}</strong></div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{fontWeight:600}}>Total lost revenue</span><strong style={{color:"#d4a853"}}>{fmtS(m.turnoverGapCost)}</strong></div>
+            <div style={{fontSize:10,color:"#5c4a3a",marginTop:6}}>Calculated at each room{"'"}s daily rate (rent / 30 days). Move incoming tenants{"'"} dates earlier to reduce gap cost.</div>
+          </div>}
         </div></div>}
 
         {/* Drill: Projected */}
