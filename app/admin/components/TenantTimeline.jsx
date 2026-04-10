@@ -63,8 +63,8 @@ export default function TenantTimeline({
   const subTogS = (on) => ({ padding: "4px 12px", fontSize: 10, fontWeight: 600, border: "none", borderRight: "1px solid rgba(0,0,0,.08)", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", background: on ? _ac : "transparent", color: on ? "#fff" : "#5c4a3a" });
   const isFutureRoom = useCallback((r) => r.tenant?.moveIn && r.tenant.moveIn > TODAY_STR, [TODAY_STR]);
 
-  /* ── Category colors (uniform muted palette) ────────────── */
-  const CAT_COLORS = {
+  /* ── Category colors (uniform muted palette, customizable via settings) ── */
+  const DEFAULT_CAT_COLORS = {
     incoming: { bg: "#D0E8DC", text: "#1A5438" },
     active:   { bg: "#CDDCEE", text: "#1B3F6B" },
     exp90:    { bg: "#E8DCC0", text: "#5C4316" },
@@ -72,6 +72,37 @@ export default function TenantTimeline({
     expired:  { bg: "#DCCACA", text: "#5C1A1A" },
     m2m:      { bg: "#D4CCE4", text: "#3A2868" },
     available:{ bg: `rgba(${_acRgb},.15)`, text: _ac },
+  };
+  // Derive a darker text color from a hex bg (for contrast)
+  const darkerText = (hex) => {
+    if (!hex || !hex.startsWith("#")) return "#1a1714";
+    const h = hex.replace("#",""); const r = parseInt(h.substr(0,2),16); const g = parseInt(h.substr(2,2),16); const b = parseInt(h.substr(4,2),16);
+    return `rgb(${Math.max(0,r-120)},${Math.max(0,g-120)},${Math.max(0,b-120)})`;
+  };
+  const customColors = settings?.timelineColors || {};
+  const SIMPLE_LEASE_CATS = ["active","exp90","exp30","expired","m2m"];
+  const CAT_COLORS = Object.keys(DEFAULT_CAT_COLORS).reduce((acc, cat) => {
+    if (customColors[cat]) {
+      acc[cat] = { bg: customColors[cat], text: darkerText(customColors[cat]) };
+    } else {
+      acc[cat] = DEFAULT_CAT_COLORS[cat];
+    }
+    // If simple mode, unify all lease states to the "active" color
+    if (settings?.timelineSimple && SIMPLE_LEASE_CATS.includes(cat)) {
+      const leasedColor = customColors.active || DEFAULT_CAT_COLORS.active.bg;
+      acc[cat] = { bg: leasedColor, text: customColors.active ? darkerText(leasedColor) : DEFAULT_CAT_COLORS.active.text };
+    }
+    return acc;
+  }, {});
+  const setCatColor = (cat, color) => {
+    const u = { ...settings, timelineColors: { ...(settings?.timelineColors || {}), [cat]: color } };
+    setSettings && setSettings(u);
+    save && save("hq-settings", u);
+  };
+  const toggleSimple = () => {
+    const u = { ...settings, timelineSimple: !settings?.timelineSimple };
+    setSettings && setSettings(u);
+    save && save("hq-settings", u);
   };
   const MUTED = { bg: "#E8E6E3", text: "#A8A29E" }; // dimmed color for toggled-off categories
 
@@ -281,23 +312,30 @@ export default function TenantTimeline({
         })()}
         {sortedFiltered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52", fontSize: 12 }}>No rooms match this filter.</div>}
         </div>{/* close scroll container */}
-        {/* Legend — clickable to toggle categories */}
+        {/* Legend — clickable to toggle + customize colors */}
         <div style={{ padding: "8px 16px", display: "flex", gap: 8, borderTop: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.01)", flexWrap: "wrap", flexShrink: 0, alignItems: "center" }}>
+          <button onClick={toggleSimple}
+            style={{ fontSize: 9, color: settings?.timelineSimple ? "#fff" : "#5c4a3a", background: settings?.timelineSimple ? _ac : "#fff", border: `1px solid ${settings?.timelineSimple ? _ac : "rgba(0,0,0,.12)"}`, borderRadius: 4, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, transition: "all .15s" }}>
+            {settings?.timelineSimple ? "Simple \u2713" : "Simple"}
+          </button>
           {[
             ["incoming","Incoming"],
-            ["active","Active"],
-            ["exp90","Expiring 90d"],
-            ["exp30","Expiring 30d"],
-            ["expired","Expired"],
-            ["m2m","Month-to-month"],
+            ...(settings?.timelineSimple ? [["active","Leased"]] : [["active","Active"],["exp90","Expiring 90d"],["exp30","Expiring 30d"],["expired","Expired"],["m2m","Month-to-month"]]),
             ["available","Available"],
           ].map(([cat,label]) => {
             const c = CAT_COLORS[cat] || CAT_COLORS.active;
             const dim = dimmedCats.includes(cat);
-            return <button key={cat} onClick={() => toggleDim(cat)}
-              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: dim ? MUTED.text : c.text, fontWeight: 600, padding: "3px 8px", borderRadius: 4, border: "none", cursor: "pointer", fontFamily: "inherit", background: dim ? MUTED.bg : c.bg, transition: "all .15s" }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: dim ? "#ccc" : c.bg, border: `1px solid ${dim ? "#ccc" : c.text}30` }} />{label}
-            </button>;
+            return <span key={cat} style={{ display: "inline-flex", alignItems: "center", gap: 0, position: "relative" }}>
+              <button onClick={() => toggleDim(cat)}
+                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: dim ? MUTED.text : c.text, fontWeight: 600, padding: "3px 8px 3px 4px", borderRadius: "4px 0 0 4px", border: "none", cursor: "pointer", fontFamily: "inherit", background: dim ? MUTED.bg : c.bg, transition: "all .15s" }}>
+                <label style={{ position: "relative", display: "inline-block", width: 10, height: 10, borderRadius: 2, background: dim ? "#ccc" : c.bg, border: `1px solid ${dim ? "#ccc" : c.text}40`, cursor: "pointer" }}
+                  onClick={e => e.stopPropagation()}>
+                  <input type="color" value={customColors[cat] || DEFAULT_CAT_COLORS[cat].bg} onChange={e => setCatColor(cat, e.target.value)}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", border: "none" }} />
+                </label>
+                {label}
+              </button>
+            </span>;
           })}
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52", marginLeft: 4 }}>
             <div style={{ width: 1.5, height: 10, background: "#c45c4a" }} />Today
