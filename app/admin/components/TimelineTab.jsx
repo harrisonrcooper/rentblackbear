@@ -56,7 +56,7 @@ export default function TimelineTab({
         return(
         <div style={{padding:"0 0 40px"}}>
           {/* Header */}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8,position:"sticky",top:0,zIndex:10,background:"#f4f3f0",paddingTop:4,paddingBottom:8}}>
             <div>
               <h2 style={{margin:0,fontSize:18,fontWeight:700}}>Tenant Timeline</h2>
               <div style={{fontSize:11,color:"#6b5e52",marginTop:2}}>Lease end dates and availability across all properties</div>
@@ -66,12 +66,12 @@ export default function TimelineTab({
                 <button onClick={()=>setTtPropFilter("all")}
                   onMouseEnter={e=>{if(ttPropFilter!=="all")e.currentTarget.style.background="rgba(0,0,0,.06)";}}
                   onMouseLeave={e=>{if(ttPropFilter!=="all")e.currentTarget.style.background="transparent";}}
-                  style={{padding:"4px 10px",fontSize:10,fontWeight:600,borderRadius:20,border:"1px solid rgba(0,0,0,.12)",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",background:ttPropFilter==="all"?"#1a1714":"transparent",color:ttPropFilter==="all"?"#d4a853":"#5c4a3a"}}>All</button>
+                  style={{padding:"4px 10px",fontSize:10,fontWeight:600,borderRadius:20,border:ttPropFilter==="all"?"1px solid #4a7c59":"1px solid rgba(0,0,0,.12)",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",background:ttPropFilter==="all"?"#4a7c59":"transparent",color:ttPropFilter==="all"?"#fff":"#5c4a3a"}}>All</button>
                 {props.filter(p=>!(p.units||[]).every(u=>u.ownerOccupied)).map(p=>(
                   <button key={p.id} onClick={()=>setTtPropFilter(ttPropFilter===p.id?"all":p.id)}
                     onMouseEnter={e=>{if(ttPropFilter!==p.id)e.currentTarget.style.background="rgba(0,0,0,.06)";}}
                     onMouseLeave={e=>{if(ttPropFilter!==p.id)e.currentTarget.style.background="transparent";}}
-                    style={{padding:"4px 10px",fontSize:10,fontWeight:600,borderRadius:20,border:"1px solid rgba(0,0,0,.12)",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",background:ttPropFilter===p.id?"#1a1714":"transparent",color:ttPropFilter===p.id?"#d4a853":"#5c4a3a"}}>
+                    style={{padding:"4px 10px",fontSize:10,fontWeight:600,borderRadius:20,border:ttPropFilter===p.id?"1px solid #4a7c59":"1px solid rgba(0,0,0,.12)",cursor:"pointer",fontFamily:"inherit",transition:"all .12s",background:ttPropFilter===p.id?"#4a7c59":"transparent",color:ttPropFilter===p.id?"#fff":"#5c4a3a"}}>
                     {getPropDisplayName(p)}
                   </button>
                 ))}
@@ -89,25 +89,23 @@ export default function TimelineTab({
                     onMouseEnter={e=>{if(ttView!==v.id)e.currentTarget.style.background="rgba(0,0,0,.06)";}}
                     onMouseLeave={e=>{if(ttView!==v.id)e.currentTarget.style.background="transparent";}}
                     style={{padding:"6px 14px",fontSize:11,fontWeight:600,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",
-                      background:ttView===v.id?"#1a1714":"transparent",color:ttView===v.id?"#d4a853":"#5c4a3a"}}>
+                      background:ttView===v.id?"#4a7c59":"transparent",color:ttView===v.id?"#fff":"#5c4a3a"}}>
                     {v.label}
-                    {v.id===ttPref&&<span style={{marginLeft:4,fontSize:9,color:ttView===v.id?"#d4a853":"#9a7422"}}>★</span>}
+                    {v.id===ttPref&&<span style={{marginLeft:4,fontSize:9,opacity:.7}}>{"\u2713"}</span>}
                   </button>
                 ))}
               </div>
               {ttPref!==ttView&&<button
                 onClick={()=>setTtPref(ttView)}
-                onMouseEnter={e=>{e.currentTarget.style.background="#d4a853";e.currentTarget.style.color="#1a1714";e.currentTarget.style.borderColor="#d4a853";}}
-                onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,168,83,.08)";e.currentTarget.style.color="#9a7422";e.currentTarget.style.borderColor="rgba(212,168,83,.3)";}}
-                style={{fontSize:10,padding:"6px 12px",borderRadius:7,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",cursor:"pointer",fontFamily:"inherit",color:"#9a7422",fontWeight:600,transition:"all .15s"}}>
-                Set as daily driver ★
+                style={{fontSize:10,padding:"6px 12px",borderRadius:7,border:"1px solid rgba(0,0,0,.12)",background:"#fff",cursor:"pointer",fontFamily:"inherit",color:"#5c4a3a",fontWeight:600,transition:"all .15s"}}>
+                Set as default
               </button>}
-              {ttPref===ttView&&<span style={{fontSize:10,color:"#9a7422",fontWeight:600,padding:"6px 4px"}}>★ Daily driver</span>}
+              {ttPref===ttView&&<span style={{fontSize:10,color:"#5c4a3a",fontWeight:600,padding:"6px 4px",opacity:.6}}>Default</span>}
             </div>
           </div>
 
           {/* ── GANTT ── */}
-          {ttView==="gantt"&&<div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",overflow:"hidden"}}>
+          {ttView==="gantt"&&<div style={{background:"#fff",borderRadius:12,border:"1px solid rgba(0,0,0,.07)",display:"flex",flexDirection:"column",maxHeight:"calc(100vh - 260px)"}}>
             {/* Month nav */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.015)"}}>
               <button className="btn btn-out btn-sm" onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""} onClick={()=>setTtMonthOffset(o=>o-1)}>← Earlier</button>
@@ -117,19 +115,21 @@ export default function TimelineTab({
                   <button onClick={()=>setTtGanttGrouped(true)}
                     onMouseEnter={e=>{if(ttGanttGrouped)return;e.currentTarget.style.background="rgba(0,0,0,.06)";}}
                     onMouseLeave={e=>{if(ttGanttGrouped)return;e.currentTarget.style.background="transparent";}}
-                    style={{padding:"4px 12px",fontSize:10,fontWeight:600,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",background:ttGanttGrouped?"#1a1714":"transparent",color:ttGanttGrouped?"#d4a853":"#5c4a3a"}}>By property</button>
+                    style={{padding:"4px 12px",fontSize:10,fontWeight:600,border:"none",borderRight:"1px solid rgba(0,0,0,.08)",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",background:ttGanttGrouped?"#4a7c59":"transparent",color:ttGanttGrouped?"#fff":"#5c4a3a"}}>By property</button>
                   <button onClick={()=>setTtGanttGrouped(false)}
                     onMouseEnter={e=>{if(!ttGanttGrouped)return;e.currentTarget.style.background="rgba(0,0,0,.06)";}}
                     onMouseLeave={e=>{if(!ttGanttGrouped)return;e.currentTarget.style.background="transparent";}}
-                    style={{padding:"4px 12px",fontSize:10,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",background:!ttGanttGrouped?"#1a1714":"transparent",color:!ttGanttGrouped?"#d4a853":"#5c4a3a"}}>By date</button>
+                    style={{padding:"4px 12px",fontSize:10,fontWeight:600,border:"none",cursor:"pointer",fontFamily:"inherit",transition:"all .15s",background:!ttGanttGrouped?"#4a7c59":"transparent",color:!ttGanttGrouped?"#fff":"#5c4a3a"}}>By date</button>
                 </div>
               </div>
               <button className="btn btn-out btn-sm" onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.06)"} onMouseLeave={e=>e.currentTarget.style.background=""} onClick={()=>setTtMonthOffset(o=>o+1)}>Later →</button>
             </div>
+            {/* Scrollable chart area */}
+            <div style={{flex:1,overflowX:"auto",overflowY:"auto",minHeight:0,WebkitOverflowScrolling:"touch"}}>
             {/* Month headers */}
-            <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)"}}>
-              <div style={{width:140,flexShrink:0,padding:"4px 12px",fontSize:9,color:"#999",textTransform:"uppercase",letterSpacing:.5}}>{ttGanttGrouped?"Room":"Room · Property"}</div>
-              <div style={{flex:1,position:"relative",height:22}}>
+            <div style={{display:"flex",borderBottom:"1px solid rgba(0,0,0,.06)",position:"sticky",top:0,zIndex:2,background:"#fff"}}>
+              <div style={{width:140,flexShrink:0,padding:"4px 12px",fontSize:9,color:"#999",textTransform:"uppercase",letterSpacing:.5,position:"sticky",left:0,background:"#fff",zIndex:3}}>{ttGanttGrouped?"Room":"Room · Property"}</div>
+              <div style={{flex:1,position:"relative",height:22,minWidth:900}}>
                 {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.x+"%",fontSize:9,color:"#999",transform:"translateX(-50%)",whiteSpace:"nowrap",top:5}}>{m.label}</div>)}
               </div>
             </div>
@@ -144,21 +144,28 @@ export default function TimelineTab({
                 const todayX=dateToX(TODAY_STR);
                 const moveInX=r.tenant?.moveIn?dateToX(r.tenant.moveIn):null;
                 return(
-                <div key={r.id} style={{display:"flex",alignItems:"center",borderBottom:"1px solid rgba(0,0,0,.04)",minHeight:36}}>
-                  <div style={{width:140,flexShrink:0,padding:"4px 12px"}}>
+                <div key={r.id} style={{display:"flex",alignItems:"center",borderBottom:"1px solid rgba(0,0,0,.04)",minHeight:36,cursor:"pointer",transition:"background .1s"}}
+                  onClick={()=>{if(r.tenant){setTenantProfileTab&&setTenantProfileTab("summary");setModal({type:"tenant",data:r});}}}
+                  onMouseEnter={e=>e.currentTarget.style.background="rgba(0,0,0,.025)"}
+                  onMouseLeave={e=>e.currentTarget.style.background=""}>
+                  <div style={{width:140,flexShrink:0,padding:"4px 12px",position:"sticky",left:0,background:"#fff",zIndex:1}}>
                     <div style={{fontSize:11,fontWeight:600,color:"#1a1714",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.name}</div>
                     {showProp&&<div style={{fontSize:9,color:"#9a7422",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.propName}</div>}
                     {isOcc&&!showProp&&<div style={{fontSize:9,color:"#6b5e52",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.tenant.name}</div>}
                     {isOcc&&showProp&&<div style={{fontSize:9,color:"#6b5e52",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.tenant.name}</div>}
                     {isVac&&<div style={{fontSize:9,color:"#4a7c59",fontWeight:600}}>Vacant</div>}
                   </div>
-                  <div style={{flex:1,position:"relative",height:36,display:"flex",alignItems:"center"}}>
+                  <div style={{flex:1,position:"relative",height:36,display:"flex",alignItems:"center",minWidth:900}}>
                     <div style={{position:"absolute",left:todayX+"%",top:0,bottom:0,width:1.5,background:"#c45c4a",zIndex:3,opacity:.7}}/>
                     {isVac&&<div style={{position:"absolute",left:"0%",right:"0%",height:16,borderRadius:3,background:"rgba(74,124,89,.15)",border:"1px solid rgba(74,124,89,.3)",display:"flex",alignItems:"center",paddingLeft:6}}>
                       <span style={{fontSize:9,color:"#2d6a3f",fontWeight:600}}>Available now</span>
                     </div>}
                     {isOcc&&r.tenant?.moveIn&&moveInX!==null&&leX!==null&&<div style={{position:"absolute",left:Math.min(moveInX,leX)+"%",width:Math.abs(leX-Math.min(moveInX,leX))+"%",height:20,borderRadius:3,background:"#B5D4F4",top:8,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden"}}>
                       <span style={{fontSize:9,color:"#0C447C",fontWeight:600,whiteSpace:"nowrap"}}>{r.tenant.name} · ends {fmtD(r.le)}</span>
+                    </div>}
+                    {/* M2M bar — no lease end date */}
+                    {isOcc&&!r.le&&<div style={{position:"absolute",left:(moveInX||0)+"%",width:(100-(moveInX||0))+"%",height:20,borderRadius:3,background:"#C8B8E8",top:8,display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden"}}>
+                      <span style={{fontSize:9,color:"#4C2882",fontWeight:600,whiteSpace:"nowrap"}}>{r.tenant.name} · M2M</span>
                     </div>}
                     {isOcc&&leX!==null&&rdX!==null&&<div style={{position:"absolute",left:rdX+"%",right:"0%",height:16,top:10,background:"rgba(74,124,89,.1)",border:"1px dashed rgba(74,124,89,.3)",borderRadius:"0 3px 3px 0",display:"flex",alignItems:"center",paddingLeft:4,overflow:"hidden"}}>
                       <span style={{fontSize:9,color:"#2d6a3f",whiteSpace:"nowrap"}}>Avail. {fmtD(readyStr)}</span>
@@ -179,8 +186,9 @@ export default function TimelineTab({
                 return sortedFiltered.map(r=>renderRow(r,true));
               }
             })()}
-            <div style={{padding:"8px 16px",display:"flex",gap:16,borderTop:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.01)"}}>
-              {[["#B5D4F4","Occupied"],["rgba(74,124,89,.15)","Available"]].map(([c,l])=>(
+            </div>{/* close scroll container */}
+            <div style={{padding:"8px 16px",display:"flex",gap:16,borderTop:"1px solid rgba(0,0,0,.06)",background:"rgba(0,0,0,.01)",flexShrink:0,flexWrap:"wrap"}}>
+              {[["#B5D4F4","Occupied"],["#C8B8E8","Month-to-month"],["rgba(74,124,89,.15)","Available"]].map(([c,l])=>(
                 <div key={l} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"#6b5e52"}}>
                   <div style={{width:10,height:10,borderRadius:2,background:c,border:c.includes("74,124")?`1px solid rgba(74,124,89,.3)`:undefined}}/>
                   {l}
