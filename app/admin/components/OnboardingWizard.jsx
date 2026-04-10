@@ -33,7 +33,7 @@ const OTC_TYPES=["Move-In Fee","Admin Fee","Key Replacement","Lock Change","Clea
 // ─── Shared styles ───────────────────────────────────────────────────
 const TH={padding:"8px 12px",textAlign:"left",fontSize:11,fontWeight:600,color:"#5c4a3a",textTransform:"uppercase",letterSpacing:".5px"};
 const TD={padding:"8px 12px",verticalAlign:"middle"};
-const INP={fontSize:16,padding:"10px 12px",minHeight:44,borderRadius:6,border:"1px solid rgba(0,0,0,.2)",fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
+const INP={fontSize:13,padding:"6px 10px",borderRadius:6,border:"1px solid rgba(0,0,0,.2)",fontFamily:"inherit",width:"100%",boxSizing:"border-box"};
 
 // ─── Main Component ──────────────────────────────────────────────────
 export default function OnboardingWizard({
@@ -276,7 +276,7 @@ export default function OnboardingWizard({
     <div style={{display:"flex",alignItems:"center",gap:0,margin:"0 0 28px",padding:"16px 0 0",overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
       {PHASES.map((p,i)=>{const st=phaseStatus(p.id),active=phase===p.id;return(
         <div key={p.id} style={{display:"flex",alignItems:"center",flex:1,minWidth:0}}>
-          <button onClick={()=>guardedSetPhase(p.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,border:"none",cursor:"pointer",background:active?accBgS:"transparent",color:active?_acc:st==="done"?_acc:"inherit",opacity:active||st==="done"?1:.45,fontWeight:active?700:500,fontSize:13,fontFamily:"inherit",transition:"all .15s",minHeight:44,minWidth:44,whiteSpace:"nowrap"}}>
+          <button onClick={()=>guardedSetPhase(p.id)} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:10,border:"none",cursor:"pointer",background:active?accBgS:"transparent",color:active?_acc:st==="done"?_acc:"inherit",opacity:active||st==="done"?1:.45,fontWeight:active?700:500,fontSize:13,fontFamily:"inherit",transition:"all .15s",whiteSpace:"nowrap"}}>
             <span style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:st==="done"?_acc:active?accBgS:"rgba(0,0,0,.1)",color:st==="done"?_accContrast:active?_acc:"inherit",fontSize:11,fontWeight:700,flexShrink:0}}>
               {st==="done"?<IcoCheck/>:p.id}
             </span>
@@ -359,11 +359,11 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
     {sel.length>0&&(<div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:accBg,border:`1px solid ${accBd}`,borderRadius:8,marginBottom:12,flexWrap:"wrap"}}>
       <span style={{fontSize:12,fontWeight:600,color:_acc}}>{sel.length} unit{sel.length>1?"s":""} selected</span>
       <select value={bulkUtil} onChange={e=>setBulkUtil(e.target.value)} style={{...INP,width:"auto",minWidth:160}}><option value="">Set utility template...</option>{utilTemplates.map(t=><option key={t.key} value={t.key}>{t.name}</option>)}</select>
-      {bulkUtil&&<button onClick={bulkApplyUtil} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,minHeight:44,padding:"0 16px"}}>Apply</button>}
+      {bulkUtil&&<button onClick={bulkApplyUtil} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,padding:"0 16px"}}>Apply</button>}
       <select value={bulkAction} onChange={e=>{setBulkAction(e.target.value);setBulkVal("");}} style={{...INP,width:"auto",minWidth:140}}><option value="">More actions...</option><option value="lateFee">Set late fee ($)</option><option value="grace">Set grace days</option><option value="daily">Set daily fee ($)</option><option value="dueDay">Set due day</option></select>
       {bulkAction&&(bulkAction==="dueDay"?<select value={bulkVal} onChange={e=>setBulkVal(e.target.value)} style={{...INP,width:"auto",minWidth:80}}><option value="">Day...</option>{Array.from({length:28},(_,i)=><option key={i+1} value={i+1}>{ord(i+1)}</option>)}</select>:<input type="number" value={bulkVal} onChange={e=>setBulkVal(e.target.value)} placeholder={bulkAction==="grace"?"3":"50"} style={{...INP,width:70}}/>)}
-      {bulkAction&&bulkVal&&<button onClick={bulkApplyPropSetting} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,minHeight:44,padding:"0 16px"}}>Apply</button>}
-      <button onClick={()=>{setSel([]);setBulkUtil("");setBulkAction("");setBulkVal("");}} style={{fontSize:11,color:"#5c4a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",minHeight:44}}>Clear</button>
+      {bulkAction&&bulkVal&&<button onClick={bulkApplyPropSetting} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,padding:"0 16px"}}>Apply</button>}
+      <button onClick={()=>{setSel([]);setBulkUtil("");setBulkAction("");setBulkVal("");}} style={{fontSize:11,color:"#5c4a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Clear</button>
     </div>)}
 
     {propRows.map(p=>(
@@ -420,7 +420,7 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
                 <option value="">Select template...</option>{utilTemplates.map(t=><option key={t.key} value={t.key}>{t.name}</option>)}
               </select>
             </td>
-            <td style={TD}><button onClick={()=>setExpanded(isExp?null:u.id)} style={{background:"none",border:"none",cursor:"pointer",minHeight:44,minWidth:44,display:"flex",alignItems:"center",justifyContent:"center"}}><IcoExpand open={isExp}/></button></td>
+            <td style={TD}><button onClick={()=>setExpanded(isExp?null:u.id)} style={{background:"none",border:"none",cursor:"pointer"}}><IcoExpand open={isExp}/></button></td>
           </tr>,
           isExp&&(u.rooms||[]).map(r=>(
             <tr key={r.id} style={{background:"rgba(0,0,0,.02)",borderTop:"1px solid rgba(0,0,0,.03)"}}>
@@ -436,7 +436,7 @@ function P1({propRows,utilTemplates,sel,setSel,updateUnit,bulkUpdateUnits,lateFe
     </div>))}
 
     <div style={{display:"flex",justifyContent:"flex-end",marginTop:20}}>
-      <button onClick={()=>go(2)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13,minHeight:44}}>Tenants <IcoArrow/></button>
+      <button onClick={()=>go(2)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13}}>Tenants <IcoArrow/></button>
     </div>
   </div>);
 }
@@ -475,12 +475,12 @@ function P2({tenantRows,sel,setSel,toggleSel,toggleAll,expandedId,setExpandedId,
     {ct.exp>0&&(<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.15)",borderRadius:8,marginBottom:12,flexWrap:"wrap"}}>
       <span style={{color:_red}}><IcoWarn/></span>
       <span style={{fontSize:12,color:_red,fontWeight:500}}>{ct.exp} tenant{ct.exp>1?"s":""} with expired leases{"\u2014"}consider flagging as month-to-month</span>
-      <button onClick={()=>setFilter("expired")} style={{fontSize:11,color:_red,fontWeight:600,background:"none",border:"none",cursor:"pointer",marginLeft:"auto",fontFamily:"inherit",minHeight:44}}>Show</button>
+      <button onClick={()=>setFilter("expired")} style={{fontSize:11,color:_red,fontWeight:600,background:"none",border:"none",cursor:"pointer",marginLeft:"auto",fontFamily:"inherit"}}>Show</button>
     </div>)}
 
     <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
       {[["all",`All (${totalTenants})`],["incomplete",`Incomplete (${ct.inc})`],["expired",`Expired (${ct.exp})`],["missing-email",`No Email (${ct.noE})`],["missing-rent",`No Rent (${ct.noR})`],["missing-phone",`No Phone (${ct.noP})`]].map(([k,l])=>(
-        <button key={k} onClick={()=>setFilter(k)} style={{fontSize:11,padding:"8px 14px",borderRadius:6,border:"1px solid",fontFamily:"inherit",cursor:"pointer",fontWeight:filter===k?600:400,borderColor:filter===k?_acc:"rgba(0,0,0,.12)",color:filter===k?_acc:"inherit",opacity:filter===k?1:.5,background:filter===k?accBg:"transparent",minHeight:44}}>{l}</button>
+        <button key={k} onClick={()=>setFilter(k)} style={{fontSize:11,padding:"8px 14px",borderRadius:6,border:"1px solid",fontFamily:"inherit",cursor:"pointer",fontWeight:filter===k?600:400,borderColor:filter===k?_acc:"rgba(0,0,0,.12)",color:filter===k?_acc:"inherit",opacity:filter===k?1:.5,background:filter===k?accBg:"transparent",minHeight:36}}>{l}</button>
       ))}
     </div>
 
@@ -492,8 +492,8 @@ function P2({tenantRows,sel,setSel,toggleSel,toggleAll,expandedId,setExpandedId,
         :bulkType==="occupation"?<select value={bulkVal} onChange={e=>setBulkVal(e.target.value)} style={{...INP,width:"auto"}}><option value="">Type...</option>{OCC_TYPES.map(o=><option key={o} value={o}>{o}</option>)}</select>
         :<input type={bulkType==="rent"?"number":"date"} value={bulkVal} onChange={e=>setBulkVal(e.target.value)} placeholder={bulkType==="rent"?"Amount":""} style={{...INP,width:bulkType==="rent"?100:150}}/>
       )}
-      {(bulkType==="m2m"||bulkType==="lateFeeExempt"||bulkVal)&&<button onClick={()=>{bulkApplyToSelected(bulkType,bulkVal);setBulkType("");setBulkVal("");}} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,minHeight:44,padding:"0 16px"}}>Apply to {sel.length}</button>}
-      <button onClick={()=>{setSel([]);setBulkType("");setBulkVal("");}} style={{fontSize:11,color:"#5c4a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",marginLeft:"auto",minHeight:44}}>Clear</button>
+      {(bulkType==="m2m"||bulkType==="lateFeeExempt"||bulkVal)&&<button onClick={()=>{bulkApplyToSelected(bulkType,bulkVal);setBulkType("");setBulkVal("");}} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:11,padding:"0 16px"}}>Apply to {sel.length}</button>}
+      <button onClick={()=>{setSel([]);setBulkType("");setBulkVal("");}} style={{fontSize:11,color:"#5c4a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",marginLeft:"auto"}}>Clear</button>
     </div>)}
 
     <div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:10,overflow:"hidden"}}>
@@ -526,8 +526,8 @@ function P2({tenantRows,sel,setSel,toggleSel,toggleAll,expandedId,setExpandedId,
     </div>
 
     <div style={{display:"flex",justifyContent:"space-between",marginTop:20}}>
-      <button onClick={()=>go(1)} className="btn btn-out" style={{fontSize:13,minHeight:44}}>Back</button>
-      <button onClick={()=>go(3)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13,minHeight:44}}>Historical Data <IcoArrow/></button>
+      <button onClick={()=>go(1)} className="btn btn-out" style={{fontSize:13}}>Back</button>
+      <button onClick={()=>go(3)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13}}>Historical Data <IcoArrow/></button>
     </div>
   </div>);
 }
@@ -589,7 +589,7 @@ function TenantDetail({row,updateRoom,_acc,_red,_gold,TODAY,flash,setDirtyTenant
       {fld("Monthly Rent","rent","number",{minWidth:100})}{fld("Door Code (4-digit)","doorCode","text",{minWidth:100})}{fld("Move-in Date","moveIn","date")}
       {!f.m2m&&fld("Lease End","le","date")}
       <div style={{flex:1,minWidth:100,display:"flex",alignItems:"flex-end",gap:8}}>
-        <label style={{fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer",paddingBottom:6,minHeight:44}}>
+        <label style={{fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer",paddingBottom:6}}>
           <input type="checkbox" checked={f.m2m} onChange={e=>set("m2m",e.target.checked)} style={{width:18,height:18}}/> Month-to-month
         </label>
       </div>
@@ -600,10 +600,10 @@ function TenantDetail({row,updateRoom,_acc,_red,_gold,TODAY,flash,setDirtyTenant
         <select value={f.recurringDueDay} onChange={e=>set("recurringDueDay",e.target.value)} style={INP}><option value="">1st (default)</option>{Array.from({length:28},(_,i)=><option key={i+1} value={i+1}>{ord(i+1)}</option>)}</select>
       </div>
       <div style={{flex:1,minWidth:200,display:"flex",alignItems:"flex-end",gap:12,paddingBottom:2}}>
-        <label style={{fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer",minHeight:44}}>
+        <label style={{fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
           <input type="checkbox" checked={f.lateFeeExempt} onChange={e=>set("lateFeeExempt",e.target.checked)} style={{width:18,height:18}}/> Late fee exempt
         </label>
-        <label style={{fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer",minHeight:44}}>
+        <label style={{fontSize:12,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
           <input type="checkbox" checked={f.paymentPlanActive} onChange={e=>set("paymentPlanActive",e.target.checked)} style={{width:18,height:18}}/> Payment plan
         </label>
       </div>
@@ -626,7 +626,7 @@ function TenantDetail({row,updateRoom,_acc,_red,_gold,TODAY,flash,setDirtyTenant
       </div>
     </div>
     <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
-      <button onClick={doSave} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44,padding:"0 20px"}}>Save Changes</button>
+      <button onClick={doSave} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,padding:"0 20px"}}>Save Changes</button>
     </div>
   </div>);
 }
@@ -657,7 +657,7 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
     {needsDep.length>0&&section("Deposits","",<div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
         <div><div style={{fontSize:14,fontWeight:600}}>Security Deposits</div><div style={{fontSize:12,color:"#7a7067"}}>{needsDep.length} tenant{needsDep.length>1?"s":""} with deposits from prior system</div></div>
-        {depDone?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Recorded</span>:<button onClick={recordHistoricalDeposits} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Record All Deposits</button>}
+        {depDone?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Recorded</span>:<button onClick={recordHistoricalDeposits} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12}}>Record All Deposits</button>}
       </div>
       <div style={{fontSize:12,color:"#7a7067",background:"rgba(0,0,0,.03)",padding:"8px 12px",borderRadius:6}}>{needsDep.map(r=><div key={r.roomId} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}><span>{r.tenant.name}</span><span style={{fontWeight:500}}>{fmtS(r.depositAmount||r.rent)}</span></div>)}</div>
     </div>)}
@@ -665,7 +665,7 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
     {needsBal.length>0&&section("Balances","",<div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
         <div><div style={{fontSize:14,fontWeight:600}}>Outstanding Balances</div><div style={{fontSize:12,color:"#7a7067"}}>{needsBal.length} tenant{needsBal.length>1?"s":""} with balances from prior system</div></div>
-        {hasBal?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Recorded</span>:<button onClick={createBalanceForwards} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Create Balance Forwards</button>}
+        {hasBal?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Recorded</span>:<button onClick={createBalanceForwards} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12}}>Create Balance Forwards</button>}
       </div>
       <div style={{fontSize:12,color:"#7a7067",background:"rgba(0,0,0,.03)",padding:"8px 12px",borderRadius:6}}>{needsBal.map(r=><div key={r.roomId} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(0,0,0,.06)"}}><span>{r.tenant.name}</span><span style={{fontWeight:500,color:_red}}>{fmtS(r.balanceOwed)}</span></div>)}</div>
     </div>)}
@@ -673,7 +673,7 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
     {drafts.length>0&&section("Leases","",<div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
         <div><div style={{fontSize:14,fontWeight:600}}>Existing Leases</div><div style={{fontSize:12,color:"#7a7067"}}>{drafts.length} draft lease{drafts.length>1?"s":""} from import{"\u2014"}mark as already executed</div></div>
-        <button onClick={markLeasesExecuted} disabled={saving} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,opacity:saving?.6:1,minHeight:44}}>{saving?"Updating...":"Mark All as Executed"}</button>
+        <button onClick={markLeasesExecuted} disabled={saving} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,opacity:saving?.6:1}}>{saving?"Updating...":"Mark All as Executed"}</button>
       </div>
       <div style={{fontSize:11,color:"#5c4a3a",background:`rgba(${hexRgb(_gold)},.1)`,padding:"8px 12px",borderRadius:6}}>These leases will be marked as &ldquo;Executed (Imported)&rdquo; without requiring signatures.</div>
     </div>)}
@@ -683,18 +683,18 @@ function P3({tenantRows,charges,sdLedger,leases,createBalanceForwards,recordHist
     {unpaid.length>0&&section("Payments","",<div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}>
         <div><div style={{fontSize:14,fontWeight:600}}>Pre-Existing Payments</div><div style={{fontSize:12,color:"#7a7067"}}>Mark charges that were already paid in your old system</div></div>
-        {selCh.length>0&&<button onClick={()=>{markChargesPaid(selCh);setSelCh([]);}} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Mark {selCh.length} as Paid</button>}
+        {selCh.length>0&&<button onClick={()=>{markChargesPaid(selCh);setSelCh([]);}} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12}}>Mark {selCh.length} as Paid</button>}
       </div>
       <div style={{fontSize:12,background:"rgba(0,0,0,.03)",padding:"8px 12px",borderRadius:6,maxHeight:200,overflowY:"auto"}}>{unpaid.map(c=>(
-        <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.06)",cursor:"pointer",minHeight:44}}>
+        <label key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid rgba(0,0,0,.06)",cursor:"pointer"}}>
           <input type="checkbox" checked={selCh.includes(c.id)} onChange={e=>setSelCh(p=>e.target.checked?[...p,c.id]:p.filter(x=>x!==c.id))} style={{width:18,height:18}}/>
           <span style={{flex:1}}>{c.tenantName} {"\u2014"} {c.category}</span><span style={{fontWeight:500}}>{fmtS(c.amount)}</span><span style={{fontSize:11,color:"#7a7067"}}>{c.dueDate}</span>
         </label>))}</div>
     </div>)}
 
     <div style={{display:"flex",justifyContent:"space-between",marginTop:20}}>
-      <button onClick={()=>go(2)} className="btn btn-out" style={{fontSize:13,minHeight:44}}>Back</button>
-      <button onClick={()=>go(4)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13,minHeight:44}}>Charges <IcoArrow/></button>
+      <button onClick={()=>go(2)} className="btn btn-out" style={{fontSize:13}}>Back</button>
+      <button onClick={()=>go(4)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13}}>Charges <IcoArrow/></button>
     </div>
   </div>);
 }
@@ -720,7 +720,7 @@ function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcF
   return(<div>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4,flexWrap:"wrap",gap:8}}>
       <div><h2 style={{fontSize:18,fontWeight:700,margin:0}}>Charge Generation</h2><p style={{fontSize:13,color:"#5c4a3a",margin:"4px 0 0"}}>{mo} rent charges for all active tenants</p></div>
-      {phase4Done?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Generated</span>:<button onClick={generateCharges} className="btn" style={{background:_acc,color:"#fff",fontSize:13,minHeight:44}}>Generate All Charges</button>}
+      {phase4Done?<span style={{fontSize:12,fontWeight:600,color:_acc,display:"flex",alignItems:"center",gap:4}}><IcoCheck/> Generated</span>:<button onClick={generateCharges} className="btn" style={{background:_acc,color:"#fff",fontSize:13}}>Generate All Charges</button>}
     </div>
 
     <div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:10,overflow:"hidden",marginTop:16}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
@@ -747,7 +747,7 @@ function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcF
         <div><label style={{fontSize:11,color:"#5c4a3a",display:"block",marginBottom:3}}>Type</label><select value={otcForm.type} onChange={e=>setOtcForm(f=>({...f,type:e.target.value}))} style={{...INP,width:"auto",minWidth:140}}><option value="">Select...</option>{OTC_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div>
         <div><label style={{fontSize:11,color:"#5c4a3a",display:"block",marginBottom:3}}>Amount</label><input type="number" value={otcForm.amount} onChange={e=>setOtcForm(f=>({...f,amount:e.target.value}))} placeholder="$" style={{...INP,width:90}}/></div>
         <div><label style={{fontSize:11,color:"#5c4a3a",display:"block",marginBottom:3}}>Apply to</label><select value="" onChange={e=>{if(e.target.value)setOtcForm(f=>({...f,roomIds:[...new Set([...f.roomIds,e.target.value])]}));}} style={{...INP,width:"auto",minWidth:160}}><option value="">Add tenant...</option>{tenantRows.map(r=><option key={r.roomId} value={r.roomId}>{r.tenant.name}</option>)}</select></div>
-        {otcForm.roomIds.length>0&&<button onClick={addOneTimeCharges} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Create {otcForm.roomIds.length} charge{otcForm.roomIds.length>1?"s":""}</button>}
+        {otcForm.roomIds.length>0&&<button onClick={addOneTimeCharges} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12}}>Create {otcForm.roomIds.length} charge{otcForm.roomIds.length>1?"s":""}</button>}
       </div>
       {otcForm.roomIds.length>0&&<div style={{marginTop:8,fontSize:12,color:"#5c4a3a"}}>{otcForm.roomIds.map(rid=>{const r=tenantRows.find(x=>x.roomId===rid);return r?r.tenant.name:"";}).filter(Boolean).join(", ")} <button onClick={()=>setOtcForm(f=>({...f,roomIds:[]}))} style={{marginLeft:8,fontSize:11,color:"#5c4a3a",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>clear</button></div>}
     </div>
@@ -776,14 +776,14 @@ function P4({tenantRows,charges,TODAY,generateCharges,phase4Done,otcForm,setOtcF
           });
           if(count)flash(`${count} back-rent charge${count>1?"s":""} generated (marked as historical)`);
           else flash("All prior months already have charges");
-        }} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12,minHeight:44}}>Generate Prior-Month Charges</button>
+        }} className="btn btn-sm" style={{background:_acc,color:"#fff",fontSize:12}}>Generate Prior-Month Charges</button>
         <div style={{fontSize:10,color:"#7a7067",marginTop:6}}>These are marked as historical and will not trigger late fees or reminders</div>
       </div>);
     })()}
 
     <div style={{display:"flex",justifyContent:"space-between",marginTop:20}}>
-      <button onClick={()=>go(3)} className="btn btn-out" style={{fontSize:13,minHeight:44}}>Back</button>
-      <button onClick={()=>go(5)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13,minHeight:44}}>Go Live <IcoArrow/></button>
+      <button onClick={()=>go(3)} className="btn btn-out" style={{fontSize:13}}>Back</button>
+      <button onClick={()=>go(5)} className="btn" style={{background:_acc,color:"#fff",display:"flex",alignItems:"center",gap:6,fontSize:13}}>Go Live <IcoArrow/></button>
     </div>
   </div>);
 }
@@ -843,7 +843,7 @@ function P5({propRows,tenantRows,charges,sdLedger,leases,phase1Done,phase2Done,p
     <div style={{padding:20,background:allReady?accBg:"rgba(0,0,0,.03)",borderRadius:10,border:`1px solid ${allReady?accBd:"rgba(0,0,0,.06)"}`,marginTop:20,textAlign:"center"}}>
       <div style={{fontSize:15,fontWeight:700,color:allReady?_acc:"inherit",opacity:allReady?1:.6,marginBottom:4}}>{allReady?"Ready to go live":"Some items need attention"}</div>
       <div style={{fontSize:13,color:"#5c4a3a",marginBottom:16}}>{totalTenants} tenant{totalTenants===1?"":"s"}, {propRows.length} propert{propRows.length===1?"y":"ies"}{allReady?", all configured":""}</div>
-      {allReady&&<button onClick={completeOnboarding} className="btn" style={{background:_acc,color:_accContrast,fontSize:14,padding:"10px 32px",minHeight:44}}>Complete Onboarding</button>}
+      {allReady&&<button onClick={completeOnboarding} className="btn" style={{background:_acc,color:_accContrast,fontSize:14,padding:"10px 32px"}}>Complete Onboarding</button>}
     </div>
   </div>);
 }

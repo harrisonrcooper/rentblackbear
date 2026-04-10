@@ -116,7 +116,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
   const fmtS = n => "$" + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   /* ── Shared styles ── */
-  const sInput = { width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 16, fontFamily: "inherit", minHeight: 44 };
+  const sInput = { width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 12, fontFamily: "inherit" };
   const sLabel2 = { fontSize: 10, fontWeight: 600, color: _muted, display: "block", marginBottom: 4 };
   const sErr = { fontSize: 10, color: _red, fontWeight: 600, marginTop: 2 };
   const sBadge = (color) => ({ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 100, textTransform: "uppercase", letterSpacing: .5, background: color + "18", color });
@@ -342,7 +342,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: _ac, color: "#fff", padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, boxShadow: "0 4px 16px rgba(0,0,0,.2)", animation: "fadeIn .2s", maxWidth: "calc(100vw - 40px)" }}>
+        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: _ac, color: "#fff", padding: "10px 20px", borderRadius: 8, fontSize: 12, fontWeight: 700, boxShadow: "0 4px 16px rgba(0,0,0,.2)", animation: "fadeIn .2s" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ marginRight: 6, verticalAlign: "middle" }}><polyline points="20 6 9 17 4 12" /></svg>
           {toast}
         </div>
@@ -376,7 +376,7 @@ export default function PortalOpsTab({ settings, properties, allTenants, onDirty
           const active = portalOpsTab === st.id;
           return (
             <button key={st.id} onClick={() => setPortalOpsTab(st.id)}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", border: "none", borderBottom: active ? `2px solid ${_ac}` : "2px solid transparent", background: "transparent", color: active ? _text : _muted, fontWeight: active ? 700 : 400, fontSize: 12, cursor: "pointer", fontFamily: "inherit", transition: "all .15s", whiteSpace: "nowrap", minWidth: 44, minHeight: 44 }}>
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", border: "none", borderBottom: active ? `2px solid ${_ac}` : "2px solid transparent", background: "transparent", color: active ? _text : _muted, fontWeight: active ? 700 : 400, fontSize: 12, cursor: "pointer", fontFamily: "inherit", transition: "all .15s", whiteSpace: "nowrap" }}>
               {st.icon}{st.label}
             </button>
           );

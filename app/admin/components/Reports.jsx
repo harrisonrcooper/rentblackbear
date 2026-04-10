@@ -113,13 +113,13 @@ export default function Reports({
 
     {/* Filters */}
     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 16, padding: "12px 14px", background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>
-      <select value={reportProp} onChange={e => setReportProp(e.target.value)} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit", minHeight: 44 }}>
+      <select value={reportProp} onChange={e => setReportProp(e.target.value)} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit" }}>
         <option value="all">All Properties</option>
         {props.map(p => <option key={p.id} value={p.id}>{getPropDisplayName(p)}</option>)}
       </select>
-      <input type="date" value={reportPeriod.from} onChange={e => setReportPeriod(p => ({ ...p, from: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, minHeight: 44 }} />
+      <input type="date" value={reportPeriod.from} onChange={e => setReportPeriod(p => ({ ...p, from: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11 }} />
       <span style={{ fontSize: 11, color: "#6b5e52" }}>to</span>
-      <input type="date" value={reportPeriod.to} onChange={e => setReportPeriod(p => ({ ...p, to: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, minHeight: 44 }} />
+      <input type="date" value={reportPeriod.to} onChange={e => setReportPeriod(p => ({ ...p, to: e.target.value }))} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11 }} />
       <button className="btn btn-out btn-sm" onClick={() => setReportPeriod({ from: TODAY.getFullYear() + "-01-01", to: TODAY.toISOString().split("T")[0] })}>YTD</button>
       <button className="btn btn-out btn-sm" onClick={() => { const y = TODAY.getFullYear() - 1; setReportPeriod({ from: y + "-01-01", to: y + "-12-31" }); }}>Last Year</button>
       <button className="btn btn-out btn-sm" onClick={() => { const m = String(TODAY.getMonth() + 1).padStart(2, "0"); setReportPeriod({ from: TODAY.getFullYear() + "-" + m + "-01", to: rTo }); }}>MTD</button>
@@ -483,7 +483,7 @@ export default function Reports({
           const csvRows = withBal.map(e => ({ Date: e.date, Tenant: e.tenant, Description: e.desc, Category: e.category, Debit: e.type === "debit" ? fmt(e.amount) : "", Credit: e.type === "credit" ? fmt(e.amount) : "", Balance: fmt(e.balance) }));
           return (<>
             <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
-              <select value={selTenant} onChange={e => setSelTenant(e.target.value)} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit", minHeight: 44 }}>
+              <select value={selTenant} onChange={e => setSelTenant(e.target.value)} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit" }}>
                 <option value="all">All Tenants</option>{tenantNames.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
               {csvBtn(csvRows, ["Date", "Tenant", "Description", "Category", "Debit", "Credit", "Balance"], "tenant-ledger-" + (selTenant === "all" ? "all" : selTenant.replace(/\s/g, "-")))}

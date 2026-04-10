@@ -81,7 +81,7 @@ const S = {
   threadListMobile: { width: "100%", display: "flex", flexDirection: "column", background: "rgba(245,244,242,.85)" },
   threadSearch: { padding: "12px 14px", borderBottom: "1px solid rgba(0,0,0,.04)" },
   threadScroll: { flex: 1, overflowY: "auto" },
-  threadItem: (active, unread, acc) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? hexToRgba(acc, .08) : "transparent", borderLeft: active ? "3px solid " + acc : "3px solid transparent", transition: "all .15s ease", position: "relative", minHeight: 44 }),
+  threadItem: (active, unread, acc) => ({ padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid rgba(0,0,0,.02)", background: active ? hexToRgba(acc, .08) : "transparent", borderLeft: active ? "3px solid " + acc : "3px solid transparent", transition: "all .15s ease", position: "relative" }),
   chatArea: { flex: 1, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #f8f8fa 0%, #eeeef2 100%)", minWidth: 0 },
   chatHeader: { padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", flexShrink: 0, background: "rgba(255,255,255,.92)", zIndex: 20, overflow: "visible", position: "relative" },
   chatScroll: { flex: 1, minHeight: 0, overflowY: "auto", padding: "52px 20px 16px" },
@@ -710,8 +710,8 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
           <div style={{ ...(isMobile ? S.threadListMobile : S.threadList), display: isMobile && mobileShowChat ? "none" : "flex" }}>
             <div style={S.threadSearch}>
               <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "none", fontSize: 16, fontFamily: "inherit", outline: "none", background: "rgba(0,0,0,.06)" }} />
-                <button onClick={() => { setComposeMode(true); setComposeRecipient(null); setComposeSubject(""); setComposeBody(""); }} title="New message" style={{ width: 34, height: 34, minWidth: 44, minHeight: 44, borderRadius: 10, border: "none", background: _acc, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search messages..." style={{ flex: 1, padding: "8px 12px", borderRadius: 10, border: "none", fontSize: 12, fontFamily: "inherit", outline: "none", background: "rgba(0,0,0,.06)" }} />
+                <button onClick={() => { setComposeMode(true); setComposeRecipient(null); setComposeSubject(""); setComposeBody(""); }} title="New message" style={{ width: 34, height: 34, borderRadius: 10, border: "none", background: _acc, color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
               </div>
@@ -782,7 +782,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
               <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 24 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <div style={{ fontSize: 16, fontWeight: 700 }}>New Message</div>
-                  <button onClick={() => setComposeMode(false)} style={{ width: 28, height: 28, minWidth: 44, minHeight: 44, borderRadius: 14, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button onClick={() => setComposeMode(false)} style={{ width: 28, height: 28, borderRadius: 14, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
@@ -817,11 +817,11 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 </div>
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", marginBottom: 4, textTransform: "uppercase", letterSpacing: .3 }}>Subject (optional)</div>
-                  <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)} placeholder="Subject..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 16, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                  <input value={composeSubject} onChange={e => setComposeSubject(e.target.value)} placeholder="Subject..." style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
                 </div>
                 <div style={{ marginBottom: 16, flex: 1, display: "flex", flexDirection: "column" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#6b5e52", marginBottom: 4, textTransform: "uppercase", letterSpacing: .3 }}>Message</div>
-                  <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} placeholder="Type your message..." style={{ flex: 1, minHeight: 120, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 16, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" }} />
+                  <textarea value={composeBody} onChange={e => setComposeBody(e.target.value)} placeholder="Type your message..." style={{ flex: 1, minHeight: 120, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.6, boxSizing: "border-box" }} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <button onClick={() => setComposeMode(false)} className="btn btn-out btn-sm">Cancel</button>
@@ -849,7 +849,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 <div style={S.chatHeader}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      {isMobile && <button onClick={() => setMobileShowChat(false)} style={{ width: 44, height: 44, borderRadius: 8, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 2 }}>
+                      {isMobile && <button onClick={() => setMobileShowChat(false)} style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginRight: 2 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1714" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
                       </button>}
                       <div style={{ width: 34, height: 34, minWidth: 34, minHeight: 34, borderRadius: "50%", background: _acc, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, position: "relative", flexShrink: 0, boxShadow: "0 2px 8px " + hexToRgba(_acc, .2) }}>
@@ -859,7 +859,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ fontSize: 14, fontWeight: 700 }}>{activeThread.tenantName}</span>
-                          <button onClick={e => { e.stopPropagation(); if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 10, color: _acc, background: hexToRgba(_acc, .06), border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: "8px 12px", minHeight: 44, borderRadius: 4, lineHeight: 1.2 }}>View Profile &rarr;</button>
+                          <button onClick={e => { e.stopPropagation(); if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("navigate-tab", { detail: "tenants" })); }} style={{ fontSize: 10, color: _acc, background: hexToRgba(_acc, .06), border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, padding: "2px 8px", borderRadius: 4, lineHeight: 1.2 }}>View Profile &rarr;</button>
                         </div>
                         <div style={{ fontSize: 10, color: "#8e8e93" }}>
                           {activeThread.propertyName}{activeThread.roomName ? " · " + activeThread.roomName : ""}
@@ -871,7 +871,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     {/* Tag button */}
                     <div style={{ position: "relative" }}>
-                      <button className="msg-header-btn" data-tip="Tags" onClick={() => setShowTagDropdown(!showTagDropdown)} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: (threadTags[selectedThread] || []).length > 0 ? "rgba(74,124,89,.08)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                      <button className="msg-header-btn" data-tip="Tags" onClick={() => setShowTagDropdown(!showTagDropdown)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: (threadTags[selectedThread] || []).length > 0 ? "rgba(74,124,89,.08)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={(threadTags[selectedThread] || []).length > 0 ? _acc : "#999"} strokeWidth="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                       </button>
                       {showTagDropdown && (
@@ -891,16 +891,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       )}
                     </div>
                     {/* Export PDF */}
-                    <button className="msg-header-btn" data-tip="Export" onClick={exportConversation} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip="Export" onClick={exportConversation} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </button>
                     {/* Pin */}
-                    <button className="msg-header-btn" data-tip={pinnedThreads.has(selectedThread) ? "Unpin" : "Pin"} onClick={() => setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: pinnedThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip={pinnedThreads.has(selectedThread) ? "Unpin" : "Pin"} onClick={() => setPinnedThreads(prev => { const next = new Set(prev); if (next.has(selectedThread)) next.delete(selectedThread); else next.add(selectedThread); return next; })} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: pinnedThreads.has(selectedThread) ? "rgba(212,168,83,.1)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill={pinnedThreads.has(selectedThread) ? "#d4a853" : "none"} stroke={pinnedThreads.has(selectedThread) ? "#d4a853" : "#999"} strokeWidth="2"><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7.5 17l1-7h7l1 7"/><path d="M9.5 10V3h5v7"/></svg>
                     </button>
                     {/* Assign */}
                     <div style={{ position: "relative" }}>
-                      <button className="msg-header-btn" data-tip="Assign" onClick={() => setShowAssignMenu(!showAssignMenu)} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: assignedThreads[selectedThread] ? "rgba(74,124,89,.1)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                      <button className="msg-header-btn" data-tip="Assign" onClick={() => setShowAssignMenu(!showAssignMenu)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: assignedThreads[selectedThread] ? "rgba(74,124,89,.1)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={assignedThreads[selectedThread] ? "#4a7c59" : "#999"} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                       </button>
                       {showAssignMenu && (
@@ -914,11 +914,11 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       )}
                     </div>
                     {/* Archive */}
-                    <button className="msg-header-btn" data-tip={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} onClick={() => { if (archivedThreads.has(selectedThread)) { setArchivedThreads(prev => { const next = new Set(prev); next.delete(selectedThread); return next; }); } else if (window.confirm("Archive this conversation with " + activeThread.tenantName + "? You can find it in the Archived filter.")) { setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; }); setSelectedThread(null); } }} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip={archivedThreads.has(selectedThread) ? "Unarchive" : "Archive"} onClick={() => { if (archivedThreads.has(selectedThread)) { setArchivedThreads(prev => { const next = new Set(prev); next.delete(selectedThread); return next; }); } else if (window.confirm("Archive this conversation with " + activeThread.tenantName + "? You can find it in the Archived filter.")) { setArchivedThreads(prev => { const next = new Set(prev); next.add(selectedThread); return next; }); setSelectedThread(null); } }} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: archivedThreads.has(selectedThread) ? "rgba(0,0,0,.06)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
                     </button>
                     {/* Info */}
-                    <button className="msg-header-btn" data-tip="Info" onClick={() => setShowTenantInfo(!showTenantInfo)} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showTenantInfo ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <button className="msg-header-btn" data-tip="Info" onClick={() => setShowTenantInfo(!showTenantInfo)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showTenantInfo ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </button>
                   </div>
@@ -972,13 +972,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                           {/* Edit/Delete/React actions for outbound — appear on hover */}
                           {(isOut || isNote) && isHovered && !isEditing && !isDeleted && (
                             <div style={{ display: "flex", gap: 2, alignItems: "center", marginRight: 6, alignSelf: "center" }}>
-                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, minWidth: 44, minHeight: 44, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id); }} title="React" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                               </button>
-                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 26, height: 26, minWidth: 44, minHeight: 44, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); setEditingMsg(msg.id); setEditMsgText(msg.body || ""); }} title="Edit" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                               </button>
-                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); if (window.confirm("Delete this message? This cannot be undone.")) deleteMsg(msg.id); }} title="Delete" style={{ width: 26, height: 26, minWidth: 44, minHeight: 44, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
+                              <button className="msg-action-btn" onClick={e => { e.stopPropagation(); if (window.confirm("Delete this message? This cannot be undone.")) deleteMsg(msg.id); }} title="Delete" style={{ width: 26, height: 26, borderRadius: 13, border: "none", background: "rgba(0,0,0,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform .15s ease, background .15s ease" }}>
                                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                               </button>
                             </div>
@@ -1003,7 +1003,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                             {msg.attachment && !msg.attachment.type?.startsWith("image/") && <div style={{ padding: "6px 10px", background: isOut ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.06)", borderRadius: 8, fontSize: 11, marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{msg.attachment.name}</div>}
                             {isEditing ? (
                               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                <textarea value={editMsgText} onChange={e => setEditMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEditMsg(msg.id); } if (e.key === "Escape") { setEditingMsg(null); setEditMsgText(""); } }} rows={2} style={{ width: "100%", padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,.3)", fontSize: 16, fontFamily: "inherit", resize: "none", outline: "none", background: "rgba(255,255,255,.15)", color: "inherit", boxSizing: "border-box" }} autoFocus />
+                                <textarea value={editMsgText} onChange={e => setEditMsgText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEditMsg(msg.id); } if (e.key === "Escape") { setEditingMsg(null); setEditMsgText(""); } }} rows={2} style={{ width: "100%", padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,.3)", fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none", background: "rgba(255,255,255,.15)", color: "inherit", boxSizing: "border-box" }} autoFocus />
                                 <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
                                   <button onClick={() => { setEditingMsg(null); setEditMsgText(""); }} style={{ padding: "3px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,.3)", background: "transparent", color: "inherit", fontSize: 10, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
                                   <button onClick={() => saveEditMsg(msg.id)} style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "rgba(255,255,255,.25)", color: "inherit", fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Save</button>
@@ -1079,7 +1079,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                   <div style={{ padding: "8px 16px", borderTop: "1px solid " + hexToRgba(_acc, .15), background: hexToRgba(_acc, .03), display: "flex", gap: 8, alignItems: "center" }}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     <span style={{ fontSize: 11, fontWeight: 600, color: _acc }}>Schedule for:</span>
-                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid " + hexToRgba(_acc, .2), fontSize: 16, fontFamily: "inherit", background: "#fff" }} />
+                    <input type="datetime-local" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} min={new Date().toISOString().slice(0, 16)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid " + hexToRgba(_acc, .2), fontSize: 11, fontFamily: "inherit", background: "#fff" }} />
                     <button onClick={() => { setShowSchedule(false); setScheduleTime(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#999" }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
@@ -1095,13 +1095,13 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                       </button>
                     </div>
-                    <input value={maintForm.title} onChange={e => setMaintForm(p => ({ ...p, title: e.target.value }))} placeholder="What is the issue?" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 16, fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" }} />
+                    <input value={maintForm.title} onChange={e => setMaintForm(p => ({ ...p, title: e.target.value }))} placeholder="What is the issue?" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 12, fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" }} />
                     <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 9, fontWeight: 700, color: "#6b5e52", marginBottom: 3 }}>SCOPE</div>
                         <div style={{ display: "flex", gap: 4 }}>
                           {[["room", "Room Only"], ["unit", "Whole Unit"], ["common", "Common Area"]].map(([v, l]) => (
-                            <button key={v} onClick={() => setMaintForm(p => ({ ...p, scope: v }))} style={{ flex: 1, padding: "5px 0", minHeight: 44, borderRadius: 5, fontSize: 10, fontWeight: maintForm.scope === v ? 700 : 500, border: "1px solid " + (maintForm.scope === v ? _acc : "rgba(0,0,0,.08)"), background: maintForm.scope === v ? _acc + "12" : "#fff", color: maintForm.scope === v ? _acc : "#999", cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
+                            <button key={v} onClick={() => setMaintForm(p => ({ ...p, scope: v }))} style={{ flex: 1, padding: "5px 0", borderRadius: 5, fontSize: 10, fontWeight: maintForm.scope === v ? 700 : 500, border: "1px solid " + (maintForm.scope === v ? _acc : "rgba(0,0,0,.08)"), background: maintForm.scope === v ? _acc + "12" : "#fff", color: maintForm.scope === v ? _acc : "#999", cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
                           ))}
                         </div>
                       </div>
@@ -1109,7 +1109,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                         <div style={{ fontSize: 9, fontWeight: 700, color: "#6b5e52", marginBottom: 3 }}>PRIORITY</div>
                         <div style={{ display: "flex", gap: 4 }}>
                           {[["low", "Low", "#4a7c59"], ["medium", "Med", "#d4a853"], ["high", "High", "#c45c4a"]].map(([v, l, c]) => (
-                            <button key={v} onClick={() => setMaintForm(p => ({ ...p, priority: v }))} style={{ flex: 1, padding: "5px 0", minHeight: 44, borderRadius: 5, fontSize: 10, fontWeight: maintForm.priority === v ? 700 : 500, border: "1px solid " + (maintForm.priority === v ? c : "rgba(0,0,0,.08)"), background: maintForm.priority === v ? c + "15" : "#fff", color: maintForm.priority === v ? c : "#999", cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
+                            <button key={v} onClick={() => setMaintForm(p => ({ ...p, priority: v }))} style={{ flex: 1, padding: "5px 0", borderRadius: 5, fontSize: 10, fontWeight: maintForm.priority === v ? 700 : 500, border: "1px solid " + (maintForm.priority === v ? c : "rgba(0,0,0,.08)"), background: maintForm.priority === v ? c + "15" : "#fff", color: maintForm.priority === v ? c : "#999", cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
                           ))}
                         </div>
                       </div>
@@ -1162,16 +1162,16 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                         <div key={si} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 6, padding: "6px 8px", background: "#fff", borderRadius: 6, border: "1px solid " + hexToRgba(_acc, .15) }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <textarea value={sm.text} onChange={e => updateScheduled(idx, { text: e.target.value })} style={{ width: "100%", border: "none", background: "transparent", fontSize: 16, fontFamily: "inherit", resize: "none", outline: "none", padding: 0, lineHeight: 1.4 }} rows={1} />
+                            <textarea value={sm.text} onChange={e => updateScheduled(idx, { text: e.target.value })} style={{ width: "100%", border: "none", background: "transparent", fontSize: 11, fontFamily: "inherit", resize: "none", outline: "none", padding: 0, lineHeight: 1.4 }} rows={1} />
                             <div style={{ fontSize: 9, color: _acc, marginTop: 2 }}>
-                              <input type="datetime-local" value={sm.scheduledAt ? new Date(sm.scheduledAt).toISOString().slice(0, 16) : ""} onChange={e => updateScheduled(idx, { scheduledAt: new Date(e.target.value).toISOString() })} style={{ border: "none", background: "transparent", fontSize: 16, color: _acc, fontFamily: "inherit", outline: "none", padding: 0 }} />
+                              <input type="datetime-local" value={sm.scheduledAt ? new Date(sm.scheduledAt).toISOString().slice(0, 16) : ""} onChange={e => updateScheduled(idx, { scheduledAt: new Date(e.target.value).toISOString() })} style={{ border: "none", background: "transparent", fontSize: 11, color: _acc, fontFamily: "inherit", outline: "none", padding: 0 }} />
                             </div>
                           </div>
                           <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                            <button onClick={() => { const msg = scheduledMsgs[idx]; setReplyText(msg.text); deleteScheduled(idx); }} title="Send now" style={{ width: 20, height: 20, minWidth: 44, minHeight: 44, borderRadius: 4, border: "none", background: "rgba(74,124,89,.1)", color: "#4a7c59", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
+                            <button onClick={() => { const msg = scheduledMsgs[idx]; setReplyText(msg.text); deleteScheduled(idx); }} title="Send now" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(74,124,89,.1)", color: "#4a7c59", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                             </button>
-                            <button onClick={() => deleteScheduled(idx)} title="Delete" style={{ width: 20, height: 20, minWidth: 44, minHeight: 44, borderRadius: 4, border: "none", background: "rgba(196,92,74,.08)", color: "#c45c4a", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
+                            <button onClick={() => deleteScheduled(idx)} title="Delete" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(196,92,74,.08)", color: "#c45c4a", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                           </div>
@@ -1199,14 +1199,14 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                             onDrop={e => { e.preventDefault(); e.currentTarget.style.borderTop = "none"; const from = Number(e.dataTransfer.getData("replyIdx")); if (from === i) return; const next = [...savedReplies]; const [moved] = next.splice(from, 1); next.splice(i, 0, moved); setSavedReplies(next); }}
                             style={{ display: "flex", gap: 4, marginBottom: 4, alignItems: "center", cursor: "grab" }}>
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" style={{ flexShrink: 0 }}><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                            <input value={cr} onChange={e => { const next = [...savedReplies]; next[i] = e.target.value; setSavedReplies(next); }} onClick={e => e.stopPropagation()} style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 16, fontFamily: "inherit", outline: "none" }} />
-                            <button onClick={() => setSavedReplies(prev => prev.filter((_, j) => j !== i))} style={{ width: 24, height: 24, minWidth: 44, minHeight: 44, borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <input value={cr} onChange={e => { const next = [...savedReplies]; next[i] = e.target.value; setSavedReplies(next); }} onClick={e => e.stopPropagation()} style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit", outline: "none" }} />
+                            <button onClick={() => setSavedReplies(prev => prev.filter((_, j) => j !== i))} style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                           </div>
                         ))}
                         <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
-                          <input value={editReplyDraft} onChange={e => setEditReplyDraft(e.target.value)} placeholder="Add new reply..." onKeyDown={e => { if (e.key === "Enter" && editReplyDraft.trim()) { setSavedReplies(prev => [...prev, editReplyDraft.trim()]); setEditReplyDraft(""); } }} style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 16, fontFamily: "inherit", outline: "none" }} />
+                          <input value={editReplyDraft} onChange={e => setEditReplyDraft(e.target.value)} placeholder="Add new reply..." onKeyDown={e => { if (e.key === "Enter" && editReplyDraft.trim()) { setSavedReplies(prev => [...prev, editReplyDraft.trim()]); setEditReplyDraft(""); } }} style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,.1)", fontSize: 11, fontFamily: "inherit", outline: "none" }} />
                           <button onClick={() => { if (editReplyDraft.trim()) { setSavedReplies(prev => [...prev, editReplyDraft.trim()]); setEditReplyDraft(""); } }} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid " + _acc, background: _acc + "12", color: _acc, fontSize: 10, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Add</button>
                         </div>
                       </div>
@@ -1233,20 +1233,20 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                 <div style={S.chatInput}>
                   {/* File attach */}
                   <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx" style={{ display: "none" }} onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => setAttachFile({ name: file.name, type: file.type, data: ev.target.result }); reader.readAsDataURL(file); e.target.value = ""; }} />
-                  <button onClick={() => fileInputRef.current?.click()} title="Attach file" style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => fileInputRef.current?.click()} title="Attach file" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                   </button>
                   {/* Note toggle */}
-                  <button onClick={() => setNoteMode(!noteMode)} title={noteMode ? "Switch to reply" : "Switch to internal note"} style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: noteMode ? "2px solid #d4a853" : "1px solid rgba(0,0,0,.1)", background: noteMode ? "rgba(212,168,83,.08)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => setNoteMode(!noteMode)} title={noteMode ? "Switch to reply" : "Switch to internal note"} style={{ width: 36, height: 36, borderRadius: 8, border: noteMode ? "2px solid #d4a853" : "1px solid rgba(0,0,0,.1)", background: noteMode ? "rgba(212,168,83,.08)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={noteMode ? "#9a7422" : "#999"} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                   </button>
                   {/* Canned toggle */}
-                  <button onClick={() => setShowCanned(!showCanned)} title="Quick replies" style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showCanned ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => setShowCanned(!showCanned)} title="Quick replies" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showCanned ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                   </button>
                   {/* Emoji picker */}
                   <div style={{ position: "relative" }}>
-                    <button onClick={() => setShowEmoji(!showEmoji)} title="Insert emoji" style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showEmoji ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <button onClick={() => setShowEmoji(!showEmoji)} title="Insert emoji" style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: showEmoji ? "rgba(0,0,0,.04)" : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                     </button>
                     {showEmoji && (() => {
@@ -1272,7 +1272,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                           <div style={{ padding: 8, maxHeight: 200, overflowY: "auto" }}>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2 }}>
                               {cat.emojis.map((em, i) => (
-                                <button key={i} onClick={() => { setReplyText(prev => prev + em); setShowEmoji(false); inputRef.current?.focus(); }} style={{ width: 32, height: 32, minWidth: 44, minHeight: 44, border: "none", background: "transparent", cursor: "pointer", fontSize: 18, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.06)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                                <button key={i} onClick={() => { setReplyText(prev => prev + em); setShowEmoji(false); inputRef.current?.focus(); }} style={{ width: 32, height: 32, border: "none", background: "transparent", cursor: "pointer", fontSize: 18, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.06)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                                   {em}
                                 </button>
                               ))}
@@ -1283,7 +1283,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                     })()}
                   </div>
                   {/* Sound toggle */}
-                  <button onClick={() => setSoundEnabled(!soundEnabled)} title={soundEnabled ? "Mute sounds" : "Unmute sounds"} style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: soundEnabled ? hexToRgba(_acc, .06) : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <button onClick={() => setSoundEnabled(!soundEnabled)} title={soundEnabled ? "Mute sounds" : "Unmute sounds"} style={{ width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(0,0,0,.1)", background: soundEnabled ? hexToRgba(_acc, .06) : "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {soundEnabled ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={_acc} strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                     ) : (
@@ -1299,22 +1299,22 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
                       onKeyDown={async e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (showSlashMenu) { const filtered = SLASH_COMMANDS.filter(c => c.cmd.startsWith(replyText.trim())); if (filtered.length === 1) insertSlashCommand(filtered[0].cmd); } else if (replyText.trim().startsWith("/")) { await executeSlashCommand(); } else { sendReply(); } } }}
                       placeholder={noteMode ? "Write an internal note..." : "Type a message... (/ for commands)"}
                       rows={1}
-                      style={{ width: "100%", padding: "10px 14px", borderRadius: 20, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1px solid rgba(0,0,0,.08)", fontSize: 16, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "rgba(0,0,0,.04)", minHeight: 44, maxHeight: 120, lineHeight: 1.5, transition: "border-color .15s" }}
+                      style={{ width: "100%", padding: "10px 14px", borderRadius: 20, border: noteMode ? "2px solid rgba(212,168,83,.4)" : "1px solid rgba(0,0,0,.08)", fontSize: 14, fontFamily: "inherit", resize: "none", outline: "none", background: noteMode ? "rgba(212,168,83,.04)" : "rgba(0,0,0,.04)", maxHeight: 120, lineHeight: 1.5, transition: "border-color .15s" }}
                     />
                   </div>
                   {/* Send / Schedule button group */}
                   <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
                     {showSchedule ? (
-                      <button onClick={scheduleMessage} disabled={!replyText.trim() || !scheduleTime} style={{ height: 40, minHeight: 44, padding: "0 16px", borderRadius: "20px 0 0 20px", border: "none", background: (replyText.trim() && scheduleTime) ? _acc : "rgba(0,0,0,.08)", color: (replyText.trim() && scheduleTime) ? "#fff" : "#bbb", cursor: (replyText.trim() && scheduleTime) ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>
+                      <button onClick={scheduleMessage} disabled={!replyText.trim() || !scheduleTime} style={{ height: 40, padding: "0 16px", borderRadius: "20px 0 0 20px", border: "none", background: (replyText.trim() && scheduleTime) ? _acc : "rgba(0,0,0,.08)", color: (replyText.trim() && scheduleTime) ? "#fff" : "#bbb", cursor: (replyText.trim() && scheduleTime) ? "pointer" : "default", display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         Schedule
                       </button>
                     ) : (
-                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 36, height: 36, minWidth: 44, minHeight: 44, borderRadius: 18, border: "none", background: replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s ease", transform: replyText.trim() ? "scale(1)" : "scale(.9)" }}>
+                      <button onClick={sendReply} disabled={sending || !replyText.trim()} style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: replyText.trim() ? _acc : "rgba(0,0,0,.08)", color: replyText.trim() ? "#fff" : "#bbb", cursor: replyText.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s ease", transform: replyText.trim() ? "scale(1)" : "scale(.9)" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                       </button>
                     )}
-                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 28, height: 28, minWidth: 44, minHeight: 44, borderRadius: 14, border: "none", marginLeft: 2, background: showSchedule ? _acc : "rgba(0,0,0,.06)", color: showSchedule ? "#fff" : "#8e8e93", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
+                    <button onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduleTime(""); }} style={{ width: 28, height: 28, borderRadius: 14, border: "none", marginLeft: 2, background: showSchedule ? _acc : "rgba(0,0,0,.06)", color: showSchedule ? "#fff" : "#8e8e93", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .15s" }}>
                       <svg width="8" height="8" viewBox="0 0 12 8" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 1l5 5 5-5"/></svg>
                     </button>
                   </div>

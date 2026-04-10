@@ -44,20 +44,20 @@ const thS = (align) => ({
 });
 
 const inputS = {
-  fontSize: 16, padding: "6px 8px", borderRadius: 6,
+  fontSize: 12, padding: "6px 8px", borderRadius: 6,
   border: "1px solid #d1d5db", fontFamily: "inherit",
-  width: "100%", boxSizing: "border-box", minHeight: 44, color: "#1a1714",
+  width: "100%", boxSizing: "border-box", height: 32, color: "#1a1714",
   outline: "none", background: "#fff", WebkitAppearance: "auto", appearance: "auto",
 };
 
 const selectS = {
-  fontSize: 16, padding: "4px 6px", borderRadius: 6,
+  fontSize: 11, padding: "4px 6px", borderRadius: 6,
   border: "1px solid #d1d5db", fontFamily: "inherit", color: "#374151",
   height: 28, outline: "none",
 };
 
 const labelS = {
-  fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase",
+  fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase",
   letterSpacing: .6, marginBottom: 3, display: "block",
 };
 
@@ -83,7 +83,7 @@ const statusText = (status) => {
 const monoRight = { textAlign: "right", fontFamily: MONO, fontVariantNumeric: "tabular-nums" };
 
 const sectionLabel = {
-  fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase",
+  fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase",
   letterSpacing: 1, marginBottom: 8,
 };
 
@@ -95,14 +95,14 @@ const btnPrimary = {
   fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6,
   border: "none", background: "#1a1714", color: "#fff",
   cursor: "pointer", fontFamily: "inherit", display: "inline-flex",
-  alignItems: "center", gap: 4, height: 30, minHeight: 44, transition: "opacity .15s",
+  alignItems: "center", gap: 4, height: 30, transition: "opacity .15s",
 };
 
 const btnSecondary = {
   fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6,
   border: "1px solid #d1d5db", background: "#fff", color: "#374151",
   cursor: "pointer", fontFamily: "inherit", display: "inline-flex",
-  alignItems: "center", gap: 4, height: 30, minHeight: 44, transition: "all .15s",
+  alignItems: "center", gap: 4, height: 30, transition: "all .15s",
 };
 
 const btnDanger = {
@@ -112,7 +112,7 @@ const btnDanger = {
 const btnGhost = {
   background: "none", border: "none", cursor: "pointer", padding: 3,
   color: "#6b7280", display: "inline-flex", alignItems: "center",
-  transition: "color .15s", minWidth: 44, minHeight: 44, justifyContent: "center",
+  transition: "color .15s",
 };
 
 /* ==================================================================== */
@@ -795,7 +795,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
                   {DEDUCTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
                 <input value={d.description} onChange={e => updateDeductionItem(d.id, "description", e.target.value)} placeholder="Description" style={{ ...inputS, fontSize: 11 }} />
-                <div style={{ display: "flex", alignItems: "center", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden", minHeight: 44 }}>
+                <div style={{ display: "flex", alignItems: "center", border: "1px solid #d1d5db", borderRadius: 6, overflow: "hidden" }}>
                   <span style={{ padding: "0 6px", background: "#f9fafb", color: "#6b7280", fontSize: 11, borderRight: "1px solid #d1d5db", height: "100%", display: "flex", alignItems: "center" }}>$</span>
                   <input type="number" value={d.amount} onChange={e => updateDeductionItem(d.id, "amount", e.target.value)} placeholder="0" style={{ border: "none", padding: "0 6px", fontSize: 11, fontFamily: MONO, width: "100%", outline: "none", height: "100%" }} />
                 </div>
@@ -867,7 +867,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
         <div style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)" }}><IconSearch /></div>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }}
           placeholder="Search all transactions..."
-          style={{ width: "100%", padding: "6px 8px 6px 28px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit", boxSizing: "border-box", height: 32, color: "#1a1714", outline: "none" }} />
+          style={{ width: "100%", padding: "6px 8px 6px 28px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", height: 32, color: "#1a1714", outline: "none" }} />
       </div>
 
       {/* Filter row */}
@@ -878,7 +878,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
           const toggle = (val) => { const sv = safeStr(val); setSelected(selected.map(safeStr).includes(sv) ? selected.map(safeStr).filter(v => v !== sv) : [...selected.map(safeStr), sv]); setPage(0); };
           return (
             <div data-multidrop style={{ position: "relative" }} onClick={e => e.stopPropagation()}>
-              <button onClick={e => { e.stopPropagation(); setOpenDrop(isOpen ? null : id); }} style={{ ...selectS, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: selected.length ? "#f3f4f6" : "#fff", fontWeight: selected.length ? 600 : 400, color: selected.length ? "#1a1714" : "#6b7280", minWidth: 100, minHeight: 44 }}>
+              <button onClick={e => { e.stopPropagation(); setOpenDrop(isOpen ? null : id); }} style={{ ...selectS, display: "flex", alignItems: "center", gap: 4, cursor: "pointer", background: selected.length ? "#f3f4f6" : "#fff", fontWeight: selected.length ? 600 : 400, color: selected.length ? "#1a1714" : "#6b7280", minWidth: 100 }}>
                 {label}{selected.length > 0 && <span style={{ background: "#1a1714", color: "#fff", fontSize: 8, fontWeight: 700, padding: "1px 5px", borderRadius: 3, marginLeft: 2 }}>{selected.length}</span>}
                 <svg width="8" height="8" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: "auto" }}><path d="M3 5l3 3 3-3"/></svg>
               </button>
@@ -988,7 +988,7 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
       <div>
         {/* Column toggle */}
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4, position: "relative" }}>
-          <button data-col-menu onClick={() => setShowColMenu(!showColMenu)} style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 4, padding: "3px 8px", fontSize: 10, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit", minWidth: 44, minHeight: 44 }}>
+          <button data-col-menu onClick={() => setShowColMenu(!showColMenu)} style={{ background: "none", border: "1px solid #e5e7eb", borderRadius: 4, padding: "3px 8px", fontSize: 10, color: "#6b7280", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             Columns
           </button>
@@ -1265,15 +1265,15 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
                               {editingId === r._src.id ? (
                                 <div>
                                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 8 }}>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Date</label><input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Amount</label><input type="number" value={editData.amount} onChange={e => setEditData(p => ({ ...p, amount: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Category</label><select value={editData.category} onChange={e => setEditData(p => ({ ...p, category: e.target.value, subcategory: "" }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }}>{SCHED_E_CATS.map(c => <option key={c.label||c.cat} value={c.label||c.cat}>{c.label||c.cat}</option>)}</select></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Subcategory</label><select value={editData.subcategory} onChange={e => setEditData(p => ({ ...p, subcategory: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }}><option value="">None</option>{(subcats?.[editData.category] || []).map(sc => { const lbl = typeof sc === "object" ? (sc.label || sc.id || "") : sc; return <option key={lbl} value={lbl}>{lbl}</option>; })}</select></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Date</label><input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Amount</label><input type="number" value={editData.amount} onChange={e => setEditData(p => ({ ...p, amount: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Category</label><select value={editData.category} onChange={e => setEditData(p => ({ ...p, category: e.target.value, subcategory: "" }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }}>{SCHED_E_CATS.map(c => <option key={c.label||c.cat} value={c.label||c.cat}>{c.label||c.cat}</option>)}</select></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Subcategory</label><select value={editData.subcategory} onChange={e => setEditData(p => ({ ...p, subcategory: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }}><option value="">None</option>{(subcats?.[editData.category] || []).map(sc => { const lbl = typeof sc === "object" ? (sc.label || sc.id || "") : sc; return <option key={lbl} value={lbl}>{lbl}</option>; })}</select></div>
                                   </div>
                                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6, marginBottom: 8 }}>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Vendor</label><input value={editData.vendor} onChange={e => setEditData(p => ({ ...p, vendor: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Description</label><input value={editData.description} onChange={e => setEditData(p => ({ ...p, description: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
-                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Method</label><input value={editData.paymentMethod} onChange={e => setEditData(p => ({ ...p, paymentMethod: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 16, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Vendor</label><input value={editData.vendor} onChange={e => setEditData(p => ({ ...p, vendor: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Description</label><input value={editData.description} onChange={e => setEditData(p => ({ ...p, description: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
+                                    <div><label style={{ fontSize: 9, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 2 }}>Method</label><input value={editData.paymentMethod} onChange={e => setEditData(p => ({ ...p, paymentMethod: e.target.value }))} style={{ width: "100%", padding: "4px 6px", borderRadius: 4, border: "1px solid #d1d5db", fontSize: 11, fontFamily: "inherit" }} /></div>
                                   </div>
                                   <div style={{ display: "flex", gap: 6 }}>
                                     <button style={btnPrimary} onClick={e => { e.stopPropagation(); saveEditExpense(); }}>Save</button>
@@ -1354,9 +1354,9 @@ function AllActivityTab({ charges, expenses, credits, props, vendors, settings, 
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {totalPages > 1 && (
             <>
-              <button style={{ ...btnSecondary, height: 24, minHeight: 44, fontSize: 10, padding: "2px 8px" }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</button>
+              <button style={{ ...btnSecondary, height: 24, fontSize: 10, padding: "2px 8px" }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</button>
               <span style={{ fontSize: 11, color: "#6b7280" }}>Page {page + 1} of {totalPages}</span>
-              <button style={{ ...btnSecondary, height: 24, minHeight: 44, fontSize: 10, padding: "2px 8px" }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
+              <button style={{ ...btnSecondary, height: 24, fontSize: 10, padding: "2px 8px" }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
             </>
           )}
         </div>

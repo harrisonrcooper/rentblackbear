@@ -180,7 +180,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
     kpiLabel: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, color: "#7a7067", margin: 0 },
     kpiBig: { fontSize: 30, fontWeight: 800, margin: "6px 0 4px", lineHeight: 1.1 },
     kpiSub: { fontSize: 12, color: "#6b5e52", margin: 0, lineHeight: 1.4 },
-    pill: (active) => ({ fontSize: 12, fontWeight: 600, padding: "7px 16px", borderRadius: 20, border: "1px solid " + (active ? _ac : "rgba(0,0,0,.12)"), background: active ? _ac : "#fff", color: active ? "#fff" : "#6b5e52", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", minHeight: 44 }),
+    pill: (active) => ({ fontSize: 12, fontWeight: 600, padding: "7px 16px", borderRadius: 20, border: "1px solid " + (active ? _ac : "rgba(0,0,0,.12)"), background: active ? _ac : "#fff", color: active ? "#fff" : "#6b5e52", cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }),
     section: { marginBottom: 28 },
     sectionTitle: { fontSize: 14, fontWeight: 800, color: "#1a1714", margin: "0 0 14px", letterSpacing: -0.2 },
     dot: (color) => ({ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }),
@@ -200,9 +200,9 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
         ))}
         {period === "custom" && (
           <span style={{ display: "inline-flex", gap: 8, alignItems: "center", marginLeft: 4, flexWrap: "wrap" }}>
-            <input type="date" value={customRange.from} onChange={e => setCustomRange(p => ({ ...p, from: e.target.value }))} style={{ fontSize: 16, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", minHeight: 44 }} />
+            <input type="date" value={customRange.from} onChange={e => setCustomRange(p => ({ ...p, from: e.target.value }))} style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit" }} />
             <span style={{ color: "#7a7067", fontSize: 12 }}>to</span>
-            <input type="date" value={customRange.to} onChange={e => setCustomRange(p => ({ ...p, to: e.target.value }))} style={{ fontSize: 16, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", minHeight: 44 }} />
+            <input type="date" value={customRange.to} onChange={e => setCustomRange(p => ({ ...p, to: e.target.value }))} style={{ fontSize: 12, padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit" }} />
           </span>
         )}
       </div>
@@ -355,7 +355,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
               </div>
             ))}
             {data.pastDueSorted.length > 8 && (
-              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0", minHeight: 44, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
                 View all {data.pastDueSorted.length} {Ic.arrow}
               </button>
             )}
@@ -376,7 +376,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
               );
             })}
             {data.soon.length > 8 && (
-              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0", minHeight: 44, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
                 View all {data.soon.length} {Ic.arrow}
               </button>
             )}
@@ -395,7 +395,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
               </div>
             ))}
             {data.transit.length > 8 && (
-              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, padding: "8px 0", minHeight: 44, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => goTab?.("ledger")} style={{ background: "none", border: "none", color: _ac, fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}>
                 View all {data.transit.length} {Ic.arrow}
               </button>
             )}
