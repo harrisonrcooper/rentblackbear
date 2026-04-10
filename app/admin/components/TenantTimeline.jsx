@@ -270,9 +270,8 @@ export default function TenantTimeline({
               const pRooms = sortRooms(allRooms(p).filter(r => !r.ownerOccupied).map(r => ({ ...r, propName: getPropDisplayName(p), propId: p.id })));
               if (!pRooms.length) return null;
               return (<div key={p.id}>
-                <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.04)", background: `rgba(${_acRgb},.04)` }}>
-                  <div style={{ width: LABEL_W, flexShrink: 0, padding: "5px 12px", fontSize: 10, fontWeight: 700, color: _ac, textTransform: "uppercase", letterSpacing: .3, position: "sticky", left: 0, background: `rgba(${_acRgb},.04)`, zIndex: 1 }}>{getPropDisplayName(p)}</div>
-                  <div style={{ flex: 1 }} />
+                <div style={{ minWidth: LABEL_W + GANTT_W, borderBottom: "1px solid rgba(0,0,0,.04)", background: `rgba(${_acRgb},.04)`, padding: "5px 12px", position: "relative" }}>
+                  <div style={{ position: "sticky", left: 0, fontSize: 10, fontWeight: 700, color: _ac, textTransform: "uppercase", letterSpacing: .3, display: "inline-block" }}>{getPropDisplayName(p)}</div>
                 </div>
                 {pRooms.map(r => renderRow(r, false))}
               </div>);
