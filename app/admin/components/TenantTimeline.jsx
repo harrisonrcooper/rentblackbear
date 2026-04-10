@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useCallback, useRef, useEffect } from "react";
+import { useMemo, useCallback, useRef, useEffect, useState } from "react";
 
 const allRooms = (p) => (p.units || []).flatMap(u => (u.rooms || []).map(r => ({ ...r, unitName: u.name, propName: p.addr || p.name, propId: p.id })));
 
@@ -73,15 +73,35 @@ export default function TenantTimeline({
     return { bg: "#B5D4F4", text: "#0C447C" }; // active
   };
 
-  /* ── Gantt scroll: auto-scroll to "today" on mount ──────── */
+  /* ── Legend filter: toggle which categories show ─────────── */
+  const ALL_CATS = ["incoming","active","exp90","exp30","expired","m2m","available"];
+  const [hiddenCats, setHiddenCats] = useState([]);
+  const toggleCat = (cat) => setHiddenCats(h => h.includes(cat) ? h.filter(c => c !== cat) : [...h, cat]);
+  const catOf = (r) => {
+    const isOcc = r.st === "occupied" && r.tenant;
+    if (!isOcc) return "available";
+    if (isFutureRoom(r)) return "incoming";
+    if (!r.le) return "m2m";
+    const dl = daysUntil(r.le);
+    if (dl !== null && dl <= 0) return "expired";
+    if (dl !== null && dl <= 30) return "exp30";
+    if (dl !== null && dl <= 90) return "exp90";
+    return "active";
+  };
+
+  /* ── Gantt scroll: auto-scroll to "today" on mount + track scrollLeft ── */
   const ganttScrollRef = useRef(null);
+  const [scrollLeft, setScrollLeft] = useState(0);
   useEffect(() => {
     const el = ganttScrollRef.current;
     if (!el || ttView !== "gantt") return;
-    // Scroll to today marker
     const todayPx = dateToX(TODAY_STR);
     el.scrollLeft = Math.max(0, todayPx - 100);
+    const onScroll = () => setScrollLeft(el.scrollLeft);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
   }, [ttView, ttMonthOffset]); // eslint-disable-line
+  const LABEL_W = 140;
 
   /* ── Empty state guard ─────────────────────────────────────── */
   if (!props.length) return (
@@ -156,7 +176,14 @@ export default function TenantTimeline({
         </div>
         {(() => {
           const todayX = dateToX(TODAY_STR);
+          /* helper: compute sticky text left offset within a bar */
+          const stickyTextLeft = (barLeft) => {
+            const visibleLeft = scrollLeft; // how far scrolled
+            return Math.max(4, visibleLeft - barLeft + 4);
+          };
           const renderRow = (r, showProp = false) => {
+            const cat = catOf(r);
+            if (hiddenCats.includes(cat)) return null;
             const isOcc = r.st === "occupied" && r.tenant;
             const isFuture = isOcc && isFutureRoom(r);
             const isVac = !isOcc;
@@ -170,58 +197,60 @@ export default function TenantTimeline({
                 onClick={() => openTenant(r)}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.025)"}
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
-                <div style={{ width: 140, flexShrink: 0, padding: "4px 12px", position: "sticky", left: 0, background: "#fff", zIndex: 1 }}>
+                <div style={{ width: LABEL_W, flexShrink: 0, padding: "4px 12px", position: "sticky", left: 0, background: "#fff", zIndex: 1, borderRight: "1px solid rgba(0,0,0,.04)" }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#1a1714", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
                   {showProp && <div style={{ fontSize: 9, color: _ac, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.propName}</div>}
-                  {isFuture && <div style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Incoming: {r.tenant.name} &middot; {fmtD(r.tenant.moveIn)}</div>}
-                  {isOcc && !isFuture && <div style={{ fontSize: 9, color: "#6b5e52", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.tenant.name}{r.tenant.moveIn ? " \u00B7 since " + fmtD(r.tenant.moveIn) : ""}</div>}
+                  {isFuture && <div style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Incoming: {r.tenant.name}</div>}
+                  {isOcc && !isFuture && <div style={{ fontSize: 9, color: "#6b5e52", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.tenant.name}</div>}
                   {isVac && <div style={{ fontSize: 9, color: _ac, fontWeight: 600 }}>Vacant</div>}
                 </div>
                 <div style={{ width: GANTT_W, flexShrink: 0, position: "relative", height: 36, display: "flex", alignItems: "center" }}>
-                  {/* Month grid lines */}
                   {months.map((m, i) => <div key={i} style={{ position: "absolute", left: m.x, top: 0, bottom: 0, width: 1, background: "rgba(0,0,0,.04)", zIndex: 0 }} />)}
-                  {/* Today marker */}
                   <div style={{ position: "absolute", left: todayX, top: 0, bottom: 0, width: 1.5, background: "#c45c4a", zIndex: 3, opacity: .7 }} />
-                  {/* Vacant bar */}
-                  {isVac && <div style={{ position: "absolute", left: 0, width: GANTT_W, height: 16, borderRadius: 3, background: `rgba(${_acRgb},.15)`, border: `1px solid rgba(${_acRgb},.3)`, display: "flex", alignItems: "center", paddingLeft: 6 }}>
-                    <span style={{ fontSize: 9, color: _ac, fontWeight: 600 }}>Available now</span>
+                  {/* Vacant */}
+                  {isVac && !hiddenCats.includes("available") && <div style={{ position: "absolute", left: 0, width: GANTT_W, height: 16, borderRadius: 3, background: `rgba(${_acRgb},.15)`, border: `1px solid rgba(${_acRgb},.3)`, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                    <span style={{ fontSize: 9, color: _ac, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(0) }}>Available now</span>
                   </div>}
-                  {/* Future/incoming bar */}
-                  {isFuture && moveInX !== null && <div style={{ position: "absolute", left: todayX, width: Math.max(4, moveInX - todayX), height: 16, top: 10, borderRadius: 3, background: "repeating-linear-gradient(45deg, rgba(167,243,208,.3), rgba(167,243,208,.3) 4px, transparent 4px, transparent 8px)", border: "1px dashed #065F46", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap" }}>Incoming {fmtD(r.tenant.moveIn)}</span>
+                  {/* Future/incoming dashed */}
+                  {isFuture && moveInX !== null && <div style={{ position: "absolute", left: todayX, width: Math.max(4, moveInX - todayX), height: 16, top: 10, borderRadius: 3, background: "repeating-linear-gradient(45deg, rgba(167,243,208,.3), rgba(167,243,208,.3) 4px, transparent 4px, transparent 8px)", border: "1px dashed #065F46", display: "flex", alignItems: "center", overflow: "hidden" }}>
+                    <span style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(todayX) }}>Incoming {fmtD(r.tenant.moveIn)}</span>
                   </div>}
-                  {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, leX - moveInX), height: 20, top: 8, borderRadius: 3, background: bc.bg, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
+                  {/* Future/incoming solid */}
+                  {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, leX - moveInX), height: 20, top: 8, borderRadius: 3, background: bc.bg, display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
                     onMouseLeave={e => e.currentTarget.style.filter = ""}>
-                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
+                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(moveInX) }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
                   </div>}
-                  {/* M2M bar — solid to end of current month, dashed remainder */}
+                  {/* M2M — solid to end of month, dashed remainder */}
                   {isM2M && (() => {
                     const startX = moveInX || 0;
                     const endOfMonth = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 0);
                     const eomStr = endOfMonth.toISOString().split("T")[0];
                     const eomX = dateToX(eomStr);
                     const solidW = Math.max(4, eomX - startX);
-                    const dashedLeft = eomX;
                     const dashedW = Math.max(0, GANTT_W - eomX);
                     return (<>
-                      <div style={{ position: "absolute", left: startX, width: solidW, height: 20, borderRadius: "3px 0 0 3px", background: "#C8B8E8", top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
-                        <span style={{ fontSize: 9, color: "#4C2882", fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; ends {endOfMonth.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
+                      <div style={{ position: "absolute", left: startX, width: solidW, height: 20, borderRadius: "3px 0 0 3px", background: "#C8B8E8", top: 8, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                        <span style={{ fontSize: 9, color: "#4C2882", fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(startX) }}>{r.tenant.name} &middot; thru {endOfMonth.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
                       </div>
-                      {dashedW > 0 && <div style={{ position: "absolute", left: dashedLeft, width: dashedW, height: 16, top: 10, borderRadius: "0 3px 3px 0", background: "repeating-linear-gradient(45deg, rgba(200,184,232,.25), rgba(200,184,232,.25) 4px, transparent 4px, transparent 8px)", border: "1px dashed rgba(76,40,130,.3)", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
-                        <span style={{ fontSize: 9, color: "#4C2882", fontWeight: 500, whiteSpace: "nowrap", opacity: .7 }}>Month-to-month</span>
+                      {dashedW > 0 && <div style={{ position: "absolute", left: eomX, width: dashedW, height: 16, top: 10, borderRadius: "0 3px 3px 0", background: "repeating-linear-gradient(45deg, rgba(200,184,232,.25), rgba(200,184,232,.25) 4px, transparent 4px, transparent 8px)", border: "1px dashed rgba(76,40,130,.3)", display: "flex", alignItems: "center", overflow: "hidden" }}>
+                        <span style={{ fontSize: 9, color: "#4C2882", fontWeight: 500, whiteSpace: "nowrap", opacity: .7, paddingLeft: stickyTextLeft(eomX) }}>Month-to-month</span>
                       </div>}
                     </>);
                   })()}
                   {/* Fixed-term bar */}
-                  {isOcc && !isM2M && !isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: Math.min(moveInX, leX), width: Math.max(4, Math.abs(leX - Math.min(moveInX, leX))), height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
-                    onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
-                    onMouseLeave={e => e.currentTarget.style.filter = ""}>
-                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name}{dl !== null && dl <= 0 ? " \u00B7 EXPIRED" : " \u00B7 ends " + fmtD(r.le)}</span>
-                  </div>}
+                  {isOcc && !isM2M && !isFuture && moveInX !== null && leX !== null && (() => {
+                    const barL = Math.min(moveInX, leX);
+                    const barW = Math.max(4, Math.abs(leX - barL));
+                    return <div style={{ position: "absolute", left: barL, width: barW, height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
+                      onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
+                      onMouseLeave={e => e.currentTarget.style.filter = ""}>
+                      <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(barL) }}>{r.tenant.name}{dl !== null && dl <= 0 ? " \u00B7 EXPIRED" : " \u00B7 ends " + fmtD(r.le)}</span>
+                    </div>;
+                  })()}
                   {/* Availability zone after lease */}
-                  {isOcc && !isM2M && !isFuture && leX !== null && <div style={{ position: "absolute", left: leX, width: Math.max(4, GANTT_W - leX), height: 16, top: 10, background: `rgba(${_acRgb},.1)`, border: `1px dashed rgba(${_acRgb},.3)`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: _ac, whiteSpace: "nowrap" }}>Avail. {fmtD(r.le)}</span>
+                  {isOcc && !isM2M && !isFuture && leX !== null && !hiddenCats.includes("available") && <div style={{ position: "absolute", left: leX, width: Math.max(4, GANTT_W - leX), height: 16, top: 10, background: `rgba(${_acRgb},.1)`, border: `1px dashed rgba(${_acRgb},.3)`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", overflow: "hidden" }}>
+                    <span style={{ fontSize: 9, color: _ac, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(leX) }}>Avail. {fmtD(r.le)}</span>
                   </div>}
                 </div>
               </div>);
@@ -230,26 +259,45 @@ export default function TenantTimeline({
             return props.filter(p => ttPropFilter === "all" || p.id === ttPropFilter).map(p => {
               const pRooms = sortRooms(allRooms(p).filter(r => !r.ownerOccupied).map(r => ({ ...r, propName: getPropDisplayName(p), propId: p.id })));
               if (!pRooms.length) return null;
+              const visibleRooms = pRooms.filter(r => !hiddenCats.includes(catOf(r)));
+              if (!visibleRooms.length) return null;
               return (<div key={p.id}>
-                <div style={{ padding: "5px 12px", fontSize: 10, fontWeight: 700, color: _ac, background: `rgba(${_acRgb},.04)`, borderBottom: "1px solid rgba(0,0,0,.04)", textTransform: "uppercase", letterSpacing: .3 }}>{getPropDisplayName(p)}</div>
+                <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.04)", background: `rgba(${_acRgb},.04)` }}>
+                  <div style={{ width: LABEL_W, flexShrink: 0, padding: "5px 12px", fontSize: 10, fontWeight: 700, color: _ac, textTransform: "uppercase", letterSpacing: .3, position: "sticky", left: 0, background: `rgba(${_acRgb},.04)`, zIndex: 1 }}>{getPropDisplayName(p)}</div>
+                  <div style={{ flex: 1 }} />
+                </div>
                 {pRooms.map(r => renderRow(r, false))}
               </div>);
             });
           }
-          return sortedFiltered.map(r => renderRow(r, true));
+          return sortedFiltered.filter(r => !hiddenCats.includes(catOf(r))).map(r => renderRow(r, true));
         })()}
         {sortedFiltered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52", fontSize: 12 }}>No rooms match this filter.</div>}
         </div>{/* close scroll container */}
-        {/* Legend — outside scroll so it stays visible */}
-        <div style={{ padding: "8px 16px", display: "flex", gap: 12, borderTop: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.01)", flexWrap: "wrap", flexShrink: 0 }}>
-          {[["#A7F3D0", "Incoming"], ["#B5D4F4", "Active"], ["#FDE68A", "Expiring 90d"], ["#FCA5A5", "Expiring 30d / Expired"], ["#C8B8E8", "Month-to-month"], [`rgba(${_acRgb},.15)`, "Available"]].map(([c, l]) => (
-            <div key={l} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52" }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />{l}
-            </div>
-          ))}
-          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52" }}>
+        {/* Legend — clickable to toggle categories */}
+        <div style={{ padding: "8px 16px", display: "flex", gap: 8, borderTop: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.01)", flexWrap: "wrap", flexShrink: 0, alignItems: "center" }}>
+          {[
+            ["incoming","#A7F3D0","#065F46","Incoming"],
+            ["active","#B5D4F4","#0C447C","Active"],
+            ["exp90","#FDE68A","#633806","Expiring 90d"],
+            ["exp30","#FCA5A5","#791F1F","Exp. 30d / Expired"],
+            ["expired","#EDE5F8","#4C2882","Holdover"],
+            ["m2m","#C8B8E8","#4C2882","Month-to-month"],
+            ["available",`rgba(${_acRgb},.15)`,_ac,"Available"],
+          ].map(([cat,bg,fg,label]) => {
+            const hidden = hiddenCats.includes(cat);
+            return <button key={cat} onClick={() => toggleCat(cat)}
+              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: hidden ? "#bbb" : fg, fontWeight: 600, padding: "3px 8px", borderRadius: 4, border: "none", cursor: "pointer", fontFamily: "inherit", background: hidden ? "rgba(0,0,0,.03)" : bg, opacity: hidden ? .5 : 1, transition: "all .15s", textDecoration: hidden ? "line-through" : "none" }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: hidden ? "#ccc" : bg, border: `1px solid ${hidden ? "#ccc" : fg}40` }} />{label}
+            </button>;
+          })}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52", marginLeft: 4 }}>
             <div style={{ width: 1.5, height: 10, background: "#c45c4a" }} />Today
           </div>
+          {hiddenCats.length > 0 && <button onClick={() => setHiddenCats([])}
+            style={{ fontSize: 9, color: "#5c4a3a", background: "none", border: "1px solid rgba(0,0,0,.12)", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit", marginLeft: 4 }}>
+            Show all
+          </button>}
         </div>
       </div>}
 
