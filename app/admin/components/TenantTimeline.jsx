@@ -95,7 +95,7 @@ export default function TenantTimeline({
   return (
     <div style={{ padding: "0 0 40px" }}>
       {/* ═══ Header ═══ */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8, position: "sticky", top: 0, zIndex: 10, background: "#f4f3f0", paddingTop: 4, paddingBottom: 8 }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Tenant Timeline</h2>
           <div style={{ fontSize: 11, color: "#6b5e52", marginTop: 2 }}>Lease end dates and availability across all properties</div>
@@ -118,20 +118,20 @@ export default function TenantTimeline({
           <div style={{ display: "flex", border: "1px solid rgba(0,0,0,.12)", borderRadius: 8, overflow: "hidden", background: "rgba(0,0,0,.02)" }}>
             {views.map(v => (
               <button key={v.id} onClick={() => setTtView(v.id)} style={toggleS(ttView === v.id)}>
-                {v.label}{v.id === ttPref && <span style={{ marginLeft: 4, fontSize: 9 }}>*</span>}
+                {v.label}{v.id === ttPref && <span style={{ marginLeft: 4, fontSize: 9, opacity: .6 }}>{"\u2713"}</span>}
               </button>
             ))}
           </div>
           {ttPref !== ttView && <button onClick={() => setDailyDriver(ttView)}
-            style={{ fontSize: 10, padding: "6px 12px", borderRadius: 7, border: `1px solid rgba(${_acRgb},.3)`, background: `rgba(${_acRgb},.08)`, cursor: "pointer", fontFamily: "inherit", color: _ac, fontWeight: 600, transition: "all .15s" }}>
+            style={{ fontSize: 10, padding: "6px 12px", borderRadius: 7, border: "1px solid rgba(0,0,0,.12)", background: "#fff", cursor: "pointer", fontFamily: "inherit", color: "#5c4a3a", fontWeight: 600, transition: "all .15s" }}>
             Set as default
           </button>}
-          {ttPref === ttView && <span style={{ fontSize: 10, color: _ac, fontWeight: 600, padding: "6px 4px" }}>Default view</span>}
+          {ttPref === ttView && <span style={{ fontSize: 10, color: "#5c4a3a", fontWeight: 600, padding: "6px 4px", opacity: .6 }}>Default</span>}
         </div>
       </div>
 
       {/* ═══ GANTT ═══ */}
-      {ttView === "gantt" && <div style={{ background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)", overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 220px)" }}>
+      {ttView === "gantt" && <div style={{ background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 220px)" }}>
         {/* Nav bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.015)", flexWrap: "wrap", gap: 6 }}>
           <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o - 1)}>Earlier</button>
@@ -146,7 +146,7 @@ export default function TenantTimeline({
           <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o + 1)}>Later</button>
         </div>
         {/* Scrollable chart area (month axis + rows) */}
-        <div ref={ganttScrollRef} style={{ flex: 1, overflowX: "auto", overflowY: "auto", minHeight: 0 }}>
+        <div ref={ganttScrollRef} style={{ flex: 1, overflowX: "auto", overflowY: "auto", minHeight: 0, WebkitOverflowScrolling: "touch" }}>
         {/* Month axis */}
         <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.06)", position: "sticky", top: 0, zIndex: 2, background: "#fff" }}>
           <div style={{ width: 140, flexShrink: 0, padding: "4px 12px", fontSize: 9, color: "#999", textTransform: "uppercase", letterSpacing: .5, position: "sticky", left: 0, background: "#fff", zIndex: 3 }}>{ttGanttGrouped ? "Room" : "Room / Property"}</div>
@@ -196,7 +196,7 @@ export default function TenantTimeline({
                     <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
                   </div>}
                   {/* M2M bar */}
-                  {isM2M && moveInX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, GANTT_W - moveInX), height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
+                  {isM2M && <div style={{ position: "absolute", left: moveInX || 0, width: Math.max(4, GANTT_W - (moveInX || 0)), height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.95)"}
                     onMouseLeave={e => e.currentTarget.style.filter = ""}>
                     <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; M2M</span>
