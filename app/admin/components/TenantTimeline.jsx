@@ -84,6 +84,7 @@ export default function TenantTimeline({
   /* ── Legend filter: toggle which categories show ─────────── */
   const ALL_CATS = ["incoming","active","exp90","exp30","expired","m2m","available"];
   const [dimmedCats, setDimmedCats] = useState([]);
+  const [collapseDimmed, setCollapseDimmed] = useState(false);
   const toggleDim = (cat) => setDimmedCats(h => h.includes(cat) ? h.filter(c => c !== cat) : [...h, cat]);
   const catOf = (r) => {
     const isOcc = r.st === "occupied" && r.tenant;
@@ -191,6 +192,7 @@ export default function TenantTimeline({
           };
           const renderRow = (r, showProp = false) => {
             const cat = catOf(r);
+            if (collapseDimmed && dimmedCats.includes(cat)) return null;
             const isOcc = r.st === "occupied" && r.tenant;
             const isFuture = isOcc && isFutureRoom(r);
             const isVac = !isOcc;
@@ -301,10 +303,16 @@ export default function TenantTimeline({
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52", marginLeft: 4 }}>
             <div style={{ width: 1.5, height: 10, background: "#c45c4a" }} />Today
           </div>
-          {dimmedCats.length > 0 && <button onClick={() => setDimmedCats([])}
-            style={{ fontSize: 9, color: "#5c4a3a", background: "none", border: "1px solid rgba(0,0,0,.12)", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit", marginLeft: 4 }}>
-            Reset
-          </button>}
+          {dimmedCats.length > 0 && <>
+            <button onClick={() => setCollapseDimmed(c => !c)}
+              style={{ fontSize: 9, color: collapseDimmed ? "#fff" : "#5c4a3a", background: collapseDimmed ? "#5c4a3a" : "none", border: "1px solid rgba(0,0,0,.12)", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit", marginLeft: 4, transition: "all .15s" }}>
+              {collapseDimmed ? "Show dimmed" : "Hide dimmed"}
+            </button>
+            <button onClick={() => { setDimmedCats([]); setCollapseDimmed(false); }}
+              style={{ fontSize: 9, color: "#5c4a3a", background: "none", border: "1px solid rgba(0,0,0,.12)", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit" }}>
+              Reset
+            </button>
+          </>}
         </div>
       </div>}
 
