@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import HoldToConfirm from "./HoldToConfirm";
 
 // ── Helpers ────────────────────────────────────────────────────────
 const hexToRgba = (hex, opacity) => {
@@ -73,11 +74,18 @@ export default function PropertiesList({
             <li>Tenants will lose their property assignments</li>
             <li>Charges referencing these properties will remain but be unlinked</li>
           </ul>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>Type DELETE to confirm</div>
-          <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #fca5a5", fontSize: 16, fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" }} />
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>Step 1: Type DELETE to confirm</div>
+          <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #fca5a5", fontSize: 16, fontFamily: "inherit", marginBottom: 14, boxSizing: "border-box" }} />
+          {nukeConfirm === "DELETE" && <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", marginBottom: 6 }}>Step 2: Press and hold the button until it fills</div>}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
             <button onClick={() => { setShowNuke(false); setNukeConfirm(""); }} className="btn btn-out" style={{ fontSize: 12 }}>Cancel</button>
-            <button disabled={nukeConfirm !== "DELETE"} onClick={nukeAllProps} className="btn" style={{ background: nukeConfirm === "DELETE" ? "#dc2626" : "#fca5a5", color: "#fff", border: "none", fontSize: 12, opacity: nukeConfirm === "DELETE" ? 1 : .5 }}><IconX /> Delete All Properties</button>
+            <HoldToConfirm
+              disabled={nukeConfirm !== "DELETE"}
+              onConfirm={nukeAllProps}
+              label="Hold to Delete All"
+              holdingLabel="Keep holding..."
+              almostLabel="Almost there..."
+            />
           </div>
         </div>
       </div>

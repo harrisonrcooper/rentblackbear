@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { syncTenantToSupabase } from "@/lib/syncTenant";
+import HoldToConfirm from "./HoldToConfirm";
 
 /* ── Icons (flat SVG only) ────────────────────────────────── */
 const IconSearch = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7a7067" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
@@ -986,11 +987,18 @@ export default function TenantsTab({
             <li>Cancel draft/pending leases</li>
             <li>Remove room-linked maintenance requests</li>
           </ul>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>Type DELETE to confirm</div>
-          <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #fca5a5", fontSize: 13, fontFamily: "inherit", marginBottom: 16, boxSizing: "border-box" }} />
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", marginBottom: 8 }}>Step 1: Type DELETE to confirm</div>
+          <input value={nukeConfirm} onChange={e => setNukeConfirm(e.target.value)} placeholder="Type DELETE" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #fca5a5", fontSize: 13, fontFamily: "inherit", marginBottom: 14, boxSizing: "border-box" }} />
+          {nukeConfirm === "DELETE" && <div style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", marginBottom: 6 }}>Step 2: Press and hold the button until it fills</div>}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
             <button onClick={() => { setShowNuke(false); setNukeConfirm(""); }} style={btnSm}>Cancel</button>
-            <button disabled={nukeConfirm !== "DELETE"} onClick={nukeAllTenants} style={{ ...btnSm, background: nukeConfirm === "DELETE" ? "#dc2626" : "#fca5a5", color: "#fff", border: "none", opacity: nukeConfirm === "DELETE" ? 1 : .5 }}><IconTrash /> Reset Everything</button>
+            <HoldToConfirm
+              disabled={nukeConfirm !== "DELETE"}
+              onConfirm={nukeAllTenants}
+              label="Hold to Reset Everything"
+              holdingLabel="Keep holding..."
+              almostLabel="Almost there..."
+            />
           </div>
         </div>
       </div>
