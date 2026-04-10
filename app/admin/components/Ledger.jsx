@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 /* ---- Constants ---- */
 const PAY_METHODS = ["Zelle","Venmo","Cash","Bank Transfer","CashApp","Stripe/ACH","Check","Other"];
@@ -152,11 +153,70 @@ export default function Ledger({
     { key: "assets", label: "Assets" },
   ];
 
+  /* ---- Morph into tbar: watch the main controls bar and show condensed controls in tbar when scrolled past ---- */
+  const mainControlsRef = useRef(null);
+  const [morphActive, setMorphActive] = useState(false);
+  const [morphSlot, setMorphSlot] = useState(null);
+  useEffect(() => {
+    setMorphSlot(typeof document !== "undefined" ? document.getElementById("tbar-morph-slot") : null);
+  }, []);
+  useEffect(() => {
+    const el = mainControlsRef.current;
+    if (!el) return;
+    const scrollRoot = el.closest(".mn") || null;
+    const io = new IntersectionObserver(
+      ([entry]) => setMorphActive(!entry.isIntersecting),
+      { root: scrollRoot, threshold: 0, rootMargin: "-60px 0px 0px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  useEffect(() => () => setMorphActive(false), []); // reset on unmount
+
   return (
     <div data-ledger>
       <TipStyle _ac={_ac} />
+      {/* Morphed controls portal — bubble into tbar when scrolled past */}
+      {morphSlot && createPortal(
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          opacity: morphActive ? 1 : 0,
+          transform: morphActive ? "scale(1) translateY(0)" : "scale(0.6) translateY(-8px)",
+          transformOrigin: "right center",
+          transition: "opacity .35s cubic-bezier(.34,1.56,.64,1), transform .35s cubic-bezier(.34,1.56,.64,1)",
+          pointerEvents: morphActive ? "auto" : "none",
+          filter: morphActive ? "blur(0)" : "blur(4px)",
+        }}>
+          {/* Condensed tab switcher */}
+          <div style={{ display: "flex", background: "rgba(0,0,0,.04)", borderRadius: 7, padding: 2, gap: 0 }}>
+            {TABS.map(t => (
+              <button key={t.key} onClick={() => goTab(t.key)}
+                style={{
+                  padding: "4px 10px", fontSize: 10, fontWeight: 700, fontFamily: "inherit",
+                  background: activeTab === t.key ? "#fff" : "transparent",
+                  color: activeTab === t.key ? "#1a1714" : "#6b7280",
+                  border: "none", borderRadius: 5, cursor: "pointer",
+                  boxShadow: activeTab === t.key ? "0 1px 3px rgba(0,0,0,.08)" : "none",
+                  whiteSpace: "nowrap", transition: "all .15s",
+                }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          {/* Scroll-to-top shortcut (reveals the full Payment/Charge/Expense buttons + filters) */}
+          <button onClick={() => { const mn = document.querySelector(".mn"); if (mn) mn.scrollTo({ top: 0, behavior: "smooth" }); }}
+            title="Jump to top for + Payment / + Charge / filters"
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", fontSize: 10, fontWeight: 700, background: "#fff", border: "1px solid rgba(0,0,0,.08)", borderRadius: 6, color: "#1a1714", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+            Top
+          </button>
+        </div>,
+        morphSlot
+      )}
       {/* Sub-tab bar -- clean underline style */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #e5e7eb", marginBottom: 16, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div ref={mainControlsRef} style={{ display: "flex", gap: 0, borderBottom: "1px solid #e5e7eb", marginBottom: 16, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => goTab(t.key)}
             style={{
