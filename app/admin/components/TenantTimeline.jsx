@@ -84,6 +84,7 @@ export default function TenantTimeline({
     exp30:    { bg: "#E8C8C0", text: "#6B2418" },
     expired:  { bg: "#DCCACA", text: "#5C1A1A" },
     m2m:      { bg: "#D4CCE4", text: "#3A2868" },
+    turnover: { bg: "#E8D0B8", text: "#6B3E16" },
     available:{ bg: `rgba(${_acRgb},.15)`, text: _ac },
   };
   // Derive a darker text color from a hex bg (for contrast)
@@ -313,6 +314,17 @@ export default function TenantTimeline({
                       <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(barL) }}>{r.tenant.name}{dl !== null && dl <= 0 ? " \u00B7 EXPIRED" : " \u00B7 ends " + fmtD(r.le)}</span>
                     </div>;
                   })()}
+                  {/* Turnover period (between lease end and availability) */}
+                  {isOcc && !isM2M && !isFuture && leX !== null && turnoverDays > 0 && (() => {
+                    const availStr = addDays(r.le, turnoverDays);
+                    const availX = dateToX(availStr);
+                    const turnoverW = Math.max(2, availX - leX);
+                    const tc = CAT_COLORS.turnover || DEFAULT_CAT_COLORS.turnover;
+                    const dim = dimmedCats.includes("turnover");
+                    return <div style={{ position: "absolute", left: leX, width: turnoverW, height: 16, top: 10, background: dim ? MUTED.bg : `repeating-linear-gradient(45deg, ${tc.bg}, ${tc.bg} 4px, rgba(255,255,255,.4) 4px, rgba(255,255,255,.4) 8px)`, border: `1px solid ${dim ? "rgba(0,0,0,.08)" : tc.text + "40"}`, borderRadius: 0, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                      <span style={{ fontSize: 9, color: dim ? MUTED.text : tc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(leX) }}>Turnover {turnoverDays}d</span>
+                    </div>;
+                  })()}
                   {/* Availability zone after lease + turnover period */}
                   {isOcc && !isM2M && !isFuture && leX !== null && (() => {
                     const availStr = addDays(r.le, turnoverDays);
@@ -351,6 +363,7 @@ export default function TenantTimeline({
           {[
             ["incoming","Incoming"],
             ...(settings?.timelineSimple ? [["active","Leased"]] : [["active","Active"],["exp90","Expiring 90d"],["exp30","Expiring 30d"],["expired","Expired"],["m2m","Month-to-month"]]),
+            ...(turnoverDays > 0 ? [["turnover","Turnover"]] : []),
             ["available","Available"],
           ].map(([cat,label]) => {
             const c = CAT_COLORS[cat] || CAT_COLORS.active;
