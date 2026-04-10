@@ -25,7 +25,7 @@ import LedgerImporter from "./components/LedgerImporter";
 import OnboardingWizard from "./components/OnboardingWizard";
 import TenantsTab from "./components/TenantsTab";
 import PaymentsTab from "./components/PaymentsTab";
-import TimelineTab from "./components/TimelineTab";
+import TenantTimeline from "./components/TenantTimeline";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
@@ -1650,13 +1650,15 @@ export default function Page(){
       />}
 
       {/* ═══ TENANT TIMELINE ═══ */}
-      {tab==="timeline"&&<TimelineTab
-        props={props} TODAY={TODAY} allRooms={allRooms} getPropDisplayName={getPropDisplayName} goTab={goTab}
+      {tab==="timeline"&&<TenantTimeline
+        props={props} settings={settings} setSettings={setSettings} save={save} TODAY={TODAY}
+        ttView={ttView} setTtView={setTtView} ttPref={ttPref} setTtPref={setTtPref}
         ttPropFilter={ttPropFilter} setTtPropFilter={setTtPropFilter}
-        ttSort={ttSort} setTtSort={setTtSort} ttView={ttView} setTtView={setTtView}
-        ttPref={ttPref} setTtPref={setTtPref} ttMonthOffset={ttMonthOffset} setTtMonthOffset={setTtMonthOffset}
+        ttSort={ttSort} setTtSort={setTtSort}
+        ttMonthOffset={ttMonthOffset} setTtMonthOffset={setTtMonthOffset}
         ttGanttGrouped={ttGanttGrouped} setTtGanttGrouped={setTtGanttGrouped}
         setTenantProfileTab={setTenantProfileTab} setModal={setModal}
+        getPropDisplayName={getPropDisplayName} fmtD={fmtD} goTab={goTab}
       />}
 
       {/* ═══ APPLICATIONS ═══ */}
