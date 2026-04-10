@@ -216,17 +216,17 @@ export default function TenantTimeline({
                   <div style={{ position: "absolute", left: todayX, top: 0, bottom: 0, width: 1.5, background: "#c45c4a", zIndex: 3, opacity: .7 }} />
                   {/* Vacant */}
                   {isVac && <div style={{ position: "absolute", left: 0, width: GANTT_W, height: 16, borderRadius: 3, background: dimmedCats.includes("available") ? MUTED.bg : `rgba(${_acRgb},.15)`, border: `1px solid ${dimmedCats.includes("available") ? "rgba(0,0,0,.06)" : `rgba(${_acRgb},.3)`}`, display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: dimmedCats.includes("available") ? MUTED.text : _ac, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(0) }}>Available now</span>
+                    <span style={{ fontSize: 9, color: dimmedCats.includes("available") ? MUTED.text : _ac, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(0) }}>Available now</span>
                   </div>}
                   {/* Future/incoming dashed */}
                   {isFuture && moveInX !== null && (() => { const dim = dimmedCats.includes("incoming"); return <div style={{ position: "absolute", left: todayX, width: Math.max(4, moveInX - todayX), height: 16, top: 10, borderRadius: 3, background: dim ? "rgba(0,0,0,.03)" : "repeating-linear-gradient(45deg, rgba(208,232,220,.4), rgba(208,232,220,.4) 4px, transparent 4px, transparent 8px)", border: `1px dashed ${dim ? "rgba(0,0,0,.08)" : "#1A5438"}`, display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: dim ? MUTED.text : "#1A5438", fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(todayX) }}>Incoming {fmtD(r.tenant.moveIn)}</span>
+                    <span style={{ fontSize: 9, color: dim ? MUTED.text : "#1A5438", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(todayX) }}>Incoming {fmtD(r.tenant.moveIn)}</span>
                   </div>; })()}
                   {/* Future/incoming solid */}
                   {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, leX - moveInX), height: 20, top: 8, borderRadius: 3, background: bc.bg, display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
                     onMouseLeave={e => e.currentTarget.style.filter = ""}>
-                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(moveInX) }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
+                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(moveInX) }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
                   </div>}
                   {/* M2M — solid to end of month, dashed remainder */}
                   {isM2M && (() => {
@@ -239,10 +239,10 @@ export default function TenantTimeline({
                     const dim = dimmedCats.includes("m2m");
                     return (<>
                       <div style={{ position: "absolute", left: startX, width: solidW, height: 20, borderRadius: "3px 0 0 3px", background: dim ? MUTED.bg : bc.bg, top: 8, display: "flex", alignItems: "center", overflow: "hidden" }}>
-                        <span style={{ fontSize: 9, color: dim ? MUTED.text : bc.text, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(startX) }}>{r.tenant.name} &middot; thru {endOfMonth.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
+                        <span style={{ fontSize: 9, color: dim ? MUTED.text : bc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(startX) }}>{r.tenant.name} &middot; thru {endOfMonth.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
                       </div>
                       {dashedW > 0 && <div style={{ position: "absolute", left: eomX, width: dashedW, height: 16, top: 10, borderRadius: "0 3px 3px 0", background: dim ? "rgba(0,0,0,.03)" : "repeating-linear-gradient(45deg, rgba(212,204,228,.3), rgba(212,204,228,.3) 4px, transparent 4px, transparent 8px)", border: `1px dashed ${dim ? "rgba(0,0,0,.08)" : "rgba(58,40,104,.25)"}`, display: "flex", alignItems: "center", overflow: "hidden" }}>
-                        <span style={{ fontSize: 9, color: dim ? MUTED.text : bc.text, fontWeight: 500, whiteSpace: "nowrap", opacity: .7, paddingLeft: stickyTextLeft(eomX) }}>Month-to-month</span>
+                        <span style={{ fontSize: 9, color: dim ? MUTED.text : bc.text, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", opacity: .7, paddingLeft: stickyTextLeft(eomX) }}>Month-to-month</span>
                       </div>}
                     </>);
                   })()}
@@ -253,12 +253,12 @@ export default function TenantTimeline({
                     return <div style={{ position: "absolute", left: barL, width: barW, height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
                       onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
                       onMouseLeave={e => e.currentTarget.style.filter = ""}>
-                      <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(barL) }}>{r.tenant.name}{dl !== null && dl <= 0 ? " \u00B7 EXPIRED" : " \u00B7 ends " + fmtD(r.le)}</span>
+                      <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(barL) }}>{r.tenant.name}{dl !== null && dl <= 0 ? " \u00B7 EXPIRED" : " \u00B7 ends " + fmtD(r.le)}</span>
                     </div>;
                   })()}
                   {/* Availability zone after lease */}
                   {isOcc && !isM2M && !isFuture && leX !== null && <div style={{ position: "absolute", left: leX, width: Math.max(4, GANTT_W - leX), height: 16, top: 10, background: dimmedCats.includes("available") ? "rgba(0,0,0,.03)" : `rgba(${_acRgb},.1)`, border: `1px dashed ${dimmedCats.includes("available") ? "rgba(0,0,0,.08)" : `rgba(${_acRgb},.3)`}`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: dimmedCats.includes("available") ? MUTED.text : _ac, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(leX) }}>Avail. {fmtD(r.le)}</span>
+                    <span style={{ fontSize: 9, color: dimmedCats.includes("available") ? MUTED.text : _ac, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(leX) }}>Avail. {fmtD(r.le)}</span>
                   </div>}
                 </div>
               </div>);
