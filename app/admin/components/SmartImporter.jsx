@@ -790,6 +790,26 @@ export default function SmartImporter({
 
   // Counts
   const nProps = structure.length;
+  // ── Internal duplicate detection: tenants within the import that share a name ──
+  const internalDupeGroups = useMemo(() => {
+    const groups = {};
+    structure.forEach((p, pi) => {
+      p.units.forEach((u, ui) => {
+        u.rooms.forEach((r, ri) => {
+          r.tenants.forEach((t, ti) => {
+            if (t.excluded) return;
+            const key = (t.name || "").trim().toLowerCase();
+            if (!key) return;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push({ pi, ui, ri, ti, name: t.name, propName: p.name || p.address, roomName: r.name, moveIn: t.moveIn, email: t.email, phone: t.phone });
+          });
+        });
+      });
+    });
+    return Object.entries(groups).filter(([,list]) => list.length > 1).map(([key, list]) => ({ key, list }));
+  }, [structure]);
+  const [showDupeVerify, setShowDupeVerify] = useState(false);
+
   const nUnits = structure.reduce((s, p) => s + p.units.length, 0);
   const nRooms = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.length, 0), 0);
   const nTenants = structure.reduce((s, p) => s + p.units.reduce((s2, u) => s2 + u.rooms.reduce((s3, r) => s3 + r.tenants.filter(t => !t.excluded).length, 0), 0), 0);
@@ -1792,6 +1812,21 @@ export default function SmartImporter({
             })}
 
             {/* Import confirmation */}
+            {internalDupeGroups.length > 0 && <div style={{ marginTop: 12, padding: "12px 14px", background: _gold + "12", border: `2px solid ${_gold}`, borderRadius: 10 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <div style={{ color: _gold, flexShrink: 0, marginTop: 2 }}><IW /></div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#6B3E16", marginBottom: 4 }}>Possible duplicate tenants detected</div>
+                  <div style={{ fontSize: 12, color: "#5c4a3a", marginBottom: 8 }}>
+                    <strong>{internalDupeGroups.length}</strong> tenant name{internalDupeGroups.length !== 1 ? "s appear" : " appears"} more than once in your import: <strong>{internalDupeGroups.slice(0, 5).map(g => g.list[0].name).join(", ")}{internalDupeGroups.length > 5 ? ` +${internalDupeGroups.length - 5} more` : ""}</strong>
+                  </div>
+                  <button onClick={() => setShowDupeVerify(true)}
+                    style={{ fontSize: 11, fontWeight: 700, padding: "6px 12px", background: _gold, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit" }}>
+                    Review Duplicates
+                  </button>
+                </div>
+              </div>
+            </div>}
             <div style={{ marginTop: 16, background: "rgba(0,0,0,.03)", borderRadius: 10, padding: "16px 18px", border: "1px solid rgba(0,0,0,.08)" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", marginBottom: 6 }}>This will create:</div>
               <div style={{ fontSize: 12, color: "#5c4a3a", lineHeight: 1.8 }}>
@@ -1808,7 +1843,10 @@ export default function SmartImporter({
                 setStep(0); setStructure([]); setSkipped([]); setShowMapper(csvRows.length > 0);
               }} style={btn}>Back</button>
               {seqOverlaps > 0 && <span style={{ fontSize: 12, color: _red, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}><IW /> {seqOverlaps} sequential room{seqOverlaps > 1 ? "s" : ""} with overlapping leases {"\u2014"} fix dates or switch to co-tenant mode</span>}
-              <button onClick={() => { setShowImportConfirm(true); setImportConfirmText(""); }} disabled={nTenants === 0 || seqOverlaps > 0} style={{ ...btnP, fontSize: 13, padding: "10px 24px", opacity: (nTenants === 0 || seqOverlaps > 0) ? 0.4 : 1 }}>
+              <button onClick={() => {
+                if (internalDupeGroups.length > 0) { setShowDupeVerify(true); return; }
+                setShowImportConfirm(true); setImportConfirmText("");
+              }} disabled={nTenants === 0 || seqOverlaps > 0} style={{ ...btnP, fontSize: 13, padding: "10px 24px", opacity: (nTenants === 0 || seqOverlaps > 0) ? 0.4 : 1 }}>
                 Import {nTenants} Tenant{nTenants !== 1 ? "s" : ""}
               </button>
             </div>
@@ -1860,6 +1898,88 @@ export default function SmartImporter({
           </>)}
         </div>
       </div>
+
+      {/* ── Duplicate Verification Modal ── */}
+      {showDupeVerify && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setShowDupeVerify(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 14, maxWidth: 640, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
+            <div style={{ padding: "20px 24px 12px", borderBottom: "1px solid rgba(0,0,0,.06)" }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#1a1714", marginBottom: 6 }}>Review Possible Duplicates</div>
+              <div style={{ fontSize: 12, color: "#5c4a3a", lineHeight: 1.6 }}>
+                These tenant names appear more than once in your import. For each group, keep the record you want and skip the rest. If they&apos;re actually different people who happen to share a name, you can leave them all checked.
+              </div>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px" }}>
+              {internalDupeGroups.map(group => (
+                <div key={group.key} style={{ marginBottom: 16, padding: "12px 14px", background: "#fafaf9", borderRadius: 10, border: "1px solid #e5e7eb" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", marginBottom: 8 }}>
+                    {group.list[0].name} <span style={{ fontSize: 11, color: "#6b5e52", fontWeight: 500 }}>&middot; {group.list.length} records</span>
+                  </div>
+                  {group.list.map((g, i) => {
+                    const tenant = structure[g.pi]?.units[g.ui]?.rooms[g.ri]?.tenants[g.ti];
+                    const excluded = tenant?.excluded || false;
+                    return (
+                      <label key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 10px", marginBottom: 4, background: excluded ? "rgba(196,92,74,.06)" : "#fff", border: `1px solid ${excluded ? "rgba(196,92,74,.2)" : "#e5e7eb"}`, borderRadius: 8, cursor: "pointer", transition: "all .15s" }}>
+                        <input type="checkbox" checked={!excluded} onChange={e => {
+                          const keep = e.target.checked;
+                          setStructure(prev => {
+                            const next = prev.map(p => ({ ...p, units: p.units.map(u => ({ ...u, rooms: u.rooms.map(r => ({ ...r, tenants: r.tenants.map(t => ({ ...t })) })) })) }));
+                            const t = next[g.pi].units[g.ui].rooms[g.ri].tenants[g.ti];
+                            t.excluded = !keep;
+                            return next;
+                          });
+                          setDirty(true);
+                        }} style={{ marginTop: 2, width: 16, height: 16, accentColor: _ac, cursor: "pointer" }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: excluded ? "#9a8f82" : "#1a1714", textDecoration: excluded ? "line-through" : "none" }}>
+                            {g.propName} &middot; {g.roomName}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#6b5e52", marginTop: 2 }}>
+                            {g.moveIn ? `Move-in ${g.moveIn}` : "No move-in date"}
+                            {g.email && ` · ${g.email}`}
+                            {g.phone && ` · ${g.phone}`}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 100, background: excluded ? "rgba(196,92,74,.1)" : _ac + "15", color: excluded ? _red : _ac, textTransform: "uppercase", letterSpacing: .3, whiteSpace: "nowrap" }}>
+                          {excluded ? "Skip" : "Keep"}
+                        </span>
+                      </label>
+                    );
+                  })}
+                  <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                    <button onClick={() => {
+                      setStructure(prev => {
+                        const next = prev.map(p => ({ ...p, units: p.units.map(u => ({ ...u, rooms: u.rooms.map(r => ({ ...r, tenants: r.tenants.map(t => ({ ...t })) })) })) }));
+                        group.list.forEach((g, i) => { const t = next[g.pi].units[g.ui].rooms[g.ri].tenants[g.ti]; t.excluded = i !== 0; });
+                        return next;
+                      });
+                      setDirty(true);
+                    }} style={{ fontSize: 10, padding: "4px 10px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 5, cursor: "pointer", fontFamily: "inherit", color: "#5c4a3a", fontWeight: 600 }}>
+                      Keep first, skip rest
+                    </button>
+                    <button onClick={() => {
+                      setStructure(prev => {
+                        const next = prev.map(p => ({ ...p, units: p.units.map(u => ({ ...u, rooms: u.rooms.map(r => ({ ...r, tenants: r.tenants.map(t => ({ ...t })) })) })) }));
+                        group.list.forEach(g => { const t = next[g.pi].units[g.ui].rooms[g.ri].tenants[g.ti]; t.excluded = false; });
+                        return next;
+                      });
+                      setDirty(true);
+                    }} style={{ fontSize: 10, padding: "4px 10px", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 5, cursor: "pointer", fontFamily: "inherit", color: "#5c4a3a", fontWeight: 600 }}>
+                      Keep all
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: "14px 24px", borderTop: "1px solid rgba(0,0,0,.06)", display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button onClick={() => setShowDupeVerify(false)} style={btn}>Back to Review</button>
+              <button onClick={() => { setShowDupeVerify(false); setShowImportConfirm(true); setImportConfirmText(""); }} style={btnP}>
+                Continue to Import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Import Confirmation Modal (type IMPORT) ── */}
       {showImportConfirm && (
