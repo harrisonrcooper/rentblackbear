@@ -77,15 +77,30 @@ export default function TenantTimeline({
   const isFutureRoom = useCallback((r) => r.tenant?.moveIn && r.tenant.moveIn > TODAY_STR, [TODAY_STR]);
 
   /* ── Category colors (uniform muted palette, customizable via settings) ── */
+  /* pattern: solid | diagonal | thickDiagonal | dots | horizontal | vertical */
   const DEFAULT_CAT_COLORS = {
-    incoming: { bg: "#D0E8DC", text: "#1A5438" },
-    active:   { bg: "#CDDCEE", text: "#1B3F6B" },
-    exp90:    { bg: "#E8DCC0", text: "#5C4316" },
-    exp30:    { bg: "#E8C8C0", text: "#6B2418" },
-    expired:  { bg: "#DCCACA", text: "#5C1A1A" },
-    m2m:      { bg: "#D4CCE4", text: "#3A2868" },
-    turnover: { bg: "#E8D0B8", text: "#6B3E16" },
-    available:{ bg: `rgba(${_acRgb},.15)`, text: _ac },
+    incoming: { bg: "#D0E8DC", text: "#1A5438", pattern: "solid",         patternColor: "#1A5438" },
+    active:   { bg: "#CDDCEE", text: "#1B3F6B", pattern: "solid",         patternColor: "#1B3F6B" },
+    exp90:    { bg: "#E8DCC0", text: "#5C4316", pattern: "solid",         patternColor: "#5C4316" },
+    exp30:    { bg: "#E8C8C0", text: "#6B2418", pattern: "solid",         patternColor: "#6B2418" },
+    expired:  { bg: "#DCCACA", text: "#5C1A1A", pattern: "solid",         patternColor: "#5C1A1A" },
+    m2m:      { bg: "#D4CCE4", text: "#3A2868", pattern: "solid",         patternColor: "#3A2868" },
+    turnover: { bg: "#FF9933", text: "#1a1714", pattern: "thickDiagonal", patternColor: "#1a1714" },
+    available:{ bg: `rgba(${_acRgb},.15)`, text: _ac, pattern: "solid", patternColor: _ac },
+  };
+  /* Convert a cat color config into a CSS background value */
+  const bgFromCat = (c) => {
+    if (!c || !c.pattern || c.pattern === "solid") return c?.bg || "#ccc";
+    const bg = c.bg;
+    const pc = c.patternColor || "#000";
+    switch (c.pattern) {
+      case "diagonal":      return `repeating-linear-gradient(45deg, ${bg} 0 4px, ${pc} 4px 5px)`;
+      case "thickDiagonal": return `repeating-linear-gradient(45deg, ${bg} 0 6px, ${pc} 6px 10px)`;
+      case "dots":          return `radial-gradient(${pc} 1.5px, ${bg} 1.5px) 0 0 / 6px 6px`;
+      case "horizontal":    return `repeating-linear-gradient(0deg, ${bg} 0 4px, ${pc} 4px 5px)`;
+      case "vertical":      return `repeating-linear-gradient(90deg, ${bg} 0 4px, ${pc} 4px 5px)`;
+      default:              return bg;
+    }
   };
   // Derive a darker text color from a hex bg (for contrast)
   const darkerText = (hex) => {
@@ -95,21 +110,26 @@ export default function TenantTimeline({
   };
   const customColors = settings?.timelineColors || {};
   const SIMPLE_LEASE_CATS = ["active","exp90","exp30","expired","m2m"];
+  const normalizeCustom = (c) => {
+    if (!c) return null;
+    if (typeof c === "string") return { bg: c, text: darkerText(c) }; // legacy
+    return c;
+  };
   const CAT_COLORS = Object.keys(DEFAULT_CAT_COLORS).reduce((acc, cat) => {
-    if (customColors[cat]) {
-      acc[cat] = { bg: customColors[cat], text: darkerText(customColors[cat]) };
-    } else {
-      acc[cat] = DEFAULT_CAT_COLORS[cat];
-    }
+    const def = DEFAULT_CAT_COLORS[cat];
+    const cust = normalizeCustom(customColors[cat]);
+    acc[cat] = cust ? { ...def, ...cust } : def;
     // If simple mode, unify all lease states to the "active" color
     if (settings?.timelineSimple && SIMPLE_LEASE_CATS.includes(cat)) {
-      const leasedColor = customColors.active || DEFAULT_CAT_COLORS.active.bg;
-      acc[cat] = { bg: leasedColor, text: customColors.active ? darkerText(leasedColor) : DEFAULT_CAT_COLORS.active.text };
+      const activeCust = normalizeCustom(customColors.active);
+      acc[cat] = activeCust ? { ...DEFAULT_CAT_COLORS.active, ...activeCust } : DEFAULT_CAT_COLORS.active;
     }
     return acc;
   }, {});
-  const setCatColor = (cat, color) => {
-    const u = { ...settings, timelineColors: { ...(settings?.timelineColors || {}), [cat]: color } };
+  const setCatColor = (cat, patch) => {
+    const existing = normalizeCustom((settings?.timelineColors || {})[cat]) || {};
+    const merged = typeof patch === "string" ? { ...existing, bg: patch } : { ...existing, ...patch };
+    const u = { ...settings, timelineColors: { ...(settings?.timelineColors || {}), [cat]: merged } };
     setSettings && setSettings(u);
     save && save("hq-settings", u);
   };
@@ -135,6 +155,7 @@ export default function TenantTimeline({
   const ALL_CATS = ["incoming","active","exp90","exp30","expired","m2m","available"];
   const [dimmedCats, setDimmedCats] = useState([]);
   const [collapseDimmed, setCollapseDimmed] = useState(false);
+  const [editingCat, setEditingCat] = useState(null); // legend color editor popover target
   const toggleDim = (cat) => setDimmedCats(h => h.includes(cat) ? h.filter(c => c !== cat) : [...h, cat]);
   const catOf = (r) => {
     const isOcc = r.st === "occupied" && r.tenant;
@@ -281,7 +302,7 @@ export default function TenantTimeline({
                     <span style={{ fontSize: 9, color: dim ? MUTED.text : "#1A5438", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(todayX) }}>Incoming {fmtD(r.tenant.moveIn)}</span>
                   </div>; })()}
                   {/* Future/incoming solid */}
-                  {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, leX - moveInX), height: 20, top: 8, borderRadius: 3, background: bc.bg, display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
+                  {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, leX - moveInX), height: 20, top: 8, borderRadius: 3, background: dimmedCats.includes("incoming") ? MUTED.bg : bgFromCat(bc), display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
                     onMouseLeave={e => e.currentTarget.style.filter = ""}>
                     <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(moveInX) }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
@@ -296,7 +317,7 @@ export default function TenantTimeline({
                     const dashedW = Math.max(0, GANTT_W - eomX);
                     const dim = dimmedCats.includes("m2m");
                     return (<>
-                      <div style={{ position: "absolute", left: startX, width: solidW, height: 20, borderRadius: "3px 0 0 3px", background: dim ? MUTED.bg : bc.bg, top: 8, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                      <div style={{ position: "absolute", left: startX, width: solidW, height: 20, borderRadius: "3px 0 0 3px", background: dim ? MUTED.bg : bgFromCat(bc), top: 8, display: "flex", alignItems: "center", overflow: "hidden" }}>
                         <span style={{ fontSize: 9, color: dim ? MUTED.text : bc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(startX) }}>{r.tenant.name} &middot; thru {endOfMonth.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
                       </div>
                       {dashedW > 0 && <div style={{ position: "absolute", left: eomX, width: dashedW, height: 16, top: 10, borderRadius: "0 3px 3px 0", background: dim ? "rgba(0,0,0,.03)" : "repeating-linear-gradient(45deg, rgba(212,204,228,.3), rgba(212,204,228,.3) 4px, transparent 4px, transparent 8px)", border: `1px dashed ${dim ? "rgba(0,0,0,.08)" : "rgba(58,40,104,.25)"}`, display: "flex", alignItems: "center", overflow: "hidden" }}>
@@ -308,7 +329,7 @@ export default function TenantTimeline({
                   {isOcc && !isM2M && !isFuture && moveInX !== null && leX !== null && (() => {
                     const barL = Math.min(moveInX, leX);
                     const barW = Math.max(4, Math.abs(leX - barL));
-                    return <div style={{ position: "absolute", left: barL, width: barW, height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
+                    return <div style={{ position: "absolute", left: barL, width: barW, height: 20, borderRadius: 3, background: dimmedCats.includes(catOf(r)) ? MUTED.bg : bgFromCat(bc), top: 8, display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
                       onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
                       onMouseLeave={e => e.currentTarget.style.filter = ""}>
                       <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(barL) }}>{r.tenant.name}{dl !== null && dl <= 0 ? " \u00B7 EXPIRED" : " \u00B7 ends " + fmtD(r.le)}</span>
@@ -321,8 +342,8 @@ export default function TenantTimeline({
                     const turnoverW = Math.max(2, availX - leX);
                     const tc = CAT_COLORS.turnover || DEFAULT_CAT_COLORS.turnover;
                     const dim = dimmedCats.includes("turnover");
-                    return <div style={{ position: "absolute", left: leX, width: turnoverW, height: 16, top: 10, background: dim ? MUTED.bg : `repeating-linear-gradient(45deg, ${tc.bg}, ${tc.bg} 4px, rgba(255,255,255,.4) 4px, rgba(255,255,255,.4) 8px)`, border: `1px solid ${dim ? "rgba(0,0,0,.08)" : tc.text + "40"}`, borderRadius: 0, display: "flex", alignItems: "center", overflow: "hidden" }}>
-                      <span style={{ fontSize: 9, color: dim ? MUTED.text : tc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(leX) }}>Turnover {turnoverDays}d</span>
+                    return <div style={{ position: "absolute", left: leX, width: turnoverW, height: 20, top: 8, background: dim ? MUTED.bg : bgFromCat(tc), border: `1px solid ${dim ? "rgba(0,0,0,.08)" : tc.text + "50"}`, borderRadius: 3, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                      <span style={{ fontSize: 9, color: dim ? MUTED.text : tc.text, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(leX) }}>Turnover {turnoverDays}d</span>
                     </div>;
                   })()}
                   {/* Availability zone after lease + turnover period */}
@@ -370,15 +391,45 @@ export default function TenantTimeline({
             const dim = dimmedCats.includes(cat);
             return <span key={cat} style={{ display: "inline-flex", alignItems: "center", gap: 0, position: "relative" }}>
               <button onClick={() => toggleDim(cat)}
-                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: dim ? MUTED.text : c.text, fontWeight: 600, padding: "3px 8px 3px 4px", borderRadius: "4px 0 0 4px", border: "none", cursor: "pointer", fontFamily: "inherit", background: dim ? MUTED.bg : c.bg, transition: "all .15s" }}>
-                <label style={{ position: "relative", display: "inline-block", width: 10, height: 10, borderRadius: 2, background: dim ? "#ccc" : c.bg, border: `1px solid ${dim ? "#ccc" : c.text}40`, cursor: "pointer" }}
-                  onClick={e => e.stopPropagation()}
-                  title="Click to change color">
-                  <input type="color" defaultValue={customColors[cat] || DEFAULT_CAT_COLORS[cat].bg} onBlur={e => setCatColor(cat, e.target.value)}
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", border: "none" }} />
-                </label>
+                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: dim ? MUTED.text : c.text, fontWeight: 600, padding: "3px 8px 3px 4px", borderRadius: "4px 0 0 4px", border: "none", cursor: "pointer", fontFamily: "inherit", background: dim ? MUTED.bg : bgFromCat(c), transition: "all .15s" }}>
+                <span onClick={e => { e.stopPropagation(); setEditingCat(editingCat === cat ? null : cat); }}
+                  style={{ display: "inline-block", width: 12, height: 12, borderRadius: 3, background: dim ? "#ccc" : bgFromCat(c), border: `1px solid ${dim ? "#ccc" : c.text}60`, cursor: "pointer" }}
+                  title="Click to edit color / pattern" />
                 {label}
               </button>
+              {editingCat === cat && <div onClick={e => e.stopPropagation()} style={{ position: "absolute", bottom: "100%", left: 0, marginBottom: 6, background: "#fff", border: "1px solid rgba(0,0,0,.12)", borderRadius: 8, padding: 12, boxShadow: "0 4px 16px rgba(0,0,0,.12)", zIndex: 100, minWidth: 220 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1714" }}>{label}</div>
+                  <button onClick={() => setEditingCat(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#6b5e52", padding: 0, lineHeight: 1 }}>{"\u00D7"}</button>
+                </div>
+                {/* Preview */}
+                <div style={{ height: 24, borderRadius: 4, background: bgFromCat(c), border: `1px solid ${c.text}40`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                  <span style={{ fontSize: 9, color: c.text, fontWeight: 700 }}>Preview</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 6, alignItems: "center", fontSize: 10, color: "#5c4a3a" }}>
+                  <label>Fill color</label>
+                  <input type="color" defaultValue={c.bg.startsWith("#") ? c.bg : DEFAULT_CAT_COLORS[cat].bg} onChange={e => setCatColor(cat, { bg: e.target.value })} style={{ width: 40, height: 22, border: "1px solid rgba(0,0,0,.1)", borderRadius: 4, cursor: "pointer", background: "none" }} />
+                  <label>Text color</label>
+                  <input type="color" defaultValue={c.text} onChange={e => setCatColor(cat, { text: e.target.value })} style={{ width: 40, height: 22, border: "1px solid rgba(0,0,0,.1)", borderRadius: 4, cursor: "pointer", background: "none" }} />
+                  <label>Pattern</label>
+                  <select value={c.pattern || "solid"} onChange={e => setCatColor(cat, { pattern: e.target.value })} style={{ fontSize: 10, padding: "3px 4px", borderRadius: 4, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit" }}>
+                    <option value="solid">Solid</option>
+                    <option value="diagonal">Diagonal stripes</option>
+                    <option value="thickDiagonal">Thick diagonal</option>
+                    <option value="dots">Dots</option>
+                    <option value="horizontal">Horizontal lines</option>
+                    <option value="vertical">Vertical lines</option>
+                  </select>
+                  {(c.pattern && c.pattern !== "solid") && <>
+                    <label>Pattern color</label>
+                    <input type="color" defaultValue={c.patternColor || c.text} onChange={e => setCatColor(cat, { patternColor: e.target.value })} style={{ width: 40, height: 22, border: "1px solid rgba(0,0,0,.1)", borderRadius: 4, cursor: "pointer", background: "none" }} />
+                  </>}
+                </div>
+                <button onClick={() => { const n = { ...(settings?.timelineColors || {}) }; delete n[cat]; const u = { ...settings, timelineColors: n }; setSettings && setSettings(u); save && save("hq-settings", u); }}
+                  style={{ marginTop: 10, width: "100%", padding: "5px", fontSize: 10, border: "1px solid rgba(0,0,0,.12)", borderRadius: 4, background: "#fff", color: "#5c4a3a", cursor: "pointer", fontFamily: "inherit" }}>
+                  Reset this category
+                </button>
+              </div>}
             </span>;
           })}
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52", marginLeft: 4 }}>
