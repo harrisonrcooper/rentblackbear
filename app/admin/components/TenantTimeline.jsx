@@ -63,20 +63,28 @@ export default function TenantTimeline({
   const subTogS = (on) => ({ padding: "4px 12px", fontSize: 10, fontWeight: 600, border: "none", borderRight: "1px solid rgba(0,0,0,.08)", cursor: "pointer", fontFamily: "inherit", transition: "all .15s", background: on ? _ac : "transparent", color: on ? "#fff" : "#5c4a3a" });
   const isFutureRoom = useCallback((r) => r.tenant?.moveIn && r.tenant.moveIn > TODAY_STR, [TODAY_STR]);
 
+  /* ── Category colors (uniform muted palette) ────────────── */
+  const CAT_COLORS = {
+    incoming: { bg: "#D0E8DC", text: "#1A5438" },
+    active:   { bg: "#CDDCEE", text: "#1B3F6B" },
+    exp90:    { bg: "#E8DCC0", text: "#5C4316" },
+    exp30:    { bg: "#E8C8C0", text: "#6B2418" },
+    expired:  { bg: "#DCCACA", text: "#5C1A1A" },
+    m2m:      { bg: "#D4CCE4", text: "#3A2868" },
+    available:{ bg: `rgba(${_acRgb},.15)`, text: _ac },
+  };
+  const MUTED = { bg: "#E8E6E3", text: "#A8A29E" }; // dimmed color for toggled-off categories
+
   const barColor = (r) => {
-    if (isFutureRoom(r)) return { bg: "#A7F3D0", text: "#065F46" }; // incoming
-    if (!r.le && r.tenant) return { bg: "#C8B8E8", text: "#4C2882" }; // M2M
-    const dl = r.le ? daysUntil(r.le) : null;
-    if (dl !== null && dl <= 0) return { bg: "#FCA5A5", text: "#791F1F" }; // expired
-    if (dl !== null && dl <= 30) return { bg: "#FCA5A5", text: "#791F1F" }; // exp30
-    if (dl !== null && dl <= 90) return { bg: "#FDE68A", text: "#633806" }; // exp90
-    return { bg: "#B5D4F4", text: "#0C447C" }; // active
+    const cat = catOf(r);
+    if (dimmedCats.includes(cat)) return MUTED;
+    return CAT_COLORS[cat] || CAT_COLORS.active;
   };
 
   /* ── Legend filter: toggle which categories show ─────────── */
   const ALL_CATS = ["incoming","active","exp90","exp30","expired","m2m","available"];
-  const [hiddenCats, setHiddenCats] = useState([]);
-  const toggleCat = (cat) => setHiddenCats(h => h.includes(cat) ? h.filter(c => c !== cat) : [...h, cat]);
+  const [dimmedCats, setDimmedCats] = useState([]);
+  const toggleDim = (cat) => setDimmedCats(h => h.includes(cat) ? h.filter(c => c !== cat) : [...h, cat]);
   const catOf = (r) => {
     const isOcc = r.st === "occupied" && r.tenant;
     if (!isOcc) return "available";
@@ -183,7 +191,6 @@ export default function TenantTimeline({
           };
           const renderRow = (r, showProp = false) => {
             const cat = catOf(r);
-            if (hiddenCats.includes(cat)) return null;
             const isOcc = r.st === "occupied" && r.tenant;
             const isFuture = isOcc && isFutureRoom(r);
             const isVac = !isOcc;
@@ -208,13 +215,13 @@ export default function TenantTimeline({
                   {months.map((m, i) => <div key={i} style={{ position: "absolute", left: m.x, top: 0, bottom: 0, width: 1, background: "rgba(0,0,0,.04)", zIndex: 0 }} />)}
                   <div style={{ position: "absolute", left: todayX, top: 0, bottom: 0, width: 1.5, background: "#c45c4a", zIndex: 3, opacity: .7 }} />
                   {/* Vacant */}
-                  {isVac && !hiddenCats.includes("available") && <div style={{ position: "absolute", left: 0, width: GANTT_W, height: 16, borderRadius: 3, background: `rgba(${_acRgb},.15)`, border: `1px solid rgba(${_acRgb},.3)`, display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: _ac, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(0) }}>Available now</span>
+                  {isVac && <div style={{ position: "absolute", left: 0, width: GANTT_W, height: 16, borderRadius: 3, background: dimmedCats.includes("available") ? MUTED.bg : `rgba(${_acRgb},.15)`, border: `1px solid ${dimmedCats.includes("available") ? "rgba(0,0,0,.06)" : `rgba(${_acRgb},.3)`}`, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                    <span style={{ fontSize: 9, color: dimmedCats.includes("available") ? MUTED.text : _ac, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(0) }}>Available now</span>
                   </div>}
                   {/* Future/incoming dashed */}
-                  {isFuture && moveInX !== null && <div style={{ position: "absolute", left: todayX, width: Math.max(4, moveInX - todayX), height: 16, top: 10, borderRadius: 3, background: "repeating-linear-gradient(45deg, rgba(167,243,208,.3), rgba(167,243,208,.3) 4px, transparent 4px, transparent 8px)", border: "1px dashed #065F46", display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: "#065F46", fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(todayX) }}>Incoming {fmtD(r.tenant.moveIn)}</span>
-                  </div>}
+                  {isFuture && moveInX !== null && (() => { const dim = dimmedCats.includes("incoming"); return <div style={{ position: "absolute", left: todayX, width: Math.max(4, moveInX - todayX), height: 16, top: 10, borderRadius: 3, background: dim ? "rgba(0,0,0,.03)" : "repeating-linear-gradient(45deg, rgba(208,232,220,.4), rgba(208,232,220,.4) 4px, transparent 4px, transparent 8px)", border: `1px dashed ${dim ? "rgba(0,0,0,.08)" : "#1A5438"}`, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                    <span style={{ fontSize: 9, color: dim ? MUTED.text : "#1A5438", fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(todayX) }}>Incoming {fmtD(r.tenant.moveIn)}</span>
+                  </div>; })()}
                   {/* Future/incoming solid */}
                   {isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: moveInX, width: Math.max(4, leX - moveInX), height: 20, top: 8, borderRadius: 3, background: bc.bg, display: "flex", alignItems: "center", overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
@@ -229,12 +236,13 @@ export default function TenantTimeline({
                     const eomX = dateToX(eomStr);
                     const solidW = Math.max(4, eomX - startX);
                     const dashedW = Math.max(0, GANTT_W - eomX);
+                    const dim = dimmedCats.includes("m2m");
                     return (<>
-                      <div style={{ position: "absolute", left: startX, width: solidW, height: 20, borderRadius: "3px 0 0 3px", background: "#C8B8E8", top: 8, display: "flex", alignItems: "center", overflow: "hidden" }}>
-                        <span style={{ fontSize: 9, color: "#4C2882", fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(startX) }}>{r.tenant.name} &middot; thru {endOfMonth.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
+                      <div style={{ position: "absolute", left: startX, width: solidW, height: 20, borderRadius: "3px 0 0 3px", background: dim ? MUTED.bg : bc.bg, top: 8, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                        <span style={{ fontSize: 9, color: dim ? MUTED.text : bc.text, fontWeight: 600, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(startX) }}>{r.tenant.name} &middot; thru {endOfMonth.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
                       </div>
-                      {dashedW > 0 && <div style={{ position: "absolute", left: eomX, width: dashedW, height: 16, top: 10, borderRadius: "0 3px 3px 0", background: "repeating-linear-gradient(45deg, rgba(200,184,232,.25), rgba(200,184,232,.25) 4px, transparent 4px, transparent 8px)", border: "1px dashed rgba(76,40,130,.3)", display: "flex", alignItems: "center", overflow: "hidden" }}>
-                        <span style={{ fontSize: 9, color: "#4C2882", fontWeight: 500, whiteSpace: "nowrap", opacity: .7, paddingLeft: stickyTextLeft(eomX) }}>Month-to-month</span>
+                      {dashedW > 0 && <div style={{ position: "absolute", left: eomX, width: dashedW, height: 16, top: 10, borderRadius: "0 3px 3px 0", background: dim ? "rgba(0,0,0,.03)" : "repeating-linear-gradient(45deg, rgba(212,204,228,.3), rgba(212,204,228,.3) 4px, transparent 4px, transparent 8px)", border: `1px dashed ${dim ? "rgba(0,0,0,.08)" : "rgba(58,40,104,.25)"}`, display: "flex", alignItems: "center", overflow: "hidden" }}>
+                        <span style={{ fontSize: 9, color: dim ? MUTED.text : bc.text, fontWeight: 500, whiteSpace: "nowrap", opacity: .7, paddingLeft: stickyTextLeft(eomX) }}>Month-to-month</span>
                       </div>}
                     </>);
                   })()}
@@ -249,8 +257,8 @@ export default function TenantTimeline({
                     </div>;
                   })()}
                   {/* Availability zone after lease */}
-                  {isOcc && !isM2M && !isFuture && leX !== null && !hiddenCats.includes("available") && <div style={{ position: "absolute", left: leX, width: Math.max(4, GANTT_W - leX), height: 16, top: 10, background: `rgba(${_acRgb},.1)`, border: `1px dashed rgba(${_acRgb},.3)`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: _ac, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(leX) }}>Avail. {fmtD(r.le)}</span>
+                  {isOcc && !isM2M && !isFuture && leX !== null && <div style={{ position: "absolute", left: leX, width: Math.max(4, GANTT_W - leX), height: 16, top: 10, background: dimmedCats.includes("available") ? "rgba(0,0,0,.03)" : `rgba(${_acRgb},.1)`, border: `1px dashed ${dimmedCats.includes("available") ? "rgba(0,0,0,.08)" : `rgba(${_acRgb},.3)`}`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", overflow: "hidden" }}>
+                    <span style={{ fontSize: 9, color: dimmedCats.includes("available") ? MUTED.text : _ac, whiteSpace: "nowrap", paddingLeft: stickyTextLeft(leX) }}>Avail. {fmtD(r.le)}</span>
                   </div>}
                 </div>
               </div>);
@@ -259,8 +267,6 @@ export default function TenantTimeline({
             return props.filter(p => ttPropFilter === "all" || p.id === ttPropFilter).map(p => {
               const pRooms = sortRooms(allRooms(p).filter(r => !r.ownerOccupied).map(r => ({ ...r, propName: getPropDisplayName(p), propId: p.id })));
               if (!pRooms.length) return null;
-              const visibleRooms = pRooms.filter(r => !hiddenCats.includes(catOf(r)));
-              if (!visibleRooms.length) return null;
               return (<div key={p.id}>
                 <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.04)", background: `rgba(${_acRgb},.04)` }}>
                   <div style={{ width: LABEL_W, flexShrink: 0, padding: "5px 12px", fontSize: 10, fontWeight: 700, color: _ac, textTransform: "uppercase", letterSpacing: .3, position: "sticky", left: 0, background: `rgba(${_acRgb},.04)`, zIndex: 1 }}>{getPropDisplayName(p)}</div>
@@ -270,33 +276,34 @@ export default function TenantTimeline({
               </div>);
             });
           }
-          return sortedFiltered.filter(r => !hiddenCats.includes(catOf(r))).map(r => renderRow(r, true));
+          return sortedFiltered.map(r => renderRow(r, true));
         })()}
         {sortedFiltered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52", fontSize: 12 }}>No rooms match this filter.</div>}
         </div>{/* close scroll container */}
         {/* Legend — clickable to toggle categories */}
         <div style={{ padding: "8px 16px", display: "flex", gap: 8, borderTop: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.01)", flexWrap: "wrap", flexShrink: 0, alignItems: "center" }}>
           {[
-            ["incoming","#A7F3D0","#065F46","Incoming"],
-            ["active","#B5D4F4","#0C447C","Active"],
-            ["exp90","#FDE68A","#633806","Expiring 90d"],
-            ["exp30","#FCA5A5","#791F1F","Exp. 30d / Expired"],
-            ["expired","#EDE5F8","#4C2882","Holdover"],
-            ["m2m","#C8B8E8","#4C2882","Month-to-month"],
-            ["available",`rgba(${_acRgb},.15)`,_ac,"Available"],
-          ].map(([cat,bg,fg,label]) => {
-            const hidden = hiddenCats.includes(cat);
-            return <button key={cat} onClick={() => toggleCat(cat)}
-              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: hidden ? "#bbb" : fg, fontWeight: 600, padding: "3px 8px", borderRadius: 4, border: "none", cursor: "pointer", fontFamily: "inherit", background: hidden ? "rgba(0,0,0,.03)" : bg, opacity: hidden ? .5 : 1, transition: "all .15s", textDecoration: hidden ? "line-through" : "none" }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: hidden ? "#ccc" : bg, border: `1px solid ${hidden ? "#ccc" : fg}40` }} />{label}
+            ["incoming","Incoming"],
+            ["active","Active"],
+            ["exp90","Expiring 90d"],
+            ["exp30","Expiring 30d"],
+            ["expired","Expired"],
+            ["m2m","Month-to-month"],
+            ["available","Available"],
+          ].map(([cat,label]) => {
+            const c = CAT_COLORS[cat] || CAT_COLORS.active;
+            const dim = dimmedCats.includes(cat);
+            return <button key={cat} onClick={() => toggleDim(cat)}
+              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: dim ? MUTED.text : c.text, fontWeight: 600, padding: "3px 8px", borderRadius: 4, border: "none", cursor: "pointer", fontFamily: "inherit", background: dim ? MUTED.bg : c.bg, transition: "all .15s" }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: dim ? "#ccc" : c.bg, border: `1px solid ${dim ? "#ccc" : c.text}30` }} />{label}
             </button>;
           })}
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52", marginLeft: 4 }}>
             <div style={{ width: 1.5, height: 10, background: "#c45c4a" }} />Today
           </div>
-          {hiddenCats.length > 0 && <button onClick={() => setHiddenCats([])}
+          {dimmedCats.length > 0 && <button onClick={() => setDimmedCats([])}
             style={{ fontSize: 9, color: "#5c4a3a", background: "none", border: "1px solid rgba(0,0,0,.12)", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit", marginLeft: 4 }}>
-            Show all
+            Reset
           </button>}
         </div>
       </div>}
