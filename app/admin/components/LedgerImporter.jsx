@@ -166,6 +166,7 @@ export default function LedgerImporter({
   const [customCatInput, setCustomCatInput] = useState("");
   const [showCustomCatFor, setShowCustomCatFor] = useState(null);
   const [showSkipMsg, setShowSkipMsg] = useState(false); // one-time skip reassurance
+  const [expandedCats, setExpandedCats] = useState([]); // category keys expanded to show charges
   const fileRef = useRef(null);
   const logRef = useRef(null);
 
@@ -182,6 +183,25 @@ export default function LedgerImporter({
     if (!catCol) return counts;
     for (const r of rawRows) { const c = (r[catCol] || "").trim().toUpperCase(); if (c) counts[c] = (counts[c] || 0) + 1; }
     return counts;
+  }, [rawRows, colMap]);
+
+  // ── Per-category sample charges (for expanded view) ──────────
+  const catRows = useMemo(() => {
+    const byCat = {};
+    const catCol = colMap.category;
+    if (!catCol) return byCat;
+    for (const r of rawRows) {
+      const c = (r[catCol] || "").trim().toUpperCase();
+      if (!c) continue;
+      if (!byCat[c]) byCat[c] = [];
+      byCat[c].push({
+        tenant: (r[colMap.tenant] || r[colMap.leaseTitle] || "").trim(),
+        date: (r[colMap.date] || "").trim(),
+        amount: r[colMap.amount] || "",
+        description: (r[colMap.description] || "").trim(),
+      });
+    }
+    return byCat;
   }, [rawRows, colMap]);
 
   // ── File handling ──────────────────────────────────────────────
@@ -713,6 +733,34 @@ export default function LedgerImporter({
 
           {/* ═══ STEP 0: Upload ═══ */}
           {step === 0 && (<>
+            {/* Instructions */}
+            <div style={{ marginBottom: 16, padding: "12px 16px", background: _ac + "08", borderRadius: 8, border: `1px solid ${_ac}20` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: _ac, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>How it works</div>
+              <ol style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: "#374151", lineHeight: 1.6 }}>
+                <li>Export your charges from your existing system (Rent Manager, AppFolio, Buildium, etc.) as CSV or Excel</li>
+                <li>Or download our <button onClick={() => {
+                  const headers = ["Tenant Name","Property Address","Unit/Room","Charge Date","Amount","Category","Description"];
+                  const sample = [
+                    ["John Smith","123 Main St NW","Bedroom 1","2026-01-01","750.00","Rent","January rent"],
+                    ["John Smith","123 Main St NW","Bedroom 1","2026-01-01","1000.00","Security Deposit","Move-in deposit"],
+                    ["Jane Doe","456 Oak Ave","Whole Unit","2026-01-01","1400.00","Rent","January rent"],
+                    ["Jane Doe","456 Oak Ave","Whole Unit","2026-01-15","45.50","Utility Charge","Water overage"],
+                  ];
+                  const csv = [headers.join(","), ...sample.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = "ledger-import-template.csv";
+                  document.body.appendChild(a); a.click();
+                  document.body.removeChild(a); URL.revokeObjectURL(url);
+                }} style={{ background: "none", border: "none", padding: 0, color: _ac, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12, textDecoration: "underline" }}>template spreadsheet</button> if you're starting fresh</li>
+                <li>Upload the file below {"\u2014"} we&apos;ll auto-detect the format</li>
+                <li>Map categories to PropOS charge types (Rent, SD, Utilities, etc.)</li>
+                <li>Match each charge to a tenant (we&apos;ll do most of it for you)</li>
+                <li>Review, set your cutoff date, and import</li>
+              </ol>
+              <div style={{ fontSize: 11, color: "#6b5e52", marginTop: 8, fontStyle: "italic" }}>Tip: Include Tenant Name, Property, Unit/Room, Date, Amount, and Category. Description is optional.</div>
+            </div>
             <div
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
@@ -743,8 +791,15 @@ export default function LedgerImporter({
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {uniqueCats.map(cat => {
                 const count = catCounts[cat] || 0;
-                return (<div key={cat} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb", flexWrap: "wrap" }}>
-                  <div style={{ flex: 1 }}>
+                const isExpanded = expandedCats.includes(cat);
+                const rows = catRows[cat] || [];
+                return (<div key={cat} style={{ background: "#fafaf9", borderRadius: 8, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", flexWrap: "wrap" }}>
+                  <button onClick={() => setExpandedCats(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#6b5e52", padding: 2, display: "flex", alignItems: "center", fontFamily: "inherit" }} title={isExpanded ? "Hide charges" : "View charges"}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: isExpanded ? "rotate(90deg)" : "none", transition: "transform .15s" }}><polyline points="9 18 15 12 9 6" /></svg>
+                  </button>
+                  <div style={{ flex: 1, cursor: "pointer" }} onClick={() => setExpandedCats(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#1a1714" }}>{cat}</div>
                     <div style={{ fontSize: 11, color: "#4b5563" }}>{count} charge{count !== 1 ? "s" : ""}</div>
                   </div>
@@ -794,6 +849,19 @@ export default function LedgerImporter({
                       <option value="__custom__">+ Add custom category...</option>
                     </select>
                   )}
+                </div>
+                {isExpanded && rows.length > 0 && <div style={{ borderTop: "1px solid #e5e7eb", background: "#fff", maxHeight: 240, overflowY: "auto" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 90px 2fr", gap: 8, padding: "6px 14px", fontSize: 9, fontWeight: 700, color: "#9a8f82", textTransform: "uppercase", letterSpacing: .3, borderBottom: "1px solid #f3f4f6", position: "sticky", top: 0, background: "#fff", zIndex: 1 }}>
+                    <div>Tenant</div><div>Date</div><div style={{ textAlign: "right" }}>Amount</div><div>Description</div>
+                  </div>
+                  {rows.slice(0, 50).map((row, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 90px 2fr", gap: 8, padding: "5px 14px", fontSize: 11, color: "#374151", borderBottom: "1px solid #f9fafb" }}>
+                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.tenant || "\u2014"}</div>
+                    <div style={{ color: "#6b5e52" }}>{row.date || "\u2014"}</div>
+                    <div style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 600 }}>{row.amount ? fmtMoney(Number(row.amount) || 0) : "\u2014"}</div>
+                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#6b5e52" }}>{row.description || "\u2014"}</div>
+                  </div>)}
+                  {rows.length > 50 && <div style={{ padding: "6px 14px", fontSize: 10, color: "#9a8f82", fontStyle: "italic" }}>+ {rows.length - 50} more {"\u2014"} showing first 50</div>}
+                </div>}
                 </div>);
               })}
             </div>
@@ -889,13 +957,33 @@ export default function LedgerImporter({
                     value={m ? m.roomId : ""}
                     onChange={e => {
                       if (!e.target.value) { setMatchOverrides(prev => { const n = { ...prev }; delete n[idx]; return n; }); return; }
+                      const sourceName = (ch.parsed.tenantName || ch.leaseTitle || "").trim().toLowerCase();
                       if (e.target.value.startsWith("_newpast_")) {
                         const name = ch.parsed.tenantName || ch.leaseTitle || "Unknown";
-                        setMatchOverrides(prev => ({ ...prev, [idx]: { roomId: e.target.value, tenantName: name, propName: ch.parsed.address || "", roomName: ch.parsed.room || "Unknown", confidence: 1.0, isNewPast: true } }));
+                        const override = { roomId: e.target.value, tenantName: name, propName: ch.parsed.address || "", roomName: ch.parsed.room || "Unknown", confidence: 1.0, isNewPast: true };
+                        // Apply to all other unassigned charges with same source name
+                        setMatchOverrides(prev => {
+                          const next = { ...prev, [idx]: override };
+                          if (sourceName) parsedCharges.forEach((other, oIdx) => {
+                            if (oIdx === idx || other.skip || next[oIdx]) return;
+                            const otherName = (other.parsed.tenantName || other.leaseTitle || "").trim().toLowerCase();
+                            if (otherName === sourceName) next[oIdx] = { ...override };
+                          });
+                          return next;
+                        });
                         return;
                       }
                       const room = allRooms.find(r => r.roomId === e.target.value);
-                      if (room) setMatchOverrides(prev => ({ ...prev, [idx]: { ...room, confidence: 1.0 } }));
+                      if (room) setMatchOverrides(prev => {
+                        const next = { ...prev, [idx]: { ...room, confidence: 1.0 } };
+                        // Apply to all other unassigned charges with same source name
+                        if (sourceName) parsedCharges.forEach((other, oIdx) => {
+                          if (oIdx === idx || other.skip || next[oIdx]) return;
+                          const otherName = (other.parsed.tenantName || other.leaseTitle || "").trim().toLowerCase();
+                          if (otherName === sourceName) next[oIdx] = { ...room, confidence: 1.0 };
+                        });
+                        return next;
+                      });
                     }}
                     style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid " + (m ? (m.isNewPast ? "#6b5e52" : "#d1d5db") : _red), fontSize: 11, fontFamily: "inherit", background: m ? (m.isNewPast ? "rgba(107,94,82,.06)" : "#fff") : _red + "08", minWidth: 0, flex: "1 1 160px" }}
                   >
@@ -922,14 +1010,25 @@ export default function LedgerImporter({
                       onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b5e52"; }}
                       style={{ background: "#fff", border: "1px solid #d1d5db", borderRadius: 4, cursor: "pointer", color: "#6b5e52", fontSize: 10, padding: "6px 12px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
                     >Restore</button>
-                  ) : (
-                    <button
-                      onClick={() => { if (!showSkipMsg) setShowSkipMsg(true); setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: true } : c)); }}
-                      onMouseEnter={e => { e.currentTarget.style.background = _red + "10"; e.currentTarget.style.color = _red; e.currentTarget.style.borderColor = _red; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#4b5563"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
-                      style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "6px 12px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
-                    >Skip</button>
-                  )}
+                  ) : (() => {
+                    const sourceName = (ch.parsed.tenantName || ch.leaseTitle || "").trim().toLowerCase();
+                    const sameNameCount = sourceName ? parsedCharges.filter((c, i) => i !== idx && !c.skip && ((c.parsed.tenantName || c.leaseTitle || "").trim().toLowerCase() === sourceName)).length : 0;
+                    return <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                      <button
+                        onClick={() => { if (!showSkipMsg) setShowSkipMsg(true); setParsedCharges(prev => prev.map((c, i) => i === idx ? { ...c, skip: true } : c)); }}
+                        onMouseEnter={e => { e.currentTarget.style.background = _red + "10"; e.currentTarget.style.color = _red; e.currentTarget.style.borderColor = _red; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#4b5563"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                        style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "6px 10px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
+                      >Skip</button>
+                      {sameNameCount > 0 && <button
+                        onClick={() => { if (!showSkipMsg) setShowSkipMsg(true); setParsedCharges(prev => prev.map((c, i) => { if (i === idx) return { ...c, skip: true }; const otherName = (c.parsed.tenantName || c.leaseTitle || "").trim().toLowerCase(); return otherName === sourceName ? { ...c, skip: true } : c; })); }}
+                        title={`Skip this + all ${sameNameCount} other charges for this tenant`}
+                        onMouseEnter={e => { e.currentTarget.style.background = _red + "10"; e.currentTarget.style.color = _red; e.currentTarget.style.borderColor = _red; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#4b5563"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
+                        style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 4, cursor: "pointer", color: "#4b5563", fontSize: 10, padding: "6px 10px", fontFamily: "inherit", whiteSpace: "nowrap", fontWeight: 600, transition: "all .15s" }}
+                      >Skip all ({sameNameCount + 1})</button>}
+                    </div>;
+                  })()}
                 </div>);
               })}
             </div>

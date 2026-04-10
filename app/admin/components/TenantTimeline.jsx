@@ -39,6 +39,19 @@ export default function TenantTimeline({
 
   const sortedFiltered = useMemo(() => sortRooms(filtered), [filtered, sortRooms]);
 
+  /* ── Turnover period: days between lease end and availability ─ */
+  const turnoverDays = Number(settings?.turnoverDays ?? 1);
+  const addDays = (dateStr, days) => {
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + days);
+    return d.toISOString().split("T")[0];
+  };
+  const setTurnoverDays = (n) => {
+    const u = { ...settings, turnoverDays: Math.max(0, Math.min(30, Number(n) || 0)) };
+    setSettings && setSettings(u);
+    save && save("hq-settings", u);
+  };
+
   /* ── Gantt window — 12 months, scrollable ─────────────────── */
   const GANTT_MONTHS = 12;
   const MONTH_W = 120; // px per month
@@ -202,6 +215,12 @@ export default function TenantTimeline({
               <button onClick={() => setTtGanttGrouped(true)} style={subTogS(ttGanttGrouped)}>By property</button>
               <button onClick={() => setTtGanttGrouped(false)} style={{ ...subTogS(!ttGanttGrouped), borderRight: "none" }}>By date</button>
             </div>
+            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52", fontWeight: 600 }}>
+              Turnover
+              <input type="number" min="0" max="30" value={turnoverDays} onChange={e => setTurnoverDays(e.target.value)}
+                style={{ width: 42, padding: "3px 6px", fontSize: 11, border: "1px solid rgba(0,0,0,.12)", borderRadius: 5, fontFamily: "inherit" }} />
+              <span style={{ fontSize: 10, color: "#9a8f82" }}>days</span>
+            </label>
           </div>
           <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o + 1)}>Later</button>
         </div>
@@ -233,7 +252,7 @@ export default function TenantTimeline({
             const dl = r.le ? daysUntil(r.le) : null;
             const bc = isOcc ? barColor(r) : null;
             return (
-              <div key={r.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,.04)", minHeight: 36, cursor: "pointer", transition: "background .1s" }}
+              <div key={r.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,.04)", minHeight: 36, cursor: "pointer", transition: "background .1s", minWidth: LABEL_W + GANTT_W }}
                 onClick={() => openTenant(r)}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,.025)"}
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
@@ -289,10 +308,14 @@ export default function TenantTimeline({
                       <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(barL) }}>{r.tenant.name}{dl !== null && dl <= 0 ? " \u00B7 EXPIRED" : " \u00B7 ends " + fmtD(r.le)}</span>
                     </div>;
                   })()}
-                  {/* Availability zone after lease */}
-                  {isOcc && !isM2M && !isFuture && leX !== null && <div style={{ position: "absolute", left: leX, width: Math.max(4, GANTT_W - leX), height: 16, top: 10, background: dimmedCats.includes("available") ? "rgba(0,0,0,.03)" : `rgba(${_acRgb},.1)`, border: `1px dashed ${dimmedCats.includes("available") ? "rgba(0,0,0,.08)" : `rgba(${_acRgb},.3)`}`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", overflow: "hidden" }}>
-                    <span style={{ fontSize: 9, color: dimmedCats.includes("available") ? MUTED.text : _ac, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(leX) }}>Avail. {fmtD(r.le)}</span>
-                  </div>}
+                  {/* Availability zone after lease + turnover period */}
+                  {isOcc && !isM2M && !isFuture && leX !== null && (() => {
+                    const availStr = addDays(r.le, turnoverDays);
+                    const availX = dateToX(availStr);
+                    return <div style={{ position: "absolute", left: availX, width: Math.max(4, GANTT_W - availX), height: 16, top: 10, background: dimmedCats.includes("available") ? "rgba(0,0,0,.03)" : `rgba(${_acRgb},.1)`, border: `1px dashed ${dimmedCats.includes("available") ? "rgba(0,0,0,.08)" : `rgba(${_acRgb},.3)`}`, borderRadius: "0 3px 3px 0", display: "flex", alignItems: "center", overflow: "hidden" }}>
+                      <span style={{ fontSize: 9, color: dimmedCats.includes("available") ? MUTED.text : _ac, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block", paddingLeft: stickyTextLeft(availX) }}>Avail. {fmtD(availStr)}</span>
+                    </div>;
+                  })()}
                 </div>
               </div>);
           };
