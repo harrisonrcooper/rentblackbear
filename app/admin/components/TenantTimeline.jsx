@@ -112,6 +112,11 @@ export default function TenantTimeline({
     setSettings && setSettings(u);
     save && save("hq-settings", u);
   };
+  const resetCatColors = () => {
+    const u = { ...settings, timelineColors: {} };
+    setSettings && setSettings(u);
+    save && save("hq-settings", u);
+  };
   const toggleSimple = () => {
     const u = { ...settings, timelineSimple: !settings?.timelineSimple };
     setSettings && setSettings(u);
@@ -324,8 +329,10 @@ export default function TenantTimeline({
               const pRooms = sortRooms(allRooms(p).filter(r => !r.ownerOccupied).map(r => ({ ...r, propName: getPropDisplayName(p), propId: p.id })));
               if (!pRooms.length) return null;
               return (<div key={p.id}>
-                <div style={{ minWidth: LABEL_W + GANTT_W, borderBottom: "1px solid rgba(0,0,0,.04)", background: `rgba(${_acRgb},.04)`, padding: "5px 12px", position: "relative" }}>
-                  <div style={{ position: "sticky", left: 0, fontSize: 10, fontWeight: 700, color: _ac, textTransform: "uppercase", letterSpacing: .3, display: "inline-block" }}>{getPropDisplayName(p)}</div>
+                <div style={{ display: "flex", minWidth: LABEL_W + GANTT_W, borderBottom: "1px solid rgba(0,0,0,.04)", background: `rgba(${_acRgb},.04)` }}>
+                  <div style={{ position: "sticky", left: 0, flexShrink: 0, padding: "5px 12px", fontSize: 10, fontWeight: 700, color: _ac, textTransform: "uppercase", letterSpacing: .3, whiteSpace: "nowrap", background: `rgba(${_acRgb},.04)`, zIndex: 2 }}>
+                    {getPropDisplayName(p)}
+                  </div>
                 </div>
                 {pRooms.map(r => renderRow(r, false))}
               </div>);
@@ -352,8 +359,9 @@ export default function TenantTimeline({
               <button onClick={() => toggleDim(cat)}
                 style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: dim ? MUTED.text : c.text, fontWeight: 600, padding: "3px 8px 3px 4px", borderRadius: "4px 0 0 4px", border: "none", cursor: "pointer", fontFamily: "inherit", background: dim ? MUTED.bg : c.bg, transition: "all .15s" }}>
                 <label style={{ position: "relative", display: "inline-block", width: 10, height: 10, borderRadius: 2, background: dim ? "#ccc" : c.bg, border: `1px solid ${dim ? "#ccc" : c.text}40`, cursor: "pointer" }}
-                  onClick={e => e.stopPropagation()}>
-                  <input type="color" value={customColors[cat] || DEFAULT_CAT_COLORS[cat].bg} onChange={e => setCatColor(cat, e.target.value)}
+                  onClick={e => e.stopPropagation()}
+                  title="Click to change color">
+                  <input type="color" defaultValue={customColors[cat] || DEFAULT_CAT_COLORS[cat].bg} onBlur={e => setCatColor(cat, e.target.value)}
                     style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer", border: "none" }} />
                 </label>
                 {label}
@@ -370,9 +378,13 @@ export default function TenantTimeline({
             </button>
             <button onClick={() => { setDimmedCats([]); setCollapseDimmed(false); }}
               style={{ fontSize: 9, color: "#5c4a3a", background: "none", border: "1px solid rgba(0,0,0,.12)", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit" }}>
-              Reset
+              Reset dim
             </button>
           </>}
+          {Object.keys(settings?.timelineColors || {}).length > 0 && <button onClick={resetCatColors}
+            style={{ fontSize: 9, color: "#5c4a3a", background: "none", border: "1px solid rgba(0,0,0,.12)", borderRadius: 4, padding: "2px 8px", cursor: "pointer", fontFamily: "inherit", marginLeft: 4 }}>
+            Reset colors
+          </button>}
         </div>
       </div>}
 
