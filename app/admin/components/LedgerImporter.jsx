@@ -425,6 +425,29 @@ export default function LedgerImporter({
     };
   }, [parsedCharges]);
 
+  // ── Duplicate detection: charges that would collide with existing ones ──
+  const duplicatePreview = useMemo(() => {
+    const active = parsedCharges.filter(c => !c.skip);
+    const dupeCharges = [];
+    const dupeTenantNames = new Set();
+    for (const ch of active) {
+      const idx = parsedCharges.indexOf(ch);
+      const m = matchOverrides[idx] || ch.match;
+      if (!m) continue;
+      const roomId = m.isNewPast ? ("past_" + (m.tenantName || "").replace(/\s+/g, "_").toLowerCase()) : m.roomId;
+      const exists = (charges || []).some(c => c.roomId === roomId && c.dueDate === ch.dueDate && c.category === ch.category && c.amount === ch.amount);
+      if (exists) {
+        dupeCharges.push({ tenantName: m.tenantName, category: ch.category, amount: ch.amount, dueDate: ch.dueDate });
+        dupeTenantNames.add(m.tenantName);
+      }
+      // Also check if creating a new past tenant whose name already exists in archive
+      if (m.isNewPast && (archive || []).some(a => (a.name || "").trim().toLowerCase() === (m.tenantName || "").trim().toLowerCase())) {
+        dupeTenantNames.add(m.tenantName);
+      }
+    }
+    return { dupeCharges, dupeTenantNames: Array.from(dupeTenantNames) };
+  }, [parsedCharges, matchOverrides, charges, archive]);
+
   // ── All rooms with tenants (for manual match dropdown + matching) ─
   const allRooms = useMemo(() => {
     const rooms = [];
@@ -1058,6 +1081,25 @@ export default function LedgerImporter({
           {/* ═══ STEP 3: Review & Reconciliation ═══ */}
           {step === 3 && (<>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>Review Import</div>
+
+            {/* Duplicate warning banner */}
+            {(duplicatePreview.dupeCharges.length > 0 || duplicatePreview.dupeTenantNames.length > 0) && <div style={{ marginBottom: 14, padding: "12px 14px", background: _gold + "12", border: `2px solid ${_gold}`, borderRadius: 8 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <div style={{ color: _gold, flexShrink: 0, marginTop: 2 }}><IWarn /></div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#6B3E16", marginBottom: 4 }}>Possible duplicate import detected</div>
+                  {duplicatePreview.dupeCharges.length > 0 && <div style={{ fontSize: 12, color: "#5c4a3a", marginBottom: 6 }}>
+                    <strong>{duplicatePreview.dupeCharges.length}</strong> charge{duplicatePreview.dupeCharges.length !== 1 ? "s" : ""} already exist in your ledger with the same tenant, category, amount, and due date. These will be <strong>automatically skipped</strong> to prevent double-counting.
+                  </div>}
+                  {duplicatePreview.dupeTenantNames.length > 0 && <div style={{ fontSize: 12, color: "#5c4a3a", marginBottom: 6 }}>
+                    Affected tenants: <strong>{duplicatePreview.dupeTenantNames.slice(0, 5).join(", ")}{duplicatePreview.dupeTenantNames.length > 5 ? ` +${duplicatePreview.dupeTenantNames.length - 5} more` : ""}</strong>
+                  </div>}
+                  <div style={{ fontSize: 11, color: "#6b5e52", fontStyle: "italic", marginTop: 6 }}>
+                    If these are intentionally separate charges (e.g. two identical rent payments on the same day), you can still import them manually after this batch. If this was an accident, go back and cancel the import.
+                  </div>
+                </div>
+              </div>
+            </div>}
 
             {/* Summary stats */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 16 }}>
