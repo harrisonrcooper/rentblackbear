@@ -160,7 +160,7 @@ export default function TenantTimeline({
       </div>
 
       {/* ═══ GANTT ═══ */}
-      {ttView === "gantt" && <div style={{ background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 220px)" }}>
+      {ttView === "gantt" && <div style={{ background: "#fff", borderRadius: 12, border: "1px solid rgba(0,0,0,.07)", display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 260px)", overflow: "hidden" }}>
         {/* Nav bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.015)", flexWrap: "wrap", gap: 6 }}>
           <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o - 1)}>Earlier</button>
@@ -179,8 +179,8 @@ export default function TenantTimeline({
         {/* Month axis */}
         <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.06)", position: "sticky", top: 0, zIndex: 2, background: "#fff" }}>
           <div style={{ width: 140, flexShrink: 0, padding: "4px 12px", fontSize: 9, color: "#999", textTransform: "uppercase", letterSpacing: .5, position: "sticky", left: 0, background: "#fff", zIndex: 3 }}>{ttGanttGrouped ? "Room" : "Room / Property"}</div>
-          <div style={{ width: GANTT_W, flexShrink: 0, position: "relative", height: 22 }}>
-            {months.map((m, i) => <div key={i} style={{ position: "absolute", left: m.x, fontSize: 9, color: "#999", whiteSpace: "nowrap", top: 5, borderLeft: "1px solid rgba(0,0,0,.06)", paddingLeft: 4 }}>{m.label}</div>)}
+          <div style={{ width: GANTT_W, flexShrink: 0, position: "relative", height: 22, background: "#fff" }}>
+            {months.map((m, i) => <div key={i} style={{ position: "absolute", left: m.x, fontSize: 9, color: "#999", whiteSpace: "nowrap", top: 5, borderLeft: "1px solid rgba(0,0,0,.06)", paddingLeft: 4, background: "#fff" }}>{m.label}</div>)}
           </div>
         </div>
         {(() => {
