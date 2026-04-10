@@ -146,7 +146,7 @@ export default function TenantTimeline({
           <button className="btn btn-out btn-sm" onClick={() => setTtMonthOffset(o => o + 1)}>Later</button>
         </div>
         {/* Scrollable chart area (month axis + rows) */}
-        <div ref={ganttScrollRef} style={{ flex: 1, overflowX: "auto", overflowY: "auto", minHeight: 0, WebkitOverflowScrolling: "touch" }}>
+        <div ref={ganttScrollRef} style={{ flex: 1, overflowX: "scroll", overflowY: "auto", minHeight: 0, WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}>
         {/* Month axis */}
         <div style={{ display: "flex", borderBottom: "1px solid rgba(0,0,0,.06)", position: "sticky", top: 0, zIndex: 2, background: "#fff" }}>
           <div style={{ width: 140, flexShrink: 0, padding: "4px 12px", fontSize: 9, color: "#999", textTransform: "uppercase", letterSpacing: .5, position: "sticky", left: 0, background: "#fff", zIndex: 3 }}>{ttGanttGrouped ? "Room" : "Room / Property"}</div>
@@ -195,12 +195,24 @@ export default function TenantTimeline({
                     onMouseLeave={e => e.currentTarget.style.filter = ""}>
                     <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; ends {fmtD(r.le)}</span>
                   </div>}
-                  {/* M2M bar */}
-                  {isM2M && <div style={{ position: "absolute", left: moveInX || 0, width: Math.max(4, GANTT_W - (moveInX || 0)), height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
-                    onMouseEnter={e => e.currentTarget.style.filter = "brightness(.95)"}
-                    onMouseLeave={e => e.currentTarget.style.filter = ""}>
-                    <span style={{ fontSize: 9, color: bc.text, fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; M2M</span>
-                  </div>}
+                  {/* M2M bar — solid to end of current month, dashed remainder */}
+                  {isM2M && (() => {
+                    const startX = moveInX || 0;
+                    const endOfMonth = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 0);
+                    const eomStr = endOfMonth.toISOString().split("T")[0];
+                    const eomX = dateToX(eomStr);
+                    const solidW = Math.max(4, eomX - startX);
+                    const dashedLeft = eomX;
+                    const dashedW = Math.max(0, GANTT_W - eomX);
+                    return (<>
+                      <div style={{ position: "absolute", left: startX, width: solidW, height: 20, borderRadius: "3px 0 0 3px", background: "#C8B8E8", top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
+                        <span style={{ fontSize: 9, color: "#4C2882", fontWeight: 600, whiteSpace: "nowrap" }}>{r.tenant.name} &middot; ends {endOfMonth.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
+                      </div>
+                      {dashedW > 0 && <div style={{ position: "absolute", left: dashedLeft, width: dashedW, height: 16, top: 10, borderRadius: "0 3px 3px 0", background: "repeating-linear-gradient(45deg, rgba(200,184,232,.25), rgba(200,184,232,.25) 4px, transparent 4px, transparent 8px)", border: "1px dashed rgba(76,40,130,.3)", display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden" }}>
+                        <span style={{ fontSize: 9, color: "#4C2882", fontWeight: 500, whiteSpace: "nowrap", opacity: .7 }}>Month-to-month</span>
+                      </div>}
+                    </>);
+                  })()}
                   {/* Fixed-term bar */}
                   {isOcc && !isM2M && !isFuture && moveInX !== null && leX !== null && <div style={{ position: "absolute", left: Math.min(moveInX, leX), width: Math.max(4, Math.abs(leX - Math.min(moveInX, leX))), height: 20, borderRadius: 3, background: bc.bg, top: 8, display: "flex", alignItems: "center", paddingLeft: 4, overflow: "hidden", transition: "filter .15s" }}
                     onMouseEnter={e => e.currentTarget.style.filter = "brightness(.93)"}
@@ -226,8 +238,10 @@ export default function TenantTimeline({
           }
           return sortedFiltered.map(r => renderRow(r, true));
         })()}
-        {/* Legend */}
-        <div style={{ padding: "8px 16px", display: "flex", gap: 12, borderTop: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.01)", flexWrap: "wrap" }}>
+        {sortedFiltered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52", fontSize: 12 }}>No rooms match this filter.</div>}
+        </div>{/* close scroll container */}
+        {/* Legend — outside scroll so it stays visible */}
+        <div style={{ padding: "8px 16px", display: "flex", gap: 12, borderTop: "1px solid rgba(0,0,0,.06)", background: "rgba(0,0,0,.01)", flexWrap: "wrap", flexShrink: 0 }}>
           {[["#A7F3D0", "Incoming"], ["#B5D4F4", "Active"], ["#FDE68A", "Expiring 90d"], ["#FCA5A5", "Expiring 30d / Expired"], ["#C8B8E8", "Month-to-month"], [`rgba(${_acRgb},.15)`, "Available"]].map(([c, l]) => (
             <div key={l} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#6b5e52" }}>
               <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />{l}
@@ -237,8 +251,6 @@ export default function TenantTimeline({
             <div style={{ width: 1.5, height: 10, background: "#c45c4a" }} />Today
           </div>
         </div>
-        {sortedFiltered.length === 0 && <div style={{ textAlign: "center", padding: 40, color: "#6b5e52", fontSize: 12 }}>No rooms match this filter.</div>}
-        </div>{/* close scroll container */}
       </div>}
 
       {/* ═══ COUNTDOWN ═══ */}
