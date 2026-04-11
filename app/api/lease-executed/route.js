@@ -3,6 +3,26 @@ import { getSettings, emailWrap, fromAddress, fmtMoney } from "@/lib/getSettings
 
 export async function POST(request) {
   try {
+    // ── Origin check ────────────────────────────────────────────────
+    // Rejects requests from outside the operator's deploy domains.
+    // TODO(saas-multitenant): drive this allowlist from settings.siteUrl
+    // once per-tenant deploys land. The hardcoded rentblackbear.com entry
+    // is the current operator deploy URL, not product branding.
+    const ALLOWED_ORIGINS = [
+      process.env.NEXT_PUBLIC_SITE_URL,
+      "https://rentblackbear.com",
+      "https://rentblackbear.vercel.app",
+      "http://localhost:3000",
+    ].filter(Boolean);
+    const origin = request.headers.get("origin") || request.headers.get("referer") || "";
+    const isAllowed = ALLOWED_ORIGINS.some(ok => origin.startsWith(ok));
+    if (!isAllowed) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const body = await request.json();
     const { type } = body;
     const resendKey = process.env.RESEND_API_KEY;

@@ -171,8 +171,14 @@ export default function PaymentsTab({
             <button onClick={async () => {
               setAutopay(p => ({ ...p, loading: true }));
               try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const accessToken = session?.access_token || "";
                 const res = await fetch("/api/stripe/create-setup-intent", {
-                  method: "POST", headers: { "Content-Type": "application/json" },
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                  },
                   body: JSON.stringify({ tenantId: tenant?.id, tenantName: tenant?.name, tenantEmail: user?.email }),
                 });
                 const { clientSecret } = await res.json();
