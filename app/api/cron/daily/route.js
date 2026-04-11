@@ -149,8 +149,7 @@ export async function GET(req) {
       const daysOverdue = Math.ceil((TODAY - new Date(charge.dueDate + "T00:00:00")) / 86400000);
       if (daysOverdue <= lc.graceDays) continue;
 
-      const mo = charge.dueDate.slice(0, 7);
-      const existing = updatedCharges.find(c => c.category === "Late Fee" && c.roomId === charge.roomId && c.dueDate?.startsWith(mo));
+      const existing = updatedCharges.find(c => c.category === "Late Fee" && c.linkedChargeId === charge.id);
 
       // Calculate initial fee
       let initialAmt = 0;
