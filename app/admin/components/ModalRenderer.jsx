@@ -3043,7 +3043,7 @@ export default function ModalRenderer({
             <button className="btn btn-dk btn-sm" style={{flex:1}} onClick={async()=>{
               try{
                 // Create PaymentIntent via API
-                const r=await fetch("/api/stripe/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chargeId:c.id,amount:rem,tenantName:tenant?.name||c.tenantName,tenantEmail:tenant?.email||"",method:"ach"})});
+                const r=await fetch("/api/stripe/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chargeId:c.id,amount:rem,tenantName:tenant?.name||c.tenantName,tenantEmail:tenant?.email||"",method:"ach",roomId:c.roomId||tenant?.room_id||"",propName:c.propName||tenant?.property?.name||""})});
                 const d=await r.json();
                 if(d.clientSecret){
                   // Redirect to Stripe hosted payment page
@@ -3053,7 +3053,7 @@ export default function ModalRenderer({
             }}>🏦 ACH Bank Transfer</button>
             <button className="btn btn-gold btn-sm" style={{flex:1}} onClick={async()=>{
               try{
-                const r=await fetch("/api/stripe/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chargeId:c.id,amount:rem,tenantName:tenant?.name||c.tenantName,tenantEmail:tenant?.email||"",method:"card"})});
+                const r=await fetch("/api/stripe/create-payment-intent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chargeId:c.id,amount:rem,tenantName:tenant?.name||c.tenantName,tenantEmail:tenant?.email||"",method:"card",roomId:c.roomId||tenant?.room_id||"",propName:c.propName||tenant?.property?.name||""})});
                 const d=await r.json();
                 if(d.clientSecret){window.open(`https://checkout.stripe.com/pay/${d.clientSecret}`,"_blank");}
                 else{showAlert({title:"Payment Setup Failed",body:"Please contact your property manager to complete payment setup."});}
