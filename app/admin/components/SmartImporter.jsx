@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { syncTenantToSupabase } from "@/lib/syncTenant";
 import { supa, saveAppData } from "@/lib/supabase-client";
 import * as XLSX from "xlsx";

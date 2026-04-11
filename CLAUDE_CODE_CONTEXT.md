@@ -201,22 +201,53 @@ ID: `2d9d0941-2802-468a-a6e8-b2cceacf78d1`
 1. **PDF generation** (`/api/generate-lease-pdf`) — returns error silently. Needs debugging. Test with lease ID `ul56zet`.
 2. **Admin auth** — no password protection on `/admin`. Most critical security gap.
 3. **Tenant signing page** — sections not showing (template query may be failing). Test at `rentblackbear.vercel.app/lease?token=8dcdsabm6gxfpc`
-4. **Scroll trap** — sidebar scroll bleeds into main content on some pages.
+4. **Stripe rent collection** — tenant portal has no payment flow yet. The whole product loop is open until this is wired up.
+5. **Recurring rent generation** — cron exists but doesn't appear to auto-create next month's rent charges. If unchecked, PM will forget a month.
 
 ---
 
-## NEXT THINGS TO BUILD (priority order)
+## RECENTLY SHIPPED (this session)
 
-1. **Fix PDF generation** — @react-pdf/renderer API route debugging
-2. **Admin auth / password protection**
-3. **Automated move-in chain** — lease → SD charge → door code → portal invite → welcome email
-4. **Stripe rent collection** through tenant portal
-5. **Rent roll export** — one-click PDF for banker
-6. **Recurring charge edit modal**
-7. **Manual rent increase workflow**
-8. **PropOS SaaS landing page** — Stripe billing + tier gating
-9. **Sifely smart lock API** integration
-10. **BuildLend** — construction draw management
+- **Mobile UI overhaul** — 3 rounds of fixes, 180+ findings resolved across 26 files. Global CSS at `@media(max-width:768px)` handles touch targets (`.btn`, `.btn-sm`, `.fld` inputs), iOS zoom prevention (16px font), sticky labels, and responsive grids. Desktop is untouched.
+- **Tenant Timeline overhaul** — Gantt with sticky room labels + property headers, horizontal momentum scroll, bar text that slides with scroll, turnover period (adjustable days between lease end + availability), category dim/hide, full color/pattern editor (fill, text, pattern type: solid/diagonal/thick diagonal/dots/horizontal/vertical), "Simple" mode that unifies all lease states.
+- **LedgerImporter upgrades** — step 0 has template download + instructions, step 1 has expandable category rows showing individual charges, step 2 auto-applies tenant assignment to all charges with the same source name (bulk assign), "Skip all (N)" per-tenant skip, step 3 duplicate warning banner with affected tenant names.
+- **SmartImporter duplicate verification** — detects tenants within the import file that share a name, gold banner at Review step, verify modal with per-record keep/skip + "Keep first, skip rest" / "Keep all" bulk buttons. Uses existing `excluded` flag.
+- **HoldToConfirm component** — press-and-hold (2.5s) destructive button with progress fill + bubble animation. Wired into PropertiesList and TenantsTab nuke modals (type DELETE → hold button).
+- **Ledger morph-into-tbar** — on scroll, tab bar morphs into the top "Ledger / April 2026" banner with scale/opacity/blur animation via React portal + IntersectionObserver. Condensed tab switcher + "Top" button to scroll back.
+
+---
+
+## NEXT THINGS TO BUILD (priority order, based on current state)
+
+**CRITICAL — can't launch without these:**
+
+1. **Admin auth** — Clerk via Vercel Marketplace is fastest path. Middleware on `/admin/*`.
+2. **Stripe rent collection in tenant portal** — completes the actual product loop.
+3. **Fix PDF generation** — @react-pdf/renderer API route debugging.
+
+**HIGH-LEVERAGE QUICK WINS:**
+
+4. **Automated move-in chain** — trigger on lease execution: create SD charge, create prorated rent, set door code, send portal invite, send welcome email. All in one flow.
+5. **Recurring rent cron** — daily cron at `/api/cron/daily` should auto-create next month's rent charges for active leases.
+6. **Rent roll export (one-click PDF for banker)** — uses existing @react-pdf/renderer. George Muzny at Redstone wants this.
+
+**SECOND TIER:**
+
+7. **Lease renewal workflow** — 60-90 days before lease end, surface "renew or notice?" prompt. Timeline already shows expirations; need to close the loop.
+8. **Maintenance photo uploads** — tenants attach photos when submitting requests.
+9. **Move-out + SD reconciliation** — walk-through checklist, itemized deductions, return timeline.
+10. **Tenant documents in portal** — let tenants see/download lease, receipts, etc.
+
+**EVENTUAL:**
+
+- Background check integration (SmartMove / Plaid Identity)
+- Vendor dispatch + work orders
+- Bank feed sync for expense auto-categorization
+- Multi-user support (Carolina's own login)
+- SMS notifications alongside email
+- PropOS SaaS landing page + Stripe billing + tier gating
+- Sifely smart lock API integration
+- BuildLend construction draw management
 
 ---
 
@@ -228,4 +259,5 @@ ID: `2d9d0941-2802-468a-a6e8-b2cceacf78d1`
 - Thinks in systems: one source of truth, auto-populate everywhere
 - Very particular about: no emojis, consistent font sizes, no cut-off modals, good hover states
 - Prefers clean, flat, professional design — no decorative clutter
+- **Does not want to see code blocks in chat** — just describe what changed
 - In Claude Code: make changes directly, then run `git add -A && git commit -m "..." && git push`
