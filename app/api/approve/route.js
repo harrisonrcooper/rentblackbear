@@ -1,7 +1,19 @@
 // app/api/approve/route.js
+import { auth } from "@clerk/nextjs/server";
 import { getSettings, emailWrap, fromAddress, fmtMoney } from "@/lib/getSettings";
 
 export async function POST(request) {
+  // Clerk admin gate
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+  } catch (e) {
+    console.error("[approve] Clerk auth() failed:", e?.message || e);
+    return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
+  }
+
   try {
     const body = await request.json();
     const { type } = body;

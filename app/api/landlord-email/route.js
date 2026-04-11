@@ -1,5 +1,6 @@
 // app/api/landlord-email/route.js
 // Sends a landlord reference check email and marks the address as "sent" in applicationData
+import { auth } from "@clerk/nextjs/server";
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
 import { loadAppData, saveAppData } from "@/lib/supabase-server";
 
@@ -11,6 +12,17 @@ function applyTemplate(str, vars) {
 }
 
 export async function POST(request) {
+  // Clerk admin gate
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+  } catch (e) {
+    console.error("[landlord-email] Clerk auth() failed:", e?.message || e);
+    return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
+  }
+
   try {
     const { appId, addrIdx } = await request.json();
     if (!appId || addrIdx === undefined) {

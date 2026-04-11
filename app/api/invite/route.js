@@ -2,9 +2,21 @@
 // Sends a personal application invite email via Resend.
 // Requires RESEND_API_KEY in Vercel environment variables.
 
+import { auth } from "@clerk/nextjs/server";
 import { getSettings, fromAddress } from "@/lib/getSettings";
 
 export async function POST(request) {
+  // Clerk admin gate
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+  } catch (e) {
+    console.error("[invite] Clerk auth() failed:", e?.message || e);
+    return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
+  }
+
   try {
     const { to, name, link, property, address, room, rent, fee, note, waived } = await request.json();
     const propFull = address ? `${property} — ${address}` : property;

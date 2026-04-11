@@ -2,7 +2,20 @@
 // Accepts a base64-encoded receipt image, sends to Claude Vision API,
 // returns extracted fields: date, amount, vendor, description, category
 
+import { auth } from "@clerk/nextjs/server";
+
 export async function POST(request) {
+  // Clerk admin gate
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+  } catch (e) {
+    console.error("[receipt-scan] Clerk auth() failed:", e?.message || e);
+    return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
+  }
+
   try {
     const { image, mediaType } = await request.json();
     if (!image) {

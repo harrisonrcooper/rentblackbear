@@ -6,9 +6,15 @@ import { supaGet, supaUpsert, supaPatch, loadAppData } from "@/lib/supabase-serv
 const RESEND_KEY = process.env.RESEND_API_KEY;
 
 export async function GET(req) {
-  // Allow cron secret OR no auth for testing
-  const auth = req.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Mandatory CRON_SECRET check — never allow unauthenticated calls.
+  // If CRON_SECRET is not configured, fail closed (return 500) rather than
+  // letting any caller through.
+  if (!process.env.CRON_SECRET) {
+    console.error("[cron/send-scheduled] CRON_SECRET not configured");
+    return new Response("CRON_SECRET not configured", { status: 500 });
+  }
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new Response("Unauthorized", { status: 401 });
   }
 

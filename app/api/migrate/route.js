@@ -3,9 +3,21 @@
 // Idempotent — safe to run multiple times. Uses upsert (merge-duplicates).
 // Run via: POST /api/migrate
 
+import { auth } from "@clerk/nextjs/server";
 import { loadAppData, supaUpsert, supaGet } from "@/lib/supabase-server";
 
 export async function POST(request) {
+  // Clerk admin gate
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+  } catch (e) {
+    console.error("[migrate] Clerk auth() failed:", e?.message || e);
+    return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
+  }
+
   const results = { migrated: {}, errors: [], skipped: {} };
 
   try {
@@ -161,6 +173,17 @@ export async function POST(request) {
 
 // GET endpoint to check migration status (what's in relational tables vs app_data)
 export async function GET() {
+  // Clerk admin gate
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+  } catch (e) {
+    console.error("[migrate] Clerk auth() failed:", e?.message || e);
+    return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
+  }
+
   try {
     const pms = await supaGet("pm_accounts", "select=id&limit=1");
     const pmId = pms?.[0]?.id;

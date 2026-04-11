@@ -1,5 +1,6 @@
 // app/api/reference-email/route.js
 // Sends a reference check email to a reference and marks the ref as "sent" in hq-apps
+import { auth } from "@clerk/nextjs/server";
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
 import { loadAppData, saveAppData } from "@/lib/supabase-server";
 
@@ -11,6 +12,17 @@ function applyTemplate(str, vars) {
 }
 
 export async function POST(request) {
+  // Clerk admin gate
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+  } catch (e) {
+    console.error("[reference-email] Clerk auth() failed:", e?.message || e);
+    return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
+  }
+
   try {
     const { appId, refId } = await request.json();
     if (!appId || !refId) return Response.json({ ok: false, error: "Missing appId or refId" }, { status: 400 });

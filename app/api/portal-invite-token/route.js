@@ -2,6 +2,8 @@
 // Generates a standalone portal invite token with no tenant attached.
 // Used for the "Generate" button on the Applications page.
 
+import { auth } from "@clerk/nextjs/server";
+
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -32,6 +34,17 @@ async function supaInsert(table, data) {
 }
 
 export async function POST(request) {
+  // Clerk admin gate
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+  } catch (e) {
+    console.error("[portal-invite-token] Clerk auth() failed:", e?.message || e);
+    return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
+  }
+
   try {
     const pms = await supaQuery("pm_accounts", "select=id&limit=1");
     const pmId = pms?.[0]?.id;
