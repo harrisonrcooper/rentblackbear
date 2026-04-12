@@ -61,10 +61,28 @@ export default function LeaseTab({
             </button>
           )}
           {leaseId && (
-            <a href={"/api/generate-lease-pdf?id=" + leaseId} target="_blank" rel="noreferrer" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none" }}>
+            <button onClick={async () => {
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await fetch("/api/generate-lease-pdf?id=" + leaseId, {
+                  headers: { Authorization: "Bearer " + (session?.access_token || "") },
+                });
+                if (!res.ok) { alert("Failed to download PDF"); return; }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "lease-" + leaseId + ".pdf";
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch (e) {
+                console.error("PDF download error:", e);
+                alert("Failed to download PDF");
+              }
+            }} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer", textDecoration: "none" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               {t.lease.downloadPdf}
-            </a>
+            </button>
           )}
         </div>
       </div>

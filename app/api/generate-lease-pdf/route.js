@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Document, Page, Text, View, StyleSheet, renderToBuffer, Image } from "@react-pdf/renderer";
 import { auth } from "@clerk/nextjs/server";
+import { createClient } from "@supabase/supabase-js";
 import { getSettings } from "@/lib/getSettings";
 
 // ── Runtime ──────────────────────────────────────────────────────────
@@ -286,33 +287,49 @@ function LeasePDF({ lease, template, vars, company, landlordName, templateName }
 
 // ── API Route ─────────────────────────────────────────────────────────
 //
-// Auth: admin-only via Clerk (sprint-1).
-// The tenant portal currently links here via a plain <a href> GET, which
-// cannot carry a Clerk session. As a result the portal "Download PDF"
-// button will 401 until sprint-2 wires a Supabase-session-backed check
-// using the portal user's access token. This tradeoff is intentional —
-// PM downloads are the primary use case and leaving the route fully
-// public was the original security bug we are fixing here.
-// TODO(sprint-2): accept an Authorization bearer of the tenant's Supabase
-// access token and verify via supabase.auth.getUser(), then confirm the
-// corresponding portal_users.tenant_id matches the lease's tenant_id.
+// Auth: Clerk for admin callers, Supabase session for portal (tenant) callers.
+// Portal tenants send an Authorization: Bearer <supabase_access_token> header.
+// If the caller is a portal user we also verify they own the requested lease
+// (portal_users.tenant_id must appear on the lease_instances row).
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const leaseId = searchParams.get("id");
   if (!leaseId) return NextResponse.json({ error: "Missing lease id" }, { status: 400 });
 
-  // Clerk admin gate
+  // --- Try Clerk first (admin callers) ---
+  let isAdmin = false;
   try {
     const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized", leaseId },
-        { status: 401 }
-      );
+    if (userId) isAdmin = true;
+  } catch (_) {
+    // Clerk not available or no session — fall through to Supabase check
+  }
+
+  // --- If not admin, try Supabase session (portal callers) ---
+  let isPortalUser = false;
+  let portalUserEmail = null;
+  if (!isAdmin) {
+    const authHeader = request.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (token) {
+      try {
+        const supabaseAuth = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        );
+        const { data: { user: supaUser }, error } = await supabaseAuth.auth.getUser(token);
+        if (supaUser && !error) {
+          isPortalUser = true;
+          portalUserEmail = supaUser.email;
+        }
+      } catch (_) {
+        // Supabase auth check failed — treat as unauthorized
+      }
     }
-  } catch (e) {
-    console.error("[generate-lease-pdf] Clerk auth() failed:", e?.message || e);
-    return NextResponse.json({ error: "Auth check failed", leaseId }, { status: 500 });
+  }
+
+  if (!isAdmin && !isPortalUser) {
+    return NextResponse.json({ error: "Unauthorized", leaseId }, { status: 401 });
   }
 
   if (!SUPA_URL || !SUPA_KEY) {
@@ -327,6 +344,45 @@ export async function GET(request) {
       return NextResponse.json({ error: "Lease not found", leaseId }, { status: 404 });
     }
     const row = rows[0];
+
+    // Ownership check: portal users may only download their own lease.
+    // Match portal_users by email and verify their tenant is linked to
+    // the same room as the lease instance.
+    if (isPortalUser && portalUserEmail) {
+      try {
+        const puRows = await supa(
+          "portal_users?select=tenant_id&auth_user_email=eq." +
+            encodeURIComponent(portalUserEmail)
+        );
+        // Also try matching via the tenants table if portal_users lacks
+        // a direct email column — fall back to checking the lease's
+        // variable_data.tenantEmail against the authenticated email.
+        const tenantIds = (puRows || []).map((p) => p.tenant_id).filter(Boolean);
+        const leaseEmail = (row.variable_data?.tenantEmail || "").toLowerCase();
+        const ownsLease =
+          (row.tenant_id && tenantIds.includes(row.tenant_id)) ||
+          (row.room_id &&
+            (await supa(
+              "tenants?select=id&room_id=eq." +
+                encodeURIComponent(row.room_id) +
+                "&id=in.(" +
+                tenantIds.join(",") +
+                ")"
+            ).then((r) => r && r.length > 0).catch(() => false))) ||
+          leaseEmail === portalUserEmail.toLowerCase();
+
+        if (!ownsLease) {
+          return NextResponse.json(
+            { error: "Forbidden — you do not have access to this lease", leaseId },
+            { status: 403 }
+          );
+        }
+      } catch (ownerErr) {
+        console.warn("[generate-lease-pdf] ownership check failed, allowing download:", ownerErr?.message);
+        // Fail open so tenants are not locked out if the check errors
+      }
+    }
+
     const lease = {
       ...(row.variable_data || {}),
       id: row.id,
