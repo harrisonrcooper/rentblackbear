@@ -5,6 +5,7 @@
 
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
 import { loadAppData, saveAppData, supa } from "@/lib/supabase-server";
+import { info, error as logError } from "@/lib/logger";
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -67,10 +68,13 @@ export async function GET(req) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  const cronStart = Date.now();
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
   const todayStr = fmtDate(TODAY);
   const log = [];
+
+  info("cron/daily", "Cron started", { date: todayStr });
 
   try {
     const [props, charges, notifs, settings] = await Promise.all([
@@ -842,12 +846,34 @@ export async function GET(req) {
     if (notifsChanged) saves.push(supaSet("hq-notifs", updatedNotifs));
     await Promise.all(saves);
 
-    const summary = { ran: todayStr, log, chargesChanged, propsChanged, notifsChanged };
-    console.log("Daily cron:", summary);
+    const cronEnd = Date.now();
+    const durationMs = cronEnd - cronStart;
+    const summary = {
+      ran: todayStr,
+      durationMs,
+      sections: {
+        chargesChanged,
+        propsChanged,
+        notifsChanged,
+        logEntries: log.length,
+      },
+      log,
+    };
+
+    info("cron/daily", "Cron completed", {
+      date: todayStr,
+      durationMs,
+      chargesChanged,
+      propsChanged,
+      notifsChanged,
+      logEntries: log.length,
+    });
+
     return Response.json(summary);
 
   } catch (err) {
-    console.error("Cron error:", err);
+    const durationMs = Date.now() - cronStart;
+    logError("cron/daily", "Cron failed", { error: err.message, durationMs });
     return new Response(`Cron error: ${err.message}`, { status: 500 });
   }
 }
