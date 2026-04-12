@@ -10,6 +10,27 @@ const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const RESEND_KEY = process.env.RESEND_API_KEY;
 
+async function sendSms(to, body) {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  if (!accountSid || !authToken || !from || !to) return false;
+  try {
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Basic " + Buffer.from(`${accountSid}:${authToken}`).toString("base64"),
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ To: to, From: from, Body: body }).toString(),
+      }
+    );
+    return res.ok;
+  } catch { return false; }
+}
+
 const supaGet = (key) => loadAppData(key, null);
 const supaSet = saveAppData;
 
@@ -573,6 +594,18 @@ export async function GET(req) {
         charge.lastWarningDate = todayStr;
         chargesChanged = true;
         log.push(`Late warning sent: ${charge.tenantName} — ${charge.category} ${fmtS(amountOwed)} (${daysOverdue}d overdue)`);
+      }
+
+      // Send SMS if tenant has phone number and Twilio is configured
+      const tenantPhone = room?.tenant?.phone;
+      if (tenantPhone && process.env.TWILIO_ACCOUNT_SID) {
+        try {
+          const smsBody = `Reminder: ${charge.category} payment of ${fmtS(amountOwed)} is ${daysOverdue}d overdue. Pay at ${portalLink}`;
+          const smsSent = await sendSms(tenantPhone, smsBody);
+          if (smsSent) log.push(`Late warning SMS sent: ${charge.tenantName} — ${charge.category}`);
+        } catch (smsErr) {
+          console.warn("[cron] SMS send failed:", smsErr?.message);
+        }
       }
     }
 
