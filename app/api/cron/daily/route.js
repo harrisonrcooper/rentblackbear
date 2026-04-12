@@ -525,6 +525,192 @@ export async function GET(req) {
       log.push(`Scheduled messages error: ${schedErr.message}`);
     }
 
+    // ── 11. LATE PAYMENT WARNING EMAIL ─────────────────────────────────
+    // Weekly overdue-payment warning emails to tenants (dedup via lastWarningDate)
+    for (const charge of updatedCharges) {
+      if (charge.waived || charge.voided || charge.deleted) continue;
+      if (charge.amountPaid >= charge.amount) continue;
+
+      const dueDate = new Date(charge.dueDate + "T00:00:00");
+      const daysOverdue = Math.ceil((TODAY - dueDate) / 86400000);
+      const room = roomLookup[charge.roomId];
+      const prop = roomPropLookup[charge.roomId];
+      const lc = getLateConfig(room || {}, prop || {}, s);
+      if (daysOverdue <= lc.graceDays) continue;
+
+      // Only send if lastWarningDate is missing or > 7 days ago
+      if (charge.lastWarningDate) {
+        const lastSent = new Date(charge.lastWarningDate + "T00:00:00");
+        const daysSinceLast = Math.ceil((TODAY - lastSent) / 86400000);
+        if (daysSinceLast < 7) continue;
+      }
+
+      // Find tenant email
+      let tenantEmail = null;
+      if (room && room.tenant?.email) {
+        tenantEmail = room.tenant.email;
+      }
+      if (!tenantEmail) continue;
+
+      const firstName = charge.tenantName?.split(" ")[0] || "there";
+      const amountOwed = charge.amount - charge.amountPaid;
+      const lateFeeCharge = updatedCharges.find(c => c.category === "Late Fee" && c.linkedChargeId === charge.id && !c.voided && !c.deleted);
+      const lateFeeInfo = lateFeeCharge ? `A late fee of ${fmtS(lateFeeCharge.amount)} has also been applied.` : "Late fees may apply if payment is not received promptly.";
+
+      const sent = await sendEmail(
+        tenantEmail,
+        `Payment overdue — ${charge.category}`,
+        emailWrap(`<p>Hi ${firstName},</p>
+        <p>Your <strong>${charge.category}</strong> payment of <strong>${fmtS(amountOwed)}</strong> was due on <strong>${fmtD(charge.dueDate)}</strong> and is now <strong>${daysOverdue} days overdue</strong>.</p>
+        <p>${lateFeeInfo}</p>
+        <p>Please log in to your tenant portal to make a payment as soon as possible:</p>
+        <p><a href="${portalLink}" style="display:inline-block;padding:12px 24px;background:#4a7c59;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">Pay Now</a></p>
+        <p>If you have already paid, please disregard this notice.</p>
+        <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
+        s
+      );
+      if (sent) {
+        charge.lastWarningDate = todayStr;
+        chargesChanged = true;
+        log.push(`Late warning sent: ${charge.tenantName} — ${charge.category} ${fmtS(amountOwed)} (${daysOverdue}d overdue)`);
+      }
+    }
+
+    // ── 12. LEASE SIGNING REMINDER ───────────────────────────────────────
+    // Remind tenants who haven't signed a lease after 48 hours (one-time)
+    try {
+      const lsRes = await fetch(`${SUPA_URL}/rest/v1/lease_instances?status=eq.pending_tenant&signing_reminder_sent=not.is.true&select=*`, {
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+      });
+      const pendingLeases = await lsRes.json();
+      if (Array.isArray(pendingLeases)) {
+        const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
+        for (const lease of pendingLeases) {
+          const sentOrCreated = lease.sent_at || lease.created_at;
+          if (!sentOrCreated) continue;
+          const sentTime = new Date(sentOrCreated);
+          if (TODAY.getTime() - sentTime.getTime() < FORTY_EIGHT_HOURS) continue;
+
+          const tenantEmail = lease.tenant_email;
+          if (!tenantEmail) continue;
+
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://rentblackbear.com";
+          const signingLink = `${siteUrl}/lease?token=${lease.signing_token}`;
+          const firstName = (lease.tenant_name || "").split(" ")[0] || "there";
+
+          const sent = await sendEmail(
+            tenantEmail,
+            "Reminder: You have a lease waiting for your signature",
+            emailWrap(`<p>Hi ${firstName},</p>
+            <p>You have a lease agreement waiting for your signature. Please review and sign it at your earliest convenience.</p>
+            <p><a href="${signingLink}" style="display:inline-block;padding:12px 24px;background:#4a7c59;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">Review &amp; Sign Lease</a></p>
+            <p>If you have questions about the lease, please reply to this email or contact us at ${s.phone || ""}.</p>
+            <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
+            s
+          );
+
+          if (sent) {
+            // Mark as reminded so we don't send again
+            await fetch(`${SUPA_URL}/rest/v1/lease_instances?id=eq.${lease.id}`, {
+              method: "PATCH",
+              headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+              body: JSON.stringify({ signing_reminder_sent: true }),
+            });
+            log.push(`Lease signing reminder sent: ${lease.tenant_name || lease.id}`);
+          }
+        }
+      }
+    } catch (leaseReminderErr) {
+      log.push(`Lease signing reminder error: ${leaseReminderErr.message}`);
+    }
+
+    // ── 13. AUTOPAY RETRY (day 5 & 10) ──────────────────────────────────
+    // Retry failed autopay charges on the 5th and 10th of each month (max 2 retries)
+    if ((dayOfMonth === 5 || dayOfMonth === 10) && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+        const puRes = await fetch(`${SUPA_URL}/rest/v1/portal_users?autopay_enabled=eq.true&select=*,tenant:tenants(id,name,email,room_id)`, {
+          headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+        });
+        const autopayUsers = await puRes.json();
+        if (Array.isArray(autopayUsers)) {
+          const mk = todayStr.slice(0, 7);
+          for (const pu of autopayUsers) {
+            if (!pu.stripe_customer_id || !pu.stripe_payment_method_id) continue;
+            const tenantName = pu.tenant?.name || "Tenant";
+            // Find this month's unpaid rent charge with no payment and retries < 2
+            const rentCharge = updatedCharges.find(c =>
+              c.roomId && pu.tenant?.room_id &&
+              c.category === "Rent" && c.dueDate?.startsWith(mk) &&
+              c.amountPaid === 0 &&
+              c.roomId === pu.tenant.room_id &&
+              (c.autopayRetryCount || 0) < 2
+            );
+            if (!rentCharge) continue;
+            const amountDue = rentCharge.amount - rentCharge.amountPaid;
+            if (amountDue <= 0) continue;
+
+            try {
+              const paymentIntent = await stripe.paymentIntents.create({
+                amount: Math.round(amountDue * 100),
+                currency: "usd",
+                customer: pu.stripe_customer_id,
+                payment_method: pu.stripe_payment_method_id,
+                off_session: true,
+                confirm: true,
+                metadata: { chargeId: rentCharge.id, tenantName, autopayRetry: "true" },
+              });
+              if (paymentIntent.status === "succeeded") {
+                rentCharge.amountPaid = rentCharge.amount;
+                rentCharge.payments = [...(rentCharge.payments || []), {
+                  amount: amountDue, date: todayStr, method: "Autopay Retry",
+                  deposit_status: "transit", stripe_payment_id: paymentIntent.id,
+                }];
+                rentCharge.autopayRetryCount = (rentCharge.autopayRetryCount || 0) + 1;
+                chargesChanged = true;
+                log.push(`Autopay retry succeeded: ${tenantName} — ${fmtS(amountDue)} (${paymentIntent.id})`);
+                if (pu.tenant?.email) {
+                  sendEmail(pu.tenant.email,
+                    `Autopay Processed — ${fmtS(amountDue)} Rent Payment`,
+                    emailWrap(`<p>Hi ${tenantName.split(" ")[0]},</p>
+                    <p>Your automatic rent payment of <strong>${fmtS(amountDue)}</strong> has been processed successfully on retry.</p>
+                    <p><strong>Confirmation:</strong> ${paymentIntent.id}</p>
+                    <p>Log in to your tenant portal to view your payment history: <a href="${portalLink}">Access Portal</a></p>
+                    <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
+                    s
+                  );
+                }
+              } else {
+                rentCharge.autopayRetryCount = (rentCharge.autopayRetryCount || 0) + 1;
+                chargesChanged = true;
+                log.push(`Autopay retry pending: ${tenantName} — status ${paymentIntent.status}`);
+              }
+            } catch (stripeErr) {
+              rentCharge.autopayRetryCount = (rentCharge.autopayRetryCount || 0) + 1;
+              chargesChanged = true;
+              log.push(`Autopay retry failed: ${tenantName} — ${stripeErr.message}`);
+              updatedNotifs.unshift({ id: uid(), type: "payment", msg: `Autopay retry #${rentCharge.autopayRetryCount} failed for ${tenantName}: ${stripeErr.message}`, date: todayStr, read: false, urgent: true });
+              notifsChanged = true;
+              // Send escalation email to tenant
+              if (pu.tenant?.email) {
+                sendEmail(pu.tenant.email,
+                  `Autopay Failed — Please Update Your Payment Method`,
+                  emailWrap(`<p>Hi ${tenantName.split(" ")[0]},</p>
+                  <p>Your automatic rent payment of <strong>${fmtS(amountDue)}</strong> has failed again (attempt ${rentCharge.autopayRetryCount} of 2).</p>
+                  <p>Please log in to your tenant portal to <strong>update your payment method</strong> or <strong>pay manually</strong> to avoid additional late fees:</p>
+                  <p><a href="${portalLink}" style="display:inline-block;padding:12px 24px;background:#4a7c59;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">Access Portal</a></p>
+                  <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
+                  s
+                );
+              }
+            }
+          }
+        }
+      } catch (retryErr) {
+        log.push(`Autopay retry system error: ${retryErr.message}`);
+      }
+    }
+
     // ── Save ──────────────────────────────────────────────────────────
     const saves = [];
     if (chargesChanged) saves.push(supaSet("hq-charges", updatedCharges));
