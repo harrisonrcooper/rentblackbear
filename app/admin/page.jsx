@@ -2217,7 +2217,8 @@ export default function Page(){
     settings={settings} onUpdateSettings={s=>{setSettings(s);save("hq-settings",s);}} onDelete={id=>{const dp=props.find(x=>x.id===id);const rooms=dp?allRooms(dp):[];const occCount=rooms.filter(r=>r.st==="occupied").length;const linkedCharges=charges.filter(c=>c.propName===(dp?.addr||dp?.name)).length;const msg="Delete "+((dp?.addr||dp?.name)||"this property")+"?\n\n"+(occCount?"WARNING: "+occCount+" occupied room(s) will lose tenant assignments.\n":"")+(linkedCharges?linkedCharges+" charge record(s) reference this property.\n":"")+"\nThis cannot be undone.";if(!window.confirm(msg))return;setProps(prev=>prev.filter(x=>x.id!==id));save("hq-props",props.filter(x=>x.id!==id));setEditProp(null);}}/>}
 
   {/* Centered Confirm / Alert Dialog — replaces all window.confirm and alert calls */}
-  {confirmDialog&&<div className="mbg" onClick={()=>{if(!confirmDialog.onConfirm)setConfirmDialog(null);}} style={{zIndex:9999,alignItems:"center"}}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}}>
+  <AnimatePresence>
+  {confirmDialog&&<motion.div key="confirm-dialog" className="mbg" onClick={()=>{if(!confirmDialog.onConfirm)setConfirmDialog(null);}} style={{zIndex:9999,alignItems:"center"}} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,textAlign:"center"}} initial={{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97,y:12}} transition={{type:"spring",damping:30,stiffness:350}}>
     <div style={{width:44,height:44,borderRadius:"50%",background:confirmDialog.danger?"rgba(196,92,74,.1)":"rgba(74,124,89,.08)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
       {confirmDialog.danger
         ?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c45c4a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -2230,7 +2231,8 @@ export default function Page(){
       <button className="btn btn-out" onClick={()=>setConfirmDialog(null)}>{confirmDialog.onConfirm?"Cancel":"OK"}</button>
       {confirmDialog.onConfirm&&<button className={"btn "+(confirmDialog.danger?"btn-red":"btn-gold")} onClick={()=>{confirmDialog.onConfirm();setConfirmDialog(null);}}>{confirmDialog.confirmLabel||"Confirm"}</button>}
     </div>
-  </div></div>}
+  </motion.div></motion.div>}
+  </AnimatePresence>
 
   {/* Confetti */}
   {showConfetti&&<div className="confetti-wrap">{Array.from({length:60}).map((_,i)=>{const colors=["#d4a853","#4a7c59","#f5f0e8","#c45c4a","#3b82f6"];return(

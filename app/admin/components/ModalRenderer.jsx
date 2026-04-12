@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supa } from "@/lib/supabase-client";
 import { syncTenantToSupabase } from "@/lib/syncTenant";
 import { loadAppData as load, saveAppData as save } from "@/lib/supabase-client";
@@ -164,7 +165,7 @@ export default function ModalRenderer({
       {id:"inspections",label:"Inspections"},
     ];
     return(
-    <div style={{position:"fixed",top:0,right:0,bottom:0,left:typeof window!=="undefined"&&window.innerWidth<768?0:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}}>
+    <motion.div key="tenant-profile" style={{position:"fixed",top:0,right:0,bottom:0,left:typeof window!=="undefined"&&window.innerWidth<768?0:220,background:"#f5f4f1",zIndex:200,overflowY:"auto"}} initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}} transition={{type:"spring",damping:30,stiffness:280}}>
 
       {/* ── Sticky top bar ── */}
       <div style={{background:"#fff",borderBottom:"1px solid rgba(0,0,0,.08)",padding:typeof window!=="undefined"&&window.innerWidth<768?"12px 16px 0":"16px 32px 0",position:"sticky",top:0,zIndex:10}}>
@@ -1123,7 +1124,7 @@ export default function ModalRenderer({
           </div>
         </div>);
       })()}
-    </div>
+    </motion.div>
     );
   })()}
 
@@ -1134,7 +1135,7 @@ export default function ModalRenderer({
     const statusColors={draft:{bg:"rgba(0,0,0,.06)",tx:"#5c4a3a",label:"Draft"},pending_landlord:{bg:"rgba(212,168,83,.1)",tx:"#9a7422",label:"Awaiting Your Signature"},pending_tenant:{bg:"rgba(59,130,246,.1)",tx:"#1d4ed8",label:"Sent to Tenant"},executed:{bg:"rgba(74,124,89,.1)",tx:"#2d6a3f",label:"Executed"}};
     const sc=statusColors[l.status]||statusColors.draft;
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}}>
+    <motion.div key="lease-summary" className="mbg" onClick={()=>setModal(null)} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:500}} initial={{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97,y:12}} transition={{type:"spring",damping:30,stiffness:350}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <h2 style={{margin:0}}>Lease Summary</h2>
         <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:100,background:sc.bg,color:sc.tx}}>{sc.label}</span>
@@ -1182,7 +1183,7 @@ export default function ModalRenderer({
         <button className="btn btn-out" onClick={()=>setModal(null)}>Close</button>
         <button className="btn btn-green" onClick={()=>{setModal(null);setViewingLease({lease:l,room:null});}}>View Full Lease →</button>
       </div>
-    </div></div>);
+    </motion.div></motion.div>);
   })()}
 
   {modal&&modal.type==="addAddendum"&&(
@@ -1202,16 +1203,18 @@ export default function ModalRenderer({
     </div></div>
   )}
 
+  <AnimatePresence>
   {modal&&modal.type==="confirmAction"&&(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
+    <motion.div key="confirm-action" className="mbg" onClick={()=>setModal(null)} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}} initial={{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97,y:12}} transition={{type:"spring",damping:30,stiffness:350}}>
       <h2>{modal.title||"Are you sure?"}</h2>
       <p style={{fontSize:13,color:"#5c4a3a",marginBottom:20,lineHeight:1.6}}>{modal.body}</p>
       <div className="mft">
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
         <button className={`btn ${modal.confirmStyle||"btn-red"}`} onClick={()=>{if(modal.onConfirm)modal.onConfirm();}}>{modal.confirmLabel||"Confirm"}</button>
       </div>
-    </div></div>
+    </motion.div></motion.div>
   )}
+  </AnimatePresence>
   {/* Save Theme Modal */}
   {modal&&modal.type==="saveTheme"&&(
     <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
@@ -2027,6 +2030,7 @@ export default function ModalRenderer({
     const lbl=(text,req,err)=>(
       <label style={{display:"block",fontSize:11,fontWeight:700,color:err?"#c45c4a":"#5c4a3a",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>
         {text}{req&&<span style={{color:"#c45c4a"}}> *</span>}
+        {/* TODO: convert to framer shake */}
         {err&&<div style={{fontSize:10,color:"#c45c4a",marginTop:2,animation:"shake .4s ease",textTransform:"none",letterSpacing:0}}>{err}</div>}
       </label>
     );
@@ -2058,7 +2062,7 @@ export default function ModalRenderer({
       </div>
 
       {/* Body */}
-      <div style={{maxWidth:560,margin:"0 auto",padding:"28px 32px 80px",animation:shake?"shake .4s ease":undefined}}>
+      <motion.div style={{maxWidth:560,margin:"0 auto",padding:"28px 32px 80px"}} animate={shake?{x:[0,-6,6,-6,6,0]}:{x:0}} transition={{duration:.35}}>
         <div style={{fontSize:12,color:"#1d4ed8",marginBottom:24,padding:"10px 14px",background:"rgba(59,130,246,.05)",border:"1px solid rgba(59,130,246,.15)",borderRadius:8}}>
           Your changes only affect <strong>future monthly charges</strong>. Charges already sent to tenants will not be affected.
         </div>
@@ -2242,7 +2246,7 @@ export default function ModalRenderer({
                   {pillBtn(lc.limitMaxType==="pctRent",()=>updLc("limitMaxType","pctRent"),"% Rent")}
                 </div>
               </div>
-              {errs.limitMaxAmt&&<div style={{fontSize:10,color:"#c45c4a",marginTop:3,animation:"shake .4s ease"}}>{errs.limitMaxAmt}</div>}
+              {errs.limitMaxAmt&&<motion.div style={{fontSize:10,color:"#c45c4a",marginTop:3}} animate={{x:[0,-6,6,-6,6,0]}} transition={{duration:.35}}>{errs.limitMaxAmt}</motion.div>}
             </div>
           </div>}
         </div>
@@ -2261,7 +2265,7 @@ export default function ModalRenderer({
           Delete Charge
         </button>
       </div>
-    </div>
+    </motion.div>
     </div>);
   })()}
 
@@ -2282,7 +2286,7 @@ export default function ModalRenderer({
       backToTenant();
     };
     return(
-    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460,animation:shake?"shake .4s ease":undefined}}>
+    <div className="mbg" onClick={backToTenant}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}} animate={shake?{x:[0,-6,6,-6,6,0]}:{x:0}} transition={{duration:.35}}>
       <h2 style={{marginBottom:4}}>Edit Charge</h2>
       <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>{c.tenantName} · {c.propName}</div>
       {isPaid&&<div style={{background:"rgba(212,168,83,.08)",border:"1px solid rgba(212,168,83,.2)",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:11,color:"#9a7422",fontWeight:600}}>This charge has been paid. A reason and audit note are required.</div>}
@@ -2297,14 +2301,14 @@ export default function ModalRenderer({
         <div className="fld"><label>Additional Notes (optional)</label><input value={modal.editNote||""} onChange={e=>setModal(p=>({...p,editNote:e.target.value}))} placeholder="Any additional context..."/></div>
       </>}
       <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button><button className="btn btn-gold" onClick={save}>Save Changes</button></div>
-    </div></div>);
+    </motion.div></div>);
   })()}
 
   {/* Void Charge */}
   {modal&&modal.type==="voidCharge"&&(()=>{
     const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     return(
-    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420,animation:modal.shake?"shake .4s ease":undefined}}>
+    <div className="mbg" onClick={backToTenant}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}} animate={modal.shake?{x:[0,-6,6,-6,6,0]}:{x:0}} transition={{duration:.35}}>
       <h2>Void Charge</h2>
       <div style={{background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.12)",borderRadius:8,padding:12,marginBottom:14,fontSize:12}}>
         <div style={{fontWeight:700}}>{modal.tenantName}</div>
@@ -2323,7 +2327,7 @@ export default function ModalRenderer({
           setExpCharge(null);backToTenant();
         }}>Confirm Void</button>
       </div>
-    </div></div>);
+    </motion.div></div>);
   })()}
 
   {/* Clear Tenant Ledger */}
@@ -2445,7 +2449,7 @@ export default function ModalRenderer({
     const selCh=charges.find(c=>c.id===modal.selCharge);
     const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     return(
-    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+    <motion.div key="record-pay" className="mbg" onClick={backToTenant} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:480}} initial={{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97,y:12}} transition={{type:"spring",damping:30,stiffness:350}}>
       <h2>Record Payment</h2>
       {modal.step===1&&<>
         <div className="fld"><label>Select Tenant</label><select value={modal.selRoom} onChange={e=>setModal(prev=>({...prev,selRoom:e.target.value,selCharge:""}))}><option value="">Choose...</option>{occRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} - {r.propName} {r.name}</option>)}</select></div>
@@ -2536,7 +2540,7 @@ export default function ModalRenderer({
           </div>
         </>);
       })()}
-    </div></div>);})()}
+    </motion.div></motion.div>);})()}
 
   {/* Create Charge Modal */}
   {modal&&modal.type==="createCharge"&&(()=>{
@@ -2582,7 +2586,7 @@ export default function ModalRenderer({
       }
     };
     return(
-    <div className="mbg" onClick={closeModal}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}}>
+    <motion.div key="create-charge" className="mbg" onClick={closeModal} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:460}} initial={{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97,y:12}} transition={{type:"spring",damping:30,stiffness:350}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
         <h2 style={{margin:0}}>Create Charge</h2>
         <button onClick={closeModal} style={{background:"none",border:"none",cursor:"pointer",color:"#7a7067",padding:4,borderRadius:4,display:"flex"}}>
@@ -2652,7 +2656,7 @@ export default function ModalRenderer({
         <button className="btn btn-out" onClick={closeModal}>Cancel</button>
         <button className="btn btn-dk" onClick={submit} style={{background:"#1a1714",color:"#f5f0e8",fontWeight:700}}>Create</button>
       </div>
-    </div></div>);})()}
+    </motion.div></motion.div>);})()}
 
 
   {/* Add Credit */}
@@ -2660,7 +2664,7 @@ export default function ModalRenderer({
     const backToTenant=()=>{if(modal._fromTenant&&modal._tenantRoom){setTenantProfileTab("payments");setModal({type:"tenant",data:modal._tenantRoom});}else setModal(null);};
     const occRooms=occLeases;
     return(
-    <div className="mbg" onClick={backToTenant}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}}>
+    <motion.div key="add-credit" className="mbg" onClick={backToTenant} initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.18}}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:420}} initial={{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.97,y:12}} transition={{type:"spring",damping:30,stiffness:350}}>
       <h2>Add Credit</h2>
       <p style={{fontSize:11,color:"#5c4a3a",marginBottom:12}}>Credits auto-apply to next month's rent.</p>
       <div className="fld"><label>Tenant</label><select value={modal.roomId} onChange={e=>setModal(prev=>({...prev,roomId:e.target.value}))}><option value="">Select...</option>{occRooms.map(r=><option key={r.id} value={r.id}>{r.tenant.name} - {r.propName} {r.name}</option>)}</select></div>
@@ -2668,7 +2672,7 @@ export default function ModalRenderer({
       <div className="fld"><label>Reason</label><input value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value}))} placeholder="e.g. Overpayment, SD credit..."/></div>
       <div className="mft"><button className="btn btn-out" onClick={backToTenant}>Cancel</button>
         <button className="btn btn-green" disabled={!modal.roomId||!modal.amount} onClick={()=>{const rm=occRooms.find(r=>r.id===modal.roomId);setCredits(p=>[{id:uid(),roomId:modal.roomId,tenantName:(rm&&rm.tenant&&rm.tenant.name)||"",amount:modal.amount,reason:modal.reason,date:TODAY.toISOString().split("T")[0],applied:false},...p]);backToTenant();}}>Add Credit</button></div>
-    </div></div>);})()}
+    </motion.div></motion.div>);})()}
 
   {/* Return SD */}
   {modal&&modal.type==="returnSD"&&(()=>{
@@ -3271,9 +3275,9 @@ export default function ModalRenderer({
           </table>
           <div style={{marginTop:10,padding:"6px 10px",background:"rgba(0,0,0,.03)",borderRadius:6,fontSize:10,color:"#6b5e52",fontFamily:"monospace",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link}</div>
         </div>
-        {modal.sendErrors&&modal.sendErrors.length>0&&<div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"10px 12px",marginBottom:10,animation:"shake .4s ease"}}>
+        {modal.sendErrors&&modal.sendErrors.length>0&&<motion.div style={{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.25)",borderRadius:8,padding:"10px 12px",marginBottom:10}} animate={{x:[0,-6,6,-6,6,0]}} transition={{duration:.35}}>
           {modal.sendErrors.map((e,i)=><div key={i} style={{fontSize:11,color:"#c45c4a"}}>{e}</div>)}
-        </div>}
+        </motion.div>}
         {modal.emailSent
           ?<>
             <div style={{background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,padding:"12px 14px",textAlign:"center",marginBottom:12}}>
@@ -3440,9 +3444,9 @@ export default function ModalRenderer({
           setModal(prev=>({...prev,inviteStep:"preview",sendErrors:[],inviteRoomErr:false}));
         }}>Preview Summary</button>
       </div>
-      {modal.inviteRoomErr&&<div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:8,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:7,animation:"shake .4s ease"}}>
+      {modal.inviteRoomErr&&<motion.div style={{color:"#c45c4a",fontSize:11,fontWeight:600,marginTop:8,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:7}} animate={{x:[0,-6,6,-6,6,0]}} transition={{duration:.35}}>
         Go back to the applicant and assign a room or toggle &ldquo;Assign at lease&rdquo; to continue without one.
-      </div>}
+      </motion.div>}
     </div></div>);
   })()}
 
@@ -3590,7 +3594,7 @@ export default function ModalRenderer({
       </div>
     );
     return(
-    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560,animation:shake?"shake .4s ease":undefined}}>
+    <div className="mbg" onClick={()=>setModal(null)}><motion.div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:560}} animate={shake?{x:[0,-6,6,-6,6,0]}:{x:0}} transition={{duration:.35}}>
       <h2 style={{marginBottom:4}}>Add Existing Tenant</h2>
       <div style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Manually onboard a tenant who is already living in your property. This will mark the room as occupied immediately.</div>
       {shake&&Object.keys(errs).length>0&&<div style={{marginBottom:12,padding:"8px 12px",background:"rgba(196,92,74,.06)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,color:"#c45c4a",fontSize:11,fontWeight:700}}>Please fill in all required fields.</div>}
@@ -3681,7 +3685,7 @@ export default function ModalRenderer({
         <button className="btn btn-out" onClick={()=>setModal(null)}>Cancel</button>
         <button className="btn btn-green" onClick={save}>Add Tenant → Mark Occupied</button>
       </div>
-    </div></div>);
+    </motion.div></div>);
   })()}
 
   {/* Deny Modal */}
