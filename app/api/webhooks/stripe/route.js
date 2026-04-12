@@ -1,5 +1,9 @@
 // app/api/webhooks/stripe/route.js
 //
+// TODO(multi-tenant): Resolve workspace_id from Stripe metadata (e.g.
+// payment_intent.metadata.workspace_id) and prefix app_data keys accordingly.
+// See lib/workspace.js for the key-prefix convention.
+//
 // Stripe webhook handler for the tenant portal "Pay Online" flow.
 //
 // Handles:

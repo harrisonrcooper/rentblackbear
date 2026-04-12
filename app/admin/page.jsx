@@ -31,6 +31,7 @@ import AddExpenseSheet from "./components/AddExpenseSheet";
 import { motion, AnimatePresence } from "framer-motion";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useUser } from "@clerk/nextjs";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
 
 // ── Inline SVG nav icons (no external dependency) ──────────────────
@@ -60,7 +61,7 @@ const IconSettings=()=><svg width={15} height={15} viewBox="0 0 24 24" fill="non
 
 // ─── Storage ────────────────────────────────────────────────────────
 // Centralized Supabase client + domain-specific load/save
-import { supa, loadAppData as load, saveAppData as save } from "@/lib/supabase-client";
+import { supa, loadAppData as load, saveAppData as save, setWorkspace } from "@/lib/supabase-client";
 import * as db from "@/lib/db";
 const SUPA_URL=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -740,6 +741,13 @@ button:not(.btn):hover{opacity:.7;transform:translateY(-1px)}
 
 // ─── Main App ───────────────────────────────────────────────────────
 export default function Page(){
+  // ── Workspace isolation: set workspace_id from Clerk user ──
+  const { user: clerkUser } = useUser();
+  useEffect(() => {
+    if (clerkUser?.id) setWorkspace(clerkUser.id);
+    return () => setWorkspace(null); // cleanup on unmount
+  }, [clerkUser?.id]);
+
   const[tab,setTab]=useState("dashboard");
   const[props,setProps]=useState(DEF_PROPS);
   const[payments,setPayments]=useState(DEF_PAYMENTS);

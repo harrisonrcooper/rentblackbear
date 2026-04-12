@@ -2,6 +2,11 @@
 // Runs every day at 8am via Vercel cron (vercel.json)
 // Handles: rent charge generation, late fee creation, lease expiry alerts,
 //          daily payment reminders, month-to-month auto-escalation
+//
+// TODO(multi-tenant): This cron currently operates on bare keys (single tenant).
+// For SaaS, it needs to iterate ALL workspaces: load all app_data rows,
+// group by workspace prefix, and process each workspace independently.
+// See lib/workspace.js for the key-prefix convention.
 
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
 import { loadAppData, saveAppData, supa } from "@/lib/supabase-server";
