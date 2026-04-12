@@ -1436,7 +1436,9 @@ export default function Page(){
           reports:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
         };
         const TAB_LABELS={dashboard:"Dashboard",tenants:"Tenants",applications:"Apply",maintenance:"Maint.",payments:"Ledger",timeline:"Timeline",leases:"Leases",properties:"Portfolio",reports:"Reports",money:"Money",ledger:"Ledger","add-expense":"+ Expense"};
-        const mobTabs=(settings.mobileTabs||["dashboard","tenants","add-expense","ledger"]).slice(0,4);
+        const MOB_ID_MAP={"accounting":"add-expense","money":"add-expense"};
+        const rawMobTabs=(settings.mobileTabs||["dashboard","tenants","add-expense","ledger"]).map(id=>MOB_ID_MAP[id]||id);
+        const mobTabs=[...new Set(rawMobTabs)].slice(0,4);
         return[...mobTabs,{id:"__more__"}].map(t=>{
           const id=typeof t==="string"?t:t.id;
           const isMore=id==="__more__";

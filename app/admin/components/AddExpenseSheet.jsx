@@ -165,7 +165,7 @@ function WheelCol({ items, selIdx, onSnap, style, acc }) {
   const setTransform = (idx, animate = true) => {
     if (!innerRef.current) return;
     innerRef.current.style.transition = animate ? "transform .18s cubic-bezier(.25,.46,.45,.94)" : "none";
-    innerRef.current.style.transform = `translateY(${(PAD - idx) * ITEM_H}px)`;
+    innerRef.current.style.transform = `translateY(${-idx * ITEM_H}px)`;
   };
 
   useEffect(() => { setTransform(selIdx, false); dragRef.current.curIdx = selIdx; }, [selIdx, items.length]);
@@ -180,10 +180,10 @@ function WheelCol({ items, selIdx, onSnap, style, acc }) {
     e.preventDefault();
     const y = e.touches ? e.touches[0].clientY : e.clientY;
     const dy = y - dragRef.current.startY;
-    const base = (PAD - dragRef.current.curIdx) * ITEM_H;
+    const base = -dragRef.current.curIdx * ITEM_H;
     const raw = base + dy;
-    const min = (PAD - (items.length - 1)) * ITEM_H;
-    if (innerRef.current) innerRef.current.style.transform = `translateY(${Math.max(min, Math.min(PAD * ITEM_H, raw))}px)`;
+    const min = -(items.length - 1) * ITEM_H;
+    if (innerRef.current) innerRef.current.style.transform = `translateY(${Math.max(min, Math.min(0, raw))}px)`;
   };
   const onEnd = (e) => {
     if (!dragRef.current.dragging) return;
@@ -263,13 +263,16 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   const TOTAL_STEPS = 9;
   const STEP_TITLES = ["Add Expense", "Expense Type", "Property", "Category", "Subcategory", "Vendor", "Date", "Note", "Review"];
 
-  /* reset on open */
+  /* reset on open + body scroll lock */
   useEffect(() => {
     if (open) {
       setStep(0); setDigs(""); setHasDot(false); setExpType(""); setPropKey(""); setPropSplit("one");
       setCategory(""); setSubcat(""); setVendor(""); setVendorQuery(""); setNote("");
       setSelM(today().getMonth()); setSelD(today().getDate() - 1); setSelY(today().getFullYear());
       setDateMode("today"); setSaving(false); setShowHelp(false);
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prevOverflow; };
     }
   }, [open]);
 
@@ -400,10 +403,8 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
     },
     sheet: {
       width: "100%", background: "#161618", borderRadius: 0,
-      height: "100dvh", minHeight: "100vh", display: "flex", flexDirection: "column",
+      height: "100dvh", display: "flex", flexDirection: "column",
       overflow: "hidden",
-      paddingTop: "env(safe-area-inset-top)",
-      paddingBottom: "env(safe-area-inset-bottom)",
     },
     pill: {
       width: 36, height: 4, background: "rgba(255,255,255,.15)", borderRadius: 2,
@@ -411,7 +412,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
     },
     hdr: {
       display: "flex", justifyContent: "space-between", alignItems: "center",
-      padding: "14px 20px 0", flexShrink: 0,
+      padding: "calc(14px + env(safe-area-inset-top)) 20px 0", flexShrink: 0,
     },
     hdrBtn: {
       background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
@@ -464,7 +465,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
     typeDs: { fontSize: 13, color: "rgba(255,255,255,.4)" },
     typeEx: { fontSize: 11, color: "rgba(255,255,255,.2)", marginTop: 7, lineHeight: 1.5 },
     /* bottom btn */
-    bot: { padding: "12px 20px 36px", flexShrink: 0, background: "#161618" },
+    bot: { padding: "12px 20px calc(36px + env(safe-area-inset-bottom))", flexShrink: 0, background: "#161618" },
     botBtn: (disabled) => ({
       width: "100%", padding: 18, borderRadius: 16, fontSize: 16, fontWeight: 600,
       border: "none", cursor: disabled ? "default" : "pointer", fontFamily: "inherit",
