@@ -156,7 +156,9 @@ export default function PaymentsTab({
             <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>{t.payments.autopayDesc}</div>
             <button onClick={async () => {
               setAutopay(p => ({ ...p, loading: true }));
-              await fetch("/api/stripe/cancel-autopay", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tenantId: tenant?.id }) });
+              const { data: { session } } = await supabase.auth.getSession();
+              const accessToken = session?.access_token || "";
+              await fetch("/api/stripe/cancel-autopay", { method: "POST", headers: { "Content-Type": "application/json", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) }, body: JSON.stringify({ tenantId: tenant?.id }) });
               setAutopay({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
             }} style={{ width: "100%", padding: "10px", borderRadius: 10, border: `1.5px solid ${hexRgba(C.red, .2)}`, background: hexRgba(C.red, .04), color: C.red, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
               {autopay.loading ? t.payments.canceling : t.payments.cancelAutopay}
