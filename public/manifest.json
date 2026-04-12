@@ -1,8 +1,8 @@
 {
-  "name": "Black Bear Rentals - Tenant Portal",
-  "short_name": "BB Portal",
-  "description": "Manage your lease, payments, and maintenance requests",
-  "start_url": "/portal",
+  "name": "PropOS",
+  "short_name": "PropOS",
+  "description": "Property management admin",
+  "start_url": "/admin",
   "display": "standalone",
   "background_color": "#1a1714",
   "theme_color": "#1a1714",

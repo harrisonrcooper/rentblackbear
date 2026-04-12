@@ -1430,30 +1430,36 @@ export default function Page(){
           payments:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
           timeline:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="6" height="4" rx="1"/><rect x="3" y="10" width="10" height="4" rx="1"/><rect x="3" y="16" width="7" height="4" rx="1"/><line x1="12" y1="6" x2="21" y2="6"/><line x1="16" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg>,
           ledger:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
+          "add-expense":<svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
           leases:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
           properties:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
           reports:<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
         };
-        const TAB_LABELS={dashboard:"Dashboard",tenants:"Tenants",applications:"Apply",maintenance:"Maint.",payments:"Ledger",timeline:"Timeline",leases:"Leases",properties:"Portfolio",reports:"Reports",money:"Money",ledger:"Ledger"};
-        const mobTabs=(settings.mobileTabs||["dashboard","tenants","applications","money"]).slice(0,4);
+        const TAB_LABELS={dashboard:"Dashboard",tenants:"Tenants",applications:"Apply",maintenance:"Maint.",payments:"Ledger",timeline:"Timeline",leases:"Leases",properties:"Portfolio",reports:"Reports",money:"Money",ledger:"Ledger","add-expense":"+ Expense"};
+        const mobTabs=(settings.mobileTabs||["dashboard","tenants","add-expense","ledger"]).slice(0,4);
         return[...mobTabs,{id:"__more__"}].map(t=>{
           const id=typeof t==="string"?t:t.id;
           const isMore=id==="__more__";
+          const isAddExp=id==="add-expense";
           const icon=isMore
             ?<svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             :(TAB_ICONS[id]||TAB_ICONS.dashboard);
           const label=isMore?"More":(TAB_LABELS[id]||id);
-          const isActive=isMore?sideOpen:tab===id;
+          const isActive=isMore?sideOpen:(isAddExp?showAddExpense:tab===id);
           return(
           <button key={id} className={`bot-tab ${isActive?"act":""}`}
-            onClick={()=>{if(isMore){setSideOpen(s=>!s);}else{goTab(id);setSideOpen(false);}}}>
+            onClick={()=>{
+              if(isMore){setSideOpen(s=>!s);}
+              else if(isAddExp){setShowAddExpense(true);setSideOpen(false);}
+              else{goTab(id);setSideOpen(false);}
+            }}>
             {icon}{label}
           </button>);
         });
       })()}
     </div>
-    {/* Mobile FAB — Add Expense (center-above-bot-bar, mobile only via .bot-fab CSS) */}
-    {(!sideOpen&&!showAddExpense)&&<motion.button
+    {/* Mobile FAB — Add Expense (only on Ledger tab, mobile only via .bot-fab CSS) */}
+    {(tab==="ledger"&&!sideOpen&&!showAddExpense)&&<motion.button
       className="bot-fab"
       style={{background:_acc}}
       onClick={()=>setShowAddExpense(true)}

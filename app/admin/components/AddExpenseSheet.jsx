@@ -396,12 +396,14 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   const S = {
     overlay: {
       position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200,
-      display: "flex", alignItems: "flex-end",
+      display: "flex", alignItems: "stretch",
     },
     sheet: {
-      width: "100%", background: "#161618", borderRadius: "24px 24px 0 0",
-      maxHeight: "96vh", display: "flex", flexDirection: "column",
+      width: "100%", background: "#161618", borderRadius: 0,
+      height: "100dvh", minHeight: "100vh", display: "flex", flexDirection: "column",
       overflow: "hidden",
+      paddingTop: "env(safe-area-inset-top)",
+      paddingBottom: "env(safe-area-inset-bottom)",
     },
     pill: {
       width: 36, height: 4, background: "rgba(255,255,255,.15)", borderRadius: 2,
@@ -583,7 +585,6 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
           >
-          <div style={S.pill} />
 
           {/* HEADER */}
           <div style={S.hdr}>

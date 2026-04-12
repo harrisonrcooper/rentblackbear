@@ -109,10 +109,10 @@ export default function ThemeTab({
         {(()=>{
           const ALL_MOB_TABS=[
             {id:"dashboard",label:"Dashboard"},{id:"tenants",label:"Tenants"},{id:"applications",label:"Applications"},
-            {id:"accounting",label:"Accounting"},{id:"payments",label:"Tenant Ledger"},{id:"maintenance",label:"Maintenance"},
+            {id:"ledger",label:"Ledger"},{id:"add-expense",label:"+ Expense"},{id:"money",label:"Money"},{id:"payments",label:"Tenant Ledger"},{id:"maintenance",label:"Maintenance"},
             {id:"timeline",label:"Tenant Timeline"},{id:"leases",label:"Templates"},{id:"properties",label:"Properties"},{id:"reports",label:"Reports"},
           ];
-          const cur=settings.mobileTabs||["dashboard","tenants","applications","accounting"];
+          const cur=settings.mobileTabs||["dashboard","tenants","add-expense","ledger"];
           const saveMobTabs=(tabs)=>{const u={...settings,mobileTabs:tabs};setSettings(u);save("hq-settings",u);};
           const toggle=(id)=>{
             if(cur.includes(id)){saveMobTabs(cur.filter(x=>x!==id));}
@@ -133,7 +133,7 @@ export default function ThemeTab({
             </div>
             <div style={{marginTop:10,fontSize:11,color:"#6b5e52"}}>
               Selected ({cur.length}/4): <strong style={{color:_acc}}>{cur.map(id=>ALL_MOB_TABS.find(t=>t.id===id)?.label||id).join(" · ")}</strong>
-              {cur.length>0&&<button onClick={()=>saveMobTabs(["dashboard","tenants","applications","accounting"])} style={{marginLeft:10,fontSize:10,background:"none",border:"none",cursor:"pointer",color:"#9a7422",fontFamily:"inherit",textDecoration:"underline",padding:0}}>Reset to default</button>}
+              {cur.length>0&&<button onClick={()=>saveMobTabs(["dashboard","tenants","add-expense","ledger"])} style={{marginLeft:10,fontSize:10,background:"none",border:"none",cursor:"pointer",color:"#9a7422",fontFamily:"inherit",textDecoration:"underline",padding:0}}>Reset to default</button>}
             </div>
           </>);
         })()}
