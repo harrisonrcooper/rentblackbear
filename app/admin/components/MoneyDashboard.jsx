@@ -3,8 +3,16 @@ import { useState, useMemo } from "react";
 
 export default function MoneyDashboard({ charges = [], expenses = [], credits = [], sdLedger = [], mortgages = [], props = [], settings, vendors, improvements = [], goTab, setModal, createCharge, TODAY }) {
   const _ac = settings?.adminAccent || "#4a7c59";
+  const _grn = settings?.themeGreen || "#4a7c59";
+  const _red = settings?.themeRed || "#c45c4a";
+  const _gold = settings?.themeGold || "#d4a853";
   const [period, setPeriod] = useState("month");
   const [customRange, setCustomRange] = useState({ from: "", to: "" });
+  const [calcOpen, setCalcOpen] = useState({ capRate: true, breakEven: true, rentRatio: true });
+  const [capRateInput, setCapRateInput] = useState("");
+  const [rtiIncome, setRtiIncome] = useState("");
+  const [rtiRent, setRtiRent] = useState("");
+  const [rtiRoom, setRtiRoom] = useState("");
 
   /* ---- helpers ---- */
   const chargeStatus = (c) => {
@@ -151,7 +159,7 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
       return daysBetween(p.date, now) >= 3;
     }).map(p => ({ ...p, tenantName: c.tenantName, propName: c.propName })));
 
-    return { collectedMTD, collectedYTD, expectedMTD, pastDueAmt, pastDueTenants, pastDueCount: pastDue.length, expMTD, expYTD, noiMTD, noiYTD, noiMarginMTD, dscr, annualDebt, collectionRate, trail3, months, chartMax, avgInc, avgExp, forecast, propPerf, pastDueSorted, soon, transit };
+    return { collectedMTD, collectedYTD, expectedMTD, pastDueAmt, pastDueTenants, pastDueCount: pastDue.length, expMTD, expYTD, noiMTD, noiYTD, noiMarginMTD, dscr, annualDebt, annualNOI, collectionRate, trail3, months, chartMax, avgInc, avgExp, forecast, propPerf, pastDueSorted, soon, transit };
   }, [charges, expenses, props, mortgages, now, curYM, curYear]);
 
   /* ---- SVG icons ---- */
@@ -402,6 +410,171 @@ export default function MoneyDashboard({ charges = [], expenses = [], credits = 
           </div></div>}
         </div>
       </div>}
+
+      {/* Section 5: Financial Calculators */}
+      <div style={s.section}>
+        <h3 style={s.sectionTitle}>Financial Calculators</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+
+          {/* Cap Rate Calculator */}
+          {(() => {
+            const totalPropertyValue = (props || []).reduce((s, p) => s + (p.value || 0), 0);
+            const useInput = totalPropertyValue <= 0;
+            const pv = useInput ? Number(capRateInput) || 0 : totalPropertyValue;
+            const capRate = pv > 0 ? (data.annualNOI / pv) * 100 : null;
+            const capColor = capRate == null ? "#6b5e52" : capRate > 8 ? _grn : capRate >= 5 ? _gold : _red;
+            const capLabel = capRate == null ? "" : capRate > 8 ? "Strong return" : capRate >= 5 ? "Moderate return" : "Low return";
+            const chevron = (open) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" strokeLinecap="round"><polyline points={open ? "6 9 12 15 18 9" : "9 6 15 12 9 18"} /></svg>;
+            return (
+              <div className="card">
+                <div className="card-bd" style={{ padding: 0 }}>
+                  <button onClick={() => setCalcOpen(p => ({ ...p, capRate: !p.capRate }))} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "16px 20px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={_ac} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1714" }}>Cap Rate</span>
+                    </span>
+                    {chevron(calcOpen.capRate)}
+                  </button>
+                  {calcOpen.capRate && (
+                    <div style={{ padding: "0 20px 20px" }}>
+                      {useInput && (
+                        <div style={{ marginBottom: 12 }}>
+                          <label style={{ fontSize: 11, fontWeight: 600, color: "#6b5e52", display: "block", marginBottom: 4 }}>Total Property Value</label>
+                          <input type="text" inputMode="numeric" placeholder="e.g. 500000" value={capRateInput} onChange={e => setCapRateInput(e.target.value.replace(/[^0-9.]/g, ""))} style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", boxSizing: "border-box" }} />
+                        </div>
+                      )}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                        <span style={{ fontSize: 12, color: "#6b5e52" }}>Annual NOI (T12)</span>
+                        <span style={{ fontSize: 14, fontWeight: 700 }}>{fmt(data.annualNOI)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                        <span style={{ fontSize: 12, color: "#6b5e52" }}>Property Value</span>
+                        <span style={{ fontSize: 14, fontWeight: 700 }}>{pv > 0 ? fmt(pv) : "--"}</span>
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(0,0,0,.08)", paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: capColor }}>{capRate != null ? capRate.toFixed(1) + "%" : "N/A"}</span>
+                        {capLabel && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12, background: capColor + "18", color: capColor }}>{capLabel}</span>}
+                      </div>
+                      <p style={{ fontSize: 10, color: "#7a7067", marginTop: 8, lineHeight: 1.4 }}>Cap Rate = Annual NOI / Property Value</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Break-Even Occupancy Calculator */}
+          {(() => {
+            const allR = (props || []).flatMap(p => allRooms(p));
+            const potentialGrossIncome = allR.reduce((s, r) => s + (r.rent || 0), 0) * 12;
+            const totalExpenses = data.expYTD > 0 ? (data.expYTD / (now.getMonth() + 1)) * 12 : 0;
+            const annDebt = (mortgages || []).reduce((s, m) => s + (m.monthlyPI || 0) * 12, 0);
+            const breakEven = potentialGrossIncome > 0 ? ((totalExpenses + annDebt) / potentialGrossIncome) * 100 : null;
+            const totalR = allR.length;
+            const occupiedR = allR.filter(r => r.tenant).length;
+            const currentOcc = totalR > 0 ? (occupiedR / totalR) * 100 : 0;
+            const safe = breakEven != null && currentOcc >= breakEven;
+            const beColor = breakEven == null ? "#6b5e52" : safe ? _grn : _red;
+            const chevron = (open) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" strokeLinecap="round"><polyline points={open ? "6 9 12 15 18 9" : "9 6 15 12 9 18"} /></svg>;
+            return (
+              <div className="card">
+                <div className="card-bd" style={{ padding: 0 }}>
+                  <button onClick={() => setCalcOpen(p => ({ ...p, breakEven: !p.breakEven }))} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "16px 20px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={_ac} strokeWidth="2" strokeLinecap="round"><line x1="4" y1="20" x2="20" y2="4"/><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1714" }}>Break-Even Occupancy</span>
+                    </span>
+                    {chevron(calcOpen.breakEven)}
+                  </button>
+                  {calcOpen.breakEven && (
+                    <div style={{ padding: "0 20px 20px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6, fontSize: 12 }}>
+                        <span style={{ color: "#6b5e52" }}>Annual Expenses (est.)</span>
+                        <span style={{ fontWeight: 700 }}>{fmt(totalExpenses)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6, fontSize: 12 }}>
+                        <span style={{ color: "#6b5e52" }}>Annual Debt Service</span>
+                        <span style={{ fontWeight: 700 }}>{fmt(annDebt)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, fontSize: 12 }}>
+                        <span style={{ color: "#6b5e52" }}>Potential Gross Income</span>
+                        <span style={{ fontWeight: 700 }}>{fmt(potentialGrossIncome)}</span>
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(0,0,0,.08)", paddingTop: 12 }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: beColor, margin: "0 0 6px" }}>
+                          {breakEven != null ? `You need ${breakEven.toFixed(1)}% occupancy to cover all costs` : "Insufficient data"}
+                        </p>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+                          <span style={{ color: "#6b5e52" }}>Current occupancy:</span>
+                          <span style={{ fontWeight: 700, color: beColor }}>{currentOcc.toFixed(0)}% ({occupiedR}/{totalR} rooms)</span>
+                          {breakEven != null && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12, background: beColor + "18", color: beColor }}>{safe ? "Safe" : "Underwater"}</span>}
+                        </div>
+                        {breakEven != null && (
+                          <div style={{ height: 6, borderRadius: 3, background: "rgba(0,0,0,.06)", marginTop: 10, position: "relative" }}>
+                            <div style={{ height: 6, borderRadius: 3, background: beColor, width: `${Math.min(100, currentOcc)}%`, transition: "width .4s" }} />
+                            <div style={{ position: "absolute", left: `${Math.min(100, breakEven)}%`, top: -3, width: 2, height: 12, background: "#1a1714", borderRadius: 1 }} title={`Break-even: ${breakEven.toFixed(1)}%`} />
+                          </div>
+                        )}
+                      </div>
+                      <p style={{ fontSize: 10, color: "#7a7067", marginTop: 8, lineHeight: 1.4 }}>Break-Even = (Expenses + Debt Service) / Potential Gross Income</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Rent-to-Income Ratio Checker */}
+          {(() => {
+            const allR = (props || []).flatMap(p => allRooms(p));
+            const selectedRoom = allR.find(r => r.id === rtiRoom);
+            const rentVal = rtiRoom && selectedRoom ? (selectedRoom.rent || 0) : Number(rtiRent) || 0;
+            const incomeVal = Number(rtiIncome) || 0;
+            const ratio = incomeVal > 0 ? (rentVal / incomeVal) * 100 : null;
+            const ratioColor = ratio == null ? "#6b5e52" : ratio <= 30 ? _grn : ratio <= 40 ? _gold : _red;
+            const ratioLabel = ratio == null ? "" : ratio <= 30 ? "Qualifies" : ratio <= 40 ? "Borderline" : "Does not qualify";
+            const chevron = (open) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b5e52" strokeWidth="2" strokeLinecap="round"><polyline points={open ? "6 9 12 15 18 9" : "9 6 15 12 9 18"} /></svg>;
+            return (
+              <div className="card">
+                <div className="card-bd" style={{ padding: 0 }}>
+                  <button onClick={() => setCalcOpen(p => ({ ...p, rentRatio: !p.rentRatio }))} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "16px 20px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={_ac} strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1714" }}>Rent-to-Income Ratio</span>
+                    </span>
+                    {chevron(calcOpen.rentRatio)}
+                  </button>
+                  {calcOpen.rentRatio && (
+                    <div style={{ padding: "0 20px 20px" }}>
+                      <div style={{ marginBottom: 10 }}>
+                        <label style={{ fontSize: 11, fontWeight: 600, color: "#6b5e52", display: "block", marginBottom: 4 }}>Monthly Income</label>
+                        <input type="text" inputMode="numeric" placeholder="e.g. 4000" value={rtiIncome} onChange={e => setRtiIncome(e.target.value.replace(/[^0-9.]/g, ""))} style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </div>
+                      <div style={{ marginBottom: 10 }}>
+                        <label style={{ fontSize: 11, fontWeight: 600, color: "#6b5e52", display: "block", marginBottom: 4 }}>Room (optional)</label>
+                        <select value={rtiRoom} onChange={e => { setRtiRoom(e.target.value); if (e.target.value) { const rm = allR.find(r => r.id === e.target.value); if (rm) setRtiRent(String(rm.rent || 0)); } }} style={{ width: "100%", fontSize: 13, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", boxSizing: "border-box", background: "#fff" }}>
+                          <option value="">-- Type rent manually --</option>
+                          {allR.map(r => <option key={r.id} value={r.id}>{r.unitName ? r.unitName + " / " : ""}{r.name || r.id} -- {fmt(r.rent || 0)}/mo</option>)}
+                        </select>
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label style={{ fontSize: 11, fontWeight: 600, color: "#6b5e52", display: "block", marginBottom: 4 }}>Monthly Rent</label>
+                        <input type="text" inputMode="numeric" placeholder="e.g. 1200" value={rtiRoom && selectedRoom ? String(selectedRoom.rent || 0) : rtiRent} onChange={e => { setRtiRoom(""); setRtiRent(e.target.value.replace(/[^0-9.]/g, "")); }} style={{ width: "100%", fontSize: 14, padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(0,0,0,.12)", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(0,0,0,.08)", paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 18, fontWeight: 800, color: ratioColor }}>{ratio != null ? ratio.toFixed(1) + "% of income" : "--"}</span>
+                        {ratioLabel && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12, background: ratioColor + "18", color: ratioColor }}>{ratioLabel}</span>}
+                      </div>
+                      <p style={{ fontSize: 10, color: "#7a7067", marginTop: 8, lineHeight: 1.4 }}>Below 30% qualifies. 30-40% is borderline. Above 40% does not qualify.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+        </div>
+      </div>
     </div>
   );
 }
