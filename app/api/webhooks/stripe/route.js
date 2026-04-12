@@ -30,7 +30,9 @@
 // Production registration:
 //   Stripe Dashboard → Developers → Webhooks → Add endpoint
 //     URL:    https://<your-domain>/api/webhooks/stripe
-//     Events: payment_intent.succeeded, payment_intent.payment_failed
+//     Events: payment_intent.succeeded, payment_intent.payment_failed,
+//             customer.subscription.created, customer.subscription.updated,
+//             customer.subscription.deleted, invoice.paid, invoice.payment_failed
 //   After creation, reveal the "Signing secret" (starts with whsec_) and add
 //   it to Vercel env vars as STRIPE_WEBHOOK_SECRET for Production and Preview,
 //   then redeploy.
@@ -91,6 +93,32 @@ export async function POST(req) {
 
       case "payment_intent.payment_failed": {
         await handlePaymentIntentFailed(event.data.object);
+        return NextResponse.json({ received: true, type: event.type });
+      }
+
+      // ---- Subscription lifecycle events ----
+      case "customer.subscription.created": {
+        await handleSubscriptionCreated(event.data.object);
+        return NextResponse.json({ received: true, type: event.type });
+      }
+
+      case "customer.subscription.updated": {
+        await handleSubscriptionUpdated(event.data.object);
+        return NextResponse.json({ received: true, type: event.type });
+      }
+
+      case "customer.subscription.deleted": {
+        await handleSubscriptionDeleted(event.data.object);
+        return NextResponse.json({ received: true, type: event.type });
+      }
+
+      case "invoice.paid": {
+        await handleInvoicePaid(event.data.object);
+        return NextResponse.json({ received: true, type: event.type });
+      }
+
+      case "invoice.payment_failed": {
+        await handleInvoicePaymentFailed(event.data.object);
         return NextResponse.json({ received: true, type: event.type });
       }
 
@@ -307,4 +335,128 @@ async function handlePaymentIntentFailed(pi) {
 
   const updatedNotifs = [notif, ...notifs];
   await saveAppData("hq-notifs", updatedNotifs);
+}
+
+// ---------------------------------------------------------------------------
+// Subscription lifecycle handlers
+// ---------------------------------------------------------------------------
+
+// Map Stripe price IDs (from env) back to tier names.
+function tierFromPriceId(priceId) {
+  if (priceId === process.env.STRIPE_PRICE_STARTER) return "starter";
+  if (priceId === process.env.STRIPE_PRICE_GROWTH) return "growth";
+  if (priceId === process.env.STRIPE_PRICE_SCALE) return "scale";
+  return "starter"; // fallback
+}
+
+async function handleSubscriptionCreated(sub) {
+  const priceId = sub.items?.data?.[0]?.price?.id;
+  const tier = tierFromPriceId(priceId);
+
+  const subscriptionData = {
+    stripeCustomerId: sub.customer,
+    subscriptionId: sub.id,
+    tier,
+    status: sub.status, // "active", "trialing", etc.
+    currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
+    cancelAtPeriodEnd: sub.cancel_at_period_end || false,
+  };
+
+  await saveAppData("hq-subscription", subscriptionData);
+  console.log(`[stripe-webhook] subscription created: ${sub.id} tier=${tier}`);
+}
+
+async function handleSubscriptionUpdated(sub) {
+  const existing = (await loadAppData("hq-subscription", null)) || {};
+  const priceId = sub.items?.data?.[0]?.price?.id;
+  const tier = tierFromPriceId(priceId);
+
+  const subscriptionData = {
+    ...existing,
+    stripeCustomerId: sub.customer,
+    subscriptionId: sub.id,
+    tier,
+    status: sub.status,
+    currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString(),
+    cancelAtPeriodEnd: sub.cancel_at_period_end || false,
+  };
+
+  await saveAppData("hq-subscription", subscriptionData);
+  console.log(`[stripe-webhook] subscription updated: ${sub.id} status=${sub.status} tier=${tier}`);
+}
+
+async function handleSubscriptionDeleted(sub) {
+  const existing = (await loadAppData("hq-subscription", null)) || {};
+
+  // Mark as cancelled with a 3-day grace period
+  const gracePeriodEnd = new Date();
+  gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 3);
+
+  const subscriptionData = {
+    ...existing,
+    stripeCustomerId: sub.customer,
+    subscriptionId: sub.id,
+    status: "cancelled",
+    cancelledAt: new Date().toISOString(),
+    gracePeriodEnd: gracePeriodEnd.toISOString(),
+    cancelAtPeriodEnd: false,
+  };
+
+  await saveAppData("hq-subscription", subscriptionData);
+  console.log(`[stripe-webhook] subscription deleted: ${sub.id} — grace period until ${gracePeriodEnd.toISOString()}`);
+}
+
+async function handleInvoicePaid(invoice) {
+  // Only process subscription invoices
+  if (!invoice.subscription) return;
+
+  const existing = (await loadAppData("hq-subscription", null)) || {};
+  if (existing.subscriptionId !== invoice.subscription) return;
+
+  // Extend active period based on the invoice's period end
+  const periodEnd = invoice.lines?.data?.[0]?.period?.end;
+  if (periodEnd) {
+    const subscriptionData = {
+      ...existing,
+      status: "active",
+      currentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
+    };
+    await saveAppData("hq-subscription", subscriptionData);
+    console.log(`[stripe-webhook] invoice.paid — extended period for sub=${invoice.subscription}`);
+  }
+}
+
+async function handleInvoicePaymentFailed(invoice) {
+  if (!invoice.subscription) return;
+
+  const existing = (await loadAppData("hq-subscription", null)) || {};
+  if (existing.subscriptionId !== invoice.subscription) {
+    // Still create a notification even if subscription doesn't match
+  }
+
+  // Update subscription status to past_due
+  if (existing.subscriptionId === invoice.subscription) {
+    const subscriptionData = {
+      ...existing,
+      status: "past_due",
+    };
+    await saveAppData("hq-subscription", subscriptionData);
+  }
+
+  // Create urgent admin notification for dunning
+  const notifs = (await loadAppData("hq-notifs", [])) || [];
+  const amountDue = (invoice.amount_due ?? 0) / 100;
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const notif = {
+    id: uid(),
+    type: "billing",
+    msg: `Subscription payment failed — $${amountDue.toFixed(2)} due. Please update your payment method to avoid service interruption.`,
+    date: todayStr,
+    read: false,
+    urgent: true,
+  };
+
+  await saveAppData("hq-notifs", [notif, ...(Array.isArray(notifs) ? notifs : [])]);
+  console.log(`[stripe-webhook] invoice.payment_failed — dunning notification created for sub=${invoice.subscription}`);
 }

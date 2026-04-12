@@ -1,10 +1,208 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+
+const TIER_LABELS = { starter: "Starter", growth: "Growth", scale: "Scale" };
+const TIER_PRICES = { starter: "$97/mo", growth: "$197/mo", scale: "$397/mo" };
+const STATUS_LABELS = {
+  active: "Active",
+  trialing: "Trial",
+  past_due: "Past Due",
+  cancelled: "Cancelled",
+  canceled: "Cancelled",
+};
+
+function SubscriptionCard() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/subscription");
+      if (res.ok) setData(await res.json());
+    } catch {
+      /* silent */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  const handleAction = async (action, tier) => {
+    setActionLoading(true);
+    try {
+      const body = tier ? { action, tier } : { action };
+      const res = await fetch("/api/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (json.url) window.location.href = json.url;
+    } catch {
+      /* silent */
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const sub = data?.subscription;
+  const usage = data?.usage;
+  const isActive = sub && (sub.status === "active" || sub.status === "trialing");
+  const isPastDue = sub?.status === "past_due";
+  const isCancelled = sub?.status === "cancelled" || sub?.status === "canceled";
+
+  const fmtLimit = (v) => (v === Infinity || v === null ? "Unlimited" : v);
+
+  return (
+    <div className="card" style={{ marginBottom: 12 }}>
+      <div className="card-bd">
+        <h3 style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>Subscription</h3>
+        <p style={{ fontSize: 11, color: "#6b5e52", marginBottom: 14 }}>
+          Manage your plan, view usage, and update billing.
+        </p>
+
+        {loading ? (
+          <div style={{ fontSize: 12, color: "#999", padding: "12px 0" }}>Loading subscription status...</div>
+        ) : sub ? (
+          <>
+            {/* Tier + Status badge */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "#1a1714" }}>
+                {TIER_LABELS[sub.tier] || sub.tier}
+              </span>
+              <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 8, background: isActive ? "rgba(74,124,89,.1)" : isPastDue ? "rgba(212,168,83,.15)" : "rgba(0,0,0,.06)", color: isActive ? "#2d6a3f" : isPastDue ? "#9a7422" : "#6b5e52" }}>
+                {STATUS_LABELS[sub.status] || sub.status}
+              </span>
+              <span style={{ fontSize: 10, color: "#999", marginLeft: "auto" }}>
+                {TIER_PRICES[sub.tier] || ""}
+              </span>
+            </div>
+
+            {/* Past due warning */}
+            {isPastDue && (
+              <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(212,168,83,.08)", borderRadius: 6, fontSize: 11, color: "#9a7422", fontWeight: 600 }}>
+                Payment failed. Please update your payment method to avoid service interruption.
+              </div>
+            )}
+
+            {/* Cancelled notice */}
+            {isCancelled && (
+              <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(196,92,74,.06)", borderRadius: 6, fontSize: 11, color: "#c45c4a", fontWeight: 600 }}>
+                Subscription cancelled. Subscribe again to restore access.
+              </div>
+            )}
+
+            {/* Cancel at period end notice */}
+            {sub.cancelAtPeriodEnd && !isCancelled && (
+              <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(212,168,83,.08)", borderRadius: 6, fontSize: 11, color: "#9a7422" }}>
+                Your subscription will end on {new Date(sub.currentPeriodEnd).toLocaleDateString()}.
+              </div>
+            )}
+
+            {/* Usage bars */}
+            {usage && (
+              <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+                <UsageBar label="Rooms" used={usage.roomsUsed} limit={usage.roomsLimit} />
+                <UsageBar label="Properties" used={usage.propertiesUsed} limit={usage.propertiesLimit} />
+              </div>
+            )}
+
+            {/* Period end */}
+            {sub.currentPeriodEnd && isActive && (
+              <div style={{ fontSize: 10, color: "#999", marginBottom: 12 }}>
+                Current period ends {new Date(sub.currentPeriodEnd).toLocaleDateString()}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                className="btn btn-out btn-sm"
+                disabled={actionLoading}
+                onClick={() => handleAction("portal")}
+              >
+                Manage Subscription
+              </button>
+              {(sub.tier === "starter" || sub.tier === "growth") && isActive && (
+                <button
+                  className="btn btn-gold btn-sm"
+                  disabled={actionLoading}
+                  onClick={() => handleAction("create", sub.tier === "starter" ? "growth" : "scale")}
+                >
+                  Upgrade to {sub.tier === "starter" ? "Growth" : "Scale"}
+                </button>
+              )}
+              {isCancelled && (
+                <button
+                  className="btn btn-gold btn-sm"
+                  disabled={actionLoading}
+                  onClick={() => handleAction("create", "starter")}
+                >
+                  Subscribe
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* No subscription */}
+            {usage && (
+              <div style={{ fontSize: 11, color: "#6b5e52", marginBottom: 12 }}>
+                You have {usage.roomsUsed} room{usage.roomsUsed !== 1 ? "s" : ""} and {usage.propertiesUsed} propert{usage.propertiesUsed !== 1 ? "ies" : "y"}.
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[
+                { tier: "starter", label: "Starter", price: "$97/mo", desc: "10 rooms, 1 property" },
+                { tier: "growth", label: "Growth", price: "$197/mo", desc: "30 rooms, unlimited properties" },
+                { tier: "scale", label: "Scale", price: "$397/mo", desc: "Unlimited" },
+              ].map((p) => (
+                <button
+                  key={p.tier}
+                  className="btn btn-out btn-sm"
+                  disabled={actionLoading}
+                  onClick={() => handleAction("create", p.tier)}
+                  style={{ flex: 1, minWidth: 120, padding: "10px 12px", textAlign: "left" }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700 }}>{p.label}</div>
+                  <div style={{ fontSize: 10, color: "#6b5e52", marginTop: 2 }}>{p.price} -- {p.desc}</div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UsageBar({ label, used, limit }) {
+  const isUnlimited = limit === Infinity || limit === null;
+  const pct = isUnlimited ? 0 : Math.min(100, Math.round((used / limit) * 100));
+  const near = !isUnlimited && pct >= 80;
+
+  return (
+    <div style={{ flex: 1 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontWeight: 700, color: "#1a1714", marginBottom: 4 }}>
+        <span>{label}</span>
+        <span>{used} / {isUnlimited ? "Unlimited" : limit}</span>
+      </div>
+      <div style={{ height: 6, borderRadius: 3, background: "rgba(0,0,0,.06)", overflow: "hidden" }}>
+        {!isUnlimited && (
+          <div style={{ height: "100%", width: `${pct}%`, borderRadius: 3, background: near ? "#c45c4a" : "#4a7c59", transition: "width .3s" }} />
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function PMSettings({ settings, setSettings, save, expanded, setExpanded, DEF_SETTINGS, SigCanvas }) {
   return (
     <>
         <div className="sec-hd"><div><h2>PM Settings</h2><p>Company info, lease rules, email templates, and notifications</p></div></div>
+        <SubscriptionCard />
         <div className="card"><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Company Info</h3>
           <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
