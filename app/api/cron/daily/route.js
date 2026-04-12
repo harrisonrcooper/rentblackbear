@@ -792,7 +792,7 @@ export async function GET(req) {
       }
     }
 
-    // ── 8. SECURITY DEPOSIT 60-DAY DEADLINE MONITORING ─────────────────
+    // ── 14. SECURITY DEPOSIT 60-DAY DEADLINE MONITORING ────────────────
     // Alabama law requires SD return within 60 days of move-out.
     // Warn at 45 days (15 left), 55 days (5 left), 60 days (overdue).
     for (const prop of updatedProps) {
