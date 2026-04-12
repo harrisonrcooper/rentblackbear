@@ -18,6 +18,33 @@ const allRooms = (prop) => {
   return prop.rooms || [];
 };
 
+// ── AR Aging tenant row (collapsible) ─────────────────────────────
+function AgingTenantRow({ name, t, i, has90, bucketDefs, daysPastDue, getBucket, fmt, thS, tdS, trAlt, _red, _grn, _gold, hexToRgba }) {
+  const [open, setOpen] = useState(false);
+  return (<>
+    <tr style={{ ...trAlt(i), cursor: "pointer" }} onClick={() => setOpen(o => !o)}>
+      <td style={{ ...tdS, fontWeight: 700, color: has90 ? _red : "inherit" }}>
+        <span style={{ display: "inline-block", width: 14, fontSize: 9, color: "#999", marginRight: 4, transition: "transform .15s", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>&#9654;</span>
+        {name}
+      </td>
+      <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: has90 ? _red : "inherit" }}>{fmt(t.total)}</td>
+      {bucketDefs.map(b => <td key={b.key} style={{ ...tdS, textAlign: "right", fontWeight: 600, color: t[b.key] > 0 ? b.color : "#ccc" }}>{t[b.key] > 0 ? fmt(t[b.key]) : "\u2014"}</td>)}
+      <td style={{ ...tdS, textAlign: "center", fontWeight: 600 }}>{t.charges.length}</td>
+    </tr>
+    {open && t.charges.sort((a, b) => daysPastDue(b) - daysPastDue(a)).map(c => {
+      const bal = c.amount - c.amountPaid;
+      const days = daysPastDue(c);
+      const bk = getBucket(c);
+      return (<tr key={c.id} style={{ background: "rgba(0,0,0,.02)" }}>
+        <td style={{ ...tdS, paddingLeft: 32, fontSize: 10, color: "#6b5e52" }}>{c.propName} &mdash; {c.desc || c.category}</td>
+        <td style={{ ...tdS, textAlign: "right", fontWeight: 600, fontSize: 10 }}>{fmt(bal)}</td>
+        <td colSpan={4} style={{ ...tdS, fontSize: 10, color: bk.color, textAlign: "center" }}>Due: {c.dueDate} ({days} days)</td>
+        <td />
+      </tr>);
+    })}
+  </>);
+}
+
 // ── Component ──────────────────────────────────────────────────────
 export default function Reports({
   settings, properties, charges, expenses, mortgages, sdLedger,
@@ -315,29 +342,74 @@ export default function Reports({
 
         {/* ── AR Aging ── */}
         {activeReport === "aging" && (() => {
-          // P0 FIX: Filter by date range AND property
-          const unpaid = rCharges.filter(c => !c.voided && !c.waived && c.amountPaid < c.amount);
-          const buckets = { "Current": [0, 30], "31-60 Days": [31, 60], "61-90 Days": [61, 90], "90+ Days": [91, 9999] };
+          const unpaid = charges.filter(c => !c.voided && !c.waived && c.amountPaid < c.amount && (reportProp === "all" || rProps.some(p => p.name === c.propName)));
+          const daysPastDue = (c) => { const diff = Math.floor((TODAY - new Date(c.dueDate + "T00:00:00")) / 86400000); return diff > 0 ? diff : 0; };
+          const bucketDefs = [
+            { key: "current", label: "Current (0-30)", min: 0, max: 30, color: _grn },
+            { key: "d31_60", label: "31-60 Days", min: 31, max: 60, color: _gold },
+            { key: "d61_90", label: "61-90 Days", min: 61, max: 90, color: _red },
+            { key: "d90plus", label: "90+ Days", min: 91, max: Infinity, color: _red },
+          ];
+          const getBucket = (c) => { const d = daysPastDue(c); return bucketDefs.find(b => d >= b.min && d <= b.max); };
           const totalAR = unpaid.reduce((s, c) => s + c.amount - c.amountPaid, 0);
+
+          // Group by tenant
+          const byTenant = {};
+          unpaid.forEach(c => {
+            const name = c.tenantName || "Unknown";
+            if (!byTenant[name]) byTenant[name] = { charges: [], current: 0, d31_60: 0, d61_90: 0, d90plus: 0, total: 0 };
+            const bal = c.amount - c.amountPaid;
+            const bk = getBucket(c);
+            byTenant[name][bk.key] += bal;
+            byTenant[name].total += bal;
+            byTenant[name].charges.push(c);
+          });
+          const tenants = Object.entries(byTenant).sort((a, b) => b[1].total - a[1].total);
+
+          // Portfolio totals per bucket
+          const totals = { current: 0, d31_60: 0, d61_90: 0, d90plus: 0 };
+          tenants.forEach(([, t]) => { totals.current += t.current; totals.d31_60 += t.d31_60; totals.d61_90 += t.d61_90; totals.d90plus += t.d90plus; });
+
+          // CSV export rows
+          const csvRows = tenants.map(([name, t]) => ({ Tenant: name, Total: fmt(t.total), "Current (0-30)": fmt(t.current), "31-60 Days": fmt(t.d31_60), "61-90 Days": fmt(t.d61_90), "90+ Days": fmt(t.d90plus), Charges: t.charges.length }));
+          const csvHeaders = ["Tenant", "Total", "Current (0-30)", "31-60 Days", "61-90 Days", "90+ Days", "Charges"];
+
           return (<>
-            {totalAR === 0 && <div style={{ textAlign: "center", padding: 36, color: "#6b5e52", background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No outstanding receivables for the selected period.</div>}
-            {Object.entries(buckets).map(([label, [min, max]]) => {
-              const rows = unpaid.filter(c => { const dl = Math.ceil((TODAY - new Date(c.dueDate + "T00:00:00")) / (1e3 * 60 * 60 * 24)); return dl >= min && dl <= max; });
-              if (rows.length === 0) return null;
-              const bucketColor = min > 60 ? _red : min > 30 ? _gold : "#5c4a3a";
-              return (<div key={label} style={{ marginBottom: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 12, color: bucketColor, marginBottom: 6 }}>{label} ({rows.length} charges &middot; {fmt(rows.reduce((s, c) => s + c.amount - c.amountPaid, 0))} outstanding)</div>
-                <TW>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-                    <thead><tr style={{ background: "#f8f7f4" }}>{["Tenant", "Property", "Description", "Due Date", "Balance"].map(h => <th key={h} style={{ ...thS, textAlign: h === "Balance" ? "right" : "left" }}>{h}</th>)}</tr></thead>
-                    <tbody>{rows.map((c, i) => <tr key={c.id} style={{ borderTop: "1px solid rgba(0,0,0,.03)" }}><td style={{ ...tdS, fontWeight: 600 }}>{c.tenantName}</td><td style={{ ...tdS, fontSize: 10, color: "#6b5e52" }}>{c.propName}</td><td style={tdS}>{c.desc}</td><td style={{ ...tdS, fontSize: 10, color: _red }}>{c.dueDate}</td><td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _red }}>{fmt(c.amount - c.amountPaid)}</td></tr>)}</tbody>
-                  </table>
-                </TW>
-              </div>);
-            })}
-            {totalAR > 0 && <div style={{ background: hexToRgba(_red, .06), borderRadius: 8, padding: "12px 16px", border: "1px solid " + hexToRgba(_red, .1), marginTop: 4 }}>
-              <span style={{ fontWeight: 800, color: _red }}>Total Outstanding AR: </span><span style={{ fontWeight: 800, fontSize: 16, color: _red }}>{fmt(totalAR)}</span>
+            {/* Total AR banner */}
+            {totalAR > 0 && <div style={{ background: hexToRgba(_red, .06), borderRadius: 8, padding: "14px 18px", border: "1px solid " + hexToRgba(_red, .12), marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+              <div><span style={{ fontWeight: 800, color: _red, fontSize: 13 }}>Total Accounts Receivable: </span><span style={{ fontWeight: 800, fontSize: 20, color: _red }}>{fmt(totalAR)}</span></div>
+              <div style={{ display: "flex", gap: 14, fontSize: 11, fontWeight: 600 }}>
+                {bucketDefs.map(b => <span key={b.key} style={{ color: b.color }}>{b.label}: {fmt(totals[b.key])}</span>)}
+              </div>
             </div>}
+
+            {totalAR === 0 && <div style={{ textAlign: "center", padding: 36, color: "#6b5e52", background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No outstanding receivables.</div>}
+
+            {totalAR > 0 && <>
+              <div style={{ marginBottom: 8, display: "flex", justifyContent: "flex-end" }}>{csvBtn(csvRows, csvHeaders, "ar-aging-" + TODAY.toISOString().split("T")[0])}</div>
+              <TW>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
+                    <th style={{ ...thS, textAlign: "left" }}>Tenant</th>
+                    <th style={{ ...thS, textAlign: "right", fontWeight: 800 }}>Total</th>
+                    {bucketDefs.map(b => <th key={b.key} style={{ ...thS, textAlign: "right", color: b.color }}>{b.label}</th>)}
+                    <th style={{ ...thS, textAlign: "center" }}>Charges</th>
+                  </tr></thead>
+                  <tbody>
+                    {tenants.map(([name, t], i) => {
+                      const has90 = t.d90plus > 0;
+                      return (<AgingTenantRow key={name} name={name} t={t} i={i} has90={has90} bucketDefs={bucketDefs} daysPastDue={daysPastDue} getBucket={getBucket} fmt={fmt} thS={thS} tdS={tdS} trAlt={trAlt} _red={_red} _grn={_grn} _gold={_gold} hexToRgba={hexToRgba} />);
+                    })}
+                  </tbody>
+                  <tfoot><tr style={{ background: "#f8f7f4", borderTop: "2px solid rgba(0,0,0,.08)" }}>
+                    <td style={{ ...tdS, fontWeight: 800 }}>Portfolio Total</td>
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _red, fontSize: 13 }}>{fmt(totalAR)}</td>
+                    {bucketDefs.map(b => <td key={b.key} style={{ ...tdS, textAlign: "right", fontWeight: 800, color: b.color }}>{fmt(totals[b.key])}</td>)}
+                    <td style={{ ...tdS, textAlign: "center", fontWeight: 800 }}>{unpaid.length}</td>
+                  </tr></tfoot>
+                </table>
+              </TW>
+            </>}
           </>);
         })()}
 
