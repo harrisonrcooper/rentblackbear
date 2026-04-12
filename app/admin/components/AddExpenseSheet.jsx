@@ -65,6 +65,7 @@
 
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 /* ─── helpers ─── */
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -391,19 +392,15 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
     onClose();
   };
 
-  if (!open) return null;
-
   /* ─── styles ─── */
   const S = {
     overlay: {
       position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200,
       display: "flex", alignItems: "flex-end",
-      animation: "fadeIn .2s ease",
     },
     sheet: {
       width: "100%", background: "#161618", borderRadius: "24px 24px 0 0",
       maxHeight: "96vh", display: "flex", flexDirection: "column",
-      animation: "slideUp .3s cubic-bezier(.32,0,.67,0)",
       overflow: "hidden",
     },
     pill: {
@@ -536,7 +533,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
 
   /* ─── pick card helper ─── */
   const PickCard = ({ selected, onClick, icon, name, desc, extra, showCheck = true }) => (
-    <div style={S.card(selected)} onClick={onClick}>
+    <motion.div style={S.card(selected)} onClick={onClick} whileTap={{ scale: .98 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
       {icon && <div style={S.cardIc}>{icon}</div>}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={S.cardNm}>{name}</div>
@@ -544,7 +541,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
         {extra && <div style={S.typeEx}>{extra}</div>}
       </div>
       {showCheck && <div style={S.ck(selected)}>{selected && <CheckIc />}</div>}
-    </div>
+    </motion.div>
   );
 
   /* review row icon */
@@ -567,8 +564,25 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
         .exp-qb:active { opacity:.8 }
       `}</style>
 
-      <div style={S.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className="exp-sheet" style={S.sheet}>
+      <AnimatePresence>
+        {open && (
+        <motion.div
+          key="exp-overlay"
+          style={S.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: .18 }}
+          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+          <motion.div
+            className="exp-sheet"
+            style={S.sheet}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+          >
           <div style={S.pill} />
 
           {/* HEADER */}
@@ -588,6 +602,15 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
           </div>
 
           <div style={S.stepContent}>
+          <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: .2 }}
+            style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
+          >
 
             {/* ── STEP 0: AMOUNT ── */}
             {step === 0 && <>
@@ -626,12 +649,12 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
               </div>
               <div style={{ ...S.pickScroll, gap: 9 }}>
                 {EXPENSE_TYPES.map(t => (
-                  <div key={t.key} style={S.typeCard(expType === t.key)} onClick={() => setExpType(t.key)}>
+                  <motion.div key={t.key} style={S.typeCard(expType === t.key)} onClick={() => setExpType(t.key)} whileTap={{ scale: .98 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
                     <div style={S.typeIcWrap}>{t.icon(expType === t.key ? acc : "rgba(255,255,255,.4)")}</div>
                     <div style={S.typeNm}>{t.name}</div>
                     <div style={S.typeDs}>{t.desc}</div>
                     <div style={S.typeEx}>{t.examples}</div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </>}
@@ -809,23 +832,43 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
               </div>
             </>}
 
+          </motion.div>
+          </AnimatePresence>
           </div>
 
           {/* BOTTOM BUTTON */}
           <div style={S.bot}>
-            <button
+            <motion.button
               style={S.botBtn(!digs && step === 0)}
               onClick={fwd}
               disabled={!digs && step === 0}
+              whileTap={{ scale: .96 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
             >
               {step === 8 ? (saving ? "Saving…" : "Add Expense") : step === 7 ? "Review →" : "Continue"}
-            </button>
+            </motion.button>
           </div>
 
           {/* HELP SHEET */}
+          <AnimatePresence>
           {showHelp && (
-            <div style={S.helpOverlay} onClick={() => setShowHelp(false)}>
-              <div style={S.helpSheet} onClick={e => e.stopPropagation()}>
+            <motion.div
+              key="exp-help-overlay"
+              style={S.helpOverlay}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: .18 }}
+              onClick={() => setShowHelp(false)}
+            >
+              <motion.div
+                style={S.helpSheet}
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                onClick={e => e.stopPropagation()}
+              >
                 <div style={S.helpPill} />
                 <div style={S.helpTitle}>What type of expense?</div>
                 <div style={S.helpRow}>
@@ -841,12 +884,15 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                   <div style={S.helpTxt}><strong style={{ color: "rgba(255,255,255,.9)" }}>Capital improvement</strong> &mdash; a major upgrade depreciated over years, not deducted immediately. Examples: new roof, HVAC system, full flooring.</div>
                 </div>
                 <button style={S.helpClose} onClick={() => setShowHelp(false)}>Got it</button>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
+          </AnimatePresence>
 
-        </div>
-      </div>
+          </motion.div>
+        </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

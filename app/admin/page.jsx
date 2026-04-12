@@ -27,6 +27,7 @@ import TenantsTab from "./components/TenantsTab";
 import PaymentsTab from "./components/PaymentsTab";
 import TenantTimeline from "./components/TenantTimeline";
 import AddExpenseSheet from "./components/AddExpenseSheet";
+import { motion, AnimatePresence } from "framer-motion";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
@@ -1452,12 +1453,20 @@ export default function Page(){
       })()}
     </div>
     {/* Mobile FAB — Add Expense (center-above-bot-bar, mobile only via .bot-fab CSS) */}
-    {(!sideOpen&&!showAddExpense)&&<button className="bot-fab" style={{background:_acc}} onClick={()=>setShowAddExpense(true)} aria-label="Add expense">
+    {(!sideOpen&&!showAddExpense)&&<motion.button
+      className="bot-fab"
+      style={{background:_acc}}
+      onClick={()=>setShowAddExpense(true)}
+      aria-label="Add expense"
+      whileTap={{scale:.88}}
+      whileHover={{scale:1.08}}
+      transition={{type:"spring",stiffness:400,damping:20}}
+    >
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
-    </button>}
+    </motion.button>}
     <div className={`mob-overlay ${sideOpen?"show":""}`} onClick={()=>setSideOpen(false)}/>
 
     {/* Sidebar */}
