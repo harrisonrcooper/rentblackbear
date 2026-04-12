@@ -273,6 +273,45 @@ export async function GET(req) {
       }
     }
 
+    // ── 5b. LEASE RENEWAL PROMPT (60-90 days before expiry) ─────────
+    // For executed leases expiring in 60-90 days where no renewal has been offered,
+    // create a one-time admin notification and mark renewal_offered on the lease.
+    try {
+      const renewalRes = await fetch(
+        `${SUPA_URL}/rest/v1/lease_instances?status=eq.executed&renewal_offered=not.is.true&select=*`,
+        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+      );
+      const renewalLeases = await renewalRes.json();
+      if (Array.isArray(renewalLeases)) {
+        for (const lease of renewalLeases) {
+          const leaseEnd = lease.variable_data?.leaseEnd;
+          if (!leaseEnd) continue;
+          const endDate = new Date(leaseEnd + "T00:00:00");
+          const daysLeft = Math.ceil((endDate - TODAY) / 86400000);
+          if (daysLeft < 60 || daysLeft > 90) continue;
+          const tenantName = lease.variable_data?.tenantName || "Tenant";
+          const property = lease.variable_data?.property || "";
+          const room = lease.variable_data?.room || "";
+          // Create admin notification
+          updatedNotifs.unshift({
+            id: uid(), type: "lease-renewal", roomId: lease.room_id || "",
+            msg: `Lease renewal due — ${tenantName} expires ${fmtD(leaseEnd)}${property ? " at " + property : ""}${room ? " " + room : ""}. Offer renewal or serve notice?`,
+            date: todayStr, read: false, urgent: daysLeft <= 70,
+          });
+          notifsChanged = true;
+          // Mark renewal_offered on the lease instance so it fires only once
+          await fetch(`${SUPA_URL}/rest/v1/lease_instances?id=eq.${lease.id}`, {
+            method: "PATCH",
+            headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+            body: JSON.stringify({ renewal_offered: true }),
+          });
+          log.push(`Renewal prompt: ${tenantName} — ${daysLeft}d left, renewal offered`);
+        }
+      }
+    } catch (renewalErr) {
+      log.push(`Renewal prompt error: ${renewalErr.message}`);
+    }
+
     // ── 6. MONTH-TO-MONTH AUTO ESCALATION ────────────────────────────
     // When a lease end date has passed and room is still occupied (not already m2m)
     for (let pi = 0; pi < updatedProps.length; pi++) {
