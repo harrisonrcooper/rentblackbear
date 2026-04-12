@@ -4,6 +4,22 @@ import './globals.css';
 export const metadata = {
   title: 'PropOS | Property Management', // TODO(saas): drive from settings.companyName
   description: 'Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities included.',
+  openGraph: {
+    title: 'PropOS | Property Management',
+    description: 'Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities included.',
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'PropOS',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PropOS | Property Management',
+    description: 'Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities included.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }) {
