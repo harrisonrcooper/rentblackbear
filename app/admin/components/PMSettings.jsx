@@ -209,6 +209,16 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
           <div className="fld"><label>Property Manager Name <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>{"\u2014"} used in outgoing reference & applicant emails</span></label><input value={settings.pmName||""} onChange={e=>setSettings({...settings,pmName:e.target.value})} placeholder="Jane Smith"/></div>
           <div className="fr3"><div className="fld"><label>Phone</label><input value={settings.phone} onChange={e=>setSettings({...settings,phone:e.target.value})}/></div><div className="fld"><label>Public Email</label><input value={settings.email} onChange={e=>setSettings({...settings,email:e.target.value})} placeholder="hello@example.com"/></div><div className="fld"><label>City</label><input value={settings.city} onChange={e=>setSettings({...settings,city:e.target.value})}/></div></div><div className="fld"><label>PM Notification Email <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0}}>{"\u2014"} where you receive application, lease, and payment alerts</span></label><input type="email" value={settings.pmEmail||""} onChange={e=>setSettings({...settings,pmEmail:e.target.value})} placeholder="pm@example.com"/></div>
         </div></div>
+        {/* Screening Provider */}
+        <div className="card" style={{marginTop:12}}><div className="card-bd">
+          <h3 style={{fontSize:13,fontWeight:800,marginBottom:4}}>Screening Provider</h3>
+          <p style={{fontSize:11,color:"#6b5e52",marginBottom:12}}>Enter the screening company you use for background and credit checks. This information is included in FCRA-required adverse action notices when denying applicants.</p>
+          <div className="fld"><label>Provider Name</label><input value={settings.screeningProviderName||""} onChange={e=>setSettings({...settings,screeningProviderName:e.target.value})} placeholder="e.g. RentPrep, SmartMove, TransUnion"/></div>
+          <div className="fld"><label>Provider Address</label><input value={settings.screeningProviderAddress||""} onChange={e=>setSettings({...settings,screeningProviderAddress:e.target.value})} placeholder="e.g. 123 Main St, Suite 100, Buffalo, NY 14201"/></div>
+          <div className="fld"><label>Provider Phone</label><input value={settings.screeningProviderPhone||""} onChange={e=>setSettings({...settings,screeningProviderPhone:e.target.value})} placeholder="e.g. (800) 555-1234"/></div>
+          <button className="btn btn-gold" style={{width:"100%",marginTop:4}} onClick={()=>save("hq-settings",settings)}>Save Screening Provider</button>
+        </div></div>
+
         {/* Email Templates */}
         {(()=>{
           const etOpen=expanded.emailTemplatesOpen;

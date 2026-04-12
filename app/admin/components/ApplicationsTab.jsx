@@ -67,25 +67,8 @@ export default function ApplicationsTab({
       return;
     }
     if (ns === "denied" && app) {
-      showConfirm({
-        title: `Deny ${app.name}?`,
-        body: `This will move the application to Denied and send a rejection email to ${app.email || "(no email)"}.\n\nYou can restore denied applicants later.`,
-        danger: true,
-        onConfirm: () => {
-          doMoveApp(id, "denied");
-          if (app.email) {
-            fetch("/api/send-email", {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                to: app.email,
-                subject: `Application Update — ${settings?.companyName || "Property Management"}`,
-                html: `<p>Hi ${(app.name || "").split(" ")[0]},</p><p>Thank you for your interest in renting with ${settings?.companyName || "us"}. After careful review, we've decided to move forward with another applicant for this unit.</p><p>We appreciate your time and wish you the best in your housing search.</p><p>— ${settings?.companyName || "Property Management"}</p>`,
-              }),
-            }).then(() => flashAuto(`Rejection email sent to ${app.email}`)).catch(console.error);
-          }
-          flashAuto(`${app.name} denied`);
-        },
-      });
+      // Open the FCRA adverse action notice modal instead of a simple confirmation
+      setModal({type:"denyApp",appId:app.id,data:app,reason:"",_aaStep:"reason",_aaReasonKey:""});
       return;
     }
     // All other status changes — no confirmation needed
