@@ -65,6 +65,37 @@ export async function POST(request) {
   try {
     const stripe = require("stripe")(STRIPE_SECRET);
 
+    // Check if the PM has a Stripe Connect account for direct payment routing
+    let connectParams = {};
+    try {
+      const SUPA_URL_S = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const SUPA_KEY_S = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (SUPA_URL_S && SUPA_KEY_S) {
+        const settingsRes = await fetch(
+          `${SUPA_URL_S}/rest/v1/app_data?key=eq.hq-settings&select=data`,
+          { headers: { apikey: SUPA_KEY_S, Authorization: `Bearer ${SUPA_KEY_S}` } }
+        );
+        const settingsRows = settingsRes.ok ? await settingsRes.json() : [];
+        const pmSettings = settingsRows?.[0]?.data;
+        const pmConnectAccountId = pmSettings?.stripeConnectAccountId;
+
+        if (pmConnectAccountId) {
+          // Platform fee percentage from settings, default 2.9%
+          const feePct = typeof pmSettings.platformFeePercent === "number"
+            ? pmSettings.platformFeePercent
+            : 2.9;
+          const amountCents = Math.round(amount * 100);
+          connectParams = {
+            transfer_data: { destination: pmConnectAccountId },
+            application_fee_amount: Math.round(amountCents * (feePct / 100)),
+          };
+        }
+      }
+    } catch (connectErr) {
+      // Non-fatal — fall back to direct charge if Connect lookup fails
+      console.warn("[create-payment-intent] Connect lookup failed (non-fatal):", connectErr?.message);
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // cents
       currency: "usd",
@@ -79,6 +110,8 @@ export async function POST(request) {
         roomId: roomId || "",
         propName: propName || "",
       },
+      // Route payment to PM's connected Stripe account (if configured)
+      ...connectParams,
     });
 
     return NextResponse.json({ clientSecret: paymentIntent.client_secret });

@@ -36,7 +36,8 @@
 //     URL:    https://<your-domain>/api/webhooks/stripe
 //     Events: payment_intent.succeeded, payment_intent.payment_failed,
 //             customer.subscription.created, customer.subscription.updated,
-//             customer.subscription.deleted, invoice.paid, invoice.payment_failed
+//             customer.subscription.deleted, invoice.paid, invoice.payment_failed,
+//             account.updated
 //   After creation, reveal the "Signing secret" (starts with whsec_) and add
 //   it to Vercel env vars as STRIPE_WEBHOOK_SECRET for Production and Preview,
 //   then redeploy.
@@ -123,6 +124,12 @@ export async function POST(req) {
 
       case "invoice.payment_failed": {
         await handleInvoicePaymentFailed(event.data.object);
+        return NextResponse.json({ received: true, type: event.type });
+      }
+
+      // ---- Connect account lifecycle ----
+      case "account.updated": {
+        await handleAccountUpdated(event.data.object);
         return NextResponse.json({ received: true, type: event.type });
       }
 
@@ -428,6 +435,33 @@ async function handleInvoicePaid(invoice) {
     await saveAppData("hq-subscription", subscriptionData);
     console.log(`[stripe-webhook] invoice.paid — extended period for sub=${invoice.subscription}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Connect account lifecycle
+// ---------------------------------------------------------------------------
+
+async function handleAccountUpdated(account) {
+  // When a PM completes Stripe Connect onboarding (or their status changes),
+  // persist the latest charges_enabled / payouts_enabled into hq-settings.
+  const settings = (await loadAppData("hq-settings", {})) || {};
+
+  // Only process if this account matches the one stored in settings
+  if (!settings.stripeConnectAccountId || settings.stripeConnectAccountId !== account.id) {
+    return;
+  }
+
+  const updated = {
+    ...settings,
+    stripeConnectChargesEnabled: account.charges_enabled,
+    stripeConnectPayoutsEnabled: account.payouts_enabled,
+    stripeConnectDetailsSubmitted: account.details_submitted,
+  };
+
+  await saveAppData("hq-settings", updated);
+  console.log(
+    `[stripe-webhook] account.updated ${account.id}: charges=${account.charges_enabled} payouts=${account.payouts_enabled} details=${account.details_submitted}`
+  );
 }
 
 async function handleInvoicePaymentFailed(invoice) {

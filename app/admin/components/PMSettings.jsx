@@ -178,6 +178,127 @@ function SubscriptionCard() {
   );
 }
 
+function ConnectCard({ settings, setSettings, save }) {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/connect");
+      if (res.ok) setStatus(await res.json());
+    } catch {
+      /* silent */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  // Re-fetch after returning from Stripe onboarding
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("connect=complete")) {
+      fetchStatus();
+    }
+  }, [fetchStatus]);
+
+  const handleAction = async (action) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch("/api/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const json = await res.json();
+      if (json.url) window.location.href = json.url;
+    } catch {
+      /* silent */
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const isConnected = status?.connected && status?.chargesEnabled;
+  const isPending = status?.connected && !status?.chargesEnabled;
+
+  return (
+    <div className="card" style={{ marginBottom: 12 }}>
+      <div className="card-bd">
+        <h3 style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>Payment Processing</h3>
+        <p style={{ fontSize: 11, color: "#6b5e52", marginBottom: 14 }}>
+          Connect your Stripe account to receive tenant payments directly into your bank account.
+        </p>
+
+        {loading ? (
+          <div style={{ fontSize: 12, color: "#999", padding: "12px 0" }}>Checking Stripe connection...</div>
+        ) : isConnected ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 8, background: "rgba(74,124,89,.1)", color: "#2d6a3f" }}>
+                Connected
+              </span>
+              <span style={{ fontSize: 10, color: "#999" }}>
+                Payments route to your Stripe account
+              </span>
+            </div>
+            <div className="fld" style={{ marginBottom: 12 }}>
+              <label>Platform Fee % <span style={{ fontWeight: 400, color: "#6b5e52" }}>(charged on each tenant payment)</span></label>
+              <input
+                type="number"
+                min={0}
+                max={50}
+                step={0.1}
+                value={typeof settings.platformFeePercent === "number" ? settings.platformFeePercent : 2.9}
+                onChange={e => {
+                  const u = { ...settings, platformFeePercent: Number(e.target.value) };
+                  setSettings(u);
+                  save("hq-settings", u);
+                }}
+                style={{ width: 120 }}
+              />
+            </div>
+            <button
+              className="btn btn-out btn-sm"
+              disabled={actionLoading}
+              onClick={() => handleAction("dashboard")}
+            >
+              View Stripe Dashboard
+            </button>
+          </>
+        ) : isPending ? (
+          <>
+            <div style={{ marginBottom: 12, padding: "8px 12px", background: "rgba(212,168,83,.08)", borderRadius: 6, fontSize: 11, color: "#9a7422", fontWeight: 600 }}>
+              Your Stripe account setup is incomplete. Complete onboarding to start receiving payments.
+            </div>
+            <button
+              className="btn btn-gold btn-sm"
+              disabled={actionLoading}
+              onClick={() => handleAction("onboard")}
+            >
+              Complete Stripe Setup
+            </button>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 11, color: "#6b5e52", marginBottom: 12 }}>
+              Connect your Stripe account to receive tenant payments directly. Without this, payments are processed through the platform account.
+            </div>
+            <button
+              className="btn btn-gold btn-sm"
+              disabled={actionLoading}
+              onClick={() => handleAction("onboard")}
+            >
+              Set Up Stripe
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function UsageBar({ label, used, limit }) {
   const isUnlimited = limit === Infinity || limit === null;
   const pct = isUnlimited ? 0 : Math.min(100, Math.round((used / limit) * 100));
@@ -203,6 +324,7 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
     <>
         <div className="sec-hd"><div><h2>PM Settings</h2><p>Company info, lease rules, email templates, and notifications</p></div></div>
         <SubscriptionCard />
+        <ConnectCard settings={settings} setSettings={setSettings} save={save} />
         <div className="card"><div className="card-bd">
           <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Company Info</h3>
           <div className="fr"><div className="fld"><label>Company Name</label><input value={settings.companyName} onChange={e=>setSettings({...settings,companyName:e.target.value})}/></div><div className="fld"><label>Legal Entity</label><input value={settings.legalName} onChange={e=>setSettings({...settings,legalName:e.target.value})}/></div></div>
