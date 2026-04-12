@@ -179,6 +179,7 @@ export default function ModalRenderer({
             Back
           </button>
           <div style={{display:"flex",gap:8}}>
+            <button className="btn btn-out btn-sm" style={{color:"#9a7422",borderColor:"rgba(154,116,34,.2)"}} onClick={()=>setModal(prev=>({...prev,moveOutStep:1,moveOutDate:r.le||new Date().toISOString().split("T")[0],moveOutChecklist:{cleaning:false,keyReturn:false,forwarding:false,meterReading:false},moveOutNotes:{cleaning:"",keyReturn:"",forwarding:"",meterReading:""}}))}>Move Out</button>
             <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{}}))}>Terminate</button>
           </div>
         </div>
@@ -404,6 +405,108 @@ export default function ModalRenderer({
                     <button className="btn btn-out btn-sm" style={{width:"100%"}} onClick={()=>{setModal(null);goTab("leases");setTimeout(()=>openCreateLease(null),100);}}>Create Lease →</button>
                   </div>
                 )}
+              </div>);
+            })()}
+
+            {/* Move-Out flow */}
+            {modal.moveOutStep===1&&<div style={{background:"#fff",borderRadius:12,border:"2px solid rgba(154,116,34,.25)",padding:"20px 24px"}}>
+              <div style={{fontSize:15,fontWeight:800,color:"#9a7422",marginBottom:14}}>Move-Out Checklist</div>
+              <div className="fld"><label>Move-Out Date</label><input type="date" value={modal.moveOutDate||""} onChange={e=>setModal(p=>({...p,moveOutDate:e.target.value}))} style={{width:"100%"}}/></div>
+              {[["cleaning","Cleaning Inspection"],["keyReturn","Key Return"],["forwarding","Forwarding Address Collected"],["meterReading","Final Meter Reading"]].map(([k,label])=>(
+                <div key={k} style={{padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
+                  <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600}}>
+                    <input type="checkbox" checked={modal.moveOutChecklist?.[k]||false} onChange={e=>setModal(p=>({...p,moveOutChecklist:{...p.moveOutChecklist,[k]:e.target.checked}}))}/>
+                    {label}
+                  </label>
+                  <input placeholder="Notes (optional)" value={modal.moveOutNotes?.[k]||""} onChange={e=>setModal(p=>({...p,moveOutNotes:{...p.moveOutNotes,[k]:e.target.value}}))} style={{width:"100%",marginTop:4,padding:"4px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}}/>
+                </div>
+              ))}
+              <div style={{display:"flex",gap:6,marginTop:12}}>
+                <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(p=>({...p,moveOutStep:null}))}>Cancel</button>
+                <button className="btn" style={{flex:1,background:"#9a7422",color:"#fff"}} onClick={async()=>{
+                  if(!modal.moveOutDate){shakeModal();return;}
+                  const dueDate=new Date(modal.moveOutDate+"T00:00:00");dueDate.setDate(dueDate.getDate()+60);
+                  const sdDueStr=dueDate.toISOString().split("T")[0];
+                  // Update room: set moveOutDate, checklist, status to "notice"
+                  const updatedProps=props.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id===r.id?{...rm,st:"notice",tenant:{...rm.tenant,moveOutDate:modal.moveOutDate,moveOutChecklist:{...modal.moveOutChecklist,notes:modal.moveOutNotes},sdReturnDueDate:sdDueStr}}:rm)}))}));
+                  setProps(updatedProps);
+                  await save("hq-props",updatedProps);
+                  // Create notification
+                  const nid=crypto.randomUUID();
+                  const companyName=settings.companyName||"Property Management";
+                  const newNotif={id:nid,type:"move-out",roomId:r.id,msg:`Move-out initiated for ${r.tenant.name} — SD return due by ${fmtD(sdDueStr)} (Alabama 60-day rule)`,date:new Date().toISOString().split("T")[0],read:false,urgent:false};
+                  setNotifs(p=>[newNotif,...p]);
+                  save("hq-notifs",[newNotif,...notifs]);
+                  // Send confirmation email to tenant
+                  if(r.tenant.email){
+                    try{await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:r.tenant.email,subject:`Move-Out Confirmation — ${modal.moveOutDate}`,fromName:(settings.pmName||"Property Manager")+" | "+companyName,replyTo:settings.pmEmail||settings.email||"",html:`<p>Hi ${(r.tenant.name||"").split(" ")[0]||"there"},</p><p>This confirms your move-out date of <strong>${fmtD(modal.moveOutDate)}</strong> from <strong>${r.propName} — ${r.name}</strong>.</p><p>Your security deposit, less any lawful deductions, will be returned within 60 days of your move-out date along with an itemized statement of any deductions.</p><p>Please ensure the following before your move-out date:</p><ul><li>Return all keys</li><li>Provide a forwarding address</li><li>Complete final cleaning</li><li>Coordinate final meter reading</li></ul><p>Thank you,<br/>${companyName}</p>`})});}catch(e){console.error("Move-out email failed:",e);}
+                  }
+                  // Move to SD reconciliation step
+                  setModal(p=>({...p,moveOutStep:2,sdDeductions:[],sdReturnDueDate:sdDueStr}));
+                }}>Confirm Move-Out</button>
+              </div>
+            </div>}
+            {/* SD Reconciliation */}
+            {modal.moveOutStep===2&&(()=>{
+              const sdCharge=charges.find(c=>c.roomId===r.id&&c.category==="Security Deposit");
+              const sdEntry=(sdLedger||[]).find(e=>e.roomId===r.id);
+              const sdHeld=sdEntry?.amount||sdCharge?.amountPaid||sdCharge?.amount||0;
+              const deductions=modal.sdDeductions||[];
+              const totalDed=deductions.reduce((s,d)=>s+Number(d.amount||0),0);
+              const returnAmt=Math.max(0,sdHeld-totalDed);
+              return(
+              <div style={{background:"#fff",borderRadius:12,border:"2px solid rgba(154,116,34,.25)",padding:"20px 24px"}}>
+                <div style={{fontSize:15,fontWeight:800,color:"#9a7422",marginBottom:14}}>Security Deposit Reconciliation</div>
+                <div style={{display:"flex",justifyContent:"space-between",padding:"10px 14px",background:"rgba(154,116,34,.06)",borderRadius:8,marginBottom:14}}>
+                  <div><div style={{fontSize:10,color:"#6b5e52",fontWeight:700}}>SD HELD</div><div style={{fontSize:20,fontWeight:800}}>{fmtS(sdHeld)}</div></div>
+                  <div style={{textAlign:"center"}}><div style={{fontSize:10,color:"#c45c4a",fontWeight:700}}>DEDUCTIONS</div><div style={{fontSize:20,fontWeight:800,color:"#c45c4a"}}>{fmtS(totalDed)}</div></div>
+                  <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#4a7c59",fontWeight:700}}>RETURN</div><div style={{fontSize:20,fontWeight:800,color:"#4a7c59"}}>{fmtS(returnAmt)}</div></div>
+                </div>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>Itemized Deductions</div>
+                {deductions.map((d,i)=>(
+                  <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+                    <input placeholder="Description" value={d.desc||""} onChange={e=>{const nd=[...deductions];nd[i]={...nd[i],desc:e.target.value};setModal(p=>({...p,sdDeductions:nd}));}} style={{flex:2,padding:"6px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+                    <input type="number" placeholder="$" value={d.amount||""} onChange={e=>{const nd=[...deductions];nd[i]={...nd[i],amount:e.target.value};setModal(p=>({...p,sdDeductions:nd}));}} style={{flex:0.7,padding:"6px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
+                    <select value={d.category||""} onChange={e=>{const nd=[...deductions];nd[i]={...nd[i],category:e.target.value};setModal(p=>({...p,sdDeductions:nd}));}} style={{flex:1,padding:"6px 4px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
+                      <option value="">Category</option><option value="cleaning">Cleaning</option><option value="damage">Damage</option><option value="unpaid_rent">Unpaid Rent</option><option value="other">Other</option>
+                    </select>
+                    <button onClick={()=>{const nd=deductions.filter((_,j)=>j!==i);setModal(p=>({...p,sdDeductions:nd}));}} style={{background:"none",border:"none",cursor:"pointer",color:"#c45c4a",fontSize:14,padding:"0 4px"}}>x</button>
+                  </div>
+                ))}
+                <button onClick={()=>setModal(p=>({...p,sdDeductions:[...deductions,{id:crypto.randomUUID(),desc:"",amount:"",category:""}]}))} style={{background:"none",border:"1px dashed rgba(0,0,0,.15)",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:600,color:"#6b5e52",width:"100%",marginBottom:14,fontFamily:"inherit"}}>+ Add Deduction</button>
+                <div style={{fontSize:10,color:"#6b5e52",marginBottom:10}}>SD return due by {fmtD(modal.sdReturnDueDate)} (Alabama 60-day rule)</div>
+                <div style={{display:"flex",gap:6}}>
+                  <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(p=>({...p,moveOutStep:null}))}>Skip for Now</button>
+                  <button className="btn" style={{flex:1,background:"#4a7c59",color:"#fff"}} onClick={async()=>{
+                    const companyName=settings.companyName||"Property Management";
+                    // Create credit for return amount
+                    if(returnAmt>0){
+                      const creditId=crypto.randomUUID();
+                      const newCredit={id:creditId,roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,category:"Security Deposit Return",desc:`SD return — ${deductions.length} deduction(s) totaling ${fmtS(totalDed)}`,amount:returnAmt,date:new Date().toISOString().split("T")[0]};
+                      setCredits(p=>[newCredit,...(p||[])]);
+                      save("hq-credits",[newCredit,...(credits||[])]);
+                    }
+                    // Update SD ledger
+                    const ledgerEntry={id:crypto.randomUUID(),roomId:r.id,tenantName:r.tenant.name,propName:r.propName,amountHeld:sdHeld,deductions:deductions.map(d=>({desc:d.desc,amount:Number(d.amount||0),category:d.category})),totalDeductions:totalDed,returnAmount:returnAmt,reconciledDate:new Date().toISOString().split("T")[0],moveOutDate:modal.moveOutDate};
+                    const updatedSdLedger=[ledgerEntry,...(sdLedger||[])];
+                    setSdLedger(updatedSdLedger);
+                    save("hq-sdledger",updatedSdLedger);
+                    // Set sdReconciled on tenant
+                    const updatedProps=props.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id===r.id?{...rm,tenant:{...rm.tenant,sdReconciled:true,sdReturnDueDate:modal.sdReturnDueDate}}:rm)}))}));
+                    setProps(updatedProps);
+                    await save("hq-props",updatedProps);
+                    // Send itemized statement email
+                    if(r.tenant.email){
+                      const dedRows=deductions.map(d=>`<tr><td style="padding:6px 10px;border-bottom:1px solid #eee">${d.desc||"—"}</td><td style="padding:6px 10px;border-bottom:1px solid #eee">${d.category||"—"}</td><td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${fmtS(d.amount)}</td></tr>`).join("");
+                      try{await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:r.tenant.email,subject:`Security Deposit Itemized Statement — ${r.propName}`,fromName:(settings.pmName||"Property Manager")+" | "+companyName,replyTo:settings.pmEmail||settings.email||"",html:`<p>Hi ${(r.tenant.name||"").split(" ")[0]||"there"},</p><p>Below is your itemized security deposit statement for <strong>${r.propName} — ${r.name}</strong>.</p><table style="width:100%;border-collapse:collapse;margin:16px 0"><tr style="background:#f5f4f1"><th style="padding:8px 10px;text-align:left">Description</th><th style="padding:8px 10px;text-align:left">Category</th><th style="padding:8px 10px;text-align:right">Amount</th></tr>${dedRows}<tr style="font-weight:700"><td colspan="2" style="padding:8px 10px">Total Deductions</td><td style="padding:8px 10px;text-align:right">${fmtS(totalDed)}</td></tr></table><p><strong>Security Deposit Held:</strong> ${fmtS(sdHeld)}<br/><strong>Total Deductions:</strong> ${fmtS(totalDed)}<br/><strong>Amount to be Returned:</strong> ${fmtS(returnAmt)}</p><p>Per Alabama law, your deposit return will be processed within 60 days of your move-out date.</p><p>Thank you,<br/>${companyName}</p>`})});}catch(e){console.error("SD statement email failed:",e);}
+                    }
+                    // Notification
+                    const nid2=crypto.randomUUID();
+                    setNotifs(p=>[{id:nid2,type:"sd-reconciled",roomId:r.id,msg:`SD reconciled for ${r.tenant.name}: ${fmtS(sdHeld)} held, ${fmtS(totalDed)} deducted, ${fmtS(returnAmt)} to return`,date:new Date().toISOString().split("T")[0],read:false,urgent:false},...p]);
+                    setModal(p=>({...p,moveOutStep:null}));
+                    showAlert&&showAlert({title:"SD Reconciled",body:`Return of ${fmtS(returnAmt)} recorded. Itemized statement sent to ${r.tenant.email||"tenant"}.`});
+                  }}>Finalize SD Return</button>
+                </div>
               </div>);
             })()}
 

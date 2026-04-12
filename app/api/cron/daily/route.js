@@ -783,6 +783,58 @@ export async function GET(req) {
       }
     }
 
+    // ── 8. SECURITY DEPOSIT 60-DAY DEADLINE MONITORING ─────────────────
+    // Alabama law requires SD return within 60 days of move-out.
+    // Warn at 45 days (15 left), 55 days (5 left), 60 days (overdue).
+    for (const prop of updatedProps) {
+      for (const room of allRooms(prop)) {
+        if (!room.tenant?.moveOutDate || room.tenant?.sdReconciled) continue;
+        const moveOut = new Date(room.tenant.moveOutDate + "T00:00:00");
+        const daysSince = Math.ceil((TODAY - moveOut) / 86400000);
+        if (daysSince < 0) continue; // move-out hasn't happened yet
+        const warnings = room.tenant.sdWarnings || [];
+        const tenantName = room.tenant.name || "Tenant";
+        const roomLabel = `${room.propName || prop.name} ${room.name || ""}`.trim();
+        const sdDueDate = new Date(moveOut); sdDueDate.setDate(sdDueDate.getDate() + 60);
+        const sdDueStr = fmtDate(sdDueDate);
+
+        const checkAlert = (threshold, level, msg) => {
+          if (daysSince < threshold) return;
+          const key = `sd-${threshold}`;
+          if (warnings.includes(key)) return;
+          // Update warnings on tenant to avoid duplicates
+          warnings.push(key);
+          // Find and update room in props
+          for (let pi2 = 0; pi2 < updatedProps.length; pi2++) {
+            const p2 = updatedProps[pi2];
+            let changed = false;
+            const newUnits = (p2.units || []).map(u => ({
+              ...u, rooms: (u.rooms || []).map(rm => {
+                if (rm.id === room.id) { changed = true; return { ...rm, tenant: { ...rm.tenant, sdWarnings: warnings } }; }
+                return rm;
+              })
+            }));
+            if (changed) { updatedProps[pi2] = { ...p2, units: newUnits }; propsChanged = true; }
+          }
+          updatedNotifs.unshift({
+            id: uid(), type: "sd-deadline", roomId: room.id,
+            msg, date: todayStr, read: false,
+            urgent: level === "urgent" || level === "critical",
+          });
+          notifsChanged = true;
+          // Email PM
+          if (s.pmEmail || s.email) {
+            sendEmail(s.pmEmail || s.email, `${level === "critical" ? "CRITICAL" : level === "urgent" ? "URGENT" : "Reminder"}: SD Return — ${tenantName}`, emailWrap(`<p><strong>${msg}</strong></p><p>Tenant: ${tenantName}<br/>Property: ${roomLabel}<br/>Move-out date: ${fmtD(room.tenant.moveOutDate)}<br/>SD return due: ${fmtD(sdDueStr)}</p><p>Alabama law requires security deposits to be returned within 60 days with an itemized statement of deductions.</p>`), s);
+          }
+          log.push(`SD ${level}: ${tenantName} — ${daysSince}d since move-out`);
+        };
+
+        checkAlert(45, "warning", `SD return due in ${Math.max(0, 60 - daysSince)} days for ${tenantName} — ${roomLabel} (due ${fmtD(sdDueStr)})`);
+        checkAlert(55, "urgent", `URGENT: SD return due in ${Math.max(0, 60 - daysSince)} days for ${tenantName} — Alabama 60-day deadline — ${roomLabel}`);
+        checkAlert(60, "critical", `CRITICAL: SD RETURN OVERDUE for ${tenantName} — ${roomLabel}. Alabama 60-day deadline passed. Legal liability.`);
+      }
+    }
+
     // ── Save ──────────────────────────────────────────────────────────
     const saves = [];
     if (chargesChanged) saves.push(supaSet("hq-charges", updatedCharges));
