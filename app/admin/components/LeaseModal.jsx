@@ -11,7 +11,7 @@ async function upsertLease(lease){try{await supa("lease_instances",{method:"POST
 async function patchLease(id,updates){try{await supa("lease_instances?id=eq."+id,{method:"PATCH",prefer:"resolution=merge-duplicates",body:JSON.stringify({...updates,updated_at:new Date().toISOString()})});}catch(e){console.error("Patch lease error:",e);}}
 async function deleteLeaseInDB(id){try{await supa("lease_instances?id=eq."+id,{method:"DELETE"});}catch(e){console.error("Delete lease error:",e);}}
 
-async function sendEmail({to,subject,html,fromName="Black Bear Rentals",replyTo}){
+async function sendEmail({to,subject,html,fromName="Property Manager",replyTo}){
   try{
     await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({to,subject,html,fromName,replyTo})});
@@ -26,7 +26,8 @@ const fmtD=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return`${dt.ge
 const fmtDLong=d=>{if(!d)return"—";const dt=new Date(d+"T00:00:00");return dt.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});};
 const numberToWords=(n)=>{const ones=["","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE","TEN","ELEVEN","TWELVE","THIRTEEN","FOURTEEN","FIFTEEN","SIXTEEN","SEVENTEEN","EIGHTEEN","NINETEEN"];const tens=["","","TWENTY","THIRTY","FORTY","FIFTY","SIXTY","SEVENTY","EIGHTY","NINETY"];if(!n||n===0)return"ZERO";if(n<20)return ones[n];if(n<100)return tens[Math.floor(n/10)]+(n%10?" "+ones[n%10]:"");if(n<1000)return ones[Math.floor(n/100)]+" HUNDRED"+(n%100?" "+numberToWords(n%100):"");return numberToWords(Math.floor(n/1000))+" THOUSAND"+(n%1000?" "+numberToWords(n%1000):"");};
 const save=async(k,d)=>{try{await supa("app_data",{method:"POST",prefer:"resolution=merge-duplicates",body:JSON.stringify({key:k,value:d})});}catch(e){console.error("Save error:",k,e);}};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",pmName:"Carolina Cooper",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",siteUrl:"https://rentblackbear.com",utilTemplates:null,m2mIncrease:50,m2mNoticeDays:30};
+// Default — operator sets their own in Settings
+const DEF_SETTINGS={companyName:"Your Company",legalName:"Your Legal Entity LLC",pmName:"Property Manager",phone:"(555) 000-0000",email:"hello@example.com",pmEmail:"",city:"Your City, ST",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",siteUrl:"",utilTemplates:null,m2mIncrease:50,m2mNoticeDays:30};
 
 // ── Property helpers (re-declared) ───────────────────────────────────
 const allRooms=(prop)=>{if(!prop)return[];if(prop.units&&prop.units.length>0)return prop.units.flatMap(u=>u.rooms||[]);return prop.rooms||[];};
@@ -94,7 +95,7 @@ export default function LeaseModal({
       PARKING_SPACE:leaseForm.parking||"See property map",
       DOOR_CODE:leaseForm.doorCode||"Assigned at move-in",
       UTILITIES_CLAUSE:leaseForm.utilitiesClause||"",
-      LANDLORD_NAME:leaseForm.landlordName||"Carolina Cooper",
+      LANDLORD_NAME:leaseForm.landlordName||settings.pmName||"",
     };
     const newLease={
       ...leaseForm,
@@ -782,7 +783,7 @@ export default function LeaseModal({
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
                   <img src={settings.savedSignature} alt="Saved sig" style={{maxHeight:50,border:"1px solid rgba(0,0,0,.08)",borderRadius:6,padding:4,background:"#fff"}}/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:11,fontWeight:600}}>Carolina Cooper</div>
+                    <div style={{fontSize:11,fontWeight:600}}>{settings.pmName||"Property Manager"}</div>
                     <div style={{fontSize:10,color:"#6b5e52"}}>Saved signature on file</div>
                   </div>
                   <button className="btn btn-green btn-sm" onClick={()=>{setModal(p=>({...p,landlordSig:settings.savedSignature}));setLeaseSigErr(false);}}>Use This</button>
@@ -792,7 +793,7 @@ export default function LeaseModal({
 
             <div style={{background:"rgba(74,124,89,.06)",borderRadius:10,padding:12,marginBottom:14}}>
               <div style={{fontSize:11,fontWeight:700,color:"#2d6a3f",marginBottom:8}}>
-                {modal.landlordSig?"✓ Signature Captured":"Draw Your Signature — "+(modal.lease?.landlordName||"Carolina Cooper")}
+                {modal.landlordSig?"✓ Signature Captured":"Draw Your Signature — "+(modal.lease?.landlordName||settings.pmName||"")}
               </div>
               {modal.landlordSig
                 ?<div>
@@ -868,12 +869,12 @@ export default function LeaseModal({
                 if(tenantEmail){
                   sendEmail({
                     to:tenantEmail,
-                    subject:"Your Lease is Ready to Sign — Black Bear Rentals",
-                    fromName:"Carolina Cooper | Black Bear Rentals",
+                    subject:`Your Lease is Ready to Sign — ${settings.companyName||""}`,
+                    fromName:`${settings.pmName||"Property Manager"} | ${settings.companyName||""}`,
                     replyTo:"blackbearhousing@gmail.com",
                     html:`<div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;max-width:560px;margin:0 auto;background:#f4f3f0;padding:32px 16px">
                       <div style="background:#1a1714;border-radius:12px 12px 0 0;padding:24px 32px;text-align:center">
-                        <div style="font-size:20px;font-weight:700;color:#d4a853">Black Bear Rentals</div>
+                        <div style="font-size:20px;font-weight:700;color:#d4a853">${settings.companyName||""}</div>
                         <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;text-transform:uppercase;letter-spacing:1px">Lease Agreement — Action Required</div>
                       </div>
                       <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;border:1px solid rgba(0,0,0,.08);border-top:none">
@@ -886,7 +887,7 @@ export default function LeaseModal({
                         <a href="${link}" style="display:block;text-align:center;background:#1a1714;color:#d4a853;text-decoration:none;font-weight:700;font-size:14px;padding:16px 24px;border-radius:8px;margin-bottom:20px">Review &amp; Sign Your Lease →</a>
                         <p style="font-size:11px;color:#9a8878;line-height:1.6;margin:0">If the button above doesn't work, copy and paste this link into your browser:<br/><span style="color:#1d4ed8;word-break:break-all">${link}</span></p>
                       </div>
-                      <p style="text-align:center;font-size:10px;color:#9a8878;margin-top:16px">Black Bear Rentals · Huntsville, Alabama · blackbearhousing@gmail.com</p>
+                      <p style="text-align:center;font-size:10px;color:#9a8878;margin-top:16px">${settings.companyName||""} · ${settings.city||""} · ${settings.email||""}</p>
                     </div>`,
                   });
                 }

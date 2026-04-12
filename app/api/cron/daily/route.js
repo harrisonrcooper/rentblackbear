@@ -213,7 +213,7 @@ export async function GET(req) {
 
     // ── 4. DAILY REMINDERS ────────────────────────────────────────────
     if (autoReminders) {
-      const reminderTemplate = s.reminderTemplate || "Hi {firstName}, your {category} of {amount} was due on {dueDate}. Please pay at: {portalLink}\n\nThank you — Black Bear Rentals";
+      const reminderTemplate = s.reminderTemplate || "Hi {firstName}, your {category} of {amount} was due on {dueDate}. Please pay at: {portalLink}\n\nThank you!";
       const activeReminders = updatedCharges.filter(c => c.reminderActive && c.amountPaid < c.amount);
       for (const c of activeReminders) {
         // Find tenant email
@@ -284,7 +284,7 @@ export async function GET(req) {
                 <li><strong>Continue month-to-month</strong> at ${fmtS(newRent)}/mo — either party may terminate with 30 days written notice</li>
               </ul>
               <p>Please log in to your tenant portal to review your options: <a href="${portalLink}">Access Portal</a></p>
-              <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+              <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
               s
             );
           }
@@ -351,7 +351,7 @@ export async function GET(req) {
                     <p>Your automatic rent payment of <strong>${fmtS(amountDue)}</strong> has been processed successfully.</p>
                     <p><strong>Confirmation:</strong> ${paymentIntent.id}</p>
                     <p>Log in to your tenant portal to view your payment history: <a href="${portalLink}">Access Portal</a></p>
-                    <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+                    <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
                     s
                   );
                 }
@@ -370,7 +370,7 @@ export async function GET(req) {
                   emailWrap(`<p>Hi ${tenantName.split(" ")[0]},</p>
                   <p>Your automatic rent payment of <strong>${fmtS(amountDue)}</strong> could not be processed.</p>
                   <p>Please log in to your tenant portal to pay manually and update your payment method: <a href="${portalLink}">Access Portal</a></p>
-                  <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+                  <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
                   s
                 );
               }
@@ -462,7 +462,7 @@ export async function GET(req) {
               <li>Access your tenant portal for payments and documents: <a href="${portalLink}">Access Portal</a></li>
             </ul>
             <p>If you have any questions, reply to this email or text us at ${s.phone || "(850) 696-8101"}.</p>
-            <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+            <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
             s
           );
           log.push(`Welcome email sent: ${room.tenant.name} — moves in ${fmtD(room.tenant.moveIn)}`);
@@ -476,11 +476,11 @@ export async function GET(req) {
             if (!Array.isArray(puData) || puData.length === 0) {
               // No portal account — send invite email
               await sendEmail(tenantEmail,
-                `Set Up Your Tenant Portal — ${s.companyName || "Black Bear Rentals"}`,
+                `Set Up Your Tenant Portal — ${s.companyName || ""}`,
                 emailWrap(`<p>Hi ${firstName},</p>
                 <p>Your tenant portal is ready. Use it to pay rent, view your lease, and submit maintenance requests.</p>
                 <p><a href="${portalLink}" style="display:inline-block;padding:12px 24px;background:#4a7c59;color:#fff;border-radius:8px;text-decoration:none;font-weight:700">Set Up Portal</a></p>
-                <p>${s.companyName || "Black Bear Rentals"}<br/>${s.phone || ""}</p>`),
+                <p>${s.companyName || ""}<br/>${s.phone || ""}</p>`),
                 s
               );
               log.push(`Portal invite sent: ${room.tenant.name}`);

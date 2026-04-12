@@ -45,7 +45,7 @@ export async function POST(request) {
     }
 
     const senderEmail = process.env.SENDER_EMAIL || "hello@rentblackbear.com";
-    const senderName = process.env.SENDER_NAME || "Black Bear Rentals";
+    const senderName = process.env.SENDER_NAME || "Property Manager";
 
     const body = {
       from: fromName

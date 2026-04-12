@@ -34,7 +34,7 @@ export async function POST(request) {
       method:"POST", headers:{Authorization:`Bearer ${resendKey}`,"Content-Type":"application/json"},
       body: JSON.stringify({
         from: fromAddress(s), to: email,
-        subject: `Application Received — ${s.companyName} 🐻`,
+        subject: `Application Received — ${s.companyName}`,
         html: emailWrap(`
           <h2 style="font-size:22px;margin:0 0 12px;color:#1a1714;">Application Received!</h2>
           <p style="font-size:14px;color:#5c4a3a;line-height:1.7;margin-bottom:20px;">

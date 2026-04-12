@@ -386,7 +386,8 @@ function isLastDayOfMonth(d){const next=new Date(d);next.setDate(next.getDate()+
 const CUR_MONTH_KEY=getMonthKey(TODAY);
 const PREV_MONTH_KEY=getMonthKey(new Date(TODAY.getFullYear(),TODAY.getMonth()-1,1));
 const SC_GOALS={occ:100,coll:100,vacancy:0,leads:5};
-const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Development LLC",pmName:"Carolina Cooper",phone:"(850) 696-8101",email:"info@rentblackbear.com",pmEmail:"blackbearhousing@gmail.com",city:"Huntsville, Alabama",tagline:"Huntsville's Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you! — Black Bear Rentals",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","money"],couplesDefault:false,
+// Default — operator sets their own in Settings
+const DEF_SETTINGS={companyName:"Your Company",legalName:"Your Legal Entity LLC",pmName:"Property Manager",phone:"(555) 000-0000",email:"hello@example.com",pmEmail:"",city:"Your City, ST",tagline:"Turnkey Co-Living",heroHeadline:"Your Room Is Ready.",heroSubline:"Everything's Included.",heroDesc:"Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities — all handled.",adminFee:10,reminderTemplate:"Hi {firstName}, this is a friendly reminder that your {category} of {amount} was due on {dueDate}. Please log in to your tenant portal to view your balance and pay: {portalLink}\n\nIf you have already sent payment, please disregard this message. Thank you!",notifAppReceived:true,notifLeaseSent:true,notifLeaseSigned:true,notifPaymentReceived:true,notifMaintenanceRequest:true,notifPrescreen:true,showPayBadge:true,showAppBadge:true,adminPresetId:"forest",adminAccent:"#4a7c59",adminAccentRgb:"74,124,89",adminFont:"'Plus Jakarta Sans',system-ui,sans-serif",adminZoom:1,m2mIncrease:50,m2mNoticeDays:30,autoReminders:true,mobileTabs:["dashboard","tenants","applications","money"],couplesDefault:false,
   // Portfolio-wide late fee defaults — per-room lateConfig inherits these if fields are null
   lateFeeGraceDays:3,    // days after due before any fee applies
   lateFeeInitial:50,     // default one-time initial fee (flat $)
@@ -394,7 +395,7 @@ const DEF_SETTINGS={companyName:"Black Bear Rentals",legalName:"Oak & Main Devel
   emailTemplates:{
     prescreenSubject:"📋 New Pre-Screen — {name} · {property}",
     prescreenBody:"A new pre-screen was submitted by {name}. They passed all screening questions and left their contact info. Log in to admin to review and follow up.",
-    prescreenTenantSubject:"You're on our radar, {firstName} 🐻 — Black Bear Rentals",
+    prescreenTenantSubject:"You're on our radar, {firstName} — {companyName}",
     prescreenTenantBody:"Thanks for reaching out, {firstName}! You passed our pre-screen — nice work. We've received your info and one of our team members will be in touch within 24 hours to discuss next steps.",
     applicationSubject:"📝 New Application — {name} · {property}",
     applicationBody:"A full application was submitted by {name} for {property}{room}. Review in admin.",
@@ -1479,7 +1480,7 @@ export default function Page(){
 
     {/* Sidebar */}
     <div className={`side ${sideOpen?"open":""}`} style={{zoom:_zoom,height:`calc(100vh / ${_zoom})`}}>
-      <div className="s-logo">🐻 Black Bear <span>HQ</span></div>
+      <div className="s-logo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight:6,flexShrink:0}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>{settings.companyName||"PropOS"} <span>HQ</span></div>
 
       <div className="side-scroll">
       {/* Data-driven sections */}
@@ -1903,7 +1904,7 @@ export default function Page(){
       ROOM_NAME:l.room||"",
       DOOR_CODE:l.doorCode||"",
       UTILITIES_CLAUSE:l.utilitiesClause||"",
-      LANDLORD_NAME:l.landlordName||"Carolina Cooper",
+      LANDLORD_NAME:l.landlordName||settings.pmName||"",
       PARKING_SPACE:l.parking||"No assigned parking",
       DAILY_RATE:l.rent?Math.ceil(Number(l.rent)/30):"",
       PRORATED_RENT:l.proratedRent?Number(l.proratedRent).toLocaleString():"",
@@ -1972,7 +1973,7 @@ export default function Page(){
               <div style={{padding:"32px 40px",lineHeight:1.8,fontSize:13}}>
                 {/* Header */}
                 <div style={{textAlign:"center",marginBottom:32}}>
-                  <div style={{fontSize:18,fontWeight:800,marginBottom:4}}>{settings.companyName||"Black Bear Rentals"}</div>
+                  <div style={{fontSize:18,fontWeight:800,marginBottom:4}}>{settings.companyName||""}</div>
                   <div style={{fontSize:13,color:"#5c4a3a",marginBottom:16}}>{leaseTemplate?.name||"Alabama Co-Living Lease Agreement"}</div>
                   {/* Summary table */}
                   <div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:8,overflow:"hidden",marginBottom:16,textAlign:"left"}}>
@@ -1994,7 +1995,7 @@ export default function Page(){
                           ["Late Fee","$50 after the 3rd · $5/day thereafter","Section 5"],
                           ["Door Code",l.doorCode||"—","Section 13"],
                           ["Parking",l.parking||"No assigned parking","Section 9"],
-                          ["Landlord",l.landlordName||"Carolina Cooper",""],
+                          ["Landlord",l.landlordName||settings.pmName||"",""],
                         ].map(([label,value,ref],i)=>(
                           <tr key={label} style={{borderBottom:i<11?"1px solid rgba(0,0,0,.05)":"none",background:i%2===0?"#fff":"rgba(0,0,0,.012)"}}>
                             <td style={{padding:"7px 14px",fontWeight:700,color:"#5c4a3a",width:"35%",fontSize:10,textTransform:"uppercase",letterSpacing:.4,verticalAlign:"top"}}>{label}</td>
@@ -2034,7 +2035,7 @@ export default function Page(){
                           <img src={l.landlordSig||l.landlordSignature} alt="PM initials" style={{height:22,maxWidth:70,objectFit:"contain"}}/>
                           <span style={{fontSize:8,color:"#4a7c59",fontWeight:700}}>PM INITIALED</span>
                         </div>
-                        <div style={{fontSize:8,color:"#9a8878",paddingLeft:2}}>{l.landlordName||"Carolina Cooper"}{l.landlordSignedAt?" · "+new Date(l.landlordSignedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}</div>
+                        <div style={{fontSize:8,color:"#9a8878",paddingLeft:2}}>{l.landlordName||settings.pmName||""}{l.landlordSignedAt?" · "+new Date(l.landlordSignedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}</div>
                       </div>}
                     </div>}
                   </div>
@@ -2047,7 +2048,7 @@ export default function Page(){
                     {l.landlordSig||l.landlordSignature
                       ?<div>
                          <img src={l.landlordSig||l.landlordSignature} alt="PM signature" style={{height:48,maxWidth:180,objectFit:"contain",display:"block",marginBottom:4}}/>
-                         <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{l.landlordName||"Carolina Cooper"}</div>
+                         <div style={{fontSize:11,fontWeight:600,color:"#1a1714"}}>{l.landlordName||settings.pmName||""}</div>
                          {l.landlordSignedAt&&<div style={{fontSize:10,color:"#6b5e52"}}>Signed {new Date(l.landlordSignedAt).toLocaleDateString()}</div>}
                        </div>
                       :<div style={{borderBottom:"1px solid #333",height:40,marginBottom:4}}/>}

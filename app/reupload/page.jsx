@@ -19,7 +19,7 @@ async function uploadFile(file,appId,docType){
 
 const S={page:{minHeight:"100vh",background:"#f4f3f0",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px 16px",fontFamily:"'Plus Jakarta Sans',system-ui,sans-serif"},card:{background:"#fff",borderRadius:16,padding:"32px 28px",maxWidth:480,width:"100%",boxShadow:"0 2px 24px rgba(0,0,0,.07)"},logo:{display:"flex",alignItems:"center",gap:10,marginBottom:28},logoMark:{width:40,height:40,borderRadius:10,background:"#1a1714",display:"flex",alignItems:"center",justifyContent:"center"},logoText:{fontSize:15,fontWeight:800,color:"#1a1714"},tag:{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:"rgba(212,168,83,.12)",color:"#9a7422",display:"inline-block",marginBottom:12},h1:{fontSize:20,fontWeight:800,color:"#1a1714",margin:"0 0 6px"},sub:{fontSize:13,color:"#6b5e52",margin:"0 0 24px",lineHeight:1.5},dropzone:{border:"2px dashed rgba(0,0,0,.12)",borderRadius:12,padding:"32px 20px",textAlign:"center",cursor:"pointer",transition:"border-color .15s,background .15s",marginBottom:16,background:"rgba(0,0,0,.01)"},dropzoneActive:{borderColor:"#d4a853",background:"rgba(212,168,83,.04)"},preview:{width:"100%",maxHeight:200,objectFit:"contain",borderRadius:8,marginBottom:12,border:"1px solid rgba(0,0,0,.08)"},fileName:{fontSize:12,fontWeight:600,color:"#1a1714",padding:"10px 12px",background:"rgba(74,124,89,.06)",borderRadius:8,border:"1px solid rgba(74,124,89,.15)",marginBottom:16,display:"flex",alignItems:"center",gap:8},btn:{width:"100%",padding:"14px",borderRadius:10,border:"none",background:"#d4a853",color:"#1a1714",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit"},btnOff:{background:"rgba(0,0,0,.08)",color:"#aaa",cursor:"not-allowed"},err:{background:"rgba(196,92,74,.08)",border:"1px solid rgba(196,92,74,.2)",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#c45c4a",marginTop:12}};
 
-const Logo=()=><div style={S.logo}><div style={S.logoMark}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><span style={S.logoText}>Black Bear Rentals</span></div>;
+const Logo=()=><div style={S.logo}><div style={S.logoMark}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><span style={S.logoText}>PropOS</span></div>;
 
 function Inner(){
   const sp=useSearchParams();
@@ -87,7 +87,7 @@ function Inner(){
         {phase==="uploading"?"Uploading…":"Submit Document"}
       </button>
       {phase==="error"&&<div style={S.err}>{errMsg}</div>}
-      <div style={{marginTop:20,fontSize:11,color:"#aaa",textAlign:"center"}}>Questions? Email <a href="mailto:info@rentblackbear.com" style={{color:"#9a7422"}}>info@rentblackbear.com</a></div>
+      <div style={{marginTop:20,fontSize:11,color:"#aaa",textAlign:"center"}}>Questions? Contact your property manager.</div>
     </div></div>
   );
 }

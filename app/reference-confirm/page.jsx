@@ -60,7 +60,7 @@ function RefConfirmInner() {
         border: "1px solid rgba(0,0,0,.06)",
       }}>
         <div style={{ fontSize: 13, fontWeight: 800, color: "#d4a853", marginBottom: 20, letterSpacing: -.2 }}>
-          Black Bear Rentals
+          PropOS
         </div>
         {children}
       </div>

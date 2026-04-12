@@ -119,7 +119,7 @@ export default function PortalPreview({
       <div style={{ background: "#f9f8f5", borderRadius: 14, border: "1px solid rgba(0,0,0,.06)", overflow: "hidden" }}>
         <div style={{ background: "#1a1714", padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#f5f0e8" }}>Black Bear Rentals</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#f5f0e8" }}>{settings?.companyName || ""}</div>
             <div style={{ fontSize: 10, color: "#c4a882", marginTop: 2 }}>Welcome back, {tRoom.tenant.name.split(" ")[0]}!</div>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -173,8 +173,8 @@ export default function PortalPreview({
           <div className="tp-card" style={{ marginTop: 10, background: "rgba(74,124,89,.03)", borderColor: "rgba(74,124,89,.12)" }}>
             <h3 style={{ color: "#4a7c59" }}>How to Pay</h3>
             <div className="tp-row"><span className="tp-label">Zelle</span><span style={{ fontWeight: 600, fontSize: 12 }}>{settings.phone || "(850) 696-8101"}</span></div>
-            <div className="tp-row"><span className="tp-label">Venmo</span><span style={{ fontWeight: 600, fontSize: 12 }}>@BlackBearRentals</span></div>
-            <div className="tp-row"><span className="tp-label">Check</span><span style={{ fontWeight: 600, fontSize: 12 }}>{settings.legalName || "Oak & Main Development LLC"}</span></div>
+            <div className="tp-row"><span className="tp-label">Venmo</span><span style={{ fontWeight: 600, fontSize: 12 }}>{settings.venmo || "@YourVenmo"}</span></div>
+            <div className="tp-row"><span className="tp-label">Check</span><span style={{ fontWeight: 600, fontSize: 12 }}>{settings.legalName || ""}</span></div>
             <div style={{ marginTop: 10, fontSize: 10, color: "#6b5e52" }}>Online payments via ACH/card coming soon in the portal.</div>
           </div>
         </div>}

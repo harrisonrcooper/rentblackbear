@@ -120,7 +120,7 @@ export async function POST(request) {
       const tpl = s.emailTemplates || {};
       const vars = { name, firstName, property: property || "", room: "", amount: "" };
       const tenantSubject = applyTemplate(
-        tpl.prescreenTenantSubject || "You're on our radar, {firstName} 🐻 — Black Bear Rentals",
+        tpl.prescreenTenantSubject || "You're on our radar, {firstName} — {companyName}",
         vars
       );
       const tenantBodyIntro = applyTemplate(
@@ -154,7 +154,7 @@ export async function POST(request) {
             <p style="font-size:13px;color:#5c4a3a;line-height:1.7;">
               Questions? Reply to this email or text/call us at <strong>${s.phone || "(850) 696-8101"}</strong>.
             </p>
-            <p style="font-size:13px;color:#5c4a3a;margin-top:20px;">— ${s.companyName || "Black Bear Rentals"}</p>
+            <p style="font-size:13px;color:#5c4a3a;margin-top:20px;">— ${s.companyName || ""}</p>
           `, s),
         }),
       });

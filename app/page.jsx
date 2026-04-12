@@ -7,7 +7,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 // ─── Data ───────────────────────────────────────────────────────────
-const S_INFO = { company:"Black Bear Rentals", legal:"Oak & Main Development LLC", phone:"(850) 696-8101", email:"info@rentblackbear.com", city:"Huntsville, Alabama" };
+// TODO(saas): load from settings at build/runtime instead of hardcoding
+const S_INFO = { company:"Your Company", legal:"Your Legal Entity LLC", phone:"(555) 000-0000", email:"hello@example.com", city:"Your City, ST" };
 
 // Properties come 100% from Supabase (hq-props). No hardcoded fallback.
 const PROPS=[];
@@ -73,7 +74,8 @@ const AMENITIES=[
   {icon:"🔑",t:"Rent by the Room",d:"Pick your room and price. Private bath options available."},
 ];
 
-const CHAT_CTX=`You are the AI assistant for Black Bear Rentals in Huntsville, AL. Rent by the bedroom. All rooms furnished with bed, dresser, TV. Google Fiber WiFi always included. Cleaning: 5-bed weekly, 3-bed biweekly. No pets, no smoking, no shoes. Quiet hours 10pm-7am weekdays, 11pm-10am weekends. SD = 1 month rent, secures room. First month rent due on/before move-in. No app fee, tenant pays for background check. 12-month standard lease, flexible for interns/contractors. Properties: Holmes House (SFH, 5bd, first $100 utils then split), Lee Drive East & West (Townhomes, 3bd, all utils included). Rooms $600-$850/mo. Be friendly and concise.`;
+// Chat context is now built server-side in /api/chat from settings
+const CHAT_CTX=null; // Unused — server builds context dynamically
 
 const TODAY=new Date();
 const CLR={avBg:"#dff0e4",avTx:"#2d6a3f",occBg:"#fce4e1",occTx:"#a83a2e",soonBg:"#fef3da",soonTx:"#9a7422"};
@@ -516,7 +518,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
     <div className="mgal" style={{cursor:p.imgs&&p.imgs.length>0?"pointer":"default",position:"relative"}} onClick={()=>{if(p.imgs&&p.imgs.length>0){setLightbox(p.imgs);setLbIdx(0);}}}>
       {p.imgs&&p.imgs.length>0
         ?<img src={p.imgs[0]} alt={p.name} style={{width:"100%",height:"100%",objectFit:"contain",display:"block",background:"#1a1714"}}/>
-        :<div style={{width:"100%",height:"100%",background:"#1a1714",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}><span style={{fontSize:48}}>🐻</span><span style={{fontSize:12,color:"#c4a882"}}>Photos coming soon</span></div>
+        :<div style={{width:"100%",height:"100%",background:"#1a1714",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span style={{fontSize:12,color:"#c4a882"}}>Photos coming soon</span></div>
       }
       {p.imgs&&p.imgs.length>1&&<div className="mside">
         {p.imgs.slice(1,3).map((img,i)=><img key={i} src={img} alt="" style={{width:"100%",height:"100%",objectFit:"contain",cursor:"pointer",background:"#1a1714"}} onClick={e=>{e.stopPropagation();setLightbox(p.imgs);setLbIdx(i+1);}}/>)}
@@ -1148,7 +1150,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
     const L=window.L;const map=mapInst.current;if(!L||!map)return;
     markersRef.current.forEach(m=>m.remove());markersRef.current=[];
     curProps.filter(p=>validCoord(p.lat,p.lng)).forEach(p=>{
-      const icon=L.divIcon({className:"",html:`<div style="width:34px;height:34px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer">🐻</div>`,iconSize:[34,34],iconAnchor:[17,34],popupAnchor:[0,-34]});
+      const icon=L.divIcon({className:"",html:`<div style="width:34px;height:34px;background:#d4a853;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1714" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>`,iconSize:[34,34],iconAnchor:[17,34],popupAnchor:[0,-34]});
       // Rental-mode-aware vacancy and price
       const vacItems=(p.units&&p.units.length>0?p.units:[{rentalMode:"byRoom",rooms:allRoomsP(p)}]).flatMap(u=>{
         if((u.rentalMode||"byRoom")==="wholeHouse"){
@@ -1224,7 +1226,7 @@ function MapSection({mapCat,setMapCat,mapCats,mapFiltered,nav,properties}){
         const label=(p.units||[]).some(u=>(u.rentalMode||"byRoom")==="wholeHouse")?"unit":"room";
         return(
         <div key={p.id} className="poi" style={{borderColor:"rgba(212,168,83,.15)",background:highlight===p.name?"rgba(212,168,83,.18)":"rgba(212,168,83,.10)",border:"1px solid rgba(212,168,83,.3)",cursor:hasPin?"pointer":"default",transition:"all .2s",transform:highlight===p.name?"scale(1.02)":"none",opacity:hasPin?1:0.75}} onClick={hasPin?()=>scrollToPin(p):undefined} onMouseEnter={hasPin?()=>scrollToPin(p):undefined}>
-          <div className="poi-ic">🐻</div>
+          <div className="poi-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
           <div className="poi-inf">
             <div className="poi-nm" style={{color:"var(--ac)"}}>{p.name}</div>
             <div className="poi-ct">{p.address||p.addr||""} · {vac>0?`${vac} ${label}${vac!==1?"s":""} vacant · From $${minR}/mo`:"Fully leased"}</div>
@@ -1249,7 +1251,7 @@ function Chat(){
     }catch{setMsgs(p=>[...p,{r:"bot",t:`Trouble connecting. Reach us at ${S_INFO.email}!`}]);}setLoading(false);},[msgs,loading]);
   return(<>
     <button className={`ctog ${open?"op":""}`} onClick={()=>setOpen(!open)}>{open?"✕":"💬"}</button>
-    {open&&<div className="cwin"><div className="chdr"><div className="cav">🐻</div><div className="chi"><h4>Black Bear Assistant</h4><p>Ask me anything</p></div></div>
+    {open&&<div className="cwin"><div className="chdr"><div className="cav"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div className="chi"><h4>Assistant</h4><p>Ask me anything</p></div></div>
       <div className="cmsg" ref={ref}>{msgs.map((m,i)=><div key={i} className={`cm ${m.r==="bot"?"bot":"usr"}`}>{m.t}</div>)}{loading&&<div className="ctyp"><div className="cdot"/><div className="cdot"/><div className="cdot"/></div>}</div>
       {showS&&<div className="csugs">{sugs.map((s,i)=><button key={i} className="csug" onClick={()=>send(s)}>{s}</button>)}</div>}
       <div className="cirow"><input className="cinp" placeholder="Ask about rooms..." value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send(inp)}/><button className="csend" onClick={()=>send(inp)} disabled={loading||!inp.trim()}>↑</button></div>
@@ -1386,7 +1388,7 @@ function Screening({properties}){
           <button className="scr-sub" disabled={submitting} onClick={submitApp}>{submitting?"Submitting...":"Submit Application →"}</button>
         </div>
       </div>}
-      {step===DONE&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}>🐻</div><h3>Application Received!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
+      {step===DONE&&<div className="scr-pass"><div className="scr-pass-ic" style={{background:"rgba(212,168,83,.1)",color:"var(--ac)"}}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg></div><h3>Application Received!</h3><p>Thanks{form.name?`, ${form.name.split(" ")[0]}`:""} ! We've sent a confirmation to <strong>{form.email}</strong>. We'll reach out within 24 hours.</p></div>}
     </div></div></section>
   );
 }
@@ -1518,7 +1520,7 @@ export default function Page(){
 
   // FAQ
   const faqs=[
-    {q:"How does renting by the bedroom work?",a:"You sign a lease for a private, lockable bedroom in a shared home. Your room comes with its own furniture and TV. You share common areas with your housemates. All residents are screened, and Black Bear handles management, cleaning, and maintenance."},
+    {q:"How does renting by the bedroom work?",a:"You sign a lease for a private, lockable bedroom in a shared home. Your room comes with its own furniture and TV. You share common areas with your housemates. All residents are screened, and we handle management, cleaning, and maintenance."},
     {q:"What's included in the rent?",a:"Every room comes fully furnished with a bed, dresser, and TV. All rooms include Google Fiber internet, off-street parking, and professional cleaning of common areas. Depending on the property, utilities are either fully included or the first $100 is covered with overage split equally. WiFi is always included."},
     {q:"How does the utility split work?",a:"Some properties have all utilities included — you pay nothing extra. At others, the first $100 in utilities is covered. If the bill goes over $100, the overage is split equally among all tenants. WiFi is always included at every property."},
     {q:"What does it cost to move in?",a:"Your security deposit (equal to one month's rent) secures the room — it's not held without it. First month's rent is due on or before move-in day. No application fee, but you pay for a background and credit check."},
@@ -1561,7 +1563,7 @@ export default function Page(){
 
   return(<><style>{CSS}</style>
     {/* NAV */}
-    <nav className={`nav ${scrolled?"sc":""}`}><div className="nlogo" onClick={()=>nav("hero")}>🐻 Black Bear <span>Rentals</span></div>
+    <nav className={`nav ${scrolled?"sc":""}`}><div className="nlogo" onClick={()=>nav("hero")}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight:6}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>{S_INFO.company}</div>
       <div className="nlinks"><a onClick={()=>nav("properties")}>Properties</a><a onClick={()=>nav("compare")}>Compare</a><a onClick={()=>nav("availability")}>Availability</a><a onClick={()=>nav("location")}>Location</a><a onClick={()=>nav("apply")} className="ncta">Apply Now</a></div>
       <button className="nav-tog" onClick={()=>setMobMenu(!mobMenu)}>{mobMenu?"✕":"☰"}</button></nav>
     <div className={`mob-menu ${mobMenu?"open":""}`}><a onClick={()=>{nav("properties");setMobMenu(false);}}>Properties</a><a onClick={()=>{nav("compare");setMobMenu(false);}}>Compare</a><a onClick={()=>{nav("availability");setMobMenu(false);}}>Availability</a><a onClick={()=>{nav("location");setMobMenu(false);}}>Location</a><a onClick={()=>{nav("apply");setMobMenu(false);}} style={{color:"var(--ac)",fontWeight:700}}>Apply Now</a></div>
@@ -1593,7 +1595,7 @@ export default function Page(){
         const wholeVacant=wholeUnit&&(wholeUnit.rooms||[]).every(r=>(r.st||"vacant")==="vacant");
         const hasVacant=isWhole?wholeVacant:vacantByRoomRents.length>0;
         return(
-        <div key={p.id} className="pcard" onClick={()=>setSel(p)}>{p.imgs&&p.imgs.length>0?<img src={p.imgs[0]} alt={p.name} className="pimg"/>:<div className="pimg" style={{background:"#2c2520",display:"flex",alignItems:"center",justifyContent:"center",color:"#d4a853",fontSize:32}}>🐻</div>}<div className="pinfo"><div className="ptags"><span className={"tag "+(p.status==="Available"?"t-av":"t-cs")}>{p.status}</span><span className={"tag "+(p.typeTag==="SFH"?"t-sfh":"t-th")}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr">
+        <div key={p.id} className="pcard" onClick={()=>setSel(p)}>{p.imgs&&p.imgs.length>0?<img src={p.imgs[0]} alt={p.name} className="pimg"/>:<div className="pimg" style={{background:"#2c2520",display:"flex",alignItems:"center",justifyContent:"center",color:"#d4a853",fontSize:32}}><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>}<div className="pinfo"><div className="ptags"><span className={"tag "+(p.status==="Available"?"t-av":"t-cs")}>{p.status}</span><span className={"tag "+(p.typeTag==="SFH"?"t-sfh":"t-th")}>{p.typeTag}</span></div><h3 className="pnm">{p.name}</h3><p className="pad">{p.address}</p><div className="phls"><span className="phl">{p.utils==="allIncluded"?"✓ All Utilities":"✓ First $100 Utils"}</span><span className="phl">✓ {p.clean} Cleaning</span><span className="phl">✓ Furnished</span></div><div className="pftr">
           {hasVacant?(isWhole
             ?<span className="ppr">${p.wholeRent||"—"}<small>/mo</small></span>
             :<span className="ppr">${safeMin(vacantByRoomRents)||"—"}–${safeMax(vacantByRoomRents)||"—"}<small>/mo per room</small></span>)
@@ -1679,7 +1681,7 @@ export default function Page(){
     </div></section>
 
     {/* SAVINGS */}
-    <section className="sec-dk" id="savings" style={{padding:"80px 40px"}}><div className="sec-inner"><div className="sh"><div className="sl">Save Money</div><h2 className="st" style={{color:"var(--cr)"}}>See How Much You'd Save</h2><p className="ss" style={{color:"var(--mt)"}}>Compare a traditional apartment vs. a Black Bear room.</p></div>
+    <section className="sec-dk" id="savings" style={{padding:"80px 40px"}}><div className="sec-inner"><div className="sh"><div className="sl">Save Money</div><h2 className="st" style={{color:"var(--cr)"}}>See How Much You'd Save</h2><p className="ss" style={{color:"var(--mt)"}}>Compare a traditional apartment vs. renting a room.</p></div>
       <div className="calc-grid">
         <div className="calc-card"><div className="calc-hd"><div className="calc-ic" style={{background:"rgba(168,58,46,.08)"}}>🏢</div><div><div style={{fontWeight:800}}>Traditional Apartment</div><div style={{fontSize:10,color:"#999"}}>Everything separate</div></div></div>
           <Sl lb="Rent" id="rent" val={calcV.rent} mn={500} mx={2000} note="Avg 1BR Huntsville: ~$1,100"/>
@@ -1692,7 +1694,7 @@ export default function Page(){
           <div className="calc-total"><span style={{fontWeight:800}}>Total</span><span style={{fontSize:22,fontWeight:800,color:"var(--rd)"}}>${tradTot.toLocaleString()}</span></div>
         </div>
         <div>
-          <div className="calc-card" style={{border:"2px solid #d4a853"}}><div className="calc-hd"><div className="calc-ic" style={{background:"rgba(212,168,83,.1)"}}>🐻</div><div><div style={{fontWeight:800}}>Black Bear Room</div><div style={{fontSize:10,color:"#999"}}>Everything included</div></div></div>
+          <div className="calc-card" style={{border:"2px solid #d4a853"}}><div className="calc-hd"><div className="calc-ic" style={{background:"rgba(212,168,83,.1)"}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4a853" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><div><div style={{fontWeight:800}}>Your Room</div><div style={{fontSize:10,color:"#999"}}>Everything included</div></div></div>
             <Sl lb="Your Room" id="bb" val={bbRoom} mn={globalMin} mx={globalMax} note={`Rooms $${globalMin}–$${globalMax}/mo`}/>
             {["WiFi (Google Fiber)","Utilities (varies)","Furnished bedroom","TV in room","Parking","Common area cleaning","Pro management"].map((x,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 0",borderBottom:i<6?"1px solid rgba(0,0,0,.03)":"none",fontSize:12,color:"var(--gn)",fontWeight:500}}><span style={{fontWeight:800}}>✓</span>{x}<span style={{marginLeft:"auto",color:"#999",fontSize:10}}>$0</span></div>)}
             <div className="calc-total" style={{borderColor:"rgba(212,168,83,.2)"}}><span style={{fontWeight:800}}>Total</span><span style={{fontSize:22,fontWeight:800,color:"var(--gn)"}}>${bbRoom.toLocaleString()}</span></div>
@@ -1720,7 +1722,7 @@ export default function Page(){
     </div></section>
 
     {/* WHO LIVES HERE */}
-    <section className="sec"><div className="sec-inner"><div className="sh"><div className="sl">Our Community</div><h2 className="st">Who Lives at Black Bear?</h2><p className="ss">Professionals who value their time and want a turnkey living experience.</p></div>
+    <section className="sec"><div className="sec-inner"><div className="sh"><div className="sl">Our Community</div><h2 className="st">Who Lives Here?</h2><p className="ss">Professionals who value their time and want a turnkey living experience.</p></div>
       <div className="per-g">{personas.map((p,i)=><div key={i} className="per-c"><div className="per-ic">{p.i}</div><div><h3>{p.t}</h3><p>{p.d}</p></div></div>)}</div>
     </div></section>
 

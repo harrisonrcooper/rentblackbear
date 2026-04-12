@@ -1321,7 +1321,7 @@ export default function TrackPage() {
       <div className="trk-side">
         <div className="trk-logo">
           Track
-          <span>rentblackbear.com</span>
+          <span>PropOS Track</span>
         </div>
 
         <div className="s-lbl">Daily</div>

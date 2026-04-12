@@ -144,7 +144,7 @@ export async function POST(request) {
       method:"POST", headers:{Authorization:`Bearer ${resendKey}`,"Content-Type":"application/json"},
       body: JSON.stringify({
         from: fromAddress(s), to,
-        subject: `You're approved! Welcome to ${s.companyName} 🐻`,
+        subject: `You're approved! Welcome to ${s.companyName}`,
         html: emailWrap(`
           <div style="text-align:center;margin-bottom:28px;">
             <div style="font-size:48px;margin-bottom:12px;">🎉</div>

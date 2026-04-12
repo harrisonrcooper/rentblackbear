@@ -28,7 +28,7 @@ const SCHED_E_CATS=[
   {id:14,label:"Other",hint:"IRS Line 19 — anything not listed above"},
 ];
 const IMPROVEMENT_TYPES=["Addition","Appliance","Flooring","HVAC","Landscaping","Plumbing","Electrical","Roof","Windows","Other"];
-const DEF_SETTINGS_REMINDER_TEMPLATE="Hi {firstName},\n\nThis is a friendly reminder that your {category} payment of {amount} was due on {dueDate}.\n\nPlease log into your tenant portal to make a payment:\n{portalLink}\n\nIf you\'ve already paid, please disregard this message.\n\nThank you,\nBlack Bear Rentals";
+const DEF_SETTINGS_REMINDER_TEMPLATE="Hi {firstName},\n\nThis is a friendly reminder that your {category} payment of {amount} was due on {dueDate}.\n\nPlease log into your tenant portal to make a payment:\n{portalLink}\n\nIf you\'ve already paid, please disregard this message.\n\nThank you!";
 
 const allRooms=(prop)=>{if(!prop)return[];if(prop.units&&prop.units.length>0)return prop.units.flatMap(u=>u.rooms||[]);return prop.rooms||[];};
 const leaseableItems=(prop)=>{
@@ -294,7 +294,7 @@ export default function ModalRenderer({
                           {tLease.status==="pending_tenant"&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={()=>{navigator.clipboard.writeText(tLease.signingLink||"");showAlert({title:"Copied",body:"Signing link copied."});}}>Copy Link</button>}
                           {tLease.status==="pending_tenant"&&<button className="btn btn-out btn-sm" style={{fontSize:9}} onClick={async()=>{
                             if(!tLease.tenantEmail){showAlert({title:"No Email",body:"No tenant email on file."});return;}
-                            await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tLease.tenantEmail,subject:"Reminder: Your Lease is Ready to Sign",fromName:(settings.pmName||"Carolina Cooper")+" | "+(settings.companyName||"Black Bear Rentals"),replyTo:settings.pmEmail||settings.email||"info@rentblackbear.com",html:"<p>Hi "+(tLease.tenantName||"")+"</p><p>Your lease is ready for signature. Please click below to review and sign:</p><p><a href='"+(tLease.signingLink||"")+"' style='display:inline-block;background:#1a1714;color:#d4a853;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none'>Review & Sign →</a></p>"})});
+                            await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tLease.tenantEmail,subject:"Reminder: Your Lease is Ready to Sign",fromName:(settings.pmName||"Property Manager")+" | "+(settings.companyName||""),replyTo:settings.pmEmail||settings.email||"",html:"<p>Hi "+(tLease.tenantName||"")+"</p><p>Your lease is ready for signature. Please click below to review and sign:</p><p><a href='"+(tLease.signingLink||"")+"' style='display:inline-block;background:#1a1714;color:#d4a853;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none'>Review & Sign →</a></p>"})});
                             showAlert({title:"Sent",body:"Signing reminder sent to "+tLease.tenantEmail});
                           }}>Resend Email</button>}
                         </div>
@@ -1234,7 +1234,7 @@ export default function ModalRenderer({
     const tenant=tenantRoom&&tenantRoom.tenant;
     const phone=tenant&&tenant.phone;
     const email=tenant&&tenant.email;
-    const portalLink="https://rentblackbear.com/portal";
+    const portalLink=(settings.siteUrl||"")+"/portal";
     const template=settings.reminderTemplate||DEF_SETTINGS.reminderTemplate;
     const buildMsg=(tmpl)=>tmpl
       .replace(/{firstName}/g,c.tenantName.split(" ")[0])
@@ -2516,7 +2516,7 @@ export default function ModalRenderer({
             ${modal.payNotes?`<div class="row"><span class="label">Notes</span><span class="value">${modal.payNotes}</span></div>`:""}
             <div class="row"><span class="label">Status</span><span class="value">${modal.isTransit?"In Transit — will confirm on deposit":"Received &amp; Deposited"}</span></div>
             <div class="total"><span>Amount Paid</span><span>$${Number(modal.payAmount).toLocaleString()}</span></div>
-            <div class="footer">Oak &amp; Main Development LLC · Black Bear Rentals · blackbearhousing@gmail.com<br/>This receipt confirms payment was received. Please retain for your records.</div>
+            <div class="footer">${settings.legalName||""} · ${settings.companyName||""} · ${settings.email||""}<br/>This receipt confirms payment was received. Please retain for your records.</div>
           </body></html>`);
           w.document.close();w.print();
         };
@@ -2772,8 +2772,8 @@ export default function ModalRenderer({
         const res=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
             to:email,
-            subject:`Your tenant portal is ready — ${settings.companyName||"Black Bear Rentals"}`,
-            html:`<p>Hi ${firstName},</p><p>Your tenant portal is ready. Sign in to view your lease, pay your deposit, and access everything in one place.</p><p><a href="${link}" style="display:inline-block;background:#d4a853;color:#1a1714;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Access Your Portal →</a></p><p style="font-size:12px;color:#999;">This link expires in 48 hours. Sign in with Google or create an account using this email address.</p><p>${settings.companyName||"Black Bear Rentals"}<br/>${settings.phone||""}</p>`,
+            subject:`Your tenant portal is ready — ${settings.companyName||""}`,
+            html:`<p>Hi ${firstName},</p><p>Your tenant portal is ready. Sign in to view your lease, pay your deposit, and access everything in one place.</p><p><a href="${link}" style="display:inline-block;background:#d4a853;color:#1a1714;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Access Your Portal →</a></p><p style="font-size:12px;color:#999;">This link expires in 48 hours. Sign in with Google or create an account using this email address.</p><p>${settings.companyName||""}<br/>${settings.phone||""}</p>`,
           })
         });
         const d=await res.json();
@@ -2866,8 +2866,8 @@ export default function ModalRenderer({
         const res=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
             to:email,
-            subject:`Apply for a room at ${settings.companyName||"Black Bear Rentals"}`,
-            html:`<p>Hi ${firstName},</p><p>We have a room available at ${settings.companyName||"Black Bear Rentals"} in Huntsville, AL. Apply here:</p><p><a href="${link}" style="display:inline-block;background:#d4a853;color:#1a1714;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Apply Now →</a></p><p style="font-size:12px;color:#999;">Takes about 10–15 minutes.</p><p>${settings.companyName||"Black Bear Rentals"}<br/>${settings.phone||""}</p>`,
+            subject:`Apply for a room at ${settings.companyName||""}`,
+            html:`<p>Hi ${firstName},</p><p>We have a room available at ${settings.companyName||""} in Huntsville, AL. Apply here:</p><p><a href="${link}" style="display:inline-block;background:#d4a853;color:#1a1714;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Apply Now →</a></p><p style="font-size:12px;color:#999;">Takes about 10–15 minutes.</p><p>${settings.companyName||""}<br/>${settings.phone||""}</p>`,
           })
         });
         const d=await res.json();
@@ -2972,7 +2972,7 @@ export default function ModalRenderer({
           <div><div class="sig-line">Tenant Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div></div>
           <div><div class="sig-line">Landlord Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div></div>
         </div>
-        <p style="margin-top:40px;font-size:11px;color:#999">Oak & Main Development LLC · Black Bear Rentals · blackbearhousing@gmail.com</p>
+        <p style="margin-top:40px;font-size:11px;color:#999">${settings.legalName||""} · ${settings.companyName||""} · ${settings.email||""}</p>
       </body></html>`);
       w.document.close();w.print();
     };
@@ -3250,7 +3250,7 @@ export default function ModalRenderer({
         }catch{setModal(prev=>({...prev,sendErrors:["Network error - check connection and try again"],emailSending:false}));}
       };
       const phoneNum=(a.phone||"").replace(/\D/g,"");
-      const smsTxt="Hey "+a.name.split(" ")[0]+"! You are invited to apply at Black Bear Rentals"+(a.property?" - "+a.property:"")+(invRoomObj?" ("+invRoomObj.name+")":(a.room?" ("+a.room+")":""))+(invRent?" at $"+invRent+"/mo":"")+". Apply: "+link+(totalFee===0?". No screening fee!":(". Fee: $"+totalFee))+" - Black Bear Rentals";
+      const smsTxt="Hey "+a.name.split(" ")[0]+"! You are invited to apply at "+(settings.companyName||"our property")+(a.property?" - "+a.property:"")+(invRoomObj?" ("+invRoomObj.name+")":(a.room?" ("+a.room+")":""))+(invRent?" at $"+invRent+"/mo":"")+". Apply: "+link+(totalFee===0?". No screening fee!":(". Fee: $"+totalFee))+" - "+(settings.companyName||"");
       const smsHref="sms:"+phoneNum+"?&body="+encodeURIComponent(smsTxt);
       const copyLink=()=>{navigator.clipboard.writeText(link).then(()=>{setModal(prev=>({...prev,linkCopied:true}));setTimeout(()=>setModal(prev=>({...prev,linkCopied:false})),2500);});};
       return(
@@ -3473,7 +3473,7 @@ export default function ModalRenderer({
               This Rental Agreement ("Agreement") is entered into as of <strong>{modal.previewVars?.LEASE_START}</strong>, between:
             </p>
             <p style={{fontSize:13,color:"#3d3529",lineHeight:1.8,marginBottom:10}}>
-              <strong>Property Manager/Agent:</strong> {modal.previewVars?.LANDLORD_NAME}, {leaseTemplate?.company||"Black Bear Properties"} ("PROPERTY MANAGER"), and
+              <strong>Property Manager/Agent:</strong> {modal.previewVars?.LANDLORD_NAME}, {leaseTemplate?.company||settings.companyName||""} ("PROPERTY MANAGER"), and
             </p>
             <p style={{fontSize:13,color:"#3d3529",lineHeight:1.8,marginBottom:10}}>
               <strong>Resident(s)/Lessee:</strong> <strong>{modal.data?.name}</strong> ("RESIDENT").
@@ -4635,7 +4635,7 @@ export default function ModalRenderer({
                         <Badge label={addr.resType||"Rent"} type={addr.resType}/>
                         {addr.resType==="Rent"&&addr.landlordEmail&&<DraftBtn onClick={()=>{
                           const refName=addr.landlordFirstName||"there";
-                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
+                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Property Manager",companyName:settings.companyName||"",city:settings.city||"",phone:settings.phone||"",email:settings.email||"",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
                           const tmpl=settings.emailTemplates||{};
                           setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject:resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens),body:resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens),type:"refLandlord",refName,refType:"Previous Landlord",appId:a.id,refKey:"landlord"}}));
                         }}/>}
@@ -4662,7 +4662,7 @@ export default function ModalRenderer({
                       <CardRight>
                         {ad.empRefEmail&&<DraftBtn onClick={()=>{
                           const refName=ad.empRefFirstName;
-                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Property Manager",companyName:settings.companyName||"",city:settings.city||"",phone:settings.phone||"",email:settings.email||""};
                           const tmpl=settings.emailTemplates||{};
                           setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject:resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens),body:resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens),type:"refEmployer",refName,refType:"Employer Reference",appId:a.id,refKey:"employer"}}));
                         }}/>}
@@ -4685,7 +4685,7 @@ export default function ModalRenderer({
                       <CardRight>
                         {ad.persRefEmail&&<DraftBtn onClick={()=>{
                           const refName=ad.persRefFirstName;
-                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+                          const tokens={refName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Property Manager",companyName:settings.companyName||"",city:settings.city||"",phone:settings.phone||"",email:settings.email||""};
                           const tmpl=settings.emailTemplates||{};
                           setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject:resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens),body:resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens),type:"refPersonal",refName,refType:"Personal Reference",appId:a.id,refKey:"personal1"}}));
                         }}/>}
@@ -4818,7 +4818,7 @@ export default function ModalRenderer({
         const requestReupload=(docLabel,docType,customNote)=>{
           const tmpl=settings.emailTemplates||{};
           const portalLink=window.location.origin+"/reupload?app="+a.id+"&doc="+encodeURIComponent(docType||docLabel)+"&label="+encodeURIComponent(docLabel);
-          const tokens={applicantFirstName:a.name.split(" ")[0],applicantName:a.name,docLabel,portalLink,pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+          const tokens={applicantFirstName:a.name.split(" ")[0],applicantName:a.name,docLabel,portalLink,pmName:settings.pmName||"Property Manager",companyName:settings.companyName||"",phone:settings.phone||"(850) 696-8101",email:settings.email||""};
           let body=resolveEmailTemplate(tmpl.reuploadBody||DEF_SETTINGS.emailTemplates.reuploadBody,tokens);
           if(customNote&&customNote.trim()){
             body=body.replace(
@@ -5018,7 +5018,7 @@ export default function ModalRenderer({
           const replies=(modal._refReplies||[]).filter(r=>r.refKey===`landlord_${i}`||r.refKey==="landlord"||r.email===addr.landlordEmail);
           const verified=(a.refVerified||{})[`landlord_${i}`];
           refContacts.push({key:`landlord_${i}`,typeLabel:"Previous Landlord"+(i>0?` ${i+1}`:""),email:addr.landlordEmail,phone:addr.landlordPhone,draftFn:()=>{
-            const tokens={refName:addr.landlordFirstName||"there",applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
+            const tokens={refName:addr.landlordFirstName||"there",applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Property Manager",companyName:settings.companyName||"",city:settings.city||"",phone:settings.phone||"",email:settings.email||"",address:`${addr.street}${addr.unit?" #"+addr.unit:""}, ${addr.city} ${addr.state}`};
             const tmpl=settings.emailTemplates||{};
             setModal(p=>({...p,_draftEmail:{to:addr.landlordEmail,subject:resolveEmailTemplate(tmpl.refLandlordSubject||DEF_SETTINGS.emailTemplates.refLandlordSubject,tokens),body:resolveEmailTemplate(tmpl.refLandlordBody||DEF_SETTINGS.emailTemplates.refLandlordBody,tokens),type:"refLandlord",refType:"Previous Landlord",appId:a.id,refKey:"landlord"}}));
           },replies,verified});
@@ -5028,7 +5028,7 @@ export default function ModalRenderer({
           const replies=(modal._refReplies||[]).filter(r=>r.refKey==="employer"||r.email===ad.empRefEmail);
           const verified=(a.refVerified||{}).employer;
           refContacts.push({key:"employer",typeLabel:"Employer Reference",email:ad.empRefEmail,phone:ad.empRefPhone,draftFn:()=>{
-            const tokens={refName:ad.empRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+            const tokens={refName:ad.empRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Property Manager",companyName:settings.companyName||"",city:settings.city||"",phone:settings.phone||"",email:settings.email||""};
             const tmpl=settings.emailTemplates||{};
             setModal(p=>({...p,_draftEmail:{to:ad.empRefEmail,subject:resolveEmailTemplate(tmpl.refEmployerSubject||DEF_SETTINGS.emailTemplates.refEmployerSubject,tokens),body:resolveEmailTemplate(tmpl.refEmployerBody||DEF_SETTINGS.emailTemplates.refEmployerBody,tokens),type:"refEmployer",refType:"Employer Reference",appId:a.id,refKey:"employer"}}));
           },replies,verified});
@@ -5038,7 +5038,7 @@ export default function ModalRenderer({
           const replies=(modal._refReplies||[]).filter(r=>r.refKey==="personal1"||r.email===ad.persRefEmail);
           const verified=(a.refVerified||{}).personal1;
           refContacts.push({key:"personal1",typeLabel:"Personal Reference",email:ad.persRefEmail,phone:ad.persRefPhone,draftFn:()=>{
-            const tokens={refName:ad.persRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Carolina Cooper",companyName:settings.companyName||"Black Bear Rentals",city:settings.city||"Huntsville, AL",phone:settings.phone||"(850) 696-8101",email:settings.email||"info@rentblackbear.com"};
+            const tokens={refName:ad.persRefFirstName,applicantName:a.name,applicantFirstName:ad.firstName||a.name.split(" ")[0],pmName:settings.pmName||"Property Manager",companyName:settings.companyName||"",city:settings.city||"",phone:settings.phone||"",email:settings.email||""};
             const tmpl=settings.emailTemplates||{};
             setModal(p=>({...p,_draftEmail:{to:ad.persRefEmail,subject:resolveEmailTemplate(tmpl.refPersonalSubject||DEF_SETTINGS.emailTemplates.refPersonalSubject,tokens),body:resolveEmailTemplate(tmpl.refPersonalBody||DEF_SETTINGS.emailTemplates.refPersonalBody,tokens),type:"refPersonal",refType:"Personal Reference",appId:a.id,refKey:"personal1"}}));
           },replies,verified});
@@ -5457,7 +5457,7 @@ export default function ModalRenderer({
         </button>
       </div>
       <div style={{padding:"8px 12px",borderRadius:7,background:"rgba(0,0,0,.03)",border:"1px solid rgba(0,0,0,.07)",fontSize:11,color:"#5c4a3a",marginBottom:16}}>
-        Sending as: <strong>{settings.pmName||"Carolina Cooper"}</strong> · {settings.companyName||"Black Bear Rentals"} · {settings.email||"info@rentblackbear.com"}
+        Sending as: <strong>{settings.pmName||"Property Manager"}</strong> · {settings.companyName||""} · {settings.email||""}
       </div>
       <div className="fld"><label>To</label><input value={em.to} onChange={e=>setModal(p=>({...p,_draftEmail:{...p._draftEmail,to:e.target.value}}))} style={{width:"100%",fontFamily:"inherit"}}/></div>
       <div className="fld"><label>Subject</label><input value={em.subject} onChange={e=>setModal(p=>({...p,_draftEmail:{...p._draftEmail,subject:e.target.value}}))} style={{width:"100%",fontFamily:"inherit"}}/></div>
@@ -5466,7 +5466,7 @@ export default function ModalRenderer({
         <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_draftEmail:null}))}>Cancel</button>
         <button className="btn btn-gold" style={{flex:1}} onClick={async()=>{
           try{
-            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>"),fromName:`${settings.pmName||"Carolina Cooper"} — ${settings.companyName||"Black Bear Rentals"}`,replyTo:settings.email||"info@rentblackbear.com",...(em.appId&&em.refKey?{appId:em.appId,refKey:em.refKey}:{})})});
+            const r=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:em.to,subject:em.subject,html:em.body.replace(/\n/g,"<br/>"),fromName:`${settings.pmName||"Property Manager"} — ${settings.companyName||""}`,replyTo:settings.email||"",...(em.appId&&em.refKey?{appId:em.appId,refKey:em.refKey}:{})})});
             const d=await r.json();
             if(d.ok||r.ok){
               // Log to comm log

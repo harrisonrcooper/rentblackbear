@@ -3,7 +3,7 @@
 export default function WebsiteSettings({ settings, setSettings, save }) {
   return (
     <>
-      <div className="sec-hd"><div><h2>Website</h2><p>Public site content for rentblackbear.com</p></div></div>
+      <div className="sec-hd"><div><h2>Website</h2><p>Public site content</p></div></div>
       <div className="card"><div className="card-bd">
         <h3 style={{fontSize:13,fontWeight:800,marginBottom:12}}>Hero Section</h3>
         <div className="fld"><label>Tagline</label><input value={settings.tagline} onChange={e=>setSettings({...settings,tagline:e.target.value})}/></div>

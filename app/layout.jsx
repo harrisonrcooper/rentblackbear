@@ -2,7 +2,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 
 export const metadata = {
-  title: 'Black Bear Rentals | Furnished Rooms in Huntsville, AL',
+  title: 'PropOS | Property Management', // TODO(saas): drive from settings.companyName
   description: 'Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities included.',
 };
 

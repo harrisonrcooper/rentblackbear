@@ -100,7 +100,7 @@ export default function IdeaBoard(){
   const counts={total:ideas.length,done:ideas.filter(i=>i.status==="done").length,building:ideas.filter(i=>i.status==="building").length,planned:ideas.filter(i=>i.status==="planned").length};
 
   return (<div className="page"><style>{S}</style>
-    <div className="header"><div><h1>💡 Idea Board</h1><div className="header-sub">Plan every feature for rentblackbear.com</div></div>
+    <div className="header"><div><h1>💡 Idea Board</h1><div className="header-sub">Plan every feature for your site</div></div>
       <div style={{display:"flex",gap:8}}><button className="btn btn-gold" onClick={()=>{setIsNew(true);setModal({});}}>+ New Idea</button><Link href="/admin" className="back">← HQ</Link></div></div>
     <div className="cnt">
       <div className="toolbar">

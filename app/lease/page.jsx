@@ -141,7 +141,7 @@ export default function LeasePage(){
       const rentFmt=lease.rent?"$"+Number(lease.rent).toLocaleString():"";
       const tenantHtml=`<div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;max-width:560px;margin:0 auto;background:#f4f3f0;padding:32px 16px">
         <div style="background:#1a1714;border-radius:12px 12px 0 0;padding:24px 32px;text-align:center">
-          <div style="font-size:20px;font-weight:700;color:#d4a853">Black Bear Rentals</div>
+          <div style="font-size:20px;font-weight:700;color:#d4a853">${template?.company||"Property Manager"}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;text-transform:uppercase;letter-spacing:1px">Lease Fully Executed</div>
         </div>
         <div style="background:#fff;padding:32px;border-radius:0 0 12px 12px;border:1px solid rgba(0,0,0,.08);border-top:none">
@@ -158,20 +158,20 @@ export default function LeasePage(){
             </div>
           </div>
           <div style="background:rgba(74,124,89,.06);border:1px solid rgba(74,124,89,.2);border-radius:8px;padding:14px 20px;font-size:12px;color:#2d6a3f;line-height:1.6">
-            You can view your signed lease and manage payments anytime at <strong>rentblackbear.com</strong>.
+            You can view your signed lease and manage payments anytime in your tenant portal.
           </div>
         </div>
-        <p style="text-align:center;font-size:10px;color:#9a8878;margin-top:16px">Black Bear Rentals · Huntsville, Alabama · blackbearhousing@gmail.com</p>
+        <p style="text-align:center;font-size:10px;color:#9a8878;margin-top:16px">${template?.company||""}</p>
       </div>`;
 
       // Email tenant
       if(lease.tenantEmail){
         await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({to:lease.tenantEmail,subject:"Your Lease is Fully Executed — Black Bear Rentals",fromName:"Carolina Cooper | Black Bear Rentals",replyTo:"blackbearhousing@gmail.com",html:tenantHtml})});
+          body:JSON.stringify({to:lease.tenantEmail,subject:`Your Lease is Fully Executed — ${template?.company||""}`,fromName:`${template?.landlordName||"Property Manager"} | ${template?.company||""}`,replyTo:template?.landlordEmail||"",html:tenantHtml})});
       }
       // Email PM
       await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({to:"blackbearhousing@gmail.com",subject:`Lease Signed — ${lease.tenantName||"Tenant"} · ${lease.room||""}`,fromName:"PropOS Notifications",replyTo:lease.tenantEmail||"info@rentblackbear.com",
+        body:JSON.stringify({to:template?.landlordEmail||"",subject:`Lease Signed — ${lease.tenantName||"Tenant"} · ${lease.room||""}`,fromName:"PropOS Notifications",replyTo:lease.tenantEmail||"",
           html:`<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
             <h2 style="color:#1a1714;margin-bottom:8px">Lease Fully Executed</h2>
             <p style="color:#5c4a3a;font-size:13px;line-height:1.6"><strong>${lease.tenantName||"Tenant"}</strong> has signed their lease for <strong>${lease.room||""}</strong> at <strong>${lease.propertyAddress||lease.property||""}</strong>.</p>
@@ -200,7 +200,7 @@ export default function LeasePage(){
     ROOM_NAME:lease.room||"",
     DOOR_CODE:lease.doorCode||"",
     UTILITIES_CLAUSE:lease.utilitiesClause||"",
-    LANDLORD_NAME:lease.landlordName||"Carolina Cooper",
+    LANDLORD_NAME:lease.landlordName||template?.landlordName||"",
     PARKING_SPACE:lease.parking||"No assigned parking",
     DAILY_RATE:lease.rent?Math.ceil(Number(lease.rent)/30):"",
     PRORATED_RENT:lease.proratedRent?Number(lease.proratedRent).toLocaleString():"",
@@ -251,10 +251,10 @@ export default function LeasePage(){
         </div>
         <h1 style={{fontSize:24,fontWeight:700,color:"#1a1714",marginBottom:12}}>Lease Signed!</h1>
         <p style={{fontSize:14,color:"#5c4a3a",lineHeight:1.7,marginBottom:8}}>
-          Welcome to <strong>{template?.company||"Black Bear Rentals"}</strong>. Your lease has been fully executed and a copy has been sent to your email.
+          Welcome to <strong>{template?.company||""}</strong>. Your lease has been fully executed and a copy has been sent to your email.
         </p>
         <p style={{fontSize:13,color:"#6b5e52",lineHeight:1.6}}>
-          You can view your signed lease anytime in your tenant portal at <strong>rentblackbear.com</strong>.
+          You can view your signed lease anytime in your tenant portal.
         </p>
         <div style={{marginTop:24,padding:"14px 20px",background:"rgba(74,124,89,.06)",border:"1px solid rgba(74,124,89,.2)",borderRadius:10,fontSize:12,color:"#2d6a3f",lineHeight:1.6}}>
           Your move-in date is <strong>{fmtD(lease?.moveIn)}</strong>. Your door code is <strong>{lease?.doorCode}</strong>.
@@ -279,7 +279,7 @@ export default function LeasePage(){
       {/* Header */}
       <div style={{background:"#1a1714",padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
         <div>
-          <div style={{fontSize:14,fontWeight:700,color:"#d4a853"}}>{template?.company||"Black Bear Rentals"}</div>
+          <div style={{fontSize:14,fontWeight:700,color:"#d4a853"}}>{template?.company||""}</div>
           <div style={{fontSize:10,color:"rgba(255,255,255,.5)",marginTop:2}}>Residential Lease Agreement — Please review and sign</div>
         </div>
         <div style={{fontSize:10,color:"rgba(255,255,255,.4)",textAlign:"right"}}>
@@ -303,7 +303,7 @@ export default function LeasePage(){
 
           {/* Document header */}
           <div style={{textAlign:"center",marginBottom:32,paddingBottom:24,borderBottom:"2px solid #1a1714"}}>
-            <div style={{fontSize:20,fontWeight:700,color:"#1a1714",fontFamily:"Georgia,serif",marginBottom:4}}>{template?.company||"Black Bear Rentals"}</div>
+            <div style={{fontSize:20,fontWeight:700,color:"#1a1714",fontFamily:"Georgia,serif",marginBottom:4}}>{template?.company||""}</div>
             <div style={{fontSize:12,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1}}>Residential Co-Living Lease Agreement</div>
             <div style={{fontSize:11,color:"#9a8878",marginTop:4}}>Agreement Date: {fmtD(new Date().toISOString().split("T")[0])}</div>
           </div>
@@ -312,8 +312,8 @@ export default function LeasePage(){
           <div style={{display:"flex",flexWrap:"wrap",gap:16,marginBottom:28}}>
             <div style={{flex:"1 1 250px",padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
               <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Property Manager</div>
-              <div style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>{template?.landlordName||lease?.landlordName||"Carolina Cooper"}</div>
-              <div style={{fontSize:11,color:"#6b5e52"}}>{template?.company||"Black Bear Rentals"}</div>
+              <div style={{fontSize:13,fontWeight:600,color:"#1a1714"}}>{template?.landlordName||lease?.landlordName||""}</div>
+              <div style={{fontSize:11,color:"#6b5e52"}}>{template?.company||""}</div>
             </div>
             <div style={{flex:"1 1 250px",padding:"12px 16px",background:"rgba(0,0,0,.02)",borderRadius:8,border:"0.5px solid rgba(0,0,0,.08)"}}>
               <div style={{fontSize:11,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.8,marginBottom:6}}>Resident</div>
@@ -393,7 +393,7 @@ export default function LeasePage(){
 
           {/* Page footer */}
           <div style={{marginTop:32,paddingTop:16,borderTop:"1px solid rgba(0,0,0,.08)",textAlign:"center",fontSize:10,color:"#bbb",fontFamily:"Georgia,serif"}}>
-            {template?.company||"Black Bear Rentals"} — Alabama Residential Co-Living Lease Agreement
+            {template?.company||""} — Alabama Residential Co-Living Lease Agreement
           </div>
         </div>
 
@@ -412,7 +412,7 @@ export default function LeasePage(){
             ?<div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"rgba(74,124,89,.05)",border:"1px solid rgba(74,124,89,.15)",borderRadius:8}}>
                <img src={lease.landlordSig} alt="PM signature" style={{height:40,maxWidth:160,objectFit:"contain"}}/>
                <div>
-                 <div style={{fontSize:11,fontWeight:600,color:"#2d6a3f"}}>{template?.landlordName||"Carolina Cooper"}</div>
+                 <div style={{fontSize:11,fontWeight:600,color:"#2d6a3f"}}>{template?.landlordName||lease?.landlordName||""}</div>
                  <div style={{fontSize:10,color:"#6b5e52"}}>Signed {fmtD(lease?.landlordSignedAt?.split("T")[0])}</div>
                </div>
             </div>

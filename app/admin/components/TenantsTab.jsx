@@ -398,7 +398,7 @@ export default function TenantsTab({
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             to: email, subject: bulkSubject,
-            fromName: (settings?.pmName || "Property Manager") + " | " + (settings?.companyName || "Black Bear Rentals"),
+            fromName: (settings?.pmName || "Property Manager") + " | " + (settings?.companyName || ""),
             replyTo: settings?.pmEmail || settings?.email || "info@rentblackbear.com",
             html: `<div style="font-family:sans-serif;font-size:14px;color:#333;line-height:1.6">${bulkBody.replace(/\n/g, "<br>")}</div>`,
           }),

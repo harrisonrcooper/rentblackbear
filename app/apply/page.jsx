@@ -544,10 +544,10 @@ export default function ApplyPage(){
     else{setD(p=>({...p,employers:[...p.employers,f],curEmployerForm:null}));}};
 
   if(loading)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif",color:"#999"}}><div style={{textAlign:"center"}}><div style={{marginBottom:8}}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="13" r="7"/><circle cx="5" cy="7" r="3"/><circle cx="19" cy="7" r="3"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="14" cy="12" r="1" fill="currentColor"/><path d="M10 15.5s.8 1 2 1 2-1 2-1"/></svg></div>Loading your application...</div></div>);
-  if(submitted)return(<><style>{CSS}</style><div className="app-wrap"><div className="app-header"><div className="app-logo">Black Bear <span>Rentals</span></div></div><div className="app-body"><div className="submitted"><div className="submitted-ic"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg></div><h1>Application Submitted!</h1><p>Thanks, {d.firstName}! We've received your application and screening payment. We'll review everything and get back to you within 24-48 hours.</p><div style={{marginTop:24,padding:16,background:"rgba(74,124,89,.06)",borderRadius:12,fontSize:12,color:"#4a7c59"}}><strong>What happens next?</strong><br/>1. Your background check and credit report are processing<br/>2. We'll review your application and references<br/>3. You'll receive an email with our decision<br/>4. If approved, we'll send your lease for e-signing</div></div></div><div className="app-footer">© {new Date().getFullYear()} Black Bear Rentals</div></div></>);
+  if(submitted)return(<><style>{CSS}</style><div className="app-wrap"><div className="app-header"><div className="app-logo">PropOS</div></div><div className="app-body"><div className="submitted"><div className="submitted-ic"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4a7c59" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg></div><h1>Application Submitted!</h1><p>Thanks, {d.firstName}! We've received your application and screening payment. We'll review everything and get back to you within 24-48 hours.</p><div style={{marginTop:24,padding:16,background:"rgba(74,124,89,.06)",borderRadius:12,fontSize:12,color:"#4a7c59"}}><strong>What happens next?</strong><br/>1. Your background check and credit report are processing<br/>2. We'll review your application and references<br/>3. You'll receive an email with our decision<br/>4. If approved, we'll send your lease for e-signing</div></div></div><div className="app-footer">© {new Date().getFullYear()} PropOS</div></div></>);
 
   return(<><style>{CSS}</style><div className="app-wrap">
-    <div className="app-header"><div className="app-logo">Black Bear <span>Rentals</span></div>{step!=="welcome"&&step!=="done"&&<div className="app-save">{saving?<><div className="dot"/>Saving...</>:"✓ Saved"}</div>}</div>
+    <div className="app-header"><div className="app-logo">PropOS</div>{step!=="welcome"&&step!=="done"&&<div className="app-save">{saving?<><div className="dot"/>Saving...</>:"✓ Saved"}</div>}</div>
     <div className="app-body">
       {step!=="welcome"&&step!=="done"&&<><div className="prog">{steps.filter(s=>s!=="welcome"&&s!=="done").map((s,i)=>{const si=steps.indexOf(s);return<div key={s} className={`prog-seg ${si<stepIdx?"done":si===stepIdx?"cur":""}`}/>;})}</div><div className="prog-label">Step {stepIdx} of {steps.length-2} · {LABELS[step]}</div></>}
 
@@ -1320,7 +1320,7 @@ export default function ApplyPage(){
 
           // Admin notification email
           try{await fetch("/api/apply-notify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-            to:"info@rentblackbear.com",
+            to:"admin", // Route resolves actual email from settings
             applicantName:fullName,
             applicantEmail:d.email,
             applicantPhone:d.phone,
@@ -1346,10 +1346,10 @@ export default function ApplyPage(){
           onMouseEnter={e=>{e.currentTarget.style.background="#d4a853";e.currentTarget.style.color="#1a1714";e.currentTarget.style.borderColor="#d4a853";}}
           onMouseLeave={e=>{e.currentTarget.style.background="#1a1714";e.currentTarget.style.color="#d4a853";e.currentTarget.style.borderColor="#1a1714";}}
         >Pay ${baseFee} & Submit Application</button>
-        <div className="legal">By submitting, you authorize Black Bear Rentals and RentPrep to conduct a background check and credit inquiry. This will not impact your credit score. Fee is non-refundable.</div>
+        <div className="legal">By submitting, you authorize the property manager and RentPrep to conduct a background check and credit inquiry. This will not impact your credit score. Fee is non-refundable.</div>
         <button className="btn-back" onClick={back}>← Back to Review</button>
       </div>}
     </div>
-    {step!=="done"&&<div className="app-footer">© {new Date().getFullYear()} Black Bear Rentals — Oak & Main Development LLC · <a href="https://rentblackbear.com">rentblackbear.com</a></div>}
+    {step!=="done"&&<div className="app-footer">© {new Date().getFullYear()} PropOS</div>}
   </div></>);
 }

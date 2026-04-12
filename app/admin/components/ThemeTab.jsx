@@ -147,7 +147,7 @@ export default function ThemeTab({
         <button className="btn btn-out" onClick={exportTheme}>Export CSS</button>
         <button className="btn btn-out" onClick={()=>setTheme(randPalette())}>Random Palette</button>
       </div>
-      {expanded.themePushSuccess&&<div style={{marginBottom:10,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,animation:"fadeIn .3s"}}>Theme is live on rentblackbear.com</div>}
+      {expanded.themePushSuccess&&<div style={{marginBottom:10,padding:"9px 12px",background:"rgba(74,124,89,.08)",border:"1px solid rgba(74,124,89,.2)",borderRadius:8,fontSize:11,color:"#4a7c59",fontWeight:700,animation:"fadeIn .3s"}}>Theme is live on your site</div>}
       <div className="card" style={{marginBottom:12}}><div className="card-bd">
         <h3 style={{fontSize:13,fontWeight:800,marginBottom:10}}>Color Presets</h3>
         <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
@@ -185,7 +185,7 @@ export default function ThemeTab({
             <div style={{background:theme.surface,padding:10}}><div style={{background:"#fff",borderRadius:5,padding:6,border:"1px solid rgba(0,0,0,.04)",marginBottom:4}}><div style={{display:"flex",gap:3,marginBottom:3}}><span style={{background:theme.green+"18",color:theme.green,padding:"1px 5px",borderRadius:100,fontSize:6,fontWeight:700}}>Available</span></div><div style={{fontFamily:"Georgia,serif",fontSize:10,color:theme.dark}}>The Holmes House</div><div style={{fontSize:7,color:theme.warm}}>$600-$850/mo</div></div></div>
             <div style={{background:theme.card,padding:"10px 12px",textAlign:"center"}}><div style={{background:theme.accent,color:contrast(theme.accent),padding:"5px 14px",borderRadius:5,fontSize:9,fontWeight:700,display:"inline-block"}}>Apply Now</div></div>
           </div>
-          <div style={{marginTop:14,background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#4a7c59"}}>Click Push to Site to update rentblackbear.com.</div>
+          <div style={{marginTop:14,background:"rgba(74,124,89,.06)",borderRadius:8,padding:12,fontSize:11,color:"#4a7c59"}}>Click Push to Site to update your public site.</div>
         </div>
       </div>
     </>}

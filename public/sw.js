@@ -1,4 +1,4 @@
-// ── Black Bear Rentals — Service Worker ──
+// ── PropOS — Service Worker ──
 const CACHE_NAME = "bb-portal-v1";
 const PRECACHE = ["/portal"];
 

@@ -62,14 +62,14 @@ export async function POST(request) {
       body: JSON.stringify({
         from: fromAddress(s),
         to,
-        subject: `You're invited to apply — Black Bear Rentals 🐻`,
+        subject: `You're invited to apply — ${s.companyName || ""}`,
         html: `
           <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:580px;margin:0 auto;color:#1a1714;">
 
             <!-- Header -->
             <div style="background:#1a1714;padding:28px 32px;border-radius:12px 12px 0 0;">
-              <div style="font-family:Georgia,serif;font-size:22px;color:#d4a853;font-weight:700;margin-bottom:4px;">🐻 Black Bear Rentals</div>
-              <div style="font-size:12px;color:#c4a882;">Huntsville, Alabama</div>
+              <div style="font-family:Georgia,serif;font-size:22px;color:#d4a853;font-weight:700;margin-bottom:4px;">${s.companyName || ""}</div>
+              <div style="font-size:12px;color:#c4a882;">${s.city || ""}</div>
             </div>
 
             <!-- Body -->
@@ -77,7 +77,7 @@ export async function POST(request) {
 
               <h2 style="font-size:24px;margin:0 0 8px;color:#1a1714;">Hey ${firstName}, you're invited!</h2>
               <p style="font-size:14px;color:#5c4a3a;line-height:1.7;margin-bottom:24px;">
-                Great speaking with you. I'd love to have you as part of the Black Bear community — you're officially invited to apply for a room.
+                Great speaking with you. I'd love to have you as part of our community — you're officially invited to apply for a room.
               </p>
 
               ${personalNote}
@@ -114,11 +114,11 @@ export async function POST(request) {
                 Questions? Just reply to this email or call/text us at <strong>(850) 696-8101</strong>.
               </p>
               <p style="font-size:13px;color:#5c4a3a;">Looking forward to having you!</p>
-              <p style="font-size:13px;color:#5c4a3a;margin-top:16px;">— Black Bear Properties</p>
+              <p style="font-size:13px;color:#5c4a3a;margin-top:16px;">— ${s.companyName || ""}</p>
 
               <hr style="margin:24px 0;border:none;border-top:1px solid #e8e5e0;"/>
               <p style="font-size:10px;color:#bbb;margin:0;">
-                This invite was sent to ${to} · <a href="https://rentblackbear.com" style="color:#d4a853;">rentblackbear.com</a>
+                This invite was sent to ${to} · <a href="${s.siteUrl || ""}" style="color:#d4a853;">${(s.siteUrl || "").replace("https://","")}</a>
               </p>
             </div>
           </div>

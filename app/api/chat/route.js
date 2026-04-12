@@ -2,7 +2,13 @@
 // Handles AI chat requests server-side so the API key stays secure.
 // Set ANTHROPIC_API_KEY in Vercel → Settings → Environment Variables.
 
-const CHAT_CTX = `You are the AI assistant for Black Bear Rentals in Huntsville, AL. Rent by the bedroom. All rooms furnished with bed, dresser, TV. Google Fiber WiFi always included. Cleaning: 5-bed weekly, 3-bed biweekly. No pets, no smoking, no shoes. Quiet hours 10pm-7am weekdays, 11pm-10am weekends. SD = 1 month rent, secures room. First month rent due on/before move-in. No app fee, tenant pays for background check. 12-month standard lease, flexible for interns/contractors. Properties: Holmes House (SFH, 5bd, first $100 utils then split), Lee Drive East & West (Townhomes, 3bd, all utils included). Rooms $600-$850/mo. Be friendly and concise.`;
+import { getSettings } from "@/lib/getSettings";
+
+// Build chat context dynamically from settings — no hardcoded branding
+function buildChatCtx(s) {
+  if (s.chatCtx) return s.chatCtx; // Operator can override entirely via settings
+  return `You are the AI assistant for ${s.companyName || "this property management company"} in ${s.city || ""}. Be friendly and concise. Answer questions about rooms, pricing, policies, and the application process based on what you know. If you don't know specifics, direct the visitor to email ${s.email || "us"} or call ${s.phone || "us"}.`;
+}
 
 // Max chars for a single user message. Chat is the most abuseable public route
 // because every token hits the Anthropic billing meter — keep this tight.
@@ -47,9 +53,10 @@ export async function POST(request) {
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
+    const s = await getSettings();
     if (!apiKey) {
       return Response.json({
-        reply: "Our AI assistant is being set up. For questions, email info@rentblackbear.com or call (256) 555-0192!"
+        reply: `Our AI assistant is being set up. For questions, email ${s.email || "us"} or call ${s.phone || "us"}!`
       });
     }
 
@@ -68,7 +75,7 @@ export async function POST(request) {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 800,
-        system: CHAT_CTX,
+        system: buildChatCtx(s),
         messages,
       }),
     });
@@ -80,7 +87,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Chat API error:", error);
     return Response.json({
-      reply: "Trouble connecting right now. Reach us at info@rentblackbear.com!"
+      reply: "Trouble connecting right now. Please try again shortly!"
     }, { status: 500 });
   }
 }
