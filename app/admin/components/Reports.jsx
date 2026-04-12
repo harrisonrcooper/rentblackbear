@@ -125,6 +125,7 @@ export default function Reports({
     { id: "taxprep", icon: <RIcon d="M9 11l3 3L22 4" d2="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />, title: "Tax Prep Package", desc: "Schedule E + P&L for every property in one export \u2014 hand this to your CPA" },
     { id: "lenderpacket", icon: <RIcon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" d2="M14 2v6h6M16 13H8M16 17H8M10 9H8" />, title: "Lender Packet", desc: "Rent roll + DSCR + trailing 12 + cash flow \u2014 one download for your banker" },
     { id: "periodcompare", icon: <RIcon d="M18 20V10M12 20V4M6 20v-6" />, title: "Period Comparison", desc: "Side-by-side P&L \u2014 this year vs last year, or any two date ranges" },
+    { id: "qbexport", icon: <RIcon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" d2="M7 10l5 5 5-5M12 15V3" />, title: "QuickBooks Export", desc: "Export income and expenses as QuickBooks-compatible CSV for easy import" },
   ];
 
   // ── Table wrapper for mobile scroll ──────────────────────────────
@@ -898,6 +899,117 @@ export default function Reports({
                       </div></td>
                     </tr>);
                   })}
+                </tbody>
+              </table>
+            </TW>
+          </>);
+        })()}
+
+        {/* ── QuickBooks Export ── */}
+        {activeReport === "qbexport" && (() => {
+          const SCHED_E_TO_QB = {
+            "Advertising": "Advertising Expense",
+            "Cleaning & Maintenance": "Repairs & Maintenance",
+            "Insurance": "Insurance Expense",
+            "Legal & Professional Fees": "Professional Fees",
+            "Mortgage Interest": "Mortgage Interest",
+            "Repairs": "Repairs & Maintenance",
+            "Supplies": "Supplies",
+            "Taxes": "Property Tax",
+            "Utilities": "Utilities",
+            "Other": "Miscellaneous Expense",
+          };
+          const mapAccount = (cat) => SCHED_E_TO_QB[cat] || "Miscellaneous Expense";
+
+          const [qbRange, setQbRange] = [reportPeriod, setReportPeriod];
+
+          const qbPresets = [
+            { label: "This Month", fn: () => { const m = String(TODAY.getMonth() + 1).padStart(2, "0"); setQbRange({ from: TODAY.getFullYear() + "-" + m + "-01", to: TODAY.toISOString().split("T")[0] }); }},
+            { label: "This Quarter", fn: () => { const q = Math.floor(TODAY.getMonth() / 3); const qStart = new Date(TODAY.getFullYear(), q * 3, 1); setQbRange({ from: qStart.toISOString().split("T")[0], to: TODAY.toISOString().split("T")[0] }); }},
+            { label: "This Year", fn: () => setQbRange({ from: TODAY.getFullYear() + "-01-01", to: TODAY.toISOString().split("T")[0] }) },
+          ];
+
+          // Income rows from payments (charges with amountPaid > 0)
+          const incomeRows = rIncomePayments.map(p => ({
+            Date: p.date,
+            "Transaction Type": "Invoice",
+            Account: "Rental Income",
+            Description: (p.category || "Rent") + (p.tenantName ? " - " + p.tenantName : ""),
+            Amount: Number(p.amount).toFixed(2),
+            Name: p.tenantName || "",
+            Class: p.propName || "",
+          }));
+
+          // Expense rows
+          const expenseRows = rExpenses.map(e => {
+            const propObj = props.find(p => p.id === e.propId);
+            return {
+              Date: e.date,
+              "Transaction Type": "Expense",
+              Account: mapAccount(e.category),
+              Description: e.desc || e.category || "",
+              Amount: Number(e.amount).toFixed(2),
+              Name: e.vendor || e.payee || "",
+              Class: propObj ? getPropDisplayName(propObj) : (e.propId === "shared" ? "Shared" : ""),
+            };
+          });
+
+          const allRows = [...incomeRows, ...expenseRows].sort((a, b) => a.Date.localeCompare(b.Date));
+          const qbHeaders = ["Date", "Transaction Type", "Account", "Description", "Amount", "Name", "Class"];
+
+          const downloadQB = () => {
+            const csv = [qbHeaders.join(","), ...allRows.map(r => qbHeaders.map(h => JSON.stringify(r[h] ?? "")).join(","))].join("\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "propos-qb-export-" + TODAY.toISOString().split("T")[0] + ".csv";
+            a.click();
+            URL.revokeObjectURL(url);
+          };
+
+          return (<>
+            {/* Date range presets */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14, alignItems: "center" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#6b5e52" }}>Quick range:</span>
+              {qbPresets.map(p => (
+                <button key={p.label} className="btn btn-out btn-sm" onClick={p.fn}>{p.label}</button>
+              ))}
+              <span style={{ fontSize: 10, color: "#999", marginLeft: 8 }}>or use the date filters above</span>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
+              <button className="btn btn-sm" style={{ background: _acc, color: "#fff", border: "none", padding: "8px 16px", borderRadius: 6, fontWeight: 700, fontSize: 12, cursor: "pointer" }} onClick={downloadQB}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: "middle" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                Download QuickBooks CSV
+              </button>
+              <span style={{ fontSize: 11, color: "#6b5e52" }}>{allRows.length} transactions ({incomeRows.length} income, {expenseRows.length} expenses) &middot; {rFrom} to {rTo}</span>
+            </div>
+
+            {/* Account mapping reference */}
+            <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(0,0,0,.02)", borderRadius: 8, border: "1px solid rgba(0,0,0,.04)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Schedule E to QuickBooks Account Mapping</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: "2px 16px", fontSize: 10, color: "#6b5e52" }}>
+                {Object.entries(SCHED_E_TO_QB).map(([k, v]) => (
+                  <div key={k}><span style={{ fontWeight: 600 }}>{k}</span> &rarr; {v}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview table */}
+            <TW>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
+                  {qbHeaders.map(h => <th key={h} style={{ ...thS, textAlign: h === "Amount" ? "right" : "left" }}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {allRows.length === 0 && <tr><td colSpan={7} style={{ ...tdS, textAlign: "center", color: "#999", padding: 32 }}>No transactions in this date range</td></tr>}
+                  {allRows.slice(0, 50).map((r, i) => (
+                    <tr key={i} style={trAlt(i)}>
+                      {qbHeaders.map(h => <td key={h} style={{ ...tdS, textAlign: h === "Amount" ? "right" : "left", fontWeight: h === "Amount" ? 600 : 400, color: r["Transaction Type"] === "Invoice" ? _grn : "inherit" }}>{r[h]}</td>)}
+                    </tr>
+                  ))}
+                  {allRows.length > 50 && <tr><td colSpan={7} style={{ ...tdS, textAlign: "center", color: "#999", fontSize: 10, padding: 12 }}>Showing first 50 of {allRows.length} rows. Download CSV for full data.</td></tr>}
                 </tbody>
               </table>
             </TW>
