@@ -234,8 +234,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   const [digs, setDigs] = useState("");
   const [hasDot, setHasDot] = useState(false);
   const [expType, setExpType] = useState("");
-  const [propKey, setPropKey] = useState("");
-  const [propSplit, setPropSplit] = useState("one"); /* "one" | "all" | "custom" */
+  const [propKeys, setPropKeys] = useState([]); /* array of prop IDs, or ["all"] */
   const [category, setCategory] = useState("");
   const [subcat, setSubcat] = useState("");
   const [vendor, setVendor] = useState("");
@@ -266,7 +265,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   /* reset on open + body scroll lock */
   useEffect(() => {
     if (open) {
-      setStep(0); setDigs(""); setHasDot(false); setExpType(""); setPropKey(""); setPropSplit("one");
+      setStep(0); setDigs(""); setHasDot(false); setExpType(""); setPropKeys([]); setNewSubcatVal(""); setShowSubcatInput(false);
       setCategory(""); setSubcat(""); setVendor(""); setVendorQuery(""); setNote("");
       setSelM(today().getMonth()); setSelD(today().getDate() - 1); setSelY(today().getFullYear());
       setDateMode("today"); setSaving(false); setShowHelp(false);
@@ -297,7 +296,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
   const fwd = () => {
     if (step === 0 && !digs) { triggerShake(); return; }
     if (step === 1 && !expType) { triggerShake(); return; }
-    if (step === 2 && expType === "property" && !propKey) { triggerShake(); return; }
+    if (step === 2 && expType === "property" && propKeys.length === 0) { triggerShake(); return; }
     if (step === 3 && !category) { triggerShake(); return; }
     // subcat optional, vendor optional, date always set, note optional
     if (step === 8) { handleSave(); return; }
@@ -321,12 +320,18 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
     if (mode !== "other") { setSelM(d.getMonth()); setSelD(d.getDate() - 1); setSelY(d.getFullYear()); }
   };
 
-  /* add new subcat */
+  /* add new subcat — inline input instead of window.prompt */
+  const [newSubcatVal, setNewSubcatVal] = useState("");
+  const [showSubcatInput, setShowSubcatInput] = useState(false);
   const addNewSubcat = () => {
-    const name = window.prompt("New subcategory name:");
-    if (!name || !name.trim() || !category) return;
-    const newSc = { id: "sc-" + uidGen(), label: name.trim() };
+    const name = newSubcatVal.trim();
+    if (!name || !category) return;
+    const newSc = { id: "sc-" + uidGen(), label: name };
     setSubcats(p => ({ ...p, [category]: [...(p[category] || []), newSc] }));
+    setNewSubcatVal("");
+    setShowSubcatInput(false);
+    setSubcat(name);
+    setTimeout(() => setStep(5), 200);
   };
 
   /* add new vendor */
@@ -355,29 +360,20 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
       createdAt: new Date().toISOString(),
     };
 
-    if (expType === "property" && propKey === "all") {
-      // split equally across all active props
-      const perProp = Math.round((amount / activeProps.length) * 100) / 100;
-      const records = activeProps.map(p => ({
-        id: uidGen(),
-        ...base,
-        propId: p.id,
-        propName: p.name,
-        amount: perProp,
-        desc: `${category}${subcat ? " — " + subcat : ""}${vendor ? " / " + vendor : ""}`,
-        splitOf: "all",
+    const selProps = propKeys.includes("all") ? activeProps : activeProps.filter(p => propKeys.includes(p.id));
+    const descStr = `${category}${subcat ? " \u2014 " + subcat : ""}${vendor ? " / " + vendor : ""}`;
+    if (expType === "property" && selProps.length > 1) {
+      const perProp = Math.round((amount / selProps.length) * 100) / 100;
+      const records = selProps.map(p => ({
+        id: uidGen(), ...base, propId: p.id, propName: p.name, amount: perProp, desc: descStr,
+        splitOf: propKeys.includes("all") ? "all" : "custom",
       }));
       setExpenses(prev => [...records, ...prev]);
       setTxns(prev => [...records.map(r => ({ ...r, txnType: "expense" })), ...prev]);
     } else {
-      const selectedProp = activeProps.find(p => p.id === propKey);
+      const p = selProps[0] || null;
       const record = {
-        id: uidGen(),
-        ...base,
-        propId: propKey || null,
-        propName: selectedProp ? selectedProp.name : null,
-        amount,
-        desc: `${category}${subcat ? " — " + subcat : ""}${vendor ? " / " + vendor : ""}`,
+        id: uidGen(), ...base, propId: p?.id || null, propName: p?.name || null, amount, desc: descStr,
       };
       setExpenses(prev => [record, ...prev]);
       setTxns(prev => [{ ...record, txnType: "expense" }, ...prev]);
@@ -485,7 +481,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
       background: on ? rgba(acc, .12) : "#1f1f22", color: on ? acc : "rgba(255,255,255,.4)",
       fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "center", transition: "all .2s",
     }),
-    wheelWrap: { flex: 1, position: "relative", margin: "0 16px" },
+    wheelWrap: { height: 322, position: "relative", margin: "0 16px" },
     selBar: { position: "absolute", left: 0, right: 0, top: "50%", transform: "translateY(-50%)", height: 46, borderRadius: 12, background: rgba(acc, .1), border: `1.5px solid ${rgba(acc, .25)}`, pointerEvents: "none", zIndex: 2 },
     fadeT: { position: "absolute", left: 0, right: 0, top: 0, height: 80, background: "linear-gradient(to bottom,#161618,transparent)", pointerEvents: "none", zIndex: 3 },
     fadeB: { position: "absolute", left: 0, right: 0, bottom: 0, height: 80, background: "linear-gradient(to top,#161618,transparent)", pointerEvents: "none", zIndex: 3 },
@@ -589,11 +585,14 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
 
           {/* HEADER */}
           <div style={S.hdr}>
-            <button style={S.hdrBtn} onClick={back}>{step === 0 ? "Cancel" : "← Back"}</button>
+            <button style={S.hdrBtn} onClick={back}>{step === 0 ? "Cancel" : "\u2190 Back"}</button>
             <span style={S.hdrTitle}>{STEP_TITLES[step]}</span>
-            {step === 1
-              ? <button style={{ ...S.hdrBtn, display: "flex", alignItems: "center" }} onClick={() => setShowHelp(true)}><QuestionIc /></button>
-              : <span style={{ width: 60 }} />}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 60, justifyContent: "flex-end" }}>
+              {step === 1 && <button style={{ ...S.hdrBtn, display: "flex", alignItems: "center" }} onClick={() => setShowHelp(true)}><QuestionIc /></button>}
+              <button style={{ ...S.hdrBtn, display: "flex", alignItems: "center", padding: 6 }} onClick={onClose}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>
 
           {/* PROGRESS */}
@@ -651,7 +650,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
               </div>
               <div style={{ ...S.pickScroll, gap: 9 }}>
                 {EXPENSE_TYPES.map(t => (
-                  <motion.div key={t.key} style={S.typeCard(expType === t.key)} onClick={() => setExpType(t.key)} whileTap={{ scale: .98 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+                  <motion.div key={t.key} style={S.typeCard(expType === t.key)} onClick={() => { setExpType(t.key); setTimeout(() => { if (t.key === "business") setStep(3); else setStep(2); }, 200); }} whileTap={{ scale: .98 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
                     <div style={S.typeIcWrap}>{t.icon(expType === t.key ? acc : "rgba(255,255,255,.4)")}</div>
                     <div style={S.typeNm}>{t.name}</div>
                     <div style={S.typeDs}>{t.desc}</div>
@@ -668,22 +667,24 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                 <div style={S.pickSub}>Required for Schedule E deduction</div>
               </div>
               <div style={S.pickScroll}>
-                {activeProps.map(p => (
+                {activeProps.map(p => {
+                  const sel = propKeys.includes(p.id);
+                  return (
                   <PickCard
                     key={p.id}
-                    selected={propKey === p.id}
-                    onClick={() => { setPropKey(p.id); setPropSplit("one"); }}
-                    icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={propKey === p.id ? acc : "rgba(255,255,255,.4)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
+                    selected={sel}
+                    onClick={() => setPropKeys(prev => { const clean = prev.filter(k => k !== "all"); return clean.includes(p.id) ? clean.filter(k => k !== p.id) : [...clean, p.id]; })}
+                    icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={sel ? acc : "rgba(255,255,255,.4)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
                     name={p.name || p.addr || "Property"}
                     desc={p.addr && p.name !== p.addr ? p.addr : null}
-                  />
-                ))}
+                  />);
+                })}
                 <PickCard
-                  selected={propKey === "all"}
-                  onClick={() => { setPropKey("all"); setPropSplit("all"); }}
-                  icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={propKey === "all" ? acc : "rgba(255,255,255,.4)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>}
+                  selected={propKeys.includes("all")}
+                  onClick={() => setPropKeys(prev => prev.includes("all") ? [] : ["all"])}
+                  icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={propKeys.includes("all") ? acc : "rgba(255,255,255,.4)"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>}
                   name="All Properties"
-                  desc={`Split equally — ${activeProps.length} properties`}
+                  desc={`Split equally \u2014 ${activeProps.length} properties`}
                 />
               </div>
             </>}
@@ -699,7 +700,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                   <PickCard
                     key={c.key}
                     selected={category === c.key}
-                    onClick={() => { setCategory(c.key); setSubcat(""); }}
+                    onClick={() => { setCategory(c.key); setSubcat(""); setTimeout(() => setStep(4), 200); }}
                     name={c.key}
                     desc={c.line}
                   />
@@ -718,15 +719,29 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                   <PickCard
                     key={sc.id}
                     selected={subcat === sc.label}
-                    onClick={() => setSubcat(sc.label)}
+                    onClick={() => { setSubcat(sc.label); setTimeout(() => setStep(5), 200); }}
                     name={sc.label}
                   />
                 ))}
               </div>
-              <div style={S.addRow} onClick={addNewSubcat}>
-                <PlusIc color={acc} />
-                <span style={{ fontSize: 14, fontWeight: 500, color: acc }}>Add subcategory</span>
-              </div>
+              {showSubcatInput ? (
+                <div style={{ display: "flex", gap: 8, padding: "8px 16px", flexShrink: 0 }}>
+                  <input
+                    autoFocus
+                    style={{ ...S.srchInp, background: "#1f1f22", borderRadius: 10, padding: "10px 12px", border: "1.5px solid rgba(255,255,255,.08)", flex: 1 }}
+                    placeholder="Subcategory name"
+                    value={newSubcatVal}
+                    onChange={e => setNewSubcatVal(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") addNewSubcat(); }}
+                  />
+                  <button style={{ background: acc, border: "none", borderRadius: 10, padding: "10px 16px", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }} onClick={addNewSubcat}>Add</button>
+                </div>
+              ) : (
+                <div style={S.addRow} onClick={() => setShowSubcatInput(true)}>
+                  <PlusIc color={acc} />
+                  <span style={{ fontSize: 14, fontWeight: 500, color: acc }}>Add subcategory</span>
+                </div>
+              )}
             </>}
 
             {/* ── STEP 5: VENDOR ── */}
@@ -754,7 +769,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
                     <PickCard
                       key={i}
                       selected={vendor === vName}
-                      onClick={() => { setVendor(vName); setVendorQuery(vName); }}
+                      onClick={() => { setVendor(vName); setVendorQuery(vName); setTimeout(() => setStep(6), 200); }}
                       name={vName}
                       desc={totalPaid >= 600 ? `$${totalPaid.toLocaleString()} YTD — 1099 required` : totalPaid > 0 ? `$${totalPaid.toLocaleString()} YTD` : null}
                     />
@@ -816,7 +831,7 @@ export default function AddExpenseSheet({ open, onClose, acc = "#4a7c59", props 
               <div style={S.revScroll}>
                 {[
                   { label: "Type", value: EXPENSE_TYPES.find(t => t.key === expType)?.name || expType },
-                  expType === "property" && { label: "Property", value: propKey === "all" ? `All Properties (÷ ${activeProps.length})` : activeProps.find(p => p.id === propKey)?.name || propKey },
+                  expType === "property" && { label: "Property", value: propKeys.includes("all") ? `All Properties (\u00F7 ${activeProps.length})` : propKeys.length > 1 ? `${propKeys.length} properties (\u00F7 ${propKeys.length})` : activeProps.find(p => p.id === propKeys[0])?.name || "" },
                   { label: "Category", value: category },
                   subcat && { label: "Subcategory", value: subcat },
                   vendor && { label: "Vendor", value: vendor },
