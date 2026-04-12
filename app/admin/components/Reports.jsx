@@ -649,10 +649,16 @@ export default function Reports({
                 Downloads rent roll, trailing 12-month income, and cash flow with DSCR.
                 Three CSVs your banker can open directly.
               </div>
-              <button className="btn btn-green btn-sm" style={{ fontWeight: 700, fontSize: 12, padding: "8px 20px" }} onClick={exportAll}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: "middle" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download Lender Packet (3 CSVs)
-              </button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn btn-green btn-sm" style={{ fontWeight: 700, fontSize: 12, padding: "8px 20px" }} onClick={exportAll}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: "middle" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download Lender Packet (3 CSVs)
+                </button>
+                <button className="btn btn-green btn-sm" style={{ fontWeight: 700, fontSize: 12, padding: "8px 20px", background: "#1a1714", border: "1px solid #1a1714" }} onClick={() => window.open("/api/generate-rent-roll", "_blank")}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: "middle" }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>
+                  Rent Roll PDF
+                </button>
+              </div>
             </div>
             {/* Key metrics preview */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(80px,1fr))", gap: 8, marginBottom: 14 }}>
