@@ -601,10 +601,25 @@ export default function ApplicationsTab({
               {/* Checkbox — only on non-onboarding, positioned cleanly */}
               {!isOnboarding&&<div style={{position:"absolute",left:8,top:12}} onClick={e=>{e.stopPropagation();setBulkSel(p=>isChecked?p.filter(x=>x!==a.id):[...p,a.id]);}}><input type="checkbox" checked={isChecked} onChange={()=>{}} style={{width:13,height:13,minWidth:22,minHeight:22,cursor:"pointer"}}/></div>}
 
-              {flags.length>0&&<div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:flags[0].type==="current"?`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.08)`:flags[0].type==="past"?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`:`rgba(${_acR},.08)`,color:flags[0].type==="current"?_red:flags[0].type==="past"?_gold:_ac,fontWeight:600,cursor:"pointer"}}
-                onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>
-                {flags[0].type==="current"?"Current Tenant":flags[0].type==="past"?"Returning":flags[0].type==="dup"?"Duplicate":""} →
-              </div>}
+              {flags.length>0&&(()=>{
+                const f=flags[0];
+                const isDup=f.type==="dup";
+                const dupApp=isDup?f.data:null;
+                const dupDate=dupApp?(dupApp.submitted||dupApp.lastContact||""):"";
+                const fmtDupDate=dupDate?new Date(dupDate+"T00:00:00").toLocaleDateString():"";
+                return isDup?(
+                  <div style={{fontSize:9,padding:"4px 8px",borderRadius:5,marginBottom:4,background:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.12)`,border:`1px solid rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.25)`,color:_gold,fontWeight:600,cursor:"pointer",lineHeight:1.4}}
+                    onClick={e=>{e.stopPropagation();setModal({type:"app",data:dupApp});}}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle",marginRight:3}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Possible duplicate — {dupApp.name} also applied{fmtDupDate?" on "+fmtDupDate:""}
+                  </div>
+                ):(
+                  <div style={{fontSize:7,padding:"2px 5px",borderRadius:3,marginBottom:3,background:f.type==="current"?`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.08)`:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`,color:f.type==="current"?_red:_gold,fontWeight:600,cursor:"pointer"}}
+                    onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>
+                    {f.type==="current"?"Current Tenant":"Returning"} →
+                  </div>
+                );
+              })()}
 
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
@@ -767,13 +782,16 @@ export default function ApplicationsTab({
 
   {/* List */}
   {appView==="list"&&<div className="card"><div className="card-bd" style={{padding:0}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}><table className="tbl"><thead><tr><th style={{width:32}}></th><th>Name</th><th>Property</th><th>Score</th><th>Stage</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody>
-    {activeApps.sort((a,b)=>getScore(b)-getScore(a)).map(a=>{const sc=getScore(a);const d=daysSince(a.lastContact||a.submitted);const sel=bulkSel.includes(a.id);return(
+    {activeApps.sort((a,b)=>getScore(b)-getScore(a)).map(a=>{const sc=getScore(a);const d=daysSince(a.lastContact||a.submitted);const sel=bulkSel.includes(a.id);const listFlags=getFlags(a);const listDup=listFlags.find(f=>f.type==="dup");return(
       <tr key={a.id} style={{cursor:"pointer",background:sel?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.07)`:"",transition:"background .1s"}}
         onClick={()=>setModal({type:"app",data:a})}>
         <td style={{width:32}} onClick={e=>e.stopPropagation()}>
           <input type="checkbox" checked={sel} onChange={e=>setBulkSel(p=>e.target.checked?[...p,a.id]:p.filter(x=>x!==a.id))} style={{width:14,height:14,cursor:"pointer"}}/>
         </td>
-        <td style={{fontWeight:700}}>{a.name}</td><td>{a.property||"—"}</td>
+        <td style={{fontWeight:700}}>{a.name}{listDup&&<div style={{fontSize:9,color:_gold,fontWeight:600,marginTop:2}}>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle",marginRight:2}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Possible duplicate — {listDup.data.name} also applied{listDup.data.submitted?" on "+new Date(listDup.data.submitted+"T00:00:00").toLocaleDateString():""}
+        </div>}</td><td>{a.property||"—"}</td>
         <td><span style={{fontWeight:700,color:sc>=70?_ac:sc>=50?_gold:_red}}>{sc}</span></td>
         <td><span className={`badge ${SC2[a.status]||"b-gray"}`}>{SL[a.status]||a.status}</span></td>
         <td style={{color:d>=5?_red:d>=3?_gold:"#999",fontWeight:600}}>{d}d</td>

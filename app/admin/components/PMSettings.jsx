@@ -624,6 +624,66 @@ export default function PMSettings({ settings, setSettings, save, expanded, setE
           </div>
           <div style={{fontSize:11,color:"#6b5e52"}}>Manage in Templates tab</div>
         </div>
+
+        {/* Data & Privacy */}
+        <DataPrivacyCard />
     </>
+  );
+}
+
+function DataPrivacyCard() {
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleExport = async () => {
+    setDownloading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/export-data");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Export failed");
+      }
+      // Trigger download from the response
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename=([^\s;]+)/);
+      a.download = match ? match[1] : "propos-export.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e.message || "Export failed");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="card" style={{ marginTop: 12 }}>
+      <div className="card-bd">
+        <h3 style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>Data & Privacy</h3>
+        <p style={{ fontSize: 11, color: "#6b5e52", marginBottom: 14 }}>
+          Your data belongs to you. Download a complete copy anytime.
+        </p>
+        <button
+          className="btn btn-out btn-sm"
+          disabled={downloading}
+          onClick={handleExport}
+          style={{ minHeight: 44 }}
+        >
+          {downloading ? "Exporting..." : "Export All Data"}
+        </button>
+        {error && (
+          <div style={{ marginTop: 8, fontSize: 11, color: "#c45c4a", fontWeight: 600 }}>
+            {error}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
