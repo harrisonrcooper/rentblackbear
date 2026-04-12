@@ -41,7 +41,7 @@ export async function POST(request) {
     if (!ref.email) return Response.json({ ok: false, error: "Reference has no email" }, { status: 400 });
 
     // Generate unique token for this reference
-    const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    const token = require('crypto').randomUUID();
     const confirmUrl = `${s.siteUrl}/reference-confirm?token=${token}&appId=${appId}&refId=${refId}`;
 
     // Build email from template

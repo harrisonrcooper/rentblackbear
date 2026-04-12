@@ -43,7 +43,7 @@ export async function POST(request) {
     if (!addr.landlordEmail) return Response.json({ ok: false, error: "No landlord email on this address" }, { status: 400 });
 
     // Generate unique token
-    const token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    const token = require('crypto').randomUUID();
     const confirmUrl = `${s.siteUrl}/reference-confirm?token=${token}&appId=${appId}&addrIdx=${addrIdx}&type=landlord`;
 
     const tpl = s.emailTemplates || {};
