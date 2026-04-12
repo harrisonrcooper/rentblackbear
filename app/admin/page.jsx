@@ -14,6 +14,7 @@ import PortalPreview from "./components/PortalPreview";
 import LeasesTab from "./components/LeasesTab";
 import ThemeTab from "./components/ThemeTab";
 import PropEditor from "./components/PropEditor";
+import MaintenanceAdmin from "./components/MaintenanceAdmin";
 import ScorecardTab from "./components/ScorecardTab";
 import IdeasTab from "./components/IdeasTab";
 import MoneyDashboard from "./components/MoneyDashboard";
@@ -1714,33 +1715,11 @@ export default function Page(){
       {/* ═══ APPLICATION SETUP ═══ */}
       {tab==="app-setup"&&<AppSetup screenQs={screenQs} setScreenQs={setScreenQs} appFields={appFields} setAppFields={setAppFields} settings={settings} setSettings={setSettings} expanded={expanded} setExpanded={setExpanded} prevStep={prevStep} setPrevStep={setPrevStep} prevResult={prevResult} setPrevResult={setPrevResult} save={save} uid={uid} showAlert={showAlert} showConfirm={showConfirm} setNotifs={setNotifs} setModal={setModal} DEF_SETTINGS={DEF_SETTINGS} DEF_APP_FIELDS={DEF_APP_FIELDS} TODAY={TODAY} />}
 
-      {tab==="maintenance"&&<>
-        <div className="sec-hd"><div><h2>Maintenance Requests</h2><p>{m.openMaint} open</p></div>
-          <button className="btn btn-gold" onClick={()=>setMaint(p=>[{id:uid(),roomId:"",propId:"",tenant:"",title:"New Request",desc:"",status:"open",priority:"medium",created:TODAY.toISOString().split("T")[0],photos:0},...p])}>+ New Request</button></div>
-        {["open","in-progress","resolved"].map(status=>{
-          const items=maint.filter(x=>x.status===status);if(items.length===0&&status==="resolved")return null;
-          const labels={open:"Open","in-progress":"In Progress",resolved:"Resolved"};
-          const colors={open:"b-red","in-progress":"b-gold",resolved:"b-green"};
-          return(<div key={status} style={{marginBottom:16}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{labels[status]} ({items.length})</div>
-            {items.map(req=>(
-              <div key={req.id} className="row">
-                <div className="row-dot" style={{background:status==="open"?"#c45c4a":status==="in-progress"?"#d4a853":"#4a7c59"}}/>
-                <div className="row-i">
-                  <div className="row-t">{req.title}</div>
-                  <div className="row-s">{req.tenant} · {req.created}{req.photos>0?` · ${req.photos} photo${req.photos>1?"s":""}`:""}</div>
-                </div>
-                <span className={`badge ${colors[status]}`}>{labels[status]}</span>
-                <select value={req.status} onChange={e=>{const newStatus=e.target.value;setMaint(p=>p.map(x=>x.id===req.id?{...x,status:newStatus}:x));if(newStatus!==req.status){const found=findRoom(props,req.roomId);const tenantEmail=found?.room?.tenant?.email;if(tenantEmail){fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:tenantEmail,subject:"Maintenance Update — "+req.title,fromName:(settings.pmName||"PropOS")+" — "+(settings.companyName||""),html:"<p>Hi "+(req.tenant||req.submitted_by||"").split(" ")[0]+",</p>"+"<p>Your maintenance request <strong>"+req.title+"</strong> has been updated:</p>"+"<p>Status: <strong>"+newStatus.toUpperCase()+"</strong></p>"+(newStatus==="resolved"?"<p>This issue has been marked as resolved. If the problem persists, please submit a new request through your tenant portal.</p>":"<p>We are working on this. You will be notified when there is another update.</p>")+"<p>"+(settings.companyName||"")+"<br/>"+(settings.phone||"")+"</p>"})}).catch(()=>{});}}}} style={{padding:"4px 8px",borderRadius:5,border:"1px solid rgba(0,0,0,.08)",fontSize:10,fontFamily:"inherit"}}>
-                  <option value="open">Open</option><option value="in-progress">In Progress</option><option value="resolved">Resolved</option>
-                </select>
-              </div>
-            ))}
-          </div>);
-        })}
-
-
-      </>}
+      {tab==="maintenance"&&<MaintenanceAdmin
+        maint={maint} setMaint={setMaint}
+        vendors={vendors} setVendors={setVendors}
+        props={props} settings={settings}
+      />}
 
       {/* ═══ LEASES & DOCS ═══ */}
       {tab==="leases"&&<LeasesTab
