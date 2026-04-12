@@ -1775,7 +1775,7 @@ export default function Page(){
       </>}
 
       {/* Accounting tab removed — features in Dashboard + Reports */}
-      {tab==="reports"&&<Reports settings={settings} properties={props} charges={charges} expenses={expenses} mortgages={mortgages} sdLedger={sdLedger} apps={apps} archive={archive} SCHED_E_CATS={SCHED_E_CATS} getPropDisplayName={getPropDisplayName} propDisplay={propDisplay} chargeStatus={chargeStatus} uid={uid} />}
+      {tab==="reports"&&<Reports settings={settings} properties={props} charges={charges} expenses={expenses} mortgages={mortgages} sdLedger={sdLedger} apps={apps} archive={archive} SCHED_E_CATS={SCHED_E_CATS} getPropDisplayName={getPropDisplayName} propDisplay={propDisplay} chargeStatus={chargeStatus} uid={uid} vendors={vendors} improvements={improvements} />}
 
       {/* ═══ MESSAGES ═══ */}
       {tab==="messages"&&<Messages settings={settings} properties={props} maint={maint} setMaint={setMaint} save={save} uid={uid} />}

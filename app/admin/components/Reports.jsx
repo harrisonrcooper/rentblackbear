@@ -49,7 +49,7 @@ function AgingTenantRow({ name, t, i, has90, bucketDefs, daysPastDue, getBucket,
 export default function Reports({
   settings, properties, charges, expenses, mortgages, sdLedger,
   apps, archive, SCHED_E_CATS, getPropDisplayName, propDisplay,
-  chargeStatus, uid,
+  chargeStatus, uid, vendors = [], improvements = [],
 }) {
   const [reportPeriod, setReportPeriod] = useState({ from: "", to: "" });
   const [reportProp, setReportProp] = useState("all");
@@ -126,6 +126,8 @@ export default function Reports({
     { id: "lenderpacket", icon: <RIcon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" d2="M14 2v6h6M16 13H8M16 17H8M10 9H8" />, title: "Lender Packet", desc: "Rent roll + DSCR + trailing 12 + cash flow \u2014 one download for your banker" },
     { id: "periodcompare", icon: <RIcon d="M18 20V10M12 20V4M6 20v-6" />, title: "Period Comparison", desc: "Side-by-side P&L \u2014 this year vs last year, or any two date ranges" },
     { id: "qbexport", icon: <RIcon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" d2="M7 10l5 5 5-5M12 15V3" />, title: "QuickBooks Export", desc: "Export income and expenses as QuickBooks-compatible CSV for easy import" },
+    { id: "1099report", icon: <RIcon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" d2="M14 2v6h6M12 18v-6M9 15l3 3 3-3" />, title: "1099 Vendor Report", desc: "Vendors paid >= $600 for 1099-NEC filing \u2014 export for your CPA or e-file" },
+    { id: "yearendtax", icon: <RIcon d="M9 11l3 3L22 4" d2="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />, title: "Year-End Tax Package", desc: "Schedule E, 1099 list, mortgage interest, deposits, depreciation \u2014 all in one download" },
   ];
 
   // ── Table wrapper for mobile scroll ──────────────────────────────
@@ -1013,6 +1015,304 @@ export default function Reports({
                 </tbody>
               </table>
             </TW>
+          </>);
+        })()}
+
+        {/* ── 1099 Vendor Report ── */}
+        {activeReport === "1099report" && (() => {
+          const [taxYear, setTaxYear] = useState(String(TODAY.getFullYear()));
+          const yearStart = taxYear + "-01-01";
+          const yearEnd = taxYear + "-12-31";
+          // Compute total paid per vendor from expenses in the selected tax year
+          const yearExpenses = expenses.filter(e => e.date >= yearStart && e.date <= yearEnd);
+          const vendorTotals = {};
+          yearExpenses.forEach(e => {
+            const vName = e.vendor || "";
+            if (!vName) return;
+            vendorTotals[vName] = (vendorTotals[vName] || 0) + (e.amount || 0);
+          });
+          // Merge with vendor records
+          const vendorRows = (vendors || []).map(v => {
+            const paid = vendorTotals[v.name] || 0;
+            return { name: v.name, totalPaid: paid, tin: v.ein || v.ssn || v.tin || v.taxId || "", address: v.address || "", phone: v.phone || "", email: v.email || "" };
+          });
+          // Also include vendors from expenses that aren't in the vendors list
+          Object.keys(vendorTotals).forEach(vName => {
+            if (!vendorRows.find(r => r.name === vName)) {
+              vendorRows.push({ name: vName, totalPaid: vendorTotals[vName], tin: "", address: "", phone: "", email: "" });
+            }
+          });
+          vendorRows.sort((a, b) => b.totalPaid - a.totalPaid);
+          const threshold600 = vendorRows.filter(v => v.totalPaid >= 600);
+          const approaching = vendorRows.filter(v => v.totalPaid >= 500 && v.totalPaid < 600);
+          const payerName = settings?.companyName || settings?.ownerName || "Owner";
+          const payerEIN = settings?.ein || settings?.taxId || "";
+          const necRows = threshold600.map(v => ({
+            "Payer Name": payerName, "Payer EIN": payerEIN, "Recipient Name": v.name,
+            "Recipient TIN": v.tin || "Not on file", "Nonemployee Compensation": v.totalPaid.toFixed(2),
+            "Recipient Address": v.address || "Not on file",
+          }));
+
+          return (<>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#5c4a3a" }}>Tax Year:</label>
+              <select value={taxYear} onChange={e => setTaxYear(e.target.value)} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit" }}>
+                {[String(TODAY.getFullYear()), String(TODAY.getFullYear() - 1), String(TODAY.getFullYear() - 2)].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              {threshold600.length > 0 && csvBtn(necRows, ["Payer Name", "Payer EIN", "Recipient Name", "Recipient TIN", "Nonemployee Compensation", "Recipient Address"], `1099-nec-${taxYear}`)}
+            </div>
+
+            {/* Summary banner */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8, marginBottom: 14 }}>
+              {[
+                { label: "Vendors >= $600", value: threshold600.length, color: _red },
+                { label: "Approaching ($500-599)", value: approaching.length, color: _gold },
+                { label: "Total Vendors", value: vendorRows.length, color: "#5c4a3a" },
+                { label: "Total Paid", value: fmt(vendorRows.reduce((s, v) => s + v.totalPaid, 0)), color: _acc },
+              ].map(k => <div key={k.label} style={{ background: "#fff", borderRadius: 8, padding: "12px 14px", border: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>{k.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: k.color }}>{k.value}</div>
+              </div>)}
+            </div>
+
+            {vendorRows.length === 0 && <div style={{ textAlign: "center", padding: 36, color: "#6b5e52", background: "#fff", borderRadius: 10, border: "1px solid rgba(0,0,0,.06)" }}>No vendor expenses found for {taxYear}. Log expenses with vendor names in the Accounting tab.</div>}
+
+            {vendorRows.length > 0 && <TW>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
+                  {["Vendor Name", "Total Paid ($)", "EIN / SSN", "Address", "1099 Required"].map(h => <th key={h} style={{ ...thS, textAlign: h === "Vendor Name" ? "left" : h === "Total Paid ($)" ? "right" : "center" }}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {vendorRows.filter(v => v.totalPaid > 0).map((v, i) => {
+                    const needs1099 = v.totalPaid >= 600;
+                    const isApproaching = v.totalPaid >= 500 && v.totalPaid < 600;
+                    return (<tr key={v.name} style={{ ...trAlt(i), background: isApproaching ? hexToRgba(_gold, .06) : needs1099 ? hexToRgba(_red, .03) : trAlt(i).background }}>
+                      <td style={{ ...tdS, fontWeight: 700 }}>{v.name}</td>
+                      <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: needs1099 ? _red : isApproaching ? "#9a7422" : "inherit" }}>{fmt(v.totalPaid)}</td>
+                      <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.tin ? "#5c4a3a" : "#c45c4a" }}>{v.tin || "Not on file"}</td>
+                      <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.address ? "#5c4a3a" : "#999" }}>{v.address || "Not on file"}</td>
+                      <td style={{ ...tdS, textAlign: "center" }}>
+                        {needs1099 && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 100, fontWeight: 700, background: hexToRgba(_red, .08), color: _red }}>Yes</span>}
+                        {isApproaching && <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 100, fontWeight: 700, background: hexToRgba(_gold, .1), color: "#9a7422" }}>Approaching</span>}
+                        {!needs1099 && !isApproaching && <span style={{ fontSize: 9, color: "#999" }}>No</span>}
+                      </td>
+                    </tr>);
+                  })}
+                </tbody>
+                <tfoot><tr style={{ background: "#f8f7f4", borderTop: "2px solid rgba(0,0,0,.08)" }}>
+                  <td style={{ ...tdS, fontWeight: 800 }}>Total ({vendorRows.filter(v => v.totalPaid > 0).length} vendors)</td>
+                  <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _acc }}>{fmt(vendorRows.reduce((s, v) => s + v.totalPaid, 0))}</td>
+                  <td colSpan={3} />
+                </tr></tfoot>
+              </table>
+            </TW>}
+
+            {threshold600.length > 0 && !payerEIN && <div style={{ padding: "10px 14px", background: "rgba(196,92,74,.04)", borderRadius: 8, border: "1px solid rgba(196,92,74,.15)", marginTop: 14, fontSize: 11, color: "#8b4a3a" }}>
+              Payer EIN is not configured. Add your EIN in Settings for accurate 1099-NEC exports.
+            </div>}
+          </>);
+        })()}
+
+        {/* ── Year-End Tax Package ── */}
+        {activeReport === "yearendtax" && (() => {
+          const [taxYear, setTaxYear] = useState(String(TODAY.getFullYear()));
+          const yearStart = taxYear + "-01-01";
+          const yearEnd = taxYear + "-12-31";
+          const yearMonths = 12;
+
+          // Year-filtered data
+          const yCharges = charges.filter(c => c.dueDate >= yearStart && c.dueDate <= yearEnd);
+          const yPayments = charges.flatMap(c => (c.payments || []).map(p => ({ ...p, propName: c.propName, category: c.category }))).filter(p => p.date >= yearStart && p.date <= yearEnd && p.category !== "Security Deposit");
+          const yExpenses = expenses.filter(e => e.date >= yearStart && e.date <= yearEnd);
+          const yMortgages = mortgages || [];
+          const ySD = sdLedger || [];
+          const yImprovements = (improvements || []).filter(im => im.date >= yearStart && im.date <= yearEnd);
+          const ySharedExpAlloc = (amount) => Math.round(amount / (props.length || 1) * 100) / 100;
+
+          // 1. Schedule E per property
+          const schedERows = [];
+          props.forEach(pr => {
+            const prIncome = yPayments.filter(p => p.propName === pr.name).reduce((s, p) => s + p.amount, 0);
+            const prExp = [...yExpenses.filter(e => e.propId === pr.id), ...yExpenses.filter(e => e.propId === "shared").map(e => ({ ...e, amount: ySharedExpAlloc(e.amount) }))];
+            const expByLine = {}; prExp.forEach(e => { expByLine[e.category] = (expByLine[e.category] || 0) + e.amount; });
+            // Mortgage interest estimate
+            const mg = yMortgages.filter(m => m.propId === pr.id);
+            const mgInterest = mg.reduce((s, m) => {
+              if (!m.currentBalance || !m.interestRate) return s;
+              return s + (m.currentBalance * (m.interestRate / 100) / 12) * yearMonths;
+            }, 0);
+            if (mgInterest > 0 && !expByLine["Mortgage Interest"]) expByLine["Mortgage Interest"] = mgInterest;
+            const totalExp = Object.values(expByLine).reduce((s, v) => s + v, 0);
+            schedERows.push({ Property: getPropDisplayName(pr), Line: "3 - Gross Rents", Amount: prIncome.toFixed(2) });
+            SCHED_E_CATS.forEach(({ label: cat }) => { if (expByLine[cat]) schedERows.push({ Property: getPropDisplayName(pr), Line: cat, Amount: expByLine[cat].toFixed(2) }); });
+            schedERows.push({ Property: getPropDisplayName(pr), Line: "22 - Total Expenses", Amount: totalExp.toFixed(2) });
+            schedERows.push({ Property: getPropDisplayName(pr), Line: "Net Income / (Loss)", Amount: (prIncome - totalExp).toFixed(2) });
+          });
+
+          // 2. 1099 vendor list
+          const vendorTotals = {};
+          yExpenses.forEach(e => { if (e.vendor) vendorTotals[e.vendor] = (vendorTotals[e.vendor] || 0) + (e.amount || 0); });
+          const vendor1099Rows = Object.entries(vendorTotals).filter(([, amt]) => amt >= 600).sort((a, b) => b[1] - a[1]).map(([name, amt]) => {
+            const v = (vendors || []).find(x => x.name === name) || {};
+            return { "Vendor Name": name, "Total Paid": amt.toFixed(2), "TIN": v.ein || v.ssn || v.tin || v.taxId || "Not on file", "Address": v.address || "Not on file" };
+          });
+
+          // 3. Mortgage interest summary
+          const mortgageRows = [];
+          props.forEach(pr => {
+            const mg = yMortgages.filter(m => m.propId === pr.id);
+            mg.forEach(m => {
+              const interest = m.currentBalance && m.interestRate ? (m.currentBalance * (m.interestRate / 100) / 12) * yearMonths : 0;
+              mortgageRows.push({ Property: getPropDisplayName(pr), Lender: m.lender || "", Balance: (m.currentBalance || 0).toFixed(2), Rate: (m.interestRate || 0) + "%", "Est. Interest Paid": interest.toFixed(2), "Monthly P&I": (m.monthlyPI || 0).toFixed(2) });
+            });
+          });
+
+          // 4. Security deposit summary
+          const sdRows = ySD.map(s => {
+            const ded = (s.deductions || []).reduce((sum, d) => sum + d.amount, 0);
+            return { Tenant: s.tenantName || "", Property: propDisplay(s.propName), Room: s.roomName || "", "Amount Held": (s.amountHeld || 0).toFixed(2), Deductions: ded.toFixed(2), "Net Held": ((s.amountHeld || 0) - ded).toFixed(2), Status: s.returned ? "Returned" : "Held" };
+          });
+
+          // 5. Depreciation schedule
+          const usefulLifeMap = { "Roof": 27.5, "HVAC": 27.5, "Appliance": 5, "Appliances": 5, "Flooring": 5, "Plumbing": 15, "Electrical": 15, "Addition": 27.5, "Renovation": 27.5, "Landscaping": 15, "Paving": 15 };
+          const allImprovements = (improvements || []).filter(im => im.date <= yearEnd);
+          const depRows = allImprovements.map(im => {
+            const life = usefulLifeMap[im.improvementType] || 27.5;
+            const annualDep = im.amount / life;
+            const yearsInService = Math.max(0, parseInt(taxYear) - parseInt((im.date || "").slice(0, 4)));
+            const propName = (props.find(p => p.id === im.propId) || {}).name || "";
+            return { Property: propName ? getPropDisplayName(props.find(p => p.id === im.propId) || { name: propName }) : "Unknown", Asset: im.description || im.improvementType || "", "Date Placed": im.date || "", "Cost Basis": im.amount.toFixed(2), "Useful Life (yrs)": life, "Annual Depreciation": annualDep.toFixed(2), "Years in Service": yearsInService, "Accum. Depreciation": Math.min(im.amount, annualDep * Math.max(1, yearsInService)).toFixed(2) };
+          });
+
+          const exportTaxPackage = () => {
+            // Schedule E
+            exportCSV(schedERows, ["Property", "Line", "Amount"], `schedule-e-${taxYear}`);
+            let delay = 200;
+            // 1099 vendors
+            if (vendor1099Rows.length > 0) { setTimeout(() => exportCSV(vendor1099Rows, ["Vendor Name", "Total Paid", "TIN", "Address"], `1099-vendors-${taxYear}`), delay); delay += 200; }
+            // Mortgage interest
+            if (mortgageRows.length > 0) { setTimeout(() => exportCSV(mortgageRows, ["Property", "Lender", "Balance", "Rate", "Est. Interest Paid", "Monthly P&I"], `mortgage-interest-${taxYear}`), delay); delay += 200; }
+            // Security deposits
+            if (sdRows.length > 0) { setTimeout(() => exportCSV(sdRows, ["Tenant", "Property", "Room", "Amount Held", "Deductions", "Net Held", "Status"], `security-deposits-${taxYear}`), delay); delay += 200; }
+            // Depreciation
+            if (depRows.length > 0) { setTimeout(() => exportCSV(depRows, ["Property", "Asset", "Date Placed", "Cost Basis", "Useful Life (yrs)", "Annual Depreciation", "Years in Service", "Accum. Depreciation"], `depreciation-${taxYear}`), delay); }
+          };
+
+          // Count sections
+          const sectionCount = 1 + (vendor1099Rows.length > 0 ? 1 : 0) + (mortgageRows.length > 0 ? 1 : 0) + (sdRows.length > 0 ? 1 : 0) + (depRows.length > 0 ? 1 : 0);
+
+          return (<>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#5c4a3a" }}>Tax Year:</label>
+              <select value={taxYear} onChange={e => setTaxYear(e.target.value)} style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid rgba(0,0,0,.08)", fontSize: 11, fontFamily: "inherit" }}>
+                {[String(TODAY.getFullYear()), String(TODAY.getFullYear() - 1), String(TODAY.getFullYear() - 2)].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+
+            {/* Main download card */}
+            <div style={{ padding: "14px 16px", background: hexToRgba(_acc, .04), borderRadius: 10, border: "1px solid " + hexToRgba(_acc, .2), marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: _acc, marginBottom: 6 }}>Year-End Tax Package -- {taxYear}</div>
+              <div style={{ fontSize: 11, color: "#6b5e52", lineHeight: 1.6, marginBottom: 10 }}>
+                Downloads {sectionCount} CSV file{sectionCount !== 1 ? "s" : ""}: Schedule E summary{vendor1099Rows.length > 0 ? ", 1099 vendor list" : ""}{mortgageRows.length > 0 ? ", mortgage interest" : ""}{sdRows.length > 0 ? ", security deposits" : ""}{depRows.length > 0 ? ", depreciation schedule" : ""}. Hand these to your CPA.
+              </div>
+              <button className="btn btn-green btn-sm" style={{ fontWeight: 700, fontSize: 12, padding: "8px 20px" }} onClick={exportTaxPackage}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6, verticalAlign: "middle" }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Generate Tax Package ({sectionCount} CSVs)
+              </button>
+            </div>
+
+            {/* Section previews */}
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginBottom: 8 }}>Schedule E Summary</div>
+            {props.map(pr => {
+              const inc = yPayments.filter(p => p.propName === pr.name).reduce((s, p) => s + p.amount, 0);
+              const prExpArr = [...yExpenses.filter(e => e.propId === pr.id), ...yExpenses.filter(e => e.propId === "shared").map(e => ({ ...e, amount: ySharedExpAlloc(e.amount) }))];
+              const exp = prExpArr.reduce((s, e) => s + e.amount, 0);
+              const noi = inc - exp;
+              return (<div key={pr.id} style={{ background: "#fff", borderRadius: 8, border: "1px solid rgba(0,0,0,.06)", padding: "10px 16px", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div><div style={{ fontWeight: 700, fontSize: 12 }}>{getPropDisplayName(pr)}</div><div style={{ fontSize: 10, color: "#6b5e52", marginTop: 2 }}>Income {fmt(inc)} / Expenses {fmt(exp)}</div></div>
+                <div style={{ textAlign: "right" }}><div style={{ fontWeight: 800, fontSize: 15, color: noi >= 0 ? _grn : _red }}>{fmtParen(noi)}</div><div style={{ fontSize: 9, color: "#6b5e52" }}>NOI</div></div>
+              </div>);
+            })}
+
+            {vendor1099Rows.length > 0 && <>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>1099 Vendors ({vendor1099Rows.length})</div>
+              <TW>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
+                    {["Vendor", "Total Paid ($)", "TIN", "Address"].map(h => <th key={h} style={{ ...thS, textAlign: h === "Vendor" ? "left" : h === "Total Paid ($)" ? "right" : "center" }}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>{vendor1099Rows.map((v, i) => <tr key={v["Vendor Name"]} style={trAlt(i)}>
+                    <td style={{ ...tdS, fontWeight: 700 }}>{v["Vendor Name"]}</td>
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _red }}>{fmt(parseFloat(v["Total Paid"]))}</td>
+                    <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.TIN !== "Not on file" ? "#5c4a3a" : "#c45c4a" }}>{v.TIN}</td>
+                    <td style={{ ...tdS, textAlign: "center", fontSize: 10, color: v.Address !== "Not on file" ? "#5c4a3a" : "#999" }}>{v.Address}</td>
+                  </tr>)}</tbody>
+                </table>
+              </TW>
+            </>}
+
+            {mortgageRows.length > 0 && <>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Mortgage Interest Summary</div>
+              <TW>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
+                    {["Property", "Lender", "Balance ($)", "Rate", "Est. Interest ($)"].map(h => <th key={h} style={{ ...thS, textAlign: h === "Property" || h === "Lender" ? "left" : "right" }}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>{mortgageRows.map((m, i) => <tr key={i} style={trAlt(i)}>
+                    <td style={{ ...tdS, fontWeight: 600 }}>{m.Property}</td>
+                    <td style={tdS}>{m.Lender}</td>
+                    <td style={{ ...tdS, textAlign: "right" }}>{fmt(parseFloat(m.Balance))}</td>
+                    <td style={{ ...tdS, textAlign: "right" }}>{m.Rate}</td>
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _red }}>{fmt(parseFloat(m["Est. Interest Paid"]))}</td>
+                  </tr>)}</tbody>
+                  <tfoot><tr style={{ background: "#f8f7f4", borderTop: "2px solid rgba(0,0,0,.08)" }}>
+                    <td colSpan={4} style={{ ...tdS, fontWeight: 800 }}>Total Interest</td>
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _red }}>{fmt(mortgageRows.reduce((s, m) => s + parseFloat(m["Est. Interest Paid"]), 0))}</td>
+                  </tr></tfoot>
+                </table>
+              </TW>
+              <div style={{ fontSize: 10, color: "#6b5e52", padding: "6px 12px", marginTop: 4 }}>Interest amounts are estimated from current balance and rate. Replace with actual 1098 amounts for filing.</div>
+            </>}
+
+            {sdRows.length > 0 && <>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Security Deposit Summary</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(100px,1fr))", gap: 8, marginBottom: 8 }}>
+                {[
+                  { label: "Total Held", value: fmt(sdRows.reduce((s, r) => s + parseFloat(r["Amount Held"]), 0)), color: _gold },
+                  { label: "Returned", value: sdRows.filter(r => r.Status === "Returned").length, color: _grn },
+                  { label: "Still Held", value: sdRows.filter(r => r.Status === "Held").length, color: "#5c4a3a" },
+                  { label: "Total Deductions", value: fmt(sdRows.reduce((s, r) => s + parseFloat(r.Deductions), 0)), color: _red },
+                ].map(k => <div key={k.label} style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", border: "1px solid rgba(0,0,0,.06)", textAlign: "center" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>{k.label}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: k.color }}>{k.value}</div>
+                </div>)}
+              </div>
+            </>}
+
+            {depRows.length > 0 && <>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#7a7067", textTransform: "uppercase", letterSpacing: .8, marginTop: 16, marginBottom: 8 }}>Depreciation Schedule ({depRows.length} assets)</div>
+              <TW>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                  <thead><tr style={{ background: "#f8f7f4", borderBottom: "2px solid rgba(0,0,0,.06)" }}>
+                    {["Property", "Asset", "Date Placed", "Cost Basis ($)", "Life (yrs)", "Annual Dep ($)"].map(h => <th key={h} style={{ ...thS, textAlign: ["Property", "Asset", "Date Placed"].includes(h) ? "left" : "right" }}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>{depRows.map((d, i) => <tr key={i} style={trAlt(i)}>
+                    <td style={{ ...tdS, fontWeight: 600, fontSize: 10 }}>{d.Property}</td>
+                    <td style={tdS}>{d.Asset}</td>
+                    <td style={{ ...tdS, fontSize: 10, color: "#6b5e52" }}>{d["Date Placed"]}</td>
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 700 }}>{fmt(parseFloat(d["Cost Basis"]))}</td>
+                    <td style={{ ...tdS, textAlign: "right" }}>{d["Useful Life (yrs)"]}</td>
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 700, color: _red }}>{fmt(parseFloat(d["Annual Depreciation"]))}</td>
+                  </tr>)}</tbody>
+                  <tfoot><tr style={{ background: "#f8f7f4", borderTop: "2px solid rgba(0,0,0,.08)" }}>
+                    <td colSpan={3} style={{ ...tdS, fontWeight: 800 }}>Total</td>
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 800 }}>{fmt(depRows.reduce((s, d) => s + parseFloat(d["Cost Basis"]), 0))}</td>
+                    <td />
+                    <td style={{ ...tdS, textAlign: "right", fontWeight: 800, color: _red }}>{fmt(depRows.reduce((s, d) => s + parseFloat(d["Annual Depreciation"]), 0))}/yr</td>
+                  </tr></tfoot>
+                </table>
+              </TW>
+            </>}
           </>);
         })()}
 
