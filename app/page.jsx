@@ -505,6 +505,36 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 `;
 
 // ─── Components ─────────────────────────────────────────────────────
+function RoomPhotoGallery({photos,roomName,setLightbox,setLbIdx}){
+  const[idx,setIdx]=useState(0);
+  if(!photos||photos.length===0)return null;
+  return(
+    <div style={{marginTop:6,marginBottom:4}}>
+      <div style={{position:"relative",borderRadius:8,overflow:"hidden",background:"#1a1714",aspectRatio:"16/9",maxHeight:140}}>
+        <img src={photos[idx]} alt={`${roomName} photo ${idx+1}`} style={{width:"100%",height:"100%",objectFit:"contain",display:"block",cursor:"pointer"}}
+          onClick={e=>{e.stopPropagation();setLightbox(photos);setLbIdx(idx);}}/>
+        {photos.length>1&&<>
+          <button onClick={e=>{e.stopPropagation();setIdx(i=>(i-1+photos.length)%photos.length);}}
+            style={{position:"absolute",left:4,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.5)",color:"#fff",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button onClick={e=>{e.stopPropagation();setIdx(i=>(i+1)%photos.length);}}
+            style={{position:"absolute",right:4,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.5)",color:"#fff",border:"none",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </>}
+        {photos.length>1&&<div style={{position:"absolute",bottom:4,left:"50%",transform:"translateX(-50%)",display:"flex",gap:3}}>
+          {photos.map((_,i)=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:i===idx?"#d4a853":"rgba(255,255,255,.4)",cursor:"pointer"}} onClick={e=>{e.stopPropagation();setIdx(i);}}/>)}
+        </div>}
+      </div>
+      <div style={{display:"flex",gap:3,marginTop:3}}>
+        {photos.slice(0,5).map((ph,i)=><img key={i} src={ph} alt="" style={{width:32,height:24,objectFit:"cover",borderRadius:3,cursor:"pointer",border:i===idx?"2px solid #d4a853":"2px solid transparent",opacity:i===idx?1:.6}}
+          onClick={e=>{e.stopPropagation();setIdx(i);}}/>)}
+      </div>
+    </div>
+  );
+}
+
 function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
   if(!p)return null;
   const isWhole=p.allWholeHouse;
@@ -570,7 +600,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
             const tiers=getActiveTiers(r);const minPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):r.rent;
             const isAvail=r.st!=="occupied";
             return(
-            <div key={r.id} className="rc"><div className="rm-m"><div className="rn">{r.name}<span className={"rbt "+(r.pb?"rbt-p":"rbt-s")}>{r.pb?"Private Bath":"Shared Bath"}</span></div><div className="rd">{r.sqft?<span>{r.sqft} sqft</span>:null}<span>{r.bed} bed</span></div><div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div></div>
+            <div key={r.id} className="rc" style={{flexDirection:"column"}}>{r.photos&&r.photos.length>0&&<RoomPhotoGallery photos={r.photos} roomName={r.name} setLightbox={setLightbox} setLbIdx={setLbIdx}/>}<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",gap:12,flexWrap:"wrap"}}><div className="rm-m"><div className="rn">{r.name}<span className={"rbt "+(r.pb?"rbt-p":"rbt-s")}>{r.pb?"Private Bath":"Shared Bath"}</span></div><div className="rd">{r.sqft?<span>{r.sqft} sqft</span>:null}<span>{r.bed} bed</span></div><div className="rfs">{(r.feat||[]).map((f,i)=><span key={i} className="rf">{f}</span>)}</div></div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,minWidth:100}}>
                 {isAvail&&<div className="rprice">
                   {tiers.length>0&&<div style={{fontSize:10,color:"#999",fontWeight:400,marginBottom:1}}>Starting at</div>}
@@ -582,7 +612,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
                   Lease Now
                 </button>}
                 {!isAvail&&<div style={{fontSize:9,color:"#999",fontWeight:600,padding:"4px 8px",borderRadius:4,background:"rgba(0,0,0,.04)"}}>Occupied</div>}
-              </div>
+              </div></div>
             </div>
             );})}
           </div>
@@ -620,7 +650,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
           const tiers=getActiveTiers(r);const minPrice=tiers.length>0?Math.min(...tiers.map(t=>t.price)):r.rent;
           const isAvail=r.st!=="occupied";
           return(
-          <div key={r.id} className="rc"><div className="rm-m">
+          <div key={r.id} className="rc" style={{flexDirection:"column"}}>{r.photos&&r.photos.length>0&&<RoomPhotoGallery photos={r.photos} roomName={r.name} setLightbox={setLightbox} setLbIdx={setLbIdx}/>}<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",gap:12,flexWrap:"wrap"}}><div className="rm-m">
               <div className="rn">{r.name}<span className={"rbt "+(r.pb?"rbt-p":"rbt-s")}>{r.pb?"Private Bath":"Shared Bath"}</span></div>
               <div className="rd">
                 {r.sqft?<span>{r.sqft} sqft</span>:null}
@@ -641,7 +671,7 @@ function PropertyModal({p,onClose,setLightbox,setLbIdx,onLeaseNow}){
                 Lease Now
               </button>}
               {!isAvail&&<div style={{fontSize:9,color:"#999",fontWeight:600,padding:"4px 8px",borderRadius:4,background:"rgba(0,0,0,.04)"}}>Occupied</div>}
-            </div>
+            </div></div>
           </div>
           );})}
         </div>
@@ -1454,7 +1484,7 @@ export default function Page(){
         turnoverDays:p.turnoverDays||0,
         imgs:(p.photos&&p.photos.length>0)?p.photos:[],
         units:(p.units||[]).filter(u=>!u.ownerOccupied),
-        rooms:rooms.filter(r=>!r.ownerOccupied).map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le,leaseTiers:r.leaseTiers||[]})),
+        rooms:rooms.filter(r=>!r.ownerOccupied).map(r=>({id:r.id,name:r.name,rent:r.rent,bed:r.bed||"Queen",tv:r.tv||'55"',pb:r.pb,sqft:r.sqft||0,feat:r.feat||[],furnished:r.furnished!==false,desc:r.desc||"",st:r.st,le:r.le,leaseTiers:r.leaseTiers||[],photos:r.photos||[]})),
         rentalMode:firstUnit?.rentalMode||"byRoom",
         wholeRent:(p.units||[]).filter(u=>!u.ownerOccupied).reduce((s,u)=>(u.rentalMode||"byRoom")==="wholeHouse"?s+(u.rent||0):s,0),
         // true only if ALL non-owner-occupied units are wholeHouse

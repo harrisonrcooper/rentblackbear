@@ -14,9 +14,9 @@ export default function ApplicationsTab({
   createCharge, setProps, setNotifs, setCharges,
 }) {
   const props = properties;
-  const STAGES=["new-lead","applied","approved","onboarding"];
-  const SL={"new-lead":"New Lead","pre-screened":"New Lead","called":"New Lead","invited":"New Lead","applied":"Applied","reviewing":"Applied","approved":"Approved","onboarding":"Onboarding","denied":"Denied"};
-  const SC2={"new-lead":"b-blue","pre-screened":"b-blue","called":"b-blue","invited":"b-blue","applied":"b-gold","reviewing":"b-gold","approved":"b-green","onboarding":"b-green","denied":"b-red"};
+  const STAGES=["new-lead","applied","approved","waitlisted","onboarding"];
+  const SL={"new-lead":"New Lead","pre-screened":"New Lead","called":"New Lead","invited":"New Lead","applied":"Applied","reviewing":"Applied","approved":"Approved","waitlisted":"Waitlisted","onboarding":"Onboarding","denied":"Denied"};
+  const SC2={"new-lead":"b-blue","pre-screened":"b-blue","called":"b-blue","invited":"b-blue","applied":"b-gold","reviewing":"b-gold","approved":"b-green","waitlisted":"b-gold","onboarding":"b-green","denied":"b-red"};
   const SI2={};
   // Resolve property name from UUID for charges (P0 fix: use UUID not name string)
   const getPropNameFromId = (propId) => { const p = props.find(x => x.id === propId); return p ? (p.addr || p.name) : ""; };
@@ -71,6 +71,17 @@ export default function ApplicationsTab({
       setModal({type:"denyApp",appId:app.id,data:app,reason:"",_aaStep:"reason",_aaReasonKey:""});
       return;
     }
+    // Waitlisted → Approved shortcut: confirm and execute approval side effects
+    if (ns === "approved" && app && app.status === "waitlisted") {
+      const rent=Number(app.termRent||app.negotiatedRent||0);
+      const sd=Number(app.termSD||rent);
+      showConfirm({
+        title: `Approve ${app.name} from Waitlist?`,
+        body: `This will:\n\n- Send a portal invite to ${app.email}\n- Generate a lease draft (${fmtS(rent)}/mo)\n- Create rent charge (${fmtS(rent)}) + security deposit (${fmtS(sd)})\n\nThis cannot be undone.`,
+        onConfirm: () => { doMoveApp(id, "approved"); executeApproval(app); },
+      });
+      return;
+    }
     // All other status changes — no confirmation needed
     doMoveApp(id, ns);
     flashAuto(`${app.name} moved to ${SL[ns] || ns}`);
@@ -112,8 +123,47 @@ export default function ApplicationsTab({
     else if(d>=5){s-=5;breakdown.push("-5 stale 5d+");}
     return{score:Math.max(0,Math.min(s,100)),breakdown};
   };
+  // Pure scoring algorithm (no side effects) — normalized 0-100
+  const scoreApplication = (app) => {
+    let score = 0;
+    let maxScore = 0;
+
+    // Income (30 points)
+    maxScore += 30;
+    const income = parseFloat(app.monthlyIncome || app.income || 0);
+    const rent = parseFloat(app.desiredRent || app.termRent || app.negotiatedRent || 0);
+    if (rent > 0 && income > 0) {
+      const ratio = rent / income;
+      if (ratio <= 0.25) score += 30;
+      else if (ratio <= 0.30) score += 25;
+      else if (ratio <= 0.35) score += 15;
+      else if (ratio <= 0.40) score += 5;
+    }
+
+    // Background check (25 points)
+    maxScore += 25;
+    if (app.bgCheck === "passed") score += 25;
+    else if (app.bgCheck === "pending") score += 10;
+
+    // Credit score (25 points)
+    maxScore += 25;
+    const credit = parseInt(app.creditScore);
+    if (credit >= 700) score += 25;
+    else if (credit >= 650) score += 20;
+    else if (credit >= 600) score += 10;
+    else if (credit >= 550) score += 5;
+
+    // References (20 points)
+    maxScore += 20;
+    const refs = [app.empRefStatus, app.persRefStatus].filter(r => r === "confirmed").length;
+    score += refs * 10;
+
+    return { score, maxScore, pct: maxScore > 0 ? Math.round(score / maxScore * 100) : 0 };
+  };
+
   const getScore=(a)=>scoreApp(a).score;
   const getBreakdown=(a)=>scoreApp(a).breakdown;
+  const getAppScore=(a)=>scoreApplication(a);
 
   // Onboarding progress — 4 steps
   const getOnboardingProgress=(a)=>{
@@ -182,6 +232,11 @@ export default function ApplicationsTab({
       if (appLease.status === "draft") return "Lease drafted — needs to be sent";
       if (appLease.status === "pending_tenant") return `Lease sent — waiting for signature (${daysSince(appLease.updatedAt?.split("T")[0])}d)`;
       return "Lease signed — advancing to move-in";
+    }
+    if (a.status === "waitlisted") {
+      const totalVacant = props.reduce((s,pr)=>s+allRooms(pr).filter(r=>r.st==="vacant").length,0);
+      if (totalVacant > 0) return "Room available — ready to approve";
+      return "Waiting for vacancy";
     }
     if (a.status === "onboarding") {
       const ob = getOnboardingProgress(a);
@@ -326,6 +381,7 @@ export default function ApplicationsTab({
 
   // All active (non-denied) apps — search only within pipeline
   const allActiveApps=apps.filter(a=>a.status!=="denied"&&a.status!=="converted");
+  const waitlistedApps=apps.filter(a=>a.status==="waitlisted");
   const staleApps=allActiveApps.filter(a=>daysSince(a.lastContact||a.submitted)>=3&&!["approved","onboarding"].includes(a.status));
   const needsActionApps=allActiveApps.filter(a=>a.status==="applied");
   const deniedApps=apps.filter(a=>a.status==="denied");
@@ -395,6 +451,21 @@ export default function ApplicationsTab({
           </div>
         </div>
       ))}
+    </div>);
+  })()}
+
+  {/* Waitlist vacancy notification */}
+  {(()=>{
+    if(waitlistedApps.length===0)return null;
+    const vacantByProp=props.map(pr=>{const vacant=allRooms(pr).filter(r=>r.st==="vacant").length;return{name:pr.addr||pr.name,vacant};}).filter(x=>x.vacant>0);
+    if(vacantByProp.length===0)return null;
+    return(<div style={{background:`rgba(${(_green||"#2d6a3f").replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"45,106,63"},.06)`,border:`1px solid rgba(${(_green||"#2d6a3f").replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"45,106,63"},.2)`,borderRadius:10,padding:12,marginBottom:14}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={_green} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style={{fontSize:12,fontWeight:700,color:_green}}>Room Available — {waitlistedApps.length} applicant{waitlistedApps.length!==1?"s":""} on waitlist</span>
+      </div>
+      {vacantByProp.map(vp=><div key={vp.name} style={{fontSize:10,color:"#5c4a3a",marginBottom:2}}>{vp.name}: {vp.vacant} vacant room{vp.vacant!==1?"s":""}</div>)}
+      <div style={{fontSize:9,color:"#7a7067",marginTop:4}}>Move waitlisted applicants to Approved to begin onboarding.</div>
     </div>);
   })()}
 
@@ -567,6 +638,8 @@ export default function ApplicationsTab({
         ?activeApps.filter(function(a){return a.status==="onboarding";})
         :stage==="approved"
         ?activeApps.filter(function(a){return a.status==="approved";})
+        :stage==="waitlisted"
+        ?activeApps.filter(function(a){return a.status==="waitlisted";})
         :stage==="new-lead"
         ?activeApps.filter(function(a){return["new-lead","pre-screened","called","invited","applied","reviewing"].includes(a.status);})
         :stage==="applied"
@@ -580,6 +653,7 @@ export default function ApplicationsTab({
             {stage==="new-lead"&&<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>}
             {stage==="applied"&&<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></>}
             {stage==="approved"&&<><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></>}
+            {stage==="waitlisted"&&<><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>}
             {stage==="onboarding"&&<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>}
           </svg>
           {SL[stage]}
@@ -626,15 +700,30 @@ export default function ApplicationsTab({
                   <div className="pipe-nm">{a.name}</div>
                   {a._hasUnreadRefReply&&<span style={{fontSize:8,fontWeight:700,padding:"1px 6px",borderRadius:8,background:`rgba(${_acR},.12)`,color:_ac,whiteSpace:"nowrap"}}>● Reply</span>}
                 </div>
-                {!isOnboarding&&<div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
-                  <span style={{fontSize:7,fontWeight:700,color:sc>=70?_ac:sc>=50?_gold:_red,background:sc>=70?`rgba(${_acR},.08)`:sc>=50?`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.08)`:`rgba(${_red.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"196,92,74"},.08)`,padding:"1px 5px",borderRadius:3,cursor:"pointer"}}
-                    onMouseEnter={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="block";}}
-                    onMouseLeave={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="none";}}
-                  >{sc}</span>
-                  <div style={{display:"none",position:"absolute",right:0,top:"100%",zIndex:20,background:"#1a1714",color:"#f5f0e8",borderRadius:6,padding:"6px 8px",fontSize:8,whiteSpace:"nowrap",boxShadow:"0 4px 12px rgba(0,0,0,.3)",marginTop:2}}>
-                    {bd.length>0?bd.map((b,i)=><div key={i}>{b}</div>):<div>Base: 50pts</div>}
-                  </div>
-                </div>}
+                {!isOnboarding&&(()=>{
+                  const appSc=getAppScore(a);
+                  const pct=appSc.pct;
+                  const circColor=pct>=80?_green:pct>=50?_gold:_red;
+                  const r=14;const circ=2*Math.PI*r;const offset=circ-(pct/100)*circ;
+                  return(<div style={{position:"relative",display:"flex",alignItems:"center",gap:4}} onClick={e=>e.stopPropagation()}>
+                    <div style={{position:"relative",width:32,height:32,cursor:"pointer"}}
+                      onMouseEnter={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="block";}}
+                      onMouseLeave={e=>{const t=e.currentTarget.nextSibling;if(t)t.style.display="none";}}>
+                      <svg width="32" height="32" viewBox="0 0 32 32">
+                        <circle cx="16" cy="16" r={r} fill="none" stroke="rgba(0,0,0,.08)" strokeWidth="3"/>
+                        <circle cx="16" cy="16" r={r} fill="none" stroke={circColor} strokeWidth="3"
+                          strokeDasharray={circ} strokeDashoffset={offset}
+                          strokeLinecap="round" transform="rotate(-90 16 16)"
+                          style={{transition:"stroke-dashoffset .4s"}}/>
+                      </svg>
+                      <span style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:circColor}}>{pct}</span>
+                    </div>
+                    <div style={{display:"none",position:"absolute",right:0,top:"100%",zIndex:20,background:"#1a1714",color:"#f5f0e8",borderRadius:6,padding:"6px 8px",fontSize:8,whiteSpace:"nowrap",boxShadow:"0 4px 12px rgba(0,0,0,.3)",marginTop:2}}>
+                      <div style={{marginBottom:2,fontWeight:700}}>Score: {appSc.score}/{appSc.maxScore} ({pct}%)</div>
+                      {bd.length>0?bd.map((b,i)=><div key={i}>{b}</div>):<div>Base: 50pts</div>}
+                    </div>
+                  </div>);
+                })()}
               </div>
 
               <div className="pipe-sub">{(()=>{const p=a.termPropId?props.find(x=>x.id===a.termPropId):props.find(x=>x.name===a.property);const addr=p?.addr||p?.address||"";const dispName=p?getPropDisplayName(p):(a.property||"—");return dispName+(addr&&!dispName.includes(addr)?" · "+addr:"")+(a.room&&!p?.units?.some(u=>(u.rentalMode||"byRoom")==="wholeHouse")?" · "+a.room:"");})()}</div>
@@ -655,6 +744,18 @@ export default function ApplicationsTab({
                 <button style={{fontSize:9,padding:"8px 12px",minHeight:44,background:_gold,border:"none",borderRadius:5,color:"#1a1714",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
                   onClick={e=>{e.stopPropagation();setModal({type:"inviteApp",data:a});}}>Re-invite</button>
               </div>}
+
+              {/* Waitlisted — quick approve button */}
+              {a.status==="waitlisted"&&(()=>{
+                const totalVacant=props.reduce((s,pr)=>s+allRooms(pr).filter(r=>r.st==="vacant").length,0);
+                return(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,gap:6}}>
+                  <span style={{fontSize:8,fontWeight:700,color:_gold,background:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.1)`,padding:"2px 7px",borderRadius:99,flexShrink:0}}>
+                    {totalVacant>0?`${totalVacant} room${totalVacant!==1?"s":""} available`:"No vacancies"}
+                  </span>
+                  {totalVacant>0&&<button style={{fontSize:9,padding:"8px 12px",minHeight:44,background:_green,border:"none",borderRadius:5,color:"#fff",cursor:"pointer",fontWeight:800,fontFamily:"inherit",whiteSpace:"nowrap"}}
+                    onClick={e=>{e.stopPropagation();moveApp(a.id,"approved");}}>Approve</button>}
+                </div>);
+              })()}
 
               {/* Onboarding progress bar */}
 
@@ -810,28 +911,23 @@ export default function ApplicationsTab({
   </div>}
 
 
-  {/* ── Waitlist ── */}
-  {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);const waitlistApps=activeApps.filter(a=>["new-lead"].includes(a.status));
-    if(totalVacant===0&&waitlistApps.length>0)return(
-      <div style={{marginTop:8,border:`2px solid rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.2)`,borderRadius:12,padding:14,background:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.03)`}}>
-        <div style={{fontSize:13,fontWeight:700,color:_gold,marginBottom:8}}>Waitlist — No Vacant Rooms</div>
-        <div style={{fontSize:10,color:"#6b5e52",marginBottom:8}}>All rooms are occupied. These applicants are waiting for availability, ranked by score.</div>
-        {waitlistApps.sort((a,b)=>getScore(b)-getScore(a)).map((a,i)=><div key={a.id} className="row" style={{padding:"8px 10px"}}><div style={{width:20,fontSize:12,fontWeight:800,color:_gold}}>{i+1}</div><div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>({getScore(a)}pt)</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div><button className="btn btn-out btn-sm" onClick={()=>setModal({type:"app",data:a})}>View</button></div>)}
-      </div>);
-    return null;})()}
-
-  {/* ── Waitlist ── */}
-  {(()=>{const totalVacant=props.reduce((s,p)=>s+allRooms(p).filter(r=>r.st==="vacant").length,0);
-    if(totalVacant>0)return null;
-    const waitlistApps=activeApps.filter(a=>["new-lead"].includes(a.status)).sort((a,b)=>getScore(b)-getScore(a));
-    return waitlistApps.length>0?<div style={{marginTop:16,border:`2px solid rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.2)`,borderRadius:12,padding:16,background:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.03)`}}>
-      <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>Waitlist — No Vacancies</div>
-      <div style={{fontSize:10,color:"#6b5e52",marginBottom:10}}>All rooms are full. These applicants are ranked by score and ready when a room opens.</div>
-      {waitlistApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer"}} onClick={()=>setModal({type:"app",data:a})}>
+  {/* ── Waitlist Summary ── */}
+  {(()=>{
+    const wlApps=waitlistedApps.sort((a,b)=>new Date(a.lastContact||a.submitted||0)-new Date(b.lastContact||b.submitted||0));
+    if(wlApps.length===0)return null;
+    const totalVacant=props.reduce((s,pr)=>s+allRooms(pr).filter(r=>r.st==="vacant").length,0);
+    return(<div style={{marginTop:16,border:`2px solid rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.2)`,borderRadius:12,padding:16,background:`rgba(${_gold.replace("#","").match(/../g)?.map(h=>parseInt(h,16)).join(",")||"212,168,83"},.03)`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontSize:13,fontWeight:700,color:_gold}}>Waitlist ({wlApps.length}){totalVacant>0?` — ${totalVacant} room${totalVacant!==1?"s":""} available`:""}</div>
+      </div>
+      <div style={{fontSize:10,color:"#6b5e52",marginBottom:10}}>Sorted by date added. {totalVacant>0?"Approve to begin onboarding.":"All rooms occupied — applicants queued for next vacancy."}</div>
+      {wlApps.map((a,i)=><div key={a.id} className="row" style={{cursor:"pointer",padding:"8px 10px"}} onClick={()=>setModal({type:"app",data:a})}>
         <div style={{width:20,fontSize:11,fontWeight:700,color:_gold}}>#{i+1}</div>
-        <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>Score: {getScore(a)}</span></div><div className="row-s">{a.property||"No pref"} · {SL[a.status]} · {a.source||""}</div></div>
+        <div className="row-i"><div className="row-t">{a.name} <span style={{fontSize:9,color:"#6b5e52"}}>Score: {getAppScore(a).pct}%</span></div><div className="row-s">{a.property||"No pref"} · {a.source||""} · {fmtD(a.lastContact||a.submitted)}</div></div>
+        {totalVacant>0&&<button className="btn btn-green btn-sm" style={{fontSize:9}} onClick={e=>{e.stopPropagation();moveApp(a.id,"approved");}}>Approve</button>}
+        <button className="btn btn-out btn-sm" onClick={e=>{e.stopPropagation();setModal({type:"app",data:a});}}>View</button>
       </div>)}
-    </div>:null;
+    </div>);
   })()}
 
   {/* ── Renewal Requests — only shows if any exist ── */}
