@@ -48,6 +48,7 @@
 
 import { NextResponse } from "next/server";
 import { loadAppData, saveAppData } from "@/lib/supabase-server";
+import { getSettings, emailWrap, fromAddress, fmtMoney } from "@/lib/getSettings";
 
 export const runtime = "nodejs";
 // Never cache: every request must be freshly verified and processed.
@@ -167,6 +168,110 @@ async function handlePaymentIntentSucceeded(pi) {
   const updatedCharges = [...charges];
   updatedCharges[idx] = updatedCharge;
   await saveAppData("hq-charges", updatedCharges);
+
+  // --- Send receipt email (best-effort, never blocks webhook) ---
+  try {
+    await sendPaymentReceiptEmail(updatedCharge, paymentRecord, md);
+  } catch (err) {
+    console.error("[stripe-webhook] receipt email failed (non-fatal):", err?.message || err);
+  }
+}
+
+async function sendPaymentReceiptEmail(charge, payment, metadata) {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  if (!RESEND_API_KEY) {
+    console.warn("[stripe-webhook] RESEND_API_KEY not set — skipping receipt email");
+    return;
+  }
+
+  // Resolve tenant email from hq-props → room.tenant.email
+  const roomId = metadata.roomId || charge.roomId;
+  let tenantEmail = null;
+  if (roomId) {
+    const props = (await loadAppData("hq-props", [])) || [];
+    for (const prop of props) {
+      for (const unit of prop.units || []) {
+        for (const room of unit.rooms || []) {
+          if (room.id === roomId && room.tenant?.email) {
+            tenantEmail = room.tenant.email;
+            break;
+          }
+        }
+        if (tenantEmail) break;
+      }
+      if (tenantEmail) break;
+    }
+  }
+
+  if (!tenantEmail) {
+    console.warn(`[stripe-webhook] no tenant email found for roomId=${roomId} — skipping receipt`);
+    return;
+  }
+
+  const settings = await getSettings();
+  const amount = fmtMoney(payment.amount);
+  const remaining = Math.max(0, Number(charge.amount || 0) - Number(charge.amountPaid || 0));
+  const category = charge.category || "Rent";
+  const propName = metadata.propName || charge.propName || "";
+  const roomName = charge.roomName || "";
+  const location = [propName, roomName].filter(Boolean).join(" — ");
+
+  const subject = `Payment received — ${category} ${amount}`;
+
+  const content = `
+    <h2 style="margin:0 0 20px 0;font-size:20px;color:#1a1714;">Payment Receipt</h2>
+    <p style="margin:0 0 24px 0;color:#444;">Thank you for your payment. Here are the details:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:15px;color:#1a1714;">
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;color:#777;">Amount Paid</td>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;font-weight:600;text-align:right;">${amount}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;color:#777;">Date</td>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;text-align:right;">${payment.date}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;color:#777;">Payment Method</td>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;text-align:right;">${payment.method}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;color:#777;">Category</td>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;text-align:right;">${category}</td>
+      </tr>
+      ${location ? `<tr>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;color:#777;">Property</td>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;text-align:right;">${location}</td>
+      </tr>` : ""}
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;color:#777;">Remaining Balance</td>
+        <td style="padding:10px 0;border-bottom:1px solid #e8e5e0;font-weight:600;text-align:right;">${fmtMoney(remaining)}</td>
+      </tr>
+    </table>
+    <p style="margin:28px 0 0 0;color:#444;">If you have any questions about this payment, please reach out to your property manager.</p>
+  `;
+
+  const html = emailWrap(content, settings);
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: fromAddress(settings),
+      to: [tenantEmail],
+      subject,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    console.error("[stripe-webhook] Resend API error:", data);
+  } else {
+    console.log(`[stripe-webhook] receipt email sent to ${tenantEmail}`);
+  }
 }
 
 async function handlePaymentIntentFailed(pi) {
