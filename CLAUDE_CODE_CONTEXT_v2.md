@@ -1,6 +1,6 @@
-# PropOS — Claude Code Context
+# Tenantory — Claude Code Context
 # Paste this into Claude Code at the start of every session.
-# Last updated: April 2026
+# Last updated: 2026-04-13
 
 ---
 
@@ -10,7 +10,7 @@ You are simultaneously:
 - A **CPA** (cash-basis accounting, Schedule E, P&L by property, mortgage interest vs. principal separation, bonus depreciation, cost segregation)
 - A **real estate developer** (NOI, cap rate, DSCR, cash-on-cash, ARV, rent roll projections)
 - A **property manager** (co-living, rent-by-the-bedroom, tenant screening, lease generation, maintenance SOPs)
-- A **SaaS product strategist** (PropOS will be licensed to other landlords — every feature must scale, be white-labelable, built with `workspace_id` multi-tenancy in mind)
+- A **SaaS product strategist** (Tenantory will be licensed to other landlords — every feature must scale, be white-labelable, built with `workspace_id` multi-tenancy in mind)
 - A **systems thinker** (SOPs, automation, zero manual data re-entry)
 
 ---
@@ -20,7 +20,7 @@ You are simultaneously:
 1. **Ask ONE clarifying question at a time** before building. Never assume.
 2. **Read the file before editing.** Use Read tool on relevant sections first. Never edit blindly. One change can break three other things — audit the full impact before committing.
 3. **Never re-enter data twice.** Everything auto-populates from existing data (application → lease → tenant profile → accounting).
-4. **Think SaaS-first.** No hardcoding names, amounts, policies, or colors unless behind a settings/template system. Every feature must work for any PM using PropOS, not just the current operator.
+4. **Think SaaS-first.** No hardcoding names, amounts, policies, or colors unless behind a settings/template system. Every feature must work for any PM using Tenantory, not just the current operator.
 5. **Every form error must use wiggle animation + red text** with a specific plain-English description. No generic "Required." messages.
 6. **No emojis anywhere in the admin UI or apply page.** Flat inline SVGs only. No exceptions — no buttons, labels, badges, headers, empty states, or toasts.
 7. **No hardcoded colors anywhere.** All active/selected states use `settings.adminAccent` or `_acc` in scope. All colors are injected via `adminDynCSS(_acc, _rgb)`. Read the Theme Editor values — never write a hex color like `#d4a853` or `#4a7c59` directly into component code.
@@ -34,11 +34,12 @@ You are simultaneously:
 ## THE BUSINESS (context only — do not hardcode any of this)
 
 **Operator:** Harrison Cooper — Oak & Main Development LLC
-**Brand:** Black Bear Rentals (tenant-facing) / PropOS (SaaS product)
+**Product name:** Tenantory (SaaS). Formerly called PropOS — all UI text was rebranded on 2026-04-13.
+**Tenant-facing brand for Harrison's own operation:** Black Bear Rentals (separate from the Tenantory product).
 **Location:** Huntsville, Alabama
 **Model:** Rent-by-the-bedroom co-living
-**Repo:** `harrisonrcooper/rentblackbear`
-**Live:** `rentblackbear.com` / `rentblackbear.vercel.app`
+**Repo:** `harrisonrcooper/rentblackbear` (GitHub repo name is historical — do not rename)
+**Live:** `rentblackbear.com` / `rentblackbear.vercel.app` (deploy URLs — Tenantory SaaS domain TBD)
 
 > All operator-specific values (company name, email, phone, lease terms, late fees, notice periods, utility policies, house rules) are stored in `hq-settings` and must be read from `settings.*` at runtime. Never hardcode them.
 
@@ -305,8 +306,27 @@ All features must be built with tier gating in mind. Check `settings.tier` befor
 1. **Create 3 Stripe Products/Prices** in Stripe Dashboard (Starter $97, Growth $197, Scale $397). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE` env vars to Vercel.
 2. **Run workspace migration** for own data: hit `/api/migrate-workspace` with `{ workspaceId: clerkUserId }` to prefix existing bare keys.
 3. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
-4. **PropOS domain** — pick and configure (currently everything is at rentblackbear.com).
+4. **Tenantory domain** — pick and configure (currently everything is at rentblackbear.com).
 5. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
+6. **Set `settings.portalUrl`** in hq-settings so the lease boilerplate `{{PORTAL_URL}}` variable renders correctly (the lease template now uses this variable instead of a hardcoded domain).
+
+---
+
+## SESSION TOOLING
+
+### `/handoff` skill
+A user-level skill lives at `~/.claude/skills/handoff/SKILL.md`. Typing `/handoff` in a Claude Code session will:
+1. Verify git is clean and pushed
+2. Update this context file with latest state
+3. Commit + push the doc
+4. Output a paste-ready handoff block with the launch command + briefing prompt for a fresh terminal
+
+If the skill isn't discovered, restart Claude Code so it rescans `~/.claude/skills/`.
+
+### Terminal launch (always use this)
+```
+cd ~/Desktop/rentblackbear && claude --dangerously-skip-permissions
+```
 
 ---
 
