@@ -300,28 +300,80 @@ All features must be built with tier gating in mind. Check `settings.tier` befor
 
 ---
 
-## WHAT'S BROKEN / NEEDS FIXING
+## REMAINING MANUAL STEPS (Harrison only — code is complete)
 
-1. **PDF generation** (`/api/generate-lease-pdf`) — broken silently. Server-side only — `@react-pdf/renderer` must never be imported in client code.
-2. **Admin auth** — no auth on `/admin`. Highest priority security gap. Use Clerk via Vercel Marketplace.
-3. **Tenant signing page** — lease sections may not be loading. Check Supabase `lease_templates` query.
-4. **Stripe rent collection** — tenant portal has no payment flow. Product loop is open until this ships.
-5. **Recurring rent generation** — cron may not be auto-creating monthly rent charges reliably.
+1. **Create 3 Stripe Products/Prices** in Stripe Dashboard (Starter $97, Growth $197, Scale $397). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE` env vars to Vercel.
+2. **Run workspace migration** for own data: hit `/api/migrate-workspace` with `{ workspaceId: clerkUserId }` to prefix existing bare keys.
+3. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
+4. **PropOS domain** — pick and configure (currently everything is at rentblackbear.com).
+5. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
 
 ---
 
-## WHAT'S BUILT (high-level)
+## WHAT'S BUILT — current state
 
-| Area | Status |
-|---|---|
-| Admin page | ~13,000 lines — dashboard, applications pipeline, tenants, accounting, reports, maintenance, leases, properties, settings |
-| Apply page | ~1,300 lines — multi-step application, file upload, references, review step, payment |
-| Tenant portal | Basic — balance display. Stripe payment, maintenance submission, lease viewing pending. |
-| Lease signing | Built — may have template loading bug |
-| PDF generation | Built — broken |
-| Public site | Built — pre-screen form, property listings |
-| Cron | Built — daily automation. Monthly rent gen and late fees need verification. |
-| Email | Resend wired — invite, confirm, notify routes exist |
+### Admin (`app/admin/page.jsx` + 35 components in `app/admin/components/`)
+- Dashboard with 23-widget customizable grid + 14 financial KPI calculators (cap rate, break-even, rent-to-income, DSCR, NOI, occupancy, etc.)
+- Applications pipeline (lead → invited → applied → approved → waitlisted → onboarding → rejected) with **scoring algorithm** (income/bg/credit/refs = 100pts), **duplicate detection**, **FCRA adverse action notice**, **background check status tracking**, **waitlist with vacancy alerts**
+- Tenants tab + tenant profile **with iOS-style slide-in animation**, **move-out chain** (checklist + SD reconciliation with itemized deductions, Alabama 60-day rule)
+- Lease management — templates (20-section), e-signing canvas, **renewal workflow** (60-90d cron prompt + Renew button + draft creation), **move-in chain** (5-step automation on lease execution), expiry alerts (90/30/7d), M2M auto-escalation
+- Reports tab — Schedule E, P&L per property, cash flow, 90-day forecast, **rent roll PDF**, **A/R aging 30/60/90+**, **QuickBooks CSV export**, **1099 vendor report**, **year-end tax package**, lender packet, period comparison
+- **Maintenance admin tab** — request list with vendor assignment, cost tracking, status pipeline (open → assigned → in-progress → completed)
+- Properties + per-room **photo gallery** (5 photos/room, 2MB each, base64)
+- PMSettings with **Subscription card** (current tier, usage bars, Manage/Upgrade buttons), **Stripe Connect card** (onboarding, dashboard, fee %), **Screening Provider** fields, **Data & Privacy** (export all data as JSON)
+- Theme tab with mobile-tab editor (configure 4 bot-bar tabs)
+- Sidebar logo is settings-driven (no hardcoded brand)
+
+### Mobile UX
+- **AddExpenseSheet** — full-screen 9-step expense flow (amount → type → property[multi-select] → category → subcat → vendor → date → note → review). Auto-advance on tap, scroll-wheel date picker, Schedule E categories, 1099 vendor flagging, `+` action button on bot-bar (replaces old Money tab), contextual FAB on Ledger tab only
+- **PWA manifest** — Add to Home Screen launches in standalone mode (no Chrome chrome). Manifest start_url = `/admin`
+- Bot-bar configurable via Theme tab. Default tabs: Dashboard | Tenants | + Expense | Ledger | More
+- Body scroll lock when sheets are open
+- Framer Motion animations: spring slide-up sheets, fade+scale modals, tenant profile slide-in, shake error wiggle, FAB tap+hover springs
+
+### Public site (`app/page.jsx`)
+- Listings with per-room photo carousels
+- Pre-screen lead capture form (configurable questions)
+- SEO og: tags, sitemap.xml, listings JSON feed at `/api/listings` (syndication-ready)
+
+### Standalone marketing pages
+- `/pricing` — 3-tier cards with feature comparison + FAQ
+- `/terms` — Terms of Service template (11 sections, attorney review needed)
+- `/privacy` — Privacy Policy template (10 sections)
+- `/changelog` — release notes
+- `/support` — contact info
+
+### Tenant portal (`app/portal/page.jsx`)
+- Dashboard, balance, payment history, **Stripe online payments** (with webhook reconciliation), **autopay enrollment** (with retry on failure), **lease PDF download** (dual-auth: Clerk admin OR Supabase portal session), maintenance submission, document downloads
+- Settings: language, notification prefs, autopay management
+
+### Cron (`app/api/cron/daily/route.js` — 14 sections)
+1. Rent charge auto-generation (monthly, 1st)
+2. Late fees (initial + daily accrual + cap, dedup by linkedChargeId)
+3. Auto-clear reminderActive when paid
+4. Daily reminders
+5. Lease expiry alerts (90/30/7d)
+5b. **Lease renewal prompt** (60-90d before expiry, fires once per lease)
+6. M2M auto-escalation
+7. Autopay (Stripe confirm:true on the 1st)
+8 → 14 (renumbered): future-tenant transition, onboarding chain (7d pre-move-in), scheduled messages, **late payment warning emails** (weekly per charge), **lease signing reminder** (48h, once), **autopay retry** (day 5 + day 10, max 2), **SD 60-day deadline monitoring** (45/55/60 day alerts)
+- Cron telemetry: structured logs via `lib/logger.js`, summary in response body
+
+### API routes (current full inventory)
+**Public** (origin allowlist or token-gated): apply, apply-confirm, apply-notify, lease-executed, chat, reference-confirm, listings, sitemap
+**Admin (Clerk-gated)**: invite, send-email, send-sms, migrate, migrate-workspace, approve, landlord-email, reference-email, portal-invite, portal-invite-token, receipt-scan (with retry/confidence/dedup), generate-lease-pdf (dual-auth), generate-rent-roll, export-data, subscription, connect
+**Tenant portal (Supabase session)**: stripe/create-payment-intent, stripe/create-setup-intent, stripe/cancel-autopay
+**Webhooks (signature-verified)**: webhooks/stripe (19 events incl. payment_intent, charge, customer.subscription, invoice, setup_intent, payment_method, payout, account.updated), webhooks/ref-reply
+**Cron (CRON_SECRET fail-closed)**: cron/daily, cron/send-scheduled
+
+### SaaS infrastructure
+- **Multi-tenant**: workspace_id transparent prefix at load/save layer (`lib/workspace.js`, `lib/supabase-client.js`). Backwards-compatible — null workspace = bare keys
+- **Stripe subscription billing**: `/api/subscription` route (checkout + portal), 5 webhook handlers, `lib/tierCheck.js`, SubscriptionCard in PMSettings
+- **Stripe Connect**: `/api/connect` route, payment routing via `transfer_data.destination`, configurable platform fee, account.updated webhook
+- **Feature flags + tier gating**: `lib/features.js` (FEATURE_TIERS map), `<TierGate>` component
+- **Brand-clean**: 29 files, ~140 hardcoded "Black Bear"/"Carolina"/emoji bear references removed. All settings-driven now
+- **Observability**: `lib/logger.js` structured JSON logs, `app/admin/error.jsx` error boundary
+- **Security**: Clerk on `/admin/*`, 16+ API route gates, crypto.randomUUID for auth tokens, ownership checks on tenant-portal Stripe routes, anon key in env (never hardcoded)
 
 ---
 
