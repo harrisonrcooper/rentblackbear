@@ -35,7 +35,11 @@ async function sendSmsViaTwilio(to, body) {
   return { ok: true, sid: data.sid };
 }
 
-export { sendSmsViaTwilio };
+// NOTE: sendSmsViaTwilio was previously re-exported from this file
+// so other routes could import it. Next.js 14 only allows the
+// route-convention exports (GET/POST/etc) on route files. Callers
+// should move the helper into a plain module under lib/ (e.g.
+// lib/sms.js) and import from there.
 
 export async function POST(request) {
   // Accept either Clerk auth or CRON_SECRET bearer token
