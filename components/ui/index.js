@@ -15,3 +15,4 @@ export { default as Drawer } from "./Drawer";
 export { default as Modal } from "./Modal";
 export { default as Toast, ToastProvider, useToast } from "./Toast";
 export { default as Pill } from "./Pill";
+export { default as Avatar } from "./Avatar";

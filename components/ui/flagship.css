@@ -626,3 +626,31 @@
 .flg-pill-pink { background: var(--flg-pink-bg); color: var(--flg-pink); }
 .flg-pill-gray { background: var(--flg-surface-alt); color: var(--flg-text-muted); }
 .flg-pill svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+/* ============================================================
+   Avatar
+   ============================================================ */
+.flg-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--flg-font-sans);
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--flg-blue-pale);
+  color: var(--flg-blue);
+  user-select: none;
+}
+.flg-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.flg-avatar-sm { width: 24px; height: 24px; font-size: 10px; }
+.flg-avatar-md { width: 32px; height: 32px; font-size: 11px; }
+.flg-avatar-lg { width: 48px; height: 48px; font-size: 16px; }
+.flg-avatar-xl { width: 56px; height: 56px; font-size: 18px; }
+.flg-avatar-gradient { background: linear-gradient(135deg, var(--flg-blue), var(--flg-pink)); color: #fff; }
+.flg-avatar-blue { background: var(--flg-blue-pale); color: var(--flg-blue); }
+.flg-avatar-pink { background: var(--flg-pink-bg); color: var(--flg-pink); }
+.flg-avatar-green { background: var(--flg-green-bg); color: var(--flg-green-dark); }
+.flg-avatar-orange { background: var(--flg-orange-bg); color: var(--flg-orange); }
+.flg-avatar-gray { background: var(--flg-surface-alt); color: var(--flg-text-muted); }
