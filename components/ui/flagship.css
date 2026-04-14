@@ -985,3 +985,42 @@
   opacity: 0;
   cursor: inherit;
 }
+
+/* ============================================================
+   Key/Value grid
+   ============================================================ */
+.flg-kv {
+  font-family: var(--flg-font-sans);
+  color: var(--flg-text);
+  display: grid;
+  gap: 0;
+}
+.flg-kv-columns-1 { grid-template-columns: 1fr; }
+.flg-kv-columns-2 { grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.flg-kv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--flg-border);
+  font-size: 13px;
+  gap: 16px;
+}
+.flg-kv-row:last-child { border-bottom: none; }
+.flg-kv-dense .flg-kv-row { padding: 6px 0; font-size: 12px; }
+.flg-kv-label {
+  color: var(--flg-text-muted);
+  flex-shrink: 0;
+}
+.flg-kv-value {
+  color: var(--flg-text);
+  font-weight: 500;
+  text-align: right;
+  word-break: break-word;
+}
+.flg-kv-stacked .flg-kv-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.flg-kv-stacked .flg-kv-value { text-align: left; }

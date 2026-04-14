@@ -22,3 +22,4 @@ export { default as Stepper } from "./Stepper";
 export { default as DataTable } from "./DataTable";
 export { Kanban, KanbanColumn, KanbanCard } from "./Kanban";
 export { default as Dropzone } from "./Dropzone";
+export { default as KeyValueGrid, KeyValueRow } from "./KeyValueGrid";
