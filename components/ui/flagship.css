@@ -475,3 +475,71 @@
 
 @keyframes flg-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes flg-slide-left { from { transform: translateX(12px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ============================================================
+   Modal
+   ============================================================ */
+.flg-modal-root {
+  position: fixed; inset: 0;
+  z-index: 1100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  font-family: var(--flg-font-sans);
+  color: var(--flg-text);
+  overflow-y: auto;
+}
+.flg-modal-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(26,31,54,0.4);
+  animation: flg-fade-in 0.18s ease;
+}
+.flg-modal {
+  position: relative;
+  background: var(--flg-surface);
+  border-radius: var(--flg-radius-lg);
+  box-shadow: var(--flg-shadow-lg);
+  width: 100%;
+  max-width: 480px;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 40px);
+  animation: flg-pop 0.18s ease;
+}
+.flg-modal-sm { max-width: 380px; }
+.flg-modal-md { max-width: 480px; }
+.flg-modal-lg { max-width: 640px; }
+.flg-modal-xl { max-width: 860px; }
+.flg-modal-head {
+  padding: 18px 22px 0;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.flg-modal-title {
+  font-size: 17px; font-weight: 700; color: var(--flg-text);
+  letter-spacing: -0.01em; margin: 0;
+}
+.flg-modal-subtitle {
+  font-size: 13px; color: var(--flg-text-muted); margin-top: 4px;
+}
+.flg-modal-close {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: transparent; color: var(--flg-text-muted);
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer;
+  transition: background var(--flg-ease), color var(--flg-ease);
+}
+.flg-modal-close:hover { background: var(--flg-surface-alt); color: var(--flg-text); }
+.flg-modal-close:focus-visible { outline: 2px solid var(--flg-blue); outline-offset: 2px; }
+.flg-modal-close svg { width: 14px; height: 14px; }
+.flg-modal-body { padding: 14px 22px 20px; overflow-y: auto; flex: 1; }
+.flg-modal-foot {
+  padding: 12px 22px;
+  border-top: 1px solid var(--flg-border);
+  display: flex; gap: 8px; justify-content: flex-end;
+  background: var(--flg-surface-subtle);
+  border-bottom-left-radius: var(--flg-radius-lg);
+  border-bottom-right-radius: var(--flg-radius-lg);
+}
+
+@keyframes flg-pop {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
