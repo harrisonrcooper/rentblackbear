@@ -20,3 +20,4 @@ export { default as EmptyState } from "./EmptyState";
 export { default as ProgressBar } from "./ProgressBar";
 export { default as Stepper } from "./Stepper";
 export { default as DataTable } from "./DataTable";
+export { Kanban, KanbanColumn, KanbanCard } from "./Kanban";
