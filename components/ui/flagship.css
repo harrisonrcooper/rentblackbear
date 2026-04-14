@@ -687,3 +687,93 @@
   margin: 0;
 }
 .flg-empty-action { margin-top: 6px; }
+
+/* ============================================================
+   Progress bar
+   ============================================================ */
+.flg-progress {
+  font-family: var(--flg-font-sans);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.flg-progress-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12px;
+}
+.flg-progress-label { color: var(--flg-text-muted); font-weight: 600; }
+.flg-progress-value { color: var(--flg-text); font-variant-numeric: tabular-nums; font-weight: 600; }
+.flg-progress-track {
+  width: 100%;
+  background: var(--flg-surface-alt);
+  border-radius: var(--flg-radius-pill);
+  overflow: hidden;
+}
+.flg-progress-sm .flg-progress-track { height: 4px; }
+.flg-progress-md .flg-progress-track { height: 8px; }
+.flg-progress-lg .flg-progress-track { height: 12px; }
+.flg-progress-fill {
+  height: 100%;
+  background: var(--flg-blue);
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+.flg-progress-success .flg-progress-fill { background: var(--flg-green); }
+.flg-progress-warning .flg-progress-fill { background: var(--flg-gold); }
+.flg-progress-danger .flg-progress-fill { background: var(--flg-red); }
+
+/* ============================================================
+   Stepper
+   ============================================================ */
+.flg-stepper {
+  display: flex;
+  align-items: flex-start;
+  font-family: var(--flg-font-sans);
+  gap: 0;
+}
+.flg-stepper-item {
+  display: flex; flex-direction: column; align-items: center;
+  flex-shrink: 0; text-align: center;
+  min-width: 80px;
+}
+.flg-stepper-item-grow {
+  flex: 1;
+  display: flex; align-items: center;
+  padding-top: 13px;
+}
+.flg-stepper-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: var(--flg-surface-alt);
+  color: var(--flg-text-muted);
+  border: 2px solid var(--flg-border);
+  transition: background var(--flg-ease), border-color var(--flg-ease), color var(--flg-ease);
+}
+.flg-stepper-dot svg { width: 14px; height: 14px; }
+.flg-stepper-item-current .flg-stepper-dot {
+  background: var(--flg-blue);
+  color: #fff;
+  border-color: var(--flg-blue);
+  box-shadow: 0 0 0 4px var(--flg-blue-pale);
+}
+.flg-stepper-item-completed .flg-stepper-dot {
+  background: var(--flg-green);
+  color: #fff;
+  border-color: var(--flg-green);
+}
+.flg-stepper-label {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--flg-text-muted);
+  line-height: 1.3;
+}
+.flg-stepper-item-current .flg-stepper-label { color: var(--flg-text); }
+.flg-stepper-item-completed .flg-stepper-label { color: var(--flg-text); }
+.flg-stepper-connector {
+  height: 2px;
+  flex: 1;
+  background: var(--flg-border);
+  transition: background var(--flg-ease);
+  margin: 0 8px;
+}
+.flg-stepper-connector-completed { background: var(--flg-green); }
