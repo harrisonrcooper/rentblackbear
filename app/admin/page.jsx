@@ -31,6 +31,7 @@ import DocumentsTab from "./components/tabs/DocumentsTab";
 import LedgerTab from "./components/tabs/LedgerTab";
 import NotificationsTab from "./components/tabs/NotificationsTab";
 import RocksTab from "./components/tabs/RocksTab";
+import IssuesTab from "./components/tabs/IssuesTab";
 import { motion, AnimatePresence } from "framer-motion";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -1783,17 +1784,7 @@ export default function Page(){
       {tab==="rocks"&&<RocksTab rocks={rocks} setRocks={setRocks} cycleRock={cycleRock} uid={uid} />}
 
       {/* ═══ ISSUES ═══ */}
-      {tab==="issues"&&<>
-        <div className="sec-hd"><div><h2>Issues List (IDS)</h2><p>Identify, Discuss, Solve. Click priority to cycle.</p></div>
-          <button className="btn btn-gold" onClick={()=>setIssues(p=>[{id:uid(),title:"New issue",priority:"medium",created:TODAY.toISOString().split("T")[0]},...p])}>+ Add</button></div>
-        {issues.map(i=>(
-          <div key={i.id} className="row">
-            <span style={{cursor:"pointer",fontSize:14}} onClick={()=>setIssues(p=>p.map(x=>x.id===i.id?{...x,priority:x.priority==="high"?"medium":x.priority==="medium"?"low":"high"}:x))}>{i.priority==="high"?"🔴":i.priority==="medium"?"🟡":"🟢"}</span>
-            <div className="row-i"><div className="row-t" contentEditable suppressContentEditableWarning onBlur={e=>setIssues(p=>p.map(x=>x.id===i.id?{...x,title:e.target.textContent}:x))}>{i.title}</div><div className="row-s">{i.created}</div></div>
-            <button className="btn btn-green btn-sm" onClick={()=>setIssues(p=>p.filter(x=>x.id!==i.id))}>✓ Solved</button>
-          </div>
-        ))}
-      </>}
+      {tab==="issues"&&<IssuesTab issues={issues} setIssues={setIssues} uid={uid} TODAY={TODAY} />}
 
       {/* ═══ PROPERTIES ═══ */}
       {tab==="properties"&&<PropertiesList settings={settings} properties={props} setProperties={setProps} payments={payments} leaseableItems={leaseableItems} expanded={expanded} setExpanded={setExpanded} editProp={editProp} setEditProp={setEditProp} setIsNewProp={setIsNewProp} setTab={setTab} setModal={setModal} setBulkSel={setBulkSel} fmtS={fmtS} fmtD={fmtD} PROP_TYPES={PROP_TYPES} getPropDisplayName={getPropDisplayName} TODAY={TODAY} MO={MO} save={save} charges={charges} showConfirm={showConfirm} onDeleteProp={id=>{setProps(prev=>{const next=prev.filter(x=>x.id!==id);save("hq-props",next);return next;});setEditProp(null);}} />}
