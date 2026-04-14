@@ -1,299 +1,492 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Elements } from "@stripe/react-stripe-js";
-import translations from "@/lib/i18n";
-import { supabase, stripePromise, hexRgba, esc, fmt, fmtD, daysLeft, C_DEFAULT, CREDIT_FEE, sCard, sLabel, sRow, IcHome, IcDollar, IcWrench, IcFile, IcUser, IcLogout, IcCheck, IcGoogle } from "./components/PortalShared";
-import NotificationCenter from "./components/NotificationCenter";
-import OnboardingFlow from "./components/OnboardingFlow";
-import HomeTab from "./components/HomeTab";
-import PaymentsTab from "./components/PaymentsTab";
-import MessagesTab from "./components/MessagesTab";
-import MaintenanceTab from "./components/MaintenanceTab";
-// CommunityTab removed — amenity booking moved to HomeTab
-import LeaseTab from "./components/LeaseTab";
-import AccountTab from "./components/AccountTab";
 
-export default function TenantPortal() {
-  const [screen, setScreen]               = useState("loading");
-  const [authMode, setAuthMode]           = useState("signin");
-  const [authEmail, setAuthEmail]         = useState("");
-  const [authPassword, setAuthPassword]   = useState("");
-  const [authName, setAuthName]           = useState("");
-  const [authErr, setAuthErr]             = useState("");
-  const [authLoading, setAuthLoading]     = useState(false);
-  const [successMsg, setSuccessMsg]       = useState("");
-  const [user, setUser]                   = useState(null);
-  const [tenant, setTenant]               = useState(null);
-  const [pmSettings, setPmSettings]       = useState(null);
-  const [charges, setCharges]             = useState([]);
-  const [maintenance, setMaintenance]     = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [activeTab, setActiveTab]         = useState("home");
-  const [token, setToken]                 = useState(null);
-  const [leaseId, setLeaseId]             = useState(null);
-  const [leaseData, setLeaseData]         = useState(null);
-  const [showFullLease, setShowFullLease] = useState(false);
-  const [onboarding, setOnboarding]       = useState({ leaseSigned: false, sdPaid: false, firstMonthPaid: false });
-  const [obStep, setObStep]               = useState(null);
-  const [showSig, setShowSig]             = useState(false);
-  const [stripeSecret, setStripeSecret]   = useState(null);
-  const [payingCharge, setPayingCharge]   = useState(null);
-  const [maintForm, setMaintForm]         = useState({ title: "", desc: "", priority: "medium", photos: [] });
-  const [maintSubmitting, setMaintSubmitting] = useState(false);
-  const [maintSuccess, setMaintSuccess]   = useState(false);
-  const [noticeForm, setNoticeForm]       = useState({ moveOutDate: "", reason: "", showForm: false, step: 1, signature: null, submitting: false, submitted: false });
-  const [autopay, setAutopay]             = useState({ enrolled: false, loading: false, setupSecret: null, showSetup: false });
-  const [showDoorCode, setShowDoorCode]   = useState(false);
-  const [doorCodeChange, setDoorCodeChange] = useState({ open: false, newCode: "", submitting: false, done: false, error: "" });
-  const [referralCopied, setReferralCopied] = useState(false);
-  const [notifPrefs, setNotifPrefs]       = useState({ payment_reminders: { email: true, text: true }, payment_confirmations: { email: true, text: true }, maintenance_updates: { email: true, text: true }, lease_reminders: { email: true, text: false }, announcements: { email: true, text: false } });
-  const [contactForm, setContactForm]     = useState({ subject: "", message: "", sending: false, sent: false, showForm: false });
-  const [tenantMessages, setTenantMessages] = useState([]);
-  const [msgInput, setMsgInput]           = useState("");
-  const [portalHoveredMsg, setPortalHoveredMsg] = useState(null);
-  const [portalShowReactions, setPortalShowReactions] = useState(null);
-  const portalMsgEndRef = useRef(null);
-  const portalMsgCountRef = useRef(0);
-  const [renewalModal, setRenewalModal]   = useState({ open: false, choice: null, submitting: false, submitted: false });
-  const [renewalFlow, setRenewalFlow]     = useState({ status: null, pmOffer: null, counterForm: { rent: "", term: "", note: "" }, showCounter: false, signing: false });
-  const [utilities, setUtilities]         = useState([]);
-  const [utilityConfig, setUtilityConfig] = useState({ coverageAmount: 100, residents: 1 });
-  const [notifications, setNotifications] = useState([]);
-  const [notifOpen, setNotifOpen]         = useState(false);
-  const [notifLastSeen, setNotifLastSeen] = useState(null);
-  const [scheduledPayments, setScheduledPayments] = useState([]);
-  const [scheduleForm, setScheduleForm]   = useState({ open: false, chargeId: null, date: "", submitting: false });
-  const [installmentForm, setInstallmentForm] = useState({ open: false, chargeId: null, numPayments: 3, frequency: "monthly", submitting: false });
-  const notifRef = useRef(null);
-  const [maintFeedback, setMaintFeedback]   = useState({});
-  const [inspection, setInspection]         = useState({ type: null, step: 0, rooms: [], signature: null, submitted: false, loading: false, existing: null });
-  const [documents, setDocuments]           = useState([]);
-  const [docRequests, setDocRequests]       = useState([]);
-  const [docUpload, setDocUpload]           = useState({ open: false, type: "other", file: null, uploading: false });
-  const [insurance, setInsurance]           = useState(null);
-  const [insuranceForm, setInsuranceForm]   = useState({ open: false, provider: "", policyNumber: "", expiration: "", coverage: "", file: null, uploading: false });
-  const [guests, setGuests]                 = useState([]);
-  const [guestForm, setGuestForm]           = useState({ open: false, name: "", relationship: "friend", visitDate: "", visitEnd: "", phone: "", submitting: false });
-  const [communityPosts, setCommunityPosts] = useState([]);
-  const [communityInput, setCommunityInput] = useState("");
-  const [communityPosting, setCommunityPosting] = useState(false);
-  const [amenities, setAmenities]           = useState([]);
-  const [amenityBookings, setAmenityBookings] = useState([]);
-  const [bookingForm, setBookingForm]       = useState({ open: false, amenityId: null, date: "", timeSlot: "", submitting: false });
-  const [surveys, setSurveys]               = useState([]);
-  const [activeSurvey, setActiveSurvey]     = useState(null);
-  const [surveyForm, setSurveyForm]         = useState({ rating: 0, recommend: null, improve: "", love: "", submitting: false });
-  const [auditLog, setAuditLog]             = useState([]);
-  const [auditExpanded, setAuditExpanded]   = useState(false);
-  const [packages, setPackages]             = useState([]);
-  const [darkMode, setDarkMode]             = useState(typeof window !== "undefined" ? localStorage.getItem("bb-dark-mode") || "light" : "light");
+// Mock ported from ~/Desktop/tenantory/portal.html.
+// HTML converted to JSX via /tmp/mock-porter/port.js:
+//   class/for/tabindex/... attrs mapped to JSX names
+//   inline style strings parsed to JS objects
+//   void elements self-closed; inline event handlers stripped
+//   <script>/<title>/<meta>/<link> removed
+// Original <style> blocks are injected via dangerouslySetInnerHTML
+// so the mock CSS doesn't get re-parsed as JSX.
 
-  // Realtime subscription for portal messages
-  useEffect(() => {
-    if (!tenant?.name) return;
-    const channel = supabase.channel("portal-msgs-" + tenant.name).on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-      if (payload.new.tenant_name === tenant.name && payload.new.direction !== "note") setTenantMessages(prev => [...prev, payload.new]);
-    }).subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [tenant?.name]);
+const MOCK_CSS = "\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }\n    body {\n      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;\n      color: var(--text);\n      background: var(--surface-alt);\n      line-height: 1.5;\n      font-size: 14px;\n      min-height: 100vh;\n    }\n    a { color: inherit; text-decoration: none; }\n    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }\n    img, svg { display: block; max-width: 100%; }\n    input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }\n\n    /* ===== Workspace brand tokens (Black Bear Rentals — intentionally NOT Tenantory Flagship) ===== */\n    :root {\n      --brand: #1e6f47;\n      --brand-dark: #144d31;\n      --brand-darker: #0e3822;\n      --brand-bright: #2a8f5e;\n      --brand-pale: #e7f4ed;\n      --brand-soft: #d1e8dc;\n      --accent: #c7843b;\n      --accent-bg: rgba(199,132,59,0.12);\n      --text: #1f2b24;\n      --text-muted: #5e6b62;\n      --text-faint: #8b978f;\n      --surface: #ffffff;\n      --surface-alt: #f6f4ee;\n      --surface-subtle: #fbfaf4;\n      --border: #e5e1d4;\n      --border-strong: #c9c3b0;\n      --green: #1e6f47;\n      --green-bg: rgba(30,111,71,0.12);\n      --green-dark: #144d31;\n      --red: #b23a3a;\n      --red-bg: rgba(178,58,58,0.1);\n      --amber: #c7843b;\n      --radius-sm: 6px;\n      --radius: 10px;\n      --radius-lg: 14px;\n      --radius-xl: 20px;\n      --shadow-sm: 0 1px 2px rgba(20,77,49,0.05);\n      --shadow: 0 4px 18px rgba(20,77,49,0.08);\n      --shadow-lg: 0 14px 44px rgba(20,77,49,0.14);\n    }\n\n    /* ===== Topbar (branded, NOT Tenantory) ===== */\n    .topbar {\n      background: linear-gradient(180deg, var(--brand-dark) 0%, var(--brand-darker) 100%);\n      color: rgba(255,255,255,0.9);\n      padding: 0 32px;\n      height: 72px;\n      display: flex; align-items: center; justify-content: space-between;\n      box-shadow: 0 2px 0 rgba(0,0,0,0.04);\n    }\n    .tb-brand { display: flex; align-items: center; gap: 12px; }\n    .tb-logo {\n      width: 40px; height: 40px; border-radius: 10px;\n      background: linear-gradient(135deg, var(--brand-bright), var(--accent));\n      display: flex; align-items: center; justify-content: center;\n      box-shadow: 0 4px 12px rgba(0,0,0,0.2);\n      color: #fff;\n    }\n    .tb-logo svg { width: 22px; height: 22px; }\n    .tb-brand-name { font-weight: 800; font-size: 18px; color: #fff; letter-spacing: -0.02em; }\n    .tb-brand-sub { font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 500; margin-top: 1px; }\n\n    .tb-nav { display: flex; gap: 2px; align-items: center; }\n    .tb-nav-item {\n      padding: 10px 16px; border-radius: 100px;\n      color: rgba(255,255,255,0.7); font-weight: 600; font-size: 13px;\n      display: flex; align-items: center; gap: 8px;\n      transition: all 0.15s ease;\n    }\n    .tb-nav-item:hover { color: #fff; background: rgba(255,255,255,0.08); }\n    .tb-nav-item.active { color: #fff; background: rgba(255,255,255,0.14); }\n    .tb-nav-item svg { width: 15px; height: 15px; }\n\n    .tb-right { display: flex; align-items: center; gap: 14px; }\n    .tb-bell {\n      position: relative; width: 36px; height: 36px; border-radius: 50%;\n      background: rgba(255,255,255,0.08); color: #fff;\n      display: flex; align-items: center; justify-content: center;\n      transition: all 0.15s ease;\n    }\n    .tb-bell:hover { background: rgba(255,255,255,0.16); }\n    .tb-bell svg { width: 16px; height: 16px; }\n    .tb-bell-dot { position: absolute; top: 8px; right: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); border: 2px solid var(--brand-darker); }\n\n    .tb-avatar {\n      display: flex; align-items: center; gap: 10px; padding: 4px 4px 4px 12px;\n      border-radius: 100px; background: rgba(255,255,255,0.08);\n      transition: all 0.15s ease;\n    }\n    .tb-avatar:hover { background: rgba(255,255,255,0.16); }\n    .tb-avatar-name { font-size: 13px; font-weight: 600; color: #fff; }\n    .tb-avatar-img {\n      width: 28px; height: 28px; border-radius: 50%;\n      background: linear-gradient(135deg, var(--accent), var(--brand-bright));\n      color: #fff; display: flex; align-items: center; justify-content: center;\n      font-weight: 700; font-size: 12px;\n    }\n\n    /* ===== Main content ===== */\n    .wrap { max-width: 1040px; margin: 0 auto; padding: 32px; }\n\n    .panel { display: none; }\n    .panel.active { display: block; animation: fadeIn 0.25s ease; }\n    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }\n\n    .page-head { margin-bottom: 24px; }\n    .page-head h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }\n    .page-head p { color: var(--text-muted); font-size: 14px; }\n\n    /* ===== Hero card (Home) ===== */\n    .pay-hero {\n      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%);\n      color: #fff;\n      border-radius: var(--radius-xl);\n      padding: 32px;\n      display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;\n      position: relative; overflow: hidden;\n      box-shadow: 0 20px 50px rgba(20,77,49,0.22);\n      margin-bottom: 20px;\n    }\n    .pay-hero::after {\n      content: \"\"; position: absolute; top: -40px; right: -40px;\n      width: 220px; height: 220px; border-radius: 50%;\n      background: radial-gradient(circle, rgba(199,132,59,0.25), transparent 70%);\n    }\n    .pay-hero-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 8px; }\n    .pay-hero-amount { font-size: 48px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px; }\n    .pay-hero-due { font-size: 14px; color: rgba(255,255,255,0.85); }\n    .pay-hero-due strong { color: #fff; font-weight: 700; }\n    .pay-hero-actions { display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 1; }\n    .btn-pay {\n      background: #fff; color: var(--brand-dark);\n      padding: 14px 28px; border-radius: 100px;\n      font-weight: 700; font-size: 15px;\n      display: inline-flex; align-items: center; gap: 10px;\n      transition: all 0.15s ease; white-space: nowrap;\n      box-shadow: 0 6px 20px rgba(0,0,0,0.2);\n    }\n    .btn-pay:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.28); }\n    .btn-pay svg { width: 16px; height: 16px; }\n    .btn-autopay {\n      background: rgba(255,255,255,0.15); color: #fff;\n      padding: 11px 22px; border-radius: 100px;\n      font-weight: 600; font-size: 13px;\n      display: inline-flex; align-items: center; gap: 8px;\n      transition: all 0.15s ease;\n      border: 1px solid rgba(255,255,255,0.25);\n    }\n    .btn-autopay:hover { background: rgba(255,255,255,0.22); }\n    .btn-autopay svg { width: 14px; height: 14px; }\n\n    /* ===== Card grid ===== */\n    .home-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-top: 20px; }\n\n    .card {\n      background: var(--surface);\n      border: 1px solid var(--border);\n      border-radius: var(--radius-lg);\n      padding: 22px;\n      box-shadow: var(--shadow-sm);\n    }\n    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }\n    .card-title { font-size: 15px; font-weight: 700; color: var(--text); }\n    .card-link { color: var(--brand); font-size: 12px; font-weight: 600; }\n    .card-link:hover { text-decoration: underline; }\n\n    .kv-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }\n    .kv-row:last-child { border-bottom: none; }\n    .kv-row .kv-key { color: var(--text-muted); }\n    .kv-row .kv-val { color: var(--text); font-weight: 600; }\n\n    /* ===== Activity ===== */\n    .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }\n    .activity-item:last-child { border-bottom: none; }\n    .activity-icon {\n      width: 34px; height: 34px; border-radius: 10px;\n      background: var(--brand-pale); color: var(--brand);\n      display: flex; align-items: center; justify-content: center; flex-shrink: 0;\n    }\n    .activity-icon.paid { background: var(--green-bg); color: var(--green-dark); }\n    .activity-icon.ticket { background: var(--accent-bg); color: var(--accent); }\n    .activity-icon svg { width: 16px; height: 16px; }\n    .activity-body { flex: 1; min-width: 0; }\n    .activity-title { font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 2px; }\n    .activity-meta { font-size: 12px; color: var(--text-muted); }\n\n    /* ===== Quick actions ===== */\n    .qa-list { display: flex; flex-direction: column; gap: 8px; }\n    .qa-item {\n      display: flex; align-items: center; gap: 12px;\n      padding: 12px 14px; border-radius: var(--radius);\n      background: var(--surface-subtle); border: 1px solid var(--border);\n      transition: all 0.15s ease; cursor: pointer;\n    }\n    .qa-item:hover { border-color: var(--brand); background: var(--brand-pale); }\n    .qa-icon {\n      width: 32px; height: 32px; border-radius: 8px;\n      background: var(--brand-pale); color: var(--brand);\n      display: flex; align-items: center; justify-content: center; flex-shrink: 0;\n    }\n    .qa-item:hover .qa-icon { background: var(--brand); color: #fff; }\n    .qa-icon svg { width: 16px; height: 16px; }\n    .qa-label { font-weight: 600; font-size: 13px; color: var(--text); flex: 1; }\n    .qa-item svg.chev { width: 14px; height: 14px; color: var(--text-faint); }\n\n    /* ===== Payment methods ===== */\n    .method-row {\n      display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;\n      padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-lg);\n      background: var(--surface); margin-bottom: 10px;\n    }\n    .method-row.default { border-color: var(--brand); background: var(--brand-pale); }\n    .method-icon {\n      width: 40px; height: 28px; border-radius: 5px;\n      background: linear-gradient(135deg, #1a1f36, #3a4160);\n      color: #fff; display: flex; align-items: center; justify-content: center;\n      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;\n    }\n    .method-icon.bank { background: linear-gradient(135deg, var(--brand), var(--brand-bright)); }\n    .method-label { font-weight: 600; font-size: 13px; color: var(--text); }\n    .method-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }\n    .default-pill {\n      font-size: 10px; font-weight: 700; color: var(--brand-dark);\n      background: rgba(30,111,71,0.18); padding: 3px 9px; border-radius: 100px;\n      text-transform: uppercase; letter-spacing: 0.08em;\n    }\n\n    .add-method {\n      margin-top: 6px; padding: 14px 16px;\n      border: 1.5px dashed var(--border-strong); border-radius: var(--radius-lg);\n      color: var(--text-muted); font-weight: 600; font-size: 13px;\n      display: flex; align-items: center; justify-content: center; gap: 8px;\n      transition: all 0.15s ease; cursor: pointer; width: 100%;\n    }\n    .add-method:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-pale); }\n    .add-method svg { width: 14px; height: 14px; }\n\n    /* ===== Payment history table ===== */\n    .table {\n      width: 100%; border-collapse: collapse; font-size: 13px;\n    }\n    .table th {\n      text-align: left; padding: 10px 14px; font-weight: 700;\n      color: var(--text-muted); font-size: 11px;\n      text-transform: uppercase; letter-spacing: 0.08em;\n      background: var(--surface-subtle); border-bottom: 1px solid var(--border);\n    }\n    .table td {\n      padding: 14px; border-bottom: 1px solid var(--border);\n      color: var(--text);\n    }\n    .table tr:last-child td { border-bottom: none; }\n    .table tr:hover td { background: var(--surface-subtle); }\n    .table-amount { font-weight: 700; font-variant-numeric: tabular-nums; }\n    .pill {\n      display: inline-flex; align-items: center; gap: 5px;\n      font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 100px;\n      text-transform: uppercase; letter-spacing: 0.06em;\n    }\n    .pill-green { background: var(--green-bg); color: var(--green-dark); }\n    .pill-amber { background: var(--accent-bg); color: var(--accent); }\n    .pill-red { background: var(--red-bg); color: var(--red); }\n    .icon-btn {\n      width: 28px; height: 28px; border-radius: 7px;\n      background: var(--surface-subtle); color: var(--text-muted);\n      display: inline-flex; align-items: center; justify-content: center;\n      transition: all 0.15s ease;\n    }\n    .icon-btn:hover { background: var(--brand-pale); color: var(--brand); }\n    .icon-btn svg { width: 14px; height: 14px; }\n\n    /* ===== Maintenance form ===== */\n    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }\n    .field { margin-bottom: 16px; }\n    .field-label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }\n    .input, textarea.input, select.input {\n      width: 100%; padding: 11px 14px;\n      background: var(--surface); border: 1px solid var(--border);\n      border-radius: var(--radius); font-size: 14px; color: var(--text);\n      transition: all 0.15s ease; outline: none;\n    }\n    .input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-pale); }\n    textarea.input { resize: vertical; min-height: 110px; line-height: 1.5; }\n    select.input {\n      -webkit-appearance: none; appearance: none;\n      background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235e6b62' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\");\n      background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;\n    }\n\n    .priority-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }\n    .priority {\n      border: 2px solid var(--border); border-radius: var(--radius);\n      padding: 12px; text-align: center; background: var(--surface);\n      cursor: pointer; transition: all 0.15s ease;\n    }\n    .priority:hover { border-color: var(--brand); }\n    .priority.selected.low { border-color: var(--green); background: var(--green-bg); }\n    .priority.selected.med { border-color: var(--amber); background: var(--accent-bg); }\n    .priority.selected.urgent { border-color: var(--red); background: var(--red-bg); }\n    .priority-label { font-weight: 700; font-size: 13px; color: var(--text); }\n    .priority-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }\n\n    .drop-zone {\n      border: 2px dashed var(--border-strong); border-radius: var(--radius-lg);\n      padding: 24px; text-align: center; cursor: pointer;\n      transition: all 0.15s ease; background: var(--surface-subtle);\n    }\n    .drop-zone:hover { border-color: var(--brand); background: var(--brand-pale); }\n    .drop-zone svg { width: 32px; height: 32px; color: var(--text-faint); margin: 0 auto 8px; }\n    .drop-zone-title { font-weight: 700; font-size: 13px; color: var(--text); }\n    .drop-zone-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }\n\n    /* ===== Tickets list ===== */\n    .ticket-row {\n      display: grid; grid-template-columns: auto 1fr auto auto; gap: 14px;\n      align-items: center; padding: 16px 18px;\n      border: 1px solid var(--border); border-radius: var(--radius-lg);\n      background: var(--surface); margin-bottom: 10px;\n      transition: all 0.15s ease;\n    }\n    .ticket-row:hover { border-color: var(--brand-bright); box-shadow: var(--shadow-sm); transform: translateY(-1px); }\n    .ticket-icon {\n      width: 40px; height: 40px; border-radius: 10px;\n      background: var(--brand-pale); color: var(--brand);\n      display: flex; align-items: center; justify-content: center; flex-shrink: 0;\n    }\n    .ticket-icon.done { background: var(--green-bg); color: var(--green-dark); }\n    .ticket-icon svg { width: 18px; height: 18px; }\n    .ticket-title { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 2px; }\n    .ticket-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 10px; align-items: center; }\n    .ticket-meta svg { width: 11px; height: 11px; }\n\n    /* ===== Documents ===== */\n    .doc-row {\n      display: grid; grid-template-columns: auto 1fr auto auto; gap: 14px;\n      align-items: center; padding: 14px 16px;\n      background: var(--surface); border: 1px solid var(--border);\n      border-radius: var(--radius-lg); margin-bottom: 8px;\n      transition: all 0.15s ease;\n    }\n    .doc-row:hover { border-color: var(--brand); }\n    .doc-icon {\n      width: 36px; height: 44px; border-radius: 5px;\n      background: linear-gradient(135deg, var(--brand-pale), var(--brand-soft));\n      color: var(--brand); display: flex; align-items: center; justify-content: center;\n      flex-shrink: 0; position: relative; font-size: 9px; font-weight: 800;\n    }\n    .doc-icon::after {\n      content: \"\"; position: absolute; top: 0; right: 0; width: 10px; height: 10px;\n      background: var(--surface); border-left: 1px solid var(--border); border-bottom: 1px solid var(--border);\n    }\n    .doc-title { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 2px; }\n    .doc-meta { font-size: 12px; color: var(--text-muted); }\n\n    /* ===== Pay drawer ===== */\n    .drawer-bg {\n      position: fixed; inset: 0; background: rgba(14,56,34,0.45);\n      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;\n      z-index: 50; display: flex; align-items: center; justify-content: center;\n      padding: 20px;\n    }\n    .drawer-bg.open { opacity: 1; pointer-events: auto; }\n    .drawer {\n      background: var(--surface); width: 100%; max-width: 460px;\n      border-radius: var(--radius-xl); box-shadow: var(--shadow-lg);\n      transform: translateY(20px) scale(0.98); transition: transform 0.3s cubic-bezier(.2,.9,.3,1);\n      overflow: hidden;\n    }\n    .drawer-bg.open .drawer { transform: none; }\n    .drawer-head {\n      padding: 22px 24px; border-bottom: 1px solid var(--border);\n      display: flex; justify-content: space-between; align-items: center;\n    }\n    .drawer-head h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }\n    .drawer-close {\n      width: 32px; height: 32px; border-radius: 50%;\n      background: var(--surface-subtle); color: var(--text-muted);\n      display: flex; align-items: center; justify-content: center;\n    }\n    .drawer-close:hover { background: var(--red-bg); color: var(--red); }\n    .drawer-close svg { width: 16px; height: 16px; }\n    .drawer-body { padding: 22px 24px; }\n    .drawer-foot {\n      padding: 16px 24px; border-top: 1px solid var(--border);\n      background: var(--surface-subtle);\n      display: flex; gap: 10px; justify-content: flex-end;\n    }\n    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 100px; font-weight: 600; font-size: 14px; transition: all 0.15s ease; }\n    .btn-primary { background: var(--brand); color: #fff; }\n    .btn-primary:hover { background: var(--brand-dark); transform: translateY(-1px); }\n    .btn-ghost { color: var(--text); border: 1px solid var(--border); background: var(--surface); }\n    .btn-ghost:hover { border-color: var(--brand); color: var(--brand); }\n\n    .pay-summary {\n      background: var(--brand-pale); border: 1px solid var(--brand-soft);\n      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px;\n      display: flex; justify-content: space-between; align-items: center;\n    }\n    .pay-summary-label { font-size: 12px; color: var(--brand-dark); font-weight: 600; }\n    .pay-summary-amount { font-size: 24px; font-weight: 800; color: var(--brand-dark); letter-spacing: -0.02em; }\n\n    .method-pick {\n      display: flex; align-items: center; gap: 14px; padding: 14px;\n      border: 2px solid var(--border); border-radius: var(--radius);\n      margin-bottom: 8px; cursor: pointer; transition: all 0.15s ease;\n    }\n    .method-pick:hover { border-color: var(--brand); }\n    .method-pick.selected { border-color: var(--brand); background: var(--brand-pale); }\n    .method-pick-radio {\n      width: 18px; height: 18px; border-radius: 50%;\n      border: 2px solid var(--border-strong); flex-shrink: 0;\n      position: relative; transition: all 0.15s ease;\n    }\n    .method-pick.selected .method-pick-radio {\n      border-color: var(--brand); background: var(--brand);\n    }\n    .method-pick.selected .method-pick-radio::after {\n      content: \"\"; position: absolute; inset: 3px; border-radius: 50%; background: #fff;\n    }\n\n    /* ===== Footer ===== */\n    .legal-foot {\n      max-width: 1040px; margin: 40px auto 28px; padding: 0 32px;\n      color: var(--text-faint); font-size: 11px; display: flex;\n      justify-content: space-between; flex-wrap: wrap; gap: 10px;\n    }\n    .legal-foot a:hover { color: var(--brand); }\n    .legal-foot-left { display: flex; align-items: center; gap: 8px; }\n    .powered-by { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }\n\n    /* ===== Toast ===== */\n    .toast-stack { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 80; }\n    .toast {\n      background: var(--text); color: var(--surface);\n      padding: 12px 18px; border-radius: var(--radius);\n      font-size: 13px; font-weight: 500;\n      box-shadow: var(--shadow-lg);\n      display: flex; align-items: center; gap: 10px;\n      animation: toastIn 0.3s cubic-bezier(.2,.9,.3,1);\n    }\n    .toast svg { width: 16px; height: 16px; color: var(--brand-bright); }\n    @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }\n\n    @media (max-width: 780px) {\n      .topbar { padding: 0 16px; height: auto; flex-direction: column; gap: 10px; padding-top: 14px; padding-bottom: 14px; }\n      .tb-nav { overflow-x: auto; width: 100%; }\n      .wrap { padding: 20px 16px; }\n      .pay-hero { grid-template-columns: 1fr; text-align: left; }\n      .home-grid, .form-grid { grid-template-columns: 1fr; }\n    }\n  ";
 
-  const referralLink = typeof window !== "undefined" ? window.location.origin + "/apply?ref=" + (tenant?.id || "") : "";
-  const copyReferral = () => { navigator.clipboard.writeText(referralLink); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000); };
-
-  const C = { bg: pmSettings?.portal_bg || C_DEFAULT.bg, accent: pmSettings?.portal_accent || C_DEFAULT.accent, green: pmSettings?.portal_green || C_DEFAULT.green, red: pmSettings?.portal_red || C_DEFAULT.red, text: pmSettings?.portal_text || C_DEFAULT.text, muted: pmSettings?.portal_muted || C_DEFAULT.muted };
-  const lang = pmSettings?.language || "en";
-  const t = translations[lang] || translations.en;
-
-  // ── Auth + Data Loading (same as original) ──
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tk = params.get("token"); if (tk) setToken(tk);
-    if (params.get("dev") === "true" && window.location.hostname === "localhost") {
-      supabase.from("app_data").select("value").eq("key", "hq-settings").single().then(({ data: devSettings }) => {
-        if (devSettings?.value) { const s = devSettings.value; setPmSettings({ company_name: s.companyName || "Tenantory", phone: s.phone || "", email: s.email || "", pmName: s.pmName || "", pmEmail: s.pmEmail || "", houseRules: s.houseRules || [], referralCredit: s.referralCredit || 0, lateFeeGraceDays: s.lateFeeGraceDays, m2mIncrease: s.m2mIncrease, language: s.portalLanguage || "en" }); } else { setPmSettings({ company_name: "Tenantory", phone: "" }); }
-      }).catch(() => { setPmSettings({ company_name: "Tenantory", phone: "" }); });
-      setUser({ email: "demo@test.com" });
-      setTenant({ id: null, name: "Demo Tenant", rent: 750, security_deposit: 750, move_in: "2025-06-01", lease_end: "2026-06-01", lease_signed_at: new Date().toISOString(), door_code: "1234", property: { name: "Demo Property" }, room: { name: "Room A" } });
-      setCharges([{ id: "c1", category: "Security Deposit", description: "Security Deposit", amount: 750, amount_paid: 750, due_date: "2025-06-01", payments: [{ amount: 750, date: "2025-05-30", method: "ACH Bank Transfer", deposit_status: "deposited" }] }, { id: "c2", category: "Rent", description: "June 2025 Rent", amount: 750, amount_paid: 750, due_date: "2025-06-01", payments: [{ amount: 750, date: "2025-06-01", method: "Debit Card", deposit_status: "deposited" }] }, { id: "c3", category: "Rent", description: "July 2025 Rent", amount: 750, amount_paid: 0, due_date: "2025-07-01", payments: [] }]);
-      setLeaseId("ul56zet");
-      try { supabase.from("lease_instances").select("*").eq("id", "ul56zet").single().then(({ data: row }) => { if (row) setLeaseData({ ...(row.variable_data || {}), id: row.id, status: row.status, landlordSig: row.landlord_sig, tenantSig: row.tenant_sig, landlordSignedAt: row.landlord_signed_at, tenantSignedAt: row.tenant_signed_at }); }).catch(() => {}); } catch (e) {}
-      setAnnouncements([{ id: "demo1", title: "Water shut-off scheduled", body: "City maintenance will shut off water on April 12 from 8am to 2pm. Please plan accordingly.", createdAt: "2026-04-05T12:00:00Z", expiresAt: null, propertyId: null }, { id: "demo2", title: "Parking lot repaving", body: "The main lot will be repaved April 15-17. Use the side lot during this time.", createdAt: "2026-04-03T09:00:00Z", expiresAt: "2026-04-18T23:59:59Z", propertyId: null }]);
-      setOnboarding({ leaseSigned: true, sdPaid: true, firstMonthPaid: true });
-      supabase.from("messages").select("*").eq("tenant_name", "Demo Tenant").order("created_at", { ascending: true }).then(({ data }) => { if (data) setTenantMessages(data); });
-      setUtilities([{ id: "u1", billing_month: "2026-04", total: 285, breakdown: { electric: 142, gas: 48, water: 35, internet: 60 } }, { id: "u2", billing_month: "2026-03", total: 310, breakdown: { electric: 158, gas: 55, water: 37, internet: 60 } }, { id: "u3", billing_month: "2026-02", total: 340, breakdown: { electric: 185, gas: 62, water: 33, internet: 60 } }, { id: "u4", billing_month: "2026-01", total: 360, breakdown: { electric: 195, gas: 70, water: 35, internet: 60 } }, { id: "u5", billing_month: "2025-12", total: 320, breakdown: { electric: 165, gas: 60, water: 35, internet: 60 } }, { id: "u6", billing_month: "2025-11", total: 290, breakdown: { electric: 148, gas: 50, water: 32, internet: 60 } }, { id: "u7", billing_month: "2025-10", total: 260, breakdown: { electric: 130, gas: 40, water: 30, internet: 60 } }, { id: "u8", billing_month: "2025-09", total: 240, breakdown: { electric: 120, gas: 32, water: 28, internet: 60 } }, { id: "u9", billing_month: "2025-08", total: 270, breakdown: { electric: 145, gas: 35, water: 30, internet: 60 } }, { id: "u10", billing_month: "2025-07", total: 300, breakdown: { electric: 160, gas: 45, water: 35, internet: 60 } }, { id: "u11", billing_month: "2025-06", total: 280, breakdown: { electric: 150, gas: 40, water: 30, internet: 60 } }, { id: "u12", billing_month: "2025-05", total: 265, breakdown: { electric: 138, gas: 38, water: 29, internet: 60 } }]);
-      setUtilityConfig({ coverageAmount: 100, residents: 4 });
-      setScheduledPayments([{ id: "sp1", charge_id: "c3", amount: 375, scheduled_date: "2025-07-15", status: "pending", is_installment: true, installment_number: 1, installment_total: 2 }, { id: "sp2", charge_id: "c3", amount: 375, scheduled_date: "2025-08-01", status: "pending", is_installment: true, installment_number: 2, installment_total: 2 }]);
-      setMaintenance([{ id: "m1", title: "Leaky faucet in bathroom", description: "Kitchen sink drips constantly", priority: "high", status: "in-progress", created_at: "2026-03-28T10:00:00Z", updated_at: "2026-04-01T14:00:00Z", technician: "Mike Rodriguez", eta: "2026-04-09", completion_photos: null, photos: null }, { id: "m2", title: "AC not cooling properly", description: "Unit blows warm air", priority: "medium", status: "resolved", created_at: "2026-03-15T09:00:00Z", updated_at: "2026-03-20T16:00:00Z", resolved_at: "2026-03-20T16:00:00Z", technician: "Sarah Chen", completion_photos: [], photos: null }]);
-      setInsurance({ id: "ins1", provider: "Lemonade", policy_number: "LEM-2026-48291", expiration: "2026-09-15", coverage_amount: 100000, file_url: null, created_at: "2026-01-15T00:00:00Z" });
-      setDocuments([{ id: "d1", type: "insurance", filename: "lemonade-policy.pdf", uploaded_at: "2026-01-15T12:00:00Z", file_url: "#" }, { id: "d2", type: "vehicleReg", filename: "vehicle-registration-2026.pdf", uploaded_at: "2026-02-20T09:00:00Z", file_url: "#" }]);
-      setDocRequests([{ id: "dr1", type: "petRecords", title: "Pet vaccination records", deadline: "2026-04-15", status: "pending", created_at: "2026-04-01T00:00:00Z" }]);
-      setGuests([{ id: "g1", name: "Alex Johnson", relationship: "friend", visit_date: "2026-04-10", visit_end: "2026-04-12", phone: "555-0123", temp_code: "7742", status: "active", created_at: "2026-04-06T10:00:00Z" }, { id: "g2", name: "Maria Cooper", relationship: "family", visit_date: "2026-03-20", visit_end: "2026-03-22", phone: "", temp_code: null, status: "completed", created_at: "2026-03-18T08:00:00Z" }]);
-      setCommunityPosts([{ id: "cp1", author: "Sarah K.", body: "Anyone want to do a BBQ this Saturday on the patio?", created_at: "2026-04-06T14:00:00Z" }, { id: "cp2", author: "Demo Tenant", body: "Found a set of keys in the hallway near Room C. Check the front desk!", created_at: "2026-04-05T10:30:00Z" }]);
-      setAmenities([{ id: "a1", name: "kitchen", slots: ["9am-12pm", "12pm-3pm", "3pm-6pm", "6pm-9pm"] }, { id: "a2", name: "laundry", slots: ["8am-10am", "10am-12pm", "12pm-2pm", "2pm-4pm", "4pm-6pm", "6pm-8pm"] }, { id: "a3", name: "commonRoom", slots: ["10am-1pm", "1pm-4pm", "4pm-7pm", "7pm-10pm"] }, { id: "a4", name: "parking", slots: ["All Day"] }]);
-      setAmenityBookings([{ id: "ab1", amenity_id: "a1", tenant_name: "Demo Tenant", date: "2026-04-08", time_slot: "6pm-9pm", status: "active" }]);
-      setSurveys([{ id: "s1", type: "move_in", title: "30-Day Check-In", status: "pending", created_at: "2026-04-01T00:00:00Z" }]);
-      setPackages([{ id: "pk1", carrier: "USPS", tracking: "9400111899223456789012", description: "Amazon \u2014 Small box", locker: "Front Desk", received_at: "2026-04-06T15:30:00Z", status: "pending" }, { id: "pk2", carrier: "FedEx", tracking: "794644790132", description: "FedEx Envelope", locker: "Locker #3", received_at: "2026-04-04T11:00:00Z", status: "picked_up", picked_up_at: "2026-04-04T18:00:00Z" }]);
-      setAuditLog([{ id: "al1", type: "payment", description: "Payment of $750.00 \u2014 June 2025 Rent", date: "2025-06-01" }, { id: "al2", type: "payment", description: "Payment of $750.00 \u2014 Security Deposit", date: "2025-05-30" }, { id: "al3", type: "lease", description: "Lease signed for Demo Property \u2014 Room A", date: "2025-05-28" }, { id: "al4", type: "charge", description: "Charge posted: July 2025 Rent \u2014 $750.00", date: "2025-07-01" }, { id: "al5", type: "maintenance", description: "Maintenance request: Leaky faucet in bathroom", date: "2026-03-28" }, { id: "al6", type: "guest", description: "Guest registered: Alex Johnson (Apr 10-12)", date: "2026-04-06" }, { id: "al7", type: "document", description: "Document uploaded: lemonade-policy.pdf", date: "2026-01-15" }, { id: "al8", type: "insurance", description: "Insurance updated: Lemonade policy", date: "2026-01-15" }]);
-      setScreen("portal"); return;
-    }
-    supabase.auth.getSession().then(({ data: { session } }) => { if (session?.user) { setUser(session.user); loadPortalData(session.user.id); } else setScreen("auth"); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => { if (session?.user) { setUser(session.user); loadPortalData(session.user.id); } else { setUser(null); setTenant(null); setScreen("auth"); } });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadPortalData = useCallback(async (authUserId) => {
-    try {
-      const { data: pu, error: puErr } = await supabase.from("portal_users").select("*, tenant:tenants(*, property:properties(*), room:rooms(*))").eq("auth_user_id", authUserId).single();
-      if (puErr || !pu) { const { data: { user: u } } = await supabase.auth.getUser(); if (u?.email) { const { data: inv } = await supabase.from("invites").select("*").eq("email", u.email).is("accepted_at", null).gt("expires_at", new Date().toISOString()).single(); if (inv) { await acceptInvite(inv, authUserId, u.email); return; } } setScreen("no-access"); return; }
-      setTenant(pu.tenant); await supabase.from("portal_users").update({ last_seen_at: new Date().toISOString() }).eq("id", pu.id);
-      if (pu.pm_id) { const { data: pm } = await supabase.from("pm_accounts").select("*").eq("id", pu.pm_id).single(); setPmSettings(pm); }
-      try { const { data: adRows } = await supabase.from("app_data").select("value").eq("key", "hq-settings").single(); if (adRows?.value) { const hqSettings = adRows.value; setPmSettings(prev => ({ ...prev, company_name: hqSettings.companyName || prev?.company_name || "Tenantory", phone: hqSettings.phone || prev?.phone || "", email: hqSettings.email || prev?.email || "", pmName: hqSettings.pmName || prev?.pmName || "", pmEmail: hqSettings.pmEmail || prev?.pmEmail || "", houseRules: hqSettings.houseRules || prev?.houseRules || [], referralCredit: hqSettings.referralCredit || 0, lateFeeGraceDays: hqSettings.lateFeeGraceDays ?? prev?.lateFeeGraceDays, m2mIncrease: hqSettings.m2mIncrease ?? prev?.m2mIncrease, language: hqSettings.portalLanguage || prev?.language || "en" })); if (hqSettings.announcements) { const now = new Date().toISOString(); const propId = pu.tenant?.property_id || null; setAnnouncements(hqSettings.announcements.filter(a => { if (a.expiresAt && a.expiresAt < now) return false; if (a.propertyId && a.propertyId !== propId) return false; return true; })); } } } catch (e) { console.warn("Settings load:", e); }
-      const { data: ch } = await supabase.from("charges").select("*, payments(*)").eq("tenant_id", pu.tenant_id).order("due_date", { ascending: false }); setCharges(ch || []);
-      const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false }); setMaintenance(mt || []);
-      try { const { data: msgs } = await supabase.from("messages").select("*").eq("tenant_name", pu.tenant?.name || "").order("created_at", { ascending: true }); setTenantMessages(msgs || []); } catch (e) {}
-      if (pu.tenant?.room_id) { const { data: leases } = await supabase.from("lease_instances").select("*").eq("room_id", pu.tenant.room_id).eq("status", "executed").order("created_at", { ascending: false }).limit(1); if (leases?.length) { setLeaseId(leases[0].id); const row = leases[0]; setLeaseData({ ...(row.variable_data || {}), id: row.id, status: row.status, landlordSig: row.landlord_sig, tenantSig: row.tenant_sig, landlordSignedAt: row.landlord_signed_at, tenantSignedAt: row.tenant_signed_at }); } }
-      try { const { data: utilRows } = await supabase.from("utility_bills").select("*").eq("property_id", pu.tenant?.property_id).order("billing_month", { ascending: false }); setUtilities(utilRows || []); } catch (e) {}
-      try { const { data: utilCfg } = await supabase.from("app_data").select("value").eq("key", "utility-config-" + pu.tenant?.property_id).single(); if (utilCfg?.value) setUtilityConfig(utilCfg.value); } catch (e) {}
-      try { const { data: notifs } = await supabase.from("activity_log").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false }).limit(50); setNotifications(notifs || []); } catch (e) {}
-      try { const { data: puRow } = await supabase.from("portal_users").select("notif_last_seen").eq("auth_user_id", authUserId).single(); if (puRow?.notif_last_seen) setNotifLastSeen(puRow.notif_last_seen); } catch (e) {}
-      try { const { data: renewal } = await supabase.from("renewal_requests").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false }).limit(1); if (renewal?.length) setRenewalFlow(prev => ({ ...prev, status: renewal[0].status, pmOffer: renewal[0].pm_offer || null, ...renewal[0] })); } catch (e) {}
-      try { const { data: sched } = await supabase.from("scheduled_payments").select("*").eq("tenant_id", pu.tenant_id).eq("status", "pending").order("scheduled_date", { ascending: true }); setScheduledPayments(sched || []); } catch (e) {}
-      try { const { data: docs } = await supabase.from("tenant_documents").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false }); setDocuments(docs || []); } catch (e) {}
-      try { const { data: dreqs } = await supabase.from("document_requests").select("*").eq("tenant_id", pu.tenant_id).order("deadline", { ascending: true }); setDocRequests(dreqs || []); } catch (e) {}
-      try { const { data: ins } = await supabase.from("tenant_insurance").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false }).limit(1); if (ins?.length) setInsurance(ins[0]); } catch (e) {}
-      try { const { data: guestRows } = await supabase.from("guest_registrations").select("*").eq("tenant_id", pu.tenant_id).order("visit_date", { ascending: false }); setGuests(guestRows || []); } catch (e) {}
-      try { const { data: insp } = await supabase.from("inspections").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false }).limit(1); if (insp?.length) setInspection(prev => ({ ...prev, existing: insp[0] })); } catch (e) {}
-      try { const { data } = await supabase.from("community_posts").select("*").eq("property_id", pu.tenant?.property_id).order("created_at", { ascending: false }).limit(30); setCommunityPosts(data || []); } catch (e) {}
-      try { const { data } = await supabase.from("amenities").select("*").eq("property_id", pu.tenant?.property_id); setAmenities(data || []); } catch (e) {}
-      try { const { data } = await supabase.from("amenity_bookings").select("*").eq("tenant_id", pu.tenant_id).gte("date", new Date().toISOString().split("T")[0]); setAmenityBookings(data || []); } catch (e) {}
-      try { const { data } = await supabase.from("tenant_surveys").select("*").eq("tenant_id", pu.tenant_id).order("created_at", { ascending: false }); setSurveys(data || []); } catch (e) {}
-      try { const { data } = await supabase.from("audit_log").select("*").eq("tenant_id", pu.tenant_id).order("date", { ascending: false }).limit(50); setAuditLog(data || []); } catch (e) {}
-      try { const { data } = await supabase.from("packages").select("*").eq("tenant_id", pu.tenant_id).order("received_at", { ascending: false }).limit(20); setPackages(data || []); } catch (e) {}
-      const allCh = ch || [];
-      setOnboarding({ leaseSigned: !!pu.tenant?.lease_signed_at, sdPaid: !!(allCh.find(c => c.category === "Security Deposit" && c.amount_paid >= c.amount)), firstMonthPaid: !!(allCh.find(c => c.category === "Rent" && c.amount_paid >= c.amount)) });
-      setScreen("portal");
-    } catch (e) { console.error(e); setScreen("error"); }
-  }, []);
-
-  const acceptInvite = async (inv, authUserId, email) => {
-    try {
-      const { data: pu, error } = await supabase.from("portal_users").insert({ auth_user_id: authUserId, pm_id: inv.pm_id, tenant_id: inv.tenant_id, email }).select("*, tenant:tenants(*, property:properties(*), room:rooms(*))").single();
-      if (error) throw error;
-      await supabase.from("invites").update({ accepted_at: new Date().toISOString() }).eq("id", inv.id);
-      setTenant(pu.tenant);
-      const { data: pmRow } = await supabase.from("pm_accounts").select("*").eq("id", inv.pm_id).single(); setPmSettings(pmRow);
-      const { data: ch } = await supabase.from("charges").select("*, payments(*)").eq("tenant_id", inv.tenant_id).order("due_date", { ascending: false }); setCharges(ch || []);
-      const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", inv.tenant_id).order("created_at", { ascending: false }); setMaintenance(mt || []);
-      try { const { data: adRows } = await supabase.from("app_data").select("value").eq("key", "hq-settings").single(); if (adRows?.value) { const hqSettings = adRows.value; setPmSettings(prev => ({ ...prev, company_name: hqSettings.companyName || prev?.company_name, phone: hqSettings.phone || prev?.phone, email: hqSettings.email || prev?.email, pmName: hqSettings.pmName || prev?.pmName, pmEmail: hqSettings.pmEmail || prev?.pmEmail, houseRules: hqSettings.houseRules || prev?.houseRules || [], referralCredit: hqSettings.referralCredit || 0, language: hqSettings.portalLanguage || prev?.language || "en" })); if (hqSettings.announcements) { const now = new Date().toISOString(); const propId = pu.tenant?.property_id || null; setAnnouncements(hqSettings.announcements.filter(a => { if (a.expiresAt && a.expiresAt < now) return false; if (a.propertyId && a.propertyId !== propId) return false; return true; })); } } } catch (e) { console.warn("Settings load:", e); }
-      setOnboarding({ leaseSigned: false, sdPaid: !!(ch || []).find(c => c.category === "Security Deposit" && c.amount_paid >= c.amount), firstMonthPaid: !!(ch || []).find(c => c.category === "Rent" && c.amount_paid >= c.amount) });
-      setScreen("portal");
-    } catch (e) { console.error(e); setScreen("error"); }
-  };
-
-  // ── Auth handlers ──
-  const signInGoogle = async () => { setAuthLoading(true); setAuthErr(""); const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + "/portal" + (token ? `?token=${token}` : "") } }); if (error) { setAuthErr(error.message); setAuthLoading(false); } };
-  const signInEmail = async (e) => { e.preventDefault(); if (!authEmail || !authPassword) { setAuthErr("Email and password are required"); return; } setAuthLoading(true); setAuthErr(""); const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword }); if (error) { setAuthErr(error.message); setAuthLoading(false); } };
-  const signUpEmail = async (e) => { e.preventDefault(); if (!authEmail || !authPassword || !authName) { setAuthErr("All fields are required"); return; } if (authPassword.length < 8) { setAuthErr("Password must be at least 8 characters"); return; } setAuthLoading(true); setAuthErr(""); const { error } = await supabase.auth.signUp({ email: authEmail, password: authPassword, options: { data: { full_name: authName }, emailRedirectTo: window.location.origin + "/portal" + (token ? `?token=${token}` : "") } }); if (error) { setAuthErr(error.message); setAuthLoading(false); } else { setSuccessMsg("Check your email to verify your account, then sign in."); setAuthMode("signin"); setAuthLoading(false); } };
-  const forgotPassword = async (e) => { e.preventDefault(); if (!authEmail) { setAuthErr("Enter your email address"); return; } setAuthLoading(true); setAuthErr(""); const { error } = await supabase.auth.resetPasswordForEmail(authEmail, { redirectTo: window.location.origin + "/portal" }); if (error) { setAuthErr(error.message); } else { setSuccessMsg("Password reset email sent."); setAuthMode("signin"); } setAuthLoading(false); };
-  const signOut = async () => { await supabase.auth.signOut(); setTenant(null); setCharges([]); setMaintenance([]); };
-
-  // ── Core actions ──
-  const signLease = async (sigDataUrl) => { await supabase.from("tenants").update({ lease_signed_at: new Date().toISOString(), lease_signature: sigDataUrl }).eq("id", tenant.id); setOnboarding(p => ({ ...p, leaseSigned: true })); setObStep(null); setShowSig(false); };
-  const startPayment = async (charge) => { if (payingCharge) return; setPayingCharge(charge); const { data: { session } } = await supabase.auth.getSession(); const accessToken = session?.access_token || ""; const res = await fetch("/api/stripe/create-payment-intent", { method: "POST", headers: { "Content-Type": "application/json", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) }, body: JSON.stringify({ chargeId: charge.id, amount: charge.amount - charge.amount_paid, tenantName: tenant?.name, tenantEmail: user?.email, roomId: charge.room_id || tenant?.room_id || "", propName: tenant?.property?.name || "" }) }); const { clientSecret } = await res.json(); setStripeSecret(clientSecret); setObStep(charge.category === "Security Deposit" ? "sd" : "firstMonth"); };
-  const onPaymentSuccess = (paymentIntent) => { const amountPaid = payingCharge.amount - payingCharge.amount_paid; const now = new Date().toISOString().split("T")[0]; const method = paymentIntent?.payment_method_types?.[0] === "us_bank_account" ? "ACH Bank Transfer" : "Card"; const payment = { amount: amountPaid, date: now, method, deposit_status: "transit", stripe_payment_id: paymentIntent?.id || null }; supabase.from("payments").insert({ charge_id: payingCharge.id, amount: amountPaid, date: now, method, deposit_status: "transit", stripe_payment_id: paymentIntent?.id || null }); supabase.from("charges").update({ amount_paid: payingCharge.amount }).eq("id", payingCharge.id); setCharges(prev => prev.map(c => c.id === payingCharge.id ? { ...c, amount_paid: c.amount, payments: [...(c.payments || []), payment] } : c)); if (payingCharge.category === "Security Deposit") setOnboarding(p => ({ ...p, sdPaid: true })); if (payingCharge.category === "Rent") setOnboarding(p => ({ ...p, firstMonthPaid: true })); setStripeSecret(null); setPayingCharge(null); setObStep(null); };
-  const submitMaint = async () => { if (!maintForm.title.trim()) return; setMaintSubmitting(true); await supabase.from("maintenance_requests").insert({ pm_id: tenant?.pm_id, tenant_id: tenant?.id, property_id: tenant?.property_id, room_id: tenant?.room_id, title: maintForm.title, description: maintForm.desc, priority: maintForm.priority, submitted_by: tenant?.name, photos: maintForm.photos.length > 0 ? maintForm.photos : null }); const { data: mt } = await supabase.from("maintenance_requests").select("*").eq("tenant_id", tenant.id).order("created_at", { ascending: false }); setMaintenance(mt || []); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "New Maintenance Request \u2014 " + maintForm.title, fromName: (pmSettings?.pmName || "Tenantory") + " \u2014 Tenant Portal", replyTo: user?.email || "", html: "<p><strong>New maintenance request from " + (tenant?.name || "Tenant") + "</strong></p><p><strong>Issue:</strong> " + maintForm.title + "</p>" + (maintForm.desc ? "<p><strong>Details:</strong> " + maintForm.desc + "</p>" : "") + "<p><strong>Priority:</strong> " + maintForm.priority + "</p><p><strong>Property:</strong> " + (tenant?.property?.name || "") + " \u2014 " + (tenant?.room?.name || "") + "</p>" + (maintForm.photos.length > 0 ? "<p><em>" + maintForm.photos.length + " photo(s) attached</em></p>" : "") + "<p style='font-size:11px;color:#999;margin-top:16px;'>Submitted via tenant portal</p>" }) }); } catch (e) {} setMaintForm({ title: "", desc: "", priority: "medium", photos: [] }); setMaintSuccess(true); setTimeout(() => setMaintSuccess(false), 4000); setMaintSubmitting(false); };
-  const getTerminationDetails = (moveOutDate) => { if (!moveOutDate || !tenant?.lease_end) return null; const moveOut = new Date(moveOutDate + "T00:00:00"); const leaseEnd = new Date(tenant.lease_end + "T00:00:00"); const isEarly = moveOut < leaseEnd; if (!isEarly) return { isEarly: false, remainingMonths: 0, remainingRent: 0, unpaidCharges: 0, sdAtRisk: false }; const diffMs = leaseEnd - moveOut; const remainingMonths = Math.ceil(diffMs / (1e3 * 60 * 60 * 24 * 30)); const remainingRent = remainingMonths * (tenant?.rent || 0); const unpaidCharges = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).reduce((s, c) => s + (c.amount - c.amount_paid), 0); return { isEarly: true, remainingMonths, remainingRent, unpaidCharges, sdAtRisk: true, leaseEnd: tenant.lease_end }; };
-  const submitNotice = async () => { if (!noticeForm.moveOutDate || !noticeForm.signature) return; setNoticeForm(p => ({ ...p, submitting: true })); const moveOut = noticeForm.moveOutDate; const today = new Date().toISOString().split("T")[0]; const termDetails = getTerminationDetails(moveOut); await supabase.from("notices").insert({ pm_id: tenant?.pm_id, tenant_id: tenant?.id, property_id: tenant?.property_id, room_id: tenant?.room_id, tenant_name: tenant?.name, move_out_date: moveOut, reason: noticeForm.reason, signature: noticeForm.signature, is_early_termination: termDetails?.isEarly || false, remaining_rent: termDetails?.remainingRent || 0, unpaid_balance: termDetails?.unpaidCharges || 0, submitted_at: new Date().toISOString() }); await supabase.from("tenants").update({ notice_given_at: today, intended_move_out: moveOut }).eq("id", tenant.id); const noticeHtml = `<h2 style="font-family:Georgia,serif;text-align:center;">Notice to Vacate</h2><p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p><p><strong>Tenant:</strong> ${esc(tenant?.name)}</p><p><strong>Property:</strong> ${esc(tenant?.property?.name)} \u2014 ${esc(tenant?.room?.name)}</p><p><strong>Intended Move-Out Date:</strong> ${fmtD(moveOut)}</p>${noticeForm.reason ? `<p><strong>Reason:</strong> ${esc(noticeForm.reason)}</p>` : ""}<hr/>${termDetails?.isEarly ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:16px 0;"><p style="color:#dc2626;font-weight:700;margin:0 0 8px;">Early Lease Termination</p><p style="margin:4px 0;">Lease end date: ${fmtD(termDetails.leaseEnd)}</p><p style="margin:4px 0;">Remaining months on lease: ${termDetails.remainingMonths}</p><p style="margin:4px 0;">Remaining rent obligation: ${fmt(termDetails.remainingRent)}</p><p style="margin:4px 0;">Current unpaid balance: ${fmt(termDetails.unpaidCharges)}</p><p style="margin:4px 0;font-weight:600;">Security deposit may be forfeited per lease terms.</p></div>` : `<p style="color:#166534;">This is a standard end-of-lease move-out. No early termination fees apply.</p>`}<div style="margin-top:24px;"><p><strong>Tenant Signature:</strong></p><img src="${noticeForm.signature}" style="max-height:60px;max-width:200px;"/><p>${esc(tenant?.name)} \u2014 ${new Date().toLocaleDateString()}</p></div>`; try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "30-Day Notice to Vacate: " + (tenant?.name || "") + (termDetails?.isEarly ? " (EARLY TERMINATION)" : ""), html: noticeHtml, replyTo: user?.email || "" }) }); } catch (e) {} await supabase.from("messages").insert({ tenant_id: tenant?.id, tenant_name: tenant?.name, sender_email: user?.email || "", sender_name: tenant?.name, direction: "inbound", subject: "30-Day Notice to Vacate" + (termDetails?.isEarly ? " (Early Termination)" : ""), body: "I am submitting my 30-day notice to vacate on " + fmtD(moveOut) + "." + (noticeForm.reason ? " Reason: " + noticeForm.reason : "") + (termDetails?.isEarly ? " This is an early termination with " + termDetails.remainingMonths + " months remaining on my lease." : ""), property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false }); setNoticeForm({ moveOutDate: "", reason: "", showForm: false, step: 1, signature: null, submitting: false, submitted: true }); };
-
-  // ── Helper functions (notifications, utilities, renewal, scheduled, inspection, documents, insurance, guests, community, survey, packages, audit, dark mode) ──
-  const buildNotifications = () => { const items = []; const lastSeen = notifLastSeen ? new Date(notifLastSeen) : new Date(0); charges.forEach(c => { const d = c.created_at || c.due_date; if (d) items.push({ id: "ch-" + c.id, type: "charge", title: (t.notifications?.chargePosted || "Charge posted") + ": " + (c.description || c.category), amount: fmt(c.amount), date: d, isNew: new Date(d) > lastSeen }); }); charges.forEach(c => (c.payments || []).forEach((p, i) => { if (p.date) items.push({ id: "pay-" + c.id + "-" + i, type: "payment", title: (t.notifications?.paymentReceived || "Payment received") + ": " + (c.description || c.category), amount: fmt(p.amount), date: p.date, isNew: new Date(p.date + "T00:00:00") > lastSeen }); })); maintenance.forEach(m => { items.push({ id: "maint-" + m.id, type: "maintenance", title: (t.notifications?.maintenanceUpdate || "Maintenance update") + ": " + m.title, status: m.status, date: m.updated_at || m.created_at, isNew: new Date(m.updated_at || m.created_at) > lastSeen }); }); announcements.forEach(a => { items.push({ id: "ann-" + a.id, type: "announcement", title: a.title, date: a.createdAt, isNew: new Date(a.createdAt) > lastSeen }); }); tenantMessages.filter(m => m.direction === "outbound").forEach(m => { items.push({ id: "msg-" + m.id, type: "message", title: (t.notifications?.messageReceived || "New message"), date: m.created_at, isNew: !m.read }); }); items.sort((a, b) => new Date(b.date) - new Date(a.date)); return items; };
-  const notifItems = buildNotifications();
-  const newNotifCount = notifItems.filter(n => n.isNew).length;
-  const markNotifsRead = async () => { const now = new Date().toISOString(); setNotifLastSeen(now); try { await supabase.from("portal_users").update({ notif_last_seen: now }).eq("tenant_id", tenant?.id); } catch (e) {} };
-  useEffect(() => { if (!notifOpen) return; const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); }; document.addEventListener("mousedown", handler); return () => document.removeEventListener("mousedown", handler); }, [notifOpen]);
-  const getUtilityShare = (bill) => { const coverage = utilityConfig.coverageAmount || 100; const residents = utilityConfig.residents || 1; const total = bill.total || 0; const overage = Math.max(0, total - coverage); const share = overage / residents; return { total, coverage: Math.min(total, coverage), overage, share, residents }; };
-  const submitRenewalCounter = async () => { if (!renewalFlow.counterForm.rent && !renewalFlow.counterForm.term) return; setRenewalFlow(p => ({ ...p, showCounter: false })); const counter = { rent: parseFloat(renewalFlow.counterForm.rent) || tenant?.rent, term: parseInt(renewalFlow.counterForm.term) || 12, note: renewalFlow.counterForm.note }; try { await supabase.from("renewal_requests").update({ status: "tenant_countered", tenant_counter: counter }).eq("tenant_id", tenant?.id).eq("status", "pm_offered"); await supabase.from("messages").insert({ tenant_id: tenant?.id, tenant_name: tenant?.name, sender_email: user?.email || "", sender_name: tenant?.name, direction: "inbound", subject: "Lease Renewal Counter-Offer", body: "I'd like to counter with: " + fmt(counter.rent) + "/mo for " + counter.term + " months." + (counter.note ? " Note: " + counter.note : ""), property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false }); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Renewal Counter-Offer: " + (tenant?.name || ""), html: "<p><strong>" + esc(tenant?.name) + "</strong> has countered your renewal offer.</p><p>Proposed: " + esc(fmt(counter.rent)) + "/mo for " + counter.term + " months</p>" + (counter.note ? "<p>Note: " + esc(counter.note) + "</p>" : ""), replyTo: user?.email || "" }) }); } catch (e) {} setRenewalFlow(p => ({ ...p, status: "tenant_countered", counterForm: { rent: "", term: "", note: "" } })); } catch (e) {} };
-  const acceptRenewalOffer = async () => { setRenewalFlow(p => ({ ...p, signing: true })); try { const offer = renewalFlow.pmOffer || {}; const newEnd = offer.leaseEnd || null; await supabase.from("renewal_requests").update({ status: "accepted", accepted_at: new Date().toISOString() }).eq("tenant_id", tenant?.id).in("status", ["pm_offered", "pm_countered"]); if (newEnd) await supabase.from("tenants").update({ lease_end: newEnd, rent: offer.rent || tenant?.rent }).eq("id", tenant?.id); await supabase.from("messages").insert({ tenant_id: tenant?.id, tenant_name: tenant?.name, sender_email: user?.email || "", sender_name: tenant?.name, direction: "inbound", subject: "Lease Renewal Accepted", body: "I accept the renewal offer: " + fmt(offer.rent || tenant?.rent) + "/mo for " + (offer.term || 12) + " months. New lease end: " + fmtD(newEnd) + ".", property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false }); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Renewal Accepted: " + (tenant?.name || ""), html: "<p><strong>" + esc(tenant?.name) + "</strong> has accepted the renewal offer.</p><p>" + esc(fmt(offer.rent || tenant?.rent)) + "/mo for " + (offer.term || 12) + " months.</p>" }) }); } catch (e) {} setRenewalFlow(p => ({ ...p, status: "accepted", signing: false })); } catch (e) { setRenewalFlow(p => ({ ...p, signing: false })); } };
-  const schedulePayment = async () => { if (!scheduleForm.date || !scheduleForm.chargeId) return; setScheduleForm(p => ({ ...p, submitting: true })); try { const charge = charges.find(c => c.id === scheduleForm.chargeId); const amount = charge ? charge.amount - charge.amount_paid : 0; await supabase.from("scheduled_payments").insert({ tenant_id: tenant?.id, charge_id: scheduleForm.chargeId, amount, scheduled_date: scheduleForm.date, status: "pending" }); const { data: sched } = await supabase.from("scheduled_payments").select("*").eq("tenant_id", tenant?.id).eq("status", "pending").order("scheduled_date", { ascending: true }); setScheduledPayments(sched || []); } catch (e) {} setScheduleForm({ open: false, chargeId: null, date: "", submitting: false }); };
-  const createInstallmentPlan = async () => { if (!installmentForm.chargeId) return; setInstallmentForm(p => ({ ...p, submitting: true })); try { const charge = charges.find(c => c.id === installmentForm.chargeId); const remaining = charge ? charge.amount - charge.amount_paid : 0; const perPayment = Math.ceil(remaining / installmentForm.numPayments * 100) / 100; const freqDays = installmentForm.frequency === "weekly" ? 7 : installmentForm.frequency === "biweekly" ? 14 : 30; const inserts = []; for (let i = 0; i < installmentForm.numPayments; i++) { const d = new Date(); d.setDate(d.getDate() + freqDays * (i + 1)); const amt = i === installmentForm.numPayments - 1 ? remaining - perPayment * (installmentForm.numPayments - 1) : perPayment; inserts.push({ tenant_id: tenant?.id, charge_id: installmentForm.chargeId, amount: Math.max(0, amt), scheduled_date: d.toISOString().split("T")[0], status: "pending", is_installment: true, installment_number: i + 1, installment_total: installmentForm.numPayments }); } await supabase.from("scheduled_payments").insert(inserts); const { data: sched } = await supabase.from("scheduled_payments").select("*").eq("tenant_id", tenant?.id).eq("status", "pending").order("scheduled_date", { ascending: true }); setScheduledPayments(sched || []); } catch (e) {} setInstallmentForm({ open: false, chargeId: null, numPayments: 3, frequency: "monthly", submitting: false }); };
-  const cancelScheduledPayment = async (id) => { await supabase.from("scheduled_payments").update({ status: "cancelled" }).eq("id", id); setScheduledPayments(prev => prev.filter(p => p.id !== id)); };
-  const exportPaymentPdf = () => { const rows = []; charges.forEach(c => { (c.payments || []).forEach(p => rows.push({ date: p.date, category: c.category, description: c.description || "", amount: p.amount, method: p.method || "", status: p.deposit_status === "deposited" ? "Deposited" : "In Transit" })); if (!(c.payments || []).length && c.amount_paid === 0) rows.push({ date: c.due_date, category: c.category, description: c.description || "", amount: 0, method: "", status: chargeStatus(c) === "pastdue" ? "Past Due" : "Unpaid" }); }); rows.sort((a, b) => (a.date || "").localeCompare(b.date || "")); const totalPaid = rows.reduce((s, r) => s + (r.amount || 0), 0); const w = window.open("", "_blank"); w.document.write(`<!DOCTYPE html><html><head><title>Payment Statement \u2014 ${esc(tenant?.name)}</title><style>body{font-family:Georgia,serif;max-width:680px;margin:40px auto;padding:0 32px;color:#1a1714;font-size:13px} .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a1714;padding-bottom:16px;margin-bottom:24px} .header h1{font-size:16px;font-weight:700;margin:0} .header .right{text-align:right;font-size:11px;color:#666} .info{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;font-size:12px} .info .label{font-weight:700;color:#333;margin-bottom:2px} .info .value{color:#555} table{width:100%;border-collapse:collapse;margin-bottom:24px} th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#666;border-bottom:2px solid #1a1714;padding:8px 6px} td{padding:7px 6px;border-bottom:1px solid #eee;font-size:12px} .total-row{border-top:2px solid #1a1714;font-weight:800;font-size:14px} .total-row td{padding:10px 6px} .footer{margin-top:32px;padding-top:16px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center} .stamp{display:inline-block;padding:4px 12px;border:2px solid #1a1714;border-radius:4px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px} @media print{body{margin:20px}}</style></head><body><div class="header"><div><h1>${esc(pm?.company_name)}</h1><div style="font-size:11px;color:#666;margin-top:2px">Tenant Payment Statement</div></div><div class="right">Generated ${new Date().toLocaleDateString()}<br/>${esc(pm?.phone || "")}${pmSettings?.email ? "<br/>" + esc(pmSettings.email) : ""}</div></div><div class="stamp">Official Statement</div><div class="info"><div><div class="label">Tenant</div><div class="value">${esc(tenant?.name)}</div></div><div><div class="label">Property</div><div class="value">${esc(tenant?.property?.name)} \u2014 ${esc(tenant?.room?.name)}</div></div><div><div class="label">Lease Period</div><div class="value">${fmtD(tenant?.move_in)} to ${fmtD(tenant?.lease_end)}</div></div><div><div class="label">Monthly Rent</div><div class="value">${fmt(tenant?.rent)}</div></div></div><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Method</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>${rows.map(r => `<tr><td>${fmtD(r.date)}</td><td>${esc(r.category)}</td><td>${esc(r.description)}</td><td>${esc(r.method)}</td><td style="text-align:right;font-weight:600">$${Number(r.amount).toLocaleString("en-US",{minimumFractionDigits:2})}</td><td>${esc(r.status)}</td></tr>`).join("")}<tr class="total-row"><td colspan="4">Total Paid</td><td style="text-align:right">$${Number(totalPaid).toLocaleString("en-US",{minimumFractionDigits:2})}</td><td></td></tr></tbody></table><div class="footer">${esc(pm?.company_name)}${pm?.phone ? " &middot; " + esc(pm.phone) : ""}${pmSettings?.email ? " &middot; " + esc(pmSettings.email) : ""}<br/>This statement is provided for informational purposes. Please retain for your records.</div></body></html>`); w.document.close(); w.print(); };
-  const submitMaintFeedback = async (maintId, rating, comments) => { try { await supabase.from("maintenance_requests").update({ tenant_rating: rating, tenant_feedback: comments, feedback_at: new Date().toISOString() }).eq("id", maintId); setMaintFeedback(p => ({ ...p, [maintId]: { rating, comments, submitted: true } })); } catch (e) {} };
-  const INSPECTION_ROOMS = (t.inspection?.rooms || ["Living Room", "Kitchen", "Bathroom", "Bedroom", "Closet", "Hallway", "Other"]);
-  const startInspection = (type) => { setInspection({ type, step: 0, submitted: false, loading: false, signature: null, existing: inspection.existing, rooms: INSPECTION_ROOMS.map(name => ({ name, condition: "good", notes: "", photos: [] })) }); };
-  const submitInspection = async () => { if (!inspection.signature) return; setInspection(p => ({ ...p, loading: true })); try { const data = { tenant_id: tenant?.id, property_id: tenant?.property_id, room_id: tenant?.room_id, type: inspection.type, rooms: inspection.rooms, signature: inspection.signature, submitted_at: new Date().toISOString() }; await supabase.from("inspections").insert(data); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: (inspection.type === "move_in" ? "Move-In" : "Move-Out") + " Inspection Submitted: " + (tenant?.name || ""), html: "<p><strong>" + esc(tenant?.name) + "</strong> has submitted a " + inspection.type.replace("_", "-") + " inspection for " + esc(tenant?.property?.name) + " \u2014 " + esc(tenant?.room?.name) + ".</p><p>" + inspection.rooms.map(r => r.name + ": " + r.condition + (r.notes ? " \u2014 " + esc(r.notes) : "")).join("<br/>") + "</p>" }) }); } catch (e) {} setInspection(p => ({ ...p, submitted: true, loading: false })); } catch (e) { setInspection(p => ({ ...p, loading: false })); } };
-  const uploadDocument = async () => { if (!docUpload.file) return; setDocUpload(p => ({ ...p, uploading: true })); try { const reader = new FileReader(); reader.onload = async () => { const base64 = reader.result; await supabase.from("tenant_documents").insert({ tenant_id: tenant?.id, type: docUpload.type, filename: docUpload.file.name, file_data: base64, created_at: new Date().toISOString() }); const { data: docs } = await supabase.from("tenant_documents").select("*").eq("tenant_id", tenant?.id).order("created_at", { ascending: false }); setDocuments(docs || []); const matchingReq = docRequests.find(r => r.type === docUpload.type && r.status === "pending"); if (matchingReq) { await supabase.from("document_requests").update({ status: "fulfilled", fulfilled_at: new Date().toISOString() }).eq("id", matchingReq.id); setDocRequests(prev => prev.map(r => r.id === matchingReq.id ? { ...r, status: "fulfilled" } : r)); } setDocUpload({ open: false, type: "other", file: null, uploading: false }); }; reader.readAsDataURL(docUpload.file); } catch (e) { setDocUpload(p => ({ ...p, uploading: false })); } };
-  const deleteDocument = async (docId) => { await supabase.from("tenant_documents").delete().eq("id", docId); setDocuments(prev => prev.filter(d => d.id !== docId)); };
-  const submitInsurance = async () => { setInsuranceForm(p => ({ ...p, uploading: true })); try { const fileData = insuranceForm.file ? await new Promise((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.readAsDataURL(insuranceForm.file); }) : null; const row = { tenant_id: tenant?.id, provider: insuranceForm.provider, policy_number: insuranceForm.policyNumber, expiration: insuranceForm.expiration, coverage_amount: parseFloat(insuranceForm.coverage) || 0, file_data: fileData, created_at: new Date().toISOString() }; if (insurance?.id) { await supabase.from("tenant_insurance").update(row).eq("id", insurance.id); setInsurance({ ...insurance, ...row }); } else { const { data } = await supabase.from("tenant_insurance").insert(row).select().single(); setInsurance(data || row); } setInsuranceForm({ open: false, provider: "", policyNumber: "", expiration: "", coverage: "", file: null, uploading: false }); } catch (e) { setInsuranceForm(p => ({ ...p, uploading: false })); } };
-  const registerGuest = async () => { if (!guestForm.name || !guestForm.visitDate) return; setGuestForm(p => ({ ...p, submitting: true })); try { const tempCode = String(Math.floor(1000 + Math.random() * 9000)); const row = { tenant_id: tenant?.id, property_id: tenant?.property_id, name: guestForm.name, relationship: guestForm.relationship, visit_date: guestForm.visitDate, visit_end: guestForm.visitEnd || null, phone: guestForm.phone || null, temp_code: tempCode, status: "active", created_at: new Date().toISOString() }; await supabase.from("guest_registrations").insert(row); const { data: guestRows } = await supabase.from("guest_registrations").select("*").eq("tenant_id", tenant?.id).order("visit_date", { ascending: false }); setGuests(guestRows || []); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Guest Registration: " + guestForm.name + " visiting " + (tenant?.name || ""), html: "<p><strong>" + esc(tenant?.name) + "</strong> has registered a guest.</p><p>Guest: " + esc(guestForm.name) + "<br/>Dates: " + fmtD(guestForm.visitDate) + (guestForm.visitEnd ? " to " + fmtD(guestForm.visitEnd) : "") + "<br/>Temp code: " + tempCode + "</p>" }) }); } catch (e) {} setGuestForm({ open: false, name: "", relationship: "friend", visitDate: "", visitEnd: "", phone: "", submitting: false }); } catch (e) { setGuestForm(p => ({ ...p, submitting: false })); } };
-  const cancelGuest = async (guestId) => { await supabase.from("guest_registrations").update({ status: "cancelled" }).eq("id", guestId); setGuests(prev => prev.map(g => g.id === guestId ? { ...g, status: "cancelled" } : g)); };
-  const postToCommunity = async () => { if (!communityInput.trim()) return; setCommunityPosting(true); try { await supabase.from("community_posts").insert({ property_id: tenant?.property_id, author: tenant?.name, body: communityInput.trim(), created_at: new Date().toISOString() }); const { data } = await supabase.from("community_posts").select("*").eq("property_id", tenant?.property_id).order("created_at", { ascending: false }).limit(30); setCommunityPosts(data || []); setCommunityInput(""); } catch (e) {} setCommunityPosting(false); };
-  const bookAmenity = async () => { if (!bookingForm.amenityId || !bookingForm.date || !bookingForm.timeSlot) return; setBookingForm(p => ({ ...p, submitting: true })); try { await supabase.from("amenity_bookings").insert({ tenant_id: tenant?.id, amenity_id: bookingForm.amenityId, tenant_name: tenant?.name, date: bookingForm.date, time_slot: bookingForm.timeSlot, status: "active" }); const { data } = await supabase.from("amenity_bookings").select("*").eq("tenant_id", tenant?.id).gte("date", new Date().toISOString().split("T")[0]); setAmenityBookings(data || []); } catch (e) {} setBookingForm({ open: false, amenityId: null, date: "", timeSlot: "", submitting: false }); };
-  const cancelBooking = async (id) => { await supabase.from("amenity_bookings").update({ status: "cancelled" }).eq("id", id); setAmenityBookings(prev => prev.filter(b => b.id !== id)); };
-  const submitSurvey = async (surveyId) => { setSurveyForm(p => ({ ...p, submitting: true })); try { await supabase.from("tenant_surveys").update({ status: "completed", rating: surveyForm.rating, recommend: surveyForm.recommend, improve: surveyForm.improve, love: surveyForm.love, completed_at: new Date().toISOString() }).eq("id", surveyId); setSurveys(prev => prev.map(s => s.id === surveyId ? { ...s, status: "completed" } : s)); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Tenant Survey Completed: " + (tenant?.name || ""), html: "<p><strong>" + esc(tenant?.name) + "</strong> completed a survey.</p><p>Rating: " + surveyForm.rating + "/5<br/>Recommend: " + (surveyForm.recommend || "N/A") + "</p>" + (surveyForm.love ? "<p>Loves: " + esc(surveyForm.love) + "</p>" : "") + (surveyForm.improve ? "<p>Improve: " + esc(surveyForm.improve) + "</p>" : "") }) }); } catch (e) {} } catch (e) {} setActiveSurvey(null); setSurveyForm({ rating: 0, recommend: null, improve: "", love: "", submitting: false }); };
-  const markPackagePickedUp = async (id) => { await supabase.from("packages").update({ status: "picked_up", picked_up_at: new Date().toISOString() }).eq("id", id); setPackages(prev => prev.map(p => p.id === id ? { ...p, status: "picked_up", picked_up_at: new Date().toISOString() } : p)); };
-  useEffect(() => { if (typeof window === "undefined") return; localStorage.setItem("bb-dark-mode", darkMode); }, [darkMode]);
-  useEffect(() => { if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js").catch(() => {}); } }, []);
-  const fullAuditLog = auditLog.length > 0 ? auditLog : (() => { const items = []; charges.forEach(c => items.push({ id: "al-ch-" + c.id, type: "charge", description: (t.auditLog?.chargePosted || "Charge posted") + ": " + (c.description || c.category) + " \u2014 " + fmt(c.amount), date: c.due_date || c.created_at })); charges.forEach(c => (c.payments || []).forEach((p, i) => items.push({ id: "al-pay-" + c.id + "-" + i, type: "payment", description: (t.auditLog?.paymentMade || "Payment made") + ": " + (c.description || c.category) + " \u2014 " + fmt(p.amount), date: p.date }))); maintenance.forEach(m => items.push({ id: "al-mt-" + m.id, type: "maintenance", description: (t.auditLog?.maintenanceSubmitted || "Maintenance request") + ": " + m.title, date: m.created_at?.split("T")[0] || m.created_at })); documents.forEach(d => items.push({ id: "al-doc-" + d.id, type: "document", description: (t.auditLog?.documentUploaded || "Document uploaded") + ": " + d.filename, date: d.created_at?.split("T")[0] || d.uploaded_at?.split("T")[0] })); guests.forEach(g => items.push({ id: "al-g-" + g.id, type: "guest", description: (t.auditLog?.guestRegistered || "Guest registered") + ": " + g.name, date: g.created_at?.split("T")[0] })); items.sort((a, b) => (b.date || "").localeCompare(a.date || "")); return items; })();
-  const chargeStatus = (c) => { if (c.voided) return "voided"; if (c.waived) return "waived"; if (c.amount_paid >= c.amount) return "paid"; if (c.amount_paid > 0) return "partial"; if (new Date(c.due_date + "T00:00:00") < new Date()) return "pastdue"; return "unpaid"; };
-  const totalDue = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).reduce((s, c) => s + (c.amount - c.amount_paid), 0);
-  const sdCharge = charges.find(c => c.category === "Security Deposit");
-  const firstMonthCharge = charges.find(c => c.category === "Rent");
-  const pm = pmSettings || { company_name: "Tenantory", phone: "" };
-  const dl = daysLeft(tenant?.lease_end);
-  const onboardingDone = onboarding.leaseSigned && onboarding.sdPaid && onboarding.firstMonthPaid;
-  const STEPS = [
-    { key: "leaseSigned", label: t.onboarding.signLease, desc: t.onboarding.signLeaseDesc, action: () => setObStep("lease"), actionLabel: t.onboarding.reviewAndSign },
-    { key: "sdPaid", label: t.onboarding.paySD, desc: sdCharge ? fmt(sdCharge.amount) + " \u2014 refundable at move-out" : "Pay your security deposit", action: () => sdCharge && startPayment(sdCharge), actionLabel: t.home.payNow, disabled: !onboarding.leaseSigned },
-    { key: "firstMonthPaid", label: t.onboarding.payFirstMonth, desc: firstMonthCharge ? fmt(firstMonthCharge.amount) + " \u2014 due before move-in" : "Pay your first month", action: () => firstMonthCharge && startPayment(firstMonthCharge), actionLabel: t.home.payNow, disabled: !onboarding.leaseSigned },
-    { key: "moveIn", label: t.onboarding.moveIn, desc: tenant?.move_in ? t.home.moveIn + ": " + fmtD(tenant.move_in) : "Portal unlocks after steps above", action: null, actionLabel: null, disabled: !onboardingDone },
-  ];
-
-  const globalStyle = `*{box-sizing:border-box;margin:0;padding:0} input,textarea,select,button{font-family:inherit} @keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} @keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}`;
-  const pendingPkgs = packages.filter(p => p.status === "pending").length;
-  const pendingSurveys = surveys.filter(s => s.status === "pending").length;
-  const isDark = darkMode === "dark" || (darkMode === "system" && typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
-  const dBg = isDark ? "#0f0e0c" : "#f4f3f0";
-  const dText = isDark ? "#e8e0d4" : C.text;
-
-  // ── Loading / Error / No-Access / Auth screens ──
-  if (screen === "loading") return (<div style={{ minHeight: "100vh", background: "#1a1714", fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}><style>{globalStyle}</style><div style={{ maxWidth: 680, margin: "0 auto", padding: "20px 16px" }}><div style={{ background: "rgba(255,255,255,.06)", borderRadius: 16, height: 120, marginBottom: 14, animation: "pulse 1.5s ease infinite" }} /><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}><div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, height: 90, animation: "pulse 1.5s ease infinite .2s" }} /><div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, height: 90, animation: "pulse 1.5s ease infinite .4s" }} /></div><div style={{ background: "rgba(255,255,255,.04)", borderRadius: 14, height: 160, animation: "pulse 1.5s ease infinite .6s" }} /><div style={{ textAlign: "center", marginTop: 20 }}><div style={{ color: "rgba(255,255,255,.3)", fontSize: 12 }}>{translations.en.common.loading}</div></div></div></div>);
-  if (screen === "no-access") return (<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: C.bg, fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", padding: 24 }}><style>{globalStyle}</style><div style={{ textAlign: "center", maxWidth: 400 }}><div style={{ width: 64, height: 64, borderRadius: "50%", background: hexRgba(C.red, .15), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h2 style={{ color: "#f5f0e8", fontSize: 20, marginBottom: 8 }}>No portal access found</h2><p style={{ color: "rgba(255,255,255,.45)", fontSize: 13, lineHeight: 1.6, marginBottom: 24 }}>Your account is not linked to a tenant record. Make sure you are using the same email your property manager sent the invite to.</p><button onClick={signOut} style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Sign Out and Try Again</button><div style={{ marginTop: 32, fontSize: 11, color: "rgba(255,255,255,.2)" }}>{t.common.poweredBy}</div></div></div>);
-  if (screen === "error") return (<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: C.bg, fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}><div style={{ textAlign: "center" }}><div style={{ color: C.red, fontSize: 18, marginBottom: 12 }}>Something went wrong</div><button onClick={() => window.location.reload()} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: C.accent, color: C.text, fontWeight: 700, cursor: "pointer" }}>Reload</button></div></div>);
-  if (screen === "auth") return (<div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}><style>{globalStyle + " input{outline:none}"}</style><div style={{ width: "100%", maxWidth: 400 }}><div style={{ textAlign: "center", marginBottom: 36 }}><div style={{ fontFamily: "Georgia,serif", fontSize: 26, color: C.accent, fontWeight: 700, marginBottom: 4 }}>{pm.company_name}</div><div style={{ fontSize: 13, color: "rgba(255,255,255,.4)" }}>Tenant Portal</div></div><div style={{ background: "#fff", borderRadius: 16, padding: 32, boxShadow: "0 8px 40px rgba(0,0,0,.3)" }}><h2 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 4 }}>{authMode === "signin" ? t.auth.signIn : authMode === "signup" ? t.auth.createAccount : t.auth.resetPassword}</h2><p style={{ fontSize: 12, color: "#999", marginBottom: 24 }}>{authMode === "signin" ? t.auth.accessPortal : authMode === "signup" ? t.auth.needInvite : t.auth.enterEmail}</p>{successMsg && <div style={{ background: hexRgba(C.green, .08), border: `1px solid ${hexRgba(C.green, .2)}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.green, marginBottom: 16 }}>{successMsg}</div>}{authErr && <div style={{ background: hexRgba(C.red, .08), border: `1px solid ${hexRgba(C.red, .2)}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.red, marginBottom: 16 }}>{authErr}</div>}{authMode !== "forgot" && <button onClick={signInGoogle} disabled={authLoading} style={{ width: "100%", padding: "11px 16px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.text, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}><IcGoogle /> {t.auth.continueGoogle}</button>}{authMode !== "forgot" && <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}><div style={{ flex: 1, height: 1, background: "rgba(0,0,0,.08)" }} /><span style={{ fontSize: 11, color: "#bbb", fontWeight: 600 }}>{t.auth.or}</span><div style={{ flex: 1, height: 1, background: "rgba(0,0,0,.08)" }} /></div>}<form onSubmit={authMode === "signin" ? signInEmail : authMode === "signup" ? signUpEmail : forgotPassword}>{authMode === "signup" && <div style={{ marginBottom: 14 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.auth.fullName}</label><input value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Jane Smith" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 16 }} /></div>}<div style={{ marginBottom: 14 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.auth.emailAddress}</label><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="you@email.com" autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 16 }} /></div>{authMode !== "forgot" && <div style={{ marginBottom: 20 }}><label style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: "block", marginBottom: 5 }}>{t.auth.password}</label><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder={authMode === "signup" ? "Min. 8 characters" : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"} style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid rgba(0,0,0,.1)", fontSize: 16 }} /></div>}<button type="submit" disabled={authLoading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 14, cursor: "pointer", marginBottom: 16 }}>{authLoading ? t.auth.pleaseWait : authMode === "signin" ? t.auth.signInBtn : authMode === "signup" ? t.auth.createAccountBtn : t.auth.sendResetLink}</button></form><div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "center" }}>{authMode === "signin" && <><button onClick={() => { setAuthMode("forgot"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>{t.auth.forgotPassword}</button><button onClick={() => { setAuthMode("signup"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>{t.auth.noAccount}</button></>}{authMode !== "signin" && <button onClick={() => { setAuthMode("signin"); setAuthErr(""); setSuccessMsg(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#999" }}>{t.auth.backToSignIn}</button>}</div></div><div style={{ textAlign: "center", marginTop: 28, fontSize: 11, color: "rgba(255,255,255,.2)" }}>{t.common.poweredBy}</div></div></div>);
-
-  // ── Portal tabs config ──
-  const portalTabs = (() => { const unpaidCount = charges.filter(c => !c.waived && !c.voided && c.amount_paid < c.amount).length; const openMaintCount = maintenance.filter(m => m.status !== "resolved").length; const unreadMsgs = tenantMessages.filter(m => m.direction === "outbound" && !m.read).length; return [{ id: "home", label: t.nav.home, icon: <IcHome s={16} />, badge: pendingPkgs + pendingSurveys }, { id: "payments", label: t.nav.payments, icon: <IcDollar s={16} />, badge: unpaidCount }, { id: "messages", label: "Messages", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>, badge: unreadMsgs }, { id: "maintenance", label: t.nav.maintenance, icon: <IcWrench s={16} />, badge: openMaintCount }, { id: "documents", label: t.nav.lease, icon: <IcFile s={16} />, badge: 0 }, { id: "account", label: t.nav.account, icon: <IcUser s={16} />, badge: 0 }]; })();
-
-  // ── PORTAL RENDER ──
+export default function Page() {
   return (
-    <div style={{ fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif", minHeight: "100vh", background: dBg, color: dText }}>
-      <style>{globalStyle + `\n@media (max-width: 640px) { .portal-top-nav { display: none !important; } .portal-bot-nav { display: flex !important; } .portal-content { padding-bottom: 80px !important; } }`}</style>
-      {/* Header */}
-      <div style={{ background: C.bg, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,.2)" }}>
-        <div><div style={{ fontFamily: "Georgia,serif", fontSize: 16, color: C.accent, fontWeight: 700 }}>{pm.company_name}</div><div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", marginTop: 1 }}>Tenant Portal</div></div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ textAlign: "right" }}><div style={{ fontSize: 12, color: "#f5f0e8", fontWeight: 600 }}>{tenant?.name}</div><div style={{ fontSize: 10, color: "rgba(255,255,255,.35)" }}>{tenant?.property?.name}</div></div>
-          <NotificationCenter notifOpen={notifOpen} setNotifOpen={setNotifOpen} notifRef={notifRef} notifItems={notifItems} newNotifCount={newNotifCount} markNotifsRead={markNotifsRead} C={C} t={t} />
-          <button onClick={signOut} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,.4)", padding: 4, minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center" }}><IcLogout s={16} /></button>
+    <>
+      <style dangerouslySetInnerHTML={{__html: MOCK_CSS}} />
+      
+
+  <header className="topbar">
+    <div className="tb-brand">
+      <div className="tb-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9c0-3 2-5 4-5 1 0 2 .5 2.5 1.5C11 4.5 12 4 13.5 4S16 5 17 6c3 0 4 2 4 4 0 2-1 4-4 4l-1 4c0 1-1 2-2 2h-4c-1 0-2-1-2-2l-1-4c-2 0-3-2-3-5z" /><circle cx="9" cy="9" r="0.8" fill="currentColor" /><circle cx="15" cy="9" r="0.8" fill="currentColor" /></svg>
+      </div>
+      <div>
+        <div className="tb-brand-name">Black Bear Rentals</div>
+        <div className="tb-brand-sub">Tenant portal</div>
+      </div>
+    </div>
+
+    <nav className="tb-nav">
+      <a className="tb-nav-item active" data-panel="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4H12v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9z" /></svg>
+        Home
+      </a>
+      <a className="tb-nav-item" data-panel="payments">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>
+        Pay rent
+      </a>
+      <a className="tb-nav-item" data-panel="maintenance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
+        Maintenance
+      </a>
+      <a className="tb-nav-item" data-panel="documents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M9 13h6M9 17h6" /></svg>
+        Documents
+      </a>
+    </nav>
+
+    <div className="tb-right">
+      <button className="tb-bell">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>
+        <span className="tb-bell-dot" />
+      </button>
+      <div className="tb-avatar">
+        <span className="tb-avatar-name">Maya Thompson</span>
+        <div className="tb-avatar-img">MT</div>
+      </div>
+    </div>
+  </header>
+
+  <main className="wrap">
+
+    
+    <section className="panel active" data-panel="home">
+      <div className="page-head">
+        <h1>Welcome back, Maya</h1>
+        <p>Room C · 908 Lee Drive · Lease through Dec 31, 2026</p>
+      </div>
+
+      <div className="pay-hero">
+        <div>
+          <div className="pay-hero-label">Next payment</div>
+          <div className="pay-hero-amount">$750.00</div>
+          <div className="pay-hero-due">Due <strong>May 1, 2026</strong> · 17 days</div>
+        </div>
+        <div className="pay-hero-actions">
+          <button className="btn-pay">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>
+            Pay now
+          </button>
+          <button className="btn-autopay">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>
+            <span id="autopayLabel">Turn on autopay</span>
+          </button>
         </div>
       </div>
-      {/* Top Nav */}
-      {onboardingDone && (<div className="portal-top-nav" style={{ background: "#fff", borderBottom: "1px solid rgba(0,0,0,.07)", overflowX: "auto" }}><div style={{ display: "flex", maxWidth: 680, margin: "0 auto" }}>{portalTabs.map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: "13px 8px", border: "none", background: "transparent", borderBottom: activeTab === tab.id ? `2px solid ${C.accent}` : "2px solid transparent", cursor: "pointer", fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 500, color: activeTab === tab.id ? C.text : "#999", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, transition: "all .15s", position: "relative" }}><span style={{ color: activeTab === tab.id ? C.accent : "#bbb" }}>{tab.icon}</span>{tab.label}{tab.badge > 0 && <span style={{ position: "absolute", top: 4, right: "calc(50% - 18px)", minWidth: 16, height: 16, borderRadius: 8, background: "#c45c4a", color: "#fff", fontSize: 8, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px", border: "2px solid #fff" }}>{tab.badge}</span>}</button>))}</div></div>)}
-      <div className="portal-content" style={{ maxWidth: 680, margin: "0 auto", padding: "20px 16px" }}>
-        {!onboardingDone && <OnboardingFlow tenant={tenant} C={C} t={t} pm={pm} pmSettings={pmSettings} CREDIT_FEE={CREDIT_FEE} onboarding={onboarding} onboardingDone={onboardingDone} STEPS={STEPS} obStep={obStep} setObStep={setObStep} showSig={showSig} setShowSig={setShowSig} stripeSecret={stripeSecret} setStripeSecret={setStripeSecret} payingCharge={payingCharge} setPayingCharge={setPayingCharge} signLease={signLease} onPaymentSuccess={onPaymentSuccess} setActiveTab={setActiveTab} sCard={sCard} />}
-        {onboardingDone && activeTab === "home" && <HomeTab tenant={tenant} C={C} t={t} pm={pm} pmSettings={pmSettings} charges={charges} maintenance={maintenance} totalDue={totalDue} dl={dl} announcements={announcements} utilities={utilities} utilityConfig={utilityConfig} getUtilityShare={getUtilityShare} insurance={insurance} scheduledPayments={scheduledPayments} packages={packages} surveys={surveys} activeSurvey={activeSurvey} setActiveSurvey={setActiveSurvey} surveyForm={surveyForm} setSurveyForm={setSurveyForm} submitSurvey={submitSurvey} markPackagePickedUp={markPackagePickedUp} showDoorCode={showDoorCode} setShowDoorCode={setShowDoorCode} doorCodeChange={doorCodeChange} setDoorCodeChange={setDoorCodeChange} setActiveTab={setActiveTab} setRenewalModal={setRenewalModal} startPayment={startPayment} user={user} supabase={supabase} esc={esc} amenities={amenities} amenityBookings={amenityBookings} bookingForm={bookingForm} setBookingForm={setBookingForm} bookAmenity={bookAmenity} cancelBooking={cancelBooking} docRequests={docRequests} autopay={autopay} />}
-        {onboardingDone && activeTab === "payments" && <PaymentsTab tenant={tenant} C={C} t={t} pm={pm} pmSettings={pmSettings} user={user} charges={charges} chargeStatus={chargeStatus} stripeSecret={stripeSecret} setStripeSecret={setStripeSecret} payingCharge={payingCharge} setPayingCharge={setPayingCharge} startPayment={startPayment} onPaymentSuccess={onPaymentSuccess} autopay={autopay} setAutopay={setAutopay} scheduledPayments={scheduledPayments} setScheduledPayments={setScheduledPayments} scheduleForm={scheduleForm} setScheduleForm={setScheduleForm} schedulePayment={schedulePayment} installmentForm={installmentForm} setInstallmentForm={setInstallmentForm} createInstallmentPlan={createInstallmentPlan} cancelScheduledPayment={cancelScheduledPayment} supabase={supabase} utilities={utilities} utilityConfig={utilityConfig} getUtilityShare={getUtilityShare} />}
-        {onboardingDone && activeTab === "messages" && <MessagesTab tenant={tenant} C={C} t={t} pm={pm} pmSettings={pmSettings} user={user} tenantMessages={tenantMessages} setTenantMessages={setTenantMessages} msgInput={msgInput} setMsgInput={setMsgInput} portalHoveredMsg={portalHoveredMsg} setPortalHoveredMsg={setPortalHoveredMsg} portalShowReactions={portalShowReactions} setPortalShowReactions={setPortalShowReactions} portalMsgCountRef={portalMsgCountRef} />}
-        {onboardingDone && activeTab === "maintenance" && <MaintenanceTab tenant={tenant} C={C} t={t} maintenance={maintenance} maintForm={maintForm} setMaintForm={setMaintForm} maintSubmitting={maintSubmitting} maintSuccess={maintSuccess} submitMaint={submitMaint} maintFeedback={maintFeedback} setMaintFeedback={setMaintFeedback} submitMaintFeedback={submitMaintFeedback} />}
-        {/* Community tab removed — amenity booking now in HomeTab */}
-        {onboardingDone && activeTab === "documents" && <LeaseTab tenant={tenant} C={C} t={t} pm={pm} pmSettings={pmSettings} user={user} dl={dl} charges={charges} leaseId={leaseId} leaseData={leaseData} showFullLease={showFullLease} setShowFullLease={setShowFullLease} renewalFlow={renewalFlow} setRenewalFlow={setRenewalFlow} submitRenewalCounter={submitRenewalCounter} acceptRenewalOffer={acceptRenewalOffer} setRenewalModal={setRenewalModal} noticeForm={noticeForm} setNoticeForm={setNoticeForm} submitNotice={submitNotice} getTerminationDetails={getTerminationDetails} inspection={inspection} setInspection={setInspection} INSPECTION_ROOMS={INSPECTION_ROOMS} startInspection={startInspection} submitInspection={submitInspection} documents={documents} setDocuments={setDocuments} docRequests={docRequests} setDocRequests={setDocRequests} docUpload={docUpload} setDocUpload={setDocUpload} uploadDocument={uploadDocument} deleteDocument={deleteDocument} insurance={insurance} insuranceForm={insuranceForm} setInsuranceForm={setInsuranceForm} submitInsurance={submitInsurance} guests={guests} guestForm={guestForm} setGuestForm={setGuestForm} registerGuest={registerGuest} cancelGuest={cancelGuest} supabase={supabase} />}
-        {onboardingDone && activeTab === "account" && <AccountTab tenant={tenant} C={C} t={t} pm={pm} pmSettings={pmSettings} user={user} charges={charges} lang={lang} setPmSettings={setPmSettings} signOut={signOut} exportPaymentPdf={exportPaymentPdf} referralLink={referralLink} referralCopied={referralCopied} copyReferral={copyReferral} notifPrefs={notifPrefs} setNotifPrefs={setNotifPrefs} darkMode={darkMode} setDarkMode={setDarkMode} packages={packages} markPackagePickedUp={markPackagePickedUp} fullAuditLog={fullAuditLog} auditExpanded={auditExpanded} setAuditExpanded={setAuditExpanded} />}
+
+      <div className="home-grid">
+        <div className="card">
+          <div className="card-head">
+            <div className="card-title">Recent activity</div>
+            <a className="card-link" data-jump="payments">View all</a>
+          </div>
+          <div className="activity-item">
+            <div className="activity-icon paid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></div>
+            <div className="activity-body">
+              <div className="activity-title">April rent — $750.00 paid</div>
+              <div className="activity-meta">Apr 1, 2026 · Bank · ••6891</div>
+            </div>
+          </div>
+          <div className="activity-item">
+            <div className="activity-icon ticket"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg></div>
+            <div className="activity-body">
+              <div className="activity-title">Leaky kitchen faucet — in progress</div>
+              <div className="activity-meta">Opened Apr 10 · Joel (plumber) assigned Apr 11</div>
+            </div>
+          </div>
+          <div className="activity-item">
+            <div className="activity-icon paid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></div>
+            <div className="activity-body">
+              <div className="activity-title">March rent — $750.00 paid</div>
+              <div className="activity-meta">Mar 1, 2026 · Bank · ••6891</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-head">
+            <div className="card-title">Quick actions</div>
+          </div>
+          <div className="qa-list">
+            <button className="qa-item" data-jump="maintenance">
+              <div className="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg></div>
+              <span className="qa-label">Submit a request</span>
+              <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+            <button className="qa-item" data-jump="documents">
+              <div className="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg></div>
+              <span className="qa-label">Download my lease</span>
+              <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+            <a className="qa-item" href="mailto:hello@rentblackbear.com">
+              <div className="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22 6 12 13 2 6" /></svg></div>
+              <span className="qa-label">Contact my landlord</span>
+              <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </a>
+            <a className="qa-item" href="moveout.html">
+              <div className="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg></div>
+              <span className="qa-label">Give move-out notice</span>
+              <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            </a>
+          </div>
+
+          <div className="card-head" style={{marginTop: "22px", marginBottom: "10px"}}>
+            <div className="card-title">Your lease</div>
+          </div>
+          <div className="kv-row"><span className="kv-key">Unit</span><span className="kv-val">Room C</span></div>
+          <div className="kv-row"><span className="kv-key">Rent</span><span className="kv-val">$750 / mo</span></div>
+          <div className="kv-row"><span className="kv-key">Due</span><span className="kv-val">1st of each month</span></div>
+          <div className="kv-row"><span className="kv-key">Ends</span><span className="kv-val">Dec 31, 2026</span></div>
+        </div>
       </div>
-      {/* Bottom nav */}
-      {onboardingDone && (<div className="portal-bot-nav" style={{ display: "none", position: "fixed", bottom: 0, left: 0, right: 0, background: C.bg, borderTop: "1px solid rgba(255,255,255,.08)", zIndex: 100, paddingBottom: "env(safe-area-inset-bottom)" }}><div style={{ display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>{portalTabs.map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: "1 0 auto", minWidth: 72, minHeight: 56, padding: "8px 12px", border: "none", background: "transparent", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", color: activeTab === tab.id ? C.accent : "rgba(255,255,255,.4)", fontSize: 10, fontWeight: activeTab === tab.id ? 700 : 500, fontFamily: "inherit", transition: "color .15s", position: "relative" }}><span style={{ color: activeTab === tab.id ? C.accent : "rgba(255,255,255,.35)" }}>{tab.icon}</span>{tab.label}{tab.badge > 0 && <span style={{ position: "absolute", top: 2, right: "calc(50% - 16px)", minWidth: 14, height: 14, borderRadius: 7, background: "#c45c4a", color: "#fff", fontSize: 7, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px", border: `2px solid ${C.bg}` }}>{tab.badge}</span>}</button>))}</div></div>)}
-      {/* Renewal Modal */}
-      {renewalModal.open && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={() => setRenewalModal({ open: false, choice: null, submitting: false, submitted: false })}><div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, maxWidth: 460, width: "100%", padding: 28, boxShadow: "0 12px 48px rgba(0,0,0,.2)" }}>{renewalModal.submitted ? (<div style={{ textAlign: "center" }}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{t.lease.renewalRequestSubmitted}</div><div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 16 }}>{pm.company_name} {t.lease.willReview}</div><button onClick={() => setRenewalModal({ open: false, choice: null, submitting: false, submitted: false })} style={{ padding: "10px 28px", borderRadius: 8, border: "none", background: C.bg, color: C.accent, fontWeight: 800, fontSize: 13, cursor: "pointer" }}>{t.common.close}</button></div>) : (<><div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{t.lease.leaseRenewalOptions}</div><div style={{ fontSize: 12, color: C.muted, marginBottom: 20, lineHeight: 1.5 }}>{t.lease.leaseExpiresOn} {fmtD(tenant?.lease_end)}. {t.lease.chooseContinue}</div>{(pmSettings?.renewalTerms || [12]).map(months => { const isSelected = renewalModal.choice === months; return (<div key={months} onClick={() => setRenewalModal(p => ({ ...p, choice: months }))} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 10, border: isSelected ? "2px solid " + C.green : "1.5px solid rgba(0,0,0,.08)", background: isSelected ? hexRgba(C.green, .04) : "#fff", cursor: "pointer", marginBottom: 8, transition: "all .15s" }}><div style={{ width: 20, height: 20, borderRadius: "50%", border: isSelected ? "6px solid " + C.green : "2px solid rgba(0,0,0,.15)", flexShrink: 0, transition: "all .15s" }} /><div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{t.lease.renewFor} {months} {t.lease.months}</div><div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{t.lease.sameRent} {fmt(tenant?.rent)}/mo</div></div><div style={{ fontSize: 11, fontWeight: 700, color: C.green, flexShrink: 0 }}>{t.lease.noIncrease}</div></div>); })}{(() => { const m2m = pmSettings?.m2mIncrease || 50; const newRent = (tenant?.rent || 0) + m2m; const isSelected = renewalModal.choice === "m2m"; return (<div onClick={() => setRenewalModal(p => ({ ...p, choice: "m2m" }))} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 10, border: isSelected ? "2px solid " + C.accent : "1.5px solid rgba(0,0,0,.08)", background: isSelected ? hexRgba(C.accent, .04) : "#fff", cursor: "pointer", marginBottom: 16, transition: "all .15s" }}><div style={{ width: 20, height: 20, borderRadius: "50%", border: isSelected ? "6px solid " + C.accent : "2px solid rgba(0,0,0,.15)", flexShrink: 0, transition: "all .15s" }} /><div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{t.lease.goMonthToMonth}</div><div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{t.lease.flexibleCancel}</div></div><div style={{ fontSize: 11, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{fmt(newRent)}/mo (+${m2m})</div></div>); })()}<div style={{ display: "flex", gap: 8 }}><button onClick={() => setRenewalModal({ open: false, choice: null, submitting: false, submitted: false })} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid rgba(0,0,0,.1)", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>{t.common.cancel}</button><button disabled={!renewalModal.choice || renewalModal.submitting} onClick={async () => { setRenewalModal(p => ({ ...p, submitting: true })); const choice = renewalModal.choice; const isM2M = choice === "m2m"; await supabase.from("messages").insert({ tenant_id: tenant?.id, tenant_name: tenant?.name, sender_email: user?.email || "", sender_name: tenant?.name, direction: "inbound", subject: isM2M ? "Lease Renewal: Month-to-Month" : "Lease Renewal: " + choice + " months", body: isM2M ? "I would like to go month-to-month when my lease expires on " + fmtD(tenant?.lease_end) + ". I understand the rent will increase to " + fmt((tenant?.rent || 0) + (pmSettings?.m2mIncrease || 50)) + "/mo." : "I would like to renew my lease for " + choice + " months at " + fmt(tenant?.rent) + "/mo when my current lease expires on " + fmtD(tenant?.lease_end) + ".", property_name: tenant?.property?.name || "", room_name: tenant?.room?.name || "", read: false }); try { await fetch("/api/send-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: pmSettings?.pmEmail || pmSettings?.email || "", subject: "Lease Renewal Request: " + (tenant?.name || "Tenant") + " \u2014 " + (isM2M ? "Month-to-Month" : choice + " months"), html: "<p><strong>" + esc(tenant?.name) + "</strong> has requested to " + (isM2M ? "go month-to-month" : "renew for " + choice + " months") + " when their lease expires on " + fmtD(tenant?.lease_end) + ".</p><p>" + esc(tenant?.property?.name) + " \u2014 " + esc(tenant?.room?.name) + "</p>", replyTo: user?.email || "" }) }); } catch (e) {} setRenewalModal({ open: false, choice: null, submitting: false, submitted: true }); setTimeout(() => setRenewalModal(p => ({ ...p, submitted: false })), 5000); }} style={{ flex: 2, padding: "12px", borderRadius: 10, border: "none", background: renewalModal.choice ? C.bg : "rgba(0,0,0,.08)", color: renewalModal.choice ? C.accent : "#bbb", cursor: renewalModal.choice ? "pointer" : "default", fontWeight: 800, fontSize: 13 }}>{renewalModal.submitting ? t.lease.submitting : t.lease.requestRenewal}</button></div></>)}</div></div>)}
+    </section>
+
+    
+    <section className="panel" data-panel="payments">
+      <div className="page-head">
+        <h1>Pay rent</h1>
+        <p>Manage your payment methods, turn on autopay, and review past payments.</p>
+      </div>
+
+      <div className="pay-hero" style={{marginBottom: "24px"}}>
+        <div>
+          <div className="pay-hero-label">Due May 1</div>
+          <div className="pay-hero-amount">$750.00</div>
+          <div className="pay-hero-due">You have <strong>17 days</strong> · No late fees before May 6</div>
+        </div>
+        <div className="pay-hero-actions">
+          <button className="btn-pay">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>
+            Pay $750 now
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{marginBottom: "16px"}}>
+        <div className="card-head">
+          <div className="card-title">Payment methods</div>
+        </div>
+        <div className="method-row default">
+          <div className="method-icon bank">ACH</div>
+          <div>
+            <div className="method-label">Chase checking ••6891</div>
+            <div className="method-sub">No fees · 1–2 business days</div>
+          </div>
+          <span className="default-pill">Default</span>
+        </div>
+        <div className="method-row">
+          <div className="method-icon">VISA</div>
+          <div>
+            <div className="method-label">Visa ••4278</div>
+            <div className="method-sub">2.95% processing fee applies</div>
+          </div>
+          <button className="icon-btn" title="Set as default">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          </button>
+        </div>
+        <button className="add-method">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          Add payment method
+        </button>
+      </div>
+
+      <div className="card">
+        <div className="card-head">
+          <div className="card-title">Payment history</div>
+        </div>
+        <table className="table">
+          <thead>
+            <tr><th>Date</th><th>Description</th><th>Method</th><th style={{textAlign: "right"}}>Amount</th><th>Status</th><th /></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Apr 1, 2026</td><td>April rent</td><td>Bank ••6891</td>
+              <td className="table-amount" style={{textAlign: "right"}}>$750.00</td>
+              <td><span className="pill pill-green">Paid</span></td>
+              <td><button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button></td>
+            </tr>
+            <tr>
+              <td>Mar 1, 2026</td><td>March rent</td><td>Bank ••6891</td>
+              <td className="table-amount" style={{textAlign: "right"}}>$750.00</td>
+              <td><span className="pill pill-green">Paid</span></td>
+              <td><button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button></td>
+            </tr>
+            <tr>
+              <td>Feb 1, 2026</td><td>February rent</td><td>Bank ••6891</td>
+              <td className="table-amount" style={{textAlign: "right"}}>$750.00</td>
+              <td><span className="pill pill-green">Paid</span></td>
+              <td><button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button></td>
+            </tr>
+            <tr>
+              <td>Jan 1, 2026</td><td>January rent</td><td>Visa ••4278</td>
+              <td className="table-amount" style={{textAlign: "right"}}>$771.93</td>
+              <td><span className="pill pill-green">Paid</span></td>
+              <td><button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button></td>
+            </tr>
+            <tr>
+              <td>Dec 1, 2025</td><td>December rent</td><td>Bank ••6891</td>
+              <td className="table-amount" style={{textAlign: "right"}}>$750.00</td>
+              <td><span className="pill pill-green">Paid</span></td>
+              <td><button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    
+    <section className="panel" data-panel="maintenance">
+      <div className="page-head">
+        <h1>Maintenance</h1>
+        <p>Submit a request and track anything currently being worked on. Your landlord is notified instantly.</p>
+      </div>
+
+      <div className="card" style={{marginBottom: "20px"}}>
+        <div className="card-head">
+          <div className="card-title">Submit a new request</div>
+        </div>
+        <form id="maintForm">
+          <div className="form-grid">
+            <div className="field">
+              <label className="field-label">Category</label>
+              <select className="input">
+                <option>Plumbing</option>
+                <option>Electrical</option>
+                <option>HVAC / heating / AC</option>
+                <option>Appliance</option>
+                <option>Exterior / yard</option>
+                <option>Pest</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div className="field">
+              <label className="field-label">Location in unit</label>
+              <select className="input">
+                <option>Kitchen</option>
+                <option>Bathroom</option>
+                <option>Bedroom (my room)</option>
+                <option>Shared living area</option>
+                <option>Laundry</option>
+                <option>Exterior</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="field-label">Title</label>
+            <input className="input" type="text" placeholder="Short description (e.g. Kitchen sink dripping)" required />
+          </div>
+
+          <div className="field">
+            <label className="field-label">Details</label>
+            <textarea className="input" placeholder="When did it start? How bad is it? Any steps you've already tried?" required />
+          </div>
+
+          <div className="field">
+            <label className="field-label">Priority</label>
+            <div className="priority-row" id="priorityRow">
+              <div className="priority low" data-pri="low">
+                <div className="priority-label">Low</div>
+                <div className="priority-sub">Can wait a week</div>
+              </div>
+              <div className="priority med selected" data-pri="med">
+                <div className="priority-label">Normal</div>
+                <div className="priority-sub">Fix this week</div>
+              </div>
+              <div className="priority urgent" data-pri="urgent">
+                <div className="priority-label">Urgent</div>
+                <div className="priority-sub">Safety or flooding</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="field-label">Photos (optional but helpful)</label>
+            <div className="drop-zone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+              <div className="drop-zone-title">Tap to add photos</div>
+              <div className="drop-zone-sub">Up to 5 photos · helps the handyman come prepared</div>
+            </div>
+          </div>
+
+          <div style={{display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "8px"}}>
+            <button type="submit" className="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+              Submit request
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="card">
+        <div className="card-head">
+          <div className="card-title">Your requests</div>
+        </div>
+        <div id="ticketsList">
+          <div className="ticket-row">
+            <div className="ticket-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
+            </div>
+            <div>
+              <div className="ticket-title">Leaky kitchen faucet</div>
+              <div className="ticket-meta">
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> Opened Apr 10</span>
+                <span>Joel (plumber) assigned · visit Apr 15</span>
+              </div>
+            </div>
+            <span className="pill pill-amber">In progress</span>
+            <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg></button>
+          </div>
+          <div className="ticket-row">
+            <div className="ticket-icon done">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            </div>
+            <div>
+              <div className="ticket-title">Bedroom outlet not working</div>
+              <div className="ticket-meta">
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> Resolved Mar 22</span>
+                <span>GFCI reset · closed by Harrison</span>
+              </div>
+            </div>
+            <span className="pill pill-green">Resolved</span>
+            <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    
+    <section className="panel" data-panel="documents">
+      <div className="page-head">
+        <h1>Documents</h1>
+        <p>Everything your landlord has shared with you, plus every receipt we've generated.</p>
+      </div>
+
+      <div className="card">
+        <div className="doc-row">
+          <div className="doc-icon">PDF</div>
+          <div>
+            <div className="doc-title">Signed lease — 908 Lee Drive, Room C</div>
+            <div className="doc-meta">Signed Dec 28, 2025 · 12 pages · 486 KB</div>
+          </div>
+          <span className="pill pill-green">Active</span>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button>
+        </div>
+        <div className="doc-row">
+          <div className="doc-icon">PDF</div>
+          <div>
+            <div className="doc-title">Move-in inspection report</div>
+            <div className="doc-meta">Completed Jan 2, 2026 · 4 pages · 1.2 MB</div>
+          </div>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg></button>
+        </div>
+        <div className="doc-row">
+          <div className="doc-icon">PDF</div>
+          <div>
+            <div className="doc-title">House rules &amp; quiet hours</div>
+            <div className="doc-meta">Updated Jan 1, 2026 · 2 pages · 88 KB</div>
+          </div>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg></button>
+        </div>
+        <div className="doc-row">
+          <div className="doc-icon">PDF</div>
+          <div>
+            <div className="doc-title">Receipt — April rent</div>
+            <div className="doc-meta">Apr 1, 2026 · $750.00 · Bank ••6891</div>
+          </div>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg></button>
+        </div>
+        <div className="doc-row">
+          <div className="doc-icon">PDF</div>
+          <div>
+            <div className="doc-title">Receipt — March rent</div>
+            <div className="doc-meta">Mar 1, 2026 · $750.00 · Bank ••6891</div>
+          </div>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg></button>
+          <button className="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg></button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer className="legal-foot">
+    <div className="legal-foot-left">
+      <span>&copy; 2026 Black Bear Rentals</span>
+      <span>·</span>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
     </div>
+    <div className="powered-by">Powered by Tenantory</div>
+  </footer>
+
+  
+  <div className="drawer-bg" id="payDrawer">
+    <div className="drawer">
+      <div className="drawer-head">
+        <h2>Pay May rent</h2>
+        <button className="drawer-close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        </button>
+      </div>
+      <div className="drawer-body">
+        <div className="pay-summary">
+          <div>
+            <div className="pay-summary-label">Amount due</div>
+            <div className="pay-summary-amount">$750.00</div>
+          </div>
+          <div style={{textAlign: "right", fontSize: "11px", color: "var(--text-muted)"}}>
+            Rent for May 2026<br />Due May 1
+          </div>
+        </div>
+
+        <label className="field-label" style={{marginBottom: "10px"}}>Payment method</label>
+        <div className="method-pick selected" data-method="bank">
+          <div className="method-pick-radio" />
+          <div className="method-icon bank">ACH</div>
+          <div style={{flex: "1"}}>
+            <div className="method-label">Chase checking ••6891</div>
+            <div className="method-sub">No fees</div>
+          </div>
+        </div>
+        <div className="method-pick" data-method="card">
+          <div className="method-pick-radio" />
+          <div className="method-icon">VISA</div>
+          <div style={{flex: "1"}}>
+            <div className="method-label">Visa ••4278</div>
+            <div className="method-sub">+$22.13 processing fee</div>
+          </div>
+        </div>
+      </div>
+      <div className="drawer-foot">
+        <button className="btn btn-ghost">Cancel</button>
+        <button className="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          Pay $750.00
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div className="toast-stack" id="toastStack" />
+
+  
+
+    </>
   );
 }
