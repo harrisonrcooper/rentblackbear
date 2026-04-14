@@ -194,3 +194,108 @@
   gap: 8px;
   background: var(--flg-surface-subtle);
 }
+
+/* ============================================================
+   Form field wrapper (shared by Input/Textarea/Select/etc.)
+   ============================================================ */
+.flg-field { display: flex; flex-direction: column; gap: 6px; }
+.flg-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--flg-text);
+  letter-spacing: 0.01em;
+}
+.flg-field-required { color: var(--flg-red); margin-left: 2px; }
+.flg-field-hint {
+  font-size: 12px;
+  color: var(--flg-text-muted);
+  line-height: 1.4;
+}
+.flg-field-error {
+  font-size: 12px;
+  color: var(--flg-red);
+  line-height: 1.4;
+  animation: flg-shake 0.4s ease;
+}
+@keyframes flg-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* ============================================================
+   Input / Textarea / Select
+   ============================================================ */
+.flg-input,
+.flg-textarea,
+.flg-select {
+  width: 100%;
+  font-family: var(--flg-font-sans);
+  font-size: 14px;
+  color: var(--flg-text);
+  background: var(--flg-surface);
+  border: 1px solid var(--flg-border);
+  border-radius: var(--flg-radius);
+  padding: 10px 14px;
+  line-height: 1.4;
+  transition: border-color var(--flg-ease), box-shadow var(--flg-ease);
+}
+.flg-input::placeholder,
+.flg-textarea::placeholder { color: var(--flg-text-faint); }
+.flg-input:hover:not(:disabled),
+.flg-textarea:hover:not(:disabled),
+.flg-select:hover:not(:disabled) { border-color: var(--flg-border-strong); }
+.flg-input:focus,
+.flg-textarea:focus,
+.flg-select:focus {
+  outline: none;
+  border-color: var(--flg-blue);
+  box-shadow: 0 0 0 3px var(--flg-blue-pale);
+}
+.flg-input:disabled,
+.flg-textarea:disabled,
+.flg-select:disabled {
+  background: var(--flg-surface-alt);
+  color: var(--flg-text-muted);
+  cursor: not-allowed;
+}
+.flg-input-error,
+.flg-textarea-error,
+.flg-select-error { border-color: var(--flg-red); }
+.flg-input-error:focus,
+.flg-textarea-error:focus,
+.flg-select-error:focus { box-shadow: 0 0 0 3px var(--flg-red-bg); }
+
+.flg-textarea { resize: vertical; min-height: 80px; }
+
+/* Input with icon slots */
+.flg-input-wrap { position: relative; }
+.flg-input-wrap-icon-left .flg-input { padding-left: 38px; }
+.flg-input-wrap-icon-right .flg-input { padding-right: 38px; }
+.flg-input-icon {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  color: var(--flg-text-muted);
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.flg-input-icon svg { width: 16px; height: 16px; }
+.flg-input-icon-left { left: 12px; }
+.flg-input-icon-right { right: 12px; }
+
+/* Select chevron */
+.flg-select-wrap { position: relative; }
+.flg-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 38px;
+  background-image: none;
+  cursor: pointer;
+}
+.flg-select-chevron {
+  position: absolute; top: 50%; right: 12px;
+  transform: translateY(-50%);
+  color: var(--flg-text-muted);
+  pointer-events: none;
+  display: flex; align-items: center;
+}
+.flg-select-chevron svg { width: 14px; height: 14px; }
