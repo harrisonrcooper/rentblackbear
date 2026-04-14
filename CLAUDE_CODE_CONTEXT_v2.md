@@ -1,6 +1,6 @@
 # Tenantory — Claude Code Context
 # Paste this into Claude Code at the start of every session.
-# Last updated: 2026-04-13
+# Last updated: 2026-04-14
 
 ---
 
@@ -303,12 +303,19 @@ All features must be built with tier gating in mind. Check `settings.tier` befor
 
 ## REMAINING MANUAL STEPS (Harrison only — code is complete)
 
-1. **Create 3 Stripe Products/Prices** in Stripe Dashboard (Starter $97, Growth $197, Scale $397). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE` env vars to Vercel.
-2. **Run workspace migration** for own data: hit `/api/migrate-workspace` with `{ workspaceId: clerkUserId }` to prefix existing bare keys.
-3. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
-4. **Tenantory domain** — pick and configure (currently everything is at rentblackbear.com).
-5. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
-6. **Set `settings.portalUrl`** in hq-settings so the lease boilerplate `{{PORTAL_URL}}` variable renders correctly (the lease template now uses this variable instead of a hardcoded domain).
+1. **Finish the new `tenantory` Vercel project setup.** T2 already created the project via CLI (`vercel projects add tenantory` → linked via `vercel link --project tenantory --yes`), but the first `vercel deploy` failed on Clerk's Edge middleware pulling `#crypto` / `@clerk/shared/buildAccountsBaseUrl` / `#safe-node-apis`. Two-part fix for T1 to run:
+   - In the Vercel dashboard for the new `tenantory` project, add env vars for Development (and later Preview + Production): `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, plus the Stripe / Resend / Twilio / Cron / Admin secrets the existing `rentblackbear` project already has.
+   - Force `middleware.ts` to Node runtime (add `export const runtime = "nodejs"` at the bottom) so Clerk's Node-specific imports stop tripping Vercel's Edge compile step.
+2. **Rotate the Supabase JWT secret** for the new Tenantory-dev project (anon key landed in chat earlier). 5 min in Supabase dashboard → API → JWT Settings → Generate new secret → re-copy the 3 values into the 3 Vercel env vars → tell T2 to re-pull.
+3. **Swap the Clerk keys in Vercel Dev.** Currently the pulled `.env.local` shows the prior `steady-marten-40` Clerk keys even though Harrison wants the new `supreme-jay-88` set. Update in the Vercel dashboard (Development env) so `vercel env pull` picks up the correct values.
+4. **Confirm the Tenantory-dev Supabase project ref.** The `NEXT_PUBLIC_SUPABASE_URL` that pulled out of Vercel Dev resolves to the existing Black Bear project (`vxys…noar`). If that's intentional (Tenantory-dev is sharing that Supabase), note it; if not, point the Dev env vars at the fresh project.
+5. **Create 3 Stripe Products/Prices** in Stripe Dashboard (Starter $97, Growth $197, Scale $397). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE` env vars to the new `tenantory` project in Vercel.
+6. **Apply the 11 SQL migrations** (`migrations/001_workspaces.sql` through `migrations/011_rls.sql`) once Supabase is provisioned. Run them in order; 011 enables RLS on every tenant-owned table and must run last.
+7. **Run workspace migration** for Harrison's existing data: hit `/api/migrate-workspace` with `{ workspaceId: clerkUserId }` to prefix existing bare `hq-*` keys.
+8. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
+9. **Tenantory domain** — pick and configure (currently everything lives at rentblackbear.com; the new Vercel project is on its auto-generated URL until a domain is attached).
+10. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
+11. **Set `settings.portalUrl`** in hq-settings so the lease boilerplate `{{PORTAL_URL}}` variable renders correctly.
 
 ---
 
@@ -331,6 +338,27 @@ cd ~/Desktop/rentblackbear && claude --dangerously-skip-permissions
 ---
 
 ## WHAT'S BUILT — current state
+
+> **April 2026 migration note.** The Flagship / Tenantory migration is mid-flight. The admin, portal, apply, and sign-in routes under `app/admin/*`, `app/portal/*`, `app/apply/[slug]/*`, and `app/sign-in/*` now serve **mock-ported Flagship JSX snapshots**, not the old data-wired pages. The prior production admin (2,192-line monolith with Supabase loaders, Clerk hooks, Stripe wiring) lives in git history (see commit `b2672fc` and earlier); the new UI is a scaffold that rewires to real data once the migrations below are applied and Clerk/Supabase point at the fresh Tenantory project. Every mock also still lives at `/mocks/<name>` for reference comparison.
+
+### New Flagship layer (added in the 2026-04 migration)
+- **components/ui/** — 20 primitives + tokens + shared CSS: Button, Card (+Head/Body/Foot), Input / Textarea / Select, Checkbox / Radio / Toggle, Drawer, Modal, Toast (+Provider+useToast), Pill, Avatar, EmptyState, ProgressBar, Stepper, DataTable, Kanban (+Column+Card), Dropzone, KeyValueGrid. All classes prefixed `flg-` to avoid colliding with the existing admin's `const S` CSS string.
+- **components/layout/** — AdminShell (navy sidebar + topbar), MarketingShell (sticky nav + navy-dark footer), PortalShell (workspace-branded, reads `--flg-ws-*` tokens via inline style).
+- **Theme system** — `app/globals.css` carries tokens verbatim from `settings.html` with `[data-theme="hearth|nocturne|slate"]` overrides; theme bootstrap script in `app/layout.jsx` reads `localStorage.tenantory-theme` pre-hydration; Inter + Source Serif 4 + JetBrains Mono now load via `next/font/google`.
+- **63 mocks ported** — every file in `~/Desktop/tenantory/*.html` has a corresponding Next.js page at `app/mocks/<name>/page.jsx` (real JSX: class→className, style strings→objects, SVG attrs camelCased, scripts stripped). The `/mocks` index at `app/mocks/page.jsx` lists them.
+- **17 real admin routes** promoted from mock ports: `/admin`, `/admin/applications`, `/admin/tenants`, `/admin/leases`, `/admin/maintenance`, `/admin/payments`, `/admin/properties`, `/admin/reports`, `/admin/settings`, `/admin/settings/import`, `/admin/settings/team`, `/admin/leases/renewals`, `/admin/properties/new`, `/admin/properties/[id]/syndicate`, `/admin/payments/late`, `/admin/leases/[id]/amend`, `/admin/reports/tax-pack`.
+- **13 real tenant/vendor/investor routes** promoted: `/portal` (+ `moveout`, `renew`, `roommate`, `inspection`, `settings`), `/apply/[slug]` (+ `approved`, `declined`), `/sign/[token]`, `/vendor` (+ `signup/[invite]`), `/investor`.
+- **25 real utility + marketing routes** promoted, including `app/(marketing)/` route group (`landing`, `pricing`, `stories`, `security`, `integrations`, `tools`, `about`, `compare`, `demo`, `faq`, `changelog`, `press`, `partners`, `referral`, `terms`, `privacy` + `/vs/[competitor]` dynamic template covering appfolio/buildium/doorloop + `/for/[segment]` dynamic template covering landlords/coliving/students/sfr-investors), plus `app/not-found.jsx` (404), `public/service-down.html`, `/status`, `/docs`, `/sign-in`.
+- **Multi-tenant routing shell** — `lib/edge-config.js` stub (delegates to `@vercel/edge-config` when present, falls back to a hard-coded Black Bear table), `lib/workspace.js` extended with `getWorkspaceFromHost(host)` + `getCurrentWorkspace()` + `getWorkspaceHeaderName()` (legacy `getWorkspaceId` / `wsKey` kept intact), `proxy.ts` at repo root with host-routing rules (marketing / admin / portal / custom) — proxy.ts is Next 16's filename; won't activate until the Next upgrade lands.
+- **11 SQL migrations, not applied** — `migrations/001_workspaces.sql` through `011_rls.sql`. Schemas for workspaces / properties / tenants / leases / payments / maintenance / vendors / documents / notifications / append-only audit log, plus RLS policies gated on `(auth.jwt() ->> 'workspace_id')::uuid` for every tenant-owned table.
+- **Webhook + API scaffolding** — `app/api/webhooks/{plaid,clerk,twilio}/route.ts` (scaffolds that 501 until their secrets are set, 401 on bad signature, dispatch on event type); stripe renamed to `.ts` (content unchanged). `app/api/v1/{tenants,properties,leases,applications,maintenance}/route.ts` + `[id]/route.ts` for tenants/properties. All gated on `x-workspace-id` header.
+- **20 email templates** under `emails/`: 7 operator, 10 tenant, 3 vendor, all built on `@react-email/components` with a shared `emails/_shared/Layout.jsx`.
+- **8 Zod schemas + 8 server action stubs** — `schemas/{application,lease,maintenance,payment,onboarding,inspection,renew,moveout}.ts` with `schemas/_shared.ts` primitives. `actions/<name>.ts` stubs validate via Zod and log tagged JSON to stdout (the write path lands when Supabase is live).
+
+### Legacy admin (`app/admin/components/`, 38 existing components)
+Still on disk but NOT imported by the current `app/admin/page.jsx` (which is the Flagship mock). Preserved because Phase-3 rewiring will reuse many of them (DashboardTab, TenantsTab, PaymentsTab, etc.). Legacy-era description retained below for reference.
+
+---
 
 ### Admin (`app/admin/page.jsx` + 35 components in `app/admin/components/`)
 - Dashboard with 23-widget customizable grid + 14 financial KPI calculators (cap rate, break-even, rent-to-income, DSCR, NOI, occupancy, etc.)
