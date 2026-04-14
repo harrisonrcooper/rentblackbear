@@ -49,8 +49,10 @@ export const applicationSchema = z.object({
 
   screeningConsent: z
     .boolean()
-    .refine((v) => v === true, "You must consent to background + credit screening to apply."),
-  applicationData: z.record(z.unknown()).default({}),
+    .refine((v) => v === true, {
+      message: "You must consent to background + credit screening to apply.",
+    }),
+  applicationData: z.record(z.string(), z.unknown()).default({}),
 });
 
 export type ApplicationInput = z.infer<typeof applicationSchema>;

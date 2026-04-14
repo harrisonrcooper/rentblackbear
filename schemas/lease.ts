@@ -20,7 +20,7 @@ export const leaseSchema = z
     securityDepositCents: positiveCents,
     utilitiesClauseKey: nonEmptyString("Utilities clause"),
 
-    variableData: z.record(z.unknown()).default({}),
+    variableData: z.record(z.string(), z.unknown()).default({}),
   })
   .refine((v) => v.endDate > v.startDate, {
     path: ["endDate"],

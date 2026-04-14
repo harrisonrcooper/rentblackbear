@@ -22,7 +22,7 @@ export const paymentSchema = z.object({
   eventDate: isoDate,
   method: paymentMethod,
   description: optionalString,
-  metadata: z.record(z.unknown()).default({}),
+  metadata: z.record(z.string(), z.unknown()).default({}),
 });
 
 export type PaymentInput = z.infer<typeof paymentSchema>;

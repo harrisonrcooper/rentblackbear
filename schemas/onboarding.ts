@@ -26,7 +26,9 @@ export const onboardingSchema = z.object({
   planTier: z.enum(["starter", "growth", "scale"]),
   agreedToTerms: z
     .boolean()
-    .refine((v) => v === true, "You must accept the Terms and Privacy Policy to continue."),
+    .refine((v) => v === true, {
+      message: "You must accept the Terms and Privacy Policy to continue.",
+    }),
 });
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
