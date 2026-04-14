@@ -67,7 +67,7 @@ export default function Page() {
   return (
     <main style={{maxWidth:720,margin:"40px auto",padding:24,fontFamily:"var(--flg-font-sans)",color:"var(--flg-text)"}}>
       <h1 style={{fontSize:24,fontWeight:800,letterSpacing:"-0.02em"}}>Tenantory mocks</h1>
-      <p style={{color:"var(--flg-text-muted)",marginTop:6}}>63 mocks ported from ~/Desktop/tenantory/. Viewable snapshots only.</p>
+      <p style={{color:"var(--flg-text-muted)",marginTop:6}}>63 mocks ported from ~/Desktop/tenantory/. Real JSX conversion — each mock is a standalone Next.js page.</p>
       <ul style={{marginTop:20,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8,listStyle:"none",padding:0}}>
         {mocks.map((m) => (
           <li key={m}>
