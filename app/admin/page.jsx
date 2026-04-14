@@ -30,6 +30,7 @@ import AddExpenseSheet from "./components/AddExpenseSheet";
 import DocumentsTab from "./components/tabs/DocumentsTab";
 import LedgerTab from "./components/tabs/LedgerTab";
 import NotificationsTab from "./components/tabs/NotificationsTab";
+import RocksTab from "./components/tabs/RocksTab";
 import { motion, AnimatePresence } from "framer-motion";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -1779,21 +1780,7 @@ export default function Page(){
       />}
 
       {/* ═══ ROCKS ═══ */}
-      {tab==="rocks"&&<>
-        <div className="sec-hd"><div><h2>Quarterly Rocks</h2><p>Click dot to cycle status</p></div>
-          <button className="btn btn-gold" onClick={()=>setRocks(p=>[{id:uid(),title:"New Rock",owner:"Harrison",status:"not-started",due:"2026-06-30",notes:""},...p])}>+ Add</button></div>
-        {rocks.map(r=>(
-          <div key={r.id} className="row">
-            <div style={{width:10,height:10,borderRadius:"50%",cursor:"pointer",flexShrink:0,background:r.status==="on-track"||r.status==="done"?"#4a7c59":r.status==="off-track"?"#c45c4a":"#ccc"}} onClick={()=>cycleRock(r.id)}/>
-            <div className="row-i">
-              <div className="row-t" contentEditable suppressContentEditableWarning onBlur={e=>setRocks(p=>p.map(x=>x.id===r.id?{...x,title:e.target.textContent}:x))}>{r.title}</div>
-              <div className="row-s">{r.owner} · {r.status.replace("-"," ")} · Due {r.due}</div>
-            </div>
-            <span className={`badge ${r.status==="on-track"||r.status==="done"?"b-green":r.status==="off-track"?"b-red":"b-gray"}`}>{r.status.replace("-"," ")}</span>
-            <button className="btn btn-red btn-sm" onClick={()=>setRocks(p=>p.filter(x=>x.id!==r.id))}>✕</button>
-          </div>
-        ))}
-      </>}
+      {tab==="rocks"&&<RocksTab rocks={rocks} setRocks={setRocks} cycleRock={cycleRock} uid={uid} />}
 
       {/* ═══ ISSUES ═══ */}
       {tab==="issues"&&<>
