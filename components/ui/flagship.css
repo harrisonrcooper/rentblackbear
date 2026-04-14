@@ -1,63 +1,21 @@
 /* ============================================================
-   Flagship design tokens + base resets
-   Sourced verbatim from ~/Desktop/tenantory/admin-v2.html :root
-   All Flagship classes are prefixed `flg-` to avoid collisions
-   with the existing admin's `const S` CSS string.
+   Flagship primitive styles. Tokens live in app/globals.css
+   (which aliases --flg-* from the unprefixed mock tokens so
+   data-theme switches cascade through every component here).
+
+   Values below are either non-theme constants (typography,
+   purple that isn't remapped per theme) or component-specific
+   classes using var(--flg-*) tokens.
    ============================================================ */
 
 :root {
-  /* Brand */
-  --flg-navy: #2F3E83;
-  --flg-navy-dark: #1e2a5e;
-  --flg-navy-darker: #14204a;
-  --flg-blue: #1251AD;
-  --flg-blue-bright: #1665D8;
-  --flg-blue-pale: #eef3ff;
-  --flg-pink: #FF4998;
-  --flg-pink-hover: #e63882;
-  --flg-pink-bg: rgba(255,73,152,0.12);
-
-  /* Text */
-  --flg-text: #1a1f36;
-  --flg-text-muted: #5a6478;
-  --flg-text-faint: #8a93a5;
-
-  /* Surfaces */
-  --flg-surface: #ffffff;
-  --flg-surface-alt: #f7f9fc;
-  --flg-surface-subtle: #fafbfd;
-  --flg-border: #e3e8ef;
-  --flg-border-strong: #c9d1dd;
-
-  /* Semantic */
-  --flg-gold: #f5a623;
-  --flg-gold-bg: rgba(245,166,35,0.12);
-  --flg-green: #1ea97c;
-  --flg-green-dark: #138a60;
-  --flg-green-bg: rgba(30,169,124,0.12);
-  --flg-red: #d64545;
-  --flg-red-bg: rgba(214,69,69,0.12);
-  --flg-orange: #ea8c3a;
-  --flg-orange-bg: rgba(234,140,58,0.12);
-
-  /* Radii */
-  --flg-radius-sm: 6px;
-  --flg-radius: 10px;
-  --flg-radius-lg: 14px;
-  --flg-radius-xl: 20px;
-  --flg-radius-pill: 100px;
-
-  /* Shadows */
-  --flg-shadow-sm: 0 1px 2px rgba(26,31,54,0.04);
-  --flg-shadow: 0 4px 16px rgba(26,31,54,0.06);
-  --flg-shadow-lg: 0 12px 40px rgba(26,31,54,0.1);
-
-  /* Typography */
-  --flg-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --flg-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-
-  /* Motion */
-  --flg-ease: 0.15s ease;
+  /* Typography — font families. Next/font sets --font-inter /
+     --font-source-serif / --font-jetbrains-mono on <html>; we
+     fall back to the bare family names when next/font hasn't
+     wired a given face (e.g. during SSR before rehydration). */
+  --flg-font-sans: var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --flg-font-serif: var(--font-source-serif, 'Source Serif 4'), Georgia, 'Times New Roman', serif;
+  --flg-font-mono: var(--font-jetbrains-mono, 'JetBrains Mono'), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* Flagship-scoped root utility — apply to any subtree to anchor font + text color */
