@@ -28,6 +28,13 @@ export default function RootLayout({ children }) {
     <ClerkProvider>
       <html lang="en">
         <head>
+          <script
+            // Runs before hydration so the chosen theme is applied without
+            // a flash. Safe to fail silently if localStorage is blocked.
+            dangerouslySetInnerHTML={{
+              __html: `try{var t=localStorage.getItem("tenantory-theme");if(t&&t!=="flagship"&&t!=="custom")document.documentElement.setAttribute("data-theme",t);}catch(e){}`,
+            }}
+          />
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
