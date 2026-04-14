@@ -70,3 +70,75 @@
 .flg *::after {
   box-sizing: border-box;
 }
+
+/* ============================================================
+   Button
+   ============================================================ */
+.flg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--flg-radius-pill);
+  font-family: var(--flg-font-sans);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background var(--flg-ease), color var(--flg-ease), border-color var(--flg-ease), transform var(--flg-ease), box-shadow var(--flg-ease);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  line-height: 1;
+}
+.flg-btn:focus-visible {
+  outline: 2px solid var(--flg-blue);
+  outline-offset: 2px;
+}
+.flg-btn[disabled],
+.flg-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.flg-btn svg { flex-shrink: 0; }
+
+/* Sizes */
+.flg-btn-sm { padding: 7px 14px; font-size: 12px; }
+.flg-btn-sm svg { width: 12px; height: 12px; }
+.flg-btn-md { padding: 10px 18px; font-size: 13px; }
+.flg-btn-md svg { width: 14px; height: 14px; }
+.flg-btn-lg { padding: 13px 24px; font-size: 15px; }
+.flg-btn-lg svg { width: 16px; height: 16px; }
+
+/* Variants */
+.flg-btn-primary { background: var(--flg-blue); color: #fff; }
+.flg-btn-primary:hover:not([disabled]) { background: var(--flg-navy); transform: translateY(-1px); }
+
+.flg-btn-ghost {
+  color: var(--flg-text);
+  border-color: var(--flg-border);
+  background: var(--flg-surface);
+}
+.flg-btn-ghost:hover:not([disabled]) { border-color: var(--flg-blue); color: var(--flg-blue); }
+
+.flg-btn-pink { background: var(--flg-pink); color: #fff; }
+.flg-btn-pink:hover:not([disabled]) {
+  background: var(--flg-pink-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(255,73,152,0.35);
+}
+
+.flg-btn-dark { background: var(--flg-navy); color: #fff; }
+.flg-btn-dark:hover:not([disabled]) { background: var(--flg-navy-dark); transform: translateY(-1px); }
+
+.flg-btn-danger { background: var(--flg-red); color: #fff; }
+.flg-btn-danger:hover:not([disabled]) { background: #b93b3b; transform: translateY(-1px); }
+
+/* Loading spinner */
+.flg-btn-spinner {
+  width: 1em; height: 1em; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: flg-spin 0.7s linear infinite;
+}
+@keyframes flg-spin { to { transform: rotate(360deg); } }
