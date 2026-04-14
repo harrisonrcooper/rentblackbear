@@ -602,3 +602,27 @@
   from { transform: translateX(16px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+
+/* ============================================================
+   Pill
+   ============================================================ */
+.flg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--flg-font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--flg-radius-pill);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.flg-pill-green { background: var(--flg-green-bg); color: var(--flg-green-dark); }
+.flg-pill-red { background: var(--flg-red-bg); color: var(--flg-red); }
+.flg-pill-blue { background: var(--flg-blue-pale); color: var(--flg-blue); }
+.flg-pill-amber { background: var(--flg-gold-bg); color: var(--flg-gold); }
+.flg-pill-orange { background: var(--flg-orange-bg); color: var(--flg-orange); }
+.flg-pill-pink { background: var(--flg-pink-bg); color: var(--flg-pink); }
+.flg-pill-gray { background: var(--flg-surface-alt); color: var(--flg-text-muted); }
+.flg-pill svg { width: 10px; height: 10px; flex-shrink: 0; }
