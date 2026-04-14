@@ -18,7 +18,6 @@ import MaintenanceAdmin from "./components/MaintenanceAdmin";
 import ScorecardTab from "./components/ScorecardTab";
 import IdeasTab from "./components/IdeasTab";
 import MoneyDashboard from "./components/MoneyDashboard";
-import Ledger from "./components/Ledger";
 import ApplicationsTab from "./components/ApplicationsTab";
 import ModalRenderer from "./components/ModalRenderer";
 import SmartImporter from "./components/SmartImporter";
@@ -29,6 +28,7 @@ import PaymentsTab from "./components/PaymentsTab";
 import TenantTimeline from "./components/TenantTimeline";
 import AddExpenseSheet from "./components/AddExpenseSheet";
 import DocumentsTab from "./components/tabs/DocumentsTab";
+import LedgerTab from "./components/tabs/LedgerTab";
 import { motion, AnimatePresence } from "framer-motion";
 // ADMIN HQ — rentblackbear.com/admin
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -1758,10 +1758,7 @@ export default function Page(){
       {tab==="money"&&<MoneyDashboard charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} props={props} settings={settings} vendors={vendors} improvements={improvements} goTab={goTab} setModal={setModal} createCharge={createCharge} TODAY={TODAY} />}
 
       {/* ═══ LEDGER ═══ */}
-      {tab==="ledger"&&<>
-        <div className="sec-hd"><div><h2>Ledger</h2></div><div style={{display:"flex",gap:8,alignItems:"center"}}><button className="btn btn-out" onClick={()=>setShowLedgerImport(true)} style={{fontSize:12,display:"flex",alignItems:"center",gap:4}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Import Charges</button></div></div>
-        <Ledger charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} improvements={improvements} props={props} vendors={vendors} settings={settings} subcats={subcats} TODAY={TODAY} setCharges={setCharges} setExpenses={setExpenses} setCredits={setCredits} setVendors={setVendors} setMortgages={setMortgages} setImprovements={setImprovements} setSubcats={setSubcats} createCharge={createCharge} recordPayment={recordPayment} setModal={setModal} uid={uid} adminGoTab={goTab} CHARGE_CATS={CHARGE_CATS} SCHED_E_CATS={SCHED_E_CATS} IMPROVEMENT_TYPES={IMPROVEMENT_TYPES} />
-      </>}
+      {tab==="ledger"&&<LedgerTab setShowLedgerImport={setShowLedgerImport} charges={charges} expenses={expenses} credits={credits} sdLedger={sdLedger} mortgages={mortgages} improvements={improvements} props={props} vendors={vendors} settings={settings} subcats={subcats} TODAY={TODAY} setCharges={setCharges} setExpenses={setExpenses} setCredits={setCredits} setVendors={setVendors} setMortgages={setMortgages} setImprovements={setImprovements} setSubcats={setSubcats} createCharge={createCharge} recordPayment={recordPayment} setModal={setModal} uid={uid} adminGoTab={goTab} CHARGE_CATS={CHARGE_CATS} SCHED_E_CATS={SCHED_E_CATS} IMPROVEMENT_TYPES={IMPROVEMENT_TYPES} />}
 
       {/* Accounting tab removed — features in Dashboard + Reports */}
       {tab==="reports"&&<Reports settings={settings} properties={props} charges={charges} expenses={expenses} mortgages={mortgages} sdLedger={sdLedger} apps={apps} archive={archive} SCHED_E_CATS={SCHED_E_CATS} getPropDisplayName={getPropDisplayName} propDisplay={propDisplay} chargeStatus={chargeStatus} uid={uid} vendors={vendors} improvements={improvements} />}
