@@ -67,7 +67,7 @@ export default function DocumentsTab({ docs, setModal }) {
         if (!items.length) return null;
         return (
           <div key={type} style={{marginBottom:16}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{labels[type]}</div>
+            <div style={{fontSize:10,fontWeight:700,color:"var(--flg-text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{labels[type]}</div>
             {items.map(d => (
               <div key={d.id} className="row">
                 <span style={{fontSize:16}}>{iconFor(type)}</span>

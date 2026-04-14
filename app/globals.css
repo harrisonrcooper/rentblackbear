@@ -45,6 +45,7 @@
   --green-dark: #138a60;
   --green-bg: rgba(30,169,124,0.12);
   --red: #d64545;
+  --red-dark: #b93b3b;
   --red-bg: rgba(214,69,69,0.12);
   --orange: #ea8c3a;
   --orange-bg: rgba(234,140,58,0.12);
@@ -91,6 +92,7 @@
   --flg-green-dark: var(--green-dark);
   --flg-green-bg: var(--green-bg);
   --flg-red: var(--red);
+  --flg-red-dark: var(--red-dark);
   --flg-red-bg: var(--red-bg);
   --flg-orange: var(--orange);
   --flg-orange-bg: var(--orange-bg);
@@ -149,6 +151,7 @@
   --surface-subtle: #1a1a2e;
   --border: #2a2a3a;
   --border-strong: #3a3a4a;
+  --red-dark: #a03838;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
   --shadow: 0 4px 16px rgba(0,0,0,0.5);
   --shadow-lg: 0 12px 40px rgba(0,0,0,0.6);

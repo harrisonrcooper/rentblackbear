@@ -1,6 +1,11 @@
-// Flagship design tokens — JS constants
-// Use when an inline style needs a token value and a CSS var reference
-// (e.g. `var(--flg-blue)`) won't work. Keep in sync with flagship.css.
+// Flagship design tokens — JS constants.
+//
+// Prefer `var(--flg-*)` references in style attributes so themes cascade
+// naturally. Use this module only when you genuinely need a JS value
+// (e.g. passing a color to a third-party library like Recharts). The
+// values below always reflect the Flagship defaults and do NOT update
+// when [data-theme] swaps; consumers that need live theme awareness
+// should read getComputedStyle(document.documentElement).
 
 export const colors = {
   navy: "#2F3E83",

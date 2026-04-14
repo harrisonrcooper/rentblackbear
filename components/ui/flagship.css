@@ -91,7 +91,7 @@
 .flg-btn-dark:hover:not([disabled]) { background: var(--flg-navy-dark); transform: translateY(-1px); }
 
 .flg-btn-danger { background: var(--flg-red); color: #fff; }
-.flg-btn-danger:hover:not([disabled]) { background: #b93b3b; transform: translateY(-1px); }
+.flg-btn-danger:hover:not([disabled]) { background: var(--flg-red-dark); transform: translateY(-1px); }
 
 /* Loading spinner */
 .flg-btn-spinner {
@@ -835,7 +835,7 @@
 .flg-kanban-col-dot-pink { background: var(--flg-pink); }
 .flg-kanban-col-dot-orange { background: var(--flg-orange); }
 .flg-kanban-col-dot-red { background: var(--flg-red); }
-.flg-kanban-col-dot-purple { background: #8b5cf6; }
+.flg-kanban-col-dot-purple { background: var(--flg-purple); }
 .flg-kanban-col-title {
   font-size: 13px; font-weight: 700;
   color: var(--flg-text);
