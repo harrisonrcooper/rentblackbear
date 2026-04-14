@@ -3,3 +3,4 @@
 
 export { default as AdminShell } from "./AdminShell";
 export { default as MarketingShell } from "./MarketingShell";
+export { default as PortalShell } from "./PortalShell";
