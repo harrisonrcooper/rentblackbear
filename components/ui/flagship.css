@@ -654,3 +654,36 @@
 .flg-avatar-green { background: var(--flg-green-bg); color: var(--flg-green-dark); }
 .flg-avatar-orange { background: var(--flg-orange-bg); color: var(--flg-orange); }
 .flg-avatar-gray { background: var(--flg-surface-alt); color: var(--flg-text-muted); }
+
+/* ============================================================
+   Empty state
+   ============================================================ */
+.flg-empty {
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--flg-text-muted);
+  font-family: var(--flg-font-sans);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px;
+}
+.flg-empty-icon {
+  width: 56px; height: 56px; border-radius: var(--flg-radius-lg);
+  background: var(--flg-surface-alt);
+  color: var(--flg-text-muted);
+  display: flex; align-items: center; justify-content: center;
+}
+.flg-empty-icon svg { width: 24px; height: 24px; }
+.flg-empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--flg-text);
+  margin: 0;
+}
+.flg-empty-desc {
+  font-size: 13px;
+  color: var(--flg-text-muted);
+  max-width: 380px;
+  line-height: 1.5;
+  margin: 0;
+}
+.flg-empty-action { margin-top: 6px; }
