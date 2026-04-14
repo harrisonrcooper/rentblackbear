@@ -387,3 +387,91 @@
   box-shadow: 0 0 0 3px var(--flg-blue-pale);
 }
 .flg-toggle:disabled { cursor: not-allowed; opacity: 0.55; }
+
+/* ============================================================
+   Drawer
+   ============================================================ */
+.flg-drawer-root {
+  position: fixed; inset: 0;
+  z-index: 1000;
+  font-family: var(--flg-font-sans);
+  color: var(--flg-text);
+}
+.flg-drawer-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(26,31,54,0.3);
+  animation: flg-fade-in 0.18s ease;
+}
+.flg-drawer {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  background: var(--flg-surface);
+  box-shadow: var(--flg-shadow-lg);
+  display: flex; flex-direction: column;
+  border-left: 1px solid var(--flg-border);
+  width: 100%;
+  max-width: 520px;
+  animation: flg-slide-left 0.22s ease;
+}
+.flg-drawer-sm { max-width: 380px; }
+.flg-drawer-md { max-width: 520px; }
+.flg-drawer-lg { max-width: 720px; }
+@media (max-width: 560px) {
+  .flg-drawer, .flg-drawer-sm, .flg-drawer-md, .flg-drawer-lg {
+    max-width: 100%;
+  }
+}
+.flg-drawer-head {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--flg-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.flg-drawer-title-wrap { flex: 1; min-width: 0; }
+.flg-drawer-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--flg-text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+.flg-drawer-subtitle {
+  font-size: 12px;
+  color: var(--flg-text-muted);
+  margin-top: 2px;
+}
+.flg-drawer-close {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--flg-surface-alt);
+  color: var(--flg-text-muted);
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer;
+  transition: background var(--flg-ease), color var(--flg-ease);
+  flex-shrink: 0;
+}
+.flg-drawer-close:hover { background: var(--flg-border); color: var(--flg-text); }
+.flg-drawer-close:focus-visible {
+  outline: 2px solid var(--flg-blue);
+  outline-offset: 2px;
+}
+.flg-drawer-close svg { width: 16px; height: 16px; }
+.flg-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+.flg-drawer-foot {
+  padding: 14px 24px;
+  border-top: 1px solid var(--flg-border);
+  background: var(--flg-surface-subtle);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+@keyframes flg-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes flg-slide-left { from { transform: translateX(12px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
