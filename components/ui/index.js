@@ -3,3 +3,4 @@
 
 export * as tokens from "./tokens";
 export { default as Button } from "./Button";
+export { Card, CardHead, CardBody, CardFoot } from "./Card";
