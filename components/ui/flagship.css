@@ -543,3 +543,62 @@
   from { transform: scale(0.96); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+/* ============================================================
+   Toast
+   ============================================================ */
+.flg-toast-root {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  z-index: 1200;
+  display: flex; flex-direction: column-reverse;
+  gap: 10px;
+  pointer-events: none;
+  font-family: var(--flg-font-sans);
+  max-width: calc(100vw - 40px);
+}
+.flg-toast {
+  min-width: 280px; max-width: 400px;
+  background: var(--flg-surface);
+  border: 1px solid var(--flg-border);
+  border-left-width: 4px;
+  border-radius: var(--flg-radius);
+  box-shadow: var(--flg-shadow);
+  padding: 12px 14px;
+  display: flex; align-items: flex-start; gap: 10px;
+  color: var(--flg-text);
+  font-size: 13px;
+  line-height: 1.4;
+  pointer-events: auto;
+  animation: flg-toast-in 0.22s ease;
+}
+.flg-toast-info { border-left-color: var(--flg-blue); }
+.flg-toast-success { border-left-color: var(--flg-green); }
+.flg-toast-warning { border-left-color: var(--flg-gold); }
+.flg-toast-error { border-left-color: var(--flg-red); }
+.flg-toast-icon {
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.flg-toast-icon svg { width: 18px; height: 18px; }
+.flg-toast-info .flg-toast-icon { color: var(--flg-blue); }
+.flg-toast-success .flg-toast-icon { color: var(--flg-green); }
+.flg-toast-warning .flg-toast-icon { color: var(--flg-gold); }
+.flg-toast-error .flg-toast-icon { color: var(--flg-red); }
+.flg-toast-body { flex: 1; min-width: 0; }
+.flg-toast-title { font-weight: 700; }
+.flg-toast-desc { color: var(--flg-text-muted); margin-top: 2px; }
+.flg-toast-close {
+  width: 22px; height: 22px; border-radius: 4px;
+  color: var(--flg-text-faint);
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; cursor: pointer;
+  flex-shrink: 0;
+}
+.flg-toast-close:hover { background: var(--flg-surface-alt); color: var(--flg-text); }
+.flg-toast-close svg { width: 12px; height: 12px; }
+@keyframes flg-toast-in {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
