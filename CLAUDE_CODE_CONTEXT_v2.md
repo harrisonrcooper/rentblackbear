@@ -1,6 +1,20 @@
 # Tenantory — Claude Code Context
 # Paste this into Claude Code at the start of every session.
-# Last updated: 2026-04-14
+# Last updated: 2026-04-14 (late evening — fork + Next 16 upgrade + Vercel tenantory project setup in progress)
+
+---
+
+## ⚠️ READ THIS FIRST — repo split happened tonight
+
+The Tenantory codebase **forked tonight** out of `rentblackbear/`. Working state:
+
+| Repo / Path | Purpose |
+|---|---|
+| `~/Desktop/rentblackbear/` | **Black Bear's live site only.** Stays on Next 14, original infra. DO NOT MODIFY for Tenantory work. Serves rentblackbear.com unchanged. |
+| `~/Desktop/tenantory-app/` | **NEW Tenantory codebase.** Next 16 + React 19 + Clerk 7. Fresh GitHub repo at `harrisonrcooper/tenantory`. This is where new feature work happens. |
+| `~/Desktop/tenantory/` | **HTML mocks (64 files).** Reference designs only — already ported to JSX in tenantory-app. Local-only git, no remote. |
+
+**For all new Tenantory work: cd ~/Desktop/tenantory-app first.** This file (CLAUDE_CODE_CONTEXT_v2.md) lives in `rentblackbear/` for historical reasons but documents Tenantory project state across all three repos.
 
 ---
 
@@ -303,19 +317,26 @@ All features must be built with tier gating in mind. Check `settings.tier` befor
 
 ## REMAINING MANUAL STEPS (Harrison only — code is complete)
 
-1. **Finish the new `tenantory` Vercel project setup.** T2 already created the project via CLI (`vercel projects add tenantory` → linked via `vercel link --project tenantory --yes`), but the first `vercel deploy` failed on Clerk's Edge middleware pulling `#crypto` / `@clerk/shared/buildAccountsBaseUrl` / `#safe-node-apis`. Two-part fix for T1 to run:
-   - In the Vercel dashboard for the new `tenantory` project, add env vars for Development (and later Preview + Production): `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, plus the Stripe / Resend / Twilio / Cron / Admin secrets the existing `rentblackbear` project already has.
-   - Force `middleware.ts` to Node runtime (add `export const runtime = "nodejs"` at the bottom) so Clerk's Node-specific imports stop tripping Vercel's Edge compile step.
-2. **Rotate the Supabase JWT secret** for the new Tenantory-dev project (anon key landed in chat earlier). 5 min in Supabase dashboard → API → JWT Settings → Generate new secret → re-copy the 3 values into the 3 Vercel env vars → tell T2 to re-pull.
-3. **Swap the Clerk keys in Vercel Dev.** Currently the pulled `.env.local` shows the prior `steady-marten-40` Clerk keys even though Harrison wants the new `supreme-jay-88` set. Update in the Vercel dashboard (Development env) so `vercel env pull` picks up the correct values.
-4. **Confirm the Tenantory-dev Supabase project ref.** The `NEXT_PUBLIC_SUPABASE_URL` that pulled out of Vercel Dev resolves to the existing Black Bear project (`vxys…noar`). If that's intentional (Tenantory-dev is sharing that Supabase), note it; if not, point the Dev env vars at the fresh project.
-5. **Create 3 Stripe Products/Prices** in Stripe Dashboard (Starter $97, Growth $197, Scale $397). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_SCALE` env vars to the new `tenantory` project in Vercel.
-6. **Apply the 11 SQL migrations** (`migrations/001_workspaces.sql` through `migrations/011_rls.sql`) once Supabase is provisioned. Run them in order; 011 enables RLS on every tenant-owned table and must run last.
-7. **Run workspace migration** for Harrison's existing data: hit `/api/migrate-workspace` with `{ workspaceId: clerkUserId }` to prefix existing bare `hq-*` keys.
-8. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
-9. **Tenantory domain** — pick and configure (currently everything lives at rentblackbear.com; the new Vercel project is on its auto-generated URL until a domain is attached).
-10. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
-11. **Set `settings.portalUrl`** in hq-settings so the lease boilerplate `{{PORTAL_URL}}` variable renders correctly.
+### Tonight / right-now state (mid-deploy)
+1. **Finish the new `tenantory` Vercel project setup.** OLD broken "tenantory" Vercel project was deleted; NEW one created from `harrisonrcooper/tenantory` GitHub repo (the `tenantory-app/` clone). Env vars partially populated as of last screenshot: CRON_SECRET, RESEND_API_KEY, STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET (placeholder), NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY. **Still need to add:** `NEXT_PUBLIC_SUPABASE_URL` = `https://jaleiwerptuocbsgugem.supabase.co`, `ADMIN_EMAIL`, `TWILIO_ACCOUNT_SID/AUTH_TOKEN/PHONE_NUMBER` (placeholders OK). Possibly the 4 `NEXT_PUBLIC_CLERK_*_URL` vars if the code references custom Clerk routes. Then redeploy.
+2. **Connect tenantory.com domain** to the new `tenantory` Vercel project once the deploy goes green (Vercel dashboard → Settings → Domains → add `tenantory.com` + `www.tenantory.com`). Cloudflare DNS already points there.
+3. **Stripe live mode activation** — Harrison started this flow tonight using sole-prop SSN + personal bank. Verification may still be in progress. When live, copy `pk_live_...` and `sk_live_...` and update Vercel's PRODUCTION env vars (keep Dev/Preview on test keys to avoid running real cards in staging).
+4. **Create the production Stripe webhook destination** AFTER tenantory.com is live: `https://tenantory.com/api/webhooks/stripe`, "Receive all current and future events", thin payloads OFF, name "Tenantory Production". Copy the `whsec_...` → replace the placeholder `STRIPE_WEBHOOK_SECRET` env var → redeploy.
+5. **Real Twilio setup** — currently placeholders. A2P 10DLC registration takes 2-4 weeks; submit the application early. Until then SMS won't actually send but the build/runtime works.
+6. **Verify `tenantory.com` in Resend** for sending domain — DNS records into Cloudflare. See `~/Desktop/tenantory/email-setup-runbook.md`.
+
+### Pre-launch hardening (before public)
+7. **Rotate the Supabase JWT secret** for the Tenantory-dev project (anon key landed in chat earlier). Supabase dashboard → Project Settings → API → JWT Settings → Generate new secret → re-copy the 3 values into Vercel env vars → redeploy.
+8. **Create 3 Stripe Products/Prices** for SaaS subscription tiers (Starter $39, Pro $99, Scale $299). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_SCALE` env vars to the new `tenantory` Vercel project.
+9. **Apply the 11 SQL migrations** (`migrations/001_workspaces.sql` through `migrations/011_rls.sql`) to the fresh Tenantory-dev Supabase. Run in order; 011 enables RLS on every tenant-owned table and must run last.
+10. **Form Tenantory LLC + EIN** (separate entity from Black Bear). Then update Stripe account from sole-prop to LLC, open business bank, transition Stripe payouts.
+11. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
+12. **Settings.portalUrl** — when Black Bear gets migrated IN as a workspace, set its `settings.portalUrl` so the lease boilerplate `{{PORTAL_URL}}` variable renders correctly.
+
+### Long-tail
+13. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
+14. **Black Bear → Tenantory workspace migration** — the eventual cutover. rentblackbear.com CNAMEs to Tenantory, data migrates as `workspace_id=blackbear`. Defer until Tenantory has 50 paying Founders and is battle-tested.
+15. **SOC 2 Type II auditor engagement** — Drata/Vanta. Process takes 6 months. Start now if you want the badge by H2.
 
 ---
 
@@ -339,7 +360,9 @@ cd ~/Desktop/rentblackbear && claude --dangerously-skip-permissions
 
 ## WHAT'S BUILT — current state
 
-> **April 2026 migration note.** The Flagship / Tenantory migration is mid-flight. The admin, portal, apply, and sign-in routes under `app/admin/*`, `app/portal/*`, `app/apply/[slug]/*`, and `app/sign-in/*` now serve **mock-ported Flagship JSX snapshots**, not the old data-wired pages. The prior production admin (2,192-line monolith with Supabase loaders, Clerk hooks, Stripe wiring) lives in git history (see commit `b2672fc` and earlier); the new UI is a scaffold that rewires to real data once the migrations below are applied and Clerk/Supabase point at the fresh Tenantory project. Every mock also still lives at `/mocks/<name>` for reference comparison.
+> **2026-04-14 LATE EVENING — fork + Next 16 upgrade.** Tonight the Tenantory codebase forked out of `rentblackbear/` into a clean repo at `~/Desktop/tenantory-app/` (pushed to `harrisonrcooper/tenantory` on GitHub). Inside that new repo: Next.js bumped 14.2 → 16.2.3, React 18 → 19.2, Clerk 6.39 → 7.1.0, TypeScript to 5.9. The Next codemod (`next-async-request-api`, `remove-unstable-prefix`, `remove-experimental-ppr`) was applied. `middleware.ts` was deleted and merged into `proxy.ts` (Next 16's preferred filename, runs on Node by default — fixes the `#crypto` / `@clerk/shared/buildAccountsBaseUrl` Edge runtime errors that blocked the previous deploy). Build is green. Old broken "tenantory" Vercel project deleted; new Vercel project being set up from the new GitHub repo with fresh env vars (Clerk supreme-jay-88, Supabase tenantory-dev `jaleiwerptuocbsgugem`, Stripe Tenantory test mode, Resend Tenantory API key, CRON_SECRET regenerated). Stripe live-mode activation submitted under sole-prop SSN. Domain connection to tenantory.com is the next step after the redeploy goes green.
+
+> **April 2026 migration note (earlier this session).** The Flagship / Tenantory migration is mid-flight. The admin, portal, apply, and sign-in routes under `app/admin/*`, `app/portal/*`, `app/apply/[slug]/*`, and `app/sign-in/*` now serve **mock-ported Flagship JSX snapshots**, not the old data-wired pages. The prior production admin (2,192-line monolith with Supabase loaders, Clerk hooks, Stripe wiring) lives in git history (see commit `b2672fc` and earlier); the new UI is a scaffold that rewires to real data once the migrations below are applied and Clerk/Supabase point at the fresh Tenantory project. Every mock also still lives at `/mocks/<name>` for reference comparison.
 
 ### New Flagship layer (added in the 2026-04 migration)
 - **components/ui/** — 20 primitives + tokens + shared CSS: Button, Card (+Head/Body/Foot), Input / Textarea / Select, Checkbox / Radio / Toggle, Drawer, Modal, Toast (+Provider+useToast), Pill, Avatar, EmptyState, ProgressBar, Stepper, DataTable, Kanban (+Column+Card), Dropzone, KeyValueGrid. All classes prefixed `flg-` to avoid colliding with the existing admin's `const S` CSS string.
