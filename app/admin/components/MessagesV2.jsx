@@ -315,7 +315,7 @@ export default function MessagesV2({ settings, properties, charges, maintenance:
 
   // Badge count on browser tab title
   useEffect(() => {
-    const base = settings?.companyName ? settings.companyName + " HQ" : "PropOS HQ";
+    const base = settings?.companyName ? settings.companyName + " HQ" : "Black Bear Rentals HQ";
     document.title = unreadTotal > 0 ? `(${unreadTotal}) ${base}` : base;
     return () => { document.title = base; };
   }, [unreadTotal]);

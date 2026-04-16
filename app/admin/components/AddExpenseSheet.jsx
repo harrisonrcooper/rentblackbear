@@ -1,6 +1,6 @@
 /**
  * AddExpenseSheet.jsx
- * PropOS — Mobile Add Expense Flow
+ * Black Bear Rentals — Mobile Add Expense Flow
  *
  * HOW TO INTEGRATE INTO admin/page.jsx:
  * 1. Import at the top of admin/page.jsx:

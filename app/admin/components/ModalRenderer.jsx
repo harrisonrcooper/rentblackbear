@@ -179,7 +179,6 @@ export default function ModalRenderer({
             Back
           </button>
           <div style={{display:"flex",gap:8}}>
-            <button className="btn btn-out btn-sm" style={{color:"#9a7422",borderColor:"rgba(154,116,34,.2)"}} onClick={()=>setModal(prev=>({...prev,moveOutStep:1,moveOutDate:r.le||new Date().toISOString().split("T")[0],moveOutChecklist:{cleaning:false,keyReturn:false,forwarding:false,meterReading:false},moveOutNotes:{cleaning:"",keyReturn:"",forwarding:"",meterReading:""}}))}>Move Out</button>
             <button className="btn btn-out btn-sm" style={{color:"#c45c4a",borderColor:"rgba(196,92,74,.2)"}} onClick={()=>setModal(prev=>({...prev,termStep:1,termErrs:{}}))}>Terminate</button>
           </div>
         </div>
@@ -405,108 +404,6 @@ export default function ModalRenderer({
                     <button className="btn btn-out btn-sm" style={{width:"100%"}} onClick={()=>{setModal(null);goTab("leases");setTimeout(()=>openCreateLease(null),100);}}>Create Lease →</button>
                   </div>
                 )}
-              </div>);
-            })()}
-
-            {/* Move-Out flow */}
-            {modal.moveOutStep===1&&<div style={{background:"#fff",borderRadius:12,border:"2px solid rgba(154,116,34,.25)",padding:"20px 24px"}}>
-              <div style={{fontSize:15,fontWeight:800,color:"#9a7422",marginBottom:14}}>Move-Out Checklist</div>
-              <div className="fld"><label>Move-Out Date</label><input type="date" value={modal.moveOutDate||""} onChange={e=>setModal(p=>({...p,moveOutDate:e.target.value}))} style={{width:"100%"}}/></div>
-              {[["cleaning","Cleaning Inspection"],["keyReturn","Key Return"],["forwarding","Forwarding Address Collected"],["meterReading","Final Meter Reading"]].map(([k,label])=>(
-                <div key={k} style={{padding:"8px 0",borderBottom:"1px solid rgba(0,0,0,.04)"}}>
-                  <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600}}>
-                    <input type="checkbox" checked={modal.moveOutChecklist?.[k]||false} onChange={e=>setModal(p=>({...p,moveOutChecklist:{...p.moveOutChecklist,[k]:e.target.checked}}))}/>
-                    {label}
-                  </label>
-                  <input placeholder="Notes (optional)" value={modal.moveOutNotes?.[k]||""} onChange={e=>setModal(p=>({...p,moveOutNotes:{...p.moveOutNotes,[k]:e.target.value}}))} style={{width:"100%",marginTop:4,padding:"4px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.06)",fontSize:11,fontFamily:"inherit"}}/>
-                </div>
-              ))}
-              <div style={{display:"flex",gap:6,marginTop:12}}>
-                <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(p=>({...p,moveOutStep:null}))}>Cancel</button>
-                <button className="btn" style={{flex:1,background:"#9a7422",color:"#fff"}} onClick={async()=>{
-                  if(!modal.moveOutDate){shakeModal();return;}
-                  const dueDate=new Date(modal.moveOutDate+"T00:00:00");dueDate.setDate(dueDate.getDate()+60);
-                  const sdDueStr=dueDate.toISOString().split("T")[0];
-                  // Update room: set moveOutDate, checklist, status to "notice"
-                  const updatedProps=props.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id===r.id?{...rm,st:"notice",tenant:{...rm.tenant,moveOutDate:modal.moveOutDate,moveOutChecklist:{...modal.moveOutChecklist,notes:modal.moveOutNotes},sdReturnDueDate:sdDueStr}}:rm)}))}));
-                  setProps(updatedProps);
-                  await save("hq-props",updatedProps);
-                  // Create notification
-                  const nid=crypto.randomUUID();
-                  const companyName=settings.companyName||"Property Management";
-                  const newNotif={id:nid,type:"move-out",roomId:r.id,msg:`Move-out initiated for ${r.tenant.name} — SD return due by ${fmtD(sdDueStr)} (Alabama 60-day rule)`,date:new Date().toISOString().split("T")[0],read:false,urgent:false};
-                  setNotifs(p=>[newNotif,...p]);
-                  save("hq-notifs",[newNotif,...notifs]);
-                  // Send confirmation email to tenant
-                  if(r.tenant.email){
-                    try{await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:r.tenant.email,subject:`Move-Out Confirmation — ${modal.moveOutDate}`,fromName:(settings.pmName||"Property Manager")+" | "+companyName,replyTo:settings.pmEmail||settings.email||"",html:`<p>Hi ${(r.tenant.name||"").split(" ")[0]||"there"},</p><p>This confirms your move-out date of <strong>${fmtD(modal.moveOutDate)}</strong> from <strong>${r.propName} — ${r.name}</strong>.</p><p>Your security deposit, less any lawful deductions, will be returned within 60 days of your move-out date along with an itemized statement of any deductions.</p><p>Please ensure the following before your move-out date:</p><ul><li>Return all keys</li><li>Provide a forwarding address</li><li>Complete final cleaning</li><li>Coordinate final meter reading</li></ul><p>Thank you,<br/>${companyName}</p>`})});}catch(e){console.error("Move-out email failed:",e);}
-                  }
-                  // Move to SD reconciliation step
-                  setModal(p=>({...p,moveOutStep:2,sdDeductions:[],sdReturnDueDate:sdDueStr}));
-                }}>Confirm Move-Out</button>
-              </div>
-            </div>}
-            {/* SD Reconciliation */}
-            {modal.moveOutStep===2&&(()=>{
-              const sdCharge=charges.find(c=>c.roomId===r.id&&c.category==="Security Deposit");
-              const sdEntry=(sdLedger||[]).find(e=>e.roomId===r.id);
-              const sdHeld=sdEntry?.amount||sdCharge?.amountPaid||sdCharge?.amount||0;
-              const deductions=modal.sdDeductions||[];
-              const totalDed=deductions.reduce((s,d)=>s+Number(d.amount||0),0);
-              const returnAmt=Math.max(0,sdHeld-totalDed);
-              return(
-              <div style={{background:"#fff",borderRadius:12,border:"2px solid rgba(154,116,34,.25)",padding:"20px 24px"}}>
-                <div style={{fontSize:15,fontWeight:800,color:"#9a7422",marginBottom:14}}>Security Deposit Reconciliation</div>
-                <div style={{display:"flex",justifyContent:"space-between",padding:"10px 14px",background:"rgba(154,116,34,.06)",borderRadius:8,marginBottom:14}}>
-                  <div><div style={{fontSize:10,color:"#6b5e52",fontWeight:700}}>SD HELD</div><div style={{fontSize:20,fontWeight:800}}>{fmtS(sdHeld)}</div></div>
-                  <div style={{textAlign:"center"}}><div style={{fontSize:10,color:"#c45c4a",fontWeight:700}}>DEDUCTIONS</div><div style={{fontSize:20,fontWeight:800,color:"#c45c4a"}}>{fmtS(totalDed)}</div></div>
-                  <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#4a7c59",fontWeight:700}}>RETURN</div><div style={{fontSize:20,fontWeight:800,color:"#4a7c59"}}>{fmtS(returnAmt)}</div></div>
-                </div>
-                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>Itemized Deductions</div>
-                {deductions.map((d,i)=>(
-                  <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-                    <input placeholder="Description" value={d.desc||""} onChange={e=>{const nd=[...deductions];nd[i]={...nd[i],desc:e.target.value};setModal(p=>({...p,sdDeductions:nd}));}} style={{flex:2,padding:"6px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-                    <input type="number" placeholder="$" value={d.amount||""} onChange={e=>{const nd=[...deductions];nd[i]={...nd[i],amount:e.target.value};setModal(p=>({...p,sdDeductions:nd}));}} style={{flex:0.7,padding:"6px 8px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}/>
-                    <select value={d.category||""} onChange={e=>{const nd=[...deductions];nd[i]={...nd[i],category:e.target.value};setModal(p=>({...p,sdDeductions:nd}));}} style={{flex:1,padding:"6px 4px",borderRadius:4,border:"1px solid rgba(0,0,0,.08)",fontSize:11,fontFamily:"inherit"}}>
-                      <option value="">Category</option><option value="cleaning">Cleaning</option><option value="damage">Damage</option><option value="unpaid_rent">Unpaid Rent</option><option value="other">Other</option>
-                    </select>
-                    <button onClick={()=>{const nd=deductions.filter((_,j)=>j!==i);setModal(p=>({...p,sdDeductions:nd}));}} style={{background:"none",border:"none",cursor:"pointer",color:"#c45c4a",fontSize:14,padding:"0 4px"}}>x</button>
-                  </div>
-                ))}
-                <button onClick={()=>setModal(p=>({...p,sdDeductions:[...deductions,{id:crypto.randomUUID(),desc:"",amount:"",category:""}]}))} style={{background:"none",border:"1px dashed rgba(0,0,0,.15)",borderRadius:6,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:600,color:"#6b5e52",width:"100%",marginBottom:14,fontFamily:"inherit"}}>+ Add Deduction</button>
-                <div style={{fontSize:10,color:"#6b5e52",marginBottom:10}}>SD return due by {fmtD(modal.sdReturnDueDate)} (Alabama 60-day rule)</div>
-                <div style={{display:"flex",gap:6}}>
-                  <button className="btn btn-out" style={{flex:1}} onClick={()=>setModal(p=>({...p,moveOutStep:null}))}>Skip for Now</button>
-                  <button className="btn" style={{flex:1,background:"#4a7c59",color:"#fff"}} onClick={async()=>{
-                    const companyName=settings.companyName||"Property Management";
-                    // Create credit for return amount
-                    if(returnAmt>0){
-                      const creditId=crypto.randomUUID();
-                      const newCredit={id:creditId,roomId:r.id,tenantName:r.tenant.name,propName:r.propName,roomName:r.name,category:"Security Deposit Return",desc:`SD return — ${deductions.length} deduction(s) totaling ${fmtS(totalDed)}`,amount:returnAmt,date:new Date().toISOString().split("T")[0]};
-                      setCredits(p=>[newCredit,...(p||[])]);
-                      save("hq-credits",[newCredit,...(credits||[])]);
-                    }
-                    // Update SD ledger
-                    const ledgerEntry={id:crypto.randomUUID(),roomId:r.id,tenantName:r.tenant.name,propName:r.propName,amountHeld:sdHeld,deductions:deductions.map(d=>({desc:d.desc,amount:Number(d.amount||0),category:d.category})),totalDeductions:totalDed,returnAmount:returnAmt,reconciledDate:new Date().toISOString().split("T")[0],moveOutDate:modal.moveOutDate};
-                    const updatedSdLedger=[ledgerEntry,...(sdLedger||[])];
-                    setSdLedger(updatedSdLedger);
-                    save("hq-sdledger",updatedSdLedger);
-                    // Set sdReconciled on tenant
-                    const updatedProps=props.map(p=>({...p,units:(p.units||[]).map(u=>({...u,rooms:(u.rooms||[]).map(rm=>rm.id===r.id?{...rm,tenant:{...rm.tenant,sdReconciled:true,sdReturnDueDate:modal.sdReturnDueDate}}:rm)}))}));
-                    setProps(updatedProps);
-                    await save("hq-props",updatedProps);
-                    // Send itemized statement email
-                    if(r.tenant.email){
-                      const dedRows=deductions.map(d=>`<tr><td style="padding:6px 10px;border-bottom:1px solid #eee">${d.desc||"—"}</td><td style="padding:6px 10px;border-bottom:1px solid #eee">${d.category||"—"}</td><td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${fmtS(d.amount)}</td></tr>`).join("");
-                      try{await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:r.tenant.email,subject:`Security Deposit Itemized Statement — ${r.propName}`,fromName:(settings.pmName||"Property Manager")+" | "+companyName,replyTo:settings.pmEmail||settings.email||"",html:`<p>Hi ${(r.tenant.name||"").split(" ")[0]||"there"},</p><p>Below is your itemized security deposit statement for <strong>${r.propName} — ${r.name}</strong>.</p><table style="width:100%;border-collapse:collapse;margin:16px 0"><tr style="background:#f5f4f1"><th style="padding:8px 10px;text-align:left">Description</th><th style="padding:8px 10px;text-align:left">Category</th><th style="padding:8px 10px;text-align:right">Amount</th></tr>${dedRows}<tr style="font-weight:700"><td colspan="2" style="padding:8px 10px">Total Deductions</td><td style="padding:8px 10px;text-align:right">${fmtS(totalDed)}</td></tr></table><p><strong>Security Deposit Held:</strong> ${fmtS(sdHeld)}<br/><strong>Total Deductions:</strong> ${fmtS(totalDed)}<br/><strong>Amount to be Returned:</strong> ${fmtS(returnAmt)}</p><p>Per Alabama law, your deposit return will be processed within 60 days of your move-out date.</p><p>Thank you,<br/>${companyName}</p>`})});}catch(e){console.error("SD statement email failed:",e);}
-                    }
-                    // Notification
-                    const nid2=crypto.randomUUID();
-                    setNotifs(p=>[{id:nid2,type:"sd-reconciled",roomId:r.id,msg:`SD reconciled for ${r.tenant.name}: ${fmtS(sdHeld)} held, ${fmtS(totalDed)} deducted, ${fmtS(returnAmt)} to return`,date:new Date().toISOString().split("T")[0],read:false,urgent:false},...p]);
-                    setModal(p=>({...p,moveOutStep:null}));
-                    showAlert&&showAlert({title:"SD Reconciled",body:`Return of ${fmtS(returnAmt)} recorded. Itemized statement sent to ${r.tenant.email||"tenant"}.`});
-                  }}>Finalize SD Return</button>
-                </div>
               </div>);
             })()}
 
@@ -3791,148 +3688,15 @@ export default function ModalRenderer({
     </motion.div></div>);
   })()}
 
-  {/* Deny Modal — FCRA Adverse Action Notice */}
-  {modal&&modal.type==="denyApp"&&(()=>{
-    const a=modal.data||{};
-    const step=modal._aaStep||"reason"; // reason → preview → confirm
-    const DENIAL_REASONS=[
-      {value:"credit_score",label:"Credit score below threshold"},
-      {value:"criminal_history",label:"Criminal history"},
-      {value:"rental_history",label:"Negative rental history"},
-      {value:"income_insufficient",label:"Insufficient income"},
-      {value:"other",label:"Other (specify below)"},
-    ];
-    const reasonLabel=DENIAL_REASONS.find(r=>r.value===modal._aaReasonKey)?.label||modal._aaReasonKey||"";
-    const reasonText=modal._aaReasonKey==="other"?(modal.reason||""):reasonLabel;
-    const providerName=modal._aaProviderName||(settings?.screeningProviderName||"");
-    const providerAddress=modal._aaProviderAddress||(settings?.screeningProviderAddress||"");
-    const providerPhone=modal._aaProviderPhone||(settings?.screeningProviderPhone||"");
-    const todayFmt=fmtD(TODAY.toISOString().split("T")[0]);
-    const applicantName=a.name||"Applicant";
-    const applicantAddr=a.applicationData?.addresses?.[0]?`${a.applicationData.addresses[0].street||""}${a.applicationData.addresses[0].unit?" #"+a.applicationData.addresses[0].unit:""}, ${a.applicationData.addresses[0].city||""} ${a.applicationData.addresses[0].state||""} ${a.applicationData.addresses[0].zip||""}`:"(address on file)";
-    const companyName=settings?.companyName||"Property Management";
-
-    const FCRA_TEXT=`Under the Fair Credit Reporting Act, you have the right to:\n- Obtain a free copy of your consumer report from the screening company within 60 days\n- Dispute the accuracy or completeness of any information in your report\nThe screening company did not make the decision to deny your application and cannot explain why the decision was made.`;
-
-    const letterHtml=`<div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:32px;color:#1a1714;line-height:1.7">
-<p style="margin-bottom:4px"><strong>${companyName}</strong></p>
-<p style="margin-bottom:20px;font-size:13px;color:#5c4a3a">${todayFmt}</p>
-<p>Dear ${applicantName},</p>
-<p>We regret to inform you that your rental application has been denied. This decision was based, in whole or in part, on information contained in a consumer report.</p>
-<p><strong>Reason for denial:</strong> ${reasonText}${modal._aaReasonKey==="other"&&modal.reason?" — "+modal.reason:""}</p>
-<p><strong>Screening company that provided the report:</strong><br/>
-${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}${providerPhone?"<br/>"+providerPhone:""}</p>
-<p style="margin-top:20px;padding:14px;background:#f8f6f2;border-left:3px solid #d4a853;font-size:13px">${FCRA_TEXT.replace(/\n/g,"<br/>")}</p>
-<p>If you have questions about this decision, please contact us at ${settings?.email||"(contact on file)"} or ${settings?.phone||"(phone on file)"}.</p>
-<p style="margin-top:24px">Sincerely,<br/><strong>${settings?.pmName||companyName}</strong></p>
-</div>`;
-
-    const sendAdverseAction=()=>{
-      // Update application record
-      const todayStr=TODAY.toISOString().split("T")[0];
-      setApps(p=>p.map(x=>x.id!==a.id?x:{...x,
-        status:"denied",
-        deniedReason:reasonText+(modal._aaReasonKey==="other"&&modal.reason?" — "+modal.reason:""),
-        deniedDate:todayStr,
-        prevStage:x.status,
-        lastContact:todayStr,
-        history:[...(x.history||[]),{from:x.status,to:"denied",date:todayStr,note:"Denied — FCRA adverse action notice sent"}],
-        adverseAction:{date:todayStr,reason:modal._aaReasonKey,reasonText:reasonText+(modal._aaReasonKey==="other"&&modal.reason?" — "+modal.reason:""),providerName,providerAddress,providerPhone,sent:true},
-      }));
-      // Send adverse action email
-      if(a.email){
-        fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({to:a.email,subject:`Adverse Action Notice — ${companyName}`,html:letterHtml})
-        }).catch(console.error);
-      }
-      setModal(null);
-    };
-
-    return(<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:step==="preview"?620:460}}>
-      {step==="reason"&&<>
-        <h2>Deny Application — Adverse Action Notice</h2>
-        <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Federal law (FCRA) requires an adverse action notice when denying an applicant based on a consumer report. Complete the fields below.</p>
-        <div className="fld"><label>Denial Reason (required)</label>
-          <select value={modal._aaReasonKey||""} onChange={e=>setModal(p=>({...p,_aaReasonKey:e.target.value}))} style={{width:"100%"}}>
-            <option value="">Select a reason...</option>
-            {DENIAL_REASONS.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
-          </select>
-        </div>
-        {modal._aaReasonKey==="other"&&<div className="fld"><label>Specify Reason</label><textarea value={modal.reason||""} onChange={e=>setModal(p=>({...p,reason:e.target.value}))} placeholder="Describe the reason for denial..." rows={2}/></div>}
-        <div style={{border:"1px solid rgba(0,0,0,.06)",borderRadius:8,padding:12,marginBottom:12,background:"rgba(0,0,0,.02)"}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#6b5e52",textTransform:"uppercase",letterSpacing:.6,marginBottom:8}}>Screening Provider (included in notice)</div>
-          <div className="fld" style={{marginBottom:6}}><label>Provider Name</label><input value={providerName} onChange={e=>setModal(p=>({...p,_aaProviderName:e.target.value}))} placeholder="e.g. RentPrep, SmartMove"/></div>
-          <div className="fld" style={{marginBottom:6}}><label>Provider Address</label><input value={providerAddress} onChange={e=>setModal(p=>({...p,_aaProviderAddress:e.target.value}))} placeholder="123 Main St, Suite 100, City, ST 12345"/></div>
-          <div className="fld" style={{marginBottom:0}}><label>Provider Phone</label><input value={providerPhone} onChange={e=>setModal(p=>({...p,_aaProviderPhone:e.target.value}))} placeholder="(800) 555-1234"/></div>
-        </div>
-        <div className="mft">
-          <button className="btn btn-out" onClick={()=>setModal(modal.data?{type:"app",data:modal.data}:null)}>Cancel</button>
-          <button className="btn btn-gold" disabled={!modal._aaReasonKey||(modal._aaReasonKey==="other"&&!(modal.reason||"").trim())} onClick={()=>setModal(p=>({...p,_aaStep:"preview"}))}>Preview Notice</button>
-        </div>
-      </>}
-      {step==="preview"&&<>
-        <h2>Review Adverse Action Notice</h2>
-        <p style={{fontSize:11,color:"#6b5e52",marginBottom:10}}>This notice will be emailed to <strong>{a.email||"(no email)"}</strong> and saved to the application record.</p>
-        <div style={{border:"1px solid rgba(0,0,0,.1)",borderRadius:8,padding:0,marginBottom:14,maxHeight:380,overflow:"auto",background:"#fff"}}>
-          <div dangerouslySetInnerHTML={{__html:letterHtml}}/>
-        </div>
-        <div className="mft">
-          <button className="btn btn-out" onClick={()=>setModal(p=>({...p,_aaStep:"reason"}))}>Back</button>
-          <button className="btn btn-red" onClick={sendAdverseAction}>Send Notice & Deny</button>
-        </div>
-      </>}
-    </div></div>);
-  })()}
-
-  {/* Background Check Order / Update Modal */}
-  {modal&&modal.type==="bgCheckOrder"&&(()=>{
-    const a=modal.data||{};
-    const existing=a.bgCheckDetails||{};
-    const provider=modal._bgProvider||(existing.provider||"");
-    const orderDate=modal._bgOrderDate||(existing.orderDate||TODAY.toISOString().split("T")[0]);
-    const status=modal._bgStatus||(existing.status||"ordered");
-    const result=modal._bgResult||(existing.result||"");
-    const notes=modal._bgNotes||(existing.notes!==undefined?existing.notes:"");
-    const BG_STATUSES=[{value:"ordered",label:"Ordered"},{value:"pending",label:"Pending / In Progress"},{value:"passed",label:"Passed"},{value:"failed",label:"Failed"}];
-    const saveBgCheck=()=>{
-      const todayStr=TODAY.toISOString().split("T")[0];
-      const bgCheckVal=(status==="passed"||status==="failed")?status:(status==="pending"?"pending":"ordered");
-      setApps(p=>{const ua=p.map(x=>x.id!==a.id?x:{...x,bgCheck:bgCheckVal,bgCheckDetails:{provider,orderDate,status,result,notes},lastContact:todayStr});save("hq-apps",ua);return ua;});
-      // Return to app modal with updated data
-      const updatedApp={...a,bgCheck:bgCheckVal,bgCheckDetails:{provider,orderDate,status,result,notes}};
-      setModal({type:"app",data:updatedApp});
-    };
-    return(<div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:440}}>
-      <h2>{existing.provider?"Update Background Check":"Order Background Check"}</h2>
-      <p style={{fontSize:11,color:"#6b5e52",marginBottom:14}}>Track background check status manually. Order through your screening provider, then update results here.</p>
-      <div className="fld"><label>Screening Provider</label>
-        <select value={provider} onChange={e=>setModal(p=>({...p,_bgProvider:e.target.value}))} style={{width:"100%"}}>
-          <option value="">Select or type below...</option>
-          {(settings?.screeningProviderName?[settings.screeningProviderName]:[]).map(n=><option key={n} value={n}>{n}</option>)}
-          <option value="RentPrep">RentPrep</option>
-          <option value="SmartMove">SmartMove (TransUnion)</option>
-          <option value="MyRental">MyRental</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      {provider==="other"&&<div className="fld"><label>Provider Name</label><input value={modal._bgProviderCustom||""} onChange={e=>setModal(p=>({...p,_bgProviderCustom:e.target.value,_bgProvider:e.target.value}))} placeholder="Enter provider name"/></div>}
-      <div className="fr"><div className="fld"><label>Order Date</label><input type="date" value={orderDate} onChange={e=>setModal(p=>({...p,_bgOrderDate:e.target.value}))}/></div>
-      <div className="fld"><label>Status</label>
-        <select value={status} onChange={e=>setModal(p=>({...p,_bgStatus:e.target.value}))} style={{width:"100%"}}>
-          {BG_STATUSES.map(s=><option key={s.value} value={s.value}>{s.label}</option>)}
-        </select>
-      </div></div>
-      {(status==="passed"||status==="failed")&&<div className="fld"><label>Result Notes</label><input value={result} onChange={e=>setModal(p=>({...p,_bgResult:e.target.value}))} placeholder="e.g. Clear, No issues found"/></div>}
-      <div className="fld"><label>Notes</label><textarea value={notes} onChange={e=>setModal(p=>({...p,_bgNotes:e.target.value}))} rows={2} placeholder="Any additional notes..."/></div>
-      <div style={{padding:"10px 12px",background:"rgba(212,168,83,.06)",borderRadius:6,fontSize:10,color:"#9a7422",marginBottom:12}}>
-        <strong>Reminder:</strong> Order the background check through your provider's website, then come back here to update the status when results arrive.
-      </div>
-      <div className="mft">
-        <button className="btn btn-out" onClick={()=>setModal(modal.data?{type:"app",data:modal.data}:null)}>Cancel</button>
-        <button className="btn btn-gold" disabled={!provider} onClick={saveBgCheck}>Save</button>
-      </div>
-    </div></div>);
-  })()}
+  {/* Deny Modal */}
+  {modal&&modal.type==="denyApp"&&(
+    <div className="mbg" onClick={()=>setModal(null)}><div className="mbox" onClick={e=>e.stopPropagation()} style={{maxWidth:400}}>
+      <h2>Deny Application</h2>
+      <div className="fld"><label>Reason (required)</label><textarea value={modal.reason||""} onChange={e=>setModal(prev=>({...prev,reason:e.target.value}))} placeholder="e.g. Failed background check, insufficient income..." rows={3} autoFocus/></div>
+      <div className="mft"><button className="btn btn-out" onClick={()=>setModal(modal.data?{type:"app",data:modal.data}:null)}>← Back</button>
+        <button className="btn btn-red" disabled={!(modal.reason||"").trim()} onClick={()=>{setApps(p=>p.map(a=>a.id===modal.appId?{...a,status:"denied",deniedReason:modal.reason,deniedDate:TODAY.toISOString().split("T")[0],prevStage:a.status,lastContact:TODAY.toISOString().split("T")[0],history:[...(a.history||[]),{from:a.status,to:"denied",date:TODAY.toISOString().split("T")[0],note:modal.reason}]}:a));setModal(null);}}>Deny</button></div>
+    </div></div>
+  )}
 
   {modal&&modal.type==="app"&&(()=>{const a=modal.data;
     const STAGES=["new-lead","applied","approved","onboarding"];
@@ -5326,19 +5090,6 @@ ${providerName||"(not specified)"}${providerAddress?"<br/>"+providerAddress:""}$
           </div>
           <div style={{fontSize:10,color:"#9a8878",marginBottom:12}}>Auto-derived from application data · Updates when RentPrep results arrive</div>
           <Row label="Background Check" st={bgSt} detail={bgDetail} badge={bgBadge} tag={hasRentPrep?"RENTPREP":null}/>
-          {/* Background Check Order / Update Button */}
-          <div style={{paddingLeft:26,paddingBottom:8}}>
-            {a.bgCheckDetails&&a.bgCheckDetails.provider?
-              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:10,color:"#6b5e52"}}>Provider: <strong>{a.bgCheckDetails.provider}</strong> | Ordered: {fmtD(a.bgCheckDetails.orderDate)}{a.bgCheckDetails.notes?" | "+a.bgCheckDetails.notes:""}</span>
-                <button onClick={()=>setModal({type:"bgCheckOrder",data:a})} style={{fontSize:9,fontWeight:700,padding:"3px 8px",borderRadius:5,border:"1px solid rgba(212,168,83,.3)",background:"rgba(212,168,83,.08)",color:"#9a7422",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>Update Status</button>
-              </div>
-              :<button onClick={()=>setModal({type:"bgCheckOrder",data:a})} style={{fontSize:9,fontWeight:700,padding:"5px 10px",borderRadius:5,border:"1px solid rgba(74,124,89,.3)",background:"rgba(74,124,89,.06)",color:"#2d6a3f",cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
-                Order Background Check
-              </button>
-            }
-          </div>
           <Row label="Credit Check" st={creditSt} detail={creditDetail} badge={creditBadge} tag={hasRentPrep?"RENTPREP":null}/>
           {incSt!==null&&<Row label="Income Verification" st={incSt} detail={incDetail} badge={incBadge} tag={hasRentPrep?"RENTPREP":null}/>}
           <Row label="Pay Stubs" st={paySt} detail={payDetail} badge={payBadge}/>

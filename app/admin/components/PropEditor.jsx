@@ -1012,89 +1012,6 @@ function AddExistingTenantModal({room,propName,onSave,onClose}){
 }
 
 // ─── PropEditor ─────────────────────────────────────────────────────
-// ─── Room Photo Uploader (base64, max 5 photos, max 2MB each) ──────
-const MAX_ROOM_PHOTOS=5;
-const MAX_PHOTO_SIZE=2*1024*1024; // 2MB
-
-function RoomPhotoUploader({photos=[],onChange,roomName,propId,showAlert}){
-  const[uploading,setUploading]=useState(false);
-  const ph=photos||[];
-
-  const handleFiles=async(files)=>{
-    const imageFiles=[...files].filter(f=>f.type.startsWith("image/"));
-    if(!imageFiles.length)return;
-
-    // Check limit
-    const remaining=MAX_ROOM_PHOTOS-ph.length;
-    if(remaining<=0){
-      showAlert&&showAlert({title:"Photo Limit Reached",body:`Maximum ${MAX_ROOM_PHOTOS} photos per room. Remove a photo before adding more.`});
-      return;
-    }
-    const toProcess=imageFiles.slice(0,remaining);
-    if(imageFiles.length>remaining){
-      showAlert&&showAlert({title:"Photo Limit",body:`Only ${remaining} more photo${remaining!==1?"s":""} can be added. ${imageFiles.length-remaining} file${imageFiles.length-remaining!==1?"s":""} skipped.`});
-    }
-
-    // Validate sizes
-    const oversized=toProcess.filter(f=>f.size>MAX_PHOTO_SIZE);
-    if(oversized.length>0){
-      showAlert&&showAlert({title:"File Too Large",body:`${oversized.length} file${oversized.length!==1?"s":""} exceed${oversized.length===1?"s":""} the 2MB limit and will be skipped.`});
-    }
-    const valid=toProcess.filter(f=>f.size<=MAX_PHOTO_SIZE);
-    if(!valid.length)return;
-
-    setUploading(true);
-    const results=await Promise.all(valid.map(async file=>{
-      // Try Supabase Storage first
-      const url=await uploadPhoto(file,propId||"general");
-      if(url)return url;
-      // Fallback to base64
-      return new Promise(res=>{const r=new FileReader();r.onload=ev=>res(ev.target.result);r.onerror=()=>res(null);r.readAsDataURL(file);});
-    }));
-    const added=results.filter(Boolean);
-    if(added.length>0)onChange(prev=>[...(Array.isArray(prev)?prev:ph),...added]);
-    setUploading(false);
-  };
-
-  const openPicker=()=>{
-    const inp=document.createElement("input");
-    inp.type="file";inp.accept="image/*";inp.multiple=true;
-    inp.onchange=e=>handleFiles(e.target.files);
-    inp.click();
-  };
-
-  const remove=(i)=>onChange(ph.filter((_,j)=>j!==i));
-
-  return(
-    <div style={{marginBottom:10}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-        <label style={{fontSize:9,fontWeight:700,color:"#7a7067",textTransform:"uppercase",letterSpacing:.3}}>
-          {roomName} Photos ({ph.length}/{MAX_ROOM_PHOTOS})
-        </label>
-        {ph.length<MAX_ROOM_PHOTOS&&<button type="button" onClick={openPicker} style={{fontSize:9,padding:"4px 10px",borderRadius:5,border:"1px solid rgba(0,0,0,.1)",background:"#faf9f7",cursor:"pointer",fontFamily:"inherit",fontWeight:600,color:"#5c4a3a"}}>
-          + Add Photo
-        </button>}
-      </div>
-      {uploading&&<div style={{fontSize:10,color:"#9a7422",marginBottom:4}}>Uploading...</div>}
-      {ph.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:6}}>
-        {ph.map((src,i)=>(
-          <div key={i} style={{position:"relative",borderRadius:7,overflow:"hidden",border:"1px solid rgba(0,0,0,.06)",aspectRatio:"1"}}>
-            <img src={src} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.target.style.display="none";}}/>
-            <button onClick={()=>remove(i)} style={{position:"absolute",top:3,right:3,width:18,height:18,borderRadius:"50%",background:"rgba(0,0,0,.65)",color:"#fff",border:"none",fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:3,lineHeight:1}}>x</button>
-          </div>
-        ))}
-      </div>}
-      {ph.length===0&&<div style={{padding:"8px 12px",border:"2px dashed rgba(0,0,0,.06)",borderRadius:8,textAlign:"center",fontSize:10,color:"#6b5e52",cursor:"pointer"}} onClick={openPicker}
-        onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor="#d4a853";}}
-        onDragLeave={e=>{e.currentTarget.style.borderColor="rgba(0,0,0,.06)";}}
-        onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="rgba(0,0,0,.06)";if(e.dataTransfer.files.length)handleFiles(e.dataTransfer.files);}}>
-        Drop photos here or click to upload (max {MAX_ROOM_PHOTOS}, 2MB each)
-      </div>}
-      <div style={{fontSize:8,color:"#999",marginTop:2}}>Accepted: image files. Max 2MB each, {MAX_ROOM_PHOTOS} per room.</div>
-    </div>
-  );
-}
-
 export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTenant,onRemoveTenant,settings,onUpdateSettings,showAlert,showConfirm}){
   const _acc=settings?.adminAccent||"#4a7c59";
   const _grn=settings?.themeGreen||"#4a7c59";
@@ -1377,7 +1294,7 @@ export default function PropEditor({prop,onSave,onClose,onDelete,isNew,onViewTen
               </div>
             </div>}
             {!locked&&<div className="fld"><label>Description <span style={{fontWeight:400,color:"#6b5e52",textTransform:"none",letterSpacing:0,fontSize:9}}>— internal notes</span></label><input value={r.desc||""} onChange={e=>updRoom(i,"desc",e.target.value)} placeholder="Additional notes..."/></div>}
-            {!locked&&<RoomPhotoUploader photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} roomName={r.name} propId={p.id} showAlert={showAlert}/>}
+            {!locked&&<PhotoManager photos={r.photos||[]} onChange={v=>updRoomPhotos(i,v)} label={`${r.name} Photos`} propId={p.id}/>}
             <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center",flexWrap:"wrap"}}>
               {!locked&&!r.ownerOccupied&&<button className="btn btn-green btn-sm" style={{fontSize:10}}
                 onClick={()=>setAddTenantRoom({roomIdx:i,unitIdx:activeUnit})}>

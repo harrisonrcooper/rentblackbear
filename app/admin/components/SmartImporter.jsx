@@ -1429,7 +1429,7 @@ export default function SmartImporter({
           {step === 1 && (<>
             {/* Summary card */}
             <div style={{ background: `rgba(${_acR},.05)`, border: `1px solid rgba(${_acR},.15)`, borderRadius: 10, padding: "14px 18px", marginBottom: 14 }}>
-              {detectedPreset && <div style={{ fontSize: 11, fontWeight: 600, color: _ac, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}><IOk /> Detected {detectedPreset === "propOS" ? "PropOS" : detectedPreset === "turboTenant" ? "TurboTenant" : detectedPreset === "appFolio" ? "AppFolio" : detectedPreset === "buildium" ? "Buildium" : detectedPreset === "innago" ? "Innago" : detectedPreset === "stessa" ? "Stessa" : detectedPreset} format {"\u2014"} {Object.keys(colMap).length} columns auto-mapped</div>}
+              {detectedPreset && <div style={{ fontSize: 11, fontWeight: 600, color: _ac, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}><IOk /> Detected {detectedPreset === "propOS" ? "Black Bear Rentals" : detectedPreset === "turboTenant" ? "TurboTenant" : detectedPreset === "appFolio" ? "AppFolio" : detectedPreset === "buildium" ? "Buildium" : detectedPreset === "innago" ? "Innago" : detectedPreset === "stessa" ? "Stessa" : detectedPreset} format {"\u2014"} {Object.keys(colMap).length} columns auto-mapped</div>}
               <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1714", marginBottom: 6 }}>
                 {nProps} {nProps === 1 ? "property" : "properties"} · {nRooms} rooms · {nTenants} tenants
               </div>

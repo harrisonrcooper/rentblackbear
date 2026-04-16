@@ -778,7 +778,7 @@ export default function LedgerImporter({
                   document.body.removeChild(a); URL.revokeObjectURL(url);
                 }} style={{ background: "none", border: "none", padding: 0, color: _ac, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12, textDecoration: "underline" }}>template spreadsheet</button> if you're starting fresh</li>
                 <li>Upload the file below {"\u2014"} we&apos;ll auto-detect the format</li>
-                <li>Map categories to PropOS charge types (Rent, SD, Utilities, etc.)</li>
+                <li>Map categories to Black Bear Rentals charge types (Rent, SD, Utilities, etc.)</li>
                 <li>Match each charge to a tenant (we&apos;ll do most of it for you)</li>
                 <li>Review, set your cutoff date, and import</li>
               </ol>
@@ -809,7 +809,7 @@ export default function LedgerImporter({
           {/* ═══ STEP 1: Category Mapping ═══ */}
           {step === 1 && (<>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>Map Categories</div>
-            <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 16 }}>Map each category from your file to a PropOS charge type. Security Deposits will also route to the SD ledger.</div>
+            <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 16 }}>Map each category from your file to a Black Bear Rentals charge type. Security Deposits will also route to the SD ledger.</div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {uniqueCats.map(cat => {
@@ -1161,7 +1161,7 @@ export default function LedgerImporter({
                 <input type="checkbox" checked={removePlaceholders} onChange={e => setRemovePlaceholders(e.target.checked)} style={{ marginTop: 2 }} />
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "#1a1714" }}>Remove {placeholderCharges.length} auto-generated charges</div>
-                  <div style={{ fontSize: 11, color: "#5c4a3a", lineHeight: 1.5, marginTop: 2 }}>When you imported tenants, PropOS created estimated rent and security deposit charges to get you started. Now that you{"'"}re importing your real ledger data from your previous PM software, those estimates should be removed so you don{"'"}t have duplicates.</div>
+                  <div style={{ fontSize: 11, color: "#5c4a3a", lineHeight: 1.5, marginTop: 2 }}>When you imported tenants, Black Bear Rentals created estimated rent and security deposit charges to get you started. Now that you{"'"}re importing your real ledger data from your previous PM software, those estimates should be removed so you don{"'"}t have duplicates.</div>
                 </div>
               </label>
             )}
@@ -1185,9 +1185,9 @@ export default function LedgerImporter({
 
           {/* ═══ STEP 4: Cutoff Date ═══ */}
           {step === 4 && (<>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>When should PropOS take over?</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1714", marginBottom: 4 }}>When should Black Bear Rentals take over?</div>
             <div style={{ fontSize: 12, color: "#5c4a3a", marginBottom: 16, lineHeight: 1.6 }}>
-              Your imported charges cover your history from your previous PM software. Tell PropOS which month was the last one handled by your old system. PropOS will start auto-generating rent charges, late fees, and reminders for the month <strong>after</strong> this date.
+              Your imported charges cover your history from your previous PM software. Tell Black Bear Rentals which month was the last one handled by your old system. Black Bear Rentals will start auto-generating rent charges, late fees, and reminders for the month <strong>after</strong> this date.
             </div>
 
             <div style={{ padding: "16px 20px", background: "#fafaf9", borderRadius: 10, border: "1px solid #e5e7eb", marginBottom: 16 }}>
@@ -1212,7 +1212,7 @@ export default function LedgerImporter({
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <div style={{ width: 8, height: 8, borderRadius: 99, background: _gold }} />
-                      <span>PropOS will generate <strong>{nextLabel}</strong> charges going forward</span>
+                      <span>Black Bear Rentals will generate <strong>{nextLabel}</strong> charges going forward</span>
                     </div>
                   </div>
                 );
