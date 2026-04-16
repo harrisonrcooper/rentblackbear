@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function MaintenanceScheduled({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/portal",
+  ctaHref = "https://app.rentblackbear.com/portal",
 }) {
   return (
-    <Layout preview="Your maintenance is scheduled — here's the when + who." brand="Tenantory">
+    <Layout preview="Your maintenance is scheduled — here's the when + who." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Vendor assigned and scheduled.
       </Heading>

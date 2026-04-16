@@ -8,15 +8,15 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function TimeSavedReport({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/admin/reports",
+  ctaHref = "https://app.rentblackbear.com/admin/reports",
 }) {
   return (
-    <Layout preview="You saved 6 hours this month — here's the breakdown." brand="Tenantory">
+    <Layout preview="You saved 6 hours this month — here's the breakdown." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         You saved 6 hours this month.
       </Heading>
       <Text style={sharedStyles.paragraph}>
-        Hey {firstName}, Tenantory handled 14 payment confirmations, 9 lease reminders, and 4 maintenance intakes without you touching a thing. At your hourly rate that's real money.
+        Hey {firstName}, Black Bear Rentals handled 14 payment confirmations, 9 lease reminders, and 4 maintenance intakes without you touching a thing. At your hourly rate that's real money.
       </Text>
       <Section style={{ margin: "20px 0" }}>
         <Button href={ctaHref} style={sharedStyles.button}>

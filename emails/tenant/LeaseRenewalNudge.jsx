@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function LeaseRenewalNudge({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/portal/renew",
+  ctaHref = "https://app.rentblackbear.com/portal/renew",
 }) {
   return (
-    <Layout preview="Your lease is up in 60 days — let's talk renewal." brand="Tenantory">
+    <Layout preview="Your lease is up in 60 days — let's talk renewal." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Your lease ends in 60 days.
       </Heading>

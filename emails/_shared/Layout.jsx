@@ -9,7 +9,7 @@ import {
   Text,
 } from "@react-email/components";
 
-// Shared chrome for every Tenantory transactional email. Keeps the
+// Shared chrome for every Black Bear Rentals transactional email. Keeps the
 // brand bar + footer consistent so the individual templates in
 // emails/operator/, emails/tenant/, emails/vendor/ stay focused on
 // the message body.
@@ -49,7 +49,7 @@ const styles = {
 
 export default function Layout({
   preview,
-  brand = "Tenantory",
+  brand = "Black Bear Rentals",
   children,
   footerNote,
 }) {
@@ -65,7 +65,7 @@ export default function Layout({
           <Section>
             <Text style={styles.footerText}>
               {footerNote ??
-                "You're receiving this because you're using Tenantory. Questions? Reply to this email and the team will pick it up."}
+                "You're receiving this because you're using Black Bear Rentals. Questions? Reply to this email and the team will pick it up."}
             </Text>
           </Section>
         </Container>

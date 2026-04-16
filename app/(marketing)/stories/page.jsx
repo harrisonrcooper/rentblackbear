@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/stories.html.
+// Mock ported from ~/Desktop/blackbear/stories.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -44,7 +44,7 @@ export default function Page() {
       Real numbers · real operators · zero VC-funded testimonials
     </div>
     <h1>Operators getting their <em>weekends back.</em></h1>
-    <p className="hero-sub">No paid testimonials. No "amazing platform" stock quotes. Just three working PMs, what they were doing before, and what changed after switching to Tenantory.</p>
+    <p className="hero-sub">No paid testimonials. No "amazing platform" stock quotes. Just three working PMs, what they were doing before, and what changed after switching to Black Bear Rentals.</p>
   </section>
 
   
@@ -119,8 +119,8 @@ export default function Page() {
         <p className="story-pull">"AppFolio was charging me $280/mo to do what I now do for $99. Plus my tenants used to ask me 'who is AppFolio?' — now they just see <em>Morales Properties</em>."</p>
         <div className="story-narrative">
           <p><strong>The before:</strong> Diane bought her first rental in 2019 and added three more by 2024. She started on AppFolio because that's what her real estate agent recommended. Within a year she was paying $280/mo for a tool that was overkill — and her tenants kept asking her about confusing AppFolio emails.</p>
-          <p><strong>The switch:</strong> A friend in her REIA group mentioned Tenantory. She did the migration on a Saturday — exported her tenants and lease data from AppFolio, sent the CSV to Tenantory's support, was fully live by Monday morning.</p>
-          <p><strong>The change:</strong> "The biggest thing isn't even the money — it's that everything is on my brand now. My tenants pay rent at <span style={{color: "var(--blue)", fontWeight: "700"}}>morales-properties.tenantory.com</span>. They get emails from <span style={{color: "var(--blue)", fontWeight: "700"}}>hello@moralesproperties.com</span>. They think I built it. I just signed up."</p>
+          <p><strong>The switch:</strong> A friend in her REIA group mentioned Black Bear Rentals. She did the migration on a Saturday — exported her tenants and lease data from AppFolio, sent the CSV to Black Bear Rentals's support, was fully live by Monday morning.</p>
+          <p><strong>The change:</strong> "The biggest thing isn't even the money — it's that everything is on my brand now. My tenants pay rent at <span style={{color: "var(--blue)", fontWeight: "700"}}>morales-properties.rentblackbear.com</span>. They get emails from <span style={{color: "var(--blue)", fontWeight: "700"}}>hello@moralesproperties.com</span>. They think I built it. I just signed up."</p>
         </div>
 
         <div className="ba-grid">
@@ -139,7 +139,7 @@ export default function Page() {
           <div className="ba-side after">
             <div className="ba-label">After · stack</div>
             <div className="ba-list">
-              <div className="ba-list-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenantory Pro</div>
+              <div className="ba-list-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Black Bear Rentals Pro</div>
               <div className="ba-list-item cost">$99/mo · saves $181/mo</div>
             </div>
           </div>
@@ -159,7 +159,7 @@ export default function Page() {
         <p className="story-pull">"My 18 rooms used to take an entire weekend a month to reconcile. Now I close out the month in 35 minutes — including investor reports."</p>
         <div className="story-narrative">
           <p><strong>The before:</strong> Marcus runs three co-living houses in Atlanta with 18 individual rooms. He had spreadsheets feeding QuickBooks feeding a hand-coded landing page. Tenants paid through three different methods. Reconciling rent at month-end took an entire Saturday — and his investors wanted monthly reports he was building in PowerPoint.</p>
-          <p><strong>The change that mattered most:</strong> "The per-room rent roll is the killer feature. Other PM tools think a 'unit' is an apartment. For co-living, that's useless — I needed a room as the unit. Tenantory got that on day one. Plus the investor PDF that auto-generates every month? My LPs love it. Makes me look like I have ops."</p>
+          <p><strong>The change that mattered most:</strong> "The per-room rent roll is the killer feature. Other PM tools think a 'unit' is an apartment. For co-living, that's useless — I needed a room as the unit. Black Bear Rentals got that on day one. Plus the investor PDF that auto-generates every month? My LPs love it. Makes me look like I have ops."</p>
           <p><strong>One unexpected win:</strong> his maintenance costs dropped 22% in the first quarter because his vendors actually adopted the vendor portal — fewer emergency calls, more scheduled visits. "Joel my plumber says it's the only PM tool he doesn't hate. I think that's a real bar."</p>
         </div>
 
@@ -180,7 +180,7 @@ export default function Page() {
           <div className="ba-side after">
             <div className="ba-label">After · stack</div>
             <div className="ba-list">
-              <div className="ba-list-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenantory Scale</div>
+              <div className="ba-list-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Black Bear Rentals Scale</div>
               <div className="ba-list-item cost">$299/mo · saves $401/mo</div>
             </div>
           </div>
@@ -259,7 +259,7 @@ export default function Page() {
         <div className="story-narrative">
           <p><strong>The before:</strong> Sarah and Tom inherited their first rental from Tom's father in 2018. They added one or two a year by buying foreclosures. Twelve houses later, they were still operating like they had two — paper leases in a binder, rent collected by mailed checks, repairs coordinated through Tom's contractor brother-in-law via text.</p>
           <p><strong>What broke them:</strong> Last tax season took 6 weekends. Their CPA charged $2,400 to reconstruct the year from receipts shoved in shoeboxes. "We knew we were leaving money on the table — depreciation, mileage, repairs we forgot to log. We just didn't know what to do about it."</p>
-          <p><strong>The switch:</strong> "We'd never used PM software before. Tenantory's onboarding wizard literally walked us through everything. Fifteen minutes in, we had our first property up. By end of week one, all 12 tenants were on autopay. By end of month one, we'd recovered $4,800 in late fees and missed charges that we'd been forgetting to bill."</p>
+          <p><strong>The switch:</strong> "We'd never used PM software before. Black Bear Rentals's onboarding wizard literally walked us through everything. Fifteen minutes in, we had our first property up. By end of week one, all 12 tenants were on autopay. By end of month one, we'd recovered $4,800 in late fees and missed charges that we'd been forgetting to bill."</p>
         </div>
 
         <div className="ba-grid">
@@ -278,7 +278,7 @@ export default function Page() {
           <div className="ba-side after">
             <div className="ba-label">After · stack</div>
             <div className="ba-list">
-              <div className="ba-list-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenantory Pro</div>
+              <div className="ba-list-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Black Bear Rentals Pro</div>
               <div className="ba-list-item cost">$99/mo · plus $4,800 recovered</div>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
           <svg viewBox="0 0 24 24" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
         </div>
-        <div className="quote-text">"The Tax Pack export literally saved my CPA two days of work. He gave me a $400 credit on my bill. Tenantory paid for itself in one click."</div>
+        <div className="quote-text">"The Tax Pack export literally saved my CPA two days of work. He gave me a $400 credit on my bill. Black Bear Rentals paid for itself in one click."</div>
         <div className="quote-author">
           <div className="quote-avatar a">RH</div>
           <div>
@@ -450,12 +450,12 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="stories.html">Stories</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

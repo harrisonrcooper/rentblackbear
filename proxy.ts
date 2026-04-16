@@ -96,7 +96,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   if (domain.type === "marketing") {
     if (NON_MARKETING_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
       const url = request.nextUrl.clone();
-      url.hostname = "app.tenantory.com";
+      url.hostname = "app.rentblackbear.com";
       url.pathname = pathname;
       return NextResponse.redirect(url);
     }
@@ -122,7 +122,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
     if (pathname.startsWith("/admin")) {
       const url = request.nextUrl.clone();
-      url.hostname = "app.tenantory.com";
+      url.hostname = "app.rentblackbear.com";
       return NextResponse.redirect(url);
     }
     return NextResponse.next({ request: { headers: requestHeaders } });

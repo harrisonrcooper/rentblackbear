@@ -8,12 +8,12 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function WelcomeToPro({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/admin",
+  ctaHref = "https://app.rentblackbear.com/admin",
 }) {
   return (
-    <Layout preview="You're on a paid plan — here's what unlocks next." brand="Tenantory">
+    <Layout preview="You're on a paid plan — here's what unlocks next." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
-        Welcome to Tenantory Pro.
+        Welcome to Black Bear Rentals Pro.
       </Heading>
       <Text style={sharedStyles.paragraph}>
         Hey {firstName}, everything the free tier did, plus: unlimited properties, AI tenant matching, white-label tenant portal, accounting exports (Schedule E / QBO), and the lender packet generator.
@@ -23,7 +23,7 @@ export default function WelcomeToPro({
           Tour the new features
         </Button>
       </Section>
-      <Text style={sharedStyles.muted}>Thanks for betting on Tenantory — we'll earn it.</Text>
+      <Text style={sharedStyles.muted}>Thanks for betting on Black Bear Rentals — we'll earn it.</Text>
     </Layout>
   );
 }

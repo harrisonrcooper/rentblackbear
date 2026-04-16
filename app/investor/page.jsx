@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/investor.html.
+// Mock ported from ~/Desktop/blackbear/investor.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -688,7 +688,7 @@ export default function Page() {
       <div className="foot-powered-mark">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /></svg>
       </div>
-      <span>Powered by <strong>Tenantory</strong></span>
+      <span>Powered by <strong>Black Bear Rentals</strong></span>
     </div>
   </footer>
 

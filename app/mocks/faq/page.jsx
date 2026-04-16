@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/faq.html.
+// Mock ported from ~/Desktop/blackbear/faq.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -83,7 +83,7 @@ export default function Page() {
       <div className="empty-state" id="emptyState">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="8" y1="11" x2="14" y2="11" /></svg>
         <h3>No matches for that search</h3>
-        <p>Try a shorter phrase, or <a href="mailto:hello@tenantory.com" style={{color: "var(--blue)", fontWeight: "600"}}>email us</a> and we'll answer directly (and add it here).</p>
+        <p>Try a shorter phrase, or <a href="mailto:hello@rentblackbear.com" style={{color: "var(--blue)", fontWeight: "600"}}>email us</a> and we'll answer directly (and add it here).</p>
       </div>
 
       
@@ -129,7 +129,7 @@ export default function Page() {
             <button className="faq-q"><span className="q-text">What happens if I exceed my plan's unit limit?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
               <p>We email you at 80% of your cap (4 of 5 on Starter, 40 of 50 on Pro) with a heads-up. Add a unit that pushes you over, and you get 30 days at your current price before we auto-bump you to the next tier. Nothing breaks — we don't freeze your portal or stop rent collection. We just bill differently next cycle.</p>
-              <p>If you legitimately need more than the next tier offers, we have a "portfolio" arrangement — <a href="mailto:hello@tenantory.com">email us</a>.</p>
+              <p>If you legitimately need more than the next tier offers, we have a "portfolio" arrangement — <a href="mailto:hello@rentblackbear.com">email us</a>.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function Page() {
           <div className="faq-item">
             <button className="faq-q"><span className="q-text">How does the $100 guarantee actually work?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>You get a 14-day free trial (no card), then 30 days as a paying customer. On day 30, your dashboard shows a "time saved" report — hours you spent in Tenantory vs. the manual equivalent we benchmark against. If the number is less than 10 hours, email us one line: "I'd like the guarantee." We refund every dollar you've paid <strong>and</strong> wire $100 to your bank for wasting your time.</p>
+              <p>You get a 14-day free trial (no card), then 30 days as a paying customer. On day 30, your dashboard shows a "time saved" report — hours you spent in Black Bear Rentals vs. the manual equivalent we benchmark against. If the number is less than 10 hours, email us one line: "I'd like the guarantee." We refund every dollar you've paid <strong>and</strong> wire $100 to your bank for wasting your time.</p>
               <p>No interrogation, no "let's get on a call first", no asking you to try three more features. We do this because if we can't save you 10 hours a month, we haven't earned the subscription.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
@@ -189,7 +189,7 @@ export default function Page() {
           <div className="faq-item">
             <button className="faq-q"><span className="q-text">Do I need to be tech-savvy?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>If you can use Gmail and online banking, you can run Tenantory. There's no IT setup, no VPN, no server, no Chrome extension. You sign in from a browser — phone, laptop, whatever.</p>
+              <p>If you can use Gmail and online banking, you can run Black Bear Rentals. There's no IT setup, no VPN, no server, no Chrome extension. You sign in from a browser — phone, laptop, whatever.</p>
               <p>We deliberately don't have a 40-button admin screen. If a feature is buried behind settings, we've failed the design. Our benchmark is "a landlord who hates tech can run a first rent payment in 20 minutes without calling us."</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
@@ -250,7 +250,7 @@ export default function Page() {
           <div className="faq-item">
             <button className="faq-q"><span className="q-text">How do my tenants pay?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>Tenants get a branded portal link (yourname.tenantory.com or your own domain on Scale). They can pay by ACH (bank account), debit card, or credit card. Autopay is one click — most of your tenants will turn it on during move-in because it kills late fees.</p>
+              <p>Tenants get a branded portal link (yourname.rentblackbear.com or your own domain on Scale). They can pay by ACH (bank account), debit card, or credit card. Autopay is one click — most of your tenants will turn it on during move-in because it kills late fees.</p>
               <p>For tenants who insist on paying with cash or check, you can still record a manual payment in the app. And for the wire-transfer types, there's a direct-deposit reference number on every invoice.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
@@ -268,7 +268,7 @@ export default function Page() {
           <div className="faq-item">
             <button className="faq-q"><span className="q-text">Who holds my money — you or me?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>You do. Tenantory is not a custodian — we don't hold rent in a pooled account with our name on it. Payments go through Stripe Connect, where each landlord has their own Stripe account connected to their own bank. Money goes tenant &rarr; Stripe &rarr; your bank. Tenantory never touches the funds.</p>
+              <p>You do. Black Bear Rentals is not a custodian — we don't hold rent in a pooled account with our name on it. Payments go through Stripe Connect, where each landlord has their own Stripe account connected to their own bank. Money goes tenant &rarr; Stripe &rarr; your bank. Black Bear Rentals never touches the funds.</p>
               <p>For security deposits, we recommend a separate sub-account you create with your bank (many states require this anyway). We help you track it; we don't hold it.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
@@ -329,7 +329,7 @@ export default function Page() {
           <div className="faq-item">
             <button className="faq-q"><span className="q-text">How do tenants apply?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>You share a listing link — yourname.tenantory.com/apply/unit-name, or your own domain on Scale. The applicant fills out a single-page form (identity, income, employment, rental history, pets, move-in date) and pays the $45 application fee from their card.</p>
+              <p>You share a listing link — yourname.rentblackbear.com/apply/unit-name, or your own domain on Scale. The applicant fills out a single-page form (identity, income, employment, rental history, pets, move-in date) and pays the $45 application fee from their card.</p>
               <p>Behind the scenes we run credit, criminal background, eviction history, and income verification via TransUnion SmartMove-equivalent checks. You get a scored report in your dashboard within 15–60 minutes.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
@@ -427,7 +427,7 @@ export default function Page() {
             <button className="faq-q"><span className="q-text">Where are signed leases stored?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
               <p>Inside your workspace, attached to each unit and each tenant, forever — even after they move out. Signed PDFs are stored encrypted at rest (AES-256) in US-region cloud storage, backed up nightly to a second region. Tenants keep access to their signed lease in their portal for seven years post-move-out.</p>
-              <p>You can download any lease as a PDF anytime, or bulk-export all leases for an attorney review. If you cancel Tenantory, you get a ZIP of every document in your workspace on the way out.</p>
+              <p>You can download any lease as a PDF anytime, or bulk-export all leases for an attorney review. If you cancel Black Bear Rentals, you get a ZIP of every document in your workspace on the way out.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
           </div>
@@ -478,7 +478,7 @@ export default function Page() {
           <div className="faq-item">
             <button className="faq-q"><span className="q-text">Do you sync with QuickBooks?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>Yes, on Pro and Scale. Connect your QuickBooks Online account (one click, OAuth) and Tenantory pushes rent receipts, deposits, expenses, and fees as journal entries on a nightly sync. Property-level class codes map to your QB locations so your P&amp;L stays per-property.</p>
+              <p>Yes, on Pro and Scale. Connect your QuickBooks Online account (one click, OAuth) and Black Bear Rentals pushes rent receipts, deposits, expenses, and fees as journal entries on a nightly sync. Property-level class codes map to your QB locations so your P&amp;L stays per-property.</p>
               <p>If you prefer to not sync, the manual export is a one-click IIF file you drop into QuickBooks Desktop. Either way, you're not double-entering anything.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
@@ -497,7 +497,7 @@ export default function Page() {
             <button className="faq-q"><span className="q-text">Will I get a 1099 for my vendors?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
               <p>Yes. For any vendor you've paid $600+ in a calendar year, we generate a 1099-NEC, collect the W-9 from the vendor automatically (they fill it out once in their vendor portal), and e-file with the IRS on your behalf in January. You get the vendor's copy emailed and a file-stamped IRS confirmation.</p>
-              <p>Tenantory also generates your 1099-K reconciliation if Stripe issued one to you — so your total "rent income per the IRS" matches what you actually received. Included on Pro and Scale at no extra cost.</p>
+              <p>Black Bear Rentals also generates your 1099-K reconciliation if Stripe issued one to you — so your total "rent income per the IRS" matches what you actually received. Included on Pro and Scale at no extra cost.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
           </div>
@@ -515,7 +515,7 @@ export default function Page() {
             <button className="faq-q"><span className="q-text">Can I give my CPA access?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
               <p>Yes. Invite your CPA with a "read-only accountant" role, no extra cost. They see all reports and transactions, can export anything, but can't edit rent, send invoices, or touch tenant data. You can revoke access with one click after tax season.</p>
-              <p>CPAs who handle multiple Tenantory clients get a multi-client dashboard so they can jump between workspaces without logging out. A few of our most senior CPA partners have consolidated 20+ landlord clients on our accountant portal.</p>
+              <p>CPAs who handle multiple Black Bear Rentals clients get a multi-client dashboard so they can jump between workspaces without logging out. A few of our most senior CPA partners have consolidated 20+ landlord clients on our accountant portal.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
           </div>
@@ -531,16 +531,16 @@ export default function Page() {
           </div>
           <div>
             <div className="faq-section-title">For tenants</div>
-            <div className="faq-section-sub">If you rent from a Tenantory landlord and showed up here confused.</div>
+            <div className="faq-section-sub">If you rent from a Black Bear Rentals landlord and showed up here confused.</div>
           </div>
         </div>
         <div className="faq-list">
 
           <div className="faq-item">
-            <button className="faq-q"><span className="q-text">Why is my rent going through Tenantory?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+            <button className="faq-q"><span className="q-text">Why is my rent going through Black Bear Rentals?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>Your landlord uses Tenantory to manage their properties, which means rent is paid online instead of by check or cash app. You still rent from your landlord — we're the software they use to handle invoicing, leases, and maintenance tickets. Your rent still goes to your landlord's bank account, not ours.</p>
-              <p>If you have a question about your lease or a repair, you contact your landlord through the portal. If you have a question about the <em>portal itself</em> (can't log in, card won't work), email us at <a href="mailto:support@tenantory.com">support@tenantory.com</a>.</p>
+              <p>Your landlord uses Black Bear Rentals to manage their properties, which means rent is paid online instead of by check or cash app. You still rent from your landlord — we're the software they use to handle invoicing, leases, and maintenance tickets. Your rent still goes to your landlord's bank account, not ours.</p>
+              <p>If you have a question about your lease or a repair, you contact your landlord through the portal. If you have a question about the <em>portal itself</em> (can't log in, card won't work), email us at <a href="mailto:support@rentblackbear.com">support@rentblackbear.com</a>.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
           </div>
@@ -548,7 +548,7 @@ export default function Page() {
           <div className="faq-item">
             <button className="faq-q"><span className="q-text">Is my information safe?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>Yes. Your bank info and card data never touch Tenantory's servers — it's stored by Stripe, which is PCI Level 1 (the highest standard) and used by Target, Shopify, and Lyft. Your Social Security number (submitted during application screening) is encrypted end-to-end and not visible to your landlord in plaintext.</p>
+              <p>Yes. Your bank info and card data never touch Black Bear Rentals's servers — it's stored by Stripe, which is PCI Level 1 (the highest standard) and used by Target, Shopify, and Lyft. Your Social Security number (submitted during application screening) is encrypted end-to-end and not visible to your landlord in plaintext.</p>
               <p>We never sell data. We never share your info with marketers. Read the full <a href="privacy.html">privacy policy</a> for the specifics.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
@@ -567,7 +567,7 @@ export default function Page() {
             <button className="faq-q"><span className="q-text">Who do I contact if something breaks?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
               <p>If something broke in your apartment (leak, HVAC, busted appliance), file a maintenance ticket inside your portal — your landlord gets notified instantly with photos and a description. Emergencies (no heat, flooding, smell of gas) route to your landlord's emergency line.</p>
-              <p>If the portal itself is broken (can't log in, payment failed, page won't load), email <a href="mailto:support@tenantory.com">support@tenantory.com</a> and we reply within a few hours, weekends included.</p>
+              <p>If the portal itself is broken (can't log in, payment failed, page won't load), email <a href="mailto:support@rentblackbear.com">support@rentblackbear.com</a> and we reply within a few hours, weekends included.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
           </div>
@@ -610,7 +610,7 @@ export default function Page() {
             <button className="faq-q"><span className="q-text">Are you SOC 2 certified?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
               <p>We are in an active SOC 2 Type I audit as of Q1 2026, targeting Type II by end of year. Our underlying infrastructure (Vercel, Supabase, Stripe, Clerk) is all SOC 2 Type II certified today, so the data path itself has been audited end-to-end — it's our internal controls that are in final review.</p>
-              <p>If you need the current Type I letter, our Trust Center (available on request) will include it, along with penetration test results and our data retention policies. Email <a href="mailto:security@tenantory.com">security@tenantory.com</a>.</p>
+              <p>If you need the current Type I letter, our Trust Center (available on request) will include it, along with penetration test results and our data retention policies. Email <a href="mailto:security@rentblackbear.com">security@rentblackbear.com</a>.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
           </div>
@@ -636,7 +636,7 @@ export default function Page() {
           <div className="faq-item">
             <button className="faq-q"><span className="q-text">Where can I get a DPA?</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
             <div className="faq-a">
-              <p>Email <a href="mailto:security@tenantory.com">security@tenantory.com</a> with your entity name and we send back a standard Data Processing Agreement within one business day. GDPR Article 28 compliant, with the Standard Contractual Clauses attached for any EU data subjects you're processing.</p>
+              <p>Email <a href="mailto:security@rentblackbear.com">security@rentblackbear.com</a> with your entity name and we send back a standard Data Processing Agreement within one business day. GDPR Article 28 compliant, with the Standard Contractual Clauses attached for any EU data subjects you're processing.</p>
               <p>We don't charge for a DPA and we don't make you jump through sales calls. Same for our sub-processor list, our SIG-Lite questionnaire, and our insurance certificates — all available to any customer who asks.</p>
               <div className="helpful"><span className="helpful-label">Was this helpful?</span><button className="helpful-btn" data-vote="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H7V10l4.3-6.88a1.3 1.3 0 0 1 2.38 0Z" /></svg>Yes</button><button className="helpful-btn" data-vote="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H17v12l-4.3 6.88a1.3 1.3 0 0 1-2.38 0Z" /></svg>No</button></div>
             </div>
@@ -655,7 +655,7 @@ export default function Page() {
       <h2>Didn't see your question?</h2>
       <p>The three fastest ways to reach a human. Email gets a reply the same business day. The 15-minute call is a screen-share where we open your account and answer in context.</p>
       <div className="unans-actions">
-        <a className="btn btn-pink btn-lg" href="mailto:hello@tenantory.com">
+        <a className="btn btn-pink btn-lg" href="mailto:hello@rentblackbear.com">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
           Email support
         </a>
@@ -663,7 +663,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
           Book a 15-min call
         </a>
-        <a className="btn btn-ghost btn-lg" href="mailto:faq@tenantory.com?subject=FAQ%20suggestion">
+        <a className="btn btn-ghost btn-lg" href="mailto:faq@rentblackbear.com?subject=FAQ%20suggestion">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
           Submit a question
         </a>
@@ -673,12 +673,12 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory &middot; Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals &middot; Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="faq.html">FAQ</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="privacy.html">Privacy</a>
       <a href="terms.html">Terms</a>
     </div>

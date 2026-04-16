@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/admin-late-rent.html.
+// Mock ported from ~/Desktop/blackbear/admin-late-rent.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -26,7 +26,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
         </div>
         <div>
-          <div className="sb-brand-name">Tenantory</div>
+          <div className="sb-brand-name">Black Bear Rentals</div>
           <div className="sb-brand-ws">Black Bear Rentals</div>
         </div>
       </div>
@@ -200,7 +200,7 @@ export default function Page() {
               </div>
               <div>
                 <h2>Auto-reminders enabled <span className="pill pill-green nodot" style={{fontSize: "10px", padding: "2px 8px"}}>LIVE</span></h2>
-                <p>Tenantory handles the chase. You only get pinged when something needs a human decision.</p>
+                <p>Black Bear Rentals handles the chase. You only get pinged when something needs a human decision.</p>
               </div>
             </div>
             <div className="auto-controls">
@@ -675,7 +675,7 @@ export default function Page() {
     <div className="modal">
       <div className="modal-head">
         <h3>Log a payment</h3>
-        <p>Use this when rent came in outside Tenantory (cash, check, bank transfer).</p>
+        <p>Use this when rent came in outside Black Bear Rentals (cash, check, bank transfer).</p>
       </div>
       <div className="modal-body">
         <div className="field-row">

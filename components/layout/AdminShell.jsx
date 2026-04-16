@@ -74,7 +74,7 @@ export default function AdminShell({
 }) {
   const searchId = useId();
   const safeBrand = {
-    name: "Tenantory",
+    name: "Black Bear Rentals",
     workspaceLabel: null,
     logo: <DefaultLogo />,
     href: "/admin",

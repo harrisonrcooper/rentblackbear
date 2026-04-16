@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/tools.html.
+// Mock ported from ~/Desktop/blackbear/tools.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -45,7 +45,7 @@ export default function Page() {
       Free forever · no signup
     </div>
     <h1>Free tools for people who <em>own rentals</em>.</h1>
-    <p className="hero-sub">Four calculators we built for ourselves to decide which houses to buy and which tenants to approve. Same math that powers Tenantory's internal analytics. Given away because gatekeeping a cap rate formula is embarrassing.</p>
+    <p className="hero-sub">Four calculators we built for ourselves to decide which houses to buy and which tenants to approve. Same math that powers Black Bear Rentals's internal analytics. Given away because gatekeeping a cap rate formula is embarrassing.</p>
     <div className="hero-meta">
       <span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -295,7 +295,7 @@ export default function Page() {
         </div>
 
         <div className="tool-foot">
-          <div className="tool-foot-note">Save this to the applicant's profile in Tenantory.</div>
+          <div className="tool-foot-note">Save this to the applicant's profile in Black Bear Rentals.</div>
           <button className="btn-save" id="aff-save">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
             Save to applicant
@@ -312,7 +312,7 @@ export default function Page() {
       <div>
         <div className="cross-label">The shameless cross-sell</div>
         <div className="cross-title">These calculators are nice. Running them on your whole portfolio is nicer.</div>
-        <div className="cross-sub">Inside Tenantory, every property gets a live cap rate, cash-on-cash, and occupancy score — updated every time rent hits the bank. Stop opening a spreadsheet to know if your rentals are working.</div>
+        <div className="cross-sub">Inside Black Bear Rentals, every property gets a live cap rate, cash-on-cash, and occupancy score — updated every time rent hits the bank. Stop opening a spreadsheet to know if your rentals are working.</div>
         <ul className="cross-list">
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -390,7 +390,7 @@ export default function Page() {
       </div>
       <div className="faq-item">
         <button className="faq-q">Can I save these results? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Not on this page — these calculators are stateless on purpose. Bookmark the page, or if you want a cap rate and affordability score attached to every property and applicant in your portfolio, that's what Tenantory is for. Start the 14-day trial, no card.</div>
+        <div className="faq-a">Not on this page — these calculators are stateless on purpose. Bookmark the page, or if you want a cap rate and affordability score attached to every property and applicant in your portfolio, that's what Black Bear Rentals is for. Start the 14-day trial, no card.</div>
       </div>
     </div>
   </section>
@@ -399,7 +399,7 @@ export default function Page() {
   <section className="cta-bottom">
     <div className="cta-card">
       <h2>Put the math on autopilot.</h2>
-      <p>Tenantory runs these calculators on your whole portfolio, every day, automatically — plus it collects the rent, signs the leases, and ships the investor reports. 14-day free trial. No credit card.</p>
+      <p>Black Bear Rentals runs these calculators on your whole portfolio, every day, automatically — plus it collects the rent, signs the leases, and ships the investor reports. 14-day free trial. No credit card.</p>
       <div className="cta-card-actions">
         <a className="btn btn-pink btn-lg" href="onboarding.html">
           Start free trial
@@ -413,13 +413,13 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="stories.html">Stories</a>
       <a href="tools.html">Tools</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

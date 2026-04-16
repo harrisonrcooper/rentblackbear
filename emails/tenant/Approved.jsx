@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function Approved({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/lease",
+  ctaHref = "https://app.rentblackbear.com/lease",
 }) {
   return (
-    <Layout preview="Good news — your application was approved." brand="Tenantory">
+    <Layout preview="Good news — your application was approved." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         You're approved. Welcome to {workspaceName}.
       </Heading>

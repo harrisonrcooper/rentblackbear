@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/onboarding.html.
+// Mock ported from ~/Desktop/blackbear/onboarding.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -26,7 +26,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
         </div>
         <div>
-          <div className="rail-brand-name">Tenantory</div>
+          <div className="rail-brand-name">Black Bear Rentals</div>
           <div className="rail-brand-sub">14-day free trial</div>
         </div>
       </div>
@@ -61,7 +61,7 @@ export default function Page() {
       </div>
 
       <div className="rail-footer">
-        Need a hand? <br /><a href="mailto:hello@tenantory.com">hello@tenantory.com</a>
+        Need a hand? <br /><a href="mailto:hello@rentblackbear.com">hello@rentblackbear.com</a>
       </div>
     </aside>
 
@@ -91,11 +91,11 @@ export default function Page() {
             <label className="field-label" htmlFor="wsSlug">Subdomain</label>
             <div className="input-row">
               <input id="wsSlug" type="text" value="blackbear" placeholder="acme" autoComplete="off" />
-              <span className="input-row-suffix">.tenantory.com</span>
+              <span className="input-row-suffix">.rentblackbear.com</span>
             </div>
             <div className="field-state ok" id="slugState">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              <span>blackbear.tenantory.com is available</span>
+              <span>portal.rentblackbear.com is available</span>
             </div>
             <div className="field-hint">3–32 characters. Letters, numbers, and hyphens only. You can move to a custom domain later on Scale.</div>
           </div>
@@ -155,7 +155,7 @@ export default function Page() {
           <div className="field">
             <label className="field-label">Public email</label>
             <div className="input-row"><input type="email" value="hello@rentblackbear.com" placeholder="hello@acme.com" /></div>
-            <div className="field-hint">Shown on your tenant portal. Separate from your Tenantory login.</div>
+            <div className="field-hint">Shown on your tenant portal. Separate from your Black Bear Rentals login.</div>
           </div>
           <div className="field">
             <label className="field-label">Mailing address</label>
@@ -245,7 +245,7 @@ export default function Page() {
           <div className="step-head">
             <div className="step-kicker">Step 6 of 6</div>
             <h1 className="step-title">Pick your plan</h1>
-            <p className="step-desc">Every plan starts with a 14-day free trial. No card required. Cancel in one click. If Tenantory doesn't save you 10 hours in the first 30 paid days, we refund you and send you $100 for your time.</p>
+            <p className="step-desc">Every plan starts with a 14-day free trial. No card required. Cancel in one click. If Black Bear Rentals doesn't save you 10 hours in the first 30 paid days, we refund you and send you $100 for your time.</p>
           </div>
 
           <div className="trial-banner">
@@ -297,8 +297,8 @@ export default function Page() {
             <div className="welcome-badge">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
-            <h1>You're in. Welcome to Tenantory.</h1>
-            <p className="welcome-sub">Your workspace is live at <strong>blackbear.tenantory.com</strong>. Here's what most operators do next — pick one or jump straight to the dashboard.</p>
+            <h1>You're in. Welcome to Black Bear Rentals.</h1>
+            <p className="welcome-sub">Your workspace is live at <strong>portal.rentblackbear.com</strong>. Here's what most operators do next — pick one or jump straight to the dashboard.</p>
             <div className="welcome-grid">
               <a className="welcome-card" href="admin-v2.html">
                 <div className="welcome-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="14" y="12" width="7" height="9" /><rect x="3" y="16" width="7" height="5" /></svg></div>
@@ -314,7 +314,7 @@ export default function Page() {
               </a>
               <a className="welcome-card" href="portal.html" target="_blank">
                 <div className="welcome-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6M14 10l7-7M9 21H3v-6M10 14l-7 7" /></svg></div>
-                <div><div className="welcome-card-title">Preview your tenant portal</div><div className="welcome-card-sub">See what your tenants see at blackbear.tenantory.com — your brand, not ours</div></div>
+                <div><div className="welcome-card-title">Preview your tenant portal</div><div className="welcome-card-sub">See what your tenants see at portal.rentblackbear.com — your brand, not ours</div></div>
               </a>
             </div>
             <a className="btn btn-primary" href="admin-v2.html" style={{padding: "14px 28px", fontSize: "15px"}}>

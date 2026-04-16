@@ -8,7 +8,7 @@ const DefaultLogo = () => (
 
 function Brand({ brand, colorClass = "" }) {
   const href = brand?.href ?? "/";
-  const name = brand?.name ?? "Tenantory";
+  const name = brand?.name ?? "Black Bear Rentals";
   const logo = brand?.logo ?? <DefaultLogo />;
   return (
     <a className={`flg-mkt-logo ${colorClass}`} href={href}>

@@ -1,20 +1,20 @@
-# Tenantory — Claude Code Context
+# Black Bear Rentals — Claude Code Context
 # Paste this into Claude Code at the start of every session.
-# Last updated: 2026-04-14 (late evening — fork + Next 16 upgrade + Vercel tenantory project setup in progress)
+# Last updated: 2026-04-14 (late evening — fork + Next 16 upgrade + Vercel blackbear project setup in progress)
 
 ---
 
 ## ⚠️ READ THIS FIRST — repo split happened tonight
 
-The Tenantory codebase **forked tonight** out of `rentblackbear/`. Working state:
+The Black Bear Rentals codebase **forked tonight** out of `rentblackbear/`. Working state:
 
 | Repo / Path | Purpose |
 |---|---|
-| `~/Desktop/rentblackbear/` | **Black Bear's live site only.** Stays on Next 14, original infra. DO NOT MODIFY for Tenantory work. Serves rentblackbear.com unchanged. |
-| `~/Desktop/tenantory-app/` | **NEW Tenantory codebase.** Next 16 + React 19 + Clerk 7. Fresh GitHub repo at `harrisonrcooper/tenantory`. This is where new feature work happens. |
-| `~/Desktop/tenantory/` | **HTML mocks (64 files).** Reference designs only — already ported to JSX in tenantory-app. Local-only git, no remote. |
+| `~/Desktop/rentblackbear/` | **Black Bear's live site only.** Stays on Next 14, original infra. DO NOT MODIFY for Black Bear Rentals work. Serves rentblackbear.com unchanged. |
+| `~/Desktop/blackbear-app/` | **NEW Black Bear Rentals codebase.** Next 16 + React 19 + Clerk 7. Fresh GitHub repo at `harrisonrcooper/blackbear`. This is where new feature work happens. |
+| `~/Desktop/blackbear/` | **HTML mocks (64 files).** Reference designs only — already ported to JSX in blackbear-app. Local-only git, no remote. |
 
-**For all new Tenantory work: cd ~/Desktop/tenantory-app first.** This file (CLAUDE_CODE_CONTEXT_v2.md) lives in `rentblackbear/` for historical reasons but documents Tenantory project state across all three repos.
+**For all new Black Bear Rentals work: cd ~/Desktop/blackbear-app first.** This file (CLAUDE_CODE_CONTEXT_v2.md) lives in `rentblackbear/` for historical reasons but documents Black Bear Rentals project state across all three repos.
 
 ---
 
@@ -24,7 +24,7 @@ You are simultaneously:
 - A **CPA** (cash-basis accounting, Schedule E, P&L by property, mortgage interest vs. principal separation, bonus depreciation, cost segregation)
 - A **real estate developer** (NOI, cap rate, DSCR, cash-on-cash, ARV, rent roll projections)
 - A **property manager** (co-living, rent-by-the-bedroom, tenant screening, lease generation, maintenance SOPs)
-- A **SaaS product strategist** (Tenantory will be licensed to other landlords — every feature must scale, be white-labelable, built with `workspace_id` multi-tenancy in mind)
+- A **SaaS product strategist** (Black Bear Rentals will be licensed to other landlords — every feature must scale, be white-labelable, built with `workspace_id` multi-tenancy in mind)
 - A **systems thinker** (SOPs, automation, zero manual data re-entry)
 
 ---
@@ -34,7 +34,7 @@ You are simultaneously:
 1. **Ask ONE clarifying question at a time** before building. Never assume.
 2. **Read the file before editing.** Use Read tool on relevant sections first. Never edit blindly. One change can break three other things — audit the full impact before committing.
 3. **Never re-enter data twice.** Everything auto-populates from existing data (application → lease → tenant profile → accounting).
-4. **Think SaaS-first.** No hardcoding names, amounts, policies, or colors unless behind a settings/template system. Every feature must work for any PM using Tenantory, not just the current operator.
+4. **Think SaaS-first.** No hardcoding names, amounts, policies, or colors unless behind a settings/template system. Every feature must work for any PM using Black Bear Rentals, not just the current operator.
 5. **Every form error must use wiggle animation + red text** with a specific plain-English description. No generic "Required." messages.
 6. **No emojis anywhere in the admin UI or apply page.** Flat inline SVGs only. No exceptions — no buttons, labels, badges, headers, empty states, or toasts.
 7. **No hardcoded colors anywhere.** All active/selected states use `settings.adminAccent` or `_acc` in scope. All colors are injected via `adminDynCSS(_acc, _rgb)`. Read the Theme Editor values — never write a hex color like `#d4a853` or `#4a7c59` directly into component code.
@@ -48,12 +48,12 @@ You are simultaneously:
 ## THE BUSINESS (context only — do not hardcode any of this)
 
 **Operator:** Harrison Cooper — Oak & Main Development LLC
-**Product name:** Tenantory (SaaS). Formerly called PropOS — all UI text was rebranded on 2026-04-13.
-**Tenant-facing brand for Harrison's own operation:** Black Bear Rentals (separate from the Tenantory product).
+**Product name:** Black Bear Rentals (SaaS). Formerly called PropOS — all UI text was rebranded on 2026-04-13.
+**Tenant-facing brand for Harrison's own operation:** Black Bear Rentals (separate from the Black Bear Rentals product).
 **Location:** Huntsville, Alabama
 **Model:** Rent-by-the-bedroom co-living
 **Repo:** `harrisonrcooper/rentblackbear` (GitHub repo name is historical — do not rename)
-**Live:** `rentblackbear.com` / `rentblackbear.vercel.app` (deploy URLs — Tenantory SaaS domain TBD)
+**Live:** `rentblackbear.com` / `rentblackbear.vercel.app` (deploy URLs — Black Bear Rentals SaaS domain TBD)
 
 > All operator-specific values (company name, email, phone, lease terms, late fees, notice periods, utility policies, house rules) are stored in `hq-settings` and must be read from `settings.*` at runtime. Never hardcode them.
 
@@ -318,24 +318,24 @@ All features must be built with tier gating in mind. Check `settings.tier` befor
 ## REMAINING MANUAL STEPS (Harrison only — code is complete)
 
 ### Tonight / right-now state (mid-deploy)
-1. **Finish the new `tenantory` Vercel project setup.** OLD broken "tenantory" Vercel project was deleted; NEW one created from `harrisonrcooper/tenantory` GitHub repo (the `tenantory-app/` clone). Env vars partially populated as of last screenshot: CRON_SECRET, RESEND_API_KEY, STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET (placeholder), NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY. **Still need to add:** `NEXT_PUBLIC_SUPABASE_URL` = `https://jaleiwerptuocbsgugem.supabase.co`, `ADMIN_EMAIL`, `TWILIO_ACCOUNT_SID/AUTH_TOKEN/PHONE_NUMBER` (placeholders OK). Possibly the 4 `NEXT_PUBLIC_CLERK_*_URL` vars if the code references custom Clerk routes. Then redeploy.
-2. **Connect tenantory.com domain** to the new `tenantory` Vercel project once the deploy goes green (Vercel dashboard → Settings → Domains → add `tenantory.com` + `www.tenantory.com`). Cloudflare DNS already points there.
+1. **Finish the new `blackbear` Vercel project setup.** OLD broken "blackbear" Vercel project was deleted; NEW one created from `harrisonrcooper/blackbear` GitHub repo (the `blackbear-app/` clone). Env vars partially populated as of last screenshot: CRON_SECRET, RESEND_API_KEY, STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET (placeholder), NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY. **Still need to add:** `NEXT_PUBLIC_SUPABASE_URL` = `https://jaleiwerptuocbsgugem.supabase.co`, `ADMIN_EMAIL`, `TWILIO_ACCOUNT_SID/AUTH_TOKEN/PHONE_NUMBER` (placeholders OK). Possibly the 4 `NEXT_PUBLIC_CLERK_*_URL` vars if the code references custom Clerk routes. Then redeploy.
+2. **Connect rentblackbear.com domain** to the new `blackbear` Vercel project once the deploy goes green (Vercel dashboard → Settings → Domains → add `rentblackbear.com` + `www.rentblackbear.com`). Cloudflare DNS already points there.
 3. **Stripe live mode activation** — Harrison started this flow tonight using sole-prop SSN + personal bank. Verification may still be in progress. When live, copy `pk_live_...` and `sk_live_...` and update Vercel's PRODUCTION env vars (keep Dev/Preview on test keys to avoid running real cards in staging).
-4. **Create the production Stripe webhook destination** AFTER tenantory.com is live: `https://tenantory.com/api/webhooks/stripe`, "Receive all current and future events", thin payloads OFF, name "Tenantory Production". Copy the `whsec_...` → replace the placeholder `STRIPE_WEBHOOK_SECRET` env var → redeploy.
+4. **Create the production Stripe webhook destination** AFTER rentblackbear.com is live: `https://rentblackbear.com/api/webhooks/stripe`, "Receive all current and future events", thin payloads OFF, name "Black Bear Rentals Production". Copy the `whsec_...` → replace the placeholder `STRIPE_WEBHOOK_SECRET` env var → redeploy.
 5. **Real Twilio setup** — currently placeholders. A2P 10DLC registration takes 2-4 weeks; submit the application early. Until then SMS won't actually send but the build/runtime works.
-6. **Verify `tenantory.com` in Resend** for sending domain — DNS records into Cloudflare. See `~/Desktop/tenantory/email-setup-runbook.md`.
+6. **Verify `rentblackbear.com` in Resend** for sending domain — DNS records into Cloudflare. See `~/Desktop/blackbear/email-setup-runbook.md`.
 
 ### Pre-launch hardening (before public)
-7. **Rotate the Supabase JWT secret** for the Tenantory-dev project (anon key landed in chat earlier). Supabase dashboard → Project Settings → API → JWT Settings → Generate new secret → re-copy the 3 values into Vercel env vars → redeploy.
-8. **Create 3 Stripe Products/Prices** for SaaS subscription tiers (Starter $39, Pro $99, Scale $299). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_SCALE` env vars to the new `tenantory` Vercel project.
-9. **Apply the 11 SQL migrations** (`migrations/001_workspaces.sql` through `migrations/011_rls.sql`) to the fresh Tenantory-dev Supabase. Run in order; 011 enables RLS on every tenant-owned table and must run last.
-10. **Form Tenantory LLC + EIN** (separate entity from Black Bear). Then update Stripe account from sole-prop to LLC, open business bank, transition Stripe payouts.
+7. **Rotate the Supabase JWT secret** for the BlackBear-dev project (anon key landed in chat earlier). Supabase dashboard → Project Settings → API → JWT Settings → Generate new secret → re-copy the 3 values into Vercel env vars → redeploy.
+8. **Create 3 Stripe Products/Prices** for SaaS subscription tiers (Starter $39, Pro $99, Scale $299). Add `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_SCALE` env vars to the new `blackbear` Vercel project.
+9. **Apply the 11 SQL migrations** (`migrations/001_workspaces.sql` through `migrations/011_rls.sql`) to the fresh BlackBear-dev Supabase. Run in order; 011 enables RLS on every tenant-owned table and must run last.
+10. **Form Black Bear Rentals LLC + EIN** (separate entity from Black Bear). Then update Stripe account from sole-prop to LLC, open business bank, transition Stripe payouts.
 11. **Attorney review** of `/terms` and `/privacy` template pages before relying on them legally.
 12. **Settings.portalUrl** — when Black Bear gets migrated IN as a workspace, set its `settings.portalUrl` so the lease boilerplate `{{PORTAL_URL}}` variable renders correctly.
 
 ### Long-tail
 13. **Sifely API keys** when ready for smart-lock integration (door-code text storage works without it).
-14. **Black Bear → Tenantory workspace migration** — the eventual cutover. rentblackbear.com CNAMEs to Tenantory, data migrates as `workspace_id=blackbear`. Defer until Tenantory has 50 paying Founders and is battle-tested.
+14. **Black Bear → Black Bear Rentals workspace migration** — the eventual cutover. rentblackbear.com CNAMEs to Black Bear Rentals, data migrates as `workspace_id=blackbear`. Defer until Black Bear Rentals has 50 paying Founders and is battle-tested.
 15. **SOC 2 Type II auditor engagement** — Drata/Vanta. Process takes 6 months. Start now if you want the badge by H2.
 
 ---
@@ -360,15 +360,15 @@ cd ~/Desktop/rentblackbear && claude --dangerously-skip-permissions
 
 ## WHAT'S BUILT — current state
 
-> **2026-04-14 LATE EVENING — fork + Next 16 upgrade.** Tonight the Tenantory codebase forked out of `rentblackbear/` into a clean repo at `~/Desktop/tenantory-app/` (pushed to `harrisonrcooper/tenantory` on GitHub). Inside that new repo: Next.js bumped 14.2 → 16.2.3, React 18 → 19.2, Clerk 6.39 → 7.1.0, TypeScript to 5.9. The Next codemod (`next-async-request-api`, `remove-unstable-prefix`, `remove-experimental-ppr`) was applied. `middleware.ts` was deleted and merged into `proxy.ts` (Next 16's preferred filename, runs on Node by default — fixes the `#crypto` / `@clerk/shared/buildAccountsBaseUrl` Edge runtime errors that blocked the previous deploy). Build is green. Old broken "tenantory" Vercel project deleted; new Vercel project being set up from the new GitHub repo with fresh env vars (Clerk supreme-jay-88, Supabase tenantory-dev `jaleiwerptuocbsgugem`, Stripe Tenantory test mode, Resend Tenantory API key, CRON_SECRET regenerated). Stripe live-mode activation submitted under sole-prop SSN. Domain connection to tenantory.com is the next step after the redeploy goes green.
+> **2026-04-14 LATE EVENING — fork + Next 16 upgrade.** Tonight the Black Bear Rentals codebase forked out of `rentblackbear/` into a clean repo at `~/Desktop/blackbear-app/` (pushed to `harrisonrcooper/blackbear` on GitHub). Inside that new repo: Next.js bumped 14.2 → 16.2.3, React 18 → 19.2, Clerk 6.39 → 7.1.0, TypeScript to 5.9. The Next codemod (`next-async-request-api`, `remove-unstable-prefix`, `remove-experimental-ppr`) was applied. `middleware.ts` was deleted and merged into `proxy.ts` (Next 16's preferred filename, runs on Node by default — fixes the `#crypto` / `@clerk/shared/buildAccountsBaseUrl` Edge runtime errors that blocked the previous deploy). Build is green. Old broken "blackbear" Vercel project deleted; new Vercel project being set up from the new GitHub repo with fresh env vars (Clerk supreme-jay-88, Supabase blackbear-dev `jaleiwerptuocbsgugem`, Stripe Black Bear Rentals test mode, Resend Black Bear Rentals API key, CRON_SECRET regenerated). Stripe live-mode activation submitted under sole-prop SSN. Domain connection to rentblackbear.com is the next step after the redeploy goes green.
 
-> **April 2026 migration note (earlier this session).** The Flagship / Tenantory migration is mid-flight. The admin, portal, apply, and sign-in routes under `app/admin/*`, `app/portal/*`, `app/apply/[slug]/*`, and `app/sign-in/*` now serve **mock-ported Flagship JSX snapshots**, not the old data-wired pages. The prior production admin (2,192-line monolith with Supabase loaders, Clerk hooks, Stripe wiring) lives in git history (see commit `b2672fc` and earlier); the new UI is a scaffold that rewires to real data once the migrations below are applied and Clerk/Supabase point at the fresh Tenantory project. Every mock also still lives at `/mocks/<name>` for reference comparison.
+> **April 2026 migration note (earlier this session).** The Flagship / Black Bear Rentals migration is mid-flight. The admin, portal, apply, and sign-in routes under `app/admin/*`, `app/portal/*`, `app/apply/[slug]/*`, and `app/sign-in/*` now serve **mock-ported Flagship JSX snapshots**, not the old data-wired pages. The prior production admin (2,192-line monolith with Supabase loaders, Clerk hooks, Stripe wiring) lives in git history (see commit `b2672fc` and earlier); the new UI is a scaffold that rewires to real data once the migrations below are applied and Clerk/Supabase point at the fresh Black Bear Rentals project. Every mock also still lives at `/mocks/<name>` for reference comparison.
 
 ### New Flagship layer (added in the 2026-04 migration)
 - **components/ui/** — 20 primitives + tokens + shared CSS: Button, Card (+Head/Body/Foot), Input / Textarea / Select, Checkbox / Radio / Toggle, Drawer, Modal, Toast (+Provider+useToast), Pill, Avatar, EmptyState, ProgressBar, Stepper, DataTable, Kanban (+Column+Card), Dropzone, KeyValueGrid. All classes prefixed `flg-` to avoid colliding with the existing admin's `const S` CSS string.
 - **components/layout/** — AdminShell (navy sidebar + topbar), MarketingShell (sticky nav + navy-dark footer), PortalShell (workspace-branded, reads `--flg-ws-*` tokens via inline style).
-- **Theme system** — `app/globals.css` carries tokens verbatim from `settings.html` with `[data-theme="hearth|nocturne|slate"]` overrides; theme bootstrap script in `app/layout.jsx` reads `localStorage.tenantory-theme` pre-hydration; Inter + Source Serif 4 + JetBrains Mono now load via `next/font/google`.
-- **63 mocks ported** — every file in `~/Desktop/tenantory/*.html` has a corresponding Next.js page at `app/mocks/<name>/page.jsx` (real JSX: class→className, style strings→objects, SVG attrs camelCased, scripts stripped). The `/mocks` index at `app/mocks/page.jsx` lists them.
+- **Theme system** — `app/globals.css` carries tokens verbatim from `settings.html` with `[data-theme="hearth|nocturne|slate"]` overrides; theme bootstrap script in `app/layout.jsx` reads `localStorage.blackbear-theme` pre-hydration; Inter + Source Serif 4 + JetBrains Mono now load via `next/font/google`.
+- **63 mocks ported** — every file in `~/Desktop/blackbear/*.html` has a corresponding Next.js page at `app/mocks/<name>/page.jsx` (real JSX: class→className, style strings→objects, SVG attrs camelCased, scripts stripped). The `/mocks` index at `app/mocks/page.jsx` lists them.
 - **17 real admin routes** promoted from mock ports: `/admin`, `/admin/applications`, `/admin/tenants`, `/admin/leases`, `/admin/maintenance`, `/admin/payments`, `/admin/properties`, `/admin/reports`, `/admin/settings`, `/admin/settings/import`, `/admin/settings/team`, `/admin/leases/renewals`, `/admin/properties/new`, `/admin/properties/[id]/syndicate`, `/admin/payments/late`, `/admin/leases/[id]/amend`, `/admin/reports/tax-pack`.
 - **13 real tenant/vendor/investor routes** promoted: `/portal` (+ `moveout`, `renew`, `roommate`, `inspection`, `settings`), `/apply/[slug]` (+ `approved`, `declined`), `/sign/[token]`, `/vendor` (+ `signup/[invite]`), `/investor`.
 - **25 real utility + marketing routes** promoted, including `app/(marketing)/` route group (`landing`, `pricing`, `stories`, `security`, `integrations`, `tools`, `about`, `compare`, `demo`, `faq`, `changelog`, `press`, `partners`, `referral`, `terms`, `privacy` + `/vs/[competitor]` dynamic template covering appfolio/buildium/doorloop + `/for/[segment]` dynamic template covering landlords/coliving/students/sfr-investors), plus `app/not-found.jsx` (404), `public/service-down.html`, `/status`, `/docs`, `/sign-in`.

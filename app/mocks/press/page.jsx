@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/press.html.
+// Mock ported from ~/Desktop/blackbear/press.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -45,17 +45,17 @@ export default function Page() {
       Press room
     </div>
     <h1>Press &amp; <em>media</em></h1>
-    <p className="hero-sub">Welcome, journalists, podcasters, and partners. Everything you need to cover Tenantory is on this page, and the founder replies same-day on weekdays.</p>
+    <p className="hero-sub">Welcome, journalists, podcasters, and partners. Everything you need to cover Black Bear Rentals is on this page, and the founder replies same-day on weekdays.</p>
     <div className="hero-actions">
-      <a className="btn btn-primary btn-lg" href="mailto:press@tenantory.com">
+      <a className="btn btn-primary btn-lg" href="mailto:press@rentblackbear.com">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
-        Email press@tenantory.com
+        Email press@rentblackbear.com
       </a>
       <button className="btn btn-pink btn-lg" data-toast="Media kit download starting…">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
         Download media kit (ZIP)
       </button>
-      <a className="btn btn-ghost btn-lg" href="mailto:press@tenantory.com?subject=Founder call request">
+      <a className="btn btn-ghost btn-lg" href="mailto:press@rentblackbear.com?subject=Founder call request">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></svg>
         Book a founder call
       </a>
@@ -67,7 +67,7 @@ export default function Page() {
     <div className="sec-head">
       <div className="sec-eyebrow">Fast facts</div>
       <h2 className="sec-title">The short version</h2>
-      <p className="sec-sub">Cleared for print. Ping press@tenantory.com if you need a number verified on deadline.</p>
+      <p className="sec-sub">Cleared for print. Ping press@rentblackbear.com if you need a number verified on deadline.</p>
     </div>
     <div className="card facts-card">
       <div className="facts-grid">
@@ -122,7 +122,7 @@ export default function Page() {
 
     <div className="card boiler-panel active" id="panel-short">
       <div className="boiler-card">
-        <p className="boiler-text" id="text-short">Tenantory is the modern operating system for independent landlords and co-living operators. One app replaces AppFolio, QuickBooks, DocuSign, and your bookkeeper.</p>
+        <p className="boiler-text" id="text-short">Black Bear Rentals is the modern operating system for independent landlords and co-living operators. One app replaces AppFolio, QuickBooks, DocuSign, and your bookkeeper.</p>
         <button className="copy-btn" data-copy="text-short">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
           <span>Copy</span>
@@ -133,7 +133,7 @@ export default function Page() {
 
     <div className="card boiler-panel" id="panel-medium">
       <div className="boiler-card">
-        <p className="boiler-text" id="text-medium">Tenantory is an all-in-one property management platform for independent landlords and co-living operators. It replaces AppFolio, QuickBooks, DocuSign, and bookkeeping services with a single app that handles listings, applications, leases, rent, maintenance, and move-outs. Founded in 2026 in Huntsville, Alabama, Tenantory is bootstrapped and operator-built.</p>
+        <p className="boiler-text" id="text-medium">Black Bear Rentals is an all-in-one property management platform for independent landlords and co-living operators. It replaces AppFolio, QuickBooks, DocuSign, and bookkeeping services with a single app that handles listings, applications, leases, rent, maintenance, and move-outs. Founded in 2026 in Huntsville, Alabama, Black Bear Rentals is bootstrapped and operator-built.</p>
         <button className="copy-btn" data-copy="text-medium">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
           <span>Copy</span>
@@ -144,7 +144,7 @@ export default function Page() {
 
     <div className="card boiler-panel" id="panel-long">
       <div className="boiler-card">
-        <p className="boiler-text" id="text-long">Tenantory is the operating system for independent landlords and co-living operators. Founded in February 2026 in Huntsville, Alabama by operator Harrison Cooper, the bootstrapped software company replaces AppFolio, QuickBooks, DocuSign, and bookkeeping services with a single app purpose-built for small-to-mid portfolios. Tenantory covers listings, applications, screening, leases, rent collection, maintenance, bookkeeping, and move-outs, with tenant-facing tools that feel modern enough to recruit residents from Zillow. Plans start at $39/month for Starter, $99/month for Pro, and $299/month for Scale. Tenantory serves more than 100 property managers across the United States and is building in public toward a multi-tenant SaaS platform.</p>
+        <p className="boiler-text" id="text-long">Black Bear Rentals is the operating system for independent landlords and co-living operators. Founded in February 2026 in Huntsville, Alabama by operator Harrison Cooper, the bootstrapped software company replaces AppFolio, QuickBooks, DocuSign, and bookkeeping services with a single app purpose-built for small-to-mid portfolios. Black Bear Rentals covers listings, applications, screening, leases, rent collection, maintenance, bookkeeping, and move-outs, with tenant-facing tools that feel modern enough to recruit residents from Zillow. Plans start at $39/month for Starter, $99/month for Pro, and $299/month for Scale. Black Bear Rentals serves more than 100 property managers across the United States and is building in public toward a multi-tenant SaaS platform.</p>
         <button className="copy-btn" data-copy="text-long">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
           <span>Copy</span>
@@ -169,7 +169,7 @@ export default function Page() {
             <div className="asset-mark">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
             </div>
-            Tenantory
+            Black Bear Rentals
           </div>
         </div>
         <div className="asset-body">
@@ -188,7 +188,7 @@ export default function Page() {
             <div className="asset-mark solid-white">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
             </div>
-            Tenantory
+            Black Bear Rentals
           </div>
         </div>
         <div className="asset-body">
@@ -291,8 +291,8 @@ export default function Page() {
       </div>
       <div>
         <div className="founder-name">Harrison Cooper</div>
-        <div className="founder-role">Founder &amp; CEO, Tenantory</div>
-        <p className="founder-bio">Harrison Cooper is a Huntsville, Alabama operator who runs 15+ co-living rooms under Black Bear Rentals and builds software for the landlords he drinks coffee with. After a decade of spreadsheets, duct-taped integrations, and AppFolio invoices, he started Tenantory in early 2026 to give small-to-mid portfolios the same operating tools the giants have. He writes openly about revenue, churn, and lessons learned as the company grows.</p>
+        <div className="founder-role">Founder &amp; CEO, Black Bear Rentals</div>
+        <p className="founder-bio">Harrison Cooper is a Huntsville, Alabama operator who runs 15+ co-living rooms under Black Bear Rentals and builds software for the landlords he drinks coffee with. After a decade of spreadsheets, duct-taped integrations, and AppFolio invoices, he started Black Bear Rentals in early 2026 to give small-to-mid portfolios the same operating tools the giants have. He writes openly about revenue, churn, and lessons learned as the company grows.</p>
         <div className="founder-socials">
           <a className="founder-social" href="https://x.com/" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.25 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
@@ -370,7 +370,7 @@ export default function Page() {
     <div className="sec-head">
       <div className="sec-eyebrow">As featured in</div>
       <h2 className="sec-title">Where operators hear about us</h2>
-      <p className="sec-sub">Publications and communities where Tenantory shows up most. Drop us a note if we should be on your list.</p>
+      <p className="sec-sub">Publications and communities where Black Bear Rentals shows up most. Drop us a note if we should be on your list.</p>
     </div>
     <div className="featured">
       <div className="feat-cell">
@@ -445,7 +445,7 @@ export default function Page() {
       </div>
       <div>
         <div className="contact-field-label">Email</div>
-        <div className="contact-field-val"><a href="mailto:press@tenantory.com">press@tenantory.com</a></div>
+        <div className="contact-field-val"><a href="mailto:press@rentblackbear.com">press@rentblackbear.com</a></div>
         <div className="contact-field-meta">Same-day reply, Mon–Fri</div>
       </div>
       <div>
@@ -458,13 +458,13 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="about.html">About</a>
       <a href="press.html">Press</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

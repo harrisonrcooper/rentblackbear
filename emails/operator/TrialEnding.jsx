@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function TrialEnding({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/pricing",
+  ctaHref = "https://app.rentblackbear.com/pricing",
 }) {
   return (
-    <Layout preview="Your Tenantory trial ends in 3 days." brand="Tenantory">
+    <Layout preview="Your Black Bear Rentals trial ends in 3 days." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Your trial ends in 3 days.
       </Heading>

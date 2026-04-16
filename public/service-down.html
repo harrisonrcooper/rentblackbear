@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <script>try{var t=localStorage.getItem("tenantory-theme");if(t&&t!=="flagship"&&t!=="custom")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>try{var t=localStorage.getItem("blackbear-theme");if(t&&t!=="flagship"&&t!=="custom")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Under maintenance — Tenantory</title>
-  <meta name="description" content="Tenantory is down for a short scheduled maintenance window. Rent collection on Stripe is unaffected.">
+  <title>Under maintenance — Black Bear Rentals</title>
+  <meta name="description" content="Black Bear Rentals is down for a short scheduled maintenance window. Rent collection on Stripe is unaffected.">
   <meta name="robots" content="noindex">
   <meta http-equiv="refresh" content="60">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -222,12 +222,12 @@
       <div class="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12 12 3l9 9"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
       </div>
-      <span class="tb-brand-name">Tenantory</span>
+      <span class="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav class="tb-nav">
       <a class="tb-nav-item" href="landing.html">Home</a>
       <a class="tb-nav-item" href="pricing.html">Pricing</a>
-      <a class="tb-nav-item" href="https://status.tenantory.com" target="_blank" rel="noopener">Status</a>
+      <a class="tb-nav-item" href="https://status.rentblackbear.com" target="_blank" rel="noopener">Status</a>
     </nav>
     <div class="tb-cta">
       <a class="btn btn-ghost btn-nav" href="onboarding.html">Sign in</a>
@@ -257,7 +257,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Scheduled maintenance
       </div>
-      <h1>Tenantory is <em>under maintenance</em>.</h1>
+      <h1>Black Bear Rentals is <em>under maintenance</em>.</h1>
       <p class="hero-sub">
         We're pushing an update. Back online by <strong>2:45am ET</strong>. Your tenants aren't seeing any rent-collection disruption — that runs on Stripe and is unaffected.
       </p>
@@ -273,14 +273,14 @@
         <div class="detail-label">What's happening</div>
         <div class="detail-text">
           Scheduled deploy of the Q2 release. ETA 15 minutes. If this is past <strong>3:15am ET</strong>, check
-          <a href="https://status.tenantory.com" target="_blank" rel="noopener">status.tenantory.com</a>
+          <a href="https://status.rentblackbear.com" target="_blank" rel="noopener">status.rentblackbear.com</a>
           for an incident update. This page auto-refreshes every 60 seconds.
         </div>
       </div>
 
-      <a class="status-link" href="https://status.tenantory.com" target="_blank" rel="noopener">
+      <a class="status-link" href="https://status.rentblackbear.com" target="_blank" rel="noopener">
         <span class="status-dot"></span>
-        <span>View live status at status.tenantory.com</span>
+        <span>View live status at status.rentblackbear.com</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>
     </section>
@@ -316,12 +316,12 @@
 
   <!-- Footer -->
   <footer class="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div class="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
-      <a href="https://status.tenantory.com" target="_blank" rel="noopener">Status</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
+      <a href="https://status.rentblackbear.com" target="_blank" rel="noopener">Status</a>
     </div>
   </footer>
 
@@ -334,7 +334,7 @@
         if (!started || !eta) return;
         // Demo values — operator can override in CMS/template
         // Persist a synthetic start time so the label feels current across refreshes
-        var key = 'tenantory-maintenance-start';
+        var key = 'blackbear-maintenance-start';
         var startTs = parseInt(sessionStorage.getItem(key) || '0', 10);
         if (!startTs) {
           startTs = Date.now();

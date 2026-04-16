@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/status.html.
+// Mock ported from ~/Desktop/blackbear/status.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,13 +23,13 @@ export default function Page() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
       <div>
-        <div className="tb-brand-name">Tenantory</div>
+        <div className="tb-brand-name">Black Bear Rentals</div>
         <div className="tb-brand-sub">Status</div>
       </div>
     </a>
     <div className="tb-right">
       <a className="btn btn-ghost" href="landing.html">
-        Back to Tenantory
+        Back to Black Bear Rentals
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
       </a>
     </div>
@@ -149,7 +149,7 @@ export default function Page() {
         </div>
       </div>
       <div className="sub-channels">
-        <a className="sub-channel" href="mailto:status-subscribe@tenantory.com">
+        <a className="sub-channel" href="mailto:status-subscribe@rentblackbear.com">
           <div className="sub-icon email">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22 6 12 13 2 6" /></svg>
           </div>
@@ -173,12 +173,12 @@ export default function Page() {
   </main>
 
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="security.html">Security</a>
       <a href="changelog.html">Changelog</a>
-      <a href="mailto:support@tenantory.com">Support</a>
+      <a href="mailto:support@rentblackbear.com">Support</a>
     </div>
   </footer>
 

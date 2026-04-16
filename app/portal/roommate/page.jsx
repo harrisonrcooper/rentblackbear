@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/roommate.html.
+// Mock ported from ~/Desktop/blackbear/roommate.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -404,7 +404,7 @@ export default function Page() {
   
   <footer className="legal-foot">
     <div>&copy; 2026 Black Bear Rentals &middot; <a href="legal-privacy.md">Privacy</a> &middot; <a href="legal-terms.md">Terms</a></div>
-    <div className="powered-by">Powered by Tenantory</div>
+    <div className="powered-by">Powered by Black Bear Rentals</div>
   </footer>
 
   <div className="toast-stack" id="toastStack" />

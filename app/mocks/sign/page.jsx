@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/sign.html.
+// Mock ported from ~/Desktop/blackbear/sign.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -116,7 +116,7 @@ export default function Page() {
             </div>
             <div className="doc-section-body">
               <p>This lease begins on <span className="doc-highlight">May 1, 2026</span> and ends on <span className="doc-highlight">April 30, 2027</span>. Monthly rent is <span className="doc-highlight">$750.00</span>, due on the 1st of each month. Rent paid by the 5th avoids late fees. Late rent incurs a flat $25 fee plus $5/day after the 10th, capped at 5% of monthly rent per Alabama Code §35-9A-161.</p>
-              <p>If Tenant pays through Tenantory's autopay (ACH), there is no processing fee. Card payments incur a 2.95% processing fee charged by the payment processor (not retained by Landlord).</p>
+              <p>If Tenant pays through Black Bear Rentals's autopay (ACH), there is no processing fee. Card payments incur a 2.95% processing fee charged by the payment processor (not retained by Landlord).</p>
               <div className="doc-key">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                 <div>If you turn on autopay before May 1, your $25 first-month autopay credit applies automatically.</div>
@@ -206,7 +206,7 @@ export default function Page() {
               <svg className="doc-section-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
             </div>
             <div className="doc-section-body">
-              <p>By signing below, Tenant and Landlord acknowledge they have read and agree to all 8 sections of this lease. This is a legally binding agreement under Alabama law. Both parties retain a copy of the executed lease in their Tenantory portal.</p>
+              <p>By signing below, Tenant and Landlord acknowledge they have read and agree to all 8 sections of this lease. This is a legally binding agreement under Alabama law. Both parties retain a copy of the executed lease in their Black Bear Rentals portal.</p>
             </div>
           </div>
 
@@ -298,7 +298,7 @@ export default function Page() {
           <div style={{display: "flex", alignItems: "center", gap: "12px", marginTop: "14px", padding: "12px 14px", background: "var(--brand-pale)", borderRadius: "8px", border: "1px solid var(--brand-soft)"}}>
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-dark)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width: "18px", height: "18px", flexShrink: "0"}}><path d="M12 2 3 6v6c0 5.5 4 10 9 11 5-1 9-5.5 9-11V6l-9-4z" /><path d="m9 12 2 2 4-4" /></svg>
             <div style={{fontSize: "12.5px", color: "var(--brand-dark)"}}>
-              <strong style={{fontWeight: "700"}}>Stripe-secured.</strong> Your payment goes directly to Black Bear's escrow account. Tenantory never holds your funds.
+              <strong style={{fontWeight: "700"}}>Stripe-secured.</strong> Your payment goes directly to Black Bear's escrow account. Black Bear Rentals never holds your funds.
             </div>
           </div>
         </div>
@@ -385,7 +385,7 @@ export default function Page() {
 
   <footer className="legal-foot">
     <div>&copy; 2026 Black Bear Rentals · <a href="#">Fair Housing</a> · <a href="#">Privacy</a></div>
-    <div className="powered-by">Powered by Tenantory</div>
+    <div className="powered-by">Powered by Black Bear Rentals</div>
   </footer>
 
   <div className="toast-stack" id="toastStack" />

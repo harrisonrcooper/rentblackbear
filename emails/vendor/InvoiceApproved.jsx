@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function InvoiceApproved({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/vendor",
+  ctaHref = "https://app.rentblackbear.com/vendor",
 }) {
   return (
-    <Layout preview="Your invoice is approved — payout is on the way." brand="Tenantory">
+    <Layout preview="Your invoice is approved — payout is on the way." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Invoice approved.
       </Heading>

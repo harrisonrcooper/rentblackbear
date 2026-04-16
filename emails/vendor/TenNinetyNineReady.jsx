@@ -8,22 +8,22 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function TenNinetyNineReady({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/vendor",
+  ctaHref = "https://app.rentblackbear.com/vendor",
 }) {
   return (
-    <Layout preview="Your 1099-NEC for last year is ready to download." brand="Tenantory">
+    <Layout preview="Your 1099-NEC for last year is ready to download." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Your 1099-NEC is ready.
       </Heading>
       <Text style={sharedStyles.paragraph}>
-        Hey {firstName}, if you received $600+ from any workspace through Tenantory last year, your 1099-NEC is in the vendor portal. Download, file, done.
+        Hey {firstName}, if you received $600+ from any workspace through Black Bear Rentals last year, your 1099-NEC is in the vendor portal. Download, file, done.
       </Text>
       <Section style={{ margin: "20px 0" }}>
         <Button href={ctaHref} style={sharedStyles.button}>
           Download 1099-NEC
         </Button>
       </Section>
-      <Text style={sharedStyles.muted}>Each operator may issue their own copy separately — this one consolidates Tenantory-routed payouts.</Text>
+      <Text style={sharedStyles.muted}>Each operator may issue their own copy separately — this one consolidates BlackBear-routed payouts.</Text>
     </Layout>
   );
 }

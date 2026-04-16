@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/import.html.
+// Mock ported from ~/Desktop/blackbear/import.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -26,7 +26,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
         </div>
         <div>
-          <div className="sb-brand-name">Tenantory</div>
+          <div className="sb-brand-name">Black Bear Rentals</div>
           <div className="sb-brand-ws">Black Bear Rentals</div>
         </div>
       </div>
@@ -123,7 +123,7 @@ export default function Page() {
 
         <div className="page-head">
           <h1>Import tenants, leases, and properties from your old system</h1>
-          <p>Bring your existing portfolio into Tenantory in five guided steps. We'll auto-detect common exports from AppFolio, Buildium, and DoorLoop — and you can map columns yourself if you're coming from something custom.</p>
+          <p>Bring your existing portfolio into Black Bear Rentals in five guided steps. We'll auto-detect common exports from AppFolio, Buildium, and DoorLoop — and you can map columns yourself if you're coming from something custom.</p>
         </div>
 
         
@@ -355,7 +355,7 @@ export default function Page() {
                   <th style={{width: "28%"}}>Your column</th>
                   <th style={{width: "20%"}}>Sample value</th>
                   <th style={{width: "4%"}} />
-                  <th style={{width: "32%"}}>Tenantory field</th>
+                  <th style={{width: "32%"}}>Black Bear Rentals field</th>
                   <th style={{width: "16%", textAlign: "right"}}>Status</th>
                 </tr>
               </thead>
@@ -381,7 +381,7 @@ export default function Page() {
         <div className="panel" data-panel="4">
           <div className="panel-head">
             <h2>Preview your import</h2>
-            <p>Here's how the first 5 rows will look in Tenantory. Everything green is ready. Anything red needs a second look.</p>
+            <p>Here's how the first 5 rows will look in Black Bear Rentals. Everything green is ready. Anything red needs a second look.</p>
           </div>
           <div className="panel-body">
 
@@ -513,7 +513,7 @@ export default function Page() {
         
         <div className="panel" data-panel="5">
           <div className="panel-head">
-            <h2>Importing to Tenantory</h2>
+            <h2>Importing to Black Bear Rentals</h2>
             <p>Hang tight — we're writing everything into your workspace. This usually takes under a minute.</p>
           </div>
           <div className="panel-body">
@@ -524,7 +524,7 @@ export default function Page() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
               </div>
               <div className="progress-title" id="progress-title">Importing your records…</div>
-              <div className="progress-sub" id="progress-sub">Writing tenants, leases, and properties into Tenantory.</div>
+              <div className="progress-sub" id="progress-sub">Writing tenants, leases, and properties into Black Bear Rentals.</div>
               <div className="progress-bar-wrap">
                 <div className="progress-bar" id="progress-bar" />
               </div>
@@ -539,7 +539,7 @@ export default function Page() {
               <div className="success-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg>
               </div>
-              <h3>Your portfolio is live in Tenantory</h3>
+              <h3>Your portfolio is live in Black Bear Rentals</h3>
               <p>All done. You can manage your tenants, leases, and properties like you've always been here.</p>
               <div className="success-stats">
                 <div className="success-stat">

@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/for-landlords.html.
+// Mock ported from ~/Desktop/blackbear/for-landlords.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -128,7 +128,7 @@ export default function Page() {
     <div className="section-head">
       <div className="section-kicker">Counter-positioning</div>
       <h2>What you're <em style={{fontStyle: "normal", background: "linear-gradient(135deg,var(--blue-bright),var(--pink))", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent"}}>not</em>.</h2>
-      <p>A quick gut-check so you don't buy the wrong thing. Tenantory Starter is intentionally simple. Here's what you're avoiding and what you actually are.</p>
+      <p>A quick gut-check so you don't buy the wrong thing. Black Bear Rentals Starter is intentionally simple. Here's what you're avoiding and what you actually are.</p>
     </div>
     <div className="nl-wrap">
       <div className="nl-side not">
@@ -205,7 +205,7 @@ export default function Page() {
           <div className="sc-fix-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </div>
-          <div className="sc-fix-txt"><strong>With Tenantory:</strong> Tenant opens the portal, submits a ticket with a photo and a priority. You see it, tap "assign to Mike," and Mike gets a text with the address. Total time: 90 seconds. Your Sunday stays your Sunday.</div>
+          <div className="sc-fix-txt"><strong>With Black Bear Rentals:</strong> Tenant opens the portal, submits a ticket with a photo and a priority. You see it, tap "assign to Mike," and Mike gets a text with the address. Total time: 90 seconds. Your Sunday stays your Sunday.</div>
         </div>
       </div>
 
@@ -217,7 +217,7 @@ export default function Page() {
           <div className="sc-fix-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </div>
-          <div className="sc-fix-txt"><strong>With Tenantory:</strong> Every rent payment is categorized. Every expense you log gets a tag. Hit "Export Schedule E" and a clean PDF + CSV drops in your inbox. Forward to your CPA. Done before the coffee is cold.</div>
+          <div className="sc-fix-txt"><strong>With Black Bear Rentals:</strong> Every rent payment is categorized. Every expense you log gets a tag. Hit "Export Schedule E" and a clean PDF + CSV drops in your inbox. Forward to your CPA. Done before the coffee is cold.</div>
         </div>
       </div>
 
@@ -229,7 +229,7 @@ export default function Page() {
           <div className="sc-fix-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </div>
-          <div className="sc-fix-txt"><strong>With Tenantory:</strong> Tenant sets up autopay. Rent is drafted on the 1st. The ledger auto-marks it paid. You get a "Rent landed — $1,450" email. If a payment ever fails, you know the same day.</div>
+          <div className="sc-fix-txt"><strong>With Black Bear Rentals:</strong> Tenant sets up autopay. Rent is drafted on the 1st. The ledger auto-marks it paid. You get a "Rent landed — $1,450" email. If a payment ever fails, you know the same day.</div>
         </div>
       </div>
 
@@ -241,7 +241,7 @@ export default function Page() {
           <div className="sc-fix-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </div>
-          <div className="sc-fix-txt"><strong>With Tenantory:</strong> Every lease is signed in-app and filed under the property. Searchable. Dated. Clearly marked "current" vs. "expired." The pet clause is one click away — for you and the tenant.</div>
+          <div className="sc-fix-txt"><strong>With Black Bear Rentals:</strong> Every lease is signed in-app and filed under the property. Searchable. Dated. Clearly marked "current" vs. "expired." The pet clause is one click away — for you and the tenant.</div>
         </div>
       </div>
 
@@ -270,7 +270,7 @@ export default function Page() {
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Lease e-sign &amp; document storage</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Maintenance ticketing with photo upload</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Income/expense ledger + Schedule-E friendly export</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenant portal at tenantory.com/you</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenant portal at rentblackbear.com/you</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Email support (48hr) and our $100 time-back guarantee</li>
         </ul>
         <div className="pc-cta">
@@ -299,7 +299,7 @@ export default function Page() {
     <div className="case-card">
       <div className="case-kicker">Accidental landlord story</div>
       <div className="case-quote">
-        "I'm a regional pilot. I inherited my grandma's house in 2022 and bought a duplex two years later. I didn't want to be a landlord — I wanted the cash flow. <em>Tenantory is the only reason my wife doesn't hate those houses.</em> Rent shows up. Maintenance tickets route to Mike. Tax season took me 20 minutes this year."
+        "I'm a regional pilot. I inherited my grandma's house in 2022 and bought a duplex two years later. I didn't want to be a landlord — I wanted the cash flow. <em>Black Bear Rentals is the only reason my wife doesn't hate those houses.</em> Rent shows up. Maintenance tickets route to Mike. Tax season took me 20 minutes this year."
       </div>
       <div className="case-who">
         <div className="case-avatar">DR</div>
@@ -338,7 +338,7 @@ export default function Page() {
       </div>
       <div className="faq-item">
         <button className="faq-q">What if my tenant already pays by Venmo? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Venmo works until it doesn't. Three problems it quietly creates: (1) no paper trail your CPA will accept, (2) no autopay — you're still "reminding" the tenant, and (3) personal-account Venmo starts flagging rent transfers as a business and can freeze them. Tenantory gives the tenant the same "tap to pay" experience, but the receipts, ledger, and autopay all happen in the background. <strong>Most tenants prefer it</strong> once they try it.</div>
+        <div className="faq-a">Venmo works until it doesn't. Three problems it quietly creates: (1) no paper trail your CPA will accept, (2) no autopay — you're still "reminding" the tenant, and (3) personal-account Venmo starts flagging rent transfers as a business and can freeze them. Black Bear Rentals gives the tenant the same "tap to pay" experience, but the receipts, ledger, and autopay all happen in the background. <strong>Most tenants prefer it</strong> once they try it.</div>
       </div>
       <div className="faq-item">
         <button className="faq-q">Do I really need lease e-signing for one unit? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
@@ -350,7 +350,7 @@ export default function Page() {
       </div>
       <div className="faq-item">
         <button className="faq-q">I'm not tech-savvy — can I actually do this? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Yes. If you can use Gmail and Venmo, you're over-qualified. The whole setup is: add your property (name + address), invite your tenant by email, they click the link and enter their bank info. <strong>Average first-time setup is 18 minutes.</strong> If you get stuck, email hello@tenantory.com — a real human responds, usually same day.</div>
+        <div className="faq-a">Yes. If you can use Gmail and Venmo, you're over-qualified. The whole setup is: add your property (name + address), invite your tenant by email, they click the link and enter their bank info. <strong>Average first-time setup is 18 minutes.</strong> If you get stuck, email hello@rentblackbear.com — a real human responds, usually same day.</div>
       </div>
       <div className="faq-item">
         <button className="faq-q">What if my tenant doesn't want to use a portal? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
@@ -363,7 +363,7 @@ export default function Page() {
   <section className="cta-bottom">
     <div className="cta-card">
       <h2>Your rental shouldn't run your weekends.</h2>
-      <p>Try Starter free for 14 days. No credit card. Set up your first property in an afternoon. If Tenantory doesn't save you 10+ hours in your first 30 paid days, we refund you and wire $100 for wasting your time.</p>
+      <p>Try Starter free for 14 days. No credit card. Set up your first property in an afternoon. If Black Bear Rentals doesn't save you 10+ hours in your first 30 paid days, we refund you and wire $100 for wasting your time.</p>
       <div className="cta-card-actions">
         <a className="btn btn-pink btn-lg" href="onboarding.html">
           Start Starter — $39/mo
@@ -377,12 +377,12 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="for-landlords.html">For landlords</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

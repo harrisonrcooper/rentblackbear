@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/vs-appfolio.html.
+// Mock ported from ~/Desktop/blackbear/vs-appfolio.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -41,10 +41,10 @@ export default function Page() {
   <section className="hero">
     <div className="hero-eyebrow">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
-      AppFolio vs Tenantory · honest comparison
+      AppFolio vs Black Bear Rentals · honest comparison
     </div>
-    <h1>AppFolio is built for <em>250-unit portfolios</em>. Tenantory is built for the rest of us.</h1>
-    <p className="hero-sub">If you run 1 to 50 doors, AppFolio's $280/mo minimum, generic "AppFolio" tenant portal, and 6-week onboarding are overkill. Tenantory gives you the same capability for <strong style={{color: "var(--text)", fontWeight: "700"}}>$99/mo</strong>, with your brand on every tenant surface — and we migrate you in 48 hours, free.</p>
+    <h1>AppFolio is built for <em>250-unit portfolios</em>. Black Bear Rentals is built for the rest of us.</h1>
+    <p className="hero-sub">If you run 1 to 50 doors, AppFolio's $280/mo minimum, generic "AppFolio" tenant portal, and 6-week onboarding are overkill. Black Bear Rentals gives you the same capability for <strong style={{color: "var(--text)", fontWeight: "700"}}>$99/mo</strong>, with your brand on every tenant surface — and we migrate you in 48 hours, free.</p>
     <div className="hero-cta-row">
       <a className="btn btn-pink btn-lg" href="onboarding.html">
         Start 14-day trial
@@ -67,7 +67,7 @@ export default function Page() {
       </div>
       <div className="matchup-vs">VS</div>
       <div className="matchup-side us">
-        <div className="matchup-logo">Tenantory</div>
+        <div className="matchup-logo">Black Bear Rentals</div>
         <div className="matchup-sub">Built for 1–50 units · $99/mo for life</div>
       </div>
     </div>
@@ -77,7 +77,7 @@ export default function Page() {
   <section className="section" id="reasons">
     <div className="section-head">
       <div className="section-kicker">Why PMs are switching</div>
-      <h2>9 reasons PMs leave AppFolio for <em>Tenantory</em>.</h2>
+      <h2>9 reasons PMs leave AppFolio for <em>Black Bear Rentals</em>.</h2>
       <p>We pulled these from 40+ switch-conversations with independent PMs running 5 to 50 units. Every one of these was named as a direct reason.</p>
     </div>
 
@@ -89,14 +89,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
         </div>
         <h3>The $280/mo entry price is punitive at 10 units</h3>
-        <p>AppFolio's minimum is $280/mo before add-ons — that's $28 per door if you only have 10 units. Tenantory Pro is $99/mo for up to 50 doors. At 20 units you save $2,172/year; at 50 you save $9,600+.</p>
+        <p>AppFolio's minimum is $280/mo before add-ons — that's $28 per door if you only have 10 units. Black Bear Rentals Pro is $99/mo for up to 50 doors. At 20 units you save $2,172/year; at 50 you save $9,600+.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">$280/mo min</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">$99/mo for life</div>
           </div>
         </div>
@@ -108,14 +108,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
         </div>
         <h3>Tenants see "AppFolio" — not your brand</h3>
-        <p>Your applicants log into a generic AppFolio subdomain with AppFolio colors. Tenantory gives every PM a branded subdomain on Pro (<em>yourco.tenantory.com</em>) and a full custom domain on Scale. Tenants see you, not us.</p>
+        <p>Your applicants log into a generic AppFolio subdomain with AppFolio colors. Black Bear Rentals gives every PM a branded subdomain on Pro (<em>yourco.rentblackbear.com</em>) and a full custom domain on Scale. Tenants see you, not us.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">Generic portal</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Your subdomain + logo</div>
           </div>
         </div>
@@ -127,14 +127,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /><path d="M9 3v6" /><path d="M15 3v6" /><path d="M9 15v6" /><path d="M15 15v6" /></svg>
         </div>
         <h3>No AI application scoring</h3>
-        <p>AppFolio screening returns a credit score and a background check. That's it. Tenantory scores every applicant on 7 signals (income-to-rent, employment stability, prior evictions, pet/smoker flags, app completeness) and surfaces duplicate applications across your units.</p>
+        <p>AppFolio screening returns a credit score and a background check. That's it. Black Bear Rentals scores every applicant on 7 signals (income-to-rent, employment stability, prior evictions, pet/smoker flags, app completeness) and surfaces duplicate applications across your units.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">Credit report only</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">7-signal AI score</div>
           </div>
         </div>
@@ -146,14 +146,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
         </div>
         <h3>No Schedule-E export for your CPA</h3>
-        <p>AppFolio's accounting exports a generic P&amp;L. Your CPA still has to re-categorize everything for Schedule E. Tenantory ships a one-click Schedule-E export grouped by property, with mortgage interest, depreciation, and repair/capex split out the way the IRS wants it.</p>
+        <p>AppFolio's accounting exports a generic P&amp;L. Your CPA still has to re-categorize everything for Schedule E. Black Bear Rentals ships a one-click Schedule-E export grouped by property, with mortgage interest, depreciation, and repair/capex split out the way the IRS wants it.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">Generic P&amp;L only</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">1-click Schedule-E</div>
           </div>
         </div>
@@ -165,14 +165,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
         </div>
         <h3>Onboarding takes 4–6 weeks. Yours takes 15 minutes.</h3>
-        <p>AppFolio charges a $400+ onboarding fee and schedules you 3–4 weeks out for implementation. Tenantory's wizard is 6 steps, ~15 minutes, and every single bit of it is skippable except your workspace name.</p>
+        <p>AppFolio charges a $400+ onboarding fee and schedules you 3–4 weeks out for implementation. Black Bear Rentals's wizard is 6 steps, ~15 minutes, and every single bit of it is skippable except your workspace name.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">4–6 weeks + $400 fee</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">15 min, no fee</div>
           </div>
         </div>
@@ -184,14 +184,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
         </div>
         <h3>Investor reports built by hand, monthly</h3>
-        <p>If you manage units for other investors, AppFolio makes you export-to-Excel and pretty it up yourself. Tenantory auto-generates a per-owner monthly statement (rent collected, expenses, NOI, reserves) as a shareable PDF they can pull anytime.</p>
+        <p>If you manage units for other investors, AppFolio makes you export-to-Excel and pretty it up yourself. Black Bear Rentals auto-generates a per-owner monthly statement (rent collected, expenses, NOI, reserves) as a shareable PDF they can pull anytime.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">Manual Excel build</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Auto owner PDF</div>
           </div>
         </div>
@@ -203,14 +203,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 10h20" /><path d="M8 14h2" /><path d="M14 14h2" /></svg>
         </div>
         <h3>1099 season becomes a spreadsheet war</h3>
-        <p>AppFolio requires you to export vendor payment data, W-9s, and bank info to a third-party filer. Tenantory tracks W-9s at onboarding, auto-totals payments per vendor, and files 1099-NECs with the IRS for you in January. One click.</p>
+        <p>AppFolio requires you to export vendor payment data, W-9s, and bank info to a third-party filer. Black Bear Rentals tracks W-9s at onboarding, auto-totals payments per vendor, and files 1099-NECs with the IRS for you in January. One click.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">3rd-party filer</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Built-in e-file</div>
           </div>
         </div>
@@ -222,14 +222,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3h18v18H3z" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
         </div>
         <h3>Rent-by-the-bedroom isn't really supported</h3>
-        <p>AppFolio models a unit as a unit. If you're running co-living or student rentals with per-bedroom leases, you end up hacking it with fake sub-units. Tenantory has native room-level leases, rent, and photos inside one property — no workarounds.</p>
+        <p>AppFolio models a unit as a unit. If you're running co-living or student rentals with per-bedroom leases, you end up hacking it with fake sub-units. Black Bear Rentals has native room-level leases, rent, and photos inside one property — no workarounds.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">Unit-level only</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Native room leases</div>
           </div>
         </div>
@@ -241,14 +241,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 3 6v6c0 5.5 4 10 9 11 5-1 9-5.5 9-11V6l-9-4z" /><path d="m9 12 2 2 4-4" /></svg>
         </div>
         <h3>No money-back guarantee. You're stuck on contract.</h3>
-        <p>AppFolio is annual, non-refundable, and you negotiate through your CSM to cancel. Tenantory is month-to-month, cancel in one click in Settings. Plus our guarantee: if Tenantory doesn't save you 10 hours in the first 30 paid days, we refund every dollar <strong>and wire you $100</strong>.</p>
+        <p>AppFolio is annual, non-refundable, and you negotiate through your CSM to cancel. Black Bear Rentals is month-to-month, cancel in one click in Settings. Plus our guarantee: if Black Bear Rentals doesn't save you 10 hours in the first 30 paid days, we refund every dollar <strong>and wire you $100</strong>.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">AppFolio</div>
             <div className="reason-contrast-val">Annual, no refund</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Monthly + $100 back</div>
           </div>
         </div>
@@ -270,7 +270,7 @@ export default function Page() {
           <tr>
             <th>Feature</th>
             <th className="dim">AppFolio<span className="compare-col-sub">Core plan</span></th>
-            <th className="featured">Tenantory<span className="compare-col-sub">Pro · $99/mo</span></th>
+            <th className="featured">Black Bear Rentals<span className="compare-col-sub">Pro · $99/mo</span></th>
           </tr>
         </thead>
         <tbody>
@@ -329,9 +329,9 @@ export default function Page() {
           Free of charge · done for you
         </div>
         <h3>Switch from AppFolio in 48 hours. We do the work.</h3>
-        <p>Tell us you're ready, email us an export from AppFolio, and our migration team rebuilds your workspace inside Tenantory the same week. <strong>You keep using AppFolio until we say go-live.</strong> No downtime, no data loss, no double-entry. If you're stuck on an annual AppFolio contract, we'll credit up to $500 of buyout into your first invoice.</p>
+        <p>Tell us you're ready, email us an export from AppFolio, and our migration team rebuilds your workspace inside Black Bear Rentals the same week. <strong>You keep using AppFolio until we say go-live.</strong> No downtime, no data loss, no double-entry. If you're stuck on an annual AppFolio contract, we'll credit up to $500 of buyout into your first invoice.</p>
         <div className="migrate-cta">
-          <a className="btn btn-pink" href="mailto:migrate@tenantory.com?subject=AppFolio%20migration">
+          <a className="btn btn-pink" href="mailto:migrate@rentblackbear.com?subject=AppFolio%20migration">
             Start my 48-hour switch
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
           </a>
@@ -361,7 +361,7 @@ export default function Page() {
         </div>
         <div className="migrate-step">
           <div className="migrate-step-num">5</div>
-          <div className="migrate-step-text">We buy out your AppFolio contract<small>Up to $500 credit on your first Tenantory invoice.</small></div>
+          <div className="migrate-step-text">We buy out your AppFolio contract<small>Up to $500 credit on your first Black Bear Rentals invoice.</small></div>
           <div className="migrate-step-clock">Bonus</div>
         </div>
       </div>
@@ -382,7 +382,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"I was paying AppFolio <strong>$312/mo for 11 doors</strong> and my tenants thought they were paying some company called AppFolio. On Tenantory I pay $99, my logo is on everything, and the Schedule-E export cut my CPA bill by $400 at tax time. No-brainer."</p>
+        <p className="testi-quote">"I was paying AppFolio <strong>$312/mo for 11 doors</strong> and my tenants thought they were paying some company called AppFolio. On Black Bear Rentals I pay $99, my logo is on everything, and the Schedule-E export cut my CPA bill by $400 at tax time. No-brainer."</p>
         <div className="testi-person">
           <div className="testi-avatar">MR</div>
           <div>
@@ -418,7 +418,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"I run co-living houses — 6 bedrooms per property, 18 tenants across 3 houses. AppFolio treats that like 3 units, which means I was faking sub-units with garbage workarounds. Tenantory has room-level leases out of the box. <strong>Saved me probably 6 hours a week</strong> just on the accounting alone."</p>
+        <p className="testi-quote">"I run co-living houses — 6 bedrooms per property, 18 tenants across 3 houses. AppFolio treats that like 3 units, which means I was faking sub-units with garbage workarounds. Black Bear Rentals has room-level leases out of the box. <strong>Saved me probably 6 hours a week</strong> just on the accounting alone."</p>
         <div className="testi-person">
           <div className="testi-avatar">DK</div>
           <div>
@@ -436,7 +436,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"We had 14 months left on our AppFolio annual contract. Tenantory credited <strong>$500 toward the buyout</strong> on the first invoice and that plus the $213/mo I'm saving means I broke even in under 2 months. The owner statements going out to my investors look three times more professional, too."</p>
+        <p className="testi-quote">"We had 14 months left on our AppFolio annual contract. Black Bear Rentals credited <strong>$500 toward the buyout</strong> on the first invoice and that plus the $213/mo I'm saving means I broke even in under 2 months. The owner statements going out to my investors look three times more professional, too."</p>
         <div className="testi-person">
           <div className="testi-avatar">AT</div>
           <div>
@@ -461,13 +461,13 @@ export default function Page() {
         87 Founders' spots left
       </div>
       <h2>Switch from AppFolio in 48 hours. Lock $99/mo for life.</h2>
-      <p>We handle the migration, we credit your AppFolio buyout, and if Tenantory doesn't save you 10 hours in the first 30 paid days, we refund every dollar and wire you $100 for the inconvenience.</p>
+      <p>We handle the migration, we credit your AppFolio buyout, and if Black Bear Rentals doesn't save you 10 hours in the first 30 paid days, we refund every dollar and wire you $100 for the inconvenience.</p>
       <div className="cta-card-actions">
         <a className="btn btn-pink btn-lg" href="onboarding.html">
           Start my 14-day trial
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
         </a>
-        <a className="btn btn-ghost btn-lg" href="mailto:migrate@tenantory.com?subject=AppFolio%20migration">
+        <a className="btn btn-ghost btn-lg" href="mailto:migrate@rentblackbear.com?subject=AppFolio%20migration">
           Talk to a migration specialist
         </a>
       </div>
@@ -485,13 +485,13 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="vs-appfolio.html">vs AppFolio</a>
       <a href="portal.html">Tenant view</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/changelog.html.
+// Mock ported from ~/Desktop/blackbear/changelog.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -45,7 +45,7 @@ export default function Page() {
       Updated weekly · last shipped 2 days ago
     </div>
     <h1>What <em>shipped</em> this week.</h1>
-    <p className="hero-sub">I'm building Tenantory in public. Every release that hits your account gets written down here — what changed, and why I thought it was worth my time. No marketing spin, no "we're excited to announce." If pace is a trust signal for you, this page is the signal.</p>
+    <p className="hero-sub">I'm building Black Bear Rentals in public. Every release that hits your account gets written down here — what changed, and why I thought it was worth my time. No marketing spin, no "we're excited to announce." If pace is a trust signal for you, this page is the signal.</p>
   </section>
 
   
@@ -161,7 +161,7 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
           </svg>
           <div className="entry-illo-text">
             <strong>Same content, your palette</strong>
-            Works on the main app at app.tenantory.com and on custom subdomains.
+            Works on the main app at app.rentblackbear.com and on custom subdomains.
           </div>
         </div>
         <div className="entry-foot">
@@ -215,7 +215,7 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
         </div>
         <h3 className="entry-title">RentCast integration · live market comps on every property</h3>
         <div className="entry-desc">
-          <p>Each property now shows a RentCast-powered market rent estimate with comparable units from a 1-mile radius. When your lease renewal sits inside the estimate's range, Tenantory says so. When you're 12% under market, it says that too — with the comps to back it up.</p>
+          <p>Each property now shows a RentCast-powered market rent estimate with comparable units from a 1-mile radius. When your lease renewal sits inside the estimate's range, Black Bear Rentals says so. When you're 12% under market, it says that too — with the comps to back it up.</p>
           <p>Pricing a renewal used to mean opening three tabs. Now it's one column on the property page.</p>
         </div>
         <div className="entry-foot">
@@ -240,7 +240,7 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
         </div>
         <h3 className="entry-title">Partial rent payments were applying to the wrong month</h3>
         <div className="entry-desc">
-          <p>If a tenant paid half of March's rent on April 2nd, Tenantory was crediting it to April's ledger. That's wrong — a partial payment should always clear the oldest outstanding charge first. Fixed. Every affected account was recalculated overnight and the ledger entries now sit on the correct month.</p>
+          <p>If a tenant paid half of March's rent on April 2nd, Black Bear Rentals was crediting it to April's ledger. That's wrong — a partial payment should always clear the oldest outstanding charge first. Fixed. Every affected account was recalculated overnight and the ledger entries now sit on the correct month.</p>
           <p>If you noticed odd balances in the last two weeks, refresh — they should be right now. Sorry about that one.</p>
         </div>
         <div className="entry-foot">
@@ -265,12 +265,12 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
         </div>
         <h3 className="entry-title">Per-room rent roll for co-living properties</h3>
         <div className="entry-desc">
-          <p>If you run a house with four bedrooms and four separate leases, you shouldn't have to fake it as one "unit." Tenantory now models a property → rooms → room-leases. Rent roll, vacancy, and turnover math all work per-bedroom, and the tenant portal only shows the room that tenant signed for.</p>
+          <p>If you run a house with four bedrooms and four separate leases, you shouldn't have to fake it as one "unit." Black Bear Rentals now models a property → rooms → room-leases. Rent roll, vacancy, and turnover math all work per-bedroom, and the tenant portal only shows the room that tenant signed for.</p>
           <p>This was the single biggest ask from the co-living cohort. Took a month to get the data model right. Worth it.</p>
         </div>
         <div className="entry-foot">
           <a className="entry-link" href="for-coliving.html">
-            How co-living works in Tenantory
+            How co-living works in Black Bear Rentals
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
           </a>
           <a className="entry-link" href="properties.html">
@@ -294,7 +294,7 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
         </div>
         <h3 className="entry-title">Vendor portal · your plumber gets their own login</h3>
         <div className="entry-desc">
-          <p>Vendors now sign into Tenantory directly. They see open jobs, accept or decline, upload photos, and invoice — all without you playing middleman over text. And because a vendor account spans workspaces, if your HVAC guy works for you and your brother-in-law's LLC, it's one login for both.</p>
+          <p>Vendors now sign into Black Bear Rentals directly. They see open jobs, accept or decline, upload photos, and invoice — all without you playing middleman over text. And because a vendor account spans workspaces, if your HVAC guy works for you and your brother-in-law's LLC, it's one login for both.</p>
         </div>
         <div className="entry-visual">
           <div className="label">Vendor payload</div>
@@ -354,7 +354,7 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
         </div>
         <h3 className="entry-title">Bulk tenant import from an AppFolio CSV export</h3>
         <div className="entry-desc">
-          <p>Drop your AppFolio tenant export straight into onboarding. Tenantory maps the columns, flags anything ambiguous, and imports tenants, leases, security deposits, and balances in one pass. What used to be a two-week switch is now under 15 minutes for a 40-unit portfolio.</p>
+          <p>Drop your AppFolio tenant export straight into onboarding. Black Bear Rentals maps the columns, flags anything ambiguous, and imports tenants, leases, security deposits, and balances in one pass. What used to be a two-week switch is now under 15 minutes for a 40-unit portfolio.</p>
           <p>Buildium and Rentec exporters are next on the list.</p>
         </div>
         <div className="entry-foot">
@@ -383,7 +383,7 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
         </div>
         <h3 className="entry-title">Branded subdomain setup · 15 minutes, not multi-day</h3>
         <div className="entry-desc">
-          <p>Used to be: paste a CNAME, wait for propagation, wait for cert, email support if anything looked weird. Now: enter your domain, click verify, and Tenantory provisions the cert, the subdomain, and the branded login page automatically. If DNS isn't right, it tells you exactly what to change at your registrar.</p>
+          <p>Used to be: paste a CNAME, wait for propagation, wait for cert, email support if anything looked weird. Now: enter your domain, click verify, and Black Bear Rentals provisions the cert, the subdomain, and the branded login page automatically. If DNS isn't right, it tells you exactly what to change at your registrar.</p>
         </div>
         <div className="entry-foot">
           <a className="entry-link" href="settings.html">
@@ -411,7 +411,7 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
         </div>
         <h3 className="entry-title">Founders' cohort · $99/mo locked for life, first 100 accounts</h3>
         <div className="entry-desc">
-          <p>I want the first 100 operators on Tenantory to have skin in my pricing decisions. So the first 100 Pro accounts lock in $99/mo forever — no matter what I charge the 101st customer or the 10,000th. In exchange I want their feedback on the hard calls. That's the whole deal.</p>
+          <p>I want the first 100 operators on Black Bear Rentals to have skin in my pricing decisions. So the first 100 Pro accounts lock in $99/mo forever — no matter what I charge the 101st customer or the 10,000th. In exchange I want their feedback on the hard calls. That's the whole deal.</p>
           <p>As of this entry, 87 spots remain.</p>
         </div>
         <div className="entry-foot">
@@ -438,15 +438,15 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
             Launch
           </span>
         </div>
-        <h3 className="entry-title">Tenantory is public · v1.0</h3>
+        <h3 className="entry-title">Black Bear Rentals is public · v1.0</h3>
         <div className="entry-desc">
-          <p>After running my own rentals on a stack of AppFolio + QuickBooks + DocuSign + a bookkeeper for three years, I got tired of paying four companies to do one job. Tenantory is what I wish had existed: one app for leasing, rent, maintenance, accounting, and the tenant portal — priced for an operator, not a conglomerate.</p>
+          <p>After running my own rentals on a stack of AppFolio + QuickBooks + DocuSign + a bookkeeper for three years, I got tired of paying four companies to do one job. Black Bear Rentals is what I wish had existed: one app for leasing, rent, maintenance, accounting, and the tenant portal — priced for an operator, not a conglomerate.</p>
           <p>This page is where I'll tell you everything I ship, every week. Thanks for being early.</p>
           <p><strong>— Harrison, building from Huntsville, AL</strong></p>
         </div>
         <div className="entry-foot">
           <a className="entry-link" href="landing.html">
-            Why I built Tenantory
+            Why I built Black Bear Rentals
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
           </a>
         </div>
@@ -464,11 +464,11 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
     <div className="ideas-card">
       <div>
         <div className="ideas-label">Got an idea?</div>
-        <div className="ideas-title">Email ideas@tenantory.com — I read every one.</div>
+        <div className="ideas-title">Email ideas@rentblackbear.com — I read every one.</div>
         <div className="ideas-sub">Half of what's on this page started as a reply to an email. If something's in your way, tell me. The good ones ship inside a week. The hard ones I'll at least tell you why they're hard.</div>
       </div>
       <div className="ideas-actions">
-        <a className="btn btn-pink btn-lg" href="mailto:ideas@tenantory.com">
+        <a className="btn btn-pink btn-lg" href="mailto:ideas@rentblackbear.com">
           Send Harrison an idea
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
         </a>
@@ -478,12 +478,12 @@ Notes: Relocating for job at HudsonAlpha; references solid.</pre>
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="changelog.html">Changelog</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

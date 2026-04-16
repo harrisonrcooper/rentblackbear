@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/vs-doorloop.html.
+// Mock ported from ~/Desktop/blackbear/vs-doorloop.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -41,10 +41,10 @@ export default function Page() {
   <section className="hero">
     <div className="hero-eyebrow">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
-      DoorLoop vs Tenantory &middot; honest comparison
+      DoorLoop vs Black Bear Rentals &middot; honest comparison
     </div>
     <h1>DoorLoop built a modern PM tool. We built one that actually <em>looks like yours</em>.</h1>
-    <p className="hero-sub">DoorLoop is a solid product &mdash; fair pricing, clean UI, real accounting. Credit where it's due. But your applicants still land on <em>yourco.doorloop.com</em> with DoorLoop's colors, DoorLoop's logo, and DoorLoop's name in every email. Tenantory is the same price as DoorLoop Pro ($99/mo), built for the same 1&ndash;100 unit operator, with your brand stitched through every surface your tenant sees.</p>
+    <p className="hero-sub">DoorLoop is a solid product &mdash; fair pricing, clean UI, real accounting. Credit where it's due. But your applicants still land on <em>yourco.doorloop.com</em> with DoorLoop's colors, DoorLoop's logo, and DoorLoop's name in every email. Black Bear Rentals is the same price as DoorLoop Pro ($99/mo), built for the same 1&ndash;100 unit operator, with your brand stitched through every surface your tenant sees.</p>
     <div className="hero-cta-row">
       <a className="btn btn-pink btn-lg" href="onboarding.html">
         Start 14-day trial
@@ -67,7 +67,7 @@ export default function Page() {
       </div>
       <div className="matchup-vs">VS</div>
       <div className="matchup-side us">
-        <div className="matchup-logo">Tenantory</div>
+        <div className="matchup-logo">Black Bear Rentals</div>
         <div className="matchup-sub">Same price. Your brand. $99/mo for life</div>
       </div>
     </div>
@@ -113,7 +113,7 @@ export default function Page() {
   <section className="section" id="reasons">
     <div className="section-head">
       <div className="section-kicker">Where we pull ahead</div>
-      <h2>6 places Tenantory goes <em>further</em>.</h2>
+      <h2>6 places Black Bear Rentals goes <em>further</em>.</h2>
       <p>Same price bracket, same 1&ndash;100 unit target. These are the differences PMs feel in week one.</p>
     </div>
 
@@ -125,14 +125,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
         </div>
         <h3>Branded subdomain at Pro &mdash; not Enterprise</h3>
-        <p>DoorLoop's tenant portal lives under a DoorLoop-branded URL on every plan under $499/mo. Tenantory gives you <em>yourco.tenantory.com</em> at Pro ($99), a full custom domain on Scale ($299). Your tenants pay rent to <strong>your</strong> company, not to ours.</p>
+        <p>DoorLoop's tenant portal lives under a DoorLoop-branded URL on every plan under $499/mo. Black Bear Rentals gives you <em>yourco.rentblackbear.com</em> at Pro ($99), a full custom domain on Scale ($299). Your tenants pay rent to <strong>your</strong> company, not to ours.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">DoorLoop</div>
             <div className="reason-contrast-val">Generic portal</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Your subdomain</div>
           </div>
         </div>
@@ -144,14 +144,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /><path d="M9 3v6" /><path d="M15 3v6" /><path d="M9 15v6" /><path d="M15 15v6" /></svg>
         </div>
         <h3>AI application scoring, not just a credit report</h3>
-        <p>DoorLoop screening returns TransUnion credit and a background check. Useful &mdash; but it still leaves <em>you</em> to eyeball income, employment history, and red flags. Tenantory scores every applicant across 7 signals (income ratio, employment stability, prior evictions, app completeness, pet/smoker, duplicate detection) and surfaces the red flag before you open the file.</p>
+        <p>DoorLoop screening returns TransUnion credit and a background check. Useful &mdash; but it still leaves <em>you</em> to eyeball income, employment history, and red flags. Black Bear Rentals scores every applicant across 7 signals (income ratio, employment stability, prior evictions, app completeness, pet/smoker, duplicate detection) and surfaces the red flag before you open the file.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">DoorLoop</div>
             <div className="reason-contrast-val">Credit + background</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">7-signal AI score</div>
           </div>
         </div>
@@ -163,14 +163,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18" /><path d="M8 4v4" /><path d="M16 4v4" /><path d="M7 14h2" /><path d="M11 14h2" /><path d="M15 14h2" /></svg>
         </div>
         <h3>Native co-living / rent-by-the-bedroom</h3>
-        <p>DoorLoop models a unit as a unit. If you run co-living, student housing, or by-the-room rentals, you end up faking sub-units and hating your chart of accounts. Tenantory has room-level leases inside one property &mdash; separate rent, separate lease dates, separate ledgers, one roof.</p>
+        <p>DoorLoop models a unit as a unit. If you run co-living, student housing, or by-the-room rentals, you end up faking sub-units and hating your chart of accounts. Black Bear Rentals has room-level leases inside one property &mdash; separate rent, separate lease dates, separate ledgers, one roof.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">DoorLoop</div>
             <div className="reason-contrast-val">Unit-level only</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Native room leases</div>
           </div>
         </div>
@@ -182,14 +182,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
         </div>
         <h3>15-minute onboarding, no scheduled call</h3>
-        <p>DoorLoop's "free onboarding" is a scheduled 60-minute call, usually 3&ndash;5 business days out, then data entry on your end. Tenantory is a 6-step wizard you finish in ~15 minutes. The only non-skippable field is your workspace name. Real units can be bulk-imported after, or during your trial.</p>
+        <p>DoorLoop's "free onboarding" is a scheduled 60-minute call, usually 3&ndash;5 business days out, then data entry on your end. Black Bear Rentals is a 6-step wizard you finish in ~15 minutes. The only non-skippable field is your workspace name. Real units can be bulk-imported after, or during your trial.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">DoorLoop</div>
             <div className="reason-contrast-val">Scheduled call, days out</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">15 min, self-serve</div>
           </div>
         </div>
@@ -201,14 +201,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
         </div>
         <h3>Native investor portal + owner statements</h3>
-        <p>If you manage units for partners or outside investors, DoorLoop makes you DIY the monthly report &mdash; export-to-Excel, paste into a template, email it out. Tenantory auto-generates a branded monthly owner statement (rent collected, expenses, NOI, reserves) as a shareable PDF with a login portal each investor can check themselves.</p>
+        <p>If you manage units for partners or outside investors, DoorLoop makes you DIY the monthly report &mdash; export-to-Excel, paste into a template, email it out. Black Bear Rentals auto-generates a branded monthly owner statement (rent collected, expenses, NOI, reserves) as a shareable PDF with a login portal each investor can check themselves.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">DoorLoop</div>
             <div className="reason-contrast-val">Manual Excel build</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Native investor portal</div>
           </div>
         </div>
@@ -220,14 +220,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 3 6v6c0 5.5 4 10 9 11 5-1 9-5.5 9-11V6l-9-4z" /><path d="m9 12 2 2 4-4" /></svg>
         </div>
         <h3>Starter plan that's actually usable</h3>
-        <p>DoorLoop Starter ($59/mo, 20 units) has no e-sign, no accounting, no owner portal &mdash; it's a lead-funnel for Pro. Tenantory Starter ($39/mo, 5 units) ships lease e-sign, the income/expense ledger, and full tenant portal from day one. Small portfolios deserve a real product, not a demo.</p>
+        <p>DoorLoop Starter ($59/mo, 20 units) has no e-sign, no accounting, no owner portal &mdash; it's a lead-funnel for Pro. Black Bear Rentals Starter ($39/mo, 5 units) ships lease e-sign, the income/expense ledger, and full tenant portal from day one. Small portfolios deserve a real product, not a demo.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">DoorLoop Starter</div>
             <div className="reason-contrast-val">No e-sign, no books</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory Starter</div>
+            <div className="reason-contrast-label">Black Bear Rentals Starter</div>
             <div className="reason-contrast-val">E-sign + accounting</div>
           </div>
         </div>
@@ -241,7 +241,7 @@ export default function Page() {
     <div className="section-head">
       <div className="section-kicker">The real math</div>
       <h2>What you'll actually pay as you <em>add doors</em>.</h2>
-      <p>Using DoorLoop's published pricing (Starter $59, Pro $99 up to 50 units, then ~$2/door after) against Tenantory Pro flat $99/mo up to 50, Scale flat $299/mo beyond. Both include the usual must-haves.</p>
+      <p>Using DoorLoop's published pricing (Starter $59, Pro $99 up to 50 units, then ~$2/door after) against Black Bear Rentals Pro flat $99/mo up to 50, Scale flat $299/mo beyond. Both include the usual must-haves.</p>
     </div>
     <div className="ladder">
       <table className="ladder-table">
@@ -249,7 +249,7 @@ export default function Page() {
           <tr>
             <th>Portfolio size</th>
             <th className="them">DoorLoop<span className="col-sub">Published tier + per-unit</span></th>
-            <th className="us">Tenantory<span className="col-sub">Flat, for life</span></th>
+            <th className="us">Black Bear Rentals<span className="col-sub">Flat, for life</span></th>
             <th className="save">Difference<span className="col-sub">Per year</span></th>
           </tr>
         </thead>
@@ -257,36 +257,36 @@ export default function Page() {
           <tr>
             <td className="ladder-port">5 units<small>Small LLC / side-portfolio</small></td>
             <td className="ladder-price">$59/mo<small>DoorLoop Starter (thin features)</small></td>
-            <td className="ladder-us">$39/mo<small>Tenantory Starter (full leasing)</small></td>
-            <td className="ladder-save">$240<small>Tenantory cheaper &mdash; and has e-sign</small></td>
+            <td className="ladder-us">$39/mo<small>Black Bear Rentals Starter (full leasing)</small></td>
+            <td className="ladder-save">$240<small>Black Bear Rentals cheaper &mdash; and has e-sign</small></td>
           </tr>
           <tr className="highlight">
             <td className="ladder-port">20 units<small>DoorLoop Starter ceiling</small></td>
             <td className="ladder-price">$99/mo<small>Bumped to DoorLoop Pro</small></td>
-            <td className="ladder-us">$99/mo<small>Tenantory Pro</small></td>
+            <td className="ladder-us">$99/mo<small>Black Bear Rentals Pro</small></td>
             <td className="ladder-save">Even<small>Same price &mdash; branded subdomain wins</small></td>
           </tr>
           <tr>
             <td className="ladder-port">50 units<small>Typical independent PM</small></td>
             <td className="ladder-price">$99/mo<small>DoorLoop Pro ceiling</small></td>
-            <td className="ladder-us">$99/mo<small>Still Tenantory Pro</small></td>
+            <td className="ladder-us">$99/mo<small>Still Black Bear Rentals Pro</small></td>
             <td className="ladder-save">Even<small>Still same &mdash; branding + AI tilt it</small></td>
           </tr>
           <tr className="highlight">
             <td className="ladder-port">75 units<small>DoorLoop per-unit kicks in</small></td>
             <td className="ladder-price">$249/mo<small>Pro + ~$2/door over 50</small></td>
-            <td className="ladder-us">$299/mo<small>Tenantory Scale (custom domain)</small></td>
+            <td className="ladder-us">$299/mo<small>Black Bear Rentals Scale (custom domain)</small></td>
             <td className="ladder-save">-$600<small>DoorLoop still slightly cheaper here</small></td>
           </tr>
           <tr>
             <td className="ladder-port">100 units<small>Bigger independent op</small></td>
             <td className="ladder-price">$299/mo<small>Pro + per-door add-ons</small></td>
-            <td className="ladder-us">$299/mo<small>Tenantory Scale flat</small></td>
+            <td className="ladder-us">$299/mo<small>Black Bear Rentals Scale flat</small></td>
             <td className="ladder-save">Even<small>Plus your own rentyourname.com</small></td>
           </tr>
         </tbody>
       </table>
-      <div className="ladder-foot">DoorLoop per-unit rates sourced from their public pricing page (varies $1.50&ndash;$2.50/door above 50 depending on negotiation). Add-ons like custom domain, investor portal, and advanced screening are baked into Tenantory Pro and Scale &mdash; DoorLoop treats them as upsells.</div>
+      <div className="ladder-foot">DoorLoop per-unit rates sourced from their public pricing page (varies $1.50&ndash;$2.50/door above 50 depending on negotiation). Add-ons like custom domain, investor portal, and advanced screening are baked into Black Bear Rentals Pro and Scale &mdash; DoorLoop treats them as upsells.</div>
     </div>
   </section>
 
@@ -303,7 +303,7 @@ export default function Page() {
           <tr>
             <th>Feature</th>
             <th className="dim">DoorLoop<span className="compare-col-sub">Pro &middot; $99/mo</span></th>
-            <th className="featured">Tenantory<span className="compare-col-sub">Pro &middot; $99/mo for life</span></th>
+            <th className="featured">Black Bear Rentals<span className="compare-col-sub">Pro &middot; $99/mo for life</span></th>
           </tr>
         </thead>
         <tbody>
@@ -373,7 +373,7 @@ export default function Page() {
         <p>DoorLoop lets you export clean CSVs from Settings &rarr; Data Export &mdash; that's the single biggest gift when switching. We walk you through three exports (properties + units, tenants + leases, transaction ledger), ingest them, reconcile every balance against your DoorLoop numbers, and go live on day 3. <strong>You keep using DoorLoop until we say cut over.</strong> No double-entry, no downtime, no data loss.</p>
         <p><strong>What's preserved:</strong> property &amp; unit structure, tenant contacts, active lease terms and rent amounts, outstanding balances, last 24 months of transactions, uploaded documents. <strong>What's better:</strong> rent-by-room structure if you need it, your branded subdomain, AI-scored historical applicants.</p>
         <div className="migrate-cta">
-          <a className="btn btn-pink" href="mailto:migrate@tenantory.com?subject=DoorLoop%20migration">
+          <a className="btn btn-pink" href="mailto:migrate@rentblackbear.com?subject=DoorLoop%20migration">
             Start my 3-day switch
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
           </a>
@@ -403,7 +403,7 @@ export default function Page() {
         </div>
         <div className="migrate-step">
           <div className="migrate-step-num">5</div>
-          <div className="migrate-step-text">Go live on Tenantory<small>Cancel DoorLoop when you're ready. No rush.</small></div>
+          <div className="migrate-step-text">Go live on Black Bear Rentals<small>Cancel DoorLoop when you're ready. No rush.</small></div>
           <div className="migrate-step-clock">Done</div>
         </div>
       </div>
@@ -424,7 +424,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"DoorLoop was fine. Good product. The thing that killed it for me was that my applicants were typing <strong>app.doorloop.com</strong> into their browser to pay rent. I'm a 12-year local brand in Huntsville &mdash; my tenants don't know what DoorLoop is and they shouldn't have to. Switched to Tenantory, same $99, my logo everywhere. Felt overdue."</p>
+        <p className="testi-quote">"DoorLoop was fine. Good product. The thing that killed it for me was that my applicants were typing <strong>app.doorloop.com</strong> into their browser to pay rent. I'm a 12-year local brand in Huntsville &mdash; my tenants don't know what DoorLoop is and they shouldn't have to. Switched to Black Bear Rentals, same $99, my logo everywhere. Felt overdue."</p>
         <div className="testi-person">
           <div className="testi-avatar">KS</div>
           <div>
@@ -442,7 +442,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"We started on DoorLoop Starter because we had 8 units and it was $59. Found out real quick that e-sign was gated to Pro, which meant I was still pushing leases through HelloSign on the side. Then tenant screening was an add-on. Then owner statements weren't included. By the time we added everything we needed we were at <strong>$150/mo</strong>. Tenantory Starter is $39 and ships with all of it."</p>
+        <p className="testi-quote">"We started on DoorLoop Starter because we had 8 units and it was $59. Found out real quick that e-sign was gated to Pro, which meant I was still pushing leases through HelloSign on the side. Then tenant screening was an add-on. Then owner statements weren't included. By the time we added everything we needed we were at <strong>$150/mo</strong>. Black Bear Rentals Starter is $39 and ships with all of it."</p>
         <div className="testi-person">
           <div className="testi-avatar">RP</div>
           <div>
@@ -460,7 +460,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"I run four co-living houses &mdash; 22 bedrooms across 4 addresses. DoorLoop forced me to either treat each house as 1 unit (wrong ledgers) or as 6 fake sub-units (ugly URL structure for the tenants). Tenantory has <strong>room-level leases natively</strong>. Migrated the ledger myself in an afternoon with their CSV template. Four hours on a Saturday and I was live."</p>
+        <p className="testi-quote">"I run four co-living houses &mdash; 22 bedrooms across 4 addresses. DoorLoop forced me to either treat each house as 1 unit (wrong ledgers) or as 6 fake sub-units (ugly URL structure for the tenants). Black Bear Rentals has <strong>room-level leases natively</strong>. Migrated the ledger myself in an afternoon with their CSV template. Four hours on a Saturday and I was live."</p>
         <div className="testi-person">
           <div className="testi-avatar">MO</div>
           <div>
@@ -478,7 +478,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"I manage 55 units for 6 different investors. Every month on DoorLoop I was exporting P&amp;Ls, pasting into a template, emailing each investor a PDF. 4 hours, every month. Tenantory has a <strong>native investor portal</strong> &mdash; each owner logs in, sees their own properties, downloads their own statement. That one feature was worth the switch by itself. AI app scoring was the bonus."</p>
+        <p className="testi-quote">"I manage 55 units for 6 different investors. Every month on DoorLoop I was exporting P&amp;Ls, pasting into a template, emailing each investor a PDF. 4 hours, every month. Black Bear Rentals has a <strong>native investor portal</strong> &mdash; each owner logs in, sees their own properties, downloads their own statement. That one feature was worth the switch by itself. AI app scoring was the bonus."</p>
         <div className="testi-person">
           <div className="testi-avatar">HW</div>
           <div>
@@ -503,13 +503,13 @@ export default function Page() {
         87 Founders' spots left
       </div>
       <h2>Same $99. Your brand instead of ours.</h2>
-      <p>We handle the DoorLoop CSV migration, reconcile every balance, and go live in 3 days. If Tenantory doesn't save you 10 hours in the first 30 paid days, we refund every dollar and wire you $100 for the inconvenience.</p>
+      <p>We handle the DoorLoop CSV migration, reconcile every balance, and go live in 3 days. If Black Bear Rentals doesn't save you 10 hours in the first 30 paid days, we refund every dollar and wire you $100 for the inconvenience.</p>
       <div className="cta-card-actions">
         <a className="btn btn-pink btn-lg" href="onboarding.html">
           Start my 14-day trial
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
         </a>
-        <a className="btn btn-ghost btn-lg" href="mailto:migrate@tenantory.com?subject=DoorLoop%20migration">
+        <a className="btn btn-ghost btn-lg" href="mailto:migrate@rentblackbear.com?subject=DoorLoop%20migration">
           Talk to a migration specialist
         </a>
       </div>
@@ -527,7 +527,7 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory &middot; Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals &middot; Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
@@ -535,7 +535,7 @@ export default function Page() {
       <a href="vs-buildium.html">vs Buildium</a>
       <a href="vs-doorloop.html">vs DoorLoop</a>
       <a href="portal.html">Tenant view</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

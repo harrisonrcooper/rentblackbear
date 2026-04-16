@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/security.html.
+// Mock ported from ~/Desktop/blackbear/security.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -82,7 +82,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
         </div>
         <div>
-          <div className="trust-title">status.tenantory.com</div>
+          <div className="trust-title">status.rentblackbear.com</div>
           <div className="trust-sub">Public uptime &amp; incident page. Every outage is disclosed within 30 minutes with root-cause to follow. <span className="status active">99.98% 90-day uptime</span></div>
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function Page() {
     <div className="section-head">
       <div className="section-kicker">The stack</div>
       <h2>Every layer is audited, so we don't have to build security from scratch.</h2>
-      <p>Tenantory sits on top of platforms that are individually SOC 2-certified. We're not asking you to trust our homegrown crypto — we don't write any.</p>
+      <p>Black Bear Rentals sits on top of platforms that are individually SOC 2-certified. We're not asking you to trust our homegrown crypto — we don't write any.</p>
     </div>
 
     <div className="arch">
@@ -306,7 +306,7 @@ export default function Page() {
       <h3>Our incident playbook, plainly.</h3>
       <p>Every incident we've ever had (zero P0s to date, five P1s) has been disclosed to affected customers by email within 30 minutes of detection — not 72 hours, not "by EOD."</p>
       <ul className="incident-list">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Acknowledged publicly on <strong>status.tenantory.com</strong> within 15 min</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Acknowledged publicly on <strong>status.rentblackbear.com</strong> within 15 min</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Affected customers emailed directly within 30 min</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Full root-cause postmortem published within 5 business days</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>If data was exposed, regulators + affected users notified per GDPR/CCPA timelines</li>
@@ -320,7 +320,7 @@ export default function Page() {
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>You &amp; your team</strong>: full access to your workspace, scoped by role (Admin / Manager / Viewer)</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Your tenants</strong>: only their own data — rent, lease, maintenance, documents</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Vendors</strong>: only tickets you assign them, scoped by job</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Tenantory engineers</strong>: only via break-glass access, logged, and only with your approval</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Black Bear Rentals engineers</strong>: only via break-glass access, logged, and only with your approval</li>
       </ul>
     </div>
   </section>
@@ -354,11 +354,11 @@ export default function Page() {
       </div>
       <div className="faq-item">
         <button className="faq-q">Are you HIPAA compliant? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">No. Tenantory is not designed for protected health information. Don't store PHI in tenant records, maintenance notes, or messages. If you need HIPAA coverage for assisted-living properties, talk to us — it's on the Enterprise roadmap but not available today.</div>
+        <div className="faq-a">No. Black Bear Rentals is not designed for protected health information. Don't store PHI in tenant records, maintenance notes, or messages. If you need HIPAA coverage for assisted-living properties, talk to us — it's on the Enterprise roadmap but not available today.</div>
       </div>
       <div className="faq-item">
         <button className="faq-q">Can I get a signed DPA? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Yes — email <code>security@tenantory.com</code>. Our standard DPA follows the EU SCCs (Module Two). Turnaround is 1–2 business days.</div>
+        <div className="faq-a">Yes — email <code>security@rentblackbear.com</code>. Our standard DPA follows the EU SCCs (Module Two). Turnaround is 1–2 business days.</div>
       </div>
       <div className="faq-item">
         <button className="faq-q">How do you handle pen tests? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
@@ -373,9 +373,9 @@ export default function Page() {
       <div>
         <div className="bounty-label">Responsible disclosure</div>
         <h3>Found a bug? We pay for it.</h3>
-        <p>If you find a security issue, email <code>security@tenantory.com</code>. Don't post it on Twitter. We respond within 24 hours, fix within the severity SLA (critical: 24h / high: 72h / medium: 2 weeks), and pay bounties: <strong>$500–$5,000</strong> depending on impact. PGP key available at <code>tenantory.com/.well-known/security.txt</code>.</p>
+        <p>If you find a security issue, email <code>security@rentblackbear.com</code>. Don't post it on Twitter. We respond within 24 hours, fix within the severity SLA (critical: 24h / high: 72h / medium: 2 weeks), and pay bounties: <strong>$500–$5,000</strong> depending on impact. PGP key available at <code>rentblackbear.com/.well-known/security.txt</code>.</p>
       </div>
-      <a className="btn btn-primary" href="mailto:security@tenantory.com">
+      <a className="btn btn-primary" href="mailto:security@rentblackbear.com">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22 6 12 13 2 6" /></svg>
         Report a bug
       </a>
@@ -392,7 +392,7 @@ export default function Page() {
           Download security one-pager (PDF)
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
         </a>
-        <a className="btn btn-ghost btn-lg" href="mailto:security@tenantory.com">
+        <a className="btn btn-ghost btn-lg" href="mailto:security@rentblackbear.com">
           Talk to security
         </a>
       </div>
@@ -401,13 +401,13 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="stories.html">Stories</a>
       <a href="security.html">Security</a>
-      <a href="mailto:security@tenantory.com">security@</a>
+      <a href="mailto:security@rentblackbear.com">security@</a>
     </div>
   </footer>
 

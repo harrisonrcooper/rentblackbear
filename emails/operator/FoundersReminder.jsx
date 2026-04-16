@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function FoundersReminder({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/admin/settings",
+  ctaHref = "https://app.rentblackbear.com/admin/settings",
 }) {
   return (
-    <Layout preview="Your Founder spot is reserved. Here's how it pays back." brand="Tenantory">
+    <Layout preview="Your Founder spot is reserved. Here's how it pays back." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         You're one of the first 100 — here's what that means.
       </Heading>

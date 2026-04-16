@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/for-students.html.
+// Mock ported from ~/Desktop/blackbear/for-students.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -44,8 +44,8 @@ export default function Page() {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5Z" /><path d="M6 12v5c3 2 9 2 12 0v-5" /></svg>
       For student-housing operators
     </div>
-    <h1>Every August is a fire drill. Tenantory makes it <em>a lot less of one</em>.</h1>
-    <p className="hero-sub">If you rent to <strong>UAH, Auburn, Alabama, or any campus-adjacent crowd</strong>, you already know: 80% of your leases turn over in a six-week window, half your applicants have no US credit, parents want to cosign on their phone, and the August 15 move-in day is fifteen cars in a driveway. Tenantory was built by an operator running that exact playbook. Every feature below exists because we needed it.</p>
+    <h1>Every August is a fire drill. Black Bear Rentals makes it <em>a lot less of one</em>.</h1>
+    <p className="hero-sub">If you rent to <strong>UAH, Auburn, Alabama, or any campus-adjacent crowd</strong>, you already know: 80% of your leases turn over in a six-week window, half your applicants have no US credit, parents want to cosign on their phone, and the August 15 move-in day is fifteen cars in a driveway. Black Bear Rentals was built by an operator running that exact playbook. Every feature below exists because we needed it.</p>
     <div className="hero-actions">
       <a className="btn btn-pink btn-lg" href="onboarding.html">Start 14-day trial
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
@@ -74,7 +74,7 @@ export default function Page() {
       <div className="cred-avatar">HC</div>
       <div>
         <div className="cred-text">
-          I rent rooms and houses near <strong>UAH in Huntsville</strong>. Undergrads, grad students, the occasional post-doc. Every August I used to hit the same wall: a stack of applications from international students with no SSN, a parent on the phone asking where to sign, twelve move-ins on a single Saturday, and a cosigner addendum Word doc that kept growing footnotes. I built Tenantory so that stack becomes a checklist. This page is the checklist.
+          I rent rooms and houses near <strong>UAH in Huntsville</strong>. Undergrads, grad students, the occasional post-doc. Every August I used to hit the same wall: a stack of applications from international students with no SSN, a parent on the phone asking where to sign, twelve move-ins on a single Saturday, and a cosigner addendum Word doc that kept growing footnotes. I built Black Bear Rentals so that stack becomes a checklist. This page is the checklist.
         </div>
         <div className="cred-sig">— Harrison Cooper, founder</div>
       </div>
@@ -141,7 +141,7 @@ export default function Page() {
   
   <section className="section">
     <div className="sec-eyebrow">The fix</div>
-    <h2 className="sec-h2">How Tenantory handles it.</h2>
+    <h2 className="sec-h2">How Black Bear Rentals handles it.</h2>
     <p className="sec-lead">Every feature below is live in production. I use all of them on my own rental portfolio in Huntsville — the current cohort is 60% UAH students, half international, half with parental cosigners. <strong>Open the trial, add a property, all of this lights up.</strong></p>
 
     <div className="sol-grid">
@@ -158,7 +158,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10Z" /></svg>
         </div>
         <h3>International applicant paths</h3>
-        <p>No SSN? No problem. The international track asks for <strong>passport + visa/I-20, proof of funds or sponsor letter, employer/university verification, and an optional parental cosigner</strong>. Tenantory scores the application against those alternate signals instead of a US credit pull. You make the call with real data — not a "no record found" auto-rejection.</p>
+        <p>No SSN? No problem. The international track asks for <strong>passport + visa/I-20, proof of funds or sponsor letter, employer/university verification, and an optional parental cosigner</strong>. Black Bear Rentals scores the application against those alternate signals instead of a US credit pull. You make the call with real data — not a "no record found" auto-rejection.</p>
       </div>
 
       <div className="sol-card">
@@ -182,7 +182,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4" /><path d="M12 18v4" /><path d="m4.93 4.93 2.83 2.83" /><path d="m16.24 16.24 2.83 2.83" /><path d="M2 12h4" /><path d="M18 12h4" /><path d="m4.93 19.07 2.83-2.83" /><path d="m16.24 7.76 2.83-2.83" /></svg>
         </div>
         <h3>Waitlist auto-roll for August spots</h3>
-        <p>When a room opens up — a student flakes, a cosigner falls through, someone gets a better offer — Tenantory pulls the next qualified applicant off the waitlist, sends them the lease, and opens a 48-hour signing window. If they pass, the next one gets it. <strong>You spend zero minutes moving names around a spreadsheet</strong> the week before move-in.</p>
+        <p>When a room opens up — a student flakes, a cosigner falls through, someone gets a better offer — Black Bear Rentals pulls the next qualified applicant off the waitlist, sends them the lease, and opens a 48-hour signing window. If they pass, the next one gets it. <strong>You spend zero minutes moving names around a spreadsheet</strong> the week before move-in.</p>
       </div>
 
       <div className="sol-card">
@@ -190,7 +190,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M8 10h.01" /><path d="M12 10h.01" /><path d="M16 10h.01" /></svg>
         </div>
         <h3>Housemate compatibility questions</h3>
-        <p>Eight short questions on the application — sleep schedule, noise tolerance, cleanliness (1–5), guest frequency, pets, smoking, study environment, kitchen usage. Tenantory scores applicants against the current housemates at the property and flags <strong>green / yellow / red compatibility</strong> before you accept. Prevents the mid-semester "can you move me to the other house" email.</p>
+        <p>Eight short questions on the application — sleep schedule, noise tolerance, cleanliness (1–5), guest frequency, pets, smoking, study environment, kitchen usage. Black Bear Rentals scores applicants against the current housemates at the property and flags <strong>green / yellow / red compatibility</strong> before you accept. Prevents the mid-semester "can you move me to the other house" email.</p>
       </div>
     </div>
   </section>
@@ -199,7 +199,7 @@ export default function Page() {
   <section className="section" id="stack">
     <div className="sec-eyebrow">The math</div>
     <h2 className="sec-h2">Stop paying four vendors to approximate what one tool should do.</h2>
-    <p className="sec-lead">Here's what a typical 25-bed campus-area operator pays today, stitched across four products plus a spreadsheet and a 20-hour August. <strong>And here's what that same portfolio costs on Tenantory Pro.</strong></p>
+    <p className="sec-lead">Here's what a typical 25-bed campus-area operator pays today, stitched across four products plus a spreadsheet and a 20-hour August. <strong>And here's what that same portfolio costs on Black Bear Rentals Pro.</strong></p>
 
     <div className="stack-wrap">
       <div className="stack-grid">
@@ -238,7 +238,7 @@ export default function Page() {
         </div>
 
         <div className="stack-col mine">
-          <div className="stack-col-label">Tenantory Pro</div>
+          <div className="stack-col-label">Black Bear Rentals Pro</div>
           <div className="stack-col-title">One bill. One login.</div>
 
           <div className="stack-row">
@@ -276,7 +276,7 @@ export default function Page() {
   <section className="section">
     <div className="sec-eyebrow">Case study</div>
     <h2 className="sec-h2">22 beds. Three houses. Two blocks from UAH.</h2>
-    <p className="sec-lead">Rachel runs a student-focused portfolio a short walk from the UAH campus in Huntsville — three houses, 22 leaseable rooms, heavy engineering-grad mix. Here's what changed after her first full August on Tenantory.</p>
+    <p className="sec-lead">Rachel runs a student-focused portfolio a short walk from the UAH campus in Huntsville — three houses, 22 leaseable rooms, heavy engineering-grad mix. Here's what changed after her first full August on Black Bear Rentals.</p>
 
     <div className="case-wrap">
       <div className="case-side">
@@ -299,7 +299,7 @@ export default function Page() {
         </div>
 
         <div className="case-stat">
-          <div className="case-stat-label">Aug 1 occupancy (on Tenantory)</div>
+          <div className="case-stat-label">Aug 1 occupancy (on Black Bear Rentals)</div>
           <div className="case-stat-value"><em>95%</em></div>
         </div>
 
@@ -317,9 +317,9 @@ export default function Page() {
       <div className="case-body">
         <p className="case-quote">Last August I drove around with a binder of printed cosigner PDFs. This August I had the laptop open on the porch, signing waitlisted students in while the move-outs were still packing. I stopped dreading the 15th.</p>
 
-        <p className="case-detail">Before Tenantory, Rachel ran the August turn through <strong>a Google Sheet, three Word templates, and a DocuSign seat she paid for twelve months to use for six weeks</strong>. Roughly one in four international applicants got auto-rejected by her screening tool for "no credit file" — she'd then reverse the decision by hand, chase a sponsor letter, and lose a week. Summer rent collection was, in her words, "a group text with my dad asking how much to pro-rate."</p>
+        <p className="case-detail">Before Black Bear Rentals, Rachel ran the August turn through <strong>a Google Sheet, three Word templates, and a DocuSign seat she paid for twelve months to use for six weeks</strong>. Roughly one in four international applicants got auto-rejected by her screening tool for "no credit file" — she'd then reverse the decision by hand, chase a sponsor letter, and lose a week. Summer rent collection was, in her words, "a group text with my dad asking how much to pro-rate."</p>
 
-        <p className="case-detail"><strong>The unlock was the cosigner + international flow.</strong> "Three of my four best tenants this fall are PhD students from India and Vietnam. Zero would have scored well on a normal credit pull. Tenantory let me see income, sponsor, assistantship — the stuff that actually predicts whether rent shows up on the first."</p>
+        <p className="case-detail"><strong>The unlock was the cosigner + international flow.</strong> "Three of my four best tenants this fall are PhD students from India and Vietnam. Zero would have scored well on a normal credit pull. Black Bear Rentals let me see income, sponsor, assistantship — the stuff that actually predicts whether rent shows up on the first."</p>
 
         <p className="case-detail">The August move-in day <strong>went from a 14-hour Saturday to a staggered 6-hour stretch</strong>. Tenants got SMS'd 30-minute arrival windows, the checklist auto-generated per room, and every deposit statement for the prior cohort went out in a single click at the end of the day. "I ate lunch. I didn't eat lunch last August."</p>
 
@@ -361,7 +361,7 @@ export default function Page() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
       </button>
       <div className="faq-a">
-        <p>Yes, start to finish, from their phone. When the student submits the application, they tick "I need a cosigner" and enter a parent email. Tenantory sends the parent a mini-application: <strong>ID upload, income verification (W-2 or two pay stubs), guarantor addendum with full e-signature, and a short relationship attestation</strong>. No account creation, no DocuSign seat, no PDF back-and-forth.</p>
+        <p>Yes, start to finish, from their phone. When the student submits the application, they tick "I need a cosigner" and enter a parent email. Black Bear Rentals sends the parent a mini-application: <strong>ID upload, income verification (W-2 or two pay stubs), guarantor addendum with full e-signature, and a short relationship attestation</strong>. No account creation, no DocuSign seat, no PDF back-and-forth.</p>
         <p>You see both applications in one card in your dashboard — the student's and the parent's — with a combined status. When both are signed, the lease and cosigner addendum are generated as one bundled PDF, ready to save or share with your attorney.</p>
       </div>
     </div>
@@ -373,7 +373,7 @@ export default function Page() {
       </button>
       <div className="faq-a">
         <p>Yes. The international applicant track skips the US credit pull entirely and scores the application on the signals that actually predict whether rent shows up: <strong>passport + visa/I-20, proof of funds (bank statements translated if needed), university verification of enrollment, an assistantship or employment letter if applicable, and an optional parental cosigner</strong>.</p>
-        <p>Tenantory gives you a side-by-side view — the domestic applicants with their credit score, the international applicants with their alternate dossier — so you're deciding apples-to-apples, not auto-rejecting the best tenant in the stack because TransUnion has no file on them.</p>
+        <p>Black Bear Rentals gives you a side-by-side view — the domestic applicants with their credit score, the international applicants with their alternate dossier — so you're deciding apples-to-apples, not auto-rejecting the best tenant in the stack because TransUnion has no file on them.</p>
       </div>
     </div>
 
@@ -384,7 +384,7 @@ export default function Page() {
       </button>
       <div className="faq-a">
         <p>First-class. Four templates ship with the product: <strong>Fall only (Aug–Dec), Spring only (Jan–May), Summer (May–Jul), and Academic year (Aug–May)</strong>. Each has the correct clauses — subletting, summer holds, early-termination for study abroad, room-only vs. whole-house occupancy — baked in and editable.</p>
-        <p>Rent can differ per term on the same room: fall at $850, spring at $850, summer at $550. Tenantory generates a single lease with the term schedule embedded, or three separate leases if you prefer — your call at property setup.</p>
+        <p>Rent can differ per term on the same room: fall at $850, spring at $850, summer at $550. Black Bear Rentals generates a single lease with the term schedule embedded, or three separate leases if you prefer — your call at property setup.</p>
       </div>
     </div>
 
@@ -394,7 +394,7 @@ export default function Page() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
       </button>
       <div className="faq-a">
-        <p>The Move-In Day planner. Open it the week before and Tenantory lays out every arrival and departure across your whole portfolio on a single timeline. <strong>You slot each tenant into a 30-minute window and tap Send</strong> — they all get SMS + email with their arrival time, parking instructions, key pickup location, and a welcome packet.</p>
+        <p>The Move-In Day planner. Open it the week before and Black Bear Rentals lays out every arrival and departure across your whole portfolio on a single timeline. <strong>You slot each tenant into a 30-minute window and tap Send</strong> — they all get SMS + email with their arrival time, parking instructions, key pickup location, and a welcome packet.</p>
         <p>On the day itself, you check them in from the mobile view. Each check-in auto-kicks off the room's welcome sequence: first-month rent reminder, renter's insurance requirement, housemate intro message, maintenance portal invite. <strong>No copy-paste, no forgotten welcome emails, no "where do I park?" texts at 9am.</strong></p>
       </div>
     </div>
@@ -406,7 +406,7 @@ export default function Page() {
       </button>
       <div className="faq-a">
         <p>Yes. Each lease can carry a <strong>term schedule</strong> — e.g., $875/mo Aug–Dec, $875/mo Jan–May, $525/mo Jun–Jul. The tenant portal shows each month's scheduled rent, and the accounting engine books the right revenue to the right month so your Schedule E and rent roll both reflect reality.</p>
-        <p>Most of our student operators use the summer discount to keep occupancy high instead of letting rooms fully vacate in May. The rate is usually 50–65% of academic-year rent. Tenantory doesn't prescribe — you set the number, the lease holds it.</p>
+        <p>Most of our student operators use the summer discount to keep occupancy high instead of letting rooms fully vacate in May. The rate is usually 50–65% of academic-year rent. Black Bear Rentals doesn't prescribe — you set the number, the lease holds it.</p>
       </div>
     </div>
 
@@ -425,13 +425,13 @@ export default function Page() {
   
   <section className="cta-bottom">
     <div className="cta-card">
-      <h2>If you rent to college kids, Tenantory is the only tool built for your August. Try it for 14 days.</h2>
-      <p>14-day free trial. No card. If Tenantory doesn't save you 12 hours a week in the first 30 paid days, I refund every dollar and wire you $100 for your time. I have not paid it once.</p>
+      <h2>If you rent to college kids, Black Bear Rentals is the only tool built for your August. Try it for 14 days.</h2>
+      <p>14-day free trial. No card. If Black Bear Rentals doesn't save you 12 hours a week in the first 30 paid days, I refund every dollar and wire you $100 for your time. I have not paid it once.</p>
       <div className="cta-actions">
         <a className="btn btn-pink btn-lg" href="onboarding.html">Start free trial
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
         </a>
-        <a className="btn btn-ghost btn-lg" href="mailto:harrison@tenantory.com?subject=Student%20housing%20question">Email Harrison directly</a>
+        <a className="btn btn-ghost btn-lg" href="mailto:harrison@rentblackbear.com?subject=Student%20housing%20question">Email Harrison directly</a>
       </div>
       <div className="cta-note">Built in Huntsville, AL by an operator who rents to UAH students every August.</div>
     </div>
@@ -439,7 +439,7 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory &middot; Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals &middot; Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
@@ -448,7 +448,7 @@ export default function Page() {
       <a href="for-landlords.html">For solo landlords</a>
       <a href="vs-appfolio.html">vs. AppFolio</a>
       <a href="stories.html">Stories</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
     </div>
   </footer>
 

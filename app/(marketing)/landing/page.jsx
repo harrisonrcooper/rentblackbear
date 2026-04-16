@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/landing.html.
+// Mock ported from ~/Desktop/blackbear/landing.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -31,7 +31,7 @@ export default function Page() {
         <span className="logo-mark">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
         </span>
-        Tenantory
+        Black Bear Rentals
       </a>
       <div className="nav-links">
         <a href="#features">Features</a>
@@ -54,7 +54,7 @@ export default function Page() {
         <div>
           <span className="eyebrow">The Founders' Offer · 87 spots left</span>
           <h1>Run <em>30 doors</em> with the admin work of <u>5</u> — in 14 days, or we pay you <em>$100.</em></h1>
-          <p className="lead">Tenantory replaces AppFolio, QuickBooks, DocuSign, and your bookkeeper — and gives you back <strong style={{color: "var(--text)"}}>12 hours a week.</strong> All on your own brand, for $97/mo.</p>
+          <p className="lead">Black Bear Rentals replaces AppFolio, QuickBooks, DocuSign, and your bookkeeper — and gives you back <strong style={{color: "var(--text)"}}>12 hours a week.</strong> All on your own brand, for $97/mo.</p>
           <form id="hero-form" className="hero-form">
             <input type="email" placeholder="Enter your email" required />
             <button type="submit">Get my time back</button>
@@ -75,7 +75,7 @@ export default function Page() {
             <div className="founder-avatar">HC</div>
             <div className="founder-text">
               Built by <strong>Harrison Cooper</strong>, Alabama co-living operator running 15+ rooms.
-              Tenantory is the software I wish existed when I started. Not built by a VC. Built by an operator.
+              Black Bear Rentals is the software I wish existed when I started. Not built by a VC. Built by an operator.
             </div>
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function Page() {
           <div className="device-desktop">
             <div className="device-desktop-bar">
               <span className="dot r" /><span className="dot y" /><span className="dot g" />
-              <span className="device-desktop-url">yourcompany.tenantory.app</span>
+              <span className="device-desktop-url">yourcompany.blackbear.app</span>
             </div>
             <div className="device-desktop-body">
               <div className="dd-stats">
@@ -174,7 +174,7 @@ export default function Page() {
           <span className="testimonial-case-badge">Case Study · Co-Living</span>
           <div className="testimonial-stars">★★★★★</div>
           <p className="testimonial-quote">
-            "I was stitching AppFolio, QuickBooks, DocuSign, and a bookkeeper together — and still losing <strong>12 hours every week</strong> to admin. Built Tenantory in-house because nothing on the market handled per-room leases. Now I run 15+ rooms on autopilot and my banker gets a rent roll in one click."
+            "I was stitching AppFolio, QuickBooks, DocuSign, and a bookkeeper together — and still losing <strong>12 hours every week</strong> to admin. Built Black Bear Rentals in-house because nothing on the market handled per-room leases. Now I run 15+ rooms on autopilot and my banker gets a rent roll in one click."
           </p>
           <div className="testimonial-metrics">
             <div className="testimonial-metric">
@@ -407,8 +407,8 @@ export default function Page() {
     <div className="wrap">
       <div className="section-head">
         <span className="eyebrow">Built for how you operate</span>
-        <h2>Your portfolio is unique. Tenantory is built for it.</h2>
-        <p className="lead">Whether you run a 4-bedroom co-living house or a 300-unit portfolio, Tenantory scales with your operation. Same software. Different superpowers.</p>
+        <h2>Your portfolio is unique. Black Bear Rentals is built for it.</h2>
+        <p className="lead">Whether you run a 4-bedroom co-living house or a 300-unit portfolio, Black Bear Rentals scales with your operation. Same software. Different superpowers.</p>
       </div>
 
       <div className="portfolio-tabs">
@@ -421,7 +421,7 @@ export default function Page() {
       <div className="portfolio-panel active" data-panel="coliving">
         <div>
           <h3>Rent-by-the-bedroom, built in</h3>
-          <p>Tenantory is one of the only PM platforms designed from day one to handle co-living. Per-room leases, shared utilities, individual rent schedules — without Frankensteining spreadsheets on top of AppFolio.</p>
+          <p>Black Bear Rentals is one of the only PM platforms designed from day one to handle co-living. Per-room leases, shared utilities, individual rent schedules — without Frankensteining spreadsheets on top of AppFolio.</p>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Per-room lease generation with auto-filled addendums</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Shared utility splits and prorations per tenant</li>
@@ -467,7 +467,7 @@ export default function Page() {
       <div className="portfolio-panel" data-panel="student">
         <div>
           <h3>Student housing, simplified</h3>
-          <p>Per-bedroom leases on academic-year cycles. Parent co-signers. Roommate matching. Tenantory handles the quirks of student housing without bolt-ons.</p>
+          <p>Per-bedroom leases on academic-year cycles. Parent co-signers. Roommate matching. Black Bear Rentals handles the quirks of student housing without bolt-ons.</p>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Academic-year lease terms with automated renewals</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Parent co-signer workflow with e-signature</li>
@@ -488,12 +488,12 @@ export default function Page() {
         <div className="tenant-view-copy">
           <span className="eyebrow">What your tenants see</span>
           <h2>Your brand. Your domain. Zero "powered by."</h2>
-          <p>Tenants log into a portal at <strong style={{color: "var(--text)"}}>yourcompany.com</strong> — not tenantory.com. Your logo, your colors, your voice. They pay you, message you, and submit maintenance to you. Tenantory stays invisible.</p>
+          <p>Tenants log into a portal at <strong style={{color: "var(--text)"}}>yourcompany.com</strong> — not rentblackbear.com. Your logo, your colors, your voice. They pay you, message you, and submit maintenance to you. Black Bear Rentals stays invisible.</p>
           <ul className="tenant-view-list">
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Custom subdomain + logo + brand color on Pro</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Bring your own domain (CNAME + SSL) on Scale</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Emails sent from <em>you@yourcompany.com</em></li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> "Powered by Tenantory" removed on Scale</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> "Powered by Black Bear Rentals" removed on Scale</li>
           </ul>
           <div className="tenant-view-quote">
             "My tenants think I built the software myself. <strong>That's the whole point.</strong>"
@@ -565,7 +565,7 @@ export default function Page() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
           </div>
           <h3>Workflows <span className="new-pill">New</span></h3>
-          <p>Automate move-in chains, renewal reminders, maintenance escalations, and rent collection cadences. Set it once — Tenantory runs the playbook every time.</p>
+          <p>Automate move-in chains, renewal reminders, maintenance escalations, and rent collection cadences. Set it once — Black Bear Rentals runs the playbook every time.</p>
           <div className="hours-pill">Saves 8 hrs/mo</div>
         </div>
       </div>
@@ -640,7 +640,7 @@ export default function Page() {
         <div className="feature-row-copy">
           <div className="hours-pill" style={{marginBottom: "16px"}}>Saves 6 hrs/mo</div>
           <h3>Maintenance made simple</h3>
-          <p>Tenants submit tickets via their branded portal. You assign vendors, track costs, close the loop — all without leaving Tenantory. No more text-chain chaos or lost work orders.</p>
+          <p>Tenants submit tickets via their branded portal. You assign vendors, track costs, close the loop — all without leaving Black Bear Rentals. No more text-chain chaos or lost work orders.</p>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Ticket pipeline: open → assigned → in-progress → completed</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Vendor directory with cost tracking and 1099 flagging</li>
@@ -706,10 +706,10 @@ export default function Page() {
       <div className="founder-story-inner">
         <div className="founder-story-avatar">HC</div>
         <span className="eyebrow eyebrow-dark">Built by an operator, for operators</span>
-        <h2>Why I built Tenantory.</h2>
+        <h2>Why I built Black Bear Rentals.</h2>
         <p>I'm Harrison Cooper. I run a 15+ room co-living operation in Huntsville, Alabama.</p>
         <p>For three years I stitched AppFolio, QuickBooks, DocuSign, Google Sheets, and a bookkeeper together. Every week I lost 12 hours to admin work that software should have handled. Every quarter my banker asked for a rent roll and I'd lose half a Saturday building it.</p>
-        <p>I built Tenantory because no existing PM software understood co-living, and the ones that came closest were either generic and ugly ($280/mo) or enterprise and bloated ($1,400/mo). Tenantory is the software I wish existed when I started. If you're an owner-operator running 5-100 units and you want your weekends back, let's talk.</p>
+        <p>I built Black Bear Rentals because no existing PM software understood co-living, and the ones that came closest were either generic and ugly ($280/mo) or enterprise and bloated ($1,400/mo). Black Bear Rentals is the software I wish existed when I started. If you're an owner-operator running 5-100 units and you want your weekends back, let's talk.</p>
         <div className="founder-story-sig">— <strong>Harrison Cooper</strong>, Founder</div>
       </div>
     </div>
@@ -722,9 +722,9 @@ export default function Page() {
         <div className="guarantee-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>
         </div>
-        <span className="eyebrow">The Tenantory Guarantee</span>
+        <span className="eyebrow">The Black Bear Rentals Guarantee</span>
         <h2>If we don't save you 12 hours a week, we'll pay you $100.</h2>
-        <p className="guarantee-body">Try Tenantory free for 14 days. No credit card. After 30 days as a paying customer, if Tenantory hasn't saved you at least 12 hours of work, email us. <span className="guarantee-highlight">Full refund — every dollar — plus $100 for your time.</span> We built this guarantee because we know what the software does. If you can't find 12 hours back in your month, something's broken — and we'll fix it or pay you.</p>
+        <p className="guarantee-body">Try Black Bear Rentals free for 14 days. No credit card. After 30 days as a paying customer, if Black Bear Rentals hasn't saved you at least 12 hours of work, email us. <span className="guarantee-highlight">Full refund — every dollar — plus $100 for your time.</span> We built this guarantee because we know what the software does. If you can't find 12 hours back in your month, something's broken — and we'll fix it or pay you.</p>
         <div className="guarantee-stack">
           <div className="guarantee-stack-item">
             <strong>14 days</strong>
@@ -762,7 +762,7 @@ export default function Page() {
   <section className="timeline">
     <div className="wrap">
       <div className="section-head">
-        <span className="eyebrow">Life after Tenantory</span>
+        <span className="eyebrow">Life after Black Bear Rentals</span>
         <h2>Here's what your year looks like.</h2>
       </div>
       <div className="timeline-grid">
@@ -800,7 +800,7 @@ export default function Page() {
     <div className="wrap">
       <div className="section-head">
         <span className="eyebrow">The math</span>
-        <h2>Before Tenantory vs. with Tenantory.</h2>
+        <h2>Before Black Bear Rentals vs. with Black Bear Rentals.</h2>
         <p className="lead">You've seen the hours. Here's the dollars.</p>
       </div>
 
@@ -824,7 +824,7 @@ export default function Page() {
         </div>
 
         <div className="math-col math-col-after">
-          <h3>Tenantory Pro</h3>
+          <h3>Black Bear Rentals Pro</h3>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Everything above — built in</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Your brand on every page</li>
@@ -854,7 +854,7 @@ export default function Page() {
     <div className="wrap">
       <div className="section-head">
         <span className="eyebrow">How we stack up</span>
-        <h2>Tenantory vs. the legacy options.</h2>
+        <h2>Black Bear Rentals vs. the legacy options.</h2>
         <p className="lead">Same jobs done. Half the price. Built for how you actually operate.</p>
       </div>
       <div className="compare-wrap">
@@ -862,7 +862,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Capability</th>
-              <th className="us">Tenantory</th>
+              <th className="us">Black Bear Rentals</th>
               <th>AppFolio</th>
               <th>Buildium</th>
               <th>DoorLoop</th>
@@ -1039,7 +1039,7 @@ export default function Page() {
           <div className="price-features-head">Scale: Everything in Pro, and:</div>
           <ul className="price-features">
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> <strong>Bring your own domain</strong></li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> "Powered by Tenantory" removed</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> "Powered by Black Bear Rentals" removed</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> <strong>Unlimited units</strong></li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Custom email from your domain</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> API access + webhooks</li>
@@ -1074,7 +1074,7 @@ export default function Page() {
           </div>
           <div className="price-anchor">Starts at $1,497/mo. Scales to 10,000+ units.</div>
           <div className="price-tagline">For franchises, multi-market PMs, and white-label resellers.</div>
-          <div className="price-cta"><a href="mailto:sales@tenantory.com" className="btn btn-gold" style={{width: "100%"}}>Talk to sales</a></div>
+          <div className="price-cta"><a href="mailto:sales@rentblackbear.com" className="btn btn-gold" style={{width: "100%"}}>Talk to sales</a></div>
           <div className="price-features-head">Enterprise: Everything in Scale, and:</div>
           <ul className="price-features">
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> <strong>Multi-workspace</strong> (franchise / multi-market)</li>
@@ -1158,8 +1158,8 @@ export default function Page() {
 
       <div className="faq-panel active" data-faq-panel="general">
         <details className="faq-item">
-          <summary className="faq-q">How is Tenantory different from AppFolio or Buildium?<svg className="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg></summary>
-          <div className="faq-a">Tenantory is built for owner-operator PMs who want <strong>their own brand</strong> — not a generic portal that screams "we use AppFolio." Pro starts at $97/mo vs AppFolio's $298/mo minimum. And we support <strong>co-living / rent-by-the-bedroom</strong> natively, which AppFolio does not.</div>
+          <summary className="faq-q">How is Black Bear Rentals different from AppFolio or Buildium?<svg className="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg></summary>
+          <div className="faq-a">Black Bear Rentals is built for owner-operator PMs who want <strong>their own brand</strong> — not a generic portal that screams "we use AppFolio." Pro starts at $97/mo vs AppFolio's $298/mo minimum. And we support <strong>co-living / rent-by-the-bedroom</strong> natively, which AppFolio does not.</div>
         </details>
         <details className="faq-item">
           <summary className="faq-q">Do I need a credit card to try it?<svg className="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg></summary>
@@ -1167,7 +1167,7 @@ export default function Page() {
         </details>
         <details className="faq-item">
           <summary className="faq-q">What's the "Founders' Offer"?<svg className="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg></summary>
-          <div className="faq-a">The first 100 PMs to join Tenantory Pro lock <strong>$99/mo for life</strong> — even when the launch price rises to $149/mo. Founders also get <strong>$4,250 in bonuses</strong> included free: free data migration ($500), AppFolio contract buyout up to $500, a 30-minute onboarding call ($300), state-specific custom lease template ($750), lifetime price lock ($1,800+ value), and — if you sign up in the next 48 hours — 1 month of bookkeeping cleanup ($400). 87 spots remain.</div>
+          <div className="faq-a">The first 100 PMs to join Black Bear Rentals Pro lock <strong>$99/mo for life</strong> — even when the launch price rises to $149/mo. Founders also get <strong>$4,250 in bonuses</strong> included free: free data migration ($500), AppFolio contract buyout up to $500, a 30-minute onboarding call ($300), state-specific custom lease template ($750), lifetime price lock ($1,800+ value), and — if you sign up in the next 48 hours — 1 month of bookkeeping cleanup ($400). 87 spots remain.</div>
         </details>
         <details className="faq-item">
           <summary className="faq-q">Is there a contract?<svg className="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg></summary>
@@ -1204,8 +1204,8 @@ export default function Page() {
           <div className="faq-a">Starter: 48h. Pro: 24h. Scale: 4h. Enterprise: 1h with a dedicated success manager.</div>
         </details>
         <details className="faq-item">
-          <summary className="faq-q">What's in the Tenantory Guarantee?<svg className="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg></summary>
-          <div className="faq-a">If after 30 days as a paying customer Tenantory hasn't saved you 12 hours, email us. <strong>Full refund plus $100 for your time.</strong> No questions asked.</div>
+          <summary className="faq-q">What's in the Black Bear Rentals Guarantee?<svg className="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg></summary>
+          <div className="faq-a">If after 30 days as a paying customer Black Bear Rentals hasn't saved you 12 hours, email us. <strong>Full refund plus $100 for your time.</strong> No questions asked.</div>
         </details>
         <details className="faq-item">
           <summary className="faq-q">How does billing work for annual plans?<svg className="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg></summary>
@@ -1254,7 +1254,7 @@ export default function Page() {
     <div className="wrap">
       <span className="eyebrow eyebrow-pink">The Founders' Offer · 87 spots left</span>
       <h2>Get <u>12 hours a week</u> back. Starting today.</h2>
-      <p className="lead">14-day trial. No credit card. $4,250 in bonuses included. $97/mo locked for life. Tenantory Guarantee: if we don't deliver, you get a full refund and $100 for your time.</p>
+      <p className="lead">14-day trial. No credit card. $4,250 in bonuses included. $97/mo locked for life. Black Bear Rentals Guarantee: if we don't deliver, you get a full refund and $100 for your time.</p>
       <form className="final-cta-form">
         <input type="email" placeholder="Enter your email" required />
         <button type="submit">Get my time back</button>
@@ -1285,7 +1285,7 @@ export default function Page() {
             <span className="logo-mark">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
             </span>
-            Tenantory
+            Black Bear Rentals
           </a>
           <p>The property management platform for owner-operators who want their own brand. Built by an operator, for operators.</p>
         </div>
@@ -1327,7 +1327,7 @@ export default function Page() {
         </div>
       </div>
       <div className="footer-bottom">
-        <div>© 2026 Tenantory. Built by an operator in Huntsville, Alabama.</div>
+        <div>© 2026 Black Bear Rentals. Built by an operator in Huntsville, Alabama.</div>
         <div className="footer-legal">
           <a href="#">Terms</a>
           <a href="#">Privacy</a>

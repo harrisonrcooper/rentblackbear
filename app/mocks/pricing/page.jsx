@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/pricing.html.
+// Mock ported from ~/Desktop/blackbear/pricing.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -66,7 +66,7 @@ export default function Page() {
       <div className="plan-price-old" data-monthly=" " data-annual="$39/mo billed monthly" />
       <div className="plan-cap"><strong>Up to 5 units.</strong> Perfect if this is a side hustle with a house or two.</div>
       <ul className="plan-features">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenant portal (generic Tenantory URL)</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenant portal (generic Black Bear Rentals URL)</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Online rent collection (ACH free, cards 2.95%)</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Lease e-sign &amp; stored documents</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Maintenance ticketing</li>
@@ -93,7 +93,7 @@ export default function Page() {
       <div className="plan-cap"><strong>Up to 50 units.</strong> Branded subdomain, investor reports, and the full Founders' bonus stack.</div>
       <ul className="plan-features">
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Everything in Starter</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Your own branded subdomain</strong> — yourname.tenantory.com</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Your own branded subdomain</strong> — yourname.rentblackbear.com</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Branded tenant portal &amp; application</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Monthly investor reports &amp; Schedule-E export</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Accounting ledger + 1099 generation</li>
@@ -115,11 +115,11 @@ export default function Page() {
         <span className="plan-price-period">/mo</span>
       </div>
       <div className="plan-price-old" data-monthly=" " data-annual="$299/mo billed monthly" />
-      <div className="plan-cap"><strong>Unlimited units.</strong> Connect your own domain. No "Powered by Tenantory" anywhere.</div>
+      <div className="plan-cap"><strong>Unlimited units.</strong> Connect your own domain. No "Powered by Black Bear Rentals" anywhere.</div>
       <ul className="plan-features">
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Everything in Pro</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg><strong>Custom domain</strong> (rentblackbear.com) with automatic SSL</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Full white-label — no Tenantory branding</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Full white-label — no Black Bear Rentals branding</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Priority support (2-hour response SLA)</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>API access &amp; webhooks</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Custom email domain for tenant communication</li>
@@ -141,7 +141,7 @@ export default function Page() {
       </div>
       <div className="ent-actions">
         <div className="ent-price">From <strong>$1,499/mo</strong></div>
-        <a className="btn btn-pink" href="mailto:sales@tenantory.com">
+        <a className="btn btn-pink" href="mailto:sales@rentblackbear.com">
           Talk to sales
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
         </a>
@@ -156,7 +156,7 @@ export default function Page() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 3 6v6c0 5.5 4 10 9 11 5-1 9-5.5 9-11V6l-9-4z" /><path d="m9 12 2 2 4-4" /></svg>
       </div>
       <div>
-        <div className="guar-title">If Tenantory doesn't save you 10 hours in your first 30 paid days, we pay you $100.</div>
+        <div className="guar-title">If Black Bear Rentals doesn't save you 10 hours in your first 30 paid days, we pay you $100.</div>
         <p className="guar-text">Start the 14-day trial without a card. After that, you have 30 days as a paying customer. If your time-saved report doesn't show at least <strong>10 hours saved</strong> vs. your prior workflow, email us one sentence and we'll refund every dollar plus wire you <strong>$100 for your time</strong>. Less than 2% of customers claim this. We're that confident.</p>
       </div>
     </div>
@@ -167,7 +167,7 @@ export default function Page() {
     <div className="section-head">
       <div className="section-kicker">What you're replacing</div>
       <h2>The stack you're already paying for.</h2>
-      <p>Tenantory replaces the tools below. Most PMs we talk to are paying for five of these, patched together with spreadsheets.</p>
+      <p>Black Bear Rentals replaces the tools below. Most PMs we talk to are paying for five of these, patched together with spreadsheets.</p>
     </div>
     <div className="rep-grid">
       <div className="rep-row"><div className="rep-name">AppFolio or Buildium<small>Property management software</small></div><div className="rep-price">$280/mo</div></div>
@@ -220,9 +220,9 @@ export default function Page() {
 
           <tr className="group-head"><td colSpan="4">Tenant-facing</td></tr>
           <tr><td>Tenant portal</td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td></tr>
-          <tr><td>Branded subdomain (yourname.tenantory.com)</td><td className="cmp-no">—</td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td></tr>
+          <tr><td>Branded subdomain (yourname.rentblackbear.com)</td><td className="cmp-no">—</td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td></tr>
           <tr><td>Custom domain (rentyourname.com)</td><td className="cmp-no">—</td><td className="cmp-no">—</td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td></tr>
-          <tr><td>Full white-label (no "Powered by Tenantory")</td><td className="cmp-no">—</td><td className="cmp-no">—</td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td></tr>
+          <tr><td>Full white-label (no "Powered by Black Bear Rentals")</td><td className="cmp-no">—</td><td className="cmp-no">—</td><td><span className="cmp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></span></td></tr>
 
           <tr className="group-head"><td colSpan="4">Rent &amp; payments</td></tr>
           <tr><td>ACH transfers</td><td><span className="cmp-val">Free</span></td><td><span className="cmp-val">Free</span></td><td><span className="cmp-val">Free</span></td></tr>
@@ -284,7 +284,7 @@ export default function Page() {
       </div>
       <div className="faq-item">
         <button className="faq-q">Will you migrate my data from AppFolio / Buildium? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Yes — free on Pro and Scale. Export a CSV from your current system (we'll show you exactly how), send it over, and we map it into Tenantory for you. Typical migration is 48–72 hours. You keep using your current tool the whole time until we say go.</div>
+        <div className="faq-a">Yes — free on Pro and Scale. Export a CSV from your current system (we'll show you exactly how), send it over, and we map it into Black Bear Rentals for you. Typical migration is 48–72 hours. You keep using your current tool the whole time until we say go.</div>
       </div>
       <div className="faq-item">
         <button className="faq-q">Can I cancel anytime? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
@@ -296,7 +296,7 @@ export default function Page() {
       </div>
       <div className="faq-item">
         <button className="faq-q">What makes this different from AppFolio? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Three things. (1) AppFolio charges $280/mo per portfolio and needs you to hit 50+ units. We start at $39 for 5 units. (2) Your tenants see "AppFolio." Our tenants see YOUR brand, your colors, your domain. (3) Tenantory was built by an operator running 15+ units — not by a VC who's never fixed a toilet. <a href="vs-appfolio.html" style={{color: "var(--blue)", fontWeight: "600", textDecoration: "underline"}}>Full side-by-side comparison &rarr;</a></div>
+        <div className="faq-a">Three things. (1) AppFolio charges $280/mo per portfolio and needs you to hit 50+ units. We start at $39 for 5 units. (2) Your tenants see "AppFolio." Our tenants see YOUR brand, your colors, your domain. (3) Black Bear Rentals was built by an operator running 15+ units — not by a VC who's never fixed a toilet. <a href="vs-appfolio.html" style={{color: "var(--blue)", fontWeight: "600", textDecoration: "underline"}}>Full side-by-side comparison &rarr;</a></div>
       </div>
     </div>
   </section>
@@ -321,11 +321,11 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/sign-in.html.
+// Mock ported from ~/Desktop/blackbear/sign-in.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -25,7 +25,7 @@ export default function Page() {
         <div className="brand-logo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
         </div>
-        <div className="brand-name">Tenantory</div>
+        <div className="brand-name">Black Bear Rentals</div>
       </div>
 
       <div className="brand-body">
@@ -59,11 +59,11 @@ export default function Page() {
       <div className="form-wrap">
         <a className="form-back" href="landing.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-          Back to tenantory.com
+          Back to rentblackbear.com
         </a>
 
         <h2>Welcome back.</h2>
-        <p className="sub">Sign in to your Tenantory workspace to keep managing like the operator you are.</p>
+        <p className="sub">Sign in to your Black Bear Rentals workspace to keep managing like the operator you are.</p>
 
         <div className="social-row">
           <button className="social-btn">
@@ -101,7 +101,7 @@ export default function Page() {
           </button>
         </form>
 
-        <div className="switch-auth">New to Tenantory? <a href="onboarding.html">Start your free trial</a></div>
+        <div className="switch-auth">New to Black Bear Rentals? <a href="onboarding.html">Start your free trial</a></div>
 
         <div className="trust-row">
           <span className="trust-item">

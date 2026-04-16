@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function ApplicationReceived({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com",
+  ctaHref = "https://app.rentblackbear.com",
 }) {
   return (
-    <Layout preview="We got your application. Here's what happens next." brand="Tenantory">
+    <Layout preview="We got your application. Here's what happens next." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Application received.
       </Heading>

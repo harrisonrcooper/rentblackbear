@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/referral.html.
+// Mock ported from ~/Desktop/blackbear/referral.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -45,7 +45,7 @@ export default function Page() {
       Double-sided $99 credit
     </div>
     <h1>Turn your REIA friends into <em>your first check.</em></h1>
-    <p className="hero-sub">You already tell your PM buddies about the software that runs your portfolio. Now get paid for it. Refer another property manager to Tenantory Pro — you get a free month, they get a free month. No limit on how many you send.</p>
+    <p className="hero-sub">You already tell your PM buddies about the software that runs your portfolio. Now get paid for it. Refer another property manager to Black Bear Rentals Pro — you get a free month, they get a free month. No limit on how many you send.</p>
     <div className="hero-actions">
       <a className="btn btn-pink btn-lg" href="#programs">See the two programs
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
@@ -84,7 +84,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
         </div>
         <div className="step-title">Grab your link</div>
-        <div className="step-desc">Open your Tenantory admin, click <strong>Refer &amp; earn</strong>. Your unique link is there waiting. Copy it, text it, tweet it — whatever feels natural.</div>
+        <div className="step-desc">Open your Black Bear Rentals admin, click <strong>Refer &amp; earn</strong>. Your unique link is there waiting. Copy it, text it, tweet it — whatever feels natural.</div>
         <div className="step-payout"><span>Takes</span><strong>~20 seconds</strong></div>
       </div>
 
@@ -104,7 +104,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="3" /><path d="M6 12h.01" /><path d="M18 12h.01" /></svg>
         </div>
         <div className="step-title">They subscribe — you both get paid</div>
-        <div className="step-desc">The moment they enter payment info for Tenantory Pro, $99 drops into your account as credit against next month's bill. They've already saved $99 on month one. Nobody lost.</div>
+        <div className="step-desc">The moment they enter payment info for Black Bear Rentals Pro, $99 drops into your account as credit against next month's bill. They've already saved $99 on month one. Nobody lost.</div>
         <div className="step-payout"><span>You get</span><strong>$99 credit</strong></div>
       </div>
     </div>
@@ -114,7 +114,7 @@ export default function Page() {
   <section className="section" id="programs">
     <div className="section-head">
       <div className="section-eyebrow">Two programs, same door</div>
-      <h2 className="section-title">Pick the one that fits how you actually talk about Tenantory.</h2>
+      <h2 className="section-title">Pick the one that fits how you actually talk about Black Bear Rentals.</h2>
       <p className="section-sub">Sending a link to a friend is different from posting it to your 40,000 YouTube subs. We pay both — differently.</p>
     </div>
 
@@ -124,7 +124,7 @@ export default function Page() {
         <div className="program-ribbon">Most common</div>
         <div className="program-kicker">For active customers</div>
         <div className="program-name">Customer Referral Program</div>
-        <div className="program-tag">You pay Tenantory. Now Tenantory pays you. Every referral that signs up for Pro drops $99 in account credit — a free month, straight across.</div>
+        <div className="program-tag">You pay Black Bear Rentals. Now Black Bear Rentals pays you. Every referral that signs up for Pro drops $99 in account credit — a free month, straight across.</div>
 
         <div className="math">
           <div className="math-row"><span>Your monthly credit per referral</span><strong>$99</strong></div>
@@ -169,10 +169,10 @@ export default function Page() {
         </ul>
 
         <div className="program-cta">
-          <a className="btn btn-primary" href="mailto:affiliates@tenantory.com?subject=Tenantory%20Affiliate%20Application">Apply to affiliate
+          <a className="btn btn-primary" href="mailto:affiliates@rentblackbear.com?subject=Black Bear Rentals%20Affiliate%20Application">Apply to affiliate
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
           </a>
-          <a className="btn btn-ghost" href="mailto:affiliates@tenantory.com">Talk to us</a>
+          <a className="btn btn-ghost" href="mailto:affiliates@rentblackbear.com">Talk to us</a>
         </div>
       </div>
     </div>
@@ -182,7 +182,7 @@ export default function Page() {
   <section className="calc-wrap" id="calc">
     <div className="calc">
       <div className="calc-kicker">Run the numbers</div>
-      <h3>If you refer <em id="calcCount">6</em> PMs this year, you pocket <em id="calcPayout">$594</em> in Tenantory credit.</h3>
+      <h3>If you refer <em id="calcCount">6</em> PMs this year, you pocket <em id="calcPayout">$594</em> in Black Bear Rentals credit.</h3>
       <div className="calc-grid">
         <div className="calc-slider-wrap">
           <div className="calc-label">
@@ -219,7 +219,7 @@ export default function Page() {
         <div className="dash-dot" /><div className="dash-dot" /><div className="dash-dot" />
         <div className="dash-url">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-          app.tenantory.com/refer
+          app.rentblackbear.com/refer
         </div>
       </div>
       <div className="dash-body">
@@ -230,7 +230,7 @@ export default function Page() {
           </div>
           <div className="dash-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-            <div className="dash-link-url">tenantory.com/r/marcus-bh83</div>
+            <div className="dash-link-url">rentblackbear.com/r/marcus-bh83</div>
             <div className="dash-link-copy">Copy</div>
           </div>
         </div>
@@ -323,12 +323,12 @@ export default function Page() {
     <div className="faq-list">
       <div className="faq-item">
         <button className="faq-q">How do I get my referral link?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Sign in to Tenantory, open <strong>Refer &amp; earn</strong> from the sidebar. Your link is pre-generated — it looks like <strong>tenantory.com/r/your-handle</strong>. You can also grab a short social-ready version, a QR code for in-person REIA meetings, and email copy we've already written.</div>
+        <div className="faq-a">Sign in to Black Bear Rentals, open <strong>Refer &amp; earn</strong> from the sidebar. Your link is pre-generated — it looks like <strong>rentblackbear.com/r/your-handle</strong>. You can also grab a short social-ready version, a QR code for in-person REIA meetings, and email copy we've already written.</div>
       </div>
 
       <div className="faq-item">
         <button className="faq-q">When does the $99 credit actually hit?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">The moment your referred PM <strong>completes their first paid invoice</strong> on Tenantory Pro (usually right after the 14-day trial ends), $99 drops onto your account as credit against the next invoice. No waiting on clearing periods, no "qualification window." If you're already on Pro, it's a free month. If you refer 12 in a year, Tenantory costs you $0 that year.</div>
+        <div className="faq-a">The moment your referred PM <strong>completes their first paid invoice</strong> on Black Bear Rentals Pro (usually right after the 14-day trial ends), $99 drops onto your account as credit against the next invoice. No waiting on clearing periods, no "qualification window." If you're already on Pro, it's a free month. If you refer 12 in a year, Black Bear Rentals costs you $0 that year.</div>
       </div>
 
       <div className="faq-item">
@@ -348,7 +348,7 @@ export default function Page() {
 
       <div className="faq-item">
         <button className="faq-q">How do I qualify for the affiliate program?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">We approve affiliates who either (a) have an audience of <strong>5,000+ real estate investors / PMs</strong> on any platform, or (b) run a REIA, mastermind, or coaching cohort, or (c) deliver <strong>3+ paid referrals per quarter</strong> via the customer program — at which point we upgrade you automatically. Email <strong>affiliates@tenantory.com</strong> with a quick intro; we reply inside 48 hours.</div>
+        <div className="faq-a">We approve affiliates who either (a) have an audience of <strong>5,000+ real estate investors / PMs</strong> on any platform, or (b) run a REIA, mastermind, or coaching cohort, or (c) deliver <strong>3+ paid referrals per quarter</strong> via the customer program — at which point we upgrade you automatically. Email <strong>affiliates@rentblackbear.com</strong> with a quick intro; we reply inside 48 hours.</div>
       </div>
     </div>
   </section>
@@ -366,7 +366,7 @@ export default function Page() {
       </div>
       <div id="signedLinkBox" className="signed-link-box" style={{display: "none"}}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-        <code id="signedLinkUrl">tenantory.com/r/your-handle</code>
+        <code id="signedLinkUrl">rentblackbear.com/r/your-handle</code>
         <button id="copyBtn">Copy link</button>
       </div>
       <div className="cta-note">No cap on referrals. Double-sided reward. Credit applies automatically.</div>
@@ -375,12 +375,12 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory &middot; Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals &middot; Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="referral.html">Refer &amp; earn</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

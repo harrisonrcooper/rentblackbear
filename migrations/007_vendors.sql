@@ -3,7 +3,7 @@
 -- vendor invoices.
 --
 -- Vendors are cross-workspace by design: a plumber working for
--- Black Bear Rentals AND for another PM on Tenantory should exist
+-- Black Bear Rentals AND for another PM on Black Bear Rentals should exist
 -- once. Per-workspace specifics (rate, status, notes) live in
 -- vendor_workspaces. RLS on vendor_workspaces gates what a
 -- workspace can see; the base vendors table is readable to any
@@ -24,7 +24,7 @@ create table if not exists vendors (
   license_number        text,
   categories            jsonb not null default '[]'::jsonb,
   notes                 text,
-  tenantory_verified    boolean not null default false,
+  vendor_verified    boolean not null default false,
   created_by_workspace_id uuid references workspaces(id) on delete set null,
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()

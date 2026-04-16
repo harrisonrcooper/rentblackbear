@@ -55,7 +55,7 @@ export default function RootLayout({ children }) {
             // Runs before hydration so the chosen theme is applied without
             // a flash. Safe to fail silently if localStorage is blocked.
             dangerouslySetInnerHTML={{
-              __html: `try{var t=localStorage.getItem("tenantory-theme");if(t&&t!=="flagship"&&t!=="custom")document.documentElement.setAttribute("data-theme",t);}catch(e){}`,
+              __html: `try{var t=localStorage.getItem("blackbear-theme");if(t&&t!=="flagship"&&t!=="custom")document.documentElement.setAttribute("data-theme",t);}catch(e){}`,
             }}
           />
           <link rel="preconnect" href="https://fonts.googleapis.com" />

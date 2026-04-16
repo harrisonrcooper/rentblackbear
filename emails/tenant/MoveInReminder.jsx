@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function MoveInReminder({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/portal/inspection",
+  ctaHref = "https://app.rentblackbear.com/portal/inspection",
 }) {
   return (
-    <Layout preview="Your move-in is 7 days away — here's the checklist." brand="Tenantory">
+    <Layout preview="Your move-in is 7 days away — here's the checklist." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Move-in day is 7 days out.
       </Heading>

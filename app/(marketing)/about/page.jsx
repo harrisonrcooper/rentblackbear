@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/about.html.
+// Mock ported from ~/Desktop/blackbear/about.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -51,7 +51,7 @@ export default function Page() {
         <div className="hero-meta">
           <span><strong>Harrison Cooper</strong></span>
           <span className="dot" />
-          <span>Founder, Tenantory</span>
+          <span>Founder, Black Bear Rentals</span>
           <span className="dot" />
           <span>Operator, <strong>Black Bear Rentals</strong></span>
           <span className="dot" />
@@ -110,14 +110,14 @@ export default function Page() {
       <h3>The weekend I started building.</h3>
       <p>Here's the embarrassing part. I'm not a professional developer. I built a couple of internal tools during my last corporate job, I can move around in a codebase, but I'm not the kind of person who "ships a SaaS on a weekend" — that tweet never resonated with me.</p>
       <p>What actually happened: on January 10th, 2026, a tenant at the Turf Ave house emailed me asking for a paid-in-full statement for her tax return. I went to the Google Sheet. The sheet was wrong. Her February rent had been logged under the wrong house. I spent ninety minutes reconciling, apologized twice, and sent the statement at midnight. I closed the laptop and said out loud, <em>"I am not doing this in 2027."</em></p>
-      <p>The next morning I started Tenantory. First commit was January 11. First tenant paid rent through it on February 14 — my wife Megan thought I was joking when I said my Valentine's was a Stripe webhook firing correctly. By March 1st all 15 rooms were on it. Black Bear Rentals has not touched a spreadsheet since.</p>
+      <p>The next morning I started Black Bear Rentals. First commit was January 11. First tenant paid rent through it on February 14 — my wife Megan thought I was joking when I said my Valentine's was a Stripe webhook firing correctly. By March 1st all 15 rooms were on it. Black Bear Rentals has not touched a spreadsheet since.</p>
     </div>
 
     <div className="story-beat">
       <div className="year">April 2026 · Beat 5</div>
       <h3>Why this works for other operators now.</h3>
       <p>Two operators in Birmingham found me through a Twitter thread I wrote in late February about the $280/mo sticker shock. They asked if they could pay me to let them use it. I said yes, awkwardly, because I hadn't designed it for anyone but myself. It turns out "designed for one guy with 15 rooms" ports surprisingly well to "a woman with 22 doors in Mountain Brook" and "a retired electrician with 8 houses in Bessemer." Because we have the same problems.</p>
-      <p>Tenantory is now open to anyone running 1 – 300 units. It replaces AppFolio, most of QuickBooks, DocuSign, and the line item on your ledger called "bookkeeper." It costs $39 – $99/mo depending on portfolio size. And — this is the whole point — <em>it shows your brand, not mine.</em> Your tenant portal says your company name. Your lease PDFs have your logo. Your emails come from your domain. Tenantory is plumbing. You're the house.</p>
+      <p>Black Bear Rentals is now open to anyone running 1 – 300 units. It replaces AppFolio, most of QuickBooks, DocuSign, and the line item on your ledger called "bookkeeper." It costs $39 – $99/mo depending on portfolio size. And — this is the whole point — <em>it shows your brand, not mine.</em> Your tenant portal says your company name. Your lease PDFs have your logo. Your emails come from your domain. Black Bear Rentals is plumbing. You're the house.</p>
     </div>
 
   </div>
@@ -126,12 +126,12 @@ export default function Page() {
   <section className="section">
     <span className="kicker">Design philosophy</span>
     <h2 className="h2">Three things I've learned running 15 rooms.</h2>
-    <p className="lede">Every product decision in Tenantory traces back to one of these. If something in the app feels obvious, it's because I lost money on it first.</p>
+    <p className="lede">Every product decision in Black Bear Rentals traces back to one of these. If something in the app feels obvious, it's because I lost money on it first.</p>
     <div className="lessons-grid">
       <div className="lesson">
         <div className="lesson-num">1</div>
         <h4>Your tenants should never see a tool's brand, only yours.</h4>
-        <p>You are the relationship. The software is a clipboard. The clipboard doesn't get to put its logo on the rent receipt. This is why white-label is free on every Tenantory plan and always will be.</p>
+        <p>You are the relationship. The software is a clipboard. The clipboard doesn't get to put its logo on the rent receipt. This is why white-label is free on every Black Bear Rentals plan and always will be.</p>
       </div>
       <div className="lesson">
         <div className="lesson-num">2</div>
@@ -141,7 +141,7 @@ export default function Page() {
       <div className="lesson">
         <div className="lesson-num">3</div>
         <h4>Default settings are policy.</h4>
-        <p>If the late fee is a checkbox nobody remembers to tick, then in practice your policy is "no late fee." Tenantory ships with opinionated defaults — late at 5pm on day 6, 5% fee, auto-applied — because unopinionated software is just a form you fill out badly.</p>
+        <p>If the late fee is a checkbox nobody remembers to tick, then in practice your policy is "no late fee." Black Bear Rentals ships with opinionated defaults — late at 5pm on day 6, 5% fee, auto-applied — because unopinionated software is just a form you fill out badly.</p>
       </div>
     </div>
   </section>
@@ -156,7 +156,7 @@ export default function Page() {
         <div className="quote-avatar">HC</div>
         <div className="quote-attr-text">
           <div className="quote-attr-name">Harrison Cooper</div>
-          <div className="quote-attr-role">Founder, Tenantory · Operator, Black Bear Rentals</div>
+          <div className="quote-attr-role">Founder, Black Bear Rentals · Operator, Black Bear Rentals</div>
         </div>
       </div>
     </div>
@@ -165,7 +165,7 @@ export default function Page() {
   
   <section className="section">
     <span className="kicker">Counter-positioning</span>
-    <h2 className="h2">What Tenantory is not.</h2>
+    <h2 className="h2">What Black Bear Rentals is not.</h2>
     <p className="lede">We're small on purpose. Here's what you're explicitly not buying.</p>
     <div className="not-grid">
       <div className="not-card">
@@ -186,14 +186,14 @@ export default function Page() {
         <div className="not-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></div>
         <div>
           <h4>Not trying to replace your judgment.</h4>
-          <p>I will not auto-evict your tenant. I will not screen out an applicant because an algorithm said so. Tenantory surfaces information and handles paperwork. The call is always yours. Always.</p>
+          <p>I will not auto-evict your tenant. I will not screen out an applicant because an algorithm said so. Black Bear Rentals surfaces information and handles paperwork. The call is always yours. Always.</p>
         </div>
       </div>
       <div className="not-card">
         <div className="not-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></div>
         <div>
           <h4>Not an enterprise product pretending to be simple.</h4>
-          <p>If you run 800 doors and need ACH positive pay workflows and HUD compliance, you want AppFolio or Yardi. I'll tell you that on the sales call. Tenantory is designed for 1 – 300 units run by an operator who also swings a hammer.</p>
+          <p>If you run 800 doors and need ACH positive pay workflows and HUD compliance, you want AppFolio or Yardi. I'll tell you that on the sales call. Black Bear Rentals is designed for 1 – 300 units run by an operator who also swings a hammer.</p>
         </div>
       </div>
     </div>
@@ -269,7 +269,7 @@ export default function Page() {
           <div className="tl-dot" />
           <div className="tl-year">Today</div>
           <div className="tl-title">Public launch</div>
-          <div className="tl-desc">Black Bear runs fully on Tenantory. Two paying operators in Birmingham. You could be #3.</div>
+          <div className="tl-desc">Black Bear runs fully on Black Bear Rentals. Two paying operators in Birmingham. You could be #3.</div>
         </div>
       </div>
     </div>
@@ -280,8 +280,8 @@ export default function Page() {
     <div className="dogfood-card">
       <div className="dogfood-badge">WE EAT<br />OUR OWN<br />COOKING</div>
       <div className="dogfood-text">
-        <h3>Black Bear Rentals runs entirely on Tenantory.</h3>
-        <p>Every tenant at every one of my houses logs into <strong>portal.blackbearrentals.com</strong> — which is just Tenantory with my logo on top. Rent, applications, renewals, maintenance tickets, lease signing — all of it. <strong>If you see a bug, I see it first, because my tenants hit it first.</strong> Which means the thing you're complaining about on a Tuesday is the thing that makes me miss a Stripe deposit on Wednesday. That's the kind of alignment you can't fake.</p>
+        <h3>Black Bear Rentals runs entirely on Black Bear Rentals.</h3>
+        <p>Every tenant at every one of my houses logs into <strong>portal.blackbearrentals.com</strong> — which is just Black Bear Rentals with my logo on top. Rent, applications, renewals, maintenance tickets, lease signing — all of it. <strong>If you see a bug, I see it first, because my tenants hit it first.</strong> Which means the thing you're complaining about on a Tuesday is the thing that makes me miss a Stripe deposit on Wednesday. That's the kind of alignment you can't fake.</p>
       </div>
     </div>
   </section>
@@ -301,7 +301,7 @@ export default function Page() {
         </div>
       </div>
       <div className="team-empty">
-        <strong>Hire #2 is open.</strong> Probably a senior full-stack engineer who has also rented a bedroom out in their life. If that's you, <a href="mailto:harrison@tenantory.com" style={{color: "var(--blue)", fontWeight: "600"}}>say hello.</a>
+        <strong>Hire #2 is open.</strong> Probably a senior full-stack engineer who has also rented a bedroom out in their life. If that's you, <a href="mailto:harrison@rentblackbear.com" style={{color: "var(--blue)", fontWeight: "600"}}>say hello.</a>
       </div>
     </div>
   </section>
@@ -312,20 +312,20 @@ export default function Page() {
     <h2 className="h2">I read every email. Seriously.</h2>
     <p className="lede">There is no support tier. There is me. If you hit a wall, I'd rather know about it than not.</p>
     <div className="contact-grid">
-      <a className="contact-card" href="mailto:harrison@tenantory.com">
+      <a className="contact-card" href="mailto:harrison@rentblackbear.com">
         <div className="contact-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
         </div>
         <h4>Email</h4>
-        <div className="val">harrison@tenantory.com</div>
+        <div className="val">harrison@rentblackbear.com</div>
         <div className="desc">Best channel. Response usually within 4 business hours.</div>
       </a>
-      <a className="contact-card" href="https://twitter.com/tenantory" target="_blank" rel="noopener">
+      <a className="contact-card" href="https://twitter.com/blackbear" target="_blank" rel="noopener">
         <div className="contact-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2H22L14.5 10.5 23 22H16L11 15L5 22H1L9 13L0.5 2H7.5L12 8L18 2Z" /></svg>
         </div>
         <h4>Twitter / X</h4>
-        <div className="val">@tenantory</div>
+        <div className="val">@blackbear</div>
         <div className="desc">Where I post build-log updates and roast bad PM software.</div>
       </a>
       <a className="contact-card" href="#calendly">
@@ -343,7 +343,7 @@ export default function Page() {
   <section className="cta-bottom">
     <div className="cta-card">
       <h2>Come run your rentals on operator software.</h2>
-      <p>14-day free trial, no card required. Lock in $99/mo for life while Founder pricing is open. If Tenantory doesn't save you 10 hours in your first 30 paid days, we refund you and wire $100 for your trouble.</p>
+      <p>14-day free trial, no card required. Lock in $99/mo for life while Founder pricing is open. If Black Bear Rentals doesn't save you 10 hours in your first 30 paid days, we refund you and wire $100 for your trouble.</p>
       <div className="cta-card-actions">
         <a className="btn btn-pink btn-lg" href="onboarding.html">
           Claim a Founders' spot
@@ -357,12 +357,12 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL by Harrison Cooper</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL by Harrison Cooper</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="about.html">About</a>
-      <a href="mailto:harrison@tenantory.com">Support</a>
+      <a href="mailto:harrison@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

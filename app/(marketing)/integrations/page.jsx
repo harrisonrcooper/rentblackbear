@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/integrations.html.
+// Mock ported from ~/Desktop/blackbear/integrations.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -22,7 +22,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -113,7 +113,7 @@ export default function Page() {
           <div className="int-name">Resend</div>
           <div className="int-category">Email</div>
         </div>
-        <div className="int-desc">Every transactional email — rent receipts, maintenance updates, lease PDFs. Sends from <code style={{fontSize: "11px", background: "var(--surface-subtle)", padding: "1px 5px", borderRadius: "3px"}}>noreply@yourname.tenantory.com</code> or your custom domain.</div>
+        <div className="int-desc">Every transactional email — rent receipts, maintenance updates, lease PDFs. Sends from <code style={{fontSize: "11px", background: "var(--surface-subtle)", padding: "1px 5px", borderRadius: "3px"}}>noreply@yourname.rentblackbear.com</code> or your custom domain.</div>
         <div className="int-foot"><strong>Starter+</strong><span>No setup</span></div>
       </div>
 
@@ -309,7 +309,7 @@ export default function Page() {
           <div className="int-category">Developer</div>
         </div>
         <div className="int-desc">Full read/write API scoped to your workspace. Fetch rent rolls, create tickets, manage tenants. Bearer-token auth, JSON everywhere.</div>
-        <div className="int-foot"><strong>Scale+</strong><span>Docs at api.tenantory.com</span></div>
+        <div className="int-foot"><strong>Scale+</strong><span>Docs at api.rentblackbear.com</span></div>
       </div>
 
       <div className="int-card" data-cat="dev">
@@ -334,7 +334,7 @@ export default function Page() {
           <div className="int-name">Zapier</div>
           <div className="int-category">No-code automation</div>
         </div>
-        <div className="int-desc">Public Zapier app in build. Connect Tenantory triggers to 5,000+ apps for custom workflows.</div>
+        <div className="int-desc">Public Zapier app in build. Connect Black Bear Rentals triggers to 5,000+ apps for custom workflows.</div>
         <div className="int-foot"><strong>Pro+</strong><span>In beta</span></div>
       </div>
 
@@ -354,7 +354,7 @@ export default function Page() {
           <div className="int-logo stripe">S</div>
           <div className="deep-head-text"><div className="deep-title">Stripe</div><div className="deep-meta">Payments · Starter+</div></div>
         </div>
-        <div className="deep-body">Every rent payment, deposit, application fee, and refund flows through Stripe. Money goes to <strong>your</strong> Stripe account — Tenantory never holds your funds.</div>
+        <div className="deep-body">Every rent payment, deposit, application fee, and refund flows through Stripe. Money goes to <strong>your</strong> Stripe account — Black Bear Rentals never holds your funds.</div>
         <ul className="deep-bullets">
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>PCI DSS Level 1 compliance inherited</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>1099-K issued directly by Stripe</li>
@@ -370,7 +370,7 @@ export default function Page() {
         <ul className="deep-bullets">
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>12,000+ banks supported</li>
           <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Account ownership + balance verification</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenant credentials never touch Tenantory</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Tenant credentials never touch Black Bear Rentals</li>
         </ul>
       </div>
       <div className="deep">
@@ -402,8 +402,8 @@ export default function Page() {
         </ul>
       </div>
       <pre className="dev-code"><span className="c"># List active tenants in your workspace</span>
-<span className="k">curl</span> https://api.tenantory.com/v1/tenants \
-  -H <span className="s">"Authorization: Bearer $TENANTORY_KEY"</span> \
+<span className="k">curl</span> https://api.rentblackbear.com/v1/tenants \
+  -H <span className="s">"Authorization: Bearer $BLACKBEAR_KEY"</span> \
   -H <span className="s">"X-Workspace-Id: ws_01HXK2..."</span>
 
 <span className="c"># Subscribe to rent-paid events</span>
@@ -436,11 +436,11 @@ export default function Page() {
       </div>
       <div className="faq-item">
         <button className="faq-q">Can I bring my own Stripe account? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Yes — and you should. You'll be asked during onboarding to connect your existing Stripe account or create a new one. Money flows to YOUR Stripe, not Tenantory's. We never touch your funds.</div>
+        <div className="faq-a">Yes — and you should. You'll be asked during onboarding to connect your existing Stripe account or create a new one. Money flows to YOUR Stripe, not Black Bear Rentals's. We never touch your funds.</div>
       </div>
       <div className="faq-item">
         <button className="faq-q">What's the difference between an integration and the core product? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Short answer: nothing you'd notice. We use "integration" internally for things that live outside Tenantory's servers (Stripe, Plaid, etc.). For you, it's all one product. Clerk, Resend, Twilio, RentCast — you'd never know they exist if we didn't tell you.</div>
+        <div className="faq-a">Short answer: nothing you'd notice. We use "integration" internally for things that live outside Black Bear Rentals's servers (Stripe, Plaid, etc.). For you, it's all one product. Clerk, Resend, Twilio, RentCast — you'd never know they exist if we didn't tell you.</div>
       </div>
       <div className="faq-item">
         <button className="faq-q">Do you support QuickBooks sync? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
@@ -448,7 +448,7 @@ export default function Page() {
       </div>
       <div className="faq-item">
         <button className="faq-q">Missing something you need? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
-        <div className="faq-a">Email <code style={{fontSize: "12px", background: "var(--surface-subtle)", padding: "1px 6px", borderRadius: "4px"}}>integrations@tenantory.com</code> and tell us what you're trying to connect. We prioritize by request volume — if 5 PMs ask for the same integration, it gets on the Q-next roadmap.</div>
+        <div className="faq-a">Email <code style={{fontSize: "12px", background: "var(--surface-subtle)", padding: "1px 6px", borderRadius: "4px"}}>integrations@rentblackbear.com</code> and tell us what you're trying to connect. We prioritize by request volume — if 5 PMs ask for the same integration, it gets on the Q-next roadmap.</div>
       </div>
     </div>
   </section>
@@ -469,7 +469,7 @@ export default function Page() {
   </section>
 
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>

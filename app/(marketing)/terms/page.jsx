@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/terms.html.
+// Mock ported from ~/Desktop/blackbear/terms.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -45,7 +45,7 @@ export default function Page() {
         Legal
       </div>
       <h1>Terms of Service</h1>
-      <p className="hero-sub">These Terms govern your use of Tenantory. We wrote them to be as clear as a legal document reasonably can be, with a plain-English summary up top for the parts that matter most.</p>
+      <p className="hero-sub">These Terms govern your use of Black Bear Rentals. We wrote them to be as clear as a legal document reasonably can be, with a plain-English summary up top for the parts that matter most.</p>
       <div className="hero-meta">
         <span className="hero-pill">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
@@ -102,7 +102,7 @@ export default function Page() {
           <ul>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              Tenantory is software. You pay a monthly fee; we give you access, keep your data isolated, and never sell it.
+              Black Bear Rentals is software. You pay a monthly fee; we give you access, keep your data isolated, and never sell it.
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -114,7 +114,7 @@ export default function Page() {
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              If Tenantory doesn't save you at least 10 hours in your first 30 paid days, we refund the month and pay you $100 on top. One request, one email.
+              If Black Bear Rentals doesn't save you at least 10 hours in your first 30 paid days, we refund the month and pay you $100 on top. One request, one email.
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -126,25 +126,25 @@ export default function Page() {
         
         <section className="sec" id="s1">
           <h2><span className="num">01</span> Acceptance of Terms</h2>
-          <p>Tenantory ("<strong>Tenantory</strong>," "<strong>we</strong>," "<strong>us</strong>," or "<strong>our</strong>") is operated by Tenantory, LLC, an Alabama limited liability company with its principal place of business in Huntsville, Alabama. These Terms of Service (the "<strong>Terms</strong>") form a binding agreement between you and Tenantory governing your access to and use of the Tenantory platform, website, mobile experiences, APIs, and related services (collectively, the "<strong>Service</strong>").</p>
+          <p>Black Bear Rentals ("<strong>Black Bear Rentals</strong>," "<strong>we</strong>," "<strong>us</strong>," or "<strong>our</strong>") is operated by Black Bear Rentals, LLC, an Alabama limited liability company with its principal place of business in Huntsville, Alabama. These Terms of Service (the "<strong>Terms</strong>") form a binding agreement between you and Black Bear Rentals governing your access to and use of the Black Bear Rentals platform, website, mobile experiences, APIs, and related services (collectively, the "<strong>Service</strong>").</p>
           <p>By creating an account, clicking "I agree," or otherwise accessing or using the Service, you accept these Terms and our <a href="privacy.html">Privacy Policy</a>. If you are entering into these Terms on behalf of an organization, you represent that you have authority to bind that organization, and "you" refers to that organization.</p>
-          <p>You must be at least 18 years old and legally capable of entering into a binding contract to use the Service. Tenantory is a business tool intended for property owners, property managers, and their authorized team members. It is not offered to minors or for personal, household, or consumer use.</p>
+          <p>You must be at least 18 years old and legally capable of entering into a binding contract to use the Service. Black Bear Rentals is a business tool intended for property owners, property managers, and their authorized team members. It is not offered to minors or for personal, household, or consumer use.</p>
           <p>If you do not agree to these Terms, do not create an account and do not use the Service.</p>
         </section>
 
         
         <section className="sec" id="s2">
           <h2><span className="num">02</span> Description of Service</h2>
-          <p>Tenantory is a cloud-based property management platform that helps operators list units, screen applicants, sign leases, collect rent, process maintenance requests, keep accounting records, and communicate with tenants and vendors. The Service is delivered as software-as-a-service and is hosted on infrastructure we control or license.</p>
+          <p>Black Bear Rentals is a cloud-based property management platform that helps operators list units, screen applicants, sign leases, collect rent, process maintenance requests, keep accounting records, and communicate with tenants and vendors. The Service is delivered as software-as-a-service and is hosted on infrastructure we control or license.</p>
           <p>Features, limits, and included integrations may change over time as we improve the Service. We may add, modify, or remove functionality at our discretion; where a change materially reduces the core functionality of a paid plan, we will provide reasonable notice and, if applicable, a prorated adjustment.</p>
-          <p>The Service is a <em>tool</em>. Tenantory does not provide legal, financial, tax, or real-estate advice. We don't draft leases for your jurisdiction, we don't underwrite tenants, and we don't decide whether to rent to an applicant. You are solely responsible for compliance with the laws that apply to your rental business — including fair housing, landlord-tenant, security deposit, fair credit reporting, consumer notice, and tax laws.</p>
+          <p>The Service is a <em>tool</em>. Black Bear Rentals does not provide legal, financial, tax, or real-estate advice. We don't draft leases for your jurisdiction, we don't underwrite tenants, and we don't decide whether to rent to an applicant. You are solely responsible for compliance with the laws that apply to your rental business — including fair housing, landlord-tenant, security deposit, fair credit reporting, consumer notice, and tax laws.</p>
         </section>
 
         
         <section className="sec" id="s3">
           <h2><span className="num">03</span> Account Registration & Security</h2>
           <p>To use the Service, you must register for an account through our authentication provider. You agree to provide accurate, current, and complete information during registration and to keep that information up to date. Each paid subscription corresponds to a single workspace — a private, isolated environment that holds your properties, tenants, leases, payments, documents, and settings.</p>
-          <p>You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account, whether authorized by you or not. You agree to use strong, unique passwords and to enable multi-factor authentication when we offer it. You will notify us immediately at <a href="mailto:security@tenantory.com">security@tenantory.com</a> if you suspect unauthorized access to your account.</p>
+          <p>You are responsible for maintaining the confidentiality of your login credentials and for all activity that occurs under your account, whether authorized by you or not. You agree to use strong, unique passwords and to enable multi-factor authentication when we offer it. You will notify us immediately at <a href="mailto:security@rentblackbear.com">security@rentblackbear.com</a> if you suspect unauthorized access to your account.</p>
           <p>You may invite team members to your workspace at roles defined within the product (for example, Admin, Manager, or Viewer). You are responsible for the conduct of anyone you invite, including revoking access when they leave your team. Sharing a single login across multiple people is prohibited — if you need more seats, add users.</p>
           <p>We may suspend or terminate accounts that show evidence of compromise, fraud, or violation of these Terms. We will try to notify you before doing so unless doing so would risk further harm.</p>
         </section>
@@ -152,7 +152,7 @@ export default function Page() {
         
         <section className="sec" id="s4">
           <h2><span className="num">04</span> Subscription Plans & Billing</h2>
-          <p>Tenantory is offered on a subscription basis. Current published plans are: <strong>Starter</strong> at $39 per month, <strong>Pro</strong> at $99 per month, <strong>Scale</strong> at $299 per month, and <strong>Enterprise</strong> at custom pricing negotiated in a separate order form. Plan limits, included features, and overage rules are described on our <a href="pricing.html">Pricing page</a> and may be referenced within the product.</p>
+          <p>Black Bear Rentals is offered on a subscription basis. Current published plans are: <strong>Starter</strong> at $39 per month, <strong>Pro</strong> at $99 per month, <strong>Scale</strong> at $299 per month, and <strong>Enterprise</strong> at custom pricing negotiated in a separate order form. Plan limits, included features, and overage rules are described on our <a href="pricing.html">Pricing page</a> and may be referenced within the product.</p>
           <p><strong>Free trial.</strong> New workspaces receive a 14-day free trial on the plan you select at signup. No payment method is required to start a trial. If you do not enter a payment method before the trial ends, your workspace transitions to a read-only state and, after 30 additional days, is scheduled for deletion in accordance with our retention policy.</p>
           <p><strong>Billing & auto-renewal.</strong> Monthly plans renew on the same calendar day each month; annual plans renew on the same day each year. Your payment method is charged automatically at the start of each billing period. All fees are quoted in U.S. Dollars and exclude applicable taxes. You authorize us and our payment processor (Stripe) to charge your chosen payment method for each recurring charge.</p>
           <p><strong>Cancellation.</strong> You may cancel at any time from within the product. Cancellations take effect at the end of the current billing period; we do not prorate partial-month cancellations on monthly plans. Annual plans may be canceled at any time but are not refundable on a pro-rata basis except where required by law or under the Time-Back Guarantee described below.</p>
@@ -178,8 +178,8 @@ export default function Page() {
         
         <section className="sec" id="s6">
           <h2><span className="num">06</span> The Time-Back Guarantee</h2>
-          <p>We offer a one-time money-back guarantee for new paying customers. You are eligible if, at the end of your first 30 paid days, the in-app "Time Saved" report shows that Tenantory has saved your workspace fewer than <strong>10 hours</strong> of work compared to its baseline estimate.</p>
-          <p>To claim the guarantee, send a single email to <a href="mailto:guarantee@tenantory.com">guarantee@tenantory.com</a> within <strong>14 days</strong> of the end of your first 30 paid days that includes your workspace name and your in-app Time Saved report. We will:</p>
+          <p>We offer a one-time money-back guarantee for new paying customers. You are eligible if, at the end of your first 30 paid days, the in-app "Time Saved" report shows that Black Bear Rentals has saved your workspace fewer than <strong>10 hours</strong> of work compared to its baseline estimate.</p>
+          <p>To claim the guarantee, send a single email to <a href="mailto:guarantee@rentblackbear.com">guarantee@rentblackbear.com</a> within <strong>14 days</strong> of the end of your first 30 paid days that includes your workspace name and your in-app Time Saved report. We will:</p>
           <ol>
             <li>Refund any subscription fees you paid during those first 30 paid days to your original payment method; and</li>
             <li>Issue you an additional <strong>$100</strong> via refund check or ACH, typically within 10 business days of verification.</li>
@@ -195,9 +195,9 @@ export default function Page() {
           <h2><span className="num">07</span> Acceptable Use</h2>
           <p>You agree not to use the Service to do anything unlawful, harmful, or abusive. Without limiting the foregoing, you agree not to:</p>
           <ul>
-            <li>Harass, threaten, discriminate against, or retaliate against any tenant, applicant, vendor, or Tenantory user, including conduct that violates fair housing or anti-discrimination laws;</li>
+            <li>Harass, threaten, discriminate against, or retaliate against any tenant, applicant, vendor, or Black Bear Rentals user, including conduct that violates fair housing or anti-discrimination laws;</li>
             <li>Use the Service to commit fraud, launder money, evade tax, or violate any other applicable law or regulation;</li>
-            <li>Send unsolicited bulk communications (spam) to tenants, applicants, or third parties, or use Tenantory's messaging tools in violation of TCPA, CAN-SPAM, or similar laws;</li>
+            <li>Send unsolicited bulk communications (spam) to tenants, applicants, or third parties, or use Black Bear Rentals's messaging tools in violation of TCPA, CAN-SPAM, or similar laws;</li>
             <li>Circumvent, disable, probe, or interfere with any security feature, rate limit, usage quota, or access control;</li>
             <li>Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Service, except to the extent such restriction is prohibited by law;</li>
             <li>Scrape, data-mine, or copy any portion of the Service other than your own workspace data;</li>
@@ -210,17 +210,17 @@ export default function Page() {
         
         <section className="sec" id="s8">
           <h2><span className="num">08</span> User Content & Intellectual Property</h2>
-          <p><strong>Your data is yours.</strong> As between you and Tenantory, you own all data, files, documents, images, and other content that you or your team members upload to the Service, including tenant personal information, lease documents, and accounting records ("<strong>Customer Content</strong>"). We do not claim any ownership interest in Customer Content.</p>
-          <p><strong>Limited license to us.</strong> You grant Tenantory a worldwide, non-exclusive, royalty-free license to host, copy, transmit, display, and process Customer Content solely as necessary to provide the Service to you, to secure it, to back it up, to prevent fraud and abuse, and to comply with law. This license exists only for the duration of your subscription plus the limited retention windows described in our Privacy Policy.</p>
+          <p><strong>Your data is yours.</strong> As between you and Black Bear Rentals, you own all data, files, documents, images, and other content that you or your team members upload to the Service, including tenant personal information, lease documents, and accounting records ("<strong>Customer Content</strong>"). We do not claim any ownership interest in Customer Content.</p>
+          <p><strong>Limited license to us.</strong> You grant Black Bear Rentals a worldwide, non-exclusive, royalty-free license to host, copy, transmit, display, and process Customer Content solely as necessary to provide the Service to you, to secure it, to back it up, to prevent fraud and abuse, and to comply with law. This license exists only for the duration of your subscription plus the limited retention windows described in our Privacy Policy.</p>
           <p><strong>No AI training without consent.</strong> We do not use Customer Content to train general-purpose AI models. Where AI features operate on your data (for example, document summarization or maintenance triage), processing is scoped to your workspace, results are returned only to you, and inputs are not retained for cross-customer model improvement.</p>
-          <p><strong>Tenantory's IP.</strong> The Service itself — including the software, user interface, designs, logos, documentation, and all underlying technology — is owned by Tenantory and is protected by intellectual-property laws. We grant you a limited, non-exclusive, non-transferable, revocable license to access and use the Service during your subscription, subject to these Terms. All rights not expressly granted are reserved.</p>
+          <p><strong>Black Bear Rentals's IP.</strong> The Service itself — including the software, user interface, designs, logos, documentation, and all underlying technology — is owned by Black Bear Rentals and is protected by intellectual-property laws. We grant you a limited, non-exclusive, non-transferable, revocable license to access and use the Service during your subscription, subject to these Terms. All rights not expressly granted are reserved.</p>
           <p><strong>Feedback.</strong> If you send us suggestions, feature requests, or other feedback, you grant us an irrevocable, perpetual, royalty-free license to use that feedback to improve the Service without obligation to you.</p>
         </section>
 
         
         <section className="sec" id="s9">
           <h2><span className="num">09</span> Third-Party Services</h2>
-          <p>The Service integrates with third-party providers to deliver certain functionality. These providers have their own terms and privacy policies, which govern your use of their services when accessed through Tenantory:</p>
+          <p>The Service integrates with third-party providers to deliver certain functionality. These providers have their own terms and privacy policies, which govern your use of their services when accessed through Black Bear Rentals:</p>
           <ul>
             <li><strong>Stripe, Inc.</strong> — payment processing and connected accounts for rent collection;</li>
             <li><strong>Plaid Inc.</strong> — bank account verification and ACH authorization;</li>
@@ -228,31 +228,31 @@ export default function Page() {
             <li><strong>Clerk, Inc.</strong> — user authentication and session management;</li>
             <li>and other providers listed in our <a href="privacy.html#s4">Privacy Policy</a>.</li>
           </ul>
-          <p>You are responsible for reviewing and agreeing to the terms of any third-party provider whose service you elect to use through Tenantory, including by accepting electronic terms during onboarding. Tenantory is not responsible for the availability, accuracy, legality, or conduct of third-party services, and we disclaim liability arising from them to the fullest extent permitted by law.</p>
+          <p>You are responsible for reviewing and agreeing to the terms of any third-party provider whose service you elect to use through Black Bear Rentals, including by accepting electronic terms during onboarding. Black Bear Rentals is not responsible for the availability, accuracy, legality, or conduct of third-party services, and we disclaim liability arising from them to the fullest extent permitted by law.</p>
           <p>If a third-party provider terminates our integration or ceases operation, we will notify you and, where practical, provide an alternative. Some integrations may require you to maintain a direct account with the provider.</p>
         </section>
 
         
         <section className="sec" id="s10">
           <h2><span className="num">10</span> Payment Processing</h2>
-          <p>Rent collection and other money movement features are powered by Stripe, Inc. When you enable rent collection, you are prompted to create and connect a Stripe Connect account and to accept Stripe's <a href="https://stripe.com/legal/connect-account" target="_blank" rel="noopener">Connected Account Agreement</a> and <a href="https://stripe.com/legal" target="_blank" rel="noopener">Services Agreement</a>. Your ability to accept payments depends on Stripe's ongoing approval, KYC verification, and underwriting decisions — Tenantory is not a party to those decisions.</p>
+          <p>Rent collection and other money movement features are powered by Stripe, Inc. When you enable rent collection, you are prompted to create and connect a Stripe Connect account and to accept Stripe's <a href="https://stripe.com/legal/connect-account" target="_blank" rel="noopener">Connected Account Agreement</a> and <a href="https://stripe.com/legal" target="_blank" rel="noopener">Services Agreement</a>. Your ability to accept payments depends on Stripe's ongoing approval, KYC verification, and underwriting decisions — Black Bear Rentals is not a party to those decisions.</p>
           <p>You are the merchant of record for all payments collected from your tenants. You are responsible for: (a) resolving chargebacks, disputes, and refund requests initiated by your tenants; (b) reporting and remitting any applicable taxes on amounts collected; (c) maintaining any licenses or registrations required to collect rent in your jurisdiction; and (d) complying with the Stripe Restricted Businesses list.</p>
-          <p>Tenantory may charge platform or processing fees in addition to Stripe's fees. Our fees are disclosed on the Pricing page or in your order form. Payouts to your bank account are made on Stripe's standard schedule unless otherwise agreed in writing.</p>
+          <p>Black Bear Rentals may charge platform or processing fees in addition to Stripe's fees. Our fees are disclosed on the Pricing page or in your order form. Payouts to your bank account are made on Stripe's standard schedule unless otherwise agreed in writing.</p>
         </section>
 
         
         <section className="sec" id="s11">
           <h2><span className="num">11</span> Data & Privacy</h2>
           <p>Our collection, use, storage, and disclosure of personal information is described in our <a href="privacy.html">Privacy Policy</a>, which is incorporated into these Terms by reference. By using the Service you acknowledge that policy and the data processing it describes.</p>
-          <p>Where you upload personal information about tenants, applicants, vendors, or other third parties, you represent and warrant that you have the legal right to do so and to permit Tenantory to process that information on your behalf. You are the data controller and Tenantory is the data processor with respect to such information, as those terms are used in applicable privacy laws.</p>
-          <p>If you are subject to the GDPR, UK GDPR, CCPA/CPRA, or other jurisdictional requirements that demand a separate data processing agreement (DPA), you may request our standard DPA at <a href="mailto:privacy@tenantory.com">privacy@tenantory.com</a>. Our standard DPA, once executed, supplements and (where inconsistent) controls over these Terms with respect to personal data.</p>
+          <p>Where you upload personal information about tenants, applicants, vendors, or other third parties, you represent and warrant that you have the legal right to do so and to permit Black Bear Rentals to process that information on your behalf. You are the data controller and Black Bear Rentals is the data processor with respect to such information, as those terms are used in applicable privacy laws.</p>
+          <p>If you are subject to the GDPR, UK GDPR, CCPA/CPRA, or other jurisdictional requirements that demand a separate data processing agreement (DPA), you may request our standard DPA at <a href="mailto:privacy@rentblackbear.com">privacy@rentblackbear.com</a>. Our standard DPA, once executed, supplements and (where inconsistent) controls over these Terms with respect to personal data.</p>
         </section>
 
         
         <section className="sec" id="s12">
           <h2><span className="num">12</span> Termination and Data Export</h2>
           <p>You may cancel your subscription at any time from within the product. We may suspend or terminate your access for material breach of these Terms, fraud or abuse, non-payment lasting more than 30 days, or where required by law or to protect the safety of other users.</p>
-          <p><strong>Data export.</strong> For 30 days following cancellation or termination, we will preserve your workspace in a read-only state and allow you to export your data through the in-product export tools or, where that isn't sufficient, by written request to <a href="mailto:support@tenantory.com">support@tenantory.com</a>. Exports include tenant records, lease documents, transaction history, and financial ledgers in standard formats (CSV, PDF, and JSON where applicable).</p>
+          <p><strong>Data export.</strong> For 30 days following cancellation or termination, we will preserve your workspace in a read-only state and allow you to export your data through the in-product export tools or, where that isn't sufficient, by written request to <a href="mailto:support@rentblackbear.com">support@rentblackbear.com</a>. Exports include tenant records, lease documents, transaction history, and financial ledgers in standard formats (CSV, PDF, and JSON where applicable).</p>
           <p><strong>Deletion.</strong> After the 30-day export window closes, active Customer Content is deleted from our production systems. Encrypted, access-controlled backups containing your data age out according to the schedule described in our Privacy Policy (typically within 90 days). Certain records — including financial transactions and audit logs — may be retained longer where required by law.</p>
           <p>Sections that by their nature should survive termination (including Sections 8, 13, 14, 15, 16, 17, and 19) survive any termination of these Terms.</p>
         </section>
@@ -260,7 +260,7 @@ export default function Page() {
         
         <section className="sec" id="s13">
           <h2><span className="num">13</span> Disclaimer of Warranties</h2>
-          <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY KIND. TO THE FULLEST EXTENT PERMITTED BY LAW, TENANTORY AND ITS LICENSORS DISCLAIM ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, ACCURACY, AND NON-INFRINGEMENT.</p>
+          <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY KIND. TO THE FULLEST EXTENT PERMITTED BY LAW, BLACK BEAR RENTALS AND ITS LICENSORS DISCLAIM ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, ACCURACY, AND NON-INFRINGEMENT.</p>
           <p>We do not warrant that the Service will be uninterrupted, error-free, secure against every threat, compatible with every device, or that any data processed by the Service will be accurate or preserved without loss. We do not warrant that the Service, its AI features, or any document template will satisfy legal requirements in your jurisdiction or produce any particular business outcome.</p>
           <p>Some jurisdictions do not allow the exclusion of certain warranties. In those jurisdictions, the exclusions above apply only to the extent permitted by law.</p>
         </section>
@@ -268,16 +268,16 @@ export default function Page() {
         
         <section className="sec" id="s14">
           <h2><span className="num">14</span> Limitation of Liability</h2>
-          <p>TO THE FULLEST EXTENT PERMITTED BY LAW, NEITHER TENANTORY NOR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS WILL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, LOSS OF GOODWILL, LOSS OF DATA, BUSINESS INTERRUPTION, OR THE COST OF SUBSTITUTE SERVICES, ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICE, WHETHER IN CONTRACT, TORT, OR ANY OTHER LEGAL THEORY, EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
-          <p>OUR AGGREGATE LIABILITY ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICE, FROM ALL CAUSES OF ACTION AND UNDER ALL THEORIES OF LIABILITY, WILL NOT EXCEED THE TOTAL AMOUNT OF FEES YOU PAID TO TENANTORY IN THE <strong>TWELVE (12) MONTHS</strong> IMMEDIATELY PRECEDING THE EVENT GIVING RISE TO THE CLAIM.</p>
-          <p>These limitations apply whether or not Tenantory has been advised of the possibility of such damages and even if a remedy fails of its essential purpose. The parties agree that these limitations are a material basis of the bargain between them and that without them the fees would be materially higher.</p>
+          <p>TO THE FULLEST EXTENT PERMITTED BY LAW, NEITHER BLACK BEAR RENTALS NOR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS WILL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, LOSS OF GOODWILL, LOSS OF DATA, BUSINESS INTERRUPTION, OR THE COST OF SUBSTITUTE SERVICES, ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICE, WHETHER IN CONTRACT, TORT, OR ANY OTHER LEGAL THEORY, EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
+          <p>OUR AGGREGATE LIABILITY ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICE, FROM ALL CAUSES OF ACTION AND UNDER ALL THEORIES OF LIABILITY, WILL NOT EXCEED THE TOTAL AMOUNT OF FEES YOU PAID TO BLACK BEAR RENTALS IN THE <strong>TWELVE (12) MONTHS</strong> IMMEDIATELY PRECEDING THE EVENT GIVING RISE TO THE CLAIM.</p>
+          <p>These limitations apply whether or not Black Bear Rentals has been advised of the possibility of such damages and even if a remedy fails of its essential purpose. The parties agree that these limitations are a material basis of the bargain between them and that without them the fees would be materially higher.</p>
         </section>
 
         
         <section className="sec" id="s15">
           <h2><span className="num">15</span> Indemnification</h2>
-          <p>You agree to defend, indemnify, and hold harmless Tenantory, its affiliates, and their respective officers, directors, employees, and agents from and against any third-party claims, damages, liabilities, losses, costs, and reasonable attorneys' fees arising out of or related to: (a) your Customer Content; (b) your use of the Service in violation of these Terms or applicable law; (c) your violation of the rights of a tenant, applicant, vendor, or other third party, including fair-housing and landlord-tenant laws; or (d) any taxes or fees for which you are responsible.</p>
-          <p>Tenantory will promptly notify you of any claim for which we seek indemnification and will reasonably cooperate with you in the defense. You may not settle any claim that admits liability on our part or imposes any obligation on us without our prior written consent.</p>
+          <p>You agree to defend, indemnify, and hold harmless Black Bear Rentals, its affiliates, and their respective officers, directors, employees, and agents from and against any third-party claims, damages, liabilities, losses, costs, and reasonable attorneys' fees arising out of or related to: (a) your Customer Content; (b) your use of the Service in violation of these Terms or applicable law; (c) your violation of the rights of a tenant, applicant, vendor, or other third party, including fair-housing and landlord-tenant laws; or (d) any taxes or fees for which you are responsible.</p>
+          <p>Black Bear Rentals will promptly notify you of any claim for which we seek indemnification and will reasonably cooperate with you in the defense. You may not settle any claim that admits liability on our part or imposes any obligation on us without our prior written consent.</p>
         </section>
 
         
@@ -290,11 +290,11 @@ export default function Page() {
         
         <section className="sec" id="s17">
           <h2><span className="num">17</span> Dispute Resolution; Arbitration; Class-Action Waiver</h2>
-          <p><strong>Informal resolution.</strong> Before initiating arbitration or any legal proceeding, you agree to contact us at <a href="mailto:legal@tenantory.com">legal@tenantory.com</a> with a written description of the dispute, the relief you seek, and your contact information. The parties will attempt in good faith to resolve the dispute informally within 60 days.</p>
+          <p><strong>Informal resolution.</strong> Before initiating arbitration or any legal proceeding, you agree to contact us at <a href="mailto:legal@rentblackbear.com">legal@rentblackbear.com</a> with a written description of the dispute, the relief you seek, and your contact information. The parties will attempt in good faith to resolve the dispute informally within 60 days.</p>
           <p><strong>Binding arbitration.</strong> If the parties cannot resolve the dispute informally, <strong>any dispute, claim, or controversy arising out of or relating to these Terms or the Service will be resolved by final and binding arbitration</strong> administered by JAMS under its Comprehensive Arbitration Rules & Procedures then in effect. The arbitration will be conducted by a single arbitrator in Madison County, Alabama, or by videoconference at the parties' election. The arbitrator's decision will be final and enforceable in any court of competent jurisdiction.</p>
-          <p><strong>Class-action waiver.</strong> You and Tenantory each agree that any dispute will be resolved only on an individual basis and <strong>not as a plaintiff or class member in any purported class, collective, consolidated, or representative proceeding</strong>. The arbitrator may not consolidate more than one party's claims and may not preside over any form of representative or class proceeding. If this waiver is found to be unenforceable, then the entirety of this Section 17 is null and void, and the dispute will proceed in court under Section 16.</p>
+          <p><strong>Class-action waiver.</strong> You and Black Bear Rentals each agree that any dispute will be resolved only on an individual basis and <strong>not as a plaintiff or class member in any purported class, collective, consolidated, or representative proceeding</strong>. The arbitrator may not consolidate more than one party's claims and may not preside over any form of representative or class proceeding. If this waiver is found to be unenforceable, then the entirety of this Section 17 is null and void, and the dispute will proceed in court under Section 16.</p>
           <p><strong>Exceptions.</strong> Either party may bring an individual action in small-claims court, and either party may seek injunctive or other equitable relief in court for claims relating to intellectual property, unauthorized access, or confidentiality.</p>
-          <p><strong>30-day opt-out.</strong> You may opt out of this arbitration agreement by sending written notice to <a href="mailto:legal@tenantory.com">legal@tenantory.com</a> within 30 days of first accepting these Terms. Opting out does not affect any other part of these Terms.</p>
+          <p><strong>30-day opt-out.</strong> You may opt out of this arbitration agreement by sending written notice to <a href="mailto:legal@rentblackbear.com">legal@rentblackbear.com</a> within 30 days of first accepting these Terms. Opting out does not affect any other part of these Terms.</p>
         </section>
 
         
@@ -309,11 +309,11 @@ export default function Page() {
         <section className="sec" id="s19">
           <h2><span className="num">19</span> Contact Information</h2>
           <p>For questions about these Terms, notices of material breach, or any other legal matter, contact us at:</p>
-          <p><strong>Tenantory, LLC</strong><br />
+          <p><strong>Black Bear Rentals, LLC</strong><br />
           Attn: Legal<br />
           Huntsville, Alabama, USA<br />
-          Email: <a href="mailto:legal@tenantory.com">legal@tenantory.com</a></p>
-          <p>For product support, billing questions, and general help, contact <a href="mailto:hello@tenantory.com">hello@tenantory.com</a>. For security reports, contact <a href="mailto:security@tenantory.com">security@tenantory.com</a>.</p>
+          Email: <a href="mailto:legal@rentblackbear.com">legal@rentblackbear.com</a></p>
+          <p>For product support, billing questions, and general help, contact <a href="mailto:hello@rentblackbear.com">hello@rentblackbear.com</a>. For security reports, contact <a href="mailto:security@rentblackbear.com">security@rentblackbear.com</a>.</p>
         </section>
 
         
@@ -325,7 +325,7 @@ export default function Page() {
             <div className="contact-title">Questions about these Terms?</div>
             <div className="contact-sub">Reach our legal team directly. We reply within two business days.</div>
           </div>
-          <a className="btn btn-pink" href="mailto:legal@tenantory.com">Email legal@tenantory.com</a>
+          <a className="btn btn-pink" href="mailto:legal@rentblackbear.com">Email legal@rentblackbear.com</a>
         </div>
 
       </main>
@@ -334,11 +334,11 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory &middot; Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals &middot; Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="privacy.html">Privacy</a>
       <a href="terms.html">Terms</a>
     </div>

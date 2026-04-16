@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function MaintenanceReceived({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/portal",
+  ctaHref = "https://app.rentblackbear.com/portal",
 }) {
   return (
-    <Layout preview="We got your maintenance request." brand="Tenantory">
+    <Layout preview="We got your maintenance request." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Got it — your request is in the queue.
       </Heading>

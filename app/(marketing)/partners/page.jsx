@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/partners.html.
+// Mock ported from ~/Desktop/blackbear/partners.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -42,9 +42,9 @@ export default function Page() {
   <section className="hero">
     <div className="hero-eyebrow">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-      Tenantory Partner Program
+      Black Bear Rentals Partner Program
     </div>
-    <h1>Tenantory pays <em>30% for a year</em>. Per referral. Recurring.</h1>
+    <h1>Black Bear Rentals pays <em>30% for a year</em>. Per referral. Recurring.</h1>
     <p className="hero-sub">If you have an audience in the real estate or rental space — a REIA chapter, a coaching cohort, a podcast, a YouTube channel, or a service practice full of landlords — every PM you refer pays you for twelve months straight. Quarterly Stripe payouts. No cap on referrals. No cap on earnings.</p>
     <div className="hero-actions">
       <a className="btn btn-pink btn-lg" href="#apply">Apply to be a partner
@@ -166,7 +166,7 @@ export default function Page() {
   <section className="sec" id="what">
     <div className="sec-head">
       <div className="sec-eyebrow">What you get</div>
-      <h2>Tools to make promoting Tenantory feel easy.</h2>
+      <h2>Tools to make promoting Black Bear Rentals feel easy.</h2>
     </div>
     <div className="feat-grid">
       <div className="feat-card">
@@ -412,7 +412,7 @@ export default function Page() {
           </div>
           <div>
             <h4>No brand-bidding on paid search</h4>
-            <p>No Google or Bing ads targeting "Tenantory" or common misspellings. Bid on your own audience, not our name.</p>
+            <p>No Google or Bing ads targeting "Black Bear Rentals" or common misspellings. Bid on your own audience, not our name.</p>
           </div>
         </div>
         <div className="req-item">
@@ -465,7 +465,7 @@ export default function Page() {
         <div className="faq-a"><p>A qualified conversion is an account that signs up through your link and completes their first paid billing cycle (i.e. survives the 14-day trial and stays through day 30). The 12-month commission clock starts the day they first pay. Trials that don't convert don't count toward your payout, but they do show in your dashboard as attribution data.</p></div>
       </div>
       <div className="faq-item">
-        <button className="faq-q">Can I promote Tenantory across multiple channels?
+        <button className="faq-q">Can I promote Black Bear Rentals across multiple channels?
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
         </button>
         <div className="faq-a"><p>Yes — and we recommend it. Every partner gets separate tracking codes per channel (podcast vs. newsletter vs. YouTube, for example) so you can see which one converts best. No cap on channels, codes, or creative variations. Just keep them on your owned properties.</p></div>
@@ -486,7 +486,7 @@ export default function Page() {
         <button className="faq-q">What's the difference between this and the customer referral program?
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
         </button>
-        <div className="faq-a"><p>The <a href="referral.html" style={{color: "var(--blue)", fontWeight: "600"}}>customer referral program</a> is built for existing Tenantory subscribers referring PM friends one at a time — you get $99 in account credit per signup, they get $99 off their first month, no application required. The partner program is for people with audiences who are promoting Tenantory at scale: 30% revenue share for 12 months, paid in cash via Stripe, with a dedicated dashboard and creative library. Most partners earn 10–50× what the customer program would pay. You can participate in both simultaneously if you're an existing Tenantory customer with an audience.</p></div>
+        <div className="faq-a"><p>The <a href="referral.html" style={{color: "var(--blue)", fontWeight: "600"}}>customer referral program</a> is built for existing Black Bear Rentals subscribers referring PM friends one at a time — you get $99 in account credit per signup, they get $99 off their first month, no application required. The partner program is for people with audiences who are promoting Black Bear Rentals at scale: 30% revenue share for 12 months, paid in cash via Stripe, with a dedicated dashboard and creative library. Most partners earn 10–50× what the customer program would pay. You can participate in both simultaneously if you're an existing Black Bear Rentals customer with an audience.</p></div>
       </div>
       <div className="faq-item">
         <button className="faq-q">Can I negotiate a custom deal for a large launch?
@@ -550,7 +550,7 @@ export default function Page() {
       </div>
       <div className="form-row">
         <div className="form-field full">
-          <label htmlFor="pf-plan">How would you promote Tenantory?</label>
+          <label htmlFor="pf-plan">How would you promote Black Bear Rentals?</label>
           <textarea id="pf-plan" required placeholder="Tell us what you'd do in the first 60 days. Be specific — 'a four-part newsletter series in April plus two YouTube videos' lands better than 'probably social posts.'" />
         </div>
       </div>
@@ -572,7 +572,7 @@ export default function Page() {
         <a className="btn btn-pink btn-lg" href="#apply">Apply now
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
         </a>
-        <a className="btn btn-ghost btn-lg" href="mailto:partners@tenantory.com">Email Harrison directly</a>
+        <a className="btn btn-ghost btn-lg" href="mailto:partners@rentblackbear.com">Email Harrison directly</a>
       </div>
       <div className="cta-note">32 active partners · $48k paid out in Q1 · Reviewed personally in 3–5 business days</div>
     </div>
@@ -580,13 +580,13 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="partners.html">Partners</a>
       <a href="referral.html">Refer a PM</a>
-      <a href="mailto:partners@tenantory.com">Partner support</a>
+      <a href="mailto:partners@rentblackbear.com">Partner support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

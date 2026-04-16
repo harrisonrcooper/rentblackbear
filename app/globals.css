@@ -1,6 +1,6 @@
 /* ============================================================
    Global Flagship token system + theme overrides
-   Tokens copied verbatim from ~/Desktop/tenantory/settings.html.
+   Tokens copied verbatim from ~/Desktop/blackbear/settings.html.
 
    The unprefixed tokens (--navy, --blue, ...) match the HTML mocks
    so mock CSS ports cleanly. The --flg-* aliases feed the
@@ -9,7 +9,7 @@
 
    Active theme is driven by a data-theme attribute on
    <html>. The bootstrap script in layout.jsx reads localStorage
-   "tenantory-theme" synchronously so the correct palette is
+   "blackbear-theme" synchronously so the correct palette is
    applied before hydration (no flash).
    ============================================================ */
 

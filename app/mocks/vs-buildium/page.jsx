@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/vs-buildium.html.
+// Mock ported from ~/Desktop/blackbear/vs-buildium.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -42,10 +42,10 @@ export default function Page() {
   <section className="hero">
     <div className="hero-eyebrow">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-      Buildium vs Tenantory · the real math
+      Buildium vs Black Bear Rentals · the real math
     </div>
-    <h1>Buildium's pricing <em>punishes you for growing</em>. Tenantory is flat for life.</h1>
-    <p className="hero-sub">Buildium starts at $58/mo for 20 units, then jumps to $166/mo the second you sign tenant #21, plus per-unit fees on every door after. You get punished for doing your job. Tenantory is <strong style={{color: "var(--text)", fontWeight: "700"}}>$99/mo flat for up to 50 doors</strong>, your brand on every tenant surface, migrated in 3 days.</p>
+    <h1>Buildium's pricing <em>punishes you for growing</em>. Black Bear Rentals is flat for life.</h1>
+    <p className="hero-sub">Buildium starts at $58/mo for 20 units, then jumps to $166/mo the second you sign tenant #21, plus per-unit fees on every door after. You get punished for doing your job. Black Bear Rentals is <strong style={{color: "var(--text)", fontWeight: "700"}}>$99/mo flat for up to 50 doors</strong>, your brand on every tenant surface, migrated in 3 days.</p>
     <div className="hero-cta-row">
       <a className="btn btn-pink btn-lg" href="onboarding.html">
         Start 14-day trial
@@ -68,7 +68,7 @@ export default function Page() {
       </div>
       <div className="matchup-vs">VS</div>
       <div className="matchup-side us">
-        <div className="matchup-logo">Tenantory</div>
+        <div className="matchup-logo">Black Bear Rentals</div>
         <div className="matchup-sub">Built for 1–50 units · $99/mo for life</div>
       </div>
     </div>
@@ -78,7 +78,7 @@ export default function Page() {
   <section className="section" id="reasons">
     <div className="section-head">
       <div className="section-kicker">Why PMs are switching</div>
-      <h2>7 reasons PMs leave Buildium for <em>Tenantory</em>.</h2>
+      <h2>7 reasons PMs leave Buildium for <em>Black Bear Rentals</em>.</h2>
       <p>Buildium was the best tool in 2012. Tenants still pay rent in 2026. Here's what operators hit a wall on — in their own words.</p>
     </div>
 
@@ -90,14 +90,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
         </div>
         <h3>Per-unit pricing that punishes the doors you just closed on</h3>
-        <p>Buildium Essential is $58/mo up to 20 units, but the moment you buy unit #21 you jump to Growth at $166/mo — a 186% increase overnight for adding one door. After 50 units you pay per-unit fees on every new lease. Tenantory is flat $99 whether you have 3 doors or 50.</p>
+        <p>Buildium Essential is $58/mo up to 20 units, but the moment you buy unit #21 you jump to Growth at $166/mo — a 186% increase overnight for adding one door. After 50 units you pay per-unit fees on every new lease. Black Bear Rentals is flat $99 whether you have 3 doors or 50.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">Buildium</div>
             <div className="reason-contrast-val">$58 to $166 at 21 units</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">$99 flat, 1–50 doors</div>
           </div>
         </div>
@@ -109,14 +109,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>
         </div>
         <h3>UI that still feels like 2012</h3>
-        <p>Buildium's navigation, forms, and reports look like they were built for IE9 — dense tables, modal soup, and pagination from the Obama administration. Tenantory was designed this year, for mobile-first operators who pay bills between showings.</p>
+        <p>Buildium's navigation, forms, and reports look like they were built for IE9 — dense tables, modal soup, and pagination from the Obama administration. Black Bear Rentals was designed this year, for mobile-first operators who pay bills between showings.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">Buildium</div>
             <div className="reason-contrast-val">Circa-2012 UI</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Modern, mobile-first</div>
           </div>
         </div>
@@ -128,14 +128,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
         </div>
         <h3>Your tenants see "Buildium" — not your brand</h3>
-        <p>Applicants log into a generic Buildium.com-subdomain resident portal with Buildium's logo, Buildium's colors, and Buildium's marketing. You spent years building a name — Buildium owns the tenant relationship. Tenantory puts <em>yourco.tenantory.com</em> and your logo on every surface.</p>
+        <p>Applicants log into a generic Buildium.com-subdomain resident portal with Buildium's logo, Buildium's colors, and Buildium's marketing. You spent years building a name — Buildium owns the tenant relationship. Black Bear Rentals puts <em>yourco.rentblackbear.com</em> and your logo on every surface.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">Buildium</div>
             <div className="reason-contrast-val">Buildium-branded portal</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Your subdomain + logo</div>
           </div>
         </div>
@@ -147,14 +147,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" /><line x1="12" y1="18" x2="12" y2="18" /></svg>
         </div>
         <h3>The tenant mobile experience is a crashy afterthought</h3>
-        <p>Residents complain about the Buildium Resident app constantly — slow loads, failed payments, login loops. If your tenant can't pay rent on their phone in under 45 seconds, you get a "check in the mail" call. Tenantory's tenant portal is a PWA, passkey login, Apple/Google Pay by default.</p>
+        <p>Residents complain about the Buildium Resident app constantly — slow loads, failed payments, login loops. If your tenant can't pay rent on their phone in under 45 seconds, you get a "check in the mail" call. Black Bear Rentals's tenant portal is a PWA, passkey login, Apple/Google Pay by default.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">Buildium</div>
             <div className="reason-contrast-val">2.8-star app reviews</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Passkey + Apple Pay</div>
           </div>
         </div>
@@ -166,14 +166,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
         </div>
         <h3>Support lives in a ticket queue measured in days</h3>
-        <p>Since the RealPage acquisition, Buildium support is phone-tree → chatbot → ticket. Response times are measured in business days. Tenantory support is a founder email that answers in under 24 hours, seven days a week. You talk to someone who can change the code.</p>
+        <p>Since the RealPage acquisition, Buildium support is phone-tree → chatbot → ticket. Response times are measured in business days. Black Bear Rentals support is a founder email that answers in under 24 hours, seven days a week. You talk to someone who can change the code.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">Buildium</div>
             <div className="reason-contrast-val">Tier-1 ticket queue</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Founder email, &lt;24h</div>
           </div>
         </div>
@@ -185,14 +185,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z" /><path d="M4 10h16" /><path d="M10 4v16" /></svg>
         </div>
         <h3>Tenant communication is email blasts from 2005</h3>
-        <p>Buildium's "tenant communication" is a plain-text email tool with a Buildium "from" address that spam filters love. Tenantory sends branded SMS + email, auto-categorizes replies, threads conversations per unit, and ties everything to the maintenance ticket or ledger entry it's about.</p>
+        <p>Buildium's "tenant communication" is a plain-text email tool with a Buildium "from" address that spam filters love. Black Bear Rentals sends branded SMS + email, auto-categorizes replies, threads conversations per unit, and ties everything to the maintenance ticket or ledger entry it's about.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">Buildium</div>
             <div className="reason-contrast-val">Plain-text email blasts</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Branded SMS + threaded</div>
           </div>
         </div>
@@ -204,14 +204,14 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
         </div>
         <h3>Accounting setup is a 40-tab chart-of-accounts marathon</h3>
-        <p>Buildium's double-entry accounting is powerful, but onboarding requires you to configure a full GL, link bank accounts, map recurring rules, and sit through training. Small operators never finish — they just use Buildium like a shoebox. Tenantory gives you a rental-specific chart of accounts out of the box with a one-click Schedule-E export.</p>
+        <p>Buildium's double-entry accounting is powerful, but onboarding requires you to configure a full GL, link bank accounts, map recurring rules, and sit through training. Small operators never finish — they just use Buildium like a shoebox. Black Bear Rentals gives you a rental-specific chart of accounts out of the box with a one-click Schedule-E export.</p>
         <div className="reason-contrast">
           <div className="reason-contrast-col them">
             <div className="reason-contrast-label">Buildium</div>
             <div className="reason-contrast-val">Full GL setup required</div>
           </div>
           <div className="reason-contrast-col us">
-            <div className="reason-contrast-label">Tenantory</div>
+            <div className="reason-contrast-label">Black Bear Rentals</div>
             <div className="reason-contrast-val">Pre-wired + Schedule-E</div>
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function Page() {
     <div className="section-head">
       <div className="section-kicker">The real math</div>
       <h2>What you'll actually pay as you <em>add doors</em>.</h2>
-      <p>Using Buildium's published pricing (Essential, Growth, Premium) plus typical add-ons most PMs end up on. Compared to Tenantory Pro flat at $99/mo, Scale flat at $299/mo above 50 doors.</p>
+      <p>Using Buildium's published pricing (Essential, Growth, Premium) plus typical add-ons most PMs end up on. Compared to Black Bear Rentals Pro flat at $99/mo, Scale flat at $299/mo above 50 doors.</p>
     </div>
     <div className="ladder">
       <table className="ladder-table">
@@ -233,7 +233,7 @@ export default function Page() {
           <tr>
             <th>Portfolio size</th>
             <th className="them">Buildium<span className="col-sub">Published tier + typical add-ons</span></th>
-            <th className="us">Tenantory<span className="col-sub">Flat, for life</span></th>
+            <th className="us">Black Bear Rentals<span className="col-sub">Flat, for life</span></th>
             <th className="save">You save<span className="col-sub">Per year</span></th>
           </tr>
         </thead>
@@ -241,36 +241,36 @@ export default function Page() {
           <tr>
             <td className="ladder-port">5 units<small>Small LLC / side-portfolio</small></td>
             <td className="ladder-price">$58/mo<small>Essential tier minimum</small></td>
-            <td className="ladder-us">$99/mo<small>Tenantory Pro</small></td>
+            <td className="ladder-us">$99/mo<small>Black Bear Rentals Pro</small></td>
             <td className="ladder-save">-$492<small>Buildium cheaper at this size</small></td>
           </tr>
           <tr className="highlight">
             <td className="ladder-port">20 units<small>Right at Buildium's Essential ceiling</small></td>
             <td className="ladder-price">$58/mo<small>Essential ceiling</small></td>
-            <td className="ladder-us">$99/mo<small>Tenantory Pro</small></td>
+            <td className="ladder-us">$99/mo<small>Black Bear Rentals Pro</small></td>
             <td className="ladder-save">-$492<small>Close · Buildium still edges</small></td>
           </tr>
           <tr className="highlight">
             <td className="ladder-port">21 units<small>The "one more door" tier jump</small></td>
             <td className="ladder-price">$166/mo<small>Forced onto Growth</small></td>
             <td className="ladder-us">$99/mo<small>Same $99 as before</small></td>
-            <td className="ladder-save">$804<small>Tenantory passes Buildium</small></td>
+            <td className="ladder-save">$804<small>Black Bear Rentals passes Buildium</small></td>
           </tr>
           <tr>
             <td className="ladder-port">50 units<small>Typical independent PM</small></td>
             <td className="ladder-price">$196/mo<small>Growth + per-unit fees</small></td>
-            <td className="ladder-us">$99/mo<small>Still Tenantory Pro</small></td>
+            <td className="ladder-us">$99/mo<small>Still Black Bear Rentals Pro</small></td>
             <td className="ladder-save">$1,164<small>First real payback</small></td>
           </tr>
           <tr>
             <td className="ladder-port">100 units<small>Bigger independent op</small></td>
             <td className="ladder-price">$479/mo<small>Premium + per-unit fees</small></td>
-            <td className="ladder-us">$299/mo<small>Tenantory Scale</small></td>
+            <td className="ladder-us">$299/mo<small>Black Bear Rentals Scale</small></td>
             <td className="ladder-save">$2,160<small>Custom domain included</small></td>
           </tr>
         </tbody>
       </table>
-      <div className="ladder-foot">Buildium tier bands and per-unit fees sourced from their public pricing page. Your mileage varies slightly by add-ons (e-sign, tenant screening, 1099 filer). Every one of those is included in Tenantory.</div>
+      <div className="ladder-foot">Buildium tier bands and per-unit fees sourced from their public pricing page. Your mileage varies slightly by add-ons (e-sign, tenant screening, 1099 filer). Every one of those is included in Black Bear Rentals.</div>
     </div>
   </section>
 
@@ -287,7 +287,7 @@ export default function Page() {
           <tr>
             <th>Feature</th>
             <th className="dim">Buildium<span className="compare-col-sub">Essential / Growth</span></th>
-            <th className="featured">Tenantory<span className="compare-col-sub">Pro · $99/mo for life</span></th>
+            <th className="featured">Black Bear Rentals<span className="compare-col-sub">Pro · $99/mo for life</span></th>
           </tr>
         </thead>
         <tbody>
@@ -344,9 +344,9 @@ export default function Page() {
           Done for you · 3 days · free
         </div>
         <h3>Switching from Buildium is a 3-day lift. We do the heavy part.</h3>
-        <p>Buildium's CSV export is actually one of the cleaner ones in the industry — properties, units, tenants, leases, ledgers, maintenance history, and vendor 1099 data all come out. You send us the export, we rebuild your workspace inside Tenantory, you review, and we flip the switch. <strong>You keep using Buildium until cutover.</strong> No downtime, no double entry, no tenants re-registering.</p>
+        <p>Buildium's CSV export is actually one of the cleaner ones in the industry — properties, units, tenants, leases, ledgers, maintenance history, and vendor 1099 data all come out. You send us the export, we rebuild your workspace inside Black Bear Rentals, you review, and we flip the switch. <strong>You keep using Buildium until cutover.</strong> No downtime, no double entry, no tenants re-registering.</p>
         <div className="migrate-cta">
-          <a className="btn btn-pink" href="mailto:migrate@tenantory.com?subject=Buildium%20migration">
+          <a className="btn btn-pink" href="mailto:migrate@rentblackbear.com?subject=Buildium%20migration">
             Start my 3-day switch
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
           </a>
@@ -407,7 +407,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"I closed on unit 21 and Buildium auto-bumped us to $166/mo the next billing cycle. <strong>Tripled my software cost for adding one door.</strong> I moved to Tenantory that weekend. Flat $99, doesn't care if I have 21 or 48 units, and my tenants stopped asking who Buildium was."</p>
+        <p className="testi-quote">"I closed on unit 21 and Buildium auto-bumped us to $166/mo the next billing cycle. <strong>Tripled my software cost for adding one door.</strong> I moved to Black Bear Rentals that weekend. Flat $99, doesn't care if I have 21 or 48 units, and my tenants stopped asking who Buildium was."</p>
         <div className="testi-person">
           <div className="testi-avatar">RP</div>
           <div>
@@ -443,7 +443,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"Buildium's resident app has a 2.8-star rating and I could feel it — every rent cycle I got two or three 'the app won't let me pay' calls. Tenantory is a PWA with Apple Pay. <strong>Zero payment-support calls last month.</strong> That alone gave me back four hours a week."</p>
+        <p className="testi-quote">"Buildium's resident app has a 2.8-star rating and I could feel it — every rent cycle I got two or three 'the app won't let me pay' calls. Black Bear Rentals is a PWA with Apple Pay. <strong>Zero payment-support calls last month.</strong> That alone gave me back four hours a week."</p>
         <div className="testi-person">
           <div className="testi-avatar">SM</div>
           <div>
@@ -461,7 +461,7 @@ export default function Page() {
         <div className="testi-quote-mark">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h4v4H9c0 2 1 4 3 4v2c-3 0-5-2-5-5V7zm8 0h4v4h-2c0 2 1 4 3 4v2c-3 0-5-2-5-5V7z" /></svg>
         </div>
-        <p className="testi-quote">"What sold me was the Schedule-E export. Our CPA used to spend a full day re-categorizing Buildium's generic P&amp;L at tax time. First year on Tenantory, <strong>she did it in 40 minutes</strong> and my bill dropped $600. The software pays for itself on accounting alone."</p>
+        <p className="testi-quote">"What sold me was the Schedule-E export. Our CPA used to spend a full day re-categorizing Buildium's generic P&amp;L at tax time. First year on Black Bear Rentals, <strong>she did it in 40 minutes</strong> and my bill dropped $600. The software pays for itself on accounting alone."</p>
         <div className="testi-person">
           <div className="testi-avatar">DW</div>
           <div>
@@ -486,13 +486,13 @@ export default function Page() {
         87 Founders' spots left
       </div>
       <h2>Switch from Buildium in 3 days. Lock $99/mo for life.</h2>
-      <p>We do the migration for free, we credit up to $500 of any contract buyout, and if Tenantory doesn't save you 10 hours in your first 30 paid days, we refund every dollar and wire you $100 for the inconvenience.</p>
+      <p>We do the migration for free, we credit up to $500 of any contract buyout, and if Black Bear Rentals doesn't save you 10 hours in your first 30 paid days, we refund every dollar and wire you $100 for the inconvenience.</p>
       <div className="cta-card-actions">
         <a className="btn btn-pink btn-lg" href="onboarding.html">
           Start my 14-day trial
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
         </a>
-        <a className="btn btn-ghost btn-lg" href="mailto:migrate@tenantory.com?subject=Buildium%20migration">
+        <a className="btn btn-ghost btn-lg" href="mailto:migrate@rentblackbear.com?subject=Buildium%20migration">
           Talk to a migration specialist
         </a>
       </div>
@@ -510,14 +510,14 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory &middot; Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals &middot; Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="vs-appfolio.html">vs AppFolio</a>
       <a href="vs-buildium.html">vs Buildium</a>
       <a href="portal.html">Tenant view</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

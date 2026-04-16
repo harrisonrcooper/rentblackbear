@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/tenant-approved.html.
+// Mock ported from ~/Desktop/blackbear/tenant-approved.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -165,7 +165,7 @@ export default function Page() {
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>
-    <div className="powered-by">Powered by Tenantory</div>
+    <div className="powered-by">Powered by Black Bear Rentals</div>
   </footer>
 
 

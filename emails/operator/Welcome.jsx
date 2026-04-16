@@ -8,12 +8,12 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function Welcome({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/admin",
+  ctaHref = "https://app.rentblackbear.com/admin",
 }) {
   return (
-    <Layout preview="Your Tenantory workspace is live. Here's how to make it count." brand="Tenantory">
+    <Layout preview="Your Black Bear Rentals workspace is live. Here's how to make it count." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
-        Welcome to Tenantory — let's ship your portfolio.
+        Welcome to Black Bear Rentals — let's ship your portfolio.
       </Heading>
       <Text style={sharedStyles.paragraph}>
         Hey {firstName}, your workspace is up and your Founder spot is locked in. The next 10 minutes are the most important: add your first property so the rest of the flow (tenants, leases, payments) has somewhere to land.
@@ -23,7 +23,7 @@ export default function Welcome({
           Open the admin
         </Button>
       </Section>
-      <Text style={sharedStyles.muted}>— Harrison (founder, Tenantory)</Text>
+      <Text style={sharedStyles.muted}>— Harrison (founder, Black Bear Rentals)</Text>
     </Layout>
   );
 }

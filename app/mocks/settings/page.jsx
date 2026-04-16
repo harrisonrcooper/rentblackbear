@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/settings.html.
+// Mock ported from ~/Desktop/blackbear/settings.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -25,7 +25,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
         </div>
         <div>
-          <div className="sb-brand-name">Tenantory</div>
+          <div className="sb-brand-name">Black Bear Rentals</div>
           <div className="sb-brand-ws">Black Bear Rentals</div>
         </div>
       </div>
@@ -182,7 +182,7 @@ export default function Page() {
                   <div>
                     <div className="eyebrow">WORKSPACE</div>
                     <h2>Name & identity</h2>
-                    <p>This is how Tenantory recognizes your workspace across dashboards, emails, and the tenant portal.</p>
+                    <p>This is how Black Bear Rentals recognizes your workspace across dashboards, emails, and the tenant portal.</p>
                   </div>
                 </div>
 
@@ -235,7 +235,7 @@ export default function Page() {
                 <div className="stack">
                   <div className="domain-row">
                     <div className="domain-info">
-                      <div><code>blackbear.tenantory.com</code> <span className="pill pill-green" style={{marginLeft: "6px"}}><span className="pill-dot" />Live</span></div>
+                      <div><code>portal.rentblackbear.com</code> <span className="pill pill-green" style={{marginLeft: "6px"}}><span className="pill-dot" />Live</span></div>
                       <div className="domain-info-sub">Default workspace subdomain · SSL provisioned · tenants land here</div>
                     </div>
                     <button className="btn btn-ghost btn-sm" data-action="manage-subdomain">Manage</button>
@@ -243,7 +243,7 @@ export default function Page() {
                   <div className="domain-row">
                     <div className="domain-info">
                       <div><code>pay.rentblackbear.com</code> <span className="pill pill-orange" style={{marginLeft: "6px"}}><span className="pill-dot" />DNS pending</span></div>
-                      <div className="domain-info-sub">Custom tenant portal domain · add CNAME → cname.tenantory.app</div>
+                      <div className="domain-info-sub">Custom tenant portal domain · add CNAME → cname.blackbear.app</div>
                     </div>
                     <button className="btn btn-ghost btn-sm" data-action="verify-dns">Verify DNS</button>
                   </div>
@@ -400,7 +400,7 @@ export default function Page() {
                         <span className="theme-name">Flagship</span>
                         <span className="theme-tag">Default</span>
                       </div>
-                      <div className="theme-desc">Navy + blue + pink. Premium SaaS. The default Tenantory look.</div>
+                      <div className="theme-desc">Navy + blue + pink. Premium SaaS. The default Black Bear Rentals look.</div>
                       <div className="theme-action-row">
                         <button className="theme-use-btn">Active</button>
                         <span className="theme-tag">Applied</span>
@@ -640,7 +640,7 @@ export default function Page() {
                         <div className="checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></div>
                         <div>
                           <div className="checkbox-label">Public listings</div>
-                          <div className="checkbox-sub">Your branded listing site (blackbear.tenantory.com/listings).</div>
+                          <div className="checkbox-sub">Your branded listing site (portal.rentblackbear.com/listings).</div>
                         </div>
                       </div>
                       <div className="checkbox-row checked" data-toggle="checkbox">
@@ -666,7 +666,7 @@ export default function Page() {
               <div className="sub-card">
                 <div style={{position: "relative", zIndex: "1"}}>
                   <div className="sub-card-eyebrow">CURRENT PLAN</div>
-                  <h3>Tenantory Pro</h3>
+                  <h3>Black Bear Rentals Pro</h3>
                   <div className="sub-price"><strong>$99</strong><span>/ month</span></div>
                   <div className="sub-locked-badge">Founders' offer · Locked for life</div>
                   <div style={{marginTop: "14px", fontSize: "12px", color: "rgba(255,255,255,0.75)"}}>
@@ -899,7 +899,7 @@ export default function Page() {
                     <div className="integ-logo" style={{background: "#ff4a00"}}>Z</div>
                     <div className="integ-info">
                       <div className="integ-name">Zapier</div>
-                      <div className="integ-desc">Trigger 6,000+ apps from Tenantory events — new lease, late payment, etc.</div>
+                      <div className="integ-desc">Trigger 6,000+ apps from Black Bear Rentals events — new lease, late payment, etc.</div>
                     </div>
                     <div className="integ-action"><button className="btn btn-ghost btn-sm" data-action="connect">Connect</button></div>
                   </div>
@@ -1031,7 +1031,7 @@ export default function Page() {
                 <div className="card-head">
                   <div>
                     <div className="eyebrow">CHANNELS</div>
-                    <h2>How Tenantory reaches you</h2>
+                    <h2>How Black Bear Rentals reaches you</h2>
                     <p>Choose which events fire an email, a text, or a push to your phone.</p>
                   </div>
                 </div>
@@ -1309,7 +1309,7 @@ export default function Page() {
                   <div>
                     <div className="eyebrow">API ACCESS</div>
                     <h2>Your API keys</h2>
-                    <p>Use these to connect Tenantory to your own tools. Treat the live key like a password.</p>
+                    <p>Use these to connect Black Bear Rentals to your own tools. Treat the live key like a password.</p>
                   </div>
                   <button className="btn btn-primary btn-sm" data-action="new-key">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -1370,7 +1370,7 @@ export default function Page() {
                   <div>
                     <div className="eyebrow">WEBHOOKS</div>
                     <h2>Outbound endpoints</h2>
-                    <p>Tenantory will POST to these URLs whenever a subscribed event happens.</p>
+                    <p>Black Bear Rentals will POST to these URLs whenever a subscribed event happens.</p>
                   </div>
                   <button className="btn btn-primary btn-sm" data-action="add-webhook">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -1382,7 +1382,7 @@ export default function Page() {
                   <div className="webhook-row">
                     <div className="webhook-status active" />
                     <div style={{flex: "1", minWidth: "0"}}>
-                      <div className="webhook-url">https://hooks.rentblackbear.com/tenantory</div>
+                      <div className="webhook-url">https://hooks.rentblackbear.com/blackbear</div>
                       <div className="webhook-events">payment.succeeded, payment.failed, lease.signed · 1,204 deliveries · 100% success</div>
                     </div>
                     <button className="btn btn-ghost btn-sm" data-action="configure">Configure</button>

@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/admin-renew.html.
+// Mock ported from ~/Desktop/blackbear/admin-renew.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -26,7 +26,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
         </div>
         <div>
-          <div className="sb-brand-name">Tenantory</div>
+          <div className="sb-brand-name">Black Bear Rentals</div>
           <div className="sb-brand-ws">Black Bear Rentals</div>
         </div>
       </div>
@@ -597,7 +597,7 @@ export default function Page() {
         <div className="ai-card">
           <div className="ai-head">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.9 5.8L4 12l6.1 3.2L12 21l1.9-5.8L20 12l-6.1-3.2z" /></svg>
-            Tenantory recommends
+            Black Bear Rentals recommends
           </div>
           <div className="ai-rec">Offer <strong>$750 / 12 mo</strong> (+3.4%). Market comps at 908 Lee Dr average $755–$770. Her payment history supports a slight increase — she'll almost certainly renew.</div>
           <div className="ai-opts">

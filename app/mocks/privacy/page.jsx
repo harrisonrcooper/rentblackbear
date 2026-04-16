@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/privacy.html.
+// Mock ported from ~/Desktop/blackbear/privacy.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -45,7 +45,7 @@ export default function Page() {
         Privacy
       </div>
       <h1>Privacy Policy</h1>
-      <p className="hero-sub">We built Tenantory to hold the most sensitive information a landlord owns: tenant PII, bank details, leases, and screening reports. This is exactly what we collect, why, and how it's protected.</p>
+      <p className="hero-sub">We built Black Bear Rentals to hold the most sensitive information a landlord owns: tenant PII, bank details, leases, and screening reports. This is exactly what we collect, why, and how it's protected.</p>
       <div className="hero-meta">
         <span className="hero-pill">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
@@ -120,9 +120,9 @@ export default function Page() {
         
         <section className="sec" id="s1">
           <h2><span className="num">01</span> Introduction</h2>
-          <p>This Privacy Policy describes how Tenantory, LLC ("<strong>Tenantory</strong>," "<strong>we</strong>," "<strong>us</strong>") collects, uses, discloses, and protects personal information when you use our website, product, and related services (the "<strong>Service</strong>"). It applies to property managers, landlords, and their team members who hold accounts with us (collectively, "<strong>Operators</strong>") as well as to tenants, applicants, and vendors whose information Operators enter into the Service.</p>
-          <p>We are a business-to-business software provider. Most of the personal information in our systems is placed there by Operators about their tenants, applicants, and vendors. For that information, the Operator is the <strong>data controller</strong> and Tenantory is the <strong>data processor</strong>. For information we collect directly from Operators — such as Operator account details and our own marketing analytics — we are the data controller.</p>
-          <p>This policy is part of our legal agreement with Operators and is incorporated into our <a href="terms.html">Terms of Service</a>. If you are a tenant, applicant, or vendor whose information appears in Tenantory through your landlord or property manager, please direct most requests to them — but we'll still help where we're required to under law (see Section 8).</p>
+          <p>This Privacy Policy describes how Black Bear Rentals, LLC ("<strong>Black Bear Rentals</strong>," "<strong>we</strong>," "<strong>us</strong>") collects, uses, discloses, and protects personal information when you use our website, product, and related services (the "<strong>Service</strong>"). It applies to property managers, landlords, and their team members who hold accounts with us (collectively, "<strong>Operators</strong>") as well as to tenants, applicants, and vendors whose information Operators enter into the Service.</p>
+          <p>We are a business-to-business software provider. Most of the personal information in our systems is placed there by Operators about their tenants, applicants, and vendors. For that information, the Operator is the <strong>data controller</strong> and Black Bear Rentals is the <strong>data processor</strong>. For information we collect directly from Operators — such as Operator account details and our own marketing analytics — we are the data controller.</p>
+          <p>This policy is part of our legal agreement with Operators and is incorporated into our <a href="terms.html">Terms of Service</a>. If you are a tenant, applicant, or vendor whose information appears in Black Bear Rentals through your landlord or property manager, please direct most requests to them — but we'll still help where we're required to under law (see Section 8).</p>
         </section>
 
         
@@ -158,7 +158,7 @@ export default function Page() {
           <dl className="vendor-table">
             <div className="vendor-row"><dt>Provider</dt><dd>Purpose</dd></div>
             <div className="vendor-row"><dt>Stripe, Inc.</dt><dd>Subscription billing and tenant rent collection. Receives payment method data, transaction amounts, and customer identifiers.</dd></div>
-            <div className="vendor-row"><dt>Plaid Inc.</dt><dd>Bank account verification and ACH authorization for tenants. Receives bank linkage tokens; Tenantory does not see bank credentials.</dd></div>
+            <div className="vendor-row"><dt>Plaid Inc.</dt><dd>Bank account verification and ACH authorization for tenants. Receives bank linkage tokens; Black Bear Rentals does not see bank credentials.</dd></div>
             <div className="vendor-row"><dt>TransUnion Rental Screening</dt><dd>Applicant credit, criminal, and eviction reports (where Operators enable screening). Receives applicant-authorized identifiers.</dd></div>
             <div className="vendor-row"><dt>Clerk, Inc.</dt><dd>User authentication, session management, and multi-factor authentication. Stores credentials and session tokens.</dd></div>
             <div className="vendor-row"><dt>Supabase, Inc.</dt><dd>Primary application database and file storage. Holds Customer Content encrypted at rest with row-level tenancy isolation.</dd></div>
@@ -167,7 +167,7 @@ export default function Page() {
             <div className="vendor-row"><dt>Vercel, Inc.</dt><dd>Application hosting, static asset delivery, and edge middleware. Processes HTTP request and response data.</dd></div>
             <div className="vendor-row"><dt>PostHog, Inc.</dt><dd>Product analytics and session-level debugging. Pseudonymous event data; no third-party ad tracking.</dd></div>
           </dl>
-          <p>We may also disclose personal information: (a) in response to a valid legal process, such as a subpoena or court order; (b) to protect the rights, property, or safety of Tenantory, our users, or the public; (c) to a successor entity in connection with a merger, acquisition, reorganization, or sale of assets, subject to this Policy; and (d) with your consent.</p>
+          <p>We may also disclose personal information: (a) in response to a valid legal process, such as a subpoena or court order; (b) to protect the rights, property, or safety of Black Bear Rentals, our users, or the public; (c) to a successor entity in connection with a merger, acquisition, reorganization, or sale of assets, subject to this Policy; and (d) with your consent.</p>
         </section>
 
         
@@ -183,17 +183,17 @@ export default function Page() {
         
         <section className="sec" id="s6">
           <h2><span className="num">06</span> Data Security</h2>
-          <p>Security is a first-class engineering priority at Tenantory. Our full security program — including architecture diagrams, incident response procedures, and available audit artifacts — is documented on our <a href="security.html">Security page</a>.</p>
+          <p>Security is a first-class engineering priority at Black Bear Rentals. Our full security program — including architecture diagrams, incident response procedures, and available audit artifacts — is documented on our <a href="security.html">Security page</a>.</p>
           <p><strong>Key controls include:</strong></p>
           <ul>
             <li><strong>Encryption in transit.</strong> All connections to and from the Service use TLS 1.2+ with modern cipher suites. HSTS is enabled on all production domains.</li>
             <li><strong>Encryption at rest.</strong> Databases, object storage, and backups are encrypted at rest using AES-256. Key management is delegated to our cloud providers and follows industry practice.</li>
             <li><strong>Workspace isolation.</strong> Every table that holds tenant data enforces row-level security keyed on the Operator's workspace. A query from one workspace physically cannot return another workspace's rows.</li>
-            <li><strong>Payments.</strong> Card and bank credentials are handled by PCI-certified processors (Stripe, Plaid). Tenantory never stores full card numbers, CVV, or banking credentials.</li>
+            <li><strong>Payments.</strong> Card and bank credentials are handled by PCI-certified processors (Stripe, Plaid). Black Bear Rentals never stores full card numbers, CVV, or banking credentials.</li>
             <li><strong>Access control.</strong> Production access is limited to a small number of authorized engineers using single sign-on with enforced multi-factor authentication. All access is logged.</li>
             <li><strong>Monitoring & response.</strong> Security-relevant events are logged and alerted on. We maintain an incident response plan with defined notification timelines.</li>
           </ul>
-          <p>No system is perfect. If you discover a vulnerability, please report it responsibly to <a href="mailto:security@tenantory.com">security@tenantory.com</a>. We credit researchers who give us a reasonable window to fix issues before public disclosure.</p>
+          <p>No system is perfect. If you discover a vulnerability, please report it responsibly to <a href="mailto:security@rentblackbear.com">security@rentblackbear.com</a>. We credit researchers who give us a reasonable window to fix issues before public disclosure.</p>
         </section>
 
         
@@ -223,8 +223,8 @@ export default function Page() {
             <li><strong>Right to object or restrict.</strong> Object to certain processing or ask us to restrict processing where the law gives you that right.</li>
             <li><strong>Right to withdraw consent.</strong> Where we rely on your consent, withdraw it at any time (without affecting prior processing).</li>
           </ul>
-          <p>If you are an Operator, you can exercise most of these rights directly within the product. Otherwise, contact <a href="mailto:privacy@tenantory.com">privacy@tenantory.com</a>. We verify identity before acting on requests and respond within <strong>30 days</strong>, with a possible 30-day extension for complex requests. There is no fee unless the request is manifestly unfounded or excessive.</p>
-          <p>If you believe we've mishandled your data, you can lodge a complaint with your local supervisory authority. We'd appreciate the chance to resolve it with you first at <a href="mailto:privacy@tenantory.com">privacy@tenantory.com</a>.</p>
+          <p>If you are an Operator, you can exercise most of these rights directly within the product. Otherwise, contact <a href="mailto:privacy@rentblackbear.com">privacy@rentblackbear.com</a>. We verify identity before acting on requests and respond within <strong>30 days</strong>, with a possible 30-day extension for complex requests. There is no fee unless the request is manifestly unfounded or excessive.</p>
+          <p>If you believe we've mishandled your data, you can lodge a complaint with your local supervisory authority. We'd appreciate the chance to resolve it with you first at <a href="mailto:privacy@rentblackbear.com">privacy@rentblackbear.com</a>.</p>
         </section>
 
         
@@ -236,10 +236,10 @@ export default function Page() {
             <li><strong>Right to delete</strong> personal information we've collected, subject to legal exceptions.</li>
             <li><strong>Right to correct</strong> inaccurate personal information.</li>
             <li><strong>Right to limit</strong> use of sensitive personal information to what's necessary to provide the Service.</li>
-            <li><strong>Right to opt out of sale or sharing</strong> of personal information. <strong>Tenantory does not sell personal information, and we do not share it for cross-context behavioral advertising.</strong> There is nothing to opt out of.</li>
+            <li><strong>Right to opt out of sale or sharing</strong> of personal information. <strong>Black Bear Rentals does not sell personal information, and we do not share it for cross-context behavioral advertising.</strong> There is nothing to opt out of.</li>
             <li><strong>Right to non-discrimination</strong> for exercising your privacy rights.</li>
           </ul>
-          <p>To exercise your California rights, email <a href="mailto:privacy@tenantory.com">privacy@tenantory.com</a> with the subject line "CCPA Request." You may use an authorized agent; we'll need written proof of authorization. We will verify your identity using the information we already hold about you.</p>
+          <p>To exercise your California rights, email <a href="mailto:privacy@rentblackbear.com">privacy@rentblackbear.com</a> with the subject line "CCPA Request." You may use an authorized agent; we'll need written proof of authorization. We will verify your identity using the information we already hold about you.</p>
         </section>
 
         
@@ -252,15 +252,15 @@ export default function Page() {
             <li><strong>Legal obligation.</strong> To comply with tax, financial, and other regulatory duties.</li>
             <li><strong>Consent.</strong> Where we rely on your consent (for example, optional marketing emails or optional AI improvement programs), you may withdraw it at any time.</li>
           </ul>
-          <p><strong>International transfers.</strong> Tenantory's primary production infrastructure is located in the United States. When we transfer personal information from the EEA, UK, or Switzerland to the US or other third countries, we rely on the <strong>Standard Contractual Clauses</strong> approved by the European Commission (and the UK Addendum / Swiss amendments where applicable), combined with supplementary technical measures such as encryption and workspace isolation. You may request a copy of our SCCs at <a href="mailto:privacy@tenantory.com">privacy@tenantory.com</a>.</p>
-          <p><strong>Data Protection Officer.</strong> Our privacy contact for GDPR matters is reachable at <a href="mailto:dpo@tenantory.com">dpo@tenantory.com</a>. We do not currently maintain an EU/UK representative; if this changes because of product expansion, we will update this Policy. You have the right to lodge a complaint with your local Data Protection Authority.</p>
+          <p><strong>International transfers.</strong> Black Bear Rentals's primary production infrastructure is located in the United States. When we transfer personal information from the EEA, UK, or Switzerland to the US or other third countries, we rely on the <strong>Standard Contractual Clauses</strong> approved by the European Commission (and the UK Addendum / Swiss amendments where applicable), combined with supplementary technical measures such as encryption and workspace isolation. You may request a copy of our SCCs at <a href="mailto:privacy@rentblackbear.com">privacy@rentblackbear.com</a>.</p>
+          <p><strong>Data Protection Officer.</strong> Our privacy contact for GDPR matters is reachable at <a href="mailto:dpo@rentblackbear.com">dpo@rentblackbear.com</a>. We do not currently maintain an EU/UK representative; if this changes because of product expansion, we will update this Policy. You have the right to lodge a complaint with your local Data Protection Authority.</p>
         </section>
 
         
         <section className="sec" id="s11">
           <h2><span className="num">11</span> Children's Privacy</h2>
-          <p>Tenantory is a business tool designed for adult property owners, property managers, and their authorized team members. The Service is not directed to, marketed to, or intended for individuals under the age of 18, and we do not knowingly collect personal information from children.</p>
-          <p>If you believe that a child has provided personal information to us — for example, because a minor created an account or was listed as an occupant on a lease in a way that collects their direct information — please contact <a href="mailto:privacy@tenantory.com">privacy@tenantory.com</a> and we will delete it promptly.</p>
+          <p>Black Bear Rentals is a business tool designed for adult property owners, property managers, and their authorized team members. The Service is not directed to, marketed to, or intended for individuals under the age of 18, and we do not knowingly collect personal information from children.</p>
+          <p>If you believe that a child has provided personal information to us — for example, because a minor created an account or was listed as an occupant on a lease in a way that collects their direct information — please contact <a href="mailto:privacy@rentblackbear.com">privacy@rentblackbear.com</a> and we will delete it promptly.</p>
           <p>Operators are responsible for ensuring that any occupants or applicants they enter into the Service are of an appropriate age for the data they're uploading and for securing any parental consents required by law.</p>
         </section>
 
@@ -276,13 +276,13 @@ export default function Page() {
         <section className="sec" id="s13">
           <h2><span className="num">13</span> Contact Information</h2>
           <p>For privacy questions, data subject requests, or a copy of our DPA or SCCs, contact:</p>
-          <p><strong>Tenantory, LLC</strong><br />
+          <p><strong>Black Bear Rentals, LLC</strong><br />
           Attn: Privacy<br />
           Huntsville, Alabama, USA<br />
-          Email: <a href="mailto:privacy@tenantory.com">privacy@tenantory.com</a><br />
-          Data Protection contact: <a href="mailto:dpo@tenantory.com">dpo@tenantory.com</a><br />
-          Security reports: <a href="mailto:security@tenantory.com">security@tenantory.com</a></p>
-          <p>For product support and general help, contact <a href="mailto:hello@tenantory.com">hello@tenantory.com</a>. For legal matters including notices under our Terms of Service, contact <a href="mailto:legal@tenantory.com">legal@tenantory.com</a>.</p>
+          Email: <a href="mailto:privacy@rentblackbear.com">privacy@rentblackbear.com</a><br />
+          Data Protection contact: <a href="mailto:dpo@rentblackbear.com">dpo@rentblackbear.com</a><br />
+          Security reports: <a href="mailto:security@rentblackbear.com">security@rentblackbear.com</a></p>
+          <p>For product support and general help, contact <a href="mailto:hello@rentblackbear.com">hello@rentblackbear.com</a>. For legal matters including notices under our Terms of Service, contact <a href="mailto:legal@rentblackbear.com">legal@rentblackbear.com</a>.</p>
         </section>
 
         
@@ -294,7 +294,7 @@ export default function Page() {
             <div className="contact-title">Questions about your data?</div>
             <div className="contact-sub">Ask our privacy team. We reply within two business days and handle formal requests within 30.</div>
           </div>
-          <a className="btn btn-pink" href="mailto:legal@tenantory.com">Email legal@tenantory.com</a>
+          <a className="btn btn-pink" href="mailto:legal@rentblackbear.com">Email legal@rentblackbear.com</a>
         </div>
 
       </main>
@@ -303,11 +303,11 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory &middot; Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals &middot; Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="privacy.html">Privacy</a>
       <a href="terms.html">Terms</a>
     </div>

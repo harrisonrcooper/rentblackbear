@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function Declined({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/reference-confirm",
+  ctaHref = "https://app.rentblackbear.com/reference-confirm",
 }) {
   return (
-    <Layout preview="Update on your application to {workspaceName}." brand="Tenantory">
+    <Layout preview="Update on your application to {workspaceName}." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Update on your application.
       </Heading>

@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function FirstPaymentThanks({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/portal/settings",
+  ctaHref = "https://app.rentblackbear.com/portal/settings",
 }) {
   return (
-    <Layout preview="Thanks — your first payment posted." brand="Tenantory">
+    <Layout preview="Thanks — your first payment posted." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         First payment posted. You're all set.
       </Heading>

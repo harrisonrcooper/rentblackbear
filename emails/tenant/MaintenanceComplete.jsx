@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function MaintenanceComplete({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/portal",
+  ctaHref = "https://app.rentblackbear.com/portal",
 }) {
   return (
-    <Layout preview="Your maintenance ticket is closed." brand="Tenantory">
+    <Layout preview="Your maintenance ticket is closed." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         All done — ticket closed.
       </Heading>

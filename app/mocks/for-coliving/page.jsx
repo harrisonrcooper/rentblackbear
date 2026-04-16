@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/for-coliving.html.
+// Mock ported from ~/Desktop/blackbear/for-coliving.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -45,7 +45,7 @@ export default function Page() {
       For co-living, rent-by-the-room, and student housing
     </div>
     <h1>Built for the landlord <em>AppFolio forgot about</em>.</h1>
-    <p className="hero-sub">If a "unit" in your world is a <strong>bedroom</strong>, not an apartment, you already know every PM tool on the market breaks in the same four places. Tenantory is the only one that treats a room as a first-class unit — per-room leases, per-room rent roll, housemate-aware portal, shared utility splitting that doesn't live in a spreadsheet.</p>
+    <p className="hero-sub">If a "unit" in your world is a <strong>bedroom</strong>, not an apartment, you already know every PM tool on the market breaks in the same four places. Black Bear Rentals is the only one that treats a room as a first-class unit — per-room leases, per-room rent roll, housemate-aware portal, shared utility splitting that doesn't live in a spreadsheet.</p>
     <div className="hero-actions">
       <a className="btn btn-pink btn-lg" href="onboarding.html">Start 14-day trial
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
@@ -74,7 +74,7 @@ export default function Page() {
       <div className="cred-avatar">HC</div>
       <div>
         <div className="cred-text">
-          I run <strong>Black Bear Rentals</strong> in Huntsville, Alabama — 15+ rooms across three houses, co-living model. For three years I stitched together AppFolio, QuickBooks, DocuSign, and a Google Sheet with a tab per room. Nothing on the market treated a bedroom as a unit. So I built Tenantory for operators like us. Every feature on this page I use in production, Monday morning, on my own portfolio.
+          I run <strong>Black Bear Rentals</strong> in Huntsville, Alabama — 15+ rooms across three houses, co-living model. For three years I stitched together AppFolio, QuickBooks, DocuSign, and a Google Sheet with a tab per room. Nothing on the market treated a bedroom as a unit. So I built Black Bear Rentals for operators like us. Every feature on this page I use in production, Monday morning, on my own portfolio.
         </div>
         <div className="cred-sig">— Harrison Cooper, founder</div>
       </div>
@@ -141,7 +141,7 @@ export default function Page() {
   
   <section className="section">
     <div className="sec-eyebrow">The fix</div>
-    <h2 className="sec-h2">What Tenantory does differently.</h2>
+    <h2 className="sec-h2">What Black Bear Rentals does differently.</h2>
     <p className="sec-lead">Every feature below is live today and I use all of them on Black Bear Rentals. <strong>Not on a roadmap. Not a beta.</strong> Open the trial, add a co-living property, and every one of these lights up.</p>
 
     <div className="sol-grid">
@@ -150,7 +150,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18" /><path d="M5 21V11l7-4v14" /><path d="M19 21V13l-7-4" /><circle cx="8" cy="16" r="1" /><circle cx="15" cy="16" r="1" /></svg>
         </div>
         <h3>Per-room leases</h3>
-        <p>Room is the unit. Six leases in one house is six independent agreements — with their own terms, their own rent, their own deposit, their own start/end dates. Tenant A moves out in June, tenant B stays through December. Tenantory doesn't blink.</p>
+        <p>Room is the unit. Six leases in one house is six independent agreements — with their own terms, their own rent, their own deposit, their own start/end dates. Tenant A moves out in June, tenant B stays through December. Black Bear Rentals doesn't blink.</p>
       </div>
 
       <div className="sol-card">
@@ -174,7 +174,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" /></svg>
         </div>
         <h3>Shared utility allocation</h3>
-        <p>Upload the power bill, the water bill, the internet bill. Tenantory splits by person, by room count, by room size, or by a custom formula — whichever you set at the property level. The split appears as a line item on each tenant's next statement. You never touch a spreadsheet.</p>
+        <p>Upload the power bill, the water bill, the internet bill. Black Bear Rentals splits by person, by room count, by room size, or by a custom formula — whichever you set at the property level. The split appears as a line item on each tenant's next statement. You never touch a spreadsheet.</p>
       </div>
 
       <div className="sol-card">
@@ -216,7 +216,7 @@ export default function Page() {
           </div>
           <div className="shot-url">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-            app.tenantory.com/reports/rent-roll
+            app.rentblackbear.com/reports/rent-roll
           </div>
         </div>
 
@@ -404,7 +404,7 @@ export default function Page() {
   <section className="section">
     <div className="sec-eyebrow">Case study</div>
     <h2 className="sec-h2">18 rooms. Three houses. Atlanta.</h2>
-    <p className="sec-lead">Marcus runs a co-living operation across three Atlanta properties — 18 bedrooms total. For three years he held it together with spreadsheets, QuickBooks, and a hand-coded landing page. Here's what changed in his first 90 days on Tenantory.</p>
+    <p className="sec-lead">Marcus runs a co-living operation across three Atlanta properties — 18 bedrooms total. For three years he held it together with spreadsheets, QuickBooks, and a hand-coded landing page. Here's what changed in his first 90 days on Black Bear Rentals.</p>
 
     <div className="case-wrap">
       <div className="case-side">
@@ -432,21 +432,21 @@ export default function Page() {
         </div>
 
         <div className="case-stat">
-          <div className="case-stat-label">On Tenantory since</div>
+          <div className="case-stat-label">On Black Bear Rentals since</div>
           <div className="case-stat-value">Nov 2025</div>
         </div>
       </div>
 
       <div className="case-body">
-        <p className="case-quote">The per-room rent roll is the killer feature. Other PM tools think a "unit" is an apartment. For co-living, that's useless — I needed a room as the unit. Tenantory got that on day one. Plus the investor PDF that auto-generates every month? My LPs love it. Makes me look like I have ops.</p>
+        <p className="case-quote">The per-room rent roll is the killer feature. Other PM tools think a "unit" is an apartment. For co-living, that's useless — I needed a room as the unit. Black Bear Rentals got that on day one. Plus the investor PDF that auto-generates every month? My LPs love it. Makes me look like I have ops.</p>
 
-        <p className="case-detail">Before Tenantory, Marcus ran rent reconciliation out of a Google Sheet with one tab per property and one row per bedroom. Three payment methods flowed in — Zelle, Venmo, the occasional check — and it took him a full Saturday every month to match rent paid against rent owed. Investor reports were hand-built in PowerPoint.</p>
+        <p className="case-detail">Before Black Bear Rentals, Marcus ran rent reconciliation out of a Google Sheet with one tab per property and one row per bedroom. Three payment methods flowed in — Zelle, Venmo, the occasional check — and it took him a full Saturday every month to match rent paid against rent owed. Investor reports were hand-built in PowerPoint.</p>
 
-        <p className="case-detail"><strong>The unlock was per-room accounting.</strong> "I had one LP ask me for year-over-year per-room rent growth on Oak House, and I couldn't answer it without an afternoon of Excel. On Tenantory it's two clicks."</p>
+        <p className="case-detail"><strong>The unlock was per-room accounting.</strong> "I had one LP ask me for year-over-year per-room rent growth on Oak House, and I couldn't answer it without an afternoon of Excel. On Black Bear Rentals it's two clicks."</p>
 
         <p className="case-detail">The unexpected win was <strong>vendor adoption</strong>. "Maintenance costs dropped 22% in Q1 because vendors adopted the vendor portal — fewer emergency calls, more scheduled visits. Joel, my plumber, says it's the only PM tool he doesn't hate. I think that's a real bar."</p>
 
-        <p className="case-detail">Housemate-aware portal solved a problem he didn't know he had: "Before, if one tenant was late on rent, the other five in the house could see it in our shared group chat when I'd send the reminder. Awkward. Tenantory sends each tenant their own reminder. Housemates never know."</p>
+        <p className="case-detail">Housemate-aware portal solved a problem he didn't know he had: "Before, if one tenant was late on rent, the other five in the house could see it in our shared group chat when I'd send the reminder. Awkward. Black Bear Rentals sends each tenant their own reminder. Housemates never know."</p>
       </div>
     </div>
   </section>
@@ -496,7 +496,7 @@ export default function Page() {
       </button>
       <div className="faq-a">
         <p>Four built-in splitting methods, set at the property level: <strong>equal per person</strong> (power bill ÷ 6), <strong>equal per room</strong> (useful when some rooms have more than one occupant), <strong>proportional to room size</strong> (based on square footage you set at room creation), or a <strong>custom formula</strong> (e.g., master bedroom pays 25%, others split the remaining 75% equally).</p>
-        <p>You upload the bill PDF or enter the dollar amount. Tenantory adds the split as a line item on each tenant's next monthly statement — clearly labeled "Power (shared, April) — your share: $34.50." Tenants see exactly what they owe and why. You never open a spreadsheet.</p>
+        <p>You upload the bill PDF or enter the dollar amount. Black Bear Rentals adds the split as a line item on each tenant's next monthly statement — clearly labeled "Power (shared, April) — your share: $34.50." Tenants see exactly what they owe and why. You never open a spreadsheet.</p>
       </div>
     </div>
 
@@ -528,7 +528,7 @@ export default function Page() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
       </button>
       <div className="faq-a">
-        <p>Supported natively. An ADU is modeled as its own leaseable unit under a parent property — same data model as a bedroom, with its own address suffix ("412 Clinton Ave, Rear Cottage"), its own rent, its own utility metering, its own lease template. You can also mix models on one property: 3 bedrooms under the co-living model plus a detached ADU rented as a full private unit. Tenantory treats each correctly — the ADU tenant gets their own private portal, the bedroom tenants get the housemate-aware view.</p>
+        <p>Supported natively. An ADU is modeled as its own leaseable unit under a parent property — same data model as a bedroom, with its own address suffix ("412 Clinton Ave, Rear Cottage"), its own rent, its own utility metering, its own lease template. You can also mix models on one property: 3 bedrooms under the co-living model plus a detached ADU rented as a full private unit. Black Bear Rentals treats each correctly — the ADU tenant gets their own private portal, the bedroom tenants get the housemate-aware view.</p>
       </div>
     </div>
 
@@ -546,13 +546,13 @@ export default function Page() {
   
   <section className="cta-bottom">
     <div className="cta-card">
-      <h2>If you run rent-by-the-room, Tenantory is the only tool built for you. Try it for 14 days.</h2>
+      <h2>If you run rent-by-the-room, Black Bear Rentals is the only tool built for you. Try it for 14 days.</h2>
       <p>14-day free trial. No card. If it doesn't save you 12 hours a week in the first 30 paid days, I refund every dollar and wire you $100 for your time. I have not paid it once.</p>
       <div className="cta-actions">
         <a className="btn btn-pink btn-lg" href="onboarding.html">Start free trial
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
         </a>
-        <a className="btn btn-ghost btn-lg" href="mailto:harrison@tenantory.com?subject=Co-living%20operator%20question">Email Harrison directly</a>
+        <a className="btn btn-ghost btn-lg" href="mailto:harrison@rentblackbear.com?subject=Co-living%20operator%20question">Email Harrison directly</a>
       </div>
       <div className="cta-note">Built in Huntsville, AL by an operator with 15+ rooms of his own.</div>
     </div>
@@ -560,14 +560,14 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="for-coliving.html">For co-living</a>
       <a href="vs-appfolio.html">vs. AppFolio</a>
       <a href="stories.html">Stories</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
     </div>
   </footer>
 

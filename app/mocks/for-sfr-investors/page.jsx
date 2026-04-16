@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/for-sfr-investors.html.
+// Mock ported from ~/Desktop/blackbear/for-sfr-investors.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -124,7 +124,7 @@ export default function Page() {
   
   <section className="features">
     <div className="section-head">
-      <div className="section-kicker">What Tenantory does for SFR</div>
+      <div className="section-kicker">What Black Bear Rentals does for SFR</div>
       <h2>Portfolio-grade analytics.<br />Entity-aware bookkeeping. One subscription.</h2>
       <p>Six things built specifically for the operator who thinks in IRR and gets a 1099 from every LLC they own.</p>
     </div>
@@ -141,7 +141,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 7-7" /><polyline points="14 6 21 6 21 13" /></svg>
         </div>
         <h3>Cap rate &amp; CoC auto-calculated</h3>
-        <p>Tenantory already knows rent, expenses, debt service, and your purchase basis. Cap rate and cash-on-cash compute nightly — per asset and portfolio-blended. No formulas. No Q3 catch-up.</p>
+        <p>Black Bear Rentals already knows rent, expenses, debt service, and your purchase basis. Cap rate and cash-on-cash compute nightly — per asset and portfolio-blended. No formulas. No Q3 catch-up.</p>
       </div>
       <div className="feat-card">
         <div className="feat-icon">
@@ -310,7 +310,7 @@ export default function Page() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
       </div>
       <div className="rep-total-side right">
-        <div className="rep-total-label">Tenantory Pro</div>
+        <div className="rep-total-label">Black Bear Rentals Pro</div>
         <div className="rep-total-amount">$99<span style={{fontSize: "15px", fontWeight: "500"}}>/mo</span></div>
         <div className="rep-total-after">Save $13,320/yr. Cancel four subscriptions.</div>
       </div>
@@ -474,12 +474,12 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="for-sfr-investors.html">For investors</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

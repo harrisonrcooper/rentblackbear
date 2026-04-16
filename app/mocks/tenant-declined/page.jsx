@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/tenant-declined.html.
+// Mock ported from ~/Desktop/blackbear/tenant-declined.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -116,7 +116,7 @@ export default function Page() {
     </div>
 
     <div className="encouragement">
-      We know this stings &mdash; you put real effort into the application, and you deserve a straight answer. <strong>Black Bear has more rooms coming available</strong> in the next few months, and the fit between applicant and room matters as much as any single number on a report. If you appeal, a Tenantory operator reviews the case personally alongside Harrison &mdash; it's not an automated rejection.
+      We know this stings &mdash; you put real effort into the application, and you deserve a straight answer. <strong>Black Bear has more rooms coming available</strong> in the next few months, and the fit between applicant and room matters as much as any single number on a report. If you appeal, a Black Bear Rentals operator reviews the case personally alongside Harrison &mdash; it's not an automated rejection.
     </div>
 
     <div className="note">
@@ -152,7 +152,7 @@ export default function Page() {
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>
-    <div className="powered-by">Powered by Tenantory</div>
+    <div className="powered-by">Powered by Black Bear Rentals</div>
   </footer>
 
 

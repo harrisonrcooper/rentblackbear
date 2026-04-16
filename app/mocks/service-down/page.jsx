@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/service-down.html.
+// Mock ported from ~/Desktop/blackbear/service-down.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,12 +23,12 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
       <a className="tb-nav-item" href="pricing.html">Pricing</a>
-      <a className="tb-nav-item" href="https://status.tenantory.com" target="_blank" rel="noopener">Status</a>
+      <a className="tb-nav-item" href="https://status.rentblackbear.com" target="_blank" rel="noopener">Status</a>
     </nav>
     <div className="tb-cta">
       <a className="btn btn-ghost btn-nav" href="onboarding.html">Sign in</a>
@@ -58,7 +58,7 @@ export default function Page() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
         Scheduled maintenance
       </div>
-      <h1>Tenantory is <em>under maintenance</em>.</h1>
+      <h1>Black Bear Rentals is <em>under maintenance</em>.</h1>
       <p className="hero-sub">
         We're pushing an update. Back online by <strong>2:45am ET</strong>. Your tenants aren't seeing any rent-collection disruption — that runs on Stripe and is unaffected.
       </p>
@@ -74,14 +74,14 @@ export default function Page() {
         <div className="detail-label">What's happening</div>
         <div className="detail-text">
           Scheduled deploy of the Q2 release. ETA 15 minutes. If this is past <strong>3:15am ET</strong>, check
-          <a href="https://status.tenantory.com" target="_blank" rel="noopener">status.tenantory.com</a>
+          <a href="https://status.rentblackbear.com" target="_blank" rel="noopener">status.rentblackbear.com</a>
           for an incident update. This page auto-refreshes every 60 seconds.
         </div>
       </div>
 
-      <a className="status-link" href="https://status.tenantory.com" target="_blank" rel="noopener">
+      <a className="status-link" href="https://status.rentblackbear.com" target="_blank" rel="noopener">
         <span className="status-dot" />
-        <span>View live status at status.tenantory.com</span>
+        <span>View live status at status.rentblackbear.com</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
       </a>
     </section>
@@ -117,12 +117,12 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
-      <a href="https://status.tenantory.com" target="_blank" rel="noopener">Status</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
+      <a href="https://status.rentblackbear.com" target="_blank" rel="noopener">Status</a>
     </div>
   </footer>
 

@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/admin-property-new.html.
+// Mock ported from ~/Desktop/blackbear/admin-property-new.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -26,7 +26,7 @@ export default function Page() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
         </div>
         <div>
-          <div className="sb-brand-name">Tenantory</div>
+          <div className="sb-brand-name">Black Bear Rentals</div>
           <div className="sb-brand-ws">Black Bear Rentals</div>
         </div>
       </div>
@@ -445,7 +445,7 @@ export default function Page() {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="18" height="14" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                   </div>
                   <div className="radio-card-title">An LLC</div>
-                  <div className="radio-card-sub">Tenantory tracks it separately</div>
+                  <div className="radio-card-sub">Black Bear Rentals tracks it separately</div>
                 </button>
                 <button className="radio-card" data-own="partnership">
                   <div className="radio-card-icon">
@@ -641,7 +641,7 @@ export default function Page() {
           </div>
           <div className="next-card-text">
             <div className="next-card-title">List the property publicly</div>
-            <div className="next-card-sub">Syndicate to Zillow, Trulia, and your tenantory.com page</div>
+            <div className="next-card-sub">Syndicate to Zillow, Trulia, and your rentblackbear.com page</div>
           </div>
           <div className="next-card-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg></div>
         </a>

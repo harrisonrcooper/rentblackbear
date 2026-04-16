@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/api-docs.html.
+// Mock ported from ~/Desktop/blackbear/api-docs.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -47,7 +47,7 @@ export default function Page() {
         Scale &amp; Enterprise
       </span>
     </div>
-    <h1>Tenantory <em>API v1</em></h1>
+    <h1>Black Bear Rentals <em>API v1</em></h1>
     <p className="hero-sub">REST endpoints, signed webhooks, workspace-scoped bearer tokens. OpenAPI 3.1 spec available.</p>
     <div className="hero-actions">
       <a className="btn btn-primary" href="#authentication">
@@ -78,7 +78,7 @@ export default function Page() {
         </div>
         <div className="qs-label">Base URL</div>
         <div className="qs-title">Single endpoint</div>
-        <div className="qs-body"><code>https://api.tenantory.com/v1</code><br />All requests must be HTTPS. Sandbox mirror at <code>sandbox.tenantory.com/v1</code>.</div>
+        <div className="qs-body"><code>https://api.rentblackbear.com/v1</code><br />All requests must be HTTPS. Sandbox mirror at <code>sandbox.rentblackbear.com/v1</code>.</div>
       </div>
       <div className="qs-card">
         <div className="qs-icon">
@@ -132,7 +132,7 @@ export default function Page() {
       <section className="section" id="authentication">
         <div className="kicker">Overview</div>
         <h2>Authentication</h2>
-        <p>The Tenantory API uses <strong>workspace-scoped bearer tokens</strong>. Every request must include an <code className="inline">Authorization</code> header and a <code className="inline">x-workspace-id</code> header. Keys are prefixed <code className="inline">tnt_live_</code> or <code className="inline">tnt_test_</code>; the prefix determines which environment the key operates against. Keys are not transferable across workspaces.</p>
+        <p>The Black Bear Rentals API uses <strong>workspace-scoped bearer tokens</strong>. Every request must include an <code className="inline">Authorization</code> header and a <code className="inline">x-workspace-id</code> header. Keys are prefixed <code className="inline">tnt_live_</code> or <code className="inline">tnt_test_</code>; the prefix determines which environment the key operates against. Keys are not transferable across workspaces.</p>
 
         <h3>Request headers</h3>
         <table className="params">
@@ -141,22 +141,22 @@ export default function Page() {
             <tr><td>Authorization <span className="pill req">required</span></td><td>string</td><td>Bearer token, e.g. <code className="inline">Bearer tnt_live_sk_9fHd2...</code></td></tr>
             <tr><td>x-workspace-id <span className="pill req">required</span></td><td>string</td><td>Workspace this request runs against. Format: <code className="inline">wks_</code> + 14 chars.</td></tr>
             <tr><td>x-idempotency-key <span className="pill opt">optional</span></td><td>string</td><td>Provide a unique key on POST requests to make them safely retriable.</td></tr>
-            <tr><td>Tenantory-Version <span className="pill opt">optional</span></td><td>string</td><td>Pin to a date, e.g. <code className="inline">2026-04-01</code>. Defaults to the key's pinned version.</td></tr>
+            <tr><td>BlackBear-Version <span className="pill opt">optional</span></td><td>string</td><td>Pin to a date, e.g. <code className="inline">2026-04-01</code>. Defaults to the key's pinned version.</td></tr>
           </tbody>
         </table>
 
         <h3>Example: authenticated request</h3>
-        <div className="codeblock" data-copy="curl https://api.tenantory.com/v1/tenants -H 'Authorization: Bearer tnt_live_sk_9fHd2...' -H 'x-workspace-id: wks_9aB2xQ7r1LmZc4'">
+        <div className="codeblock" data-copy="curl https://api.rentblackbear.com/v1/tenants -H 'Authorization: Bearer tnt_live_sk_9fHd2...' -H 'x-workspace-id: wks_9aB2xQ7r1LmZc4'">
           <div className="code-head">
             <div className="code-tabs"><button className="code-tab active">shell</button></div>
             <button className="code-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Copy</button>
           </div>
           <div className="code-body">
 <pre><code><span className="tok-c"># Fetch the first page of tenants in a workspace</span>
-<span className="tok-f">curl</span> https://api.tenantory.com/v1/tenants \
+<span className="tok-f">curl</span> https://api.rentblackbear.com/v1/tenants \
   -H <span className="tok-s">"Authorization: Bearer tnt_live_sk_9fHd2..."</span> \
   -H <span className="tok-s">"x-workspace-id: wks_9aB2xQ7r1LmZc4"</span> \
-  -H <span className="tok-s">"Tenantory-Version: 2026-04-01"</span></code></pre>
+  -H <span className="tok-s">"BlackBear-Version: 2026-04-01"</span></code></pre>
           </div>
         </div>
 
@@ -180,7 +180,7 @@ export default function Page() {
     <span className="tok-p">"message"</span>: <span className="tok-s">"No tenant matches tnt_missing."</span>,
     <span className="tok-p">"request_id"</span>: <span className="tok-s">"req_01HW3XQZ8V7A2K1S9ZDYR0B3MN"</span>,
     <span className="tok-p">"param"</span>: <span className="tok-s">"id"</span>,
-    <span className="tok-p">"doc_url"</span>: <span className="tok-s">"https://tenantory.com/api-docs#tenants"</span>
+    <span className="tok-p">"doc_url"</span>: <span className="tok-s">"https://rentblackbear.com/api-docs#tenants"</span>
   &#125;
 &#125;</code></pre>
           </div>
@@ -250,7 +250,7 @@ export default function Page() {
     <span className="tok-k">const</span> wait = retry ? retry * <span className="tok-n">1000</span> : <span className="tok-f">Math</span>.<span className="tok-f">min</span>(<span className="tok-n">8000</span>, <span className="tok-n">200</span> * <span className="tok-n">2</span> ** i) * <span className="tok-f">Math</span>.<span className="tok-f">random</span>();
     <span className="tok-k">await</span> <span className="tok-k">new</span> <span className="tok-f">Promise</span>(r =&gt; <span className="tok-f">setTimeout</span>(r, wait));
   &#125;
-  <span className="tok-k">throw</span> <span className="tok-k">new</span> <span className="tok-f">Error</span>(<span className="tok-s">"Tenantory: retry budget exhausted"</span>);
+  <span className="tok-k">throw</span> <span className="tok-k">new</span> <span className="tok-f">Error</span>(<span className="tok-s">"Black Bear Rentals: retry budget exhausted"</span>);
 &#125;</code></pre>
           </div>
         </div>
@@ -293,20 +293,20 @@ export default function Page() {
           </div>
           <div className="code-body">
             <div className="lang-pane active" data-lang="curl">
-<pre><code><span className="tok-f">curl</span> <span className="tok-s">"https://api.tenantory.com/v1/tenants?status=active&amp;limit=25"</span> \
+<pre><code><span className="tok-f">curl</span> <span className="tok-s">"https://api.rentblackbear.com/v1/tenants?status=active&amp;limit=25"</span> \
   -H <span className="tok-s">"Authorization: Bearer tnt_live_sk_..."</span> \
   -H <span className="tok-s">"x-workspace-id: wks_9aB2xQ7r1LmZc4"</span></code></pre>
             </div>
             <div className="lang-pane" data-lang="js">
-<pre><code><span className="tok-k">import</span> Tenantory <span className="tok-k">from</span> <span className="tok-s">"tenantory"</span>;
-<span className="tok-k">const</span> t = <span className="tok-k">new</span> <span className="tok-f">Tenantory</span>(&#123; apiKey: process.env.TENANTORY_KEY, workspace: <span className="tok-s">"wks_9aB2xQ7r1LmZc4"</span> &#125;);
+<pre><code><span className="tok-k">import</span> Black Bear Rentals <span className="tok-k">from</span> <span className="tok-s">"blackbear"</span>;
+<span className="tok-k">const</span> t = <span className="tok-k">new</span> <span className="tok-f">Black Bear Rentals</span>(&#123; apiKey: process.env.BLACKBEAR_KEY, workspace: <span className="tok-s">"wks_9aB2xQ7r1LmZc4"</span> &#125;);
 
 <span className="tok-k">const</span> page = <span className="tok-k">await</span> t.tenants.<span className="tok-f">list</span>(&#123; status: <span className="tok-s">"active"</span>, limit: <span className="tok-n">25</span> &#125;);
 <span className="tok-f">console</span>.<span className="tok-f">log</span>(page.data.length, page.next_cursor);</code></pre>
             </div>
             <div className="lang-pane" data-lang="py">
-<pre><code><span className="tok-k">import</span> tenantory
-client = tenantory.<span className="tok-f">Client</span>(api_key=os.environ[<span className="tok-s">"TENANTORY_KEY"</span>], workspace=<span className="tok-s">"wks_9aB2xQ7r1LmZc4"</span>)
+<pre><code><span className="tok-k">import</span> blackbear
+client = blackbear.<span className="tok-f">Client</span>(api_key=os.environ[<span className="tok-s">"BLACKBEAR_KEY"</span>], workspace=<span className="tok-s">"wks_9aB2xQ7r1LmZc4"</span>)
 
 page = client.tenants.<span className="tok-f">list</span>(status=<span className="tok-s">"active"</span>, limit=<span className="tok-n">25</span>)
 <span className="tok-f">print</span>(<span className="tok-f">len</span>(page.data), page.next_cursor)</code></pre>
@@ -367,7 +367,7 @@ page = client.tenants.<span className="tok-f">list</span>(status=<span className
           </div>
           <div className="code-body">
             <div className="lang-pane active" data-lang="curl">
-<pre><code><span className="tok-f">curl</span> https://api.tenantory.com/v1/tenants \
+<pre><code><span className="tok-f">curl</span> https://api.rentblackbear.com/v1/tenants \
   -H <span className="tok-s">"Authorization: Bearer tnt_live_sk_..."</span> \
   -H <span className="tok-s">"x-workspace-id: wks_9aB2xQ7r1LmZc4"</span> \
   -H <span className="tok-s">"x-idempotency-key: c8f9a7e2-4d1b-4f23-9a83-3b6d3c0fa221"</span> \
@@ -615,7 +615,7 @@ page = client.tenants.<span className="tok-f">list</span>(status=<span className
       <section className="section" id="webhooks">
         <div className="kicker">Events</div>
         <h2>Webhooks catalog</h2>
-        <p>Tenantory delivers signed JSON payloads via HTTPS POST to URLs you configure in <strong>Settings &rarr; API &rarr; Webhooks</strong>. Every delivery includes <code className="inline">t-signature</code> and <code className="inline">t-signature-timestamp</code> headers. Failed deliveries retry with exponential backoff for up to 72 hours.</p>
+        <p>Black Bear Rentals delivers signed JSON payloads via HTTPS POST to URLs you configure in <strong>Settings &rarr; API &rarr; Webhooks</strong>. Every delivery includes <code className="inline">t-signature</code> and <code className="inline">t-signature-timestamp</code> headers. Failed deliveries retry with exponential backoff for up to 72 hours.</p>
 
         <div className="webhooks-grid">
           <div className="webhook-card"><div className="webhook-event">tenant.created</div><div className="webhook-desc">A new tenant was added via API, CSV import, or admin UI.</div></div>
@@ -670,10 +670,10 @@ page = client.tenants.<span className="tok-f">list</span>(status=<span className
             <button className="code-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Copy</button>
           </div>
           <div className="code-body">
-<pre><code><span className="tok-p">POST</span> /hooks/tenantory <span className="tok-p">HTTP</span>/<span className="tok-n">1.1</span>
+<pre><code><span className="tok-p">POST</span> /hooks/blackbear <span className="tok-p">HTTP</span>/<span className="tok-n">1.1</span>
 <span className="tok-p">Host</span>: app.example.com
 <span className="tok-p">Content-Type</span>: application/json
-<span className="tok-p">User-Agent</span>: Tenantory-Webhooks/1.0
+<span className="tok-p">User-Agent</span>: BlackBear-Webhooks/1.0
 <span className="tok-p">t-signature-timestamp</span>: <span className="tok-n">1775203467</span>
 <span className="tok-p">t-signature</span>: v1=9c2a7f3e1b8d0a4c6e5f2a9b1d3c4e7a0f8b2c6d5e4a1b9c3f7e0a2d4b6c8e1a
 <span className="tok-p">t-event-id</span>: evt_01HW3D4ZK8M7A2V6R1S9B0X3QP
@@ -693,11 +693,11 @@ page = client.tenants.<span className="tok-f">list</span>(status=<span className
 <pre><code><span className="tok-k">import</span> crypto <span className="tok-k">from</span> <span className="tok-s">"node:crypto"</span>;
 <span className="tok-k">import</span> express <span className="tok-k">from</span> <span className="tok-s">"express"</span>;
 
-<span className="tok-k">const</span> SECRET = process.env.TENANTORY_WEBHOOK_SECRET;
+<span className="tok-k">const</span> SECRET = process.env.BLACKBEAR_WEBHOOK_SECRET;
 <span className="tok-k">const</span> app = <span className="tok-f">express</span>();
 
 <span className="tok-c">// IMPORTANT: capture the raw body for HMAC</span>
-app.<span className="tok-f">post</span>(<span className="tok-s">"/hooks/tenantory"</span>,
+app.<span className="tok-f">post</span>(<span className="tok-s">"/hooks/blackbear"</span>,
   express.<span className="tok-f">raw</span>(&#123; type: <span className="tok-s">"application/json"</span> &#125;),
   (req, res) =&gt; &#123;
     <span className="tok-k">const</span> ts  = req.headers[<span className="tok-s">"t-signature-timestamp"</span>];
@@ -741,9 +741,9 @@ app.<span className="tok-f">post</span>(<span className="tok-s">"/hooks/tenantor
         <ul>
           <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>OpenAPI 3.1 spec</a> — <code className="inline">openapi.yaml</code>, updated on each release</li>
           <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>Postman collection</a> — pre-configured with workspace &amp; bearer env</li>
-          <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>tenantory-node</a> — <code className="inline">npm i tenantory</code></li>
-          <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>tenantory-python</a> — <code className="inline">pip install tenantory</code></li>
-          <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>tenantory-ruby</a> — <code className="inline">gem install tenantory</code></li>
+          <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>blackbear-node</a> — <code className="inline">npm i blackbear</code></li>
+          <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>blackbear-python</a> — <code className="inline">pip install blackbear</code></li>
+          <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>blackbear-ruby</a> — <code className="inline">gem install blackbear</code></li>
           <li><a href="#" style={{color: "var(--blue)", fontWeight: "600"}}>Status page</a> — subscribe to incident updates</li>
         </ul>
       </section>
@@ -771,13 +771,13 @@ app.<span className="tok-f">post</span>(<span className="tok-s">"/hooks/tenantor
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory &middot; Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals &middot; Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="integrations.html">Integrations</a>
       <a href="api-docs.html">API</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

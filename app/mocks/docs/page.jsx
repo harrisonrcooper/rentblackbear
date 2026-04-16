@@ -1,6 +1,6 @@
 "use client";
 
-// Mock ported from ~/Desktop/tenantory/docs.html.
+// Mock ported from ~/Desktop/blackbear/docs.html.
 // HTML converted to JSX via /tmp/mock-porter/port.js:
 //   class/for/tabindex/... attrs mapped to JSX names
 //   inline style strings parsed to JS objects
@@ -23,7 +23,7 @@ export default function Page() {
       <div className="tb-logo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12 12 3l9 9" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
       </div>
-      <span className="tb-brand-name">Tenantory</span>
+      <span className="tb-brand-name">Black Bear Rentals</span>
     </a>
     <nav className="tb-nav">
       <a className="tb-nav-item" href="landing.html">Home</a>
@@ -45,7 +45,7 @@ export default function Page() {
       Help center · 71 articles
     </div>
     <h1>How can we <em>help</em>?</h1>
-    <p className="hero-sub">Guides, troubleshooting, and step-by-step tutorials for every corner of Tenantory. Written by the humans who built it.</p>
+    <p className="hero-sub">Guides, troubleshooting, and step-by-step tutorials for every corner of Black Bear Rentals. Written by the humans who built it.</p>
     <div className="search-wrap" id="searchWrap">
       <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
       <input type="text" id="searchInput" className="search-input" placeholder={"Search for articles, e.g. \"autopay failed\" or \"Schedule E\""} autoComplete="off" />
@@ -66,7 +66,7 @@ export default function Page() {
         </div>
         <div className="quick-body">
           <div className="quick-label">Guide · 15 min</div>
-          <div className="quick-ttl"><span className="article-title">Get your first property live on Tenantory in 15 minutes</span></div>
+          <div className="quick-ttl"><span className="article-title">Get your first property live on Black Bear Rentals in 15 minutes</span></div>
         </div>
       </a>
       <a href="#" className="quick-card">
@@ -219,7 +219,7 @@ export default function Page() {
         </div>
         <div className="cat-list">
           <a href="#" className="cat-article"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg><span className="article-title">Generate a Schedule E export your CPA will actually accept</span></a>
-          <a href="#" className="cat-article"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg><span className="article-title">File 1099-NECs for your vendors directly from Tenantory</span></a>
+          <a href="#" className="cat-article"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg><span className="article-title">File 1099-NECs for your vendors directly from Black Bear Rentals</span></a>
           <a href="#" className="cat-article"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg><span className="article-title">Sync your ledger to QuickBooks Online (class-by-property)</span></a>
         </div>
         <span className="cat-all">See all 8 articles <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg></span>
@@ -269,7 +269,7 @@ export default function Page() {
     <div className="empty-state" id="emptyState">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
       <h3>No articles match that search</h3>
-      <p>Try a shorter phrase, or email <a href="mailto:hello@tenantory.com" style={{color: "var(--blue)", fontWeight: "600"}}>hello@tenantory.com</a> and we'll answer directly.</p>
+      <p>Try a shorter phrase, or email <a href="mailto:hello@rentblackbear.com" style={{color: "var(--blue)", fontWeight: "600"}}>hello@rentblackbear.com</a> and we'll answer directly.</p>
     </div>
   </section>
 
@@ -309,7 +309,7 @@ export default function Page() {
       <a href="#" className="pop-card">
         <span className="pop-tag">Leases</span>
         <div className="pop-ttl"><span className="article-title">Amending a signed lease without voiding the original signatures</span></div>
-        <div className="pop-sum">Use an addendum, not a rewrite. We'll walk through when each works, which states require notarization, and how to e-send it through DocuSign or Tenantory Sign.</div>
+        <div className="pop-sum">Use an addendum, not a rewrite. We'll walk through when each works, which states require notarization, and how to e-send it through DocuSign or Black Bear Rentals Sign.</div>
         <div className="pop-foot">
           <span className="pop-read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>6 min read</span>
           <span className="pop-link">Read<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg></span>
@@ -339,7 +339,7 @@ export default function Page() {
       <a href="#" className="pop-card">
         <span className="pop-tag">Applications</span>
         <div className="pop-ttl"><span className="article-title">How to decline an applicant legally (with the letter we send for you)</span></div>
-        <div className="pop-sum">Federal law requires specific adverse-action language when credit reports are involved. Here's how Tenantory auto-generates a compliant letter the moment you click decline.</div>
+        <div className="pop-sum">Federal law requires specific adverse-action language when credit reports are involved. Here's how Black Bear Rentals auto-generates a compliant letter the moment you click decline.</div>
         <div className="pop-foot">
           <span className="pop-read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>3 min read</span>
           <span className="pop-link">Read<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg></span>
@@ -357,16 +357,16 @@ export default function Page() {
       <p className="help-sub">We're based in Huntsville, AL and a real human answers every channel below. Average first response time last month: 47 minutes.</p>
       <div className="help-grid">
 
-        <a className="help-ch" href="mailto:hello@tenantory.com?subject=Help%20with%20Tenantory">
+        <a className="help-ch" href="mailto:hello@rentblackbear.com?subject=Help%20with%20Black Bear Rentals">
           <div className="help-ch-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
           </div>
           <div className="help-ch-ttl">Email support</div>
-          <div className="help-ch-sub">hello@tenantory.com — tag it with your portfolio size and we'll route you to the right engineer.</div>
+          <div className="help-ch-sub">hello@rentblackbear.com — tag it with your portfolio size and we'll route you to the right engineer.</div>
           <span className="help-ch-act">Send email <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg></span>
         </a>
 
-        <a className="help-ch" href="https://calendly.com/tenantory/15min" target="_blank" rel="noopener">
+        <a className="help-ch" href="https://calendly.com/blackbear/15min" target="_blank" rel="noopener">
           <div className="help-ch-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
           </div>
@@ -383,7 +383,7 @@ export default function Page() {
           <div className="help-ch-sub">Missing something specific? Tell us the exact problem and we'll write a guide for it.</div>
           <div className="help-form">
             <input type="text" name="topic" placeholder="What should we write about?" required />
-            <button type="submit">Send to articles@tenantory.com</button>
+            <button type="submit">Send to articles@rentblackbear.com</button>
           </div>
         </form>
 
@@ -409,14 +409,14 @@ export default function Page() {
 
   
   <footer className="foot">
-    <div>&copy; 2026 Tenantory · Built in Huntsville, AL</div>
+    <div>&copy; 2026 Black Bear Rentals · Built in Huntsville, AL</div>
     <div className="foot-links">
       <a href="landing.html">Home</a>
       <a href="pricing.html">Pricing</a>
       <a href="docs.html">Help</a>
       <a href="changelog.html">Changelog</a>
       <a href="security.html">Security</a>
-      <a href="mailto:hello@tenantory.com">Support</a>
+      <a href="mailto:hello@rentblackbear.com">Support</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
     </div>

@@ -8,10 +8,10 @@ import Layout, { sharedStyles } from "../_shared/Layout";
 export default function LeaseSigned({
   firstName = "there",
   workspaceName = "your portfolio",
-  ctaHref = "https://app.tenantory.com/portal",
+  ctaHref = "https://app.rentblackbear.com/portal",
 }) {
   return (
-    <Layout preview="Your lease is signed and ready to download." brand="Tenantory">
+    <Layout preview="Your lease is signed and ready to download." brand="Black Bear Rentals">
       <Heading as="h1" style={sharedStyles.heading}>
         Lease signed. Here's your copy.
       </Heading>
