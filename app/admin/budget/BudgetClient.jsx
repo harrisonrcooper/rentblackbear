@@ -38,6 +38,7 @@ import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPOR
 import { buildSpendingHeatmap } from "./lib/heatmap";
 import { computeOnboarding } from "./lib/onboarding";
 import { computeYearStats } from "./lib/yearstats";
+import { computeInsights } from "./lib/insights";
 import { detectRecurring } from "./lib/recurring";
 import { createBill } from "@/actions/budget/bills";
 import { parseCSV, detectColumns, buildImportRows } from "./lib/csvImport";
@@ -369,6 +370,8 @@ export default function BudgetClient({ initialState, userId }) {
                 />
 
                 <YearInReviewStrip state={state} />
+
+                <InsightsPanel state={state} />
 
                 <HabitsStrip
                   streaks={streaks}
@@ -7970,6 +7973,77 @@ function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, st
 }
 
 // Habits / streaks / achievements strip above the tile grid.
+function InsightsPanel({ state }) {
+  const insights = useMemo(() => computeInsights(state), [state]);
+  if (insights.length === 0) return null;
+
+  const KIND_STYLES = {
+    good: { color: COLORS.green, bg: COLORS.greenBg },
+    warn: { color: COLORS.amber, bg: COLORS.amberBg },
+    info: { color: COLORS.blue,  bg: COLORS.blueBg },
+  };
+
+  return (
+    <section
+      style={{
+        ...STYLES.card,
+        padding: "14px 16px",
+        marginBottom: 14,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: COLORS.text, textTransform: "uppercase" }}>
+          What&apos;s happening this month
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint }}>
+          {insights.length} insight{insights.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      <div style={{ display: "grid", gap: 6 }}>
+        {insights.map((ins) => {
+          const styles = KIND_STYLES[ins.kind] || KIND_STYLES.info;
+          return (
+            <div
+              key={ins.id}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                gap: 12,
+                alignItems: "center",
+                padding: "10px 12px",
+                borderRadius: 10,
+                background: styles.bg,
+                border: `1px solid ${styles.color}22`,
+              }}
+            >
+              <div style={{
+                width: 30, height: 30, borderRadius: 9,
+                background: styles.color, color: "#fff",
+                display: "grid", placeItems: "center", flexShrink: 0,
+              }}>
+                <Icon d={ICON[ins.icon] || ICON.target} size={14} color="#fff" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {ins.headline}
+                </div>
+                <div style={{ marginTop: 1, fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+                  {ins.body}
+                </div>
+              </div>
+              {ins.value != null ? (
+                <div style={{ fontSize: 14, fontWeight: 800, color: styles.color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                  {fmtCompact(ins.value)}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function YearInReviewStrip({ state }) {
   const stats = useMemo(() => computeYearStats(state), [state]);
 
