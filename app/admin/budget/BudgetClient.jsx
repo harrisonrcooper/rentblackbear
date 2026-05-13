@@ -2835,7 +2835,7 @@ function AssetRow({ asset, onChange, onDelete }) {
       >
         {ASSET_KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
       </select>
-      <InlineNumber value={asset.balance_cents} onChange={(v) => onChange({ balance_cents: v })} width={120} />
+      <InlineNumber value={asset.balance_cents} onChange={(v) => onChange({ balance_cents: v })} width={120} allowNegative={false} />
       <button
         onClick={onDelete}
         aria-label="Delete account"
@@ -2878,7 +2878,7 @@ function DebtRow({ debt, onChange, onDelete }) {
         >
           {DEBT_KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
         </select>
-        <InlineNumber value={debt.balance_cents} onChange={(v) => onChange({ balance_cents: v })} width={120} />
+        <InlineNumber value={debt.balance_cents} onChange={(v) => onChange({ balance_cents: v })} width={120} allowNegative={false} />
         <button
           onClick={onDelete}
           aria-label="Delete debt"
@@ -4831,7 +4831,7 @@ function BillRow({ bill, state, onUpdate, onDelete, onMarkPaid, onStillUsing, on
             ) : null}
           </div>
         </div>
-        <InlineNumber value={bill.amount_cents} onChange={(v) => onUpdate({ amount_cents: v })} width={120} />
+        <InlineNumber value={bill.amount_cents} onChange={(v) => onUpdate({ amount_cents: v })} width={120} min={1} allowNegative={false} />
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <button
             onClick={onMarkPaid}
@@ -5724,12 +5724,16 @@ function GoalCard({ goal, state, monthlyRate, onChange, onDelete, onComplete }) 
                 value={(g.target_count || 0) * 100}
                 onChange={(v) => onChange({ target_count: Math.max(1, Math.round(v / 100)) })}
                 width={80}
+                min={100}
+                allowNegative={false}
               />
             ) : (
               <InlineNumber
                 value={g.target_cents}
                 onChange={(v) => onChange({ target_cents: v })}
                 width={120}
+                min={1}
+                allowNegative={false}
               />
             )}
             {g.kind === "custom" && (
