@@ -313,6 +313,15 @@ export default function BudgetClient({ initialState, userId }) {
         }
         /* iOS Safari polish */
         body, button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+        /* Kill the 300 ms tap delay iOS adds for double-tap-to-zoom on
+           interactive elements. */
+        button, [role="button"], a, input, select, textarea, label {
+          touch-action: manipulation;
+        }
+        /* Smooth-scroll any overflow:auto container on iOS. */
+        [class*="bb-row"], [style*="overflow-y: auto"], [style*="overflowY"] {
+          -webkit-overflow-scrolling: touch;
+        }
         @media (max-width: 899px) {
           /* Prevent iOS Safari's auto-zoom on input focus when font-size < 16px */
           input[type=number], input[type=text], input[type=date], input[type=email], textarea, select {
@@ -321,8 +330,13 @@ export default function BudgetClient({ initialState, userId }) {
           /* Touch devices have no hover — keep delete + stepper affordances visible */
           .bb-step-btn { opacity: 0.5 !important; }
           .bb-row:hover .bb-step-btn { opacity: 1 !important; }
-          /* Larger tap targets on mobile */
-          button, [role="button"] { min-height: 32px; }
+          /* Apple HIG recommends 44 pt tap targets; 40 keeps dense rows
+             usable without breaking the existing visual scale. */
+          button, [role="button"] { min-height: 40px; }
+          /* Allow vertical-only swipe on body — prevents bounce-back when
+             the user is interacting with horizontally-scrolling strips
+             like the heatmap. */
+          html, body { overscroll-behavior-y: contain; }
         }
         /* A11y: focus rings only on keyboard navigation, never mouse */
         *:focus { outline: none; }
@@ -656,7 +670,7 @@ function QuickAddSheet({ state, onClose, onSubmit }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: COLORS.surface, borderRadius: 24,
-          width: "100%", maxWidth: 460, maxHeight: "calc(100vh - 40px)",
+          width: "100%", maxWidth: 460, maxHeight: "calc(100dvh - 40px)",
           boxShadow: "0 24px 80px rgba(15,23,41,0.32)",
           display: "flex", flexDirection: "column", overflow: "hidden",
           fontFamily: FONT,
@@ -1354,7 +1368,9 @@ function DrillSheet({ children, onClose }) {
         background: "rgba(15,23,41,0.55)",
         backdropFilter: "blur(4px)",
         display: "grid", placeItems: "center",
-        padding: 20,
+        // Smaller padding on mobile so the modal claims more of the
+        // viewport; the bottom inset honors the iPhone home indicator.
+        padding: "max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) 12px",
         animation: "fadeIn 0.2s ease",
       }}
     >
@@ -1364,7 +1380,7 @@ function DrillSheet({ children, onClose }) {
           background: COLORS.surface,
           width: "100%",
           maxWidth: 720,
-          maxHeight: "calc(100vh - 40px)",
+          maxHeight: "calc(100dvh - 24px)",
           borderRadius: 24,
           boxShadow: "0 24px 80px rgba(15,23,41,0.28)",
           display: "flex", flexDirection: "column",
@@ -2354,7 +2370,7 @@ function PropertyComparisonSheet({ state, onClose }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: COLORS.surface, borderRadius: 24,
-          width: "100%", maxWidth: 760, maxHeight: "calc(100vh - 40px)",
+          width: "100%", maxWidth: 760, maxHeight: "calc(100dvh - 40px)",
           boxShadow: "0 24px 80px rgba(15,23,41,0.28)",
           display: "flex", flexDirection: "column", overflow: "hidden",
           fontFamily: FONT,
@@ -5906,7 +5922,7 @@ function GoalTemplatePicker({ state, onPick, onClose }) {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: COLORS.surface, borderRadius: 24,
-          width: "100%", maxWidth: 560, maxHeight: "calc(100vh - 40px)",
+          width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 40px)",
           boxShadow: "0 24px 80px rgba(15,23,41,0.28)",
           display: "flex", flexDirection: "column", overflow: "hidden",
           fontFamily: FONT,

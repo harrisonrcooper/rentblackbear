@@ -45,7 +45,10 @@ const GRIP_PATHS = ["M9 6h.01", "M9 12h.01", "M9 18h.01", "M15 6h.01", "M15 12h.
 export function SortableList({ items, onReorder, renderItem, getId, disabled, strategy = "vertical" }) {
   const idOf = getId || ((i) => i.id);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // 10 px activation distance: enough buffer on touch that scrolling
+    // never accidentally turns into a drag, while still feeling
+    // responsive when the user actually wants to reorder.
+    useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const itemIds = useMemo(() => items.map(idOf), [items, idOf]);
