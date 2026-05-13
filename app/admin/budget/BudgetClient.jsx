@@ -46,7 +46,15 @@ import { useIsMobile } from "./lib/responsive";
 import { DashboardSkeleton } from "./primitives/Skeleton";
 import { Mascot, moodForCashflow, MASCOT_MESSAGES } from "./primitives/Mascot";
 import { SortableList, DragHandle } from "./primitives/Sortable";
-import { usePlaidLink } from "react-plaid-link";
+import dynamic from "next/dynamic";
+
+// react-plaid-link is ~10 kB of iframe shim that's only useful after
+// the user clicks "Connect a bank". Lazy-loaded so it doesn't ship
+// with the main /admin/budget bundle.
+const PlaidLinkOpener = dynamic(
+  () => import("./views/PlaidLinkOpener"),
+  { ssr: false },
+);
 import {
   createPlaidLinkToken,
   exchangePlaidPublicToken,
@@ -6992,14 +7000,6 @@ function PlaidLinkButton({ onConnected, children, compact }) {
       ) : null}
     </>
   );
-}
-
-function PlaidLinkOpener({ token, onSuccess, onExit }) {
-  const { open, ready } = usePlaidLink({ token, onSuccess, onExit });
-  useEffect(() => {
-    if (ready) open();
-  }, [ready, open]);
-  return null;
 }
 
 function ConnectedItemCard({ item, onAfter }) {
