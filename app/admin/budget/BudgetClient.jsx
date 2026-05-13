@@ -35,6 +35,7 @@ import { predictCategory } from "./lib/predict";
 import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscriptionAudit, billCalendarGrid, billPeriodKey } from "./lib/bills";
 import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPORT_RANGES } from "./lib/reports";
 import { buildSpendingHeatmap } from "./lib/heatmap";
+import { computeOnboarding } from "./lib/onboarding";
 import { detectRecurring } from "./lib/recurring";
 import { createBill } from "@/actions/budget/bills";
 import { parseCSV, detectColumns, buildImportRows } from "./lib/csvImport";
@@ -343,6 +344,12 @@ export default function BudgetClient({ initialState, userId }) {
               <SettingsView state={state} updateState={updateState} />
             ) : (
               <>
+                <OnboardingChecklist
+                  state={state}
+                  onJump={setActiveSection}
+                  onDismiss={() => updateState((s) => ({ ...s, settings: { ...s.settings, onboarding_dismissed: true } }))}
+                />
+
                 <HeroNumber
                   hero={hero}
                   mode={state.settings.hero_mode}
@@ -7880,6 +7887,147 @@ function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, st
 }
 
 // Habits / streaks / achievements strip above the tile grid.
+function OnboardingChecklist({ state, onJump, onDismiss }) {
+  const [expanded, setExpanded] = useState(true);
+  const status = useMemo(() => computeOnboarding(state), [state]);
+
+  // Hide entirely once dismissed OR once all required steps are done.
+  if (state.settings.onboarding_dismissed) return null;
+  if (status.allRequiredDone) return null;
+
+  const SECTION_LABELS = {
+    dashboard: "Dashboard tiles",
+    envelopes: "Envelopes",
+    bills:     "Bills",
+    banking:   "Banking",
+    habits:    "Habits",
+    goals:     "Goals",
+    settings:  "Settings",
+  };
+
+  return (
+    <section
+      style={{
+        ...STYLES.card,
+        padding: 16,
+        marginBottom: 14,
+        background: `linear-gradient(135deg, ${COLORS.accentSoft} 0%, ${COLORS.surface} 70%)`,
+        border: `1px solid ${COLORS.accent}33`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: 12,
+            background: COLORS.accent, color: "#fff",
+            display: "grid", placeItems: "center", flexShrink: 0,
+            fontSize: 14, fontWeight: 800, letterSpacing: -0.4,
+          }}>
+            {status.completedRequired}/{status.totalRequired}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>
+              Let&apos;s get the basics in
+            </div>
+            <div style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: 600 }}>
+              {status.percent}% of the required setup done · {status.completedAll}/{status.totalAll} including optional
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "inline-flex", gap: 6 }}>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            style={{ ...textBtnStyle(), padding: "6px 10px", fontSize: 12 }}
+            aria-expanded={expanded}
+          >
+            <Icon d={expanded ? ICON.chevD : ICON.chevR} size={12} />
+            {expanded ? "hide" : "show"}
+          </button>
+          <button
+            onClick={onDismiss}
+            title="Hide forever"
+            aria-label="Dismiss onboarding"
+            style={{ ...textBtnStyle(), padding: "6px 8px", fontSize: 12, color: COLORS.textFaint }}
+          >
+            <Icon d={ICON.x} size={12} />
+          </button>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{
+        marginTop: 12,
+        height: 6,
+        background: COLORS.surfaceTint,
+        borderRadius: 100,
+        overflow: "hidden",
+      }}>
+        <div style={{
+          width: `${status.percent}%`,
+          height: "100%",
+          background: COLORS.accent,
+          transition: "width 0.4s ease",
+        }} />
+      </div>
+
+      {expanded ? (
+        <div style={{ marginTop: 12, display: "grid", gap: 4 }}>
+          {status.steps.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => onJump?.(s.section)}
+              disabled={s.completed}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                gap: 12,
+                alignItems: "center",
+                textAlign: "left",
+                padding: "10px 8px",
+                borderRadius: 10,
+                background: "transparent",
+                border: "none",
+                cursor: s.completed ? "default" : "pointer",
+                fontFamily: FONT,
+                opacity: s.completed ? 0.55 : 1,
+                transition: "background 0.12s ease",
+              }}
+              onMouseEnter={(e) => { if (!s.completed) e.currentTarget.style.background = COLORS.surface; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <div style={{
+                width: 22, height: 22, borderRadius: "50%",
+                background: s.completed ? COLORS.accent : "transparent",
+                border: s.completed ? "none" : `2px solid ${COLORS.borderStrong}`,
+                color: "#fff",
+                display: "grid", placeItems: "center", flexShrink: 0,
+              }}>
+                {s.completed ? <Icon d={ICON.check} size={12} color="#fff" /> : null}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  color: COLORS.text,
+                  textDecoration: s.completed ? "line-through" : "none",
+                }}>
+                  {s.label}{s.optional ? <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" }}>optional</span> : null}
+                </div>
+                <div style={{ marginTop: 1, fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+                  {s.hint}
+                </div>
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.6, color: s.completed ? COLORS.textFaint : COLORS.accent, textTransform: "uppercase" }}>
+                {s.completed ? "done" : SECTION_LABELS[s.section] || "open"}
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function UpcomingBillsBanner({ state, onJump }) {
   const upcoming = useMemo(() => upcomingBills(state.bills || [], 7), [state.bills]);
   if (upcoming.length === 0) return null;

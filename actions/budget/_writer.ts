@@ -25,6 +25,7 @@ export interface BudgetSettingsState {
   refi_target_rate_bps?: number; // target rate for the refinance scenario
   refi_cost_cents?: number; // closing costs for the refinance scenario
   theme?: "system" | "light" | "dark";
+  onboarding_dismissed?: boolean;
 }
 
 // One-per-day snapshot of the key dashboard totals so sparklines + the
