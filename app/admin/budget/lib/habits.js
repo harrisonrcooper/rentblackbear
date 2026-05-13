@@ -1,7 +1,7 @@
 // Habit defaults + pure date/grid helpers shared by all three card
 // styles (Heatmap / Garden / Stride). No React in here.
 
-import { ICON } from "./icons";
+import { ICON } from "./iconPaths";
 
 export const DEFAULT_HABITS = [
   { id: "log_spending",    label: "Logged today's spending",     cadence: "daily",   icon: ICON.clock,    color: "#3b6fd1", owner: "shared",   group: "Money"    },

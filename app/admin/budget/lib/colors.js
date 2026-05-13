@@ -3,7 +3,7 @@
 // brighter than one-off days.
 
 import { COLORS } from "./tokens";
-import { ICON } from "./icons";
+import { ICON } from "./iconPaths";
 
 export function hexToRgb(hex) {
   if (!hex || hex.startsWith("rgb")) return null;
