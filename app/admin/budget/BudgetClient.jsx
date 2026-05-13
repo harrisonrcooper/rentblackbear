@@ -31,6 +31,7 @@ import { computeAllocation, computeRetirementProjection, computeFireMetrics, def
 import { computePropertyAnalytics, projectPropertyROI } from "./lib/property";
 import { computeForecast } from "./lib/forecast";
 import { computeGoalProgress, formatEta, nextUnhitMilestone, templateToGoal, GOAL_TEMPLATES } from "./lib/goals";
+import { buildGoalTrajectory } from "./lib/goalTrajectory";
 import { predictCategory } from "./lib/predict";
 import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscriptionAudit, billCalendarGrid, billPeriodKey } from "./lib/bills";
 import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPORT_RANGES } from "./lib/reports";
@@ -5528,6 +5529,8 @@ function GoalCard({ goal, state, monthlyRate, onChange, onDelete, onComplete }) 
         </div>
       )}
 
+      <GoalTrajectory goal={g} state={state} accent={accent} target={prog.target} />
+
       <div style={{
         marginTop: 14, paddingTop: 12, borderTop: `1px solid ${COLORS.surfaceTint}`,
         display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
@@ -5549,6 +5552,70 @@ function GoalCard({ goal, state, monthlyRate, onChange, onDelete, onComplete }) 
         >
           <Icon d={ICON.x} size={14} />
         </button>
+      </div>
+    </div>
+  );
+}
+
+function GoalTrajectory({ goal, state, accent, target }) {
+  const series = useMemo(() => buildGoalTrajectory(goal, state, 12), [goal, state]);
+
+  // No trajectory data — show a short hint for kinds that aren't
+  // recoverable from history alone (debt_payoff, property_count,
+  // custom) so the card doesn't feel incomplete.
+  if (series.length < 2) {
+    const unsupportedKind = goal.kind === "debt_payoff" || goal.kind === "property_count" || goal.kind === "custom";
+    return (
+      <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${COLORS.surfaceTint}` }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.6, color: COLORS.textFaint, textTransform: "uppercase", marginBottom: 6 }}>
+          Trajectory
+        </div>
+        <div style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+          {unsupportedKind
+            ? `Trajectory for ${goal.kind.replace(/_/g, " ")} goals coming once we snapshot more state daily.`
+            : "Needs at least two months of history."}
+        </div>
+      </div>
+    );
+  }
+
+  // Scale to viewBox 100×30. Y inverts (SVG origin = top-left).
+  const values = series.map((p) => p.value);
+  const minV = Math.min(...values, target || 0, 0);
+  const maxV = Math.max(...values, target || 0, 1);
+  const range = Math.max(1, maxV - minV);
+
+  const x = (i) => (series.length === 1 ? 50 : (i / (series.length - 1)) * 100);
+  const y = (v) => 28 - ((v - minV) / range) * 26;
+  const linePoints = series.map((p, i) => `${x(i)},${y(p.value)}`).join(" ");
+  const areaPath = `M ${x(0)},28 L ${linePoints.replace(/ /g, " L ")} L ${x(series.length - 1)},28 Z`;
+
+  const last = series[series.length - 1];
+  const first = series[0];
+  const delta = last.value - first.value;
+  const targetY = target > 0 ? y(target) : null;
+
+  return (
+    <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${COLORS.surfaceTint}` }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.6, color: COLORS.textFaint, textTransform: "uppercase" }}>
+          Trajectory · last {series.length} mo
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: delta >= 0 ? COLORS.green : COLORS.red, fontVariantNumeric: "tabular-nums" }}>
+          {delta >= 0 ? "+" : "−"}{fmtCompact(Math.abs(delta))}
+        </span>
+      </div>
+      <svg viewBox="0 0 100 30" width="100%" height="36" preserveAspectRatio="none" aria-label="Goal trajectory">
+        {targetY != null && targetY > 0 && targetY < 30 ? (
+          <line x1={0} y1={targetY} x2={100} y2={targetY} stroke={COLORS.green} strokeWidth={0.3} strokeDasharray="1 1" />
+        ) : null}
+        <path d={areaPath} fill={accent} opacity="0.15" />
+        <polyline points={linePoints} fill="none" stroke={accent} strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={x(series.length - 1)} cy={y(last.value)} r={1.4} fill={accent} />
+      </svg>
+      <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", fontSize: 10, color: COLORS.textFaint, fontWeight: 600 }}>
+        <span>{first.label}</span>
+        <span>{last.label}</span>
       </div>
     </div>
   );
