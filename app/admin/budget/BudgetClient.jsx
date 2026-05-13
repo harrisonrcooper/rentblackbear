@@ -38,6 +38,17 @@ import { buildScheduleE, buildMonthlyActuals, buildHistorySnapshot, buildBills, 
 import { useIsMobile } from "./lib/responsive";
 import { DashboardSkeleton } from "./primitives/Skeleton";
 import { Mascot, moodForCashflow, MASCOT_MESSAGES } from "./primitives/Mascot";
+import { usePlaidLink } from "react-plaid-link";
+import {
+  createPlaidLinkToken,
+  exchangePlaidPublicToken,
+  syncPlaidTransactions,
+  refreshPlaidBalances,
+  disconnectPlaidItem,
+  importPlaidTransaction,
+  dismissPlaidTransaction,
+  undoPlaidTransaction,
+} from "@/actions/budget/plaid";
 
 // ── Top-level component ──────────────────────────────────────────────
 // All tokens, icons, money/calc/habit/achievement/heloc helpers, and
@@ -285,6 +296,8 @@ export default function BudgetClient({ initialState, userId }) {
               <EnvelopesView state={state} updateState={updateState} activeMonth={activeMonth} setActiveMonth={setActiveMonth} />
             ) : activeSection === "bills" ? (
               <BillsView state={state} updateState={updateState} />
+            ) : activeSection === "banking" ? (
+              <BankingView state={state} updateState={updateState} />
             ) : activeSection === "habits" ? (
               <HabitsView state={state} updateState={updateState} />
             ) : activeSection === "goals" ? (
@@ -6119,6 +6132,450 @@ function ExportsBlock({ state }) {
   );
 }
 
+// ── Banking view ─────────────────────────────────────────────────────
+
+function BankingView({ state, updateState }) {
+  const items = state.plaid_items || [];
+  const transactions = state.plaid_transactions || [];
+  const categories = state.categories || [];
+
+  const reloadFromServer = () => {
+    if (typeof window !== "undefined") window.location.reload();
+  };
+
+  const inbox = useMemo(() => transactions
+    .filter((t) => !t.imported_at && !t.dismissed_at && t.amount_cents > 0)
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
+  [transactions]);
+
+  const credits = useMemo(() => transactions
+    .filter((t) => !t.imported_at && !t.dismissed_at && t.amount_cents <= 0)
+    .sort((a, b) => (a.date < b.date ? 1 : -1)),
+  [transactions]);
+
+  const recentlyImported = useMemo(() => transactions
+    .filter((t) => t.imported_at)
+    .sort((a, b) => ((a.imported_at || "") < (b.imported_at || "") ? 1 : -1))
+    .slice(0, 6),
+  [transactions]);
+
+  return (
+    <div>
+      <DrillTitle
+        title="Banking"
+        subtitle="Connect a bank, pull recent transactions, drop them into envelopes."
+        icon="M3 22h18 M3 10h18 M5 6l7-3 7 3 M4 10v12 M20 10v12 M8 14v4 M12 14v4 M16 14v4"
+        iconColor={COLORS.green}
+        iconBg={COLORS.greenBg}
+      />
+
+      <BlockCard
+        title={`Connected institutions${items.length > 0 ? ` · ${items.length}` : ""}`}
+        accent={COLORS.green}
+        icon="M3 22h18 M3 10h18 M5 6l7-3 7 3 M4 10v12 M20 10v12"
+        style={{ marginTop: 14 }}
+      >
+        {items.length === 0 ? (
+          <div style={{ padding: "18px 8px", textAlign: "center" }}>
+            <div style={{ fontSize: 14, color: COLORS.textMuted, fontWeight: 600, marginBottom: 4 }}>
+              No bank connected yet.
+            </div>
+            <div style={{ fontSize: 12, color: COLORS.textFaint, marginBottom: 14 }}>
+              Plaid encrypts the connection. Tokens never leave the server — only
+              transaction descriptions, dates, and amounts come back to your dashboard.
+            </div>
+            <PlaidLinkButton onConnected={reloadFromServer}>
+              Connect a bank
+            </PlaidLinkButton>
+          </div>
+        ) : (
+          <>
+            {items.map((item) => (
+              <ConnectedItemCard
+                key={item.id}
+                item={item}
+                onAfter={reloadFromServer}
+              />
+            ))}
+            <div style={{ padding: "10px 4px 0", display: "flex", justifyContent: "flex-end" }}>
+              <PlaidLinkButton onConnected={reloadFromServer} compact>
+                Connect another
+              </PlaidLinkButton>
+            </div>
+          </>
+        )}
+      </BlockCard>
+
+      {items.length > 0 ? (
+        <>
+          <BlockCard
+            title={`Transaction inbox · ${inbox.length}`}
+            sub="Outflows only. Categorize → accept into envelopes."
+            accent={COLORS.amber}
+            icon="M21 8v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8 M1 5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v3H1V5z"
+            style={{ marginTop: 14 }}
+          >
+            {inbox.length === 0 ? (
+              <div style={{ padding: 14, fontSize: 13, color: COLORS.textMuted, textAlign: "center" }}>
+                Inbox empty — all caught up.
+              </div>
+            ) : (
+              inbox.slice(0, 200).map((t) => (
+                <TransactionInboxRow
+                  key={t.id}
+                  txn={t}
+                  categories={categories}
+                  onAfter={reloadFromServer}
+                />
+              ))
+            )}
+          </BlockCard>
+
+          {credits.length > 0 ? (
+            <BlockCard
+              title={`Credits / refunds · ${credits.length}`}
+              accent={COLORS.blue}
+              icon="M12 19V5 M5 12l7-7 7 7"
+              style={{ marginTop: 14 }}
+            >
+              {credits.slice(0, 30).map((t) => (
+                <CreditInboxRow
+                  key={t.id}
+                  txn={t}
+                  onAfter={reloadFromServer}
+                />
+              ))}
+            </BlockCard>
+          ) : null}
+
+          {recentlyImported.length > 0 ? (
+            <BlockCard
+              title="Recently imported"
+              accent={COLORS.textMuted}
+              icon="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z M12 7v5l3 3"
+              style={{ marginTop: 14 }}
+            >
+              {recentlyImported.map((t) => (
+                <ImportedTxnRow
+                  key={t.id}
+                  txn={t}
+                  onAfter={reloadFromServer}
+                />
+              ))}
+            </BlockCard>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+// PlaidLinkButton — fetches a link token on click, then mounts the
+// hook-using opener which fires Plaid Link.
+function PlaidLinkButton({ onConnected, children, compact }) {
+  const [token, setToken] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const start = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await createPlaidLinkToken();
+      if (!res.ok) {
+        setError(res.message);
+        setBusy(false);
+        return;
+      }
+      setToken(res.link_token);
+    } catch (e) {
+      setError(e?.message || String(e));
+      setBusy(false);
+    }
+  };
+
+  const baseStyle = compact ? {
+    ...btnStyle(),
+    padding: "8px 14px",
+    fontSize: 12,
+  } : {
+    ...btnStyle(),
+    background: COLORS.green,
+    border: `1px solid ${COLORS.green}`,
+    color: "#fff",
+    padding: "10px 18px",
+    fontSize: 13,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+  };
+
+  return (
+    <>
+      <button onClick={start} disabled={busy} style={baseStyle}>
+        {!compact ? <Icon d={ICON.link2} size={16} color="#fff" /> : null}
+        {busy && !token ? "Opening…" : children}
+      </button>
+      {error ? (
+        <div role="alert" style={{ marginTop: 8, padding: "8px 12px", borderRadius: 10, background: COLORS.redBg, color: COLORS.red, fontSize: 12, fontWeight: 600 }}>
+          {error}
+        </div>
+      ) : null}
+      {token ? (
+        <PlaidLinkOpener
+          token={token}
+          onSuccess={async (publicToken, metadata) => {
+            const res = await exchangePlaidPublicToken(publicToken, {
+              institution_id: metadata?.institution?.institution_id,
+              institution_name: metadata?.institution?.name,
+              accounts: (metadata?.accounts || []).map((a) => ({
+                id: a.id, name: a.name, mask: a.mask, type: a.type, subtype: a.subtype,
+              })),
+            });
+            setBusy(false);
+            setToken(null);
+            if (res.ok) {
+              onConnected?.();
+            } else {
+              setError(res.message);
+            }
+          }}
+          onExit={() => { setBusy(false); setToken(null); }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function PlaidLinkOpener({ token, onSuccess, onExit }) {
+  const { open, ready } = usePlaidLink({ token, onSuccess, onExit });
+  useEffect(() => {
+    if (ready) open();
+  }, [ready, open]);
+  return null;
+}
+
+function ConnectedItemCard({ item, onAfter }) {
+  const [syncing, setSyncing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const doSync = async () => {
+    setError(null);
+    setSyncing(true);
+    const res = await syncPlaidTransactions(item.id);
+    setSyncing(false);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  const doRefresh = async () => {
+    setBusy(true);
+    const res = await refreshPlaidBalances(item.id);
+    setBusy(false);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  const doDisconnect = async () => {
+    if (typeof window !== "undefined" && !window.confirm(`Disconnect ${item.institution_name}? Existing transactions stay.`)) return;
+    setBusy(true);
+    const res = await disconnectPlaidItem(item.id);
+    setBusy(false);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  return (
+    <div className="bb-row" style={{ padding: "12px 4px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: COLORS.greenBg, color: COLORS.green, display: "grid", placeItems: "center", flexShrink: 0 }}>
+            <Icon d={ICON.landmark} size={18} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>{item.institution_name}</div>
+            <div style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+              {item.last_synced_at
+                ? `Synced ${formatRelativeTime(item.last_synced_at)} · ${item.accounts.length} account${item.accounts.length === 1 ? "" : "s"}`
+                : "Not synced yet"}
+              {item.needs_relink ? " · login required" : ""}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "inline-flex", gap: 6 }}>
+          <button onClick={doSync} disabled={syncing || busy} style={{ ...textBtnStyle(), color: COLORS.green, padding: "6px 10px" }} aria-label="Sync now">
+            <Icon d={ICON.refresh} size={14} />
+            {syncing ? "syncing…" : "sync"}
+          </button>
+          <button onClick={doRefresh} disabled={syncing || busy} style={{ ...textBtnStyle(), padding: "6px 10px" }} aria-label="Refresh balances">
+            balances
+          </button>
+          <button onClick={doDisconnect} disabled={syncing || busy} style={{ ...textBtnStyle(), color: COLORS.red, padding: "6px 10px" }} aria-label="Disconnect">
+            <Icon d={ICON.unlink} size={14} />
+          </button>
+        </div>
+      </div>
+      {item.needs_relink ? (
+        <div role="alert" style={{ marginTop: 8, padding: "8px 12px", borderRadius: 10, background: COLORS.redBg, color: COLORS.red, fontSize: 12, fontWeight: 600 }}>
+          The connection needs to be repaired. Disconnect and reconnect to re-authorize.
+        </div>
+      ) : null}
+      {error ? (
+        <div role="alert" style={{ marginTop: 8, padding: "8px 12px", borderRadius: 10, background: COLORS.redBg, color: COLORS.red, fontSize: 12, fontWeight: 600 }}>
+          {error}
+        </div>
+      ) : null}
+      <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
+        {item.accounts.map((a) => (
+          <div key={a.plaid_account_id} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, fontSize: 12 }}>
+            <div style={{ color: COLORS.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {a.name}{a.mask ? ` ····${a.mask}` : ""} · <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 0.6, color: COLORS.textFaint }}>{a.subtype || a.type}</span>
+            </div>
+            <div style={{ fontWeight: 700, color: COLORS.text }}>
+              {a.current_balance_cents != null ? fmtUsd(a.current_balance_cents) : "—"}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TransactionInboxRow({ txn, categories, onAfter }) {
+  const initial = txn.predicted_category_label
+    || (categories.find((c) => c.label.toLowerCase() === (txn.predicted_category_label || "").toLowerCase())?.label)
+    || (categories[0]?.label || "");
+  const [category, setCategory] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const sortedCats = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      if ((a.group_key || "") !== (b.group_key || "")) return (a.group_key || "").localeCompare(b.group_key || "");
+      return a.label.localeCompare(b.label);
+    });
+  }, [categories]);
+
+  const accept = async () => {
+    if (!category) return;
+    setError(null);
+    setBusy(true);
+    const res = await importPlaidTransaction(txn.plaid_txn_id, category);
+    setBusy(false);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  const dismiss = async () => {
+    setBusy(true);
+    const res = await dismissPlaidTransaction(txn.plaid_txn_id);
+    setBusy(false);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  return (
+    <div className="bb-row" style={{ padding: "10px 4px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, alignItems: "center" }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {txn.merchant_name || txn.name}
+          </div>
+          <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+            {txn.date}
+            {txn.account_name ? ` · ${txn.account_name}` : ""}
+            {txn.pending ? " · pending" : ""}
+            {txn.plaid_category_primary ? ` · ${titleCase(String(txn.plaid_category_primary).toLowerCase().replace(/_/g, " "))}` : ""}
+          </div>
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: COLORS.text, whiteSpace: "nowrap" }}>
+          {fmtUsd(txn.amount_cents)}
+        </div>
+      </div>
+      <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: 6, alignItems: "center" }}>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          aria-label="Envelope"
+          style={{ ...inputStyle(), fontWeight: 600, fontSize: 12, padding: "6px 10px" }}
+        >
+          {sortedCats.map((c) => (
+            <option key={c.label} value={c.label}>
+              {c.label}{c.group_key ? `  ·  ${c.group_key}` : ""}
+            </option>
+          ))}
+        </select>
+        <button onClick={accept} disabled={busy || !category} style={{ ...btnStyle(), background: COLORS.green, border: `1px solid ${COLORS.green}`, color: "#fff", padding: "6px 12px", fontSize: 12 }}>
+          accept
+        </button>
+        <button onClick={dismiss} disabled={busy} style={{ ...textBtnStyle(), padding: "6px 10px", fontSize: 12 }}>
+          skip
+        </button>
+      </div>
+      {error ? (
+        <div role="alert" style={{ marginTop: 6, fontSize: 11, color: COLORS.red, fontWeight: 600 }}>{error}</div>
+      ) : null}
+    </div>
+  );
+}
+
+function CreditInboxRow({ txn, onAfter }) {
+  const [busy, setBusy] = useState(false);
+  const dismiss = async () => {
+    setBusy(true);
+    await dismissPlaidTransaction(txn.plaid_txn_id);
+    setBusy(false);
+    onAfter?.();
+  };
+  return (
+    <div className="bb-row" style={{ padding: "8px 4px", display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: 10, alignItems: "center" }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {txn.merchant_name || txn.name}
+        </div>
+        <div style={{ fontSize: 11, color: COLORS.textMuted }}>
+          {txn.date}{txn.account_name ? ` · ${txn.account_name}` : ""}
+        </div>
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.green, whiteSpace: "nowrap" }}>
+        {fmtUsd(Math.abs(txn.amount_cents))} in
+      </div>
+      <button onClick={dismiss} disabled={busy} style={{ ...textBtnStyle(), padding: "6px 10px", fontSize: 12 }}>
+        dismiss
+      </button>
+    </div>
+  );
+}
+
+function ImportedTxnRow({ txn, onAfter }) {
+  const [busy, setBusy] = useState(false);
+  const undo = async () => {
+    setBusy(true);
+    await undoPlaidTransaction(txn.plaid_txn_id);
+    setBusy(false);
+    onAfter?.();
+  };
+  return (
+    <div className="bb-row" style={{ padding: "8px 4px", display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: 10, alignItems: "center" }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {txn.merchant_name || txn.name}
+        </div>
+        <div style={{ fontSize: 11, color: COLORS.textMuted }}>
+          {txn.date} · {txn.predicted_category_label || "—"}
+        </div>
+      </div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: COLORS.text, whiteSpace: "nowrap" }}>
+        {fmtUsd(txn.amount_cents)}
+      </div>
+      <button onClick={undo} disabled={busy} style={{ ...textBtnStyle(), padding: "6px 10px", fontSize: 12 }}>
+        undo
+      </button>
+    </div>
+  );
+}
+
 // ── Settings view ────────────────────────────────────────────────────
 
 function SettingsView({ state, updateState }) {
@@ -6550,6 +7007,7 @@ const SIDEBAR_SECTIONS = [
   { id: "dashboard",    label: "Dashboard",    icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10", accent: "#3b6fd1" },
   { id: "envelopes",    label: "Envelopes",    icon: "M21 8v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8 M1 5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v3H1V5z M10 12h4", accent: "#4a7c59" },
   { id: "bills",        label: "Bills",        icon: "M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z", accent: "#0bafb0" },
+  { id: "banking",      label: "Banking",      icon: "M3 22h18 M3 10h18 M5 6l7-3 7 3 M4 10v12 M20 10v12 M8 14v4 M12 14v4 M16 14v4", accent: "#138a60" },
   { id: "habits",       label: "Habits",       icon: "M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3", accent: "#d6448f" },
   { id: "goals",        label: "Goals",        icon: "M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6", accent: "#c88318" },
   { id: "achievements", label: "Achievements", icon: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2z", accent: "#8c5ad9" },
