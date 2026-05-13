@@ -4063,6 +4063,14 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
                           onBulk={(parsed) => bulkLog(c.label, parsed)}
                           onUpdateEntry={updateEntry}
                           onDeleteEntry={deleteEntry}
+                          onBudgetChange={(cents) => updateState((s) => ({
+                            ...s,
+                            categories: s.categories.map((cat) =>
+                              cat.label.toLowerCase() === c.label.toLowerCase()
+                                ? { ...cat, default_monthly_cents: cents, default_biweekly_cents: 0, default_yearly_cents: 0 }
+                                : cat,
+                            ),
+                          }))}
                         />
                       </div>
                     </div>
@@ -4077,7 +4085,7 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
   );
 }
 
-function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdateEntry, onDeleteEntry }) {
+function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdateEntry, onDeleteEntry, onBudgetChange }) {
   const { budget, carryover, thisMonthSpent, available, entries } = balance;
   const [expanded, setExpanded] = useState(false);
   const [logging, setLogging] = useState(false);
@@ -4205,6 +4213,22 @@ function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdate
 
       {expanded && (
         <div style={{ marginTop: 10, paddingLeft: 18, borderLeft: `2px solid ${accent}33` }}>
+          {onBudgetChange ? (
+            <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", padding: "8px 4px 10px" }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" }}>Monthly budget</div>
+                <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+                  Tap the number to set how much you can spend each month.
+                </div>
+              </div>
+              <InlineNumber
+                value={category.default_monthly_cents || 0}
+                onChange={(v) => onBudgetChange(v)}
+                width={130}
+                allowNegative={false}
+              />
+            </div>
+          ) : null}
           {entries.length === 0 ? (
             <div style={{ fontSize: 12, color: COLORS.textFaint, fontStyle: "italic", padding: "8px 4px" }}>
               No entries this month yet.
