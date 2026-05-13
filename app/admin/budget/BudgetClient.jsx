@@ -4743,7 +4743,38 @@ function HabitsView({ state, updateState }) {
                   gridTemplateColumns: style === "garden" ? "repeat(auto-fit, minmax(320px, 1fr))" : "1fr",
                   gap: 14,
                 }}>
-                  {items.map(renderHabit)}
+                  <SortableList
+                    items={items}
+                    getId={(h) => h.id}
+                    strategy={style === "garden" ? "rect" : "vertical"}
+                    disabled={isDefault}
+                    onReorder={(next) => updateState((s) => {
+                      // Re-order habits[] so the next sync write
+                      // persists the user's chosen order. Habits
+                      // grouped by `group` field are reordered only
+                      // within their visible bucket — other habits
+                      // keep their relative position.
+                      const visibleIds = new Set(items.map((h) => h.id));
+                      const orderInGroup = next.map((h) => h.id);
+                      let visibleCursor = 0;
+                      const reordered = (s.habits || []).map((h) => {
+                        if (!visibleIds.has(h.id)) return h;
+                        const id = orderInGroup[visibleCursor++];
+                        return (s.habits || []).find((x) => x.id === id) || h;
+                      });
+                      return { ...s, habits: reordered };
+                    })}
+                    renderItem={(h, handleProps) => (
+                      <div style={{ position: "relative" }}>
+                        {handleProps ? (
+                          <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
+                            <DragHandle handleProps={handleProps} />
+                          </div>
+                        ) : null}
+                        {renderHabit(h)}
+                      </div>
+                    )}
+                  />
                 </div>
               </section>
             );
@@ -5252,17 +5283,41 @@ function GoalsView({ state, updateState }) {
         <section style={{ marginBottom: 24 }}>
           <SectionLabel>Active</SectionLabel>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
-            {active.map((g) => (
-              <GoalCard
-                key={g.id}
-                goal={g}
-                state={state}
-                monthlyRate={monthlyRate}
-                onChange={(patch) => update(g.id, patch)}
-                onDelete={() => del(g.id)}
-                onComplete={() => update(g.id, { completed_at: new Date().toISOString() })}
-              />
-            ))}
+            <SortableList
+              items={active}
+              getId={(g) => g.id}
+              strategy="rect"
+              onReorder={(next) => updateState((s) => {
+                // Preserve the relative position of archived/completed
+                // goals; only reorder the active subset.
+                const activeIds = new Set(active.map((g) => g.id));
+                const nextOrderActive = next.map((g) => g.id);
+                let cursor = 0;
+                const reordered = (s.goals || []).map((g) => {
+                  if (!activeIds.has(g.id)) return g;
+                  const id = nextOrderActive[cursor++];
+                  return (s.goals || []).find((x) => x.id === id) || g;
+                });
+                return { ...s, goals: reordered };
+              })}
+              renderItem={(g, handleProps) => (
+                <div style={{ position: "relative" }}>
+                  {handleProps ? (
+                    <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
+                      <DragHandle handleProps={handleProps} />
+                    </div>
+                  ) : null}
+                  <GoalCard
+                    goal={g}
+                    state={state}
+                    monthlyRate={monthlyRate}
+                    onChange={(patch) => update(g.id, patch)}
+                    onDelete={() => del(g.id)}
+                    onComplete={() => update(g.id, { completed_at: new Date().toISOString() })}
+                  />
+                </div>
+              )}
+            />
           </div>
         </section>
       )}

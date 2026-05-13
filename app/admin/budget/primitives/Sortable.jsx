@@ -28,6 +28,7 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -41,13 +42,14 @@ const GRIP_PATHS = ["M9 6h.01", "M9 12h.01", "M9 18h.01", "M15 6h.01", "M15 12h.
 // `onReorder(nextItems)` is called with the array in its new order.
 // `renderItem(item, dragHandleProps)` renders one row; spread
 // dragHandleProps onto whichever element should grab the drag.
-export function SortableList({ items, onReorder, renderItem, getId, disabled }) {
+export function SortableList({ items, onReorder, renderItem, getId, disabled, strategy = "vertical" }) {
   const idOf = getId || ((i) => i.id);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const itemIds = useMemo(() => items.map(idOf), [items, idOf]);
+  const sortStrategy = strategy === "rect" ? rectSortingStrategy : verticalListSortingStrategy;
 
   if (disabled) {
     return <>{items.map((it) => renderItem(it, null))}</>;
@@ -66,7 +68,7 @@ export function SortableList({ items, onReorder, renderItem, getId, disabled }) 
         onReorder(arrayMove(items, from, to));
       }}
     >
-      <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+      <SortableContext items={itemIds} strategy={sortStrategy}>
         {items.map((it) => (
           <SortableRow key={idOf(it)} id={idOf(it)}>
             {(handleProps, isDragging) => renderItem(it, handleProps, isDragging)}
