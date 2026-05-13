@@ -179,3 +179,72 @@ function isSameDay(a, b) {
     && a.getMonth() === b.getMonth()
     && a.getDate() === b.getDate();
 }
+
+// "Period bucket" a bill is currently in. For monthly bills that's
+// the YYYY-MM the bill is due in; for yearly bills, the YYYY. Used as
+// the idempotency key for auto-posting.
+export function billPeriodKey(bill, fromDate = new Date()) {
+  if (!bill || !bill.cadence) return null;
+  const today = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+  switch (bill.cadence) {
+    case "monthly":
+      return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    case "yearly":
+      return `${today.getFullYear()}`;
+    case "quarterly": {
+      const q = Math.floor(today.getMonth() / 3) + 1;
+      return `${today.getFullYear()}-Q${q}`;
+    }
+    case "biweekly":
+    case "weekly": {
+      // Anchor on the most recent due date string so each occurrence
+      // gets its own bucket.
+      const stride = bill.cadence === "weekly" ? 7 : 14;
+      const anchor = bill.last_paid_at ? new Date(bill.last_paid_at) : today;
+      let due = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+      const DAY = 86400000;
+      while (due < today) due = new Date(due.getTime() + stride * DAY);
+      // Step back one period — that's the bucket the *current* period
+      // belongs to.
+      due = new Date(due.getTime() - stride * DAY);
+      return `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, "0")}-${String(due.getDate()).padStart(2, "0")}`;
+    }
+    default:
+      return null;
+  }
+}
+
+// Bills that should auto-post right now: auto_post is on, the due
+// date has been reached for the current period, and the period hasn't
+// already been posted.
+export function billsToAutoPost(bills, fromDate = new Date()) {
+  const today = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+  const out = [];
+  for (const b of bills || []) {
+    if (b.archived_at || !b.auto_post) continue;
+    const period = billPeriodKey(b, today);
+    if (!period) continue;
+    if (b.last_auto_posted_period === period) continue;
+
+    // Has the due date passed within the current period? For monthly/
+    // yearly/quarterly bills the period is anchored to a calendar
+    // unit so we just check if today's date >= the bill's due day in
+    // the current period. For weekly/biweekly we just post on every
+    // new period.
+    let dueDay = b.due_day || 1;
+    let dueMonth = today.getMonth() + 1;
+    let dueYear = today.getFullYear();
+    if (b.cadence === "yearly") {
+      dueMonth = b.due_month || 1;
+    } else if (b.cadence === "quarterly") {
+      const q = Math.floor(today.getMonth() / 3);
+      const anchor = b.due_month || 1;
+      dueMonth = ((anchor - 1) % 3) + q * 3 + 1;
+    }
+    const dueDate = new Date(dueYear, dueMonth - 1, Math.min(dueDay, new Date(dueYear, dueMonth, 0).getDate()));
+    if (dueDate > today && (b.cadence === "monthly" || b.cadence === "yearly" || b.cadence === "quarterly")) continue;
+
+    out.push({ bill: b, period, due_iso: `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, "0")}-${String(dueDate.getDate()).padStart(2, "0")}` });
+  }
+  return out;
+}

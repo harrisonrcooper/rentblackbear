@@ -152,6 +152,12 @@ export interface BudgetBill {
   archived_at?: string | null;
   last_paid_at?: string | null; // ISO date
   last_used_at?: string | null; // user-tagged "I still use this" timestamp
+  // Auto-post: when true, the bill writes itself into monthly_actuals on
+  // the first /admin/budget load on or after its due date each period.
+  // `last_auto_posted_period` is the YYYY-MM (monthly) or YYYY (yearly)
+  // bucket already posted — used to keep the post idempotent.
+  auto_post?: boolean;
+  last_auto_posted_period?: string | null;
   notes?: string;
   created_at?: string;
 }

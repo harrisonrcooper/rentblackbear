@@ -32,7 +32,7 @@ import { computePropertyAnalytics, projectPropertyROI } from "./lib/property";
 import { computeForecast } from "./lib/forecast";
 import { computeGoalProgress, formatEta, nextUnhitMilestone, templateToGoal, GOAL_TEMPLATES } from "./lib/goals";
 import { predictCategory } from "./lib/predict";
-import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscriptionAudit, billCalendarGrid } from "./lib/bills";
+import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscriptionAudit, billCalendarGrid, billPeriodKey } from "./lib/bills";
 import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPORT_RANGES } from "./lib/reports";
 import { buildScheduleE, buildMonthlyActuals, buildHistorySnapshot, buildBills, buildFullSnapshotJSON, downloadCSV, downloadJSON, defaultFilename } from "./lib/csv";
 import { useIsMobile } from "./lib/responsive";
@@ -4479,6 +4479,27 @@ function BillRow({ bill, state, onUpdate, onDelete, onMarkPaid, onStillUsing, on
               <option value="">no category</option>
               {(state.categories || []).map((c) => <option key={c.label} value={c.label}>{c.label}</option>)}
             </select>
+            <button
+              type="button"
+              onClick={() => onUpdate({ auto_post: !bill.auto_post })}
+              aria-pressed={!!bill.auto_post}
+              title={bill.auto_post ? "Auto-post is on — bill writes itself to monthly_actuals on due date" : "Auto-post is off"}
+              style={{
+                ...pillSelectStyle(),
+                padding: "2px 10px",
+                color: bill.auto_post ? "#fff" : COLORS.textMuted,
+                background: bill.auto_post ? COLORS.green : COLORS.surface,
+                borderColor: bill.auto_post ? COLORS.green : COLORS.border,
+                cursor: "pointer",
+              }}
+            >
+              {bill.auto_post ? "auto-post ON" : "auto-post off"}
+            </button>
+            {bill.auto_post && bill.last_auto_posted_period === billPeriodKey(bill) ? (
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, color: COLORS.green, padding: "2px 8px", borderRadius: 100, background: COLORS.greenBg }}>
+                POSTED
+              </span>
+            ) : null}
           </div>
         </div>
         <InlineNumber value={bill.amount_cents} onChange={(v) => onUpdate({ amount_cents: v })} width={120} />

@@ -11,6 +11,7 @@ import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 
 import { fetchBudgetState } from "@/actions/budget/state";
+import { runScheduledBillPosts } from "@/actions/budget/bills";
 import BudgetClient from "./BudgetClient";
 import { ErrorBoundary } from "./primitives/ErrorBoundary";
 
@@ -30,6 +31,11 @@ export default async function BudgetPage() {
     .map((s) => s.trim())
     .filter(Boolean);
   if (allowedIds.length > 0 && !allowedIds.includes(userId)) notFound();
+
+  // Run scheduled auto-posts before fetching state so the page renders
+  // with any freshly-posted actuals visible. Idempotent — second
+  // calls in the same period find nothing to do.
+  await runScheduledBillPosts().catch(() => undefined);
 
   const result = await fetchBudgetState();
   if (!result.ok) {
