@@ -89,7 +89,17 @@ export default function BudgetClient({ initialState, userId }) {
   const [fabOpen, setFabOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [toast, setToast] = useState(null); // { kind, message }
+  // Toast queue. setToast(null) clears all; setToast({...}) appends.
+  // Cap at 3 — the oldest gets shifted off when a fourth arrives.
+  const [toasts, setToasts] = useState([]);
+  const setToast = useCallback((t) => {
+    if (t == null) { setToasts([]); return; }
+    setToasts((prev) => {
+      const id = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+      const next = [...prev, { ...t, id, at: Date.now() }];
+      return next.length > 3 ? next.slice(-3) : next;
+    });
+  }, []);
   const [seeding, setSeeding] = useState(false);
 
   // Global keyboard shortcuts.
@@ -108,12 +118,17 @@ export default function BudgetClient({ initialState, userId }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Auto-clear toast after 6s.
+  // Auto-clear toasts 6 seconds after they're added.
   useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 6000);
+    if (toasts.length === 0) return;
+    const oldest = toasts[0];
+    const elapsed = Date.now() - oldest.at;
+    const remaining = Math.max(0, 6000 - elapsed);
+    const t = setTimeout(() => {
+      setToasts((prev) => prev.filter((x) => x.id !== oldest.id));
+    }, remaining);
     return () => clearTimeout(t);
-  }, [toast]);
+  }, [toasts]);
 
   const hasData = state.categories.length > 0 || state.properties.length > 0;
 
@@ -262,6 +277,7 @@ export default function BudgetClient({ initialState, userId }) {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(12px) scale(0.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
         @keyframes bb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes bb-toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         /* iOS Safari polish */
         body, button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
         @media (max-width: 899px) {
@@ -446,7 +462,22 @@ export default function BudgetClient({ initialState, userId }) {
         </DrillSheet>
       )}
 
-      {toast && <Toast kind={toast.kind} message={toast.message} onDismiss={() => setToast(null)} />}
+      {toasts.length > 0 ? (
+        <div style={{
+          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          display: "grid", gap: 8, zIndex: 60,
+          width: "max-content", maxWidth: "calc(100vw - 32px)",
+        }}>
+          {toasts.map((t) => (
+            <Toast
+              key={t.id}
+              kind={t.kind}
+              message={t.message}
+              onDismiss={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+            />
+          ))}
+        </div>
+      ) : null}
 
       {quickAddOpen && (
         <QuickAddSheet
@@ -3662,20 +3693,18 @@ function PctRow({ label, bps, onChange }) {
 }
 
 function Toast({ kind, message, onDismiss }) {
-  const bg = kind === "error" ? COLORS.red : COLORS.text;
+  const bg = kind === "error" ? COLORS.red : kind === "success" ? COLORS.green : COLORS.text;
   return (
     <div style={{
-      position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
       background: bg, color: "#fff",
       padding: "12px 18px", borderRadius: 100,
       boxShadow: "0 8px 28px rgba(15,23,41,0.25)",
       fontSize: 13, fontWeight: 600,
       display: "flex", alignItems: "center", gap: 10,
-      zIndex: 60,
-      maxWidth: "calc(100vw - 32px)",
+      animation: "bb-toast-in 0.18s cubic-bezier(0.4, 0, 0.2, 1)",
     }}>
       {message}
-      <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#fff", opacity: 0.7, cursor: "pointer", padding: 0 }}>
+      <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#fff", opacity: 0.7, cursor: "pointer", padding: 0 }} aria-label="Dismiss">
         <Icon d={ICON.x} size={14} color="#fff" />
       </button>
     </div>
