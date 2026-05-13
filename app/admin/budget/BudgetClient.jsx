@@ -38,6 +38,7 @@ import { buildScheduleE, buildMonthlyActuals, buildHistorySnapshot, buildBills, 
 import { useIsMobile } from "./lib/responsive";
 import { DashboardSkeleton } from "./primitives/Skeleton";
 import { Mascot, moodForCashflow, MASCOT_MESSAGES } from "./primitives/Mascot";
+import { SortableList, DragHandle } from "./primitives/Sortable";
 import { usePlaidLink } from "react-plaid-link";
 import {
   createPlaidLinkToken,
@@ -3767,21 +3768,43 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
               icon={meta.icon}
               count={`${items.length}`}
             >
-              {items.map((c) => {
-                const b = balancesByLabel.get(c.label.toLowerCase()) || envelopeBalance(state, c, activeMonth, startMonth);
-                return (
-                  <EnvelopeRow
-                    key={c.label}
-                    category={c}
-                    balance={b}
-                    accent={meta.accent}
-                    onLog={(amount, note) => logEntry(c.label, amount, note)}
-                    onBulk={(parsed) => bulkLog(c.label, parsed)}
-                    onUpdateEntry={updateEntry}
-                    onDeleteEntry={deleteEntry}
-                  />
-                );
-              })}
+              <SortableList
+                items={items}
+                getId={(c) => c.label}
+                onReorder={(next) => updateState((s) => {
+                  // Re-number sort_order within this group only — leave
+                  // every other category's order untouched. Anchor on
+                  // the group's lowest existing sort_order so we don't
+                  // accidentally float this group above earlier ones.
+                  const startOrder = Math.min(...items.map((i) => i.sort_order ?? 0));
+                  const nextOrder = new Map(next.map((c, idx) => [c.label, startOrder + idx]));
+                  return {
+                    ...s,
+                    categories: s.categories.map((c) =>
+                      nextOrder.has(c.label) ? { ...c, sort_order: nextOrder.get(c.label) } : c,
+                    ),
+                  };
+                })}
+                renderItem={(c, handleProps) => {
+                  const b = balancesByLabel.get(c.label.toLowerCase()) || envelopeBalance(state, c, activeMonth, startMonth);
+                  return (
+                    <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", alignItems: "stretch" }}>
+                      <DragHandle handleProps={handleProps} style={{ alignSelf: "center" }} />
+                      <div style={{ minWidth: 0 }}>
+                        <EnvelopeRow
+                          category={c}
+                          balance={b}
+                          accent={meta.accent}
+                          onLog={(amount, note) => logEntry(c.label, amount, note)}
+                          onBulk={(parsed) => bulkLog(c.label, parsed)}
+                          onUpdateEntry={updateEntry}
+                          onDeleteEntry={deleteEntry}
+                        />
+                      </div>
+                    </div>
+                  );
+                }}
+              />
             </BlockCard>
           );
         })}
