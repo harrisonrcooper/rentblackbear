@@ -112,3 +112,97 @@ export const MASCOT_MESSAGES = {
     "Pause subscriptions you forgot you had.",
   ],
 };
+
+const DAY_MS = 86400000;
+
+// State-aware messages — facts pulled from the live blob. Returned in
+// rough priority order (most surprising first). Merged into the pool
+// by the caller so a click cycles between "did you know X" and the
+// generic mood nudges. Skipped silently when the relevant data is
+// missing — never returns a "no data" placeholder.
+export function contextMascotMessages(state, today = new Date()) {
+  if (!state) return [];
+  const msgs = [];
+  const monthSlug = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
+  // Heaviest envelope this month.
+  const byCat = new Map();
+  for (const a of state.monthly_actuals || []) {
+    if (!a.month || !a.month.startsWith(monthSlug)) continue;
+    if (!(a.amount_cents > 0)) continue;
+    const key = (a.category_label || "").trim();
+    if (!key) continue;
+    byCat.set(key, (byCat.get(key) || 0) + a.amount_cents);
+  }
+  let top = null;
+  for (const [label, total] of byCat) {
+    if (!top || total > top.total) top = { label, total };
+  }
+  if (top) {
+    msgs.push(`Heaviest this month so far: ${top.label}.`);
+  }
+
+  // Upcoming bills in next 7 days.
+  const upcomingCount = (state.bills || []).filter((b) => {
+    if (b.archived_at) return false;
+    if (b.cadence !== "monthly") return false;
+    const day = Math.min(31, Math.max(1, b.due_day || 1));
+    const dueThis = new Date(today.getFullYear(), today.getMonth(), day);
+    const diffDays = Math.round((dueThis - today) / DAY_MS);
+    return diffDays >= 0 && diffDays <= 7;
+  }).length;
+  if (upcomingCount >= 2) {
+    msgs.push(`${upcomingCount} bills due in the next 7 days.`);
+  }
+
+  // Mom-loan: payments remaining if a loan is active.
+  for (const loan of state.mom_loans || []) {
+    const paid = (loan.payments || []).reduce((s, p) => s + (p.amount_cents || 0), 0);
+    const remaining = (loan.starting_balance_cents || 0) - paid;
+    if (remaining > 0 && loan.monthly_payment_cents > 0) {
+      const monthsLeft = Math.ceil(remaining / loan.monthly_payment_cents);
+      if (monthsLeft <= 12) {
+        msgs.push(`${loan.label || "Family loan"}: ${monthsLeft} payment${monthsLeft === 1 ? "" : "s"} to go.`);
+      }
+      break;
+    }
+  }
+
+  // Habit-streak flex.
+  const habits = state.habits || [];
+  let bestStreak = 0;
+  for (const h of habits) {
+    const days = new Set(h.completions || []);
+    let streak = 0;
+    let cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    while (days.has(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`)) {
+      streak++;
+      cursor = new Date(cursor.getTime() - DAY_MS);
+    }
+    if (streak > bestStreak) bestStreak = streak;
+  }
+  if (bestStreak >= 5) {
+    msgs.push(`${bestStreak}-day habit streak — don't break the chain.`);
+  }
+
+  // Active goals — closest to completion.
+  let nearest = null;
+  for (const g of state.goals || []) {
+    if (g.archived || g.completed_at) continue;
+    if (!g.target_cents || g.target_cents <= 0) continue;
+    // Approximate "value" — net_worth for net_worth goals, else 0.
+    const latest = (state.history || []).slice(-1)[0];
+    let value = 0;
+    if (g.kind === "net_worth" && latest) value = latest.net_worth_cents || 0;
+    else if (g.kind === "custom") value = g.current_value_cents || 0;
+    const pct = (value / g.target_cents) * 100;
+    if (pct >= 50 && pct < 100 && (!nearest || pct > nearest.pct)) {
+      nearest = { label: g.label, pct: Math.round(pct) };
+    }
+  }
+  if (nearest) {
+    msgs.push(`"${nearest.label}" is ${nearest.pct}% done — push for the finish.`);
+  }
+
+  return msgs;
+}

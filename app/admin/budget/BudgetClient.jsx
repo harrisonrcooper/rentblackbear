@@ -41,7 +41,7 @@ import { computeYearStats } from "./lib/yearstats";
 import { computeInsights } from "./lib/insights";
 import { useIsMobile } from "./lib/responsive";
 import { DashboardSkeleton } from "./primitives/Skeleton";
-import { Mascot, moodForCashflow, MASCOT_MESSAGES } from "./primitives/Mascot";
+import { Mascot, moodForCashflow, MASCOT_MESSAGES, contextMascotMessages } from "./primitives/Mascot";
 import { SortableList, DragHandle } from "./primitives/Sortable";
 
 // ── Top-level component ──────────────────────────────────────────────
@@ -409,6 +409,7 @@ export default function BudgetClient({ initialState, userId }) {
                 <HeroNumber
                   hero={hero}
                   mode={state.settings.hero_mode}
+                  state={state}
                   onModeChange={(mode) =>
                     updateState((s) => ({ ...s, settings: { ...s.settings, hero_mode: mode } }))
                   }
@@ -920,7 +921,7 @@ const MODE_LABELS = {
   rentals_only: { title: "Rental cash flow", sub: "after reserves, salary excluded" },
 };
 
-function HeroNumber({ hero, mode, onModeChange }) {
+function HeroNumber({ hero, mode, onModeChange, state }) {
   const value = hero[mode];
   const isZero = value === 0;
   const positive = value > 0;
@@ -929,7 +930,14 @@ function HeroNumber({ hero, mode, onModeChange }) {
   const totalIn = hero.incomeMonthlyTotal + hero.rentalGross;
   const totalOut = hero.personalMonthlyTotal + hero.rentalExpensesWithReserves + hero.businessMonthlyTotal;
   const mood = moodForCashflow(value);
-  const messages = MASCOT_MESSAGES[mood] || MASCOT_MESSAGES.neutral;
+  // Pool: state-aware facts first, then mood-specific generic nudges.
+  // The state-aware ones surface real numbers from the live blob so the
+  // mascot teaches rather than greets.
+  const messages = useMemo(() => {
+    const generic = MASCOT_MESSAGES[mood] || MASCOT_MESSAGES.neutral;
+    const context = state ? contextMascotMessages(state) : [];
+    return [...context, ...generic];
+  }, [mood, state]);
   const [msgIdx, setMsgIdx] = useState(0);
   const message = messages[msgIdx % messages.length];
   return (
