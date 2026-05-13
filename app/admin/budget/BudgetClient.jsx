@@ -35,6 +35,7 @@ import { buildGoalTrajectory } from "./lib/goalTrajectory";
 import { predictCategory } from "./lib/predict";
 import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscriptionAudit, billCalendarGrid, billPeriodKey } from "./lib/bills";
 import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPORT_RANGES } from "./lib/reports";
+import { buildEnvelopeTrend } from "./lib/envelopeTrend";
 import { buildSpendingHeatmap } from "./lib/heatmap";
 import { computeOnboarding } from "./lib/onboarding";
 import { computeYearStats } from "./lib/yearstats";
@@ -4069,6 +4070,7 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
                           category={c}
                           balance={b}
                           accent={meta.accent}
+                          state={state}
                           onLog={(amount, note) => logEntry(c.label, amount, note)}
                           onBulk={(parsed) => bulkLog(c.label, parsed)}
                           onUpdateEntry={updateEntry}
@@ -4087,11 +4089,16 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
   );
 }
 
-function EnvelopeRow({ category, balance, accent, onLog, onBulk, onUpdateEntry, onDeleteEntry }) {
+function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdateEntry, onDeleteEntry }) {
   const { budget, carryover, thisMonthSpent, available, entries } = balance;
   const [expanded, setExpanded] = useState(false);
   const [logging, setLogging] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const trend = useMemo(
+    () => (state ? buildEnvelopeTrend(state, category.label, 6) : []),
+    [state, category.label],
+  );
+  const trendHasData = trend.some((m) => m.spent > 0);
 
   const overspent = available < 0;
   // Progress: spent vs (budget + carryover, but at least the budget).
@@ -4177,6 +4184,36 @@ function EnvelopeRow({ category, balance, accent, onLog, onBulk, onUpdateEntry, 
           </button>
         )}
       </div>
+
+      {trendHasData ? (
+        <div style={{ marginTop: 8, marginLeft: 18, display: "flex", alignItems: "flex-end", gap: 3, height: 18 }} aria-label="Last 6 months">
+          {(() => {
+            const maxSpend = Math.max(budget || 1, ...trend.map((m) => m.spent));
+            const lastIdx = trend.length - 1;
+            return trend.map((m, i) => {
+              const heightPct = maxSpend > 0 ? Math.max(2, (m.spent / maxSpend) * 100) : 2;
+              const isCurrent = i === lastIdx;
+              const overBudget = budget > 0 && m.spent > budget;
+              return (
+                <div
+                  key={m.month}
+                  title={`${m.month}: ${fmtUsd(m.spent)}${budget > 0 ? ` of ${fmtUsd(budget)}` : ""}`}
+                  style={{
+                    width: 8,
+                    height: `${heightPct}%`,
+                    background: overBudget ? COLORS.red : isCurrent ? accent : `${accent}88`,
+                    borderRadius: 2,
+                    transition: "height 0.3s ease",
+                  }}
+                />
+              );
+            });
+          })()}
+          <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" }}>
+            6 mo
+          </span>
+        </div>
+      ) : null}
 
       {expanded && (
         <div style={{ marginTop: 10, paddingLeft: 18, borderLeft: `2px solid ${accent}33` }}>
