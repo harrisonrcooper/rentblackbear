@@ -278,6 +278,12 @@ export default function BudgetClient({ initialState, userId }) {
         @keyframes slideUp { from { transform: translateY(12px) scale(0.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
         @keyframes bb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes bb-toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes bb-wiggle {
+          10%, 90% { transform: translateX(-1px); }
+          20%, 80% { transform: translateX(2px); }
+          30%, 50%, 70% { transform: translateX(-4px); }
+          40%, 60% { transform: translateX(4px); }
+        }
         /* iOS Safari polish */
         body, button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
         @media (max-width: 899px) {
@@ -1747,22 +1753,72 @@ function InlineText({ value, onChange }) {
     <button onClick={() => setEditing(true)} className="bb-edit-btn" style={textBtnStyle()}>{value}</button>
   );
 }
-function InlineNumber({ value, onChange, width = 110 }) {
+function InlineNumber({ value, onChange, width = 110, min, max, allowNegative = true }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String((value / 100).toFixed(2)));
+  const [error, setError] = useState(null);
+  const [wiggleKey, setWiggleKey] = useState(0);
   useEffect(() => setDraft(String((value / 100).toFixed(2))), [value]);
+
+  // Validate the draft as a cents amount against optional bounds.
+  // Returns either an error string or null.
+  const validate = (rawDraft) => {
+    const n = parseFloat(rawDraft);
+    if (rawDraft === "" || rawDraft === "-" || rawDraft === ".") return "Enter a number";
+    if (isNaN(n)) return "Not a number";
+    const cents = Math.round(n * 100);
+    if (!allowNegative && cents < 0) return "Must be 0 or more";
+    if (min != null && cents < min) return `Must be ≥ ${fmtUsd(min)}`;
+    if (max != null && cents > max) return `Must be ≤ ${fmtUsd(max)}`;
+    return null;
+  };
+
+  const commit = () => {
+    const err = validate(draft);
+    if (err) {
+      setError(err);
+      setWiggleKey((k) => k + 1);
+      // Stay in editing mode so the user can fix it.
+      return;
+    }
+    setError(null);
+    setEditing(false);
+    const n = parseFloat(draft);
+    if (!isNaN(n)) onChange(Math.round(n * 100));
+  };
+
   return editing ? (
-    <input
-      autoFocus
-      type="number"
-      step="0.01"
-      inputMode="decimal"
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => { setEditing(false); const n = parseFloat(draft); if (!isNaN(n)) onChange(Math.round(n * 100)); }}
-      onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") { setDraft(String((value / 100).toFixed(2))); setEditing(false); } }}
-      style={{ ...inputStyle(), width, textAlign: "right", fontVariantNumeric: "tabular-nums" }}
-    />
+    <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "stretch", gap: 2, width }}>
+      <input
+        key={wiggleKey}
+        autoFocus
+        type="number"
+        step="0.01"
+        inputMode="decimal"
+        value={draft}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? "inline-num-err" : undefined}
+        onChange={(e) => { setDraft(e.target.value); if (error) setError(validate(e.target.value)); }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") { setDraft(String((value / 100).toFixed(2))); setError(null); setEditing(false); }
+        }}
+        style={{
+          ...inputStyle(),
+          width: "100%",
+          textAlign: "right",
+          fontVariantNumeric: "tabular-nums",
+          borderColor: error ? COLORS.red : undefined,
+          animation: error ? "bb-wiggle 0.32s cubic-bezier(0.36, 0.07, 0.19, 0.97)" : undefined,
+        }}
+      />
+      {error ? (
+        <span id="inline-num-err" role="alert" style={{ fontSize: 10, fontWeight: 700, color: COLORS.red, textAlign: "right" }}>
+          {error}
+        </span>
+      ) : null}
+    </div>
   ) : (
     <button onClick={() => setEditing(true)} className="bb-edit-btn" style={{ ...textBtnStyle(), width, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700, color: value === 0 ? COLORS.textFaint : COLORS.text }}>
       {fmtUsd(value)}
