@@ -17,7 +17,7 @@ import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as R
 import { seedBudget } from "@/actions/budget/seed";
 import { saveBudgetStateAction } from "@/actions/budget/state";
 
-import { COLORS, FONT, STYLES, btnStyle as btn, inputStyle, textBtnStyle, stepBtnStyle, pillSelectStyle } from "./lib/tokens";
+import { COLORS, FONT, STYLES, btnStyle as btn, inputStyle, textBtnStyle, stepBtnStyle, pillSelectStyle, themeStylesheet } from "./lib/tokens";
 import { Icon, ICON } from "./lib/icons";
 import { fmtUsd, fmtCompact, biweeklyToMonthly, yearlyToMonthly, categoryMonthly, incomeMonthly } from "./lib/money";
 import { propertyMonthlyGross, propertyMonthlyExpenses, propertyMonthlyNet, computeNetWorthCents, computeHero, genId, todayISODate } from "./lib/calc";
@@ -203,8 +203,29 @@ export default function BudgetClient({ initialState, userId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.goals, state.properties, state.assets, state.debts, state.income_sources, state.categories]);
 
+  // Theme switcher — resolves "system" → "light" | "dark" via
+  // prefers-color-scheme, then writes the result to a scoped wrapper
+  // attribute. Stays off <html> so the rentblackbear shell's own
+  // data-theme system (in app/layout.jsx + app/globals.css) is
+  // untouched when the user is on this page.
+  const themeChoice = state.settings.theme || "system";
+  const [resolvedTheme, setResolvedTheme] = useState("light");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (themeChoice !== "system") {
+      setResolvedTheme(themeChoice);
+      return;
+    }
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setResolvedTheme(mq.matches ? "dark" : "light");
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [themeChoice]);
+
   return (
-    <div style={STYLES.page}>
+    <div data-bb-theme={resolvedTheme} style={STYLES.page}>
+      <style dangerouslySetInnerHTML={{ __html: themeStylesheet() }} />
       <style dangerouslySetInnerHTML={{ __html: `
         .bb-edit-btn:hover { background: ${COLORS.surfaceAlt} !important; }
         .bb-edit-btn:focus { outline: 2px solid ${COLORS.accentSoft}; outline-offset: 1px; }
@@ -6814,7 +6835,54 @@ function SettingsView({ state, updateState }) {
         </div>
         <PctRow label="Default vacancy %" bps={s.default_vacancy_bps} onChange={(v) => set({ default_vacancy_bps: v })} />
         <PctRow label="Default CapEx %" bps={s.default_capex_bps} onChange={(v) => set({ default_capex_bps: v })} />
+        <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", padding: "10px 4px" }}>
+          <div>
+            <div style={{ fontSize: 13.5, color: COLORS.textMuted, fontWeight: 500 }}>Appearance</div>
+            <div style={{ fontSize: 11, color: COLORS.textFaint, marginTop: 2 }}>System follows your phone&apos;s setting.</div>
+          </div>
+          <ThemeToggle value={s.theme || "system"} onChange={(v) => set({ theme: v })} />
+        </div>
       </BlockCard>
+    </div>
+  );
+}
+
+function ThemeToggle({ value, onChange }) {
+  const opts = [
+    { id: "system", label: "System" },
+    { id: "light",  label: "Light" },
+    { id: "dark",   label: "Dark" },
+  ];
+  return (
+    <div role="radiogroup" aria-label="Theme" style={{ display: "inline-flex", padding: 2, borderRadius: 100, background: COLORS.surfaceTint, border: `1px solid ${COLORS.border}` }}>
+      {opts.map((o) => {
+        const active = value === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(o.id)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 100,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 0.4,
+              fontFamily: FONT,
+              border: "none",
+              cursor: "pointer",
+              background: active ? COLORS.surface : "transparent",
+              color: active ? COLORS.text : COLORS.textMuted,
+              boxShadow: active ? "0 1px 2px rgba(15,23,41,0.06)" : "none",
+              transition: "all 0.12s ease",
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
