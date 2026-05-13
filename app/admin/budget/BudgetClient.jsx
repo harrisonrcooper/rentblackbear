@@ -36,6 +36,7 @@ import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscr
 import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPORT_RANGES } from "./lib/reports";
 import { buildSpendingHeatmap } from "./lib/heatmap";
 import { computeOnboarding } from "./lib/onboarding";
+import { computeYearStats } from "./lib/yearstats";
 import { detectRecurring } from "./lib/recurring";
 import { createBill } from "@/actions/budget/bills";
 import { parseCSV, detectColumns, buildImportRows } from "./lib/csvImport";
@@ -357,6 +358,8 @@ export default function BudgetClient({ initialState, userId }) {
                     updateState((s) => ({ ...s, settings: { ...s.settings, hero_mode: mode } }))
                   }
                 />
+
+                <YearInReviewStrip state={state} />
 
                 <HabitsStrip
                   streaks={streaks}
@@ -7887,6 +7890,99 @@ function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, st
 }
 
 // Habits / streaks / achievements strip above the tile grid.
+function YearInReviewStrip({ state }) {
+  const stats = useMemo(() => computeYearStats(state), [state]);
+
+  // Suppress until there's actually something to show. Months-tracked
+  // gate keeps a fresh user from seeing "$0 saved" their first day.
+  if (stats.monthsTracked < 2) return null;
+
+  const tiles = [
+    {
+      key: "saved",
+      label: `Saved · ${stats.year}`,
+      value: fmtUsd(stats.savedYTD, { compact: stats.savedYTD >= 100_000 }),
+      sub: `${stats.monthsTracked} mo tracked`,
+      color: stats.savedYTD >= 0 ? COLORS.green : COLORS.red,
+      bg: stats.savedYTD >= 0 ? COLORS.greenBg : COLORS.redBg,
+      icon: ICON.trending,
+    },
+    {
+      key: "delta",
+      label: "Net worth Δ",
+      value: `${stats.netWorthDelta >= 0 ? "+" : "−"}${fmtUsd(Math.abs(stats.netWorthDelta), { compact: Math.abs(stats.netWorthDelta) >= 100_000 })}`,
+      sub: "since Jan 1",
+      color: stats.netWorthDelta >= 0 ? COLORS.green : COLORS.red,
+      bg: stats.netWorthDelta >= 0 ? COLORS.greenBg : COLORS.redBg,
+      icon: stats.netWorthDelta >= 0 ? ICON.arrowUp : ICON.arrowDn,
+    },
+    {
+      key: "spent",
+      label: "Total spent",
+      value: fmtUsd(stats.totalSpent, { compact: stats.totalSpent >= 100_000 }),
+      sub: `across logged categories`,
+      color: COLORS.amber,
+      bg: COLORS.amberBg,
+      icon: ICON.envelope,
+    },
+    {
+      key: "best",
+      label: "Best month",
+      value: stats.bestMonthLabel || "—",
+      sub: stats.bestMonthLabel ? `${fmtUsd(stats.bestMonthAmount, { compact: true })} saved` : "needs more history",
+      color: COLORS.purple,
+      bg: COLORS.purpleBg,
+      icon: ICON.trophy,
+    },
+  ];
+
+  return (
+    <section style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+      gap: 10,
+      marginBottom: 14,
+    }}>
+      {tiles.map((t) => (
+        <div
+          key={t.key}
+          style={{
+            ...STYLES.card,
+            padding: "12px 14px",
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0, 1fr)",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: t.bg, color: t.color,
+            display: "grid", placeItems: "center", flexShrink: 0,
+          }}>
+            <Icon d={t.icon} size={18} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.6, color: COLORS.textFaint, textTransform: "uppercase" }}>
+              {t.label}
+            </div>
+            <div style={{
+              marginTop: 1, fontSize: 18, fontWeight: 800, color: t.color,
+              fontVariantNumeric: "tabular-nums", letterSpacing: -0.02,
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {t.value}
+            </div>
+            <div style={{ marginTop: 1, fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+              {t.sub}
+            </div>
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function OnboardingChecklist({ state, onJump, onDismiss }) {
   const [expanded, setExpanded] = useState(true);
   const status = useMemo(() => computeOnboarding(state), [state]);
