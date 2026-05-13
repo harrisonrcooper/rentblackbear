@@ -102,12 +102,68 @@ export default function BudgetClient({ initialState, userId }) {
   }, []);
   const [seeding, setSeeding] = useState(false);
 
-  // Global keyboard shortcuts.
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+
+  // Global keyboard shortcuts. Gmail-style two-key nav ("g d" =
+  // Dashboard) so we don't burn every single-letter key. The prefix
+  // state lives in a ref so consecutive g-presses still work without
+  // re-rendering each time.
+  const gPrefixRef = useRef({ active: false, timer: null });
   useEffect(() => {
+    const G_NAV = {
+      d: "dashboard",
+      e: "envelopes",
+      b: "bills",
+      k: "banking",
+      h: "habits",
+      o: "goals", // "g g" feels weird and conflicts with prefix
+      a: "achievements",
+      r: "reports",
+      s: "settings",
+    };
+
     const onKey = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
-      if (e.key === "Escape") { setDrill(null); setFabOpen(false); }
-      if (e.key === "+" || (e.key === "n" && (e.metaKey || e.ctrlKey))) { e.preventDefault(); setFabOpen(true); }
+      const tag = e.target.tagName;
+      const inField = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.target.isContentEditable;
+      if (e.metaKey || e.ctrlKey || e.altKey) {
+        // Only the existing Cmd/Ctrl-N shortcut survives modifier presses.
+        if (e.key === "n" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); setFabOpen(true); }
+        return;
+      }
+
+      // Always available, even in input fields.
+      if (e.key === "Escape") {
+        setDrill(null); setFabOpen(false); setShowShortcutsHelp(false);
+        gPrefixRef.current.active = false;
+        return;
+      }
+      if (inField) return;
+
+      // g-prefix mode — after pressing g, the next key picks a section.
+      if (gPrefixRef.current.active) {
+        const target = G_NAV[e.key];
+        gPrefixRef.current.active = false;
+        if (gPrefixRef.current.timer) clearTimeout(gPrefixRef.current.timer);
+        if (target) {
+          e.preventDefault();
+          setDrill(null);
+          setActiveSection(target);
+        }
+        return;
+      }
+      if (e.key === "g") {
+        e.preventDefault();
+        gPrefixRef.current.active = true;
+        if (gPrefixRef.current.timer) clearTimeout(gPrefixRef.current.timer);
+        // 1.5-second window to type the second key.
+        gPrefixRef.current.timer = setTimeout(() => { gPrefixRef.current.active = false; }, 1500);
+        return;
+      }
+
+      // Single-key shortcuts.
+      if (e.key === "?") { e.preventDefault(); setShowShortcutsHelp((v) => !v); return; }
+      if (e.key === "q") { e.preventDefault(); setFabOpen(true); return; }
+      if (e.key === "+") { e.preventDefault(); setFabOpen(true); return; }
       if (e.key === "1") setDrill("personal");
       if (e.key === "2") setDrill("rentals");
       if (e.key === "3") setDrill("networth");
@@ -115,7 +171,10 @@ export default function BudgetClient({ initialState, userId }) {
       if (e.key === "5") setDrill("mom");
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (gPrefixRef.current.timer) clearTimeout(gPrefixRef.current.timer);
+    };
   }, []);
 
   // Auto-clear toasts 6 seconds after they're added.
@@ -468,6 +527,9 @@ export default function BudgetClient({ initialState, userId }) {
         </DrillSheet>
       )}
 
+      {showShortcutsHelp ? (
+        <ShortcutsHelp onClose={() => setShowShortcutsHelp(false)} />
+      ) : null}
       {toasts.length > 0 ? (
         <div style={{
           position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
@@ -3743,6 +3805,104 @@ function PctRow({ label, bps, onChange }) {
           style={{ ...inputStyle(), width: 90, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
         />
         <span style={{ color: COLORS.textFaint, fontWeight: 600 }}>%</span>
+      </div>
+    </div>
+  );
+}
+
+function ShortcutsHelp({ onClose }) {
+  const groups = [
+    {
+      title: "Jump to a section",
+      items: [
+        ["g d", "Dashboard"],
+        ["g e", "Envelopes"],
+        ["g b", "Bills"],
+        ["g k", "Banking"],
+        ["g h", "Habits"],
+        ["g o", "Goals"],
+        ["g a", "Achievements"],
+        ["g r", "Reports"],
+        ["g s", "Settings"],
+      ],
+    },
+    {
+      title: "Open a drill",
+      items: [
+        ["1", "Personal"],
+        ["2", "Rentals"],
+        ["3", "Net worth"],
+        ["4", "HELOC"],
+        ["5", "Family loan"],
+      ],
+    },
+    {
+      title: "Quick actions",
+      items: [
+        ["q", "Quick add expense"],
+        ["+", "Quick add expense"],
+        ["⌘ N", "Quick add expense"],
+        ["?", "Show / hide this list"],
+        ["Esc", "Close any open drill or modal"],
+      ],
+    },
+  ];
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 70,
+        background: "rgba(13,20,36,0.55)",
+        backdropFilter: "blur(2px)",
+        display: "grid", placeItems: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          ...STYLES.card,
+          padding: 22,
+          maxWidth: 520, width: "100%",
+          maxHeight: "82vh", overflowY: "auto",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800 }}>Keyboard shortcuts</div>
+            <div style={{ fontSize: 11, color: COLORS.textFaint, fontWeight: 600 }}>
+              Two-key nav like Gmail. Press <kbd>g</kbd> then the destination key.
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{ ...textBtnStyle(), padding: "4px 8px" }}>
+            <Icon d={ICON.x} size={14} />
+          </button>
+        </div>
+        <div style={{ display: "grid", gap: 16 }}>
+          {groups.map((g) => (
+            <div key={g.title}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, color: COLORS.textFaint, textTransform: "uppercase", marginBottom: 6 }}>
+                {g.title}
+              </div>
+              <div style={{ display: "grid", gap: 4 }}>
+                {g.items.map(([key, label]) => (
+                  <div key={key} style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", gap: 10, alignItems: "center", padding: "6px 8px", borderRadius: 8 }}>
+                    <kbd style={{
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      minWidth: 36, padding: "2px 8px",
+                      background: COLORS.surfaceTint, border: `1px solid ${COLORS.border}`,
+                      borderRadius: 6, fontFamily: "ui-monospace, Menlo, Consolas, monospace",
+                      fontSize: 11, fontWeight: 700, color: COLORS.text,
+                    }}>{key}</kbd>
+                    <span style={{ fontSize: 12.5, color: COLORS.text, fontWeight: 500 }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
