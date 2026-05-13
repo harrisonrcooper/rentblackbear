@@ -65,6 +65,64 @@ export async function fetchBudgetState(): Promise<
   }
 }
 
+export type ImportedActualRow = {
+  date: string; // YYYY-MM-DD
+  amount_cents: number;
+  category_label: string;
+  note?: string;
+};
+
+// Batch-insert historical transactions into monthly_actuals. Used by
+// the CSV import flow on the Reports tab — drops in a full year of
+// data in a single write so the user doesn't pay per-row latency.
+// Rows without a category_label are skipped with a warning.
+export async function importHistoricalActuals(
+  inputRows: ImportedActualRow[],
+): Promise<
+  | { ok: true; inserted: number; skipped: number }
+  | { ok: false; message: string }
+> {
+  const { userId } = await auth();
+  if (!userId) return { ok: false, message: "Not authenticated." };
+  const list = allowedOwnerIds();
+  if (list.length > 0 && !list.includes(userId)) {
+    return { ok: false, message: "Not authorized." };
+  }
+  try {
+    const wsKey = workspaceKey(userId);
+    const current = await loadBudgetState(wsKey);
+    const knownLabels = new Set(
+      (current.categories || []).map((c) => c.label.toLowerCase()),
+    );
+    const accepted: BudgetState["monthly_actuals"] = [];
+    let skipped = 0;
+    const genId = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+    for (const r of inputRows) {
+      if (!r.category_label || !knownLabels.has(r.category_label.toLowerCase())) {
+        skipped++;
+        continue;
+      }
+      const month = `${r.date.slice(0, 7)}-01`;
+      accepted.push({
+        id: genId(),
+        category_label: r.category_label,
+        month,
+        paid_on: r.date,
+        amount_cents: r.amount_cents,
+        note: r.note,
+      });
+    }
+    const next: BudgetState = {
+      ...current,
+      monthly_actuals: [...(current.monthly_actuals || []), ...accepted],
+    };
+    await persist(wsKey, next, userId);
+    return { ok: true, inserted: accepted.length, skipped };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export async function saveBudgetStateAction(
   state: BudgetState,
 ): Promise<{ ok: boolean; message?: string }> {

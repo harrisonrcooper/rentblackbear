@@ -37,6 +37,8 @@ import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPOR
 import { buildSpendingHeatmap } from "./lib/heatmap";
 import { detectRecurring } from "./lib/recurring";
 import { createBill } from "@/actions/budget/bills";
+import { parseCSV, detectColumns, buildImportRows } from "./lib/csvImport";
+import { importHistoricalActuals } from "@/actions/budget/state";
 import { buildScheduleE, buildMonthlyActuals, buildHistorySnapshot, buildBills, buildFullSnapshotJSON, downloadCSV, downloadJSON, defaultFilename } from "./lib/csv";
 import { useIsMobile } from "./lib/responsive";
 import { DashboardSkeleton } from "./primitives/Skeleton";
@@ -5866,6 +5868,7 @@ function ReportsView({ state }) {
         </ReportCard>
 
         <ExportsBlock state={state} />
+        <ImportBlock state={state} />
 
         {/* Per-category trend */}
         <ReportCard
@@ -5983,6 +5986,252 @@ function EmptyReport({ text }) {
     <div style={{ padding: 28, textAlign: "center", color: COLORS.textFaint, fontSize: 12, fontStyle: "italic" }}>
       {text}
     </div>
+  );
+}
+
+function ImportBlock({ state }) {
+  const [parsed, setParsed] = useState(null); // rows[][]
+  const [columnMap, setColumnMap] = useState(null);
+  const [preview, setPreview] = useState(null); // { rows, warnings }
+  const [defaultCategory, setDefaultCategory] = useState("");
+  const [amountSign, setAmountSign] = useState("negative_is_outflow");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const categories = state.categories || [];
+  const knownLabels = useMemo(() => categories.map((c) => c.label), [categories]);
+
+  const reset = () => {
+    setParsed(null);
+    setColumnMap(null);
+    setPreview(null);
+    setResult(null);
+    setError(null);
+  };
+
+  const onFile = (file) => {
+    if (!file) return;
+    setError(null);
+    setResult(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = String(e.target?.result || "");
+        const rows = parseCSV(text);
+        if (rows.length < 2) {
+          setError("CSV had no data rows.");
+          return;
+        }
+        const headers = rows[0];
+        const detected = detectColumns(headers);
+        setParsed(rows);
+        setColumnMap(detected);
+      } catch (err) {
+        setError(err?.message || String(err));
+      }
+    };
+    reader.onerror = () => setError("Failed to read file.");
+    reader.readAsText(file);
+  };
+
+  // Recompute preview whenever the user changes mapping / default
+  // category / amount sign.
+  useEffect(() => {
+    if (!parsed || !columnMap) { setPreview(null); return; }
+    const r = buildImportRows(parsed, columnMap, {
+      categoriesKnown: knownLabels,
+      defaultCategory: defaultCategory || null,
+      amountSign,
+    });
+    setPreview(r);
+  }, [parsed, columnMap, knownLabels, defaultCategory, amountSign]);
+
+  const headers = parsed?.[0] || [];
+
+  const commit = async () => {
+    if (!preview) return;
+    const rows = preview.rows.filter((r) => r.category_label);
+    if (rows.length === 0) {
+      setError("No rows have a recognized envelope. Pick a default category or pre-create the envelopes first.");
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    const res = await importHistoricalActuals(rows.map((r) => ({
+      date: r.date,
+      amount_cents: r.amount_cents,
+      category_label: r.category_label,
+      note: r.note,
+    })));
+    setBusy(false);
+    if (res.ok) {
+      setResult(res);
+      // Reload after a short delay so the user sees the success
+      // banner before the page refreshes.
+      setTimeout(() => { if (typeof window !== "undefined") window.location.reload(); }, 1200);
+    } else {
+      setError(res.message);
+    }
+  };
+
+  return (
+    <div style={{ ...STYLES.card, padding: "16px 14px", marginTop: 14 }}>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>Import history · CSV</div>
+        <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textFaint, fontWeight: 600 }}>
+          Drop a Mint / YNAB / bank CSV export to backfill historical expenses. Columns auto-detected; preview before commit.
+        </div>
+      </div>
+
+      {!parsed ? (
+        <FileDrop onFile={onFile} />
+      ) : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
+            <ColumnPicker label="Date column"        headers={headers} value={columnMap?.date}        onChange={(idx) => setColumnMap({ ...columnMap, date: idx })} />
+            <ColumnPicker label="Amount column"      headers={headers} value={columnMap?.amount}      onChange={(idx) => setColumnMap({ ...columnMap, amount: idx })} />
+            <ColumnPicker label="Outflow column"     headers={headers} value={columnMap?.outflow}     onChange={(idx) => setColumnMap({ ...columnMap, outflow: idx })} />
+            <ColumnPicker label="Inflow column"      headers={headers} value={columnMap?.inflow}      onChange={(idx) => setColumnMap({ ...columnMap, inflow: idx })} />
+            <ColumnPicker label="Description column" headers={headers} value={columnMap?.description} onChange={(idx) => setColumnMap({ ...columnMap, description: idx })} />
+            <ColumnPicker label="Category column"    headers={headers} value={columnMap?.category}    onChange={(idx) => setColumnMap({ ...columnMap, category: idx })} />
+          </div>
+
+          <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, fontWeight: 700, color: COLORS.textMuted, letterSpacing: 0.4, textTransform: "uppercase" }}>
+              Default envelope (fallback)
+              <select value={defaultCategory} onChange={(e) => setDefaultCategory(e.target.value)} style={inputStyle()}>
+                <option value="">— none —</option>
+                {categories.map((c) => <option key={c.label} value={c.label}>{c.label}</option>)}
+              </select>
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, fontWeight: 700, color: COLORS.textMuted, letterSpacing: 0.4, textTransform: "uppercase" }}>
+              Amount convention
+              <select value={amountSign} onChange={(e) => setAmountSign(e.target.value)} style={inputStyle()}>
+                <option value="negative_is_outflow">Negative = expense (Mint, banks)</option>
+                <option value="positive_is_outflow">Positive = expense (YNAB-style)</option>
+              </select>
+            </label>
+          </div>
+
+          {preview ? (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: COLORS.textFaint, textTransform: "uppercase", marginBottom: 6 }}>
+                Preview · {preview.rows.length} ready · {preview.rows.filter((r) => !r.category_label).length} need a category
+              </div>
+              <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${COLORS.border}`, borderRadius: 10 }}>
+                {preview.rows.slice(0, 50).map((r, i) => (
+                  <div key={i} className="bb-row" style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto auto", gap: 10, padding: "8px 10px", fontSize: 12 }}>
+                    <span style={{ fontVariantNumeric: "tabular-nums", color: COLORS.textMuted, minWidth: 80 }}>{r.date}</span>
+                    <span style={{ minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.description}</span>
+                    <span style={{ color: r.category_label ? COLORS.text : COLORS.red, fontWeight: 600 }}>
+                      {r.category_label || "no envelope"}
+                    </span>
+                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, color: r.amount_cents >= 0 ? COLORS.text : COLORS.green }}>
+                      {fmtUsd(r.amount_cents)}
+                    </span>
+                  </div>
+                ))}
+                {preview.rows.length > 50 ? (
+                  <div style={{ padding: "8px 10px", fontSize: 11, color: COLORS.textFaint, fontWeight: 600, textAlign: "center" }}>
+                    … and {preview.rows.length - 50} more rows
+                  </div>
+                ) : null}
+              </div>
+              {preview.warnings.length > 0 ? (
+                <details style={{ marginTop: 8, fontSize: 11, color: COLORS.amber }}>
+                  <summary style={{ cursor: "pointer", fontWeight: 700 }}>{preview.warnings.length} parsing warning{preview.warnings.length === 1 ? "" : "s"}</summary>
+                  <ul style={{ margin: "6px 0 0 18px", lineHeight: 1.5 }}>
+                    {preview.warnings.slice(0, 8).map((w, i) => <li key={i}>{w}</li>)}
+                    {preview.warnings.length > 8 ? <li>… +{preview.warnings.length - 8} more</li> : null}
+                  </ul>
+                </details>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div style={{ marginTop: 12, display: "inline-flex", gap: 8 }}>
+            <button
+              onClick={commit}
+              disabled={busy || !preview || preview.rows.filter((r) => r.category_label).length === 0}
+              style={{ ...btnStyle(), background: COLORS.accent, border: `1px solid ${COLORS.accent}`, color: "#fff", padding: "8px 16px", fontSize: 13 }}
+            >
+              {busy ? "importing…" : `import ${preview ? preview.rows.filter((r) => r.category_label).length : 0} rows`}
+            </button>
+            <button onClick={reset} disabled={busy} style={{ ...textBtnStyle(), padding: "8px 12px", fontSize: 12 }}>
+              cancel
+            </button>
+          </div>
+
+          {result?.ok ? (
+            <div role="status" style={{ marginTop: 10, padding: "8px 12px", borderRadius: 10, background: COLORS.greenBg, color: COLORS.green, fontSize: 12, fontWeight: 700 }}>
+              Imported {result.inserted} rows{result.skipped ? ` · ${result.skipped} skipped (no matching envelope)` : ""}. Reloading…
+            </div>
+          ) : null}
+          {error ? (
+            <div role="alert" style={{ marginTop: 10, padding: "8px 12px", borderRadius: 10, background: COLORS.redBg, color: COLORS.red, fontSize: 12, fontWeight: 600 }}>
+              {error}
+            </div>
+          ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+function FileDrop({ onFile }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <label
+      onDragOver={(e) => { e.preventDefault(); setHover(true); }}
+      onDragLeave={() => setHover(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setHover(false);
+        const file = e.dataTransfer?.files?.[0];
+        if (file) onFile(file);
+      }}
+      style={{
+        display: "grid",
+        placeItems: "center",
+        padding: "28px 18px",
+        borderRadius: 14,
+        border: `2px dashed ${hover ? COLORS.accent : COLORS.borderStrong}`,
+        background: hover ? COLORS.accentSoft : COLORS.surfaceTint,
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+      }}
+    >
+      <Icon d={ICON.upload} size={22} color={hover ? COLORS.accent : COLORS.textMuted} />
+      <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: hover ? COLORS.accent : COLORS.textMuted }}>
+        Drop a CSV here or tap to choose
+      </div>
+      <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textFaint, fontWeight: 500 }}>
+        .csv exports from Mint, YNAB, banks, or any tool with a header row
+      </div>
+      <input
+        type="file"
+        accept=".csv,text/csv"
+        onChange={(e) => onFile(e.target.files?.[0])}
+        style={{ display: "none" }}
+      />
+    </label>
+  );
+}
+
+function ColumnPicker({ label, headers, value, onChange }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, fontWeight: 700, color: COLORS.textMuted, letterSpacing: 0.4, textTransform: "uppercase" }}>
+      {label}
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))}
+        style={inputStyle()}
+      >
+        <option value="">— skip —</option>
+        {headers.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
+      </select>
+    </label>
   );
 }
 
