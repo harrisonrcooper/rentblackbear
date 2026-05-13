@@ -35,6 +35,8 @@ import { predictCategory } from "./lib/predict";
 import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscriptionAudit, billCalendarGrid, billPeriodKey } from "./lib/bills";
 import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPORT_RANGES } from "./lib/reports";
 import { buildSpendingHeatmap } from "./lib/heatmap";
+import { detectRecurring } from "./lib/recurring";
+import { createBill } from "@/actions/budget/bills";
 import { buildScheduleE, buildMonthlyActuals, buildHistorySnapshot, buildBills, buildFullSnapshotJSON, downloadCSV, downloadJSON, defaultFilename } from "./lib/csv";
 import { useIsMobile } from "./lib/responsive";
 import { DashboardSkeleton } from "./primitives/Skeleton";
@@ -6377,6 +6379,8 @@ function BankingView({ state, updateState }) {
             </BlockCard>
           ) : null}
 
+          <RecurringSuggestionsBlock state={state} onAfter={reloadFromServer} />
+
           {recentlyImported.length > 0 ? (
             <BlockCard
               title="Recently imported"
@@ -6488,6 +6492,91 @@ function RulesBlock({ state, onAfter }) {
             new rule
           </button>
         </div>
+      )}
+      {error ? (
+        <div role="alert" style={{ marginTop: 6, padding: "6px 10px", borderRadius: 8, background: COLORS.redBg, color: COLORS.red, fontSize: 11, fontWeight: 600 }}>{error}</div>
+      ) : null}
+    </BlockCard>
+  );
+}
+
+function RecurringSuggestionsBlock({ state, onAfter }) {
+  const suggestions = useMemo(() => detectRecurring(state), [state]);
+  const [dismissed, setDismissed] = useState(new Set());
+  const [busyKey, setBusyKey] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Hide suggestions for merchants that already have a bill, and the
+  // ones the user dismissed this session.
+  const visible = suggestions.filter((s) => !s.existing_bill_id && !dismissed.has(s.key));
+
+  if (suggestions.length === 0) return null;
+
+  const addAsBill = async (s) => {
+    setError(null);
+    setBusyKey(s.key);
+    const res = await createBill({
+      label: s.merchant_name,
+      vendor: s.merchant_name,
+      amount_cents: s.median_amount_cents,
+      cadence: s.cadence,
+      due_day: s.due_day,
+      category_label: s.category_label,
+      auto_post: false,
+      last_paid_at: s.last_paid_on,
+    });
+    setBusyKey(null);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  return (
+    <BlockCard
+      title={`Recurring detected · ${visible.length}`}
+      sub="Charges that hit on a regular cadence. One tap turns each into a tracked bill."
+      accent={COLORS.blue}
+      icon="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z M12 7v5l3 3"
+      style={{ marginTop: 14 }}
+    >
+      {visible.length === 0 ? (
+        <div style={{ padding: 14, fontSize: 12.5, color: COLORS.textMuted, textAlign: "center" }}>
+          {suggestions.length > 0
+            ? "All detected patterns are already tracked or dismissed."
+            : "No recurring patterns yet — need at least 3 charges per merchant."}
+        </div>
+      ) : (
+        visible.map((s) => {
+          const busy = busyKey === s.key;
+          return (
+            <div key={s.key} className="bb-row" style={{ padding: "10px 4px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto", gap: 10, alignItems: "center" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {s.merchant_name}
+                  </div>
+                  <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+                    {fmtUsd(s.median_amount_cents)} · {s.cadence} · {s.occurrences} charges · last {s.last_paid_on}
+                    {s.category_label ? ` · ${s.category_label}` : ""}
+                  </div>
+                </div>
+                <button
+                  onClick={() => addAsBill(s)}
+                  disabled={busy}
+                  style={{ ...btnStyle(), background: COLORS.blue, border: `1px solid ${COLORS.blue}`, color: "#fff", padding: "6px 12px", fontSize: 12 }}
+                >
+                  {busy ? "adding…" : "add as bill"}
+                </button>
+                <button
+                  onClick={() => setDismissed((prev) => new Set(prev).add(s.key))}
+                  disabled={busy}
+                  style={{ ...textBtnStyle(), padding: "6px 10px", fontSize: 12 }}
+                >
+                  skip
+                </button>
+              </div>
+            </div>
+          );
+        })
       )}
       {error ? (
         <div role="alert" style={{ marginTop: 6, padding: "6px 10px", borderRadius: 8, background: COLORS.redBg, color: COLORS.red, fontSize: 11, fontWeight: 600 }}>{error}</div>

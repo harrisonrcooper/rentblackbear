@@ -51,6 +51,58 @@ function errorMessage(e: unknown): string {
   return String(e);
 }
 
+export type CreateBillInput = {
+  label: string;
+  vendor?: string;
+  amount_cents: number;
+  cadence: "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
+  due_day?: number;
+  due_month?: number;
+  category_label?: string;
+  account?: string;
+  autopay?: boolean;
+  auto_post?: boolean;
+  last_paid_at?: string | null;
+  notes?: string;
+};
+
+// Create a bill from arbitrary input — used by the recurring detector
+// UI to turn a Plaid pattern into a real bill row, and available for
+// any other surface that wants to add a bill server-side.
+export async function createBill(
+  input: CreateBillInput,
+): Promise<{ ok: true; bill_id: string } | { ok: false; message: string }> {
+  try {
+    const g = await gate();
+    const state = await loadBudgetState(g.workspaceKey);
+    const id = genId();
+    const bill = {
+      id,
+      label: input.label,
+      vendor: input.vendor,
+      amount_cents: input.amount_cents,
+      cadence: input.cadence,
+      due_day: input.due_day,
+      due_month: input.due_month,
+      category_label: input.category_label,
+      account: input.account,
+      autopay: input.autopay ?? false,
+      auto_post: input.auto_post ?? false,
+      last_paid_at: input.last_paid_at ?? null,
+      notes: input.notes,
+      created_at: new Date().toISOString(),
+    };
+    const updated: BudgetState = {
+      ...state,
+      bills: [...(state.bills || []), bill],
+    };
+    await persist(g.workspaceKey, updated, g.userId);
+    return { ok: true, bill_id: id };
+  } catch (e) {
+    return { ok: false, message: errorMessage(e) };
+  }
+}
+
 export async function runScheduledBillPosts(): Promise<
   | { ok: true; posted: number; posted_bill_ids: string[] }
   | { ok: false; message: string }
