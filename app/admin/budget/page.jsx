@@ -12,6 +12,7 @@ import { notFound } from "next/navigation";
 
 import { fetchBudgetState } from "@/actions/budget/state";
 import { runScheduledBillPosts } from "@/actions/budget/bills";
+import { isAuthorizedForBudget } from "@/actions/budget/_households";
 import BudgetClient from "./BudgetClient";
 import { ErrorBoundary } from "./primitives/ErrorBoundary";
 
@@ -21,16 +22,9 @@ export default async function BudgetPage() {
   const { userId } = await auth();
   if (!userId) notFound();
 
-  // Accept either a single owner (legacy `BUDGET_OWNER_USER_ID`) or
-  // a comma-separated list of owners (`BUDGET_OWNER_USER_IDS`). Empty
-  // / unset = anyone authenticated can use the page.
-  const singleOwner = process.env.BUDGET_OWNER_USER_ID;
-  const multiOwner = process.env.BUDGET_OWNER_USER_IDS;
-  const allowedIds = (multiOwner || singleOwner || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (allowedIds.length > 0 && !allowedIds.includes(userId)) notFound();
+  // Multi-household auth: user must belong to at least one configured
+  // household group, OR no groups are configured (private/dev mode).
+  if (!isAuthorizedForBudget(userId)) notFound();
 
   // Run scheduled auto-posts before fetching state so the page renders
   // with any freshly-posted actuals visible. Idempotent — second

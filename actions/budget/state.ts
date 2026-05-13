@@ -1,14 +1,11 @@
 "use server";
 
-// Server actions for the /admin/budget page lifecycle:
-//   * fetchBudgetState — initial page load
-//   * saveBudgetStateAction — atomic full-state save (UI sends the whole
-//     object back; v1 sticks with a coarse-grained write since the blob
-//     is small)
+// Server actions for the /admin/budget page lifecycle.
 //
-// All access is gated on Clerk auth + (when set) BUDGET_OWNER_USER_IDS
-// (or legacy BUDGET_OWNER_USER_ID). Multiple owners means Harrison +
-// Carolina can share a workspace from separate Clerk sessions.
+// Multi-household: each user belongs to at most one household group
+// (see _households.ts). All members of a group share one workspace
+// blob in app_data. Users not in any group get their own private
+// workspace keyed on their Clerk user id.
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -18,24 +15,10 @@ import {
   saveBudgetState as persist,
 } from "./_writer";
 import type { BudgetState } from "./_writer";
+import { resolveHousehold, isAuthorizedForBudget } from "./_households";
 
 function denied(message: string): { ok: false; message: string; state: BudgetState } {
   return { ok: false, message, state: emptyBudgetState() };
-}
-
-function allowedOwnerIds(): string[] {
-  const multi = process.env.BUDGET_OWNER_USER_IDS;
-  const single = process.env.BUDGET_OWNER_USER_ID;
-  return (multi || single || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function workspaceKey(userId: string): string {
-  const list = allowedOwnerIds();
-  if (list.length > 1) return list[0];
-  return userId;
 }
 
 export async function fetchBudgetState(): Promise<
@@ -44,12 +27,10 @@ export async function fetchBudgetState(): Promise<
 > {
   const { userId } = await auth();
   if (!userId) return denied("Not authenticated.");
-  const list = allowedOwnerIds();
-  if (list.length > 0 && !list.includes(userId)) {
-    return denied("Not authorized.");
-  }
+  if (!isAuthorizedForBudget(userId)) return denied("Not authorized.");
   try {
-    const state = await loadBudgetState(workspaceKey(userId));
+    const { workspaceKey } = resolveHousehold(userId);
+    const state = await loadBudgetState(workspaceKey);
     return { ok: true, state };
   } catch (e: unknown) {
     return denied(e instanceof Error ? e.message : String(e));
@@ -61,12 +42,10 @@ export async function saveBudgetStateAction(
 ): Promise<{ ok: boolean; message?: string }> {
   const { userId } = await auth();
   if (!userId) return { ok: false, message: "Not authenticated." };
-  const list = allowedOwnerIds();
-  if (list.length > 0 && !list.includes(userId)) {
-    return { ok: false, message: "Not authorized." };
-  }
+  if (!isAuthorizedForBudget(userId)) return { ok: false, message: "Not authorized." };
   try {
-    await persist(workspaceKey(userId), state, userId);
+    const { workspaceKey } = resolveHousehold(userId);
+    await persist(workspaceKey, state, userId);
     return { ok: true };
   } catch (e: unknown) {
     return { ok: false, message: e instanceof Error ? e.message : String(e) };

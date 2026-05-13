@@ -26,6 +26,11 @@ export interface BudgetSettingsState {
   refi_cost_cents?: number; // closing costs for the refinance scenario
   theme?: "system" | "light" | "dark";
   onboarding_dismissed?: boolean;
+  // "basic" hides advanced surfaces from financial newcomers
+  // (HELOC, rental analytics, insights panel, heatmap, etc.).
+  // "full" is the original power-user surface. Default "full" so
+  // existing budgets render unchanged when the field is absent.
+  experience?: "basic" | "full";
 }
 
 // One-per-day snapshot of the key dashboard totals so sparklines + the

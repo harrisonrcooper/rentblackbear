@@ -15,32 +15,16 @@ import { loadBudgetState, saveBudgetState as persist } from "./_writer";
 import type { BudgetState } from "./_writer";
 import { billsToAutoPost } from "@/app/admin/budget/lib/bills";
 import { predictCategory } from "@/app/admin/budget/lib/predict";
-
-function allowedOwnerIds(): string[] {
-  const multi = process.env.BUDGET_OWNER_USER_IDS;
-  const single = process.env.BUDGET_OWNER_USER_ID;
-  return (multi || single || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function workspaceKey(userId: string): string {
-  const list = allowedOwnerIds();
-  if (list.length > 1) return list[0];
-  return userId;
-}
+import { resolveHousehold, isAuthorizedForBudget } from "./_households";
 
 class GateError extends Error {}
 
 async function gate(): Promise<{ userId: string; workspaceKey: string }> {
   const { userId } = await auth();
   if (!userId) throw new GateError("Not authenticated.");
-  const list = allowedOwnerIds();
-  if (list.length > 0 && !list.includes(userId)) {
-    throw new GateError("Not authorized.");
-  }
-  return { userId, workspaceKey: workspaceKey(userId) };
+  if (!isAuthorizedForBudget(userId)) throw new GateError("Not authorized.");
+  const { workspaceKey } = resolveHousehold(userId);
+  return { userId, workspaceKey };
 }
 
 function genId(): string {

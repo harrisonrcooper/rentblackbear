@@ -202,6 +202,9 @@ export default function BudgetClient({ initialState, userId }) {
   const achievements = useMemo(() => computeAchievements(state), [state]);
   const achievementsUnlocked = achievements.filter((a) => a.unlocked).length;
   const isMobile = useIsMobile();
+  // Experience gate: "basic" hides advanced surfaces for financially-
+  // illiterate households. Default "full" preserves Harrison's view.
+  const isBasic = state.settings.experience === "basic";
 
   // Auto-activate the profile whose clerk_user_id matches the logged
   // in Clerk user. Runs once when state + userId first load — keeps
@@ -392,6 +395,7 @@ export default function BudgetClient({ initialState, userId }) {
             profiles={state.profiles || []}
             activeProfileId={state.active_profile_id}
             onProfileChange={(id) => updateState((s) => ({ ...s, active_profile_id: id }))}
+            isBasic={isBasic}
           />
         )}
         <div style={{ flex: 1, minWidth: 0, paddingBottom: hasData && isMobile ? "calc(72px + env(safe-area-inset-bottom))" : 0 }}>
@@ -404,11 +408,11 @@ export default function BudgetClient({ initialState, userId }) {
               <EnvelopesView state={state} updateState={updateState} activeMonth={activeMonth} setActiveMonth={setActiveMonth} />
             ) : activeSection === "bills" ? (
               <BillsView state={state} updateState={updateState} />
-            ) : activeSection === "habits" ? (
+            ) : activeSection === "habits" && !isBasic ? (
               <HabitsView state={state} updateState={updateState} />
             ) : activeSection === "goals" ? (
               <GoalsView state={state} updateState={updateState} />
-            ) : activeSection === "achievements" ? (
+            ) : activeSection === "achievements" && !isBasic ? (
               <AchievementsGridView achievements={achievements} streaks={streaks} />
             ) : activeSection === "settings" ? (
               <SettingsView state={state} updateState={updateState} />
@@ -429,61 +433,59 @@ export default function BudgetClient({ initialState, userId }) {
                   }
                 />
 
-                <YearInReviewStrip state={state} />
+                {!isBasic ? <YearInReviewStrip state={state} /> : null}
 
-                <InsightsPanel state={state} />
+                {!isBasic ? <InsightsPanel state={state} /> : null}
 
-                <HabitsStrip
-                  streaks={streaks}
-                  achievements={achievements}
-                  netWorth={computeNetWorthCents(state)}
-                  savingsThisMonth={hero.conservative}
-                />
+                {!isBasic ? (
+                  <HabitsStrip
+                    streaks={streaks}
+                    achievements={achievements}
+                    netWorth={computeNetWorthCents(state)}
+                    savingsThisMonth={hero.conservative}
+                  />
+                ) : null}
 
-                <TodaysHabitsBanner state={state} onJump={() => setActiveSection("habits")} />
+                {!isBasic ? <TodaysHabitsBanner state={state} onJump={() => setActiveSection("habits")} /> : null}
 
                 <UpcomingBillsBanner state={state} onJump={() => setActiveSection("bills")} />
 
-                <CashFlowForecastPanel state={state} />
+                {!isBasic ? <CashFlowForecastPanel state={state} /> : null}
 
-                <SpendingHeatmapPanel state={state} />
+                {!isBasic ? <SpendingHeatmapPanel state={state} /> : null}
 
                 <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
 
-                <TileGrid>
-              <PersonalTile
-                state={state}
-                onClick={() => setDrill("personal")}
-              />
-              <RentalsTile
-                state={state}
-                onClick={() => setDrill("rentals")}
-              />
-              <NetWorthTile
-                state={state}
-                onClick={() => setDrill("networth")}
-              />
-              <HelocTile
-                state={state}
-                onClick={() => setDrill("heloc")}
-              />
-              <MomLoanTile
-                state={state}
-                onClick={() => setDrill("mom")}
-                onLogPayment={() => {
-                  const loan = state.mom_loans[0];
-                  if (!loan) return;
-                  updateState((s) => ({
-                    ...s,
-                    mom_loans: [{ ...loan, payments: [...loan.payments, { paid_on: new Date().toISOString().slice(0, 10), amount_cents: loan.monthly_payment_cents }] }],
-                  }));
-                  setToast({ kind: "success", message: `Payment of ${fmtUsd(loan.monthly_payment_cents)} logged` });
-                  fireConfetti({ originY: 0.4 });
-                }}
-              />
-            </TileGrid>
+                {isBasic ? (
+                  <BasicQuickActions
+                    onEnvelopes={() => setActiveSection("envelopes")}
+                    onBills={() => setActiveSection("bills")}
+                    onGoals={() => setActiveSection("goals")}
+                  />
+                ) : (
+                  <TileGrid>
+                    <PersonalTile state={state} onClick={() => setDrill("personal")} />
+                    <RentalsTile state={state} onClick={() => setDrill("rentals")} />
+                    <NetWorthTile state={state} onClick={() => setDrill("networth")} />
+                    <HelocTile state={state} onClick={() => setDrill("heloc")} />
+                    <MomLoanTile
+                      state={state}
+                      onClick={() => setDrill("mom")}
+                      onLogPayment={() => {
+                        const loan = state.mom_loans[0];
+                        if (!loan) return;
+                        updateState((s) => ({
+                          ...s,
+                          mom_loans: [{ ...loan, payments: [...loan.payments, { paid_on: new Date().toISOString().slice(0, 10), amount_cents: loan.monthly_payment_cents }] }],
+                        }));
+                        setToast({ kind: "success", message: `Payment of ${fmtUsd(loan.monthly_payment_cents)} logged` });
+                        fireConfetti({ originY: 0.4 });
+                      }}
+                    />
+                  </TileGrid>
+                )}
 
-                <AchievementStrip achievements={achievements} />
+                {!isBasic ? <AchievementStrip achievements={achievements} /> : null}
 
                 <div style={{ marginTop: 28, color: COLORS.textFaint, fontSize: 12, textAlign: "center" }}>
                   {state.last_modified_at
@@ -552,6 +554,7 @@ export default function BudgetClient({ initialState, userId }) {
           achievementsUnlocked={achievementsUnlocked}
           achievementsTotal={achievements.length}
           streak={streaks.trackedStreak}
+          isBasic={isBasic}
         />
       )}
 
@@ -6521,7 +6524,10 @@ function FAB({ onClick, bottomOffset = 24 }) {
 // Bottom-tab navigation — primary nav on mobile. Same 6 sections as
 // the desktop sidebar, rendered as a fixed bar with safe-area-aware
 // padding so it sits above the iPhone home indicator.
-function MobileNav({ active, onChange, achievementsUnlocked, achievementsTotal, streak }) {
+function MobileNav({ active, onChange, achievementsUnlocked, achievementsTotal, streak, isBasic }) {
+  const sections = isBasic
+    ? SIDEBAR_SECTIONS.filter((s) => !["habits", "achievements"].includes(s.id))
+    : SIDEBAR_SECTIONS;
   return (
     <nav
       aria-label="Sections"
@@ -6533,12 +6539,12 @@ function MobileNav({ active, onChange, achievementsUnlocked, achievementsTotal, 
         borderTop: `1px solid ${COLORS.border}`,
         padding: "6px 4px max(6px, env(safe-area-inset-bottom)) 4px",
         display: "grid",
-        gridTemplateColumns: `repeat(${SIDEBAR_SECTIONS.length}, 1fr)`,
+        gridTemplateColumns: `repeat(${sections.length}, 1fr)`,
         gap: 0,
         fontFamily: FONT,
       }}
     >
-      {SIDEBAR_SECTIONS.map((s) => {
+      {sections.map((s) => {
         const isActive = active === s.id;
         return (
           <button
@@ -6686,7 +6692,10 @@ function ProfileSwitcher({ profiles, activeId, onChange }) {
   );
 }
 
-function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, streak, lastEdit, pending, profiles, activeProfileId, onProfileChange }) {
+function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, streak, lastEdit, pending, profiles, activeProfileId, onProfileChange, isBasic }) {
+  const sections = isBasic
+    ? SIDEBAR_SECTIONS.filter((s) => !["habits", "achievements"].includes(s.id))
+    : SIDEBAR_SECTIONS;
   return (
     <aside style={{
       width: 240, flexShrink: 0,
@@ -6712,7 +6721,7 @@ function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, st
       </div>
 
       <nav style={{ padding: "12px 12px", flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-        {SIDEBAR_SECTIONS.map((s) => {
+        {sections.map((s) => {
           const isActive = active === s.id;
           return (
             <button
@@ -6937,6 +6946,57 @@ function YearInReviewStrip({ state }) {
             </div>
           </div>
         </div>
+      ))}
+    </section>
+  );
+}
+
+// Basic-mode dashboard CTA strip — replaces the 5-tile drill grid
+// with three big buttons that route to the only sections that matter:
+// Envelopes (where your money goes), Bills (what auto-debits), Goals
+// (what you're saving toward).
+function BasicQuickActions({ onEnvelopes, onBills, onGoals }) {
+  const actions = [
+    { label: "Edit my envelopes", sub: "Groceries, gas, rent — set what you can spend each month.", accent: COLORS.accent, icon: ICON.envelope, onClick: onEnvelopes },
+    { label: "Manage my bills",   sub: "The things that hit your account every month, automatically.", accent: COLORS.blue,   icon: ICON.calendar, onClick: onBills },
+    { label: "Pick a goal",       sub: "Emergency fund, vacation, payoff. Make the math chase a target.", accent: COLORS.amber, icon: ICON.flag,     onClick: onGoals },
+  ];
+  return (
+    <section style={{ marginTop: 16, display: "grid", gap: 10 }}>
+      {actions.map((a) => (
+        <button
+          key={a.label}
+          onClick={a.onClick}
+          style={{
+            ...STYLES.card,
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0, 1fr) auto",
+            gap: 14,
+            alignItems: "center",
+            padding: 18,
+            cursor: "pointer",
+            background: COLORS.surface,
+            border: `1px solid ${COLORS.border}`,
+            textAlign: "left",
+            fontFamily: FONT,
+            transition: "border-color 0.12s ease, transform 0.12s ease",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = a.accent; e.currentTarget.style.transform = "translateY(-1px)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.transform = ""; }}
+        >
+          <div style={{
+            width: 44, height: 44, borderRadius: 12,
+            background: `${a.accent}1A`, color: a.accent,
+            display: "grid", placeItems: "center", flexShrink: 0,
+          }}>
+            <Icon d={a.icon} size={20} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: COLORS.text }}>{a.label}</div>
+            <div style={{ marginTop: 3, fontSize: 12.5, color: COLORS.textMuted, fontWeight: 500 }}>{a.sub}</div>
+          </div>
+          <Icon d={ICON.chevR} size={16} color={COLORS.textFaint} />
+        </button>
       ))}
     </section>
   );

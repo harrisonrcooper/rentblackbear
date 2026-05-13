@@ -8,6 +8,48 @@
 
 import { propertyMonthlyGross } from "./calc";
 
+// Basic-mode onboarding — friendlier copy, no rentals / no assets-and-
+// debts step. Four required steps total. The basic household sees this
+// list; full households see the original STEPS below.
+const BASIC_STEPS = [
+  {
+    id: "income",
+    label: "Add your paychecks",
+    hint: "Both incomes — your job and your partner's job.",
+    section: "settings",
+    done: (state) => (state.income_sources || []).some((i) => (i.net_amount_cents || 0) > 0),
+  },
+  {
+    id: "categories",
+    label: "Fill in 3 spending categories",
+    hint: "Groceries, gas, eating out — what you spend money on every month.",
+    section: "envelopes",
+    done: (state) => {
+      const cats = state.categories || [];
+      const funded = cats.filter((c) => (
+        (c.default_monthly_cents || 0) > 0 ||
+        (c.default_biweekly_cents || 0) > 0 ||
+        (c.default_yearly_cents || 0) > 0
+      ));
+      return funded.length >= 3;
+    },
+  },
+  {
+    id: "bills",
+    label: "Add the bills you pay every month",
+    hint: "Rent, car insurance, Netflix — anything that auto-debits.",
+    section: "bills",
+    done: (state) => (state.bills || []).filter((b) => !b.archived_at).length > 0,
+  },
+  {
+    id: "goal",
+    label: "Pick one goal to chase",
+    hint: "Emergency fund, vacation, paying off a card. One thing to win.",
+    section: "goals",
+    done: (state) => (state.goals || []).filter((g) => !g.archived).length > 0,
+  },
+];
+
 const STEPS = [
   {
     id: "income",
@@ -64,7 +106,9 @@ const STEPS = [
 ];
 
 export function computeOnboarding(state) {
-  const steps = STEPS.map((s) => ({
+  const isBasic = state?.settings?.experience === "basic";
+  const source = isBasic ? BASIC_STEPS : STEPS;
+  const steps = source.map((s) => ({
     ...s,
     completed: Boolean(s.done(state)),
   }));
