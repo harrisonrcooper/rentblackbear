@@ -34,6 +34,7 @@ import { computeGoalProgress, formatEta, nextUnhitMilestone, templateToGoal, GOA
 import { predictCategory } from "./lib/predict";
 import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscriptionAudit, billCalendarGrid, billPeriodKey } from "./lib/bills";
 import { computeMonthlySnapshots, computeCategoryTrend, withCumulativeNet, REPORT_RANGES } from "./lib/reports";
+import { buildSpendingHeatmap } from "./lib/heatmap";
 import { buildScheduleE, buildMonthlyActuals, buildHistorySnapshot, buildBills, buildFullSnapshotJSON, downloadCSV, downloadJSON, defaultFilename } from "./lib/csv";
 import { useIsMobile } from "./lib/responsive";
 import { DashboardSkeleton } from "./primitives/Skeleton";
@@ -358,6 +359,8 @@ export default function BudgetClient({ initialState, userId }) {
                 <UpcomingBillsBanner state={state} onJump={() => setActiveSection("bills")} />
 
                 <CashFlowForecastPanel state={state} />
+
+                <SpendingHeatmapPanel state={state} />
 
                 <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
 
@@ -7673,6 +7676,188 @@ function CashFlowForecastPanel({ state }) {
           sub="positive months in a row"
         />
       </div>
+    </section>
+  );
+}
+
+function SpendingHeatmapPanel({ state }) {
+  const grid = useMemo(() => buildSpendingHeatmap(state, 53), [state]);
+  const [hover, setHover] = useState(null);
+
+  // Empty state — no logged spend at all.
+  if (grid.activeDays === 0) {
+    return (
+      <section style={{
+        ...STYLES.card,
+        padding: "16px 14px",
+        marginTop: 14,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>Spending heatmap</div>
+        <div style={{ marginTop: 6, fontSize: 12, color: COLORS.textMuted, fontWeight: 500 }}>
+          Log expenses or connect a bank to see your spending intensity here.
+        </div>
+      </section>
+    );
+  }
+
+  const cellSize = 11;
+  const cellGap = 2;
+  const gridWidth = grid.weeks * (cellSize + cellGap);
+  const dayLabels = ["", "M", "", "W", "", "F", ""];
+
+  // Bucket → background. Bucket 0 = $0 day (subtle tint). Buckets 1-5
+  // ramp from accentSoft to accent. Bucket -1 = future day (invisible).
+  const bucketColor = (b) => {
+    if (b < 0) return "transparent";
+    if (b === 0) return COLORS.surfaceTint;
+    if (b === 1) return "color-mix(in srgb, var(--bb-accent) 20%, var(--bb-surface))";
+    if (b === 2) return "color-mix(in srgb, var(--bb-accent) 40%, var(--bb-surface))";
+    if (b === 3) return "color-mix(in srgb, var(--bb-accent) 60%, var(--bb-surface))";
+    if (b === 4) return "color-mix(in srgb, var(--bb-accent) 80%, var(--bb-surface))";
+    return COLORS.accent;
+  };
+
+  return (
+    <section style={{
+      ...STYLES.card,
+      padding: "16px 14px",
+      marginTop: 14,
+      overflow: "hidden",
+    }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+        gap: 12, flexWrap: "wrap", marginBottom: 12,
+      }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Spending heatmap</div>
+          <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textFaint, fontWeight: 600 }}>
+            Past year · {fmtUsd(grid.totalCents, { compact: true })} across {grid.activeDays} day{grid.activeDays === 1 ? "" : "s"}
+            {grid.heaviest ? ` · heaviest ${grid.heaviest.iso} (${fmtUsd(grid.heaviest.cents, { compact: true })})` : ""}
+          </div>
+        </div>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 700, color: COLORS.textMuted }}>
+          less
+          {[0, 1, 2, 3, 4, 5].map((b) => (
+            <span key={b} style={{
+              width: cellSize, height: cellSize, borderRadius: 2,
+              background: bucketColor(b),
+              border: b === 0 ? `1px solid ${COLORS.border}` : "none",
+              display: "inline-block",
+            }} />
+          ))}
+          more
+        </div>
+      </div>
+
+      <div style={{ overflowX: "auto", paddingBottom: 4 }}>
+        <div style={{ display: "inline-block", position: "relative", paddingTop: 16, paddingLeft: 22 }}>
+          {/* Month labels */}
+          <div style={{ position: "absolute", top: 0, left: 22, right: 0, height: 14 }}>
+            {grid.monthLabels.map((m) => (
+              <span
+                key={`${m.weekIndex}-${m.label}`}
+                style={{
+                  position: "absolute",
+                  left: m.weekIndex * (cellSize + cellGap),
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: 0.4,
+                  color: COLORS.textFaint,
+                  textTransform: "uppercase",
+                }}
+              >
+                {m.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Day-of-week labels (M/W/F) */}
+          <div style={{ position: "absolute", top: 16, left: 0, width: 18, height: 7 * (cellSize + cellGap) }}>
+            {dayLabels.map((lbl, d) => (
+              <span key={d} style={{
+                position: "absolute",
+                top: d * (cellSize + cellGap),
+                left: 0,
+                width: 18,
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: 0.4,
+                color: COLORS.textFaint,
+                lineHeight: `${cellSize}px`,
+                textAlign: "right",
+                paddingRight: 4,
+              }}>
+                {lbl}
+              </span>
+            ))}
+          </div>
+
+          {/* Cell grid */}
+          <svg
+            width={gridWidth}
+            height={7 * (cellSize + cellGap)}
+            role="img"
+            aria-label="Spending heatmap, past 53 weeks"
+          >
+            {grid.cells.map((c, i) => (
+              <rect
+                key={i}
+                x={c.weekIndex * (cellSize + cellGap)}
+                y={c.dow * (cellSize + cellGap)}
+                width={cellSize}
+                height={cellSize}
+                rx={2}
+                ry={2}
+                fill={bucketColor(c.bucket)}
+                stroke={c.bucket === 0 ? COLORS.border : "none"}
+                strokeWidth={c.bucket === 0 ? 1 : 0}
+                onMouseEnter={() => setHover(c)}
+                onMouseLeave={() => setHover((h) => (h === c ? null : h))}
+                onTouchStart={() => setHover(c)}
+                style={{ cursor: c.inFuture ? "default" : "pointer" }}
+              >
+                <title>
+                  {c.inFuture
+                    ? `${c.iso} · future`
+                    : c.cents > 0
+                      ? `${c.iso} · ${fmtUsd(c.cents)}`
+                      : `${c.iso} · no spend`}
+                </title>
+              </rect>
+            ))}
+          </svg>
+        </div>
+      </div>
+
+      {hover && !hover.inFuture ? (
+        <div
+          role="status"
+          style={{
+            marginTop: 10,
+            padding: "6px 10px",
+            borderRadius: 8,
+            background: COLORS.surfaceTint,
+            border: `1px solid ${COLORS.border}`,
+            fontSize: 12,
+            color: COLORS.text,
+            fontWeight: 600,
+            display: "inline-flex",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          <span style={{
+            width: 10, height: 10, borderRadius: 2,
+            background: bucketColor(hover.bucket),
+            border: hover.bucket === 0 ? `1px solid ${COLORS.border}` : "none",
+          }} />
+          {hover.date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+          <span style={{ color: COLORS.textMuted, fontWeight: 500 }}>·</span>
+          <span style={{ color: hover.cents > 0 ? COLORS.text : COLORS.textFaint }}>
+            {hover.cents > 0 ? fmtUsd(hover.cents) : "no spend"}
+          </span>
+        </div>
+      ) : null}
     </section>
   );
 }
