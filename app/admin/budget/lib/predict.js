@@ -60,27 +60,39 @@ const PREDICTORS = [
   { match: /\b(airline|delta|united|southwest|jetblue|spirit|hotel|airbnb|booking|expedia)\b/i, hints: ["vacation", "travel"] },
 ];
 
+// `categories` accepts EITHER an array of category objects ({ label })
+// OR an array of bare label strings. The return type mirrors the
+// input: objects in → object out, strings in → string out. Callers
+// that always want a string can do `.label || result` on the result.
 export function predictCategory(label, categories) {
   if (!label || !categories || categories.length === 0) return null;
   const l = label.toLowerCase().trim();
   if (!l) return null;
 
+  // Normalize each category to a { src, label } pair so the matchers
+  // work uniformly. `src` is what we return — preserves the input
+  // shape.
+  const norm = categories
+    .map((c) => {
+      if (typeof c === "string") return { src: c, label: c.toLowerCase() };
+      return { src: c, label: ((c?.label) || "").toLowerCase() };
+    })
+    .filter((n) => n.label);
+
   // 1) Curated predictor pass — first matching regex wins.
   for (const p of PREDICTORS) {
     if (p.match.test(l)) {
       for (const hint of p.hints) {
-        const cat = categories.find((c) => (c.label || "").toLowerCase().includes(hint));
-        if (cat) return cat;
+        const cat = norm.find((n) => n.label.includes(hint));
+        if (cat) return cat.src;
       }
     }
   }
 
   // 2) Direct substring match against category labels (cheap heuristic).
-  const direct = categories.find((c) => {
-    const cl = (c.label || "").toLowerCase();
-    return cl && (l.includes(cl) || cl.includes(l.split(/\s+/)[0]));
-  });
-  return direct || null;
+  const firstToken = l.split(/\s+/)[0];
+  const direct = norm.find((n) => l.includes(n.label) || n.label.includes(firstToken));
+  return direct?.src || null;
 }
 
 // Helpful debug/inspect — returns the predictor row that matched.
