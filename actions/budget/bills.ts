@@ -14,6 +14,7 @@ import { auth } from "@clerk/nextjs/server";
 import { loadBudgetState, saveBudgetState as persist } from "./_writer";
 import type { BudgetState } from "./_writer";
 import { billsToAutoPost } from "@/app/admin/budget/lib/bills";
+import { predictCategory } from "@/app/admin/budget/lib/predict";
 
 function allowedOwnerIds(): string[] {
   const multi = process.env.BUDGET_OWNER_USER_IDS;
@@ -104,7 +105,7 @@ export async function createBill(
 }
 
 export async function runScheduledBillPosts(): Promise<
-  | { ok: true; posted: number; posted_bill_ids: string[] }
+  | { ok: true; posted: number; posted_bill_ids: string[]; skipped?: number }
   | { ok: false; message: string }
 > {
   try {
@@ -112,28 +113,67 @@ export async function runScheduledBillPosts(): Promise<
     const state = await loadBudgetState(g.workspaceKey);
     const bills = state.bills || [];
     const candidates = billsToAutoPost(bills);
-    if (candidates.length === 0) return { ok: true, posted: 0, posted_bill_ids: [] };
+    if (candidates.length === 0) return { ok: true, posted: 0, posted_bill_ids: [], skipped: 0 };
+
+    // Build a case-insensitive lookup for known envelope labels so
+    // bill.category_label can be validated before posting.
+    const envelopeLabels = (state.categories || []).map((c) => c.label);
+    const lowerToCanonical = new Map(
+      envelopeLabels.map((l) => [l.toLowerCase(), l]),
+    );
 
     const newActuals: BudgetState["monthly_actuals"] = [];
     const billsById = new Map(bills.map((b) => [b.id, b]));
     const postedIds: string[] = [];
+    let skipped = 0;
 
     for (const c of candidates) {
+      // Resolve category in priority order. An auto-post that orphans
+      // the actual (category doesn't match any envelope) confuses
+      // envelope balances later, so we'd rather skip + flag than
+      // silently mis-categorize.
+      let resolvedCategory: string | null = null;
+      const billCat = c.bill.category_label?.trim();
+      if (billCat && lowerToCanonical.has(billCat.toLowerCase())) {
+        resolvedCategory = lowerToCanonical.get(billCat.toLowerCase()) || null;
+      }
+      if (!resolvedCategory) {
+        const guess = predictCategory(
+          `${c.bill.label} ${c.bill.vendor || ""}`.trim(),
+          envelopeLabels,
+        );
+        if (guess) resolvedCategory = guess;
+      }
+
+      const existing = billsById.get(c.bill.id);
+
+      if (!resolvedCategory) {
+        // Don't post; record why and move on.
+        if (existing) {
+          billsById.set(c.bill.id, {
+            ...existing,
+            last_auto_skip_reason: `No envelope matches "${billCat || c.bill.label}". Set a category and try again.`,
+          });
+        }
+        skipped++;
+        continue;
+      }
+
       const actualId = genId();
       newActuals.push({
         id: actualId,
-        category_label: c.bill.category_label || c.bill.label,
+        category_label: resolvedCategory,
         month: `${c.due_iso.slice(0, 7)}-01`,
         paid_on: c.due_iso,
         amount_cents: c.bill.amount_cents,
         note: `[auto] ${c.bill.label}${c.bill.vendor ? ` · ${c.bill.vendor}` : ""}`,
       });
-      const existing = billsById.get(c.bill.id);
       if (existing) {
         billsById.set(c.bill.id, {
           ...existing,
           last_auto_posted_period: c.period,
           last_paid_at: c.due_iso,
+          last_auto_skip_reason: null,
         });
       }
       postedIds.push(c.bill.id);
@@ -145,7 +185,7 @@ export async function runScheduledBillPosts(): Promise<
       bills: bills.map((b) => billsById.get(b.id) || b),
     };
     await persist(g.workspaceKey, updated, g.userId);
-    return { ok: true, posted: candidates.length, posted_bill_ids: postedIds };
+    return { ok: true, posted: postedIds.length, posted_bill_ids: postedIds, skipped };
   } catch (e) {
     return { ok: false, message: errorMessage(e) };
   }

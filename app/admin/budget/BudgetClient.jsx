@@ -4570,6 +4570,19 @@ function BillRow({ bill, state, onUpdate, onDelete, onMarkPaid, onStillUsing, on
                 POSTED
               </span>
             ) : null}
+            {bill.auto_post && bill.last_auto_skip_reason ? (
+              <span
+                title={bill.last_auto_skip_reason}
+                style={{
+                  fontSize: 10, fontWeight: 800, letterSpacing: 0.8,
+                  color: COLORS.red, padding: "2px 8px",
+                  borderRadius: 100, background: COLORS.redBg,
+                  cursor: "help",
+                }}
+              >
+                NEEDS ENVELOPE
+              </span>
+            ) : null}
           </div>
         </div>
         <InlineNumber value={bill.amount_cents} onChange={(v) => onUpdate({ amount_cents: v })} width={120} />

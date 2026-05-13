@@ -160,6 +160,11 @@ export interface BudgetBill {
   // bucket already posted — used to keep the post idempotent.
   auto_post?: boolean;
   last_auto_posted_period?: string | null;
+  // Populated by runScheduledBillPosts when a bill would have auto-
+  // posted but the category couldn't be resolved against a known
+  // envelope. Cleared when the user sets a category_label that does
+  // match. Surfaces in the UI as a small red "needs envelope" pill.
+  last_auto_skip_reason?: string | null;
   notes?: string;
   created_at?: string;
 }
