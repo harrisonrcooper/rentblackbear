@@ -156,6 +156,25 @@ export interface BudgetBill {
   created_at?: string;
 }
 
+// User-defined rule: "transactions where MATCH_FIELD does MATCH_OP
+// MATCH_VALUE always belong in TARGET_CATEGORY_LABEL." Evaluated in
+// array order; first hit wins. Created either explicitly from the
+// Rules UI or learned implicitly when the user ticks "always do this"
+// while importing a Plaid transaction.
+export interface BudgetCategorizationRule {
+  id: string;
+  match_field: "merchant_name" | "name" | "plaid_category";
+  match_op: "contains" | "starts_with" | "equals" | "regex";
+  match_value: string;
+  target_category_label: string;
+  enabled: boolean;
+  auto_import?: boolean;     // if true, sync auto-imports matched txns
+  hit_count?: number;
+  last_hit_at?: string | null;
+  created_at: string;
+  notes?: string;
+}
+
 export interface BudgetState extends ImportPayload {
   settings: BudgetSettingsState;
   imported_at: string | null;
@@ -170,6 +189,7 @@ export interface BudgetState extends ImportPayload {
   active_profile_id?: string | null;
   plaid_items?: BudgetPlaidItem[];
   plaid_transactions?: BudgetPlaidTransaction[];
+  categorization_rules?: BudgetCategorizationRule[];
 }
 
 const DEFAULT_SETTINGS: BudgetSettingsState = {
@@ -205,6 +225,7 @@ export function emptyBudgetState(): BudgetState {
     active_profile_id: "harrison",
     plaid_items: [],
     plaid_transactions: [],
+    categorization_rules: [],
     imported_at: null,
     last_modified_at: null,
     last_modified_by: null,

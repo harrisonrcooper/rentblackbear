@@ -26,6 +26,7 @@ import {
   saveBudgetState as persist,
 } from "./_writer";
 import type {
+  BudgetCategorizationRule,
   BudgetPlaidAccount,
   BudgetPlaidItem,
   BudgetPlaidTransaction,
@@ -41,7 +42,7 @@ import {
   plaidRedirectUri,
   plaidWebhookUrl,
 } from "@/lib/plaid-server";
-import { predictCategory } from "@/app/admin/budget/lib/predict";
+import { predictCategoryForTxn, suggestRuleFromTxn } from "@/app/admin/budget/lib/rules";
 
 // ── auth helpers (mirrors state.ts) ──────────────────────────────────
 
@@ -208,6 +209,13 @@ export async function syncPlaidTransactions(
     const txnsByPlaidId = new Map<string, BudgetPlaidTransaction>(
       (state.plaid_transactions || []).map((t) => [t.plaid_txn_id, t]),
     );
+    // Mutable per-sync copy of rules so we can tally hit_count + last_hit_at
+    // without serializing writes through every upsert.
+    const ruleStats = new Map<string, { hits: number; last: string }>();
+    const rules = state.categorization_rules || [];
+    // Auto-imports collected here and applied once at the end so we
+    // don't reorder the transactions map mid-iteration.
+    const autoImports: Array<{ plaid_txn_id: string; category_label: string }> = [];
 
     let totalAdded = 0;
     let totalModified = 0;
@@ -239,11 +247,9 @@ export async function syncPlaidTransactions(
 
       const upsert = (txn: Transaction) => {
         const existing = txnsByPlaidId.get(txn.transaction_id);
-        const predicted = predictCategory(
-          txn.merchant_name || txn.name || "",
-          knownCategories,
-        );
-        const row: BudgetPlaidTransaction = {
+        // Build the row shape first so rule prediction can see all
+        // the Plaid fields (category, merchant, name).
+        const baseRow: BudgetPlaidTransaction = {
           id: existing?.id || genId(),
           plaid_txn_id: txn.transaction_id,
           plaid_item_id: item.id,
@@ -257,12 +263,29 @@ export async function syncPlaidTransactions(
           pending: Boolean(txn.pending),
           plaid_category_primary: txn.personal_finance_category?.primary || null,
           plaid_category_detailed: txn.personal_finance_category?.detailed || null,
-          predicted_category_label: existing?.predicted_category_label ?? predicted ?? null,
+          predicted_category_label: existing?.predicted_category_label ?? null,
           imported_at: existing?.imported_at ?? null,
           imported_actual_id: existing?.imported_actual_id ?? null,
           dismissed_at: existing?.dismissed_at ?? null,
         };
-        txnsByPlaidId.set(txn.transaction_id, row);
+
+        // Only run prediction if the row hasn't been hand-categorized or
+        // imported. A user's manual choice always wins.
+        if (!baseRow.imported_at && !baseRow.dismissed_at) {
+          const pred = predictCategoryForTxn(rules, baseRow, knownCategories);
+          if (pred.category) baseRow.predicted_category_label = pred.category;
+          if (pred.source === "rule" && pred.rule_id) {
+            const prev = ruleStats.get(pred.rule_id);
+            ruleStats.set(pred.rule_id, { hits: (prev?.hits || 0) + 1, last: todayIso() });
+            const rule = rules.find((r) => r.id === pred.rule_id);
+            // Only outflows auto-import (positive amount_cents). Refunds
+            // and transfers always wait for human review.
+            if (rule?.auto_import && !baseRow.imported_at && baseRow.amount_cents > 0) {
+              autoImports.push({ plaid_txn_id: baseRow.plaid_txn_id, category_label: pred.category as string });
+            }
+          }
+        }
+        txnsByPlaidId.set(txn.transaction_id, baseRow);
       };
 
       added.forEach(upsert);
@@ -276,12 +299,49 @@ export async function syncPlaidTransactions(
       return { ...item, cursor: cursor || null, last_synced_at: todayIso() };
     }));
 
+    // Apply auto-imports: each one gets a monthly_actuals entry and
+    // its plaid_txn row is stamped imported_at.
+    const autoImportActuals: BudgetState["monthly_actuals"] = [];
+    if (autoImports.length > 0) {
+      for (const ai of autoImports) {
+        const t = txnsByPlaidId.get(ai.plaid_txn_id);
+        if (!t || t.imported_at) continue;
+        const actualId = genId();
+        autoImportActuals.push({
+          id: actualId,
+          category_label: ai.category_label,
+          month: `${t.date.slice(0, 7)}-01`,
+          paid_on: t.date,
+          amount_cents: t.amount_cents,
+          note: `[auto] ${t.merchant_name || t.name}`,
+        });
+        txnsByPlaidId.set(ai.plaid_txn_id, {
+          ...t,
+          imported_at: todayIso(),
+          imported_actual_id: actualId,
+        });
+      }
+    }
+
+    // Roll up rule hit_count + last_hit_at increments.
+    const updatedRules = rules.map((r) => {
+      const stat = ruleStats.get(r.id);
+      if (!stat) return r;
+      return {
+        ...r,
+        hit_count: (r.hit_count || 0) + stat.hits,
+        last_hit_at: stat.last,
+      };
+    });
+
     const merged: BudgetState = {
       ...state,
       plaid_items: updatedItems,
       plaid_transactions: Array.from(txnsByPlaidId.values()).sort(
         (a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0),
       ),
+      categorization_rules: updatedRules,
+      monthly_actuals: [...(state.monthly_actuals || []), ...autoImportActuals],
     };
     await persist(g.workspaceKey, merged, g.userId);
 
@@ -368,8 +428,8 @@ export async function disconnectPlaidItem(
 export async function importPlaidTransaction(
   plaidTxnId: string,
   categoryLabel: string,
-  note?: string,
-): Promise<{ ok: true; actual_id: string } | { ok: false; message: string }> {
+  opts?: { note?: string; learn?: boolean; auto_import?: boolean },
+): Promise<{ ok: true; actual_id: string; rule_id?: string } | { ok: false; message: string }> {
   try {
     const g = await gate();
     const state = await loadBudgetState(g.workspaceKey);
@@ -388,8 +448,43 @@ export async function importPlaidTransaction(
       month: monthStart,
       paid_on: txn.date,
       amount_cents: txn.amount_cents,
-      note: note || txn.merchant_name || txn.name,
+      note: opts?.note || txn.merchant_name || txn.name,
     };
+
+    let rules = state.categorization_rules || [];
+    let createdRuleId: string | undefined;
+    if (opts?.learn) {
+      const suggestion = suggestRuleFromTxn(txn, categoryLabel) as {
+        match_field: BudgetCategorizationRule["match_field"];
+        match_op: BudgetCategorizationRule["match_op"];
+        match_value: string;
+        target_category_label: string;
+        enabled: boolean;
+      };
+      // Don't create a duplicate rule with identical match params.
+      const dupe = rules.find(
+        (r) => r.match_field === suggestion.match_field
+          && r.match_op === suggestion.match_op
+          && r.match_value.trim().toLowerCase() === suggestion.match_value.trim().toLowerCase()
+          && r.target_category_label === suggestion.target_category_label,
+      );
+      if (!dupe) {
+        createdRuleId = genId();
+        const newRule: BudgetCategorizationRule = {
+          id: createdRuleId,
+          match_field: suggestion.match_field,
+          match_op: suggestion.match_op,
+          match_value: suggestion.match_value,
+          target_category_label: suggestion.target_category_label,
+          enabled: true,
+          auto_import: Boolean(opts?.auto_import),
+          hit_count: 1,
+          last_hit_at: todayIso(),
+          created_at: todayIso(),
+        };
+        rules = [...rules, newRule];
+      }
+    }
 
     const updated: BudgetState = {
       ...state,
@@ -399,9 +494,10 @@ export async function importPlaidTransaction(
           ? { ...t, imported_at: todayIso(), imported_actual_id: actualId, predicted_category_label: categoryLabel }
           : t,
       ),
+      categorization_rules: rules,
     };
     await persist(g.workspaceKey, updated, g.userId);
-    return { ok: true, actual_id: actualId };
+    return { ok: true, actual_id: actualId, rule_id: createdRuleId };
   } catch (e: unknown) {
     return { ok: false, message: errorMessage(e) };
   }

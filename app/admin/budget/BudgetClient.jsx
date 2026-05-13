@@ -49,6 +49,12 @@ import {
   dismissPlaidTransaction,
   undoPlaidTransaction,
 } from "@/actions/budget/plaid";
+import {
+  addCategorizationRule,
+  updateCategorizationRule,
+  deleteCategorizationRule,
+} from "@/actions/budget/rules";
+import { describeRule } from "./lib/rules";
 
 // ── Top-level component ──────────────────────────────────────────────
 // All tokens, icons, money/calc/habit/achievement/heloc helpers, and
@@ -6266,6 +6272,176 @@ function BankingView({ state, updateState }) {
           ) : null}
         </>
       ) : null}
+
+      <RulesBlock state={state} onAfter={reloadFromServer} />
+    </div>
+  );
+}
+
+function RulesBlock({ state, onAfter }) {
+  const rules = state.categorization_rules || [];
+  const categories = state.categories || [];
+  const [adding, setAdding] = useState(false);
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState(null);
+
+  const toggle = async (rule) => {
+    setBusyId(rule.id);
+    const res = await updateCategorizationRule(rule.id, { enabled: !rule.enabled });
+    setBusyId(null);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  const toggleAuto = async (rule) => {
+    setBusyId(rule.id);
+    const res = await updateCategorizationRule(rule.id, { auto_import: !rule.auto_import });
+    setBusyId(null);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  const remove = async (rule) => {
+    if (typeof window !== "undefined" && !window.confirm(`Delete rule "${describeRule(rule)}"?`)) return;
+    setBusyId(rule.id);
+    const res = await deleteCategorizationRule(rule.id);
+    setBusyId(null);
+    if (res.ok) onAfter?.();
+    else setError(res.message);
+  };
+
+  return (
+    <BlockCard
+      title={`Auto-categorization rules · ${rules.length}`}
+      sub="Rules run on every sync. First match wins — higher rules trump lower."
+      accent={COLORS.purple}
+      icon="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2 M16 11h6 M19 8v6"
+      style={{ marginTop: 14 }}
+    >
+      {rules.length === 0 ? (
+        <div style={{ padding: "12px 4px", fontSize: 12.5, color: COLORS.textMuted, textAlign: "center" }}>
+          No rules yet. Check &ldquo;Always send …&rdquo; while accepting a transaction to learn one.
+        </div>
+      ) : (
+        rules.map((r) => (
+          <div key={r.id} className="bb-row" style={{ padding: "10px 4px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 10, alignItems: "center" }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: r.enabled ? COLORS.text : COLORS.textFaint, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textDecoration: r.enabled ? "none" : "line-through" }}>
+                  {describeRule(r)}
+                </div>
+                <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textMuted }}>
+                  {r.hit_count ? `${r.hit_count} hit${r.hit_count === 1 ? "" : "s"}` : "0 hits"}
+                  {r.last_hit_at ? ` · last ${formatRelativeTime(r.last_hit_at)}` : ""}
+                  {r.auto_import ? " · auto-import ON" : ""}
+                </div>
+              </div>
+              <div style={{ display: "inline-flex", gap: 4 }}>
+                <button onClick={() => toggleAuto(r)} disabled={busyId === r.id} style={{ ...textBtnStyle(), padding: "4px 8px", fontSize: 11, color: r.auto_import ? COLORS.green : COLORS.textMuted }} title="Auto-import on sync">
+                  auto
+                </button>
+                <button onClick={() => toggle(r)} disabled={busyId === r.id} style={{ ...textBtnStyle(), padding: "4px 8px", fontSize: 11, color: r.enabled ? COLORS.amber : COLORS.green }}>
+                  {r.enabled ? "pause" : "enable"}
+                </button>
+                <button onClick={() => remove(r)} disabled={busyId === r.id} style={{ ...textBtnStyle(), padding: "4px 8px", fontSize: 11, color: COLORS.red }}>
+                  delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+      {adding ? (
+        <NewRuleForm
+          categories={categories}
+          onCancel={() => setAdding(false)}
+          onSaved={() => { setAdding(false); onAfter?.(); }}
+          onError={setError}
+        />
+      ) : (
+        <div style={{ padding: "10px 4px 0" }}>
+          <button onClick={() => setAdding(true)} style={{ ...textBtnStyle(), color: COLORS.purple, fontSize: 12 }}>
+            <Icon d={ICON.plus} size={14} />
+            new rule
+          </button>
+        </div>
+      )}
+      {error ? (
+        <div role="alert" style={{ marginTop: 6, padding: "6px 10px", borderRadius: 8, background: COLORS.redBg, color: COLORS.red, fontSize: 11, fontWeight: 600 }}>{error}</div>
+      ) : null}
+    </BlockCard>
+  );
+}
+
+function NewRuleForm({ categories, onCancel, onSaved, onError }) {
+  const [field, setField] = useState("merchant_name");
+  const [op, setOp] = useState("contains");
+  const [value, setValue] = useState("");
+  const [target, setTarget] = useState(categories[0]?.label || "");
+  const [autoImport, setAutoImport] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    if (!value.trim() || !target) return;
+    setBusy(true);
+    const res = await addCategorizationRule({
+      match_field: field,
+      match_op: op,
+      match_value: value.trim(),
+      target_category_label: target,
+      enabled: true,
+      auto_import: autoImport,
+    });
+    setBusy(false);
+    if (res.ok) onSaved?.();
+    else onError?.(res.message);
+  };
+
+  return (
+    <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: COLORS.surfaceTint, border: `1px solid ${COLORS.border}` }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <select value={field} onChange={(e) => setField(e.target.value)} style={inputStyle()} aria-label="Match field">
+          <option value="merchant_name">Merchant</option>
+          <option value="name">Description</option>
+          <option value="plaid_category">Plaid category</option>
+        </select>
+        <select value={op} onChange={(e) => setOp(e.target.value)} style={inputStyle()} aria-label="Match operator">
+          <option value="contains">contains</option>
+          <option value="starts_with">starts with</option>
+          <option value="equals">equals</option>
+          <option value="regex">regex</option>
+        </select>
+      </div>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="e.g. Costco"
+        style={{ ...inputStyle(), marginTop: 8, width: "100%" }}
+        aria-label="Match value"
+      />
+      <select
+        value={target}
+        onChange={(e) => setTarget(e.target.value)}
+        style={{ ...inputStyle(), marginTop: 8, width: "100%" }}
+        aria-label="Target envelope"
+      >
+        {categories.map((c) => (
+          <option key={c.label} value={c.label}>{c.label}</option>
+        ))}
+      </select>
+      <label style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: COLORS.textMuted, cursor: "pointer" }}>
+        <input type="checkbox" checked={autoImport} onChange={(e) => setAutoImport(e.target.checked)} style={{ accentColor: COLORS.green }} />
+        Auto-import matched transactions on sync
+      </label>
+      <div style={{ marginTop: 10, display: "inline-flex", gap: 6 }}>
+        <button onClick={save} disabled={busy || !value.trim() || !target} style={{ ...btnStyle(), background: COLORS.purple, border: `1px solid ${COLORS.purple}`, color: "#fff", padding: "8px 14px", fontSize: 12 }}>
+          save rule
+        </button>
+        <button onClick={onCancel} disabled={busy} style={{ ...textBtnStyle(), padding: "8px 12px", fontSize: 12 }}>
+          cancel
+        </button>
+      </div>
     </div>
   );
 }
@@ -6447,6 +6623,7 @@ function TransactionInboxRow({ txn, categories, onAfter }) {
     || (categories.find((c) => c.label.toLowerCase() === (txn.predicted_category_label || "").toLowerCase())?.label)
     || (categories[0]?.label || "");
   const [category, setCategory] = useState(initial);
+  const [learn, setLearn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -6461,7 +6638,7 @@ function TransactionInboxRow({ txn, categories, onAfter }) {
     if (!category) return;
     setError(null);
     setBusy(true);
-    const res = await importPlaidTransaction(txn.plaid_txn_id, category);
+    const res = await importPlaidTransaction(txn.plaid_txn_id, category, { learn });
     setBusy(false);
     if (res.ok) onAfter?.();
     else setError(res.message);
@@ -6513,6 +6690,15 @@ function TransactionInboxRow({ txn, categories, onAfter }) {
           skip
         </button>
       </div>
+      <label style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: COLORS.textMuted, fontWeight: 500, cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={learn}
+          onChange={(e) => setLearn(e.target.checked)}
+          style={{ accentColor: COLORS.green }}
+        />
+        Always send <strong style={{ fontWeight: 700, color: COLORS.text }}>{txn.merchant_name || txn.name.split(/\s+/).slice(0, 2).join(" ")}</strong> to <strong style={{ fontWeight: 700, color: COLORS.text }}>{category}</strong>
+      </label>
       {error ? (
         <div role="alert" style={{ marginTop: 6, fontSize: 11, color: COLORS.red, fontWeight: 600 }}>{error}</div>
       ) : null}
