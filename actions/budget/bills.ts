@@ -67,9 +67,8 @@ export type CreateBillInput = {
   notes?: string;
 };
 
-// Create a bill from arbitrary input — used by the recurring detector
-// UI to turn a Plaid pattern into a real bill row, and available for
-// any other surface that wants to add a bill server-side.
+// Create a bill from arbitrary input — available for any surface
+// that wants to add a bill server-side.
 export async function createBill(
   input: CreateBillInput,
 ): Promise<{ ok: true; bill_id: string } | { ok: false; message: string }> {

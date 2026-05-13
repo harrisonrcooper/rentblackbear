@@ -89,57 +89,6 @@ export interface BudgetProfile {
   created_at?: string;
 }
 
-// One row per Plaid Item (a single bank connection — may contain many
-// accounts). `access_token` is server-only and is stripped before the
-// state is ever returned to the client. The shape mirrors the relevant
-// fields off /item/get + /accounts/balance/get.
-export interface BudgetPlaidAccount {
-  plaid_account_id: string;
-  mask: string | null;
-  name: string;
-  official_name: string | null;
-  type: string; // "depository" | "credit" | "loan" | "investment" | …
-  subtype: string | null;
-  current_balance_cents: number | null;
-  available_balance_cents: number | null;
-}
-
-export interface BudgetPlaidItem {
-  id: string;
-  plaid_item_id: string;
-  access_token: string;            // SERVER-ONLY — stripped from client responses
-  institution_id: string | null;
-  institution_name: string;
-  accounts: BudgetPlaidAccount[];
-  cursor: string | null;           // /transactions/sync cursor
-  last_synced_at: string | null;
-  connected_at: string;
-  needs_relink?: boolean;
-}
-
-// One row per Plaid transaction. Pulled by `syncPlaidTransactions`,
-// auto-classified via lib/predict.js. The user accepts → `imported_at`
-// gets stamped and an entry is written to monthly_actuals.
-export interface BudgetPlaidTransaction {
-  id: string;
-  plaid_txn_id: string;
-  plaid_item_id: string;
-  plaid_account_id: string;
-  account_name?: string;
-  date: string;
-  authorized_date: string | null;
-  amount_cents: number;            // positive = outflow (money out of account)
-  merchant_name: string | null;
-  name: string;
-  pending: boolean;
-  plaid_category_primary: string | null;
-  plaid_category_detailed: string | null;
-  predicted_category_label: string | null;
-  imported_at: string | null;
-  imported_actual_id: string | null;
-  dismissed_at: string | null;
-}
-
 export interface BudgetBill {
   id: string;
   label: string;
@@ -169,25 +118,6 @@ export interface BudgetBill {
   created_at?: string;
 }
 
-// User-defined rule: "transactions where MATCH_FIELD does MATCH_OP
-// MATCH_VALUE always belong in TARGET_CATEGORY_LABEL." Evaluated in
-// array order; first hit wins. Created either explicitly from the
-// Rules UI or learned implicitly when the user ticks "always do this"
-// while importing a Plaid transaction.
-export interface BudgetCategorizationRule {
-  id: string;
-  match_field: "merchant_name" | "name" | "plaid_category";
-  match_op: "contains" | "starts_with" | "equals" | "regex";
-  match_value: string;
-  target_category_label: string;
-  enabled: boolean;
-  auto_import?: boolean;     // if true, sync auto-imports matched txns
-  hit_count?: number;
-  last_hit_at?: string | null;
-  created_at: string;
-  notes?: string;
-}
-
 export interface BudgetState extends ImportPayload {
   settings: BudgetSettingsState;
   imported_at: string | null;
@@ -200,9 +130,6 @@ export interface BudgetState extends ImportPayload {
   bills?: BudgetBill[];
   profiles?: BudgetProfile[];
   active_profile_id?: string | null;
-  plaid_items?: BudgetPlaidItem[];
-  plaid_transactions?: BudgetPlaidTransaction[];
-  categorization_rules?: BudgetCategorizationRule[];
 }
 
 const DEFAULT_SETTINGS: BudgetSettingsState = {
@@ -236,9 +163,6 @@ export function emptyBudgetState(): BudgetState {
       { id: "carolina", label: "Carolina", color: "#d6448f", pay_frequency: "biweekly", created_at: new Date().toISOString() },
     ],
     active_profile_id: "harrison",
-    plaid_items: [],
-    plaid_transactions: [],
-    categorization_rules: [],
     imported_at: null,
     last_modified_at: null,
     last_modified_by: null,
@@ -250,16 +174,6 @@ export function budgetKey(workspaceId: string): string {
   return `budget:${workspaceId}`;
 }
 
-// Strip server-only secrets from a state blob before it leaves the
-// server. Today: Plaid access_tokens. Server actions that return
-// state to the client must always pipe through this.
-export function stripPlaidSecrets(state: BudgetState): BudgetState {
-  if (!state.plaid_items || state.plaid_items.length === 0) return state;
-  return {
-    ...state,
-    plaid_items: state.plaid_items.map((i) => ({ ...i, access_token: "" })),
-  };
-}
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY =

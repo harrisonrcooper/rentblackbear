@@ -55,14 +55,6 @@ const STEPS = [
     },
   },
   {
-    id: "bank",
-    label: "Connect a bank (optional)",
-    hint: "Pull transactions automatically — categorize one tap at a time.",
-    section: "banking",
-    done: (state) => (state.plaid_items || []).length > 0,
-    optional: true,
-  },
-  {
     id: "goal",
     label: "Set your first goal",
     hint: "Emergency fund, debt payoff, next property — make the math chase a target.",
