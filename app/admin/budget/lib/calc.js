@@ -5,11 +5,26 @@ import { biweeklyToMonthly, yearlyToMonthly, incomeMonthly, categoryMonthly } fr
 export const propertyMonthlyGross = (p) =>
   (p.rooms || []).filter((r) => r.occupied).reduce((s, r) => s + r.rent_cents, 0);
 
-export function propertyMonthlyExpenses(p, settings) {
-  // Sum fixed expenses + vacancy and CapEx computed live from gross
-  // rent. Percentage rows defer to either their own pct_bps or the
-  // workspace-level defaults from settings.
+// Rental share of a property: 1 for a pure rental, 0.5 for a 50/50
+// owner-occupied house hack. `personal_use_bps` is clamped to [0,10000].
+export function propertyRentalShare(p) {
+  const bps = Math.min(10000, Math.max(0, p.personal_use_bps || 0));
+  return 1 - bps / 10000;
+}
+
+// Operating expenses only — the editable expense rows (fixed costs +
+// vacancy / CapEx reserves computed live from gross rent). Percentage
+// rows defer to their own pct_bps or the workspace-level defaults.
+// Does NOT include the per-property HELOC (that's debt service held
+// outside the rows — see propertyHelocPayment).
+//
+// House hack: when a property is partly owner-occupied, only the
+// rental share of FIXED building costs (mortgage, taxes, utilities…)
+// is a rental expense. Vacancy/CapEx rows are NOT split — they're a
+// percentage of rental gross, which is already 100% rental income.
+export function propertyOperatingExpenses(p, settings) {
   const grossRent = propertyMonthlyGross(p);
+  const rentalShare = propertyRentalShare(p);
   let total = 0;
   for (const e of p.expenses || []) {
     if (e.kind === "vacancy_pct") {
@@ -19,10 +34,30 @@ export function propertyMonthlyExpenses(p, settings) {
       const bps = e.pct_bps ?? settings.default_capex_bps;
       total += Math.round((grossRent * bps) / 10000);
     } else {
-      total += e.monthly_cents;
+      total += Math.round(e.monthly_cents * rentalShare);
     }
   }
   return total;
+}
+
+// Per-property HELOC monthly payment. A manual `heloc_payment_cents`
+// override wins; otherwise the payment is interest-only — balance ×
+// annual rate ÷ 12 — which is how a HELOC behaves in its draw period.
+// Auto mode recomputes live as balance/rate change (never frozen).
+export function propertyHelocPayment(p) {
+  const override = p.heloc_payment_cents;
+  if (override != null && override > 0) return override;
+  const balance = p.heloc_balance_cents || 0;
+  const rateBps = p.heloc_rate_bps ?? 0;
+  if (balance <= 0 || rateBps <= 0) return 0;
+  return Math.round((balance * (rateBps / 10000)) / 12);
+}
+
+// Total monthly cash out for a property: operating expenses + HELOC
+// debt service. (Mortgage P&I is already modeled as an expense row,
+// so it is captured inside propertyOperatingExpenses.)
+export function propertyMonthlyExpenses(p, settings) {
+  return propertyOperatingExpenses(p, settings) + propertyHelocPayment(p);
 }
 
 export const propertyMonthlyNet = (p, settings) =>
@@ -60,7 +95,10 @@ export function computeHero(state) {
     0,
   );
   const rentalExpensesNoReserves = operatingProps.reduce(
-    (s, p) => s + (p.expenses || []).filter((e) => e.kind === "fixed").reduce((ss, e) => ss + e.monthly_cents, 0),
+    (s, p) =>
+      s
+      + (p.expenses || []).filter((e) => e.kind === "fixed").reduce((ss, e) => ss + e.monthly_cents, 0)
+      + propertyHelocPayment(p), // HELOC is debt service, not a reserve — counts in both views
     0,
   );
 

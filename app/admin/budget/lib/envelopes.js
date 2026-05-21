@@ -76,12 +76,38 @@ function spentInMonth(state, categoryLabel, monthIso) {
     .reduce((s, a) => s + a.amount_cents, 0);
 }
 
+// Sum of envelope transfers OUT of (category). `cmp` is "<" for every
+// month strictly before the cutoff (these fold into carryover) or "="
+// for exactly the cutoff month.
+function transfersOut(state, categoryLabel, cutoffMonthIso, cmp) {
+  const lc = categoryLabel.trim().toLowerCase();
+  return (state.envelope_transfers || [])
+    .filter((t) =>
+      t.from_label && t.from_label.trim().toLowerCase() === lc
+      && (cmp === "<" ? t.month < cutoffMonthIso : t.month === cutoffMonthIso))
+    .reduce((s, t) => s + t.amount_cents, 0);
+}
+
+// Sum of envelope transfers INTO (category). Same `cmp` semantics.
+function transfersIn(state, categoryLabel, cutoffMonthIso, cmp) {
+  const lc = categoryLabel.trim().toLowerCase();
+  return (state.envelope_transfers || [])
+    .filter((t) =>
+      t.to_label && t.to_label.trim().toLowerCase() === lc
+      && (cmp === "<" ? t.month < cutoffMonthIso : t.month === cutoffMonthIso))
+    .reduce((s, t) => s + t.amount_cents, 0);
+}
+
 // The full envelope snapshot for one category in one month.
 //
 // Fields:
 //   budget            — this month's allocation
-//   carryover         — net rollover from all prior months (can be negative)
+//   carryover         — net rollover from all prior months (can be negative);
+//                       includes prior-month transfers in/out
 //   thisMonthSpent    — already spent in this month
+//   transfersIn       — money moved INTO this envelope this month
+//   transfersOut      — money moved OUT of this envelope this month
+//   transferNet       — transfersIn − transfersOut for this month
 //   available         — what's left to spend right now
 //   priorMonths       — count of months counted in carryover
 //   priorBudget       — Σ budget over prior months
@@ -92,14 +118,25 @@ export function envelopeBalance(state, category, monthIso, startMonth) {
   const prior = Math.max(0, monthsBetween(startMonth, monthIso) - 1);
   const priorBudget = prior * budget;
   const priorSpent = spentBeforeMonth(state, category.label, monthIso);
-  const carryover = priorBudget - priorSpent;
+  // Transfers reallocate money between envelopes. Prior-month transfers
+  // fold into carryover; this month's net lands in `available`. Total
+  // money across all envelopes is conserved (out of one = into another).
+  const priorTransfersOut = transfersOut(state, category.label, monthIso, "<");
+  const priorTransfersIn = transfersIn(state, category.label, monthIso, "<");
+  const carryover = priorBudget - priorSpent - priorTransfersOut + priorTransfersIn;
   const thisMonthSpent = spentInMonth(state, category.label, monthIso);
-  const available = carryover + budget - thisMonthSpent;
+  const transfersOutThis = transfersOut(state, category.label, monthIso, "=");
+  const transfersInThis = transfersIn(state, category.label, monthIso, "=");
+  const transferNet = transfersInThis - transfersOutThis;
+  const available = carryover + budget - thisMonthSpent + transferNet;
   const entries = entriesForMonth(state, category.label, monthIso);
   return {
     budget,
     carryover,
     thisMonthSpent,
+    transfersIn: transfersInThis,
+    transfersOut: transfersOutThis,
+    transferNet,
     available,
     priorMonths: prior,
     priorBudget,

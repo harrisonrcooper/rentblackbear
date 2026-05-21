@@ -9,7 +9,7 @@
 import { propertyMonthlyGross } from "./calc";
 
 // Basic-mode onboarding — friendlier copy, no rentals / no assets-and-
-// debts step. Four required steps total. The basic household sees this
+// debts step. Three required steps total. The basic household sees this
 // list; full households see the original STEPS below.
 const BASIC_STEPS = [
   {
@@ -33,13 +33,6 @@ const BASIC_STEPS = [
       ));
       return funded.length >= 3;
     },
-  },
-  {
-    id: "bills",
-    label: "Add the bills you pay every month",
-    hint: "Rent, car insurance, Netflix — anything that auto-debits.",
-    section: "bills",
-    done: (state) => (state.bills || []).filter((b) => !b.archived_at).length > 0,
   },
   {
     id: "goal",

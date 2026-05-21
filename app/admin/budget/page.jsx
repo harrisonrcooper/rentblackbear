@@ -11,7 +11,6 @@ import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 
 import { fetchBudgetState } from "@/actions/budget/state";
-import { runScheduledBillPosts } from "@/actions/budget/bills";
 import { isAuthorizedForBudget } from "@/actions/budget/_households";
 import BudgetClient from "./BudgetClient";
 import { ErrorBoundary } from "./primitives/ErrorBoundary";
@@ -25,11 +24,6 @@ export default async function BudgetPage() {
   // Multi-household auth: user must belong to at least one configured
   // household group, OR no groups are configured (private/dev mode).
   if (!isAuthorizedForBudget(userId)) notFound();
-
-  // Run scheduled auto-posts before fetching state so the page renders
-  // with any freshly-posted actuals visible. Idempotent — second
-  // calls in the same period find nothing to do.
-  await runScheduledBillPosts().catch(() => undefined);
 
   const result = await fetchBudgetState();
   if (!result.ok) {
@@ -54,7 +48,12 @@ export default async function BudgetPage() {
 
   return (
     <ErrorBoundary>
-      <BudgetClient initialState={result.state} userId={userId} />
+      <BudgetClient
+        initialState={result.state}
+        userId={userId}
+        initialRegistry={result.registry}
+        initialBudgetId={result.activeBudgetId}
+      />
     </ErrorBoundary>
   );
 }

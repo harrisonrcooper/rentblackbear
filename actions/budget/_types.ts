@@ -108,6 +108,21 @@ export interface ImportProperty {
   mortgage_rate_bps?: number | null;
   mortgage_term_years?: number | null;
   mortgage_origin_date?: string | null;
+  // Per-property HELOC (home-equity line of credit) — Harrison's
+  // HELOCs are drawn against individual rentals. Optional: legacy
+  // properties have none. `heloc_payment_cents` is a manual override;
+  // when null/absent the payment is auto-computed interest-only from
+  // balance × rate (see propertyHelocPayment in lib/calc.js).
+  heloc_balance_cents?: number;
+  heloc_rate_bps?: number | null;
+  heloc_limit_cents?: number;
+  heloc_payment_cents?: number | null;
+  // Owner-occupied / house-hack share, in basis points (5000 = 50% of
+  // the property is the owner's residence). When set, only the rental
+  // share of fixed building costs counts as a rental expense — the
+  // owner's portion is personal, not a rental cost. Absent → 0 → the
+  // property is a pure rental.
+  personal_use_bps?: number;
   vacancy_bps_override?: number | null;
   capex_bps_override?: number | null;
   sort_order: number;
@@ -178,12 +193,22 @@ export interface ImportHelocModel {
 export interface ImportMomLoanPayment {
   paid_on: string; // ISO YYYY-MM-DD
   amount_cents: number;
+  // Direction of the cash flow on this row:
+  //   "in"  — money came FROM Mom (e.g. her paying off appliances)
+  //   "out" — money went TO Mom (e.g. retirement support from cash flow)
+  // Missing → "in" (legacy entries before the bidirectional model).
+  direction?: "in" | "out";
   note?: string;
 }
 
 export interface ImportMomLoan {
   label: string;
+  // Initial amount Mom owes Harrison (e.g. appliance purchase price).
+  // Net balance = starting_balance + sum(out) − sum(in).
+  // Positive → she still owes; negative → he now owes her.
   starting_balance_cents: number;
+  // Suggested monthly payment amount — used to prefill the FAB "log
+  // payment" shortcut, NOT enforced as a schedule.
   monthly_payment_cents: number;
   due_day?: number | null;
   notes?: string;

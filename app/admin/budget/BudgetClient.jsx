@@ -15,12 +15,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RTooltip, ComposedChart, Bar, ReferenceLine, XAxis, YAxis, CartesianGrid } from "recharts";
 
 import { seedBudget } from "@/actions/budget/seed";
-import { saveBudgetStateAction } from "@/actions/budget/state";
+import { saveBudgetStateAction, switchBudgetAction, createBudgetAction } from "@/actions/budget/state";
 
-import { COLORS, FONT, STYLES, btnStyle as btn, inputStyle, textBtnStyle, stepBtnStyle, pillSelectStyle, themeStylesheet } from "./lib/tokens";
+import { COLORS, FONT, STYLES, TYPE, SPACE, RADII, btnStyle as btn, inputStyle, textBtnStyle, stepBtnStyle, pillSelectStyle, selectStyle, themeStylesheet } from "./lib/tokens";
 import { Icon, ICON } from "./lib/icons";
 import { fmtUsd, fmtCompact, biweeklyToMonthly, yearlyToMonthly, categoryMonthly, incomeMonthly } from "./lib/money";
-import { propertyMonthlyGross, propertyMonthlyExpenses, propertyMonthlyNet, computeNetWorthCents, computeHero, genId, todayISODate } from "./lib/calc";
+import { propertyMonthlyGross, propertyMonthlyExpenses, propertyOperatingExpenses, propertyHelocPayment, propertyRentalShare, propertyMonthlyNet, computeNetWorthCents, computeHero, genId, todayISODate } from "./lib/calc";
 import { GROUP_META, intensityColor, mixColors, hexToRgb } from "./lib/colors";
 import { computeHelocSeries, computeHelocPlan, computeStrategies, defaultStrategyInputs } from "./lib/heloc";
 import { DEFAULT_HABITS, HABIT_OWNERS, HABIT_STYLES, computeHabitStreak, buildHeatmap, buildGardenGrid, last7Days, longestStreak } from "./lib/habits";
@@ -33,7 +33,6 @@ import { computeForecast } from "./lib/forecast";
 import { computeGoalProgress, formatEta, nextUnhitMilestone, templateToGoal, GOAL_TEMPLATES } from "./lib/goals";
 import { buildGoalTrajectory } from "./lib/goalTrajectory";
 import { predictCategory } from "./lib/predict";
-import { nextDueDate, upcomingBills, billsHittingMonth, monthlyBillTotal, subscriptionAudit, billCalendarGrid, billPeriodKey } from "./lib/bills";
 import { buildEnvelopeTrend } from "./lib/envelopeTrend";
 import { buildSpendingHeatmap } from "./lib/heatmap";
 import { computeOnboarding } from "./lib/onboarding";
@@ -48,16 +47,26 @@ import { SortableList, DragHandle } from "./primitives/Sortable";
 // All tokens, icons, money/calc/habit/achievement/heloc helpers, and
 // time formatters live in ./lib/* and ./primitives/* — imported above.
 
-export default function BudgetClient({ initialState, userId }) {
+export default function BudgetClient({ initialState, userId, initialRegistry, initialBudgetId }) {
   const [state, setState] = useState(initialState);
+  // Multi-budget: the registry indexes every budget this user owns;
+  // `activeBudgetId` (null → the primary budget) records which one is
+  // open. The id is mirrored into a ref so the debounced save closure
+  // can tag each write with the budget it belongs to.
+  const [registry, setRegistry] = useState(
+    () => initialRegistry || { primary_label: "Main budget", budgets: [], active_id: null },
+  );
+  const [activeBudgetId, setActiveBudgetId] = useState(initialBudgetId ?? null);
+  const activeBudgetIdRef = useRef(initialBudgetId ?? null);
+  const [switchingBudget, setSwitchingBudget] = useState(false);
   const [activeMonth, setActiveMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
   });
   const [drill, setDrill] = useState(null); // 'personal' | 'rentals' | 'networth' | 'heloc' | 'mom' | null
   const [activeSection, setActiveSection] = useState("dashboard"); // 'dashboard' | 'envelopes' | 'habits' | 'goals' | 'achievements' | 'settings'
-  const [fabOpen, setFabOpen] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [navEditorOpen, setNavEditorOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   // Toast queue. setToast(null) clears all; setToast({...}) appends.
   // Cap at 3 — the oldest gets shifted off when a fourth arrives.
@@ -73,6 +82,7 @@ export default function BudgetClient({ initialState, userId }) {
   const [seeding, setSeeding] = useState(false);
 
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [editingLayout, setEditingLayout] = useState(false);
 
   // Global keyboard shortcuts. Gmail-style two-key nav ("g d" =
   // Dashboard) so we don't burn every single-letter key. The prefix
@@ -83,7 +93,6 @@ export default function BudgetClient({ initialState, userId }) {
     const G_NAV = {
       d: "dashboard",
       e: "envelopes",
-      b: "bills",
       h: "habits",
       o: "goals", // "g g" feels weird and conflicts with prefix
       a: "achievements",
@@ -163,9 +172,13 @@ export default function BudgetClient({ initialState, userId }) {
   const saveTimer = useRef(null);
   const persistState = useCallback((nextState) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
+    // Tag the write with whichever budget was active when the edit was
+    // made, so a save debounced across a budget switch still lands in
+    // the correct budget rather than the newly-opened one.
+    const budgetId = activeBudgetIdRef.current;
     saveTimer.current = setTimeout(() => {
       startTransition(async () => {
-        const res = await saveBudgetStateAction(nextState);
+        const res = await saveBudgetStateAction(nextState, budgetId);
         if (!res.ok) setToast({ kind: "error", message: res.message || "Save failed." });
       });
     }, 400);
@@ -179,6 +192,22 @@ export default function BudgetClient({ initialState, userId }) {
     });
   }, [persistState]);
 
+  // Pin/unpin a section in the mobile bottom bar (cap of 4).
+  const toggleMobileNavTab = useCallback((id) => {
+    updateState((s) => {
+      const allowed = allowedNavSections(s.settings?.experience === "basic").map((x) => x.id);
+      const raw = (s.settings.mobile_nav && s.settings.mobile_nav.length
+        ? s.settings.mobile_nav
+        : DEFAULT_MOBILE_NAV
+      ).filter((x) => allowed.includes(x));
+      let next;
+      if (raw.includes(id)) next = raw.filter((x) => x !== id);
+      else if (raw.length >= 4) return s;
+      else next = [...raw, id];
+      return { ...s, settings: { ...s.settings, mobile_nav: next } };
+    });
+  }, [updateState]);
+
   const handleSeed = useCallback(() => {
     setSeeding(true);
     setToast(null);
@@ -191,6 +220,53 @@ export default function BudgetClient({ initialState, userId }) {
       }
       // Reload to pick up the seeded state on the next render.
       window.location.reload();
+    });
+  }, []);
+
+  // ── Multi-budget switching ──────────────────────────────────────────
+  // Switch to another budget the user owns. The server records the
+  // choice and returns that budget's state; we swap the whole tree.
+  const handleSwitchBudget = useCallback((budgetId) => {
+    const target = budgetId ?? null;
+    if (target === activeBudgetIdRef.current) return;
+    setSwitchingBudget(true);
+    setToast(null);
+    startTransition(async () => {
+      const res = await switchBudgetAction(target);
+      setSwitchingBudget(false);
+      if (!res.ok) {
+        setToast({ kind: "error", message: res.message || "Couldn't switch budget." });
+        return;
+      }
+      activeBudgetIdRef.current = res.activeBudgetId;
+      setActiveBudgetId(res.activeBudgetId);
+      setRegistry(res.registry);
+      setState(res.state);
+      setDrill(null);
+      setActiveSection("dashboard");
+    });
+  }, []);
+
+  // Create a brand-new blank-slate budget and switch straight into it.
+  const handleCreateBudget = useCallback((label) => {
+    const name = (label || "").trim();
+    if (!name) return;
+    setSwitchingBudget(true);
+    setToast(null);
+    startTransition(async () => {
+      const res = await createBudgetAction(name);
+      setSwitchingBudget(false);
+      if (!res.ok) {
+        setToast({ kind: "error", message: res.message || "Couldn't create budget." });
+        return;
+      }
+      activeBudgetIdRef.current = res.activeBudgetId;
+      setActiveBudgetId(res.activeBudgetId);
+      setRegistry(res.registry);
+      setState(res.state);
+      setDrill(null);
+      setActiveSection("dashboard");
+      setToast({ kind: "success", message: `"${name}" created — blank slate ready.` });
     });
   }, []);
 
@@ -340,6 +416,21 @@ export default function BudgetClient({ initialState, userId }) {
              the user is interacting with horizontally-scrolling strips
              like the heatmap. */
           html, body { overscroll-behavior-y: contain; }
+          /* Pop-up sheets become bottom-anchored, full-width sheets —
+             the native iOS feel, and they stop overflowing the screen. */
+          .bb-modal { padding: 0 !important; place-items: end stretch !important; }
+          .bb-modal-card {
+            max-width: 100% !important; width: 100% !important;
+            max-height: 92dvh !important;
+            border-radius: 20px 20px 0 0 !important;
+          }
+          /* Income rows stack: label on its own line, controls beneath. */
+          .bb-income-row { grid-template-columns: 1fr 1fr !important; }
+          .bb-income-row > :first-child { grid-column: 1 / -1 !important; }
+          /* Keep the big "amount" field big on mobile — the generic
+             16px input rule above would otherwise shrink it. (≥16px so
+             iOS still won't zoom on focus.) */
+          input.bb-amount-input { font-size: 30px !important; }
         }
         /* A11y: focus rings only on keyboard navigation, never mouse */
         *:focus { outline: none; }
@@ -392,9 +483,11 @@ export default function BudgetClient({ initialState, userId }) {
             streak={streaks.trackedStreak}
             lastEdit={state.last_modified_at}
             pending={pending}
-            profiles={state.profiles || []}
-            activeProfileId={state.active_profile_id}
-            onProfileChange={(id) => updateState((s) => ({ ...s, active_profile_id: id }))}
+            registry={registry}
+            activeBudgetId={activeBudgetId}
+            onSwitchBudget={handleSwitchBudget}
+            onCreateBudget={handleCreateBudget}
+            switchingBudget={switchingBudget}
             isBasic={isBasic}
           />
         )}
@@ -406,8 +499,6 @@ export default function BudgetClient({ initialState, userId }) {
               <EmptyState onStart={handleSeed} seeding={seeding} />
             ) : activeSection === "envelopes" ? (
               <EnvelopesView state={state} updateState={updateState} activeMonth={activeMonth} setActiveMonth={setActiveMonth} />
-            ) : activeSection === "bills" ? (
-              <BillsView state={state} updateState={updateState} />
             ) : activeSection === "habits" && !isBasic ? (
               <HabitsView state={state} updateState={updateState} />
             ) : activeSection === "goals" ? (
@@ -417,82 +508,22 @@ export default function BudgetClient({ initialState, userId }) {
             ) : activeSection === "settings" ? (
               <SettingsView state={state} updateState={updateState} />
             ) : (
-              <>
-                <OnboardingChecklist
-                  state={state}
-                  onJump={setActiveSection}
-                  onDismiss={() => updateState((s) => ({ ...s, settings: { ...s.settings, onboarding_dismissed: true } }))}
-                />
-
-                <HeroNumber
-                  hero={hero}
-                  mode={state.settings.hero_mode}
-                  state={state}
-                  onModeChange={(mode) =>
-                    updateState((s) => ({ ...s, settings: { ...s.settings, hero_mode: mode } }))
-                  }
-                />
-
-                {!isBasic ? <YearInReviewStrip state={state} /> : null}
-
-                {!isBasic ? <InsightsPanel state={state} /> : null}
-
-                {!isBasic ? (
-                  <HabitsStrip
-                    streaks={streaks}
-                    achievements={achievements}
-                    netWorth={computeNetWorthCents(state)}
-                    savingsThisMonth={hero.conservative}
-                  />
-                ) : null}
-
-                {!isBasic ? <TodaysHabitsBanner state={state} onJump={() => setActiveSection("habits")} /> : null}
-
-                <UpcomingBillsBanner state={state} onJump={() => setActiveSection("bills")} />
-
-                {!isBasic ? <CashFlowForecastPanel state={state} /> : null}
-
-                {!isBasic ? <SpendingHeatmapPanel state={state} /> : null}
-
-                <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
-
-                {isBasic ? (
-                  <BasicQuickActions
-                    onEnvelopes={() => setActiveSection("envelopes")}
-                    onBills={() => setActiveSection("bills")}
-                    onGoals={() => setActiveSection("goals")}
-                  />
-                ) : (
-                  <TileGrid>
-                    <PersonalTile state={state} onClick={() => setDrill("personal")} />
-                    <RentalsTile state={state} onClick={() => setDrill("rentals")} />
-                    <NetWorthTile state={state} onClick={() => setDrill("networth")} />
-                    <HelocTile state={state} onClick={() => setDrill("heloc")} />
-                    <MomLoanTile
-                      state={state}
-                      onClick={() => setDrill("mom")}
-                      onLogPayment={() => {
-                        const loan = state.mom_loans[0];
-                        if (!loan) return;
-                        updateState((s) => ({
-                          ...s,
-                          mom_loans: [{ ...loan, payments: [...loan.payments, { paid_on: new Date().toISOString().slice(0, 10), amount_cents: loan.monthly_payment_cents }] }],
-                        }));
-                        setToast({ kind: "success", message: `Payment of ${fmtUsd(loan.monthly_payment_cents)} logged` });
-                        fireConfetti({ originY: 0.4 });
-                      }}
-                    />
-                  </TileGrid>
-                )}
-
-                {!isBasic ? <AchievementStrip achievements={achievements} /> : null}
-
-                <div style={{ marginTop: 28, color: COLORS.textFaint, fontSize: 12, textAlign: "center" }}>
-                  {state.last_modified_at
-                    ? `Last edit ${formatRelativeTime(state.last_modified_at)} · ${pending ? "saving…" : "all changes saved"}`
-                    : (pending ? "saving…" : "all changes saved")}
-                </div>
-              </>
+              <DashboardLayout
+                state={state}
+                updateState={updateState}
+                hero={hero}
+                streaks={streaks}
+                achievements={achievements}
+                activeMonth={activeMonth}
+                setActiveMonth={setActiveMonth}
+                setActiveSection={setActiveSection}
+                setDrill={setDrill}
+                setToast={setToast}
+                isBasic={isBasic}
+                pending={pending}
+                editingLayout={editingLayout}
+                setEditingLayout={setEditingLayout}
+              />
             )}
           </main>
         </div>
@@ -528,21 +559,27 @@ export default function BudgetClient({ initialState, userId }) {
         </div>
       ) : null}
 
-      {quickAddOpen && (
-        <QuickAddSheet
+      {addOpen && (
+        <AddSheet
           state={state}
-          onClose={() => setQuickAddOpen(false)}
-          onSubmit={(entry) => {
+          onClose={() => setAddOpen(false)}
+          onAddExpense={(entry) => {
             updateState((s) => ({
               ...s,
-              monthly_actuals: [
-                ...(s.monthly_actuals || []),
-                entry,
-              ],
+              monthly_actuals: [...(s.monthly_actuals || []), entry],
             }));
             fireConfetti({ count: 40, originY: 0.45 });
             setToast({ kind: "success", message: `Logged ${fmtUsd(entry.amount_cents)} to ${entry.category_label}` });
-            setQuickAddOpen(false);
+            setAddOpen(false);
+          }}
+          onAddIncome={(source) => {
+            updateState((s) => ({
+              ...s,
+              income_sources: [...(s.income_sources || []), source],
+            }));
+            fireConfetti({ count: 40, originY: 0.45 });
+            setToast({ kind: "success", message: `Added income · ${source.label}` });
+            setAddOpen(false);
           }}
         />
       )}
@@ -551,311 +588,495 @@ export default function BudgetClient({ initialState, userId }) {
         <MobileNav
           active={activeSection}
           onChange={setActiveSection}
+          onAdd={() => setAddOpen(true)}
+          onEditNav={() => setNavEditorOpen(true)}
+          navIds={resolveMobileNav(state.settings, isBasic)}
           achievementsUnlocked={achievementsUnlocked}
-          achievementsTotal={achievements.length}
           streak={streaks.trackedStreak}
-          isBasic={isBasic}
         />
       )}
 
-      {hasData && (
-        <>
-          <FAB onClick={() => setFabOpen(true)} bottomOffset={isMobile ? 84 : 24} />
-          {fabOpen && (
-            <FABMenu
-              onClose={() => setFabOpen(false)}
-              items={[
-                { icon: ICON.plus,      label: "Log expense (smart)", onClick: () => setQuickAddOpen(true) },
-                { icon: ICON.family,    label: "Personal expense", onClick: () => setDrill("personal") },
-                { icon: ICON.arrowUp,   label: "Income source",    onClick: () => setDrill("personal") },
-                { icon: ICON.building,  label: "Property line",    onClick: () => setDrill("rentals") },
-                { icon: ICON.scales,    label: "Asset / debt",     onClick: () => setDrill("networth") },
-                ...(state.mom_loans[0] ? [{
-                  icon: ICON.home,
-                  label: `Log Mom's ${fmtUsd(state.mom_loans[0].monthly_payment_cents, { compact: true })} payment`,
-                  onClick: () => {
-                    const loan = state.mom_loans[0];
-                    updateState((s) => ({
-                      ...s,
-                      mom_loans: [{ ...loan, payments: [...loan.payments, { paid_on: new Date().toISOString().slice(0, 10), amount_cents: loan.monthly_payment_cents }] }],
-                    }));
-                    setToast({ kind: "success", message: "Mom's payment logged" });
-                    fireConfetti({ originY: 0.4 });
-                  },
-                }] : []),
-              ]}
-            />
-          )}
-        </>
+      {hasData && !isMobile && (
+        <FAB onClick={() => setAddOpen(true)} bottomOffset={24} />
+      )}
+
+      {navEditorOpen && (
+        <MobileNavEditor
+          sections={allowedNavSections(isBasic)}
+          pinned={rawMobileNav(state.settings, isBasic)}
+          active={activeSection}
+          onToggle={toggleMobileNavTab}
+          onNavigate={(id) => { setActiveSection(id); setNavEditorOpen(false); }}
+          onClose={() => setNavEditorOpen(false)}
+        />
       )}
     </div>
   );
 }
 
-// Quick-add log-an-expense modal. Predicts the category from the
-// description, supports voice input on browsers that ship the Web
-// Speech API (Chrome/Edge desktop, recent iOS Safari). Falls back
-// gracefully when SpeechRecognition isn't available.
-function QuickAddSheet({ state, onClose, onSubmit }) {
-  const today = new Date();
-  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  const monthISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [paidOn, setPaidOn] = useState(todayISO);
-  const [manualCategoryLabel, setManualCategoryLabel] = useState(null);
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef(null);
-
-  // Live prediction. User can override via the dropdown.
-  const predicted = useMemo(() => predictCategory(description, state.categories || []), [description, state.categories]);
-  const chosenLabel = manualCategoryLabel ?? predicted?.label ?? "";
-
-  // Web Speech API setup — feature-detected, browser-prefixed.
-  const speechSupported = typeof window !== "undefined"
-    && (window.SpeechRecognition || window.webkitSpeechRecognition);
-
-  const toggleListening = useCallback(() => {
-    if (!speechSupported) return;
-    if (listening) {
-      try { recognitionRef.current?.stop(); } catch {}
-      setListening(false);
-      return;
-    }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SR();
-    rec.lang = "en-US";
-    rec.interimResults = true;
-    rec.continuous = false;
-    rec.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((r) => r[0].transcript)
-        .join(" ")
-        .trim();
-      setDescription(transcript);
-    };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
-    recognitionRef.current = rec;
-    setListening(true);
-    rec.start();
-  }, [listening, speechSupported]);
-
-  useEffect(() => () => {
-    try { recognitionRef.current?.stop(); } catch {}
-  }, []);
-
-  const commit = () => {
-    const n = parseFloat(amount);
-    if (isNaN(n) || n <= 0) return;
-    if (!chosenLabel) return;
-    onSubmit({
-      id: genId(),
-      category_label: chosenLabel,
-      month: monthISO,
-      paid_on: paidOn,
-      amount_cents: Math.round(n * 100),
-      note: description.trim() || undefined,
-    });
-  };
-
+// On-screen numeric keypad — the amount step uses this instead of the
+// OS keyboard: feels native, never triggers iOS zoom, keeps the flow
+// fully under our control.
+function Keypad({ onKey }) {
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "del"];
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, zIndex: 60,
-        background: "rgba(15,23,41,0.55)", backdropFilter: "blur(4px)",
-        display: "grid", placeItems: "center", padding: 20,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: COLORS.surface, borderRadius: 24,
-          width: "100%", maxWidth: 460, maxHeight: "calc(100dvh - 40px)",
-          boxShadow: "0 24px 80px rgba(15,23,41,0.32)",
-          display: "flex", flexDirection: "column", overflow: "hidden",
-          fontFamily: FONT,
-        }}
-      >
-        <div style={{
-          padding: "18px 20px 14px", borderBottom: `1px solid ${COLORS.surfaceTint}`,
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-        }}>
-          <div>
-            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em" }}>Log an expense</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: COLORS.textMuted }}>
-              We'll guess the category from what you type.
-            </div>
-          </div>
-          <button onClick={onClose} aria-label="Close" style={{
-            width: 32, height: 32, borderRadius: 10, border: `1px solid ${COLORS.border}`,
-            background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer",
-            display: "grid", placeItems: "center",
-          }}>
-            <Icon d={ICON.x} size={14} />
-          </button>
-        </div>
-
-        <div style={{ padding: 20, display: "grid", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Amount</div>
-            <input
-              autoFocus
-              type="number"
-              step="0.01"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
-              aria-label="Amount"
-              style={{
-                ...inputStyle(), width: "100%",
-                fontSize: 32, fontWeight: 800, padding: "10px 14px",
-                fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em",
-              }}
-            />
-          </div>
-
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Description</div>
-              {predicted && !manualCategoryLabel && (
-                <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.accent }}>
-                  → {predicted.label}
-                </div>
-              )}
-            </div>
-            <div style={{ position: "relative" }}>
-              <input
-                type="text"
-                placeholder="e.g. costco run, shell gas, spotify"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
-                aria-label="Description"
-                style={{ ...inputStyle(), width: "100%", paddingRight: speechSupported ? 44 : 12, fontSize: 16, padding: "10px 14px", fontWeight: 600 }}
-              />
-              {speechSupported && (
-                <button
-                  type="button"
-                  onClick={toggleListening}
-                  aria-label={listening ? "Stop voice input" : "Start voice input"}
-                  title={listening ? "Tap to stop" : "Voice input"}
-                  style={{
-                    position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
-                    width: 32, height: 32, borderRadius: 8, border: "none", cursor: "pointer",
-                    background: listening ? COLORS.red : COLORS.surfaceTint,
-                    color: listening ? "#fff" : COLORS.textMuted,
-                    display: "grid", placeItems: "center",
-                    transition: "all 0.15s ease",
-                    animation: listening ? "bb-pulse 1s ease-in-out infinite" : "none",
-                  }}
-                >
-                  <Icon d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 11a7 7 0 0 1-14 0 M12 18v3 M8 21h8" size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Category</div>
-            <select
-              value={chosenLabel}
-              onChange={(e) => setManualCategoryLabel(e.target.value)}
-              aria-label="Category"
-              style={{ ...inputStyle(), width: "100%", fontSize: 16, padding: "10px 14px", fontWeight: 600 }}
-            >
-              <option value="">— pick a category —</option>
-              {(state.categories || [])
-                .slice()
-                .sort((a, b) => (a.group_key || "").localeCompare(b.group_key || ""))
-                .map((c) => (
-                  <option key={c.label} value={c.label}>
-                    {c.group_key ? `${c.group_key} · ` : ""}{c.label}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>When</div>
-            <input
-              type="date"
-              value={paidOn}
-              onChange={(e) => setPaidOn(e.target.value)}
-              aria-label="Paid on"
-              style={{ ...inputStyle(), width: "100%", fontSize: 16, padding: "10px 14px", fontWeight: 600 }}
-            />
-          </div>
-        </div>
-
-        <div style={{
-          padding: "12px 20px", borderTop: `1px solid ${COLORS.surfaceTint}`,
-          display: "flex", gap: 8,
-        }}>
-          <button onClick={onClose} style={{ ...btn("ghost"), flex: 1 }}>Cancel</button>
-          <button
-            onClick={commit}
-            disabled={!amount || !chosenLabel}
-            style={{
-              ...btn("primary"), flex: 2,
-              opacity: (!amount || !chosenLabel) ? 0.5 : 1,
-            }}
-          >
-            <Icon d={["M12 5v14", "M5 12h14"]} size={14} />
-            Log {amount ? fmtUsd(Math.round((parseFloat(amount) || 0) * 100)) : ""}
-          </button>
-        </div>
-      </div>
+    <div style={{
+      display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
+      padding: "10px 12px 14px",
+    }}>
+      {keys.map((k) => (
+        <button
+          key={k}
+          onClick={() => onKey(k)}
+          aria-label={k === "del" ? "Delete" : k}
+          style={{
+            height: 58, borderRadius: 16, border: "none", cursor: "pointer", fontFamily: FONT,
+            background: COLORS.surface, color: COLORS.text,
+            fontSize: 24, fontWeight: 700, display: "grid", placeItems: "center",
+            boxShadow: "0 1px 2px rgba(15,23,41,0.06)",
+            WebkitTapHighlightColor: "transparent",
+            transition: "background 0.08s ease, transform 0.06s ease",
+          }}
+          onPointerDown={(e) => { e.currentTarget.style.background = COLORS.accentSoft; e.currentTarget.style.transform = "scale(0.96)"; }}
+          onPointerUp={(e) => { e.currentTarget.style.background = COLORS.surface; e.currentTarget.style.transform = ""; }}
+          onPointerLeave={(e) => { e.currentTarget.style.background = COLORS.surface; e.currentTarget.style.transform = ""; }}
+        >
+          {k === "del"
+            ? <Icon d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z M18 9l-6 6 M12 9l6 6" size={22} />
+            : k}
+        </button>
+      ))}
     </div>
   );
 }
 
-function FABMenu({ onClose, items }) {
+// Full-screen, two-step Add flow — Step 1: amount on a custom keypad.
+// Step 2: category (expense, ranked by how often you use it) or the
+// source details (income). Theme-aware — uses the app's own surface
+// colors, so it's light/dark with the rest of the app.
+function AddSheet({ state, onClose, onAddExpense, onAddIncome }) {
+  const today = new Date();
+  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const [mode, setMode] = useState("expense"); // "expense" | "income"
+  const [step, setStep] = useState(0);          // 0 = amount, 1 = details
+  const [amt, setAmt] = useState("");
+  const [err, setErr] = useState("");
+
+  // Expense step 2
+  const [note, setNote] = useState("");
+  const [category, setCategory] = useState(null);
+  const [search, setSearch] = useState("");
+  const [paidOn, setPaidOn] = useState(todayISO);
+  const [dateOpen, setDateOpen] = useState(false);
+  // Income step 2
+  const [incLabel, setIncLabel] = useState("");
+  const [incFreq, setIncFreq] = useState("biweekly");
+  const [incOwner, setIncOwner] = useState("joint");
+
+  // Lock the page behind the full-screen flow so it doesn't show its
+  // own scrollbar alongside the category list's.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  const amountCents = Math.round((parseFloat(amt) || 0) * 100);
+
+  const keyPress = (k) => {
+    setErr("");
+    setAmt((cur) => {
+      if (k === "del") return cur.slice(0, -1);
+      if (k === ".") return cur.includes(".") ? cur : (cur === "" ? "0." : `${cur}.`);
+      if (cur.includes(".")) {
+        if (cur.split(".")[1].length >= 2) return cur; // max 2 decimals
+      } else if (cur.replace(".", "").length >= 7) {
+        return cur; // cap at ~$99,999.99
+      }
+      if (cur === "0") return k; // replace a lone leading zero
+      return cur + k;
+    });
+  };
+
+  const categories = state.categories || [];
+  const usage = useMemo(() => {
+    const u = {};
+    for (const a of state.monthly_actuals || []) {
+      const k = (a.category_label || "").toLowerCase();
+      u[k] = (u[k] || 0) + 1;
+    }
+    return u;
+  }, [state.monthly_actuals]);
+  const predicted = useMemo(() => predictCategory(note, categories), [note, categories]);
+  // Categories ranked by how often the user actually logs to them, so
+  // the common picks sit at the top. Before any usage exists, fall back
+  // to the user's own grouping + arrangement (Envelopes order) — never
+  // a flat A–Z wall.
+  const ranked = useMemo(() => {
+    const groupOrder = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
+    const groupIdx = (c) => {
+      const i = groupOrder.indexOf(c.group_key || "other");
+      return i < 0 ? groupOrder.length : i;
+    };
+    return categories.slice().sort((a, b) => {
+      const ua = usage[a.label.toLowerCase()] || 0;
+      const ub = usage[b.label.toLowerCase()] || 0;
+      if (ub !== ua) return ub - ua;
+      const ga = groupIdx(a);
+      const gb = groupIdx(b);
+      if (ga !== gb) return ga - gb;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    });
+  }, [categories, usage]);
+  const q = search.trim().toLowerCase();
+  const shownCategories = q
+    ? ranked.filter((c) => c.label.toLowerCase().includes(q))
+    : ranked;
+  const effectiveCategory = category ?? predicted?.label ?? null;
+
+  const amtDisplay = (() => {
+    const raw = amt === "" ? "0" : amt;
+    const [ip, dp] = raw.split(".");
+    const grouped = Number(ip || "0").toLocaleString("en-US");
+    return raw.includes(".") ? `${grouped}.${dp}` : grouped;
+  })();
+
+  const goNext = () => {
+    if (amountCents <= 0) { setErr("Enter an amount first."); return; }
+    setErr("");
+    setStep(1);
+  };
+  const finish = () => {
+    if (mode === "expense") {
+      if (!effectiveCategory) { setErr("Pick a category."); return; }
+      onAddExpense({
+        id: genId(),
+        category_label: effectiveCategory,
+        month: `${paidOn.slice(0, 7)}-01`,
+        paid_on: paidOn,
+        amount_cents: amountCents,
+        note: note.trim() || undefined,
+      });
+    } else {
+      onAddIncome({
+        label: incLabel.trim() || "New income",
+        owner: incOwner,
+        source_type: "salary",
+        frequency: incFreq,
+        net_amount_cents: amountCents,
+      });
+    }
+  };
+
+  const labelStyle = {
+    display: "block", fontSize: 10.5, fontWeight: 700,
+    letterSpacing: "0.08em", textTransform: "uppercase",
+    color: COLORS.textFaint, marginBottom: 8,
+  };
+  const chip = (active, label, onClick, key) => (
+    <button
+      key={key}
+      onClick={onClick}
+      style={{
+        padding: "10px 14px", borderRadius: 100, cursor: "pointer", fontFamily: FONT,
+        fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
+        border: `1px solid ${active ? COLORS.accent : COLORS.border}`,
+        background: active ? COLORS.accent : COLORS.surface,
+        color: active ? "#fff" : COLORS.text,
+      }}
+    >
+      {label}
+    </button>
+  );
+  const headerBtn = {
+    background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT,
+    fontSize: 14, fontWeight: 600, color: COLORS.accent, padding: "6px 4px",
+  };
+
   return (
-    <>
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 38, background: "rgba(15,23,41,0.18)", animation: "fadeIn 0.18s ease" }} />
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 60,
+      background: COLORS.surface, fontFamily: FONT,
+      display: "flex", flexDirection: "column",
+    }}>
       <div style={{
-        position: "fixed", bottom: 92, right: 24, zIndex: 39,
-        background: COLORS.surface,
-        borderRadius: 18,
-        boxShadow: "0 18px 48px rgba(13,20,36,0.32)",
-        padding: 8, minWidth: 240,
-        fontFamily: FONT,
-        animation: "slideUp 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        width: "100%", maxWidth: 480, margin: "0 auto",
+        flex: 1, minHeight: 0, display: "flex", flexDirection: "column",
       }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", padding: "6px 10px 8px" }}>
-          Quick add
-        </div>
-        {items.map((item, i) => (
-          <button key={i} onClick={() => { item.onClick(); onClose(); }}
+        {/* Header */}
+        <div style={{
+          paddingTop: "max(14px, env(safe-area-inset-top))",
+          display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center",
+          padding: "max(14px, env(safe-area-inset-top)) 12px 10px",
+        }}>
+          <div style={{ justifySelf: "start" }}>
+            {step === 0 ? (
+              <button onClick={onClose} style={headerBtn}>Cancel</button>
+            ) : (
+              <button onClick={() => { setStep(0); setErr(""); }} style={headerBtn}>Back</button>
+            )}
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em", color: COLORS.text }}>
+            {mode === "expense" ? "Add expense" : "Add income"}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
             style={{
-              display: "flex", alignItems: "center", gap: 12,
-              width: "100%", padding: "10px 12px", borderRadius: 10,
-              background: "transparent", border: "none", cursor: "pointer",
-              fontSize: 14, fontWeight: 600, color: COLORS.text,
-              textAlign: "left",
-              fontFamily: FONT,
-              transition: "background 0.12s ease",
+              justifySelf: "end", width: 32, height: 32, borderRadius: 9,
+              border: "none", background: COLORS.surfaceTint, color: COLORS.textMuted,
+              cursor: "pointer", display: "grid", placeItems: "center",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.surfaceTint; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
-            <div style={{
-              width: 28, height: 28, borderRadius: 8,
-              background: COLORS.surfaceTint, color: COLORS.textMuted,
-              display: "grid", placeItems: "center", flexShrink: 0,
-            }}>
-              <Icon d={item.icon} size={14} />
-            </div>
-            {item.label}
+            <Icon d={ICON.x} size={15} />
           </button>
-        ))}
+        </div>
+        {/* Progress */}
+        <div style={{ display: "flex", gap: 4, padding: "0 14px 4px" }}>
+          {[0, 1].map((i) => (
+            <div key={i} style={{
+              flex: 1, height: 3, borderRadius: 2,
+              background: step >= i ? COLORS.accent : COLORS.surfaceTint,
+              transition: "background 0.2s ease",
+            }} />
+          ))}
+        </div>
+
+        {step === 0 ? (
+          <>
+            <div style={{ padding: "14px 16px 0" }}>
+              <div style={{ display: "flex", background: COLORS.surfaceTint, borderRadius: 13, padding: 4, gap: 4 }}>
+                {[["expense", "Expense"], ["income", "Income"]].map(([m, label]) => {
+                  const on = mode === m;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => { setMode(m); setErr(""); }}
+                      style={{
+                        flex: 1, padding: "10px 0", borderRadius: 10, border: "none", cursor: "pointer",
+                        fontFamily: FONT, fontSize: 13.5, fontWeight: 700,
+                        background: on ? COLORS.accent : "transparent",
+                        color: on ? "#fff" : COLORS.textMuted,
+                        boxShadow: on ? "0 4px 12px rgba(15,23,41,0.16)" : "none",
+                        transition: "all 0.14s ease",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div style={{
+              flex: 1, minHeight: 0, display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center", padding: "20px 16px",
+            }}>
+              <div style={{
+                width: "100%", background: COLORS.accentSoft, borderRadius: 24,
+                padding: "30px 20px", display: "flex", flexDirection: "column",
+                alignItems: "center", gap: 8,
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: COLORS.accent }}>
+                  {mode === "expense" ? "Amount spent" : "Amount per paycheck"}
+                </span>
+                <div style={{
+                  display: "flex", alignItems: "baseline", gap: 4,
+                  fontWeight: 800, letterSpacing: "-0.03em",
+                  fontVariantNumeric: "tabular-nums", lineHeight: 1.05,
+                }}>
+                  <span style={{ fontSize: 40, color: COLORS.accent }}>$</span>
+                  <span style={{ fontSize: 68, color: amt === "" ? COLORS.textFaint : COLORS.text }}>
+                    {amtDisplay}
+                  </span>
+                </div>
+              </div>
+              {err && <span style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: COLORS.red }}>{err}</span>}
+            </div>
+            <div style={{
+              background: COLORS.surfaceTint, borderTop: `1px solid ${COLORS.border}`,
+              borderRadius: "20px 20px 0 0",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }}>
+              <div style={{ padding: "14px 16px 2px" }}>
+                <button
+                  onClick={goNext}
+                  style={{
+                    width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                    padding: "15px 0", fontSize: 15, fontWeight: 800, fontFamily: FONT,
+                    borderRadius: 14, cursor: "pointer",
+                    border: amountCents <= 0 ? `1px solid ${COLORS.border}` : "none",
+                    background: amountCents <= 0 ? COLORS.surface : COLORS.text,
+                    color: amountCents <= 0 ? COLORS.textFaint : "#fff",
+                    boxShadow: amountCents <= 0 ? "none" : "0 8px 20px rgba(13,20,36,0.28)",
+                    transition: "all 0.14s ease",
+                  }}
+                >
+                  Next
+                  <Icon d="M5 12h14 M13 5l7 7-7 7" size={15} color={amountCents <= 0 ? COLORS.textFaint : "#fff"} />
+                </button>
+              </div>
+              <Keypad onKey={keyPress} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "16px" }}>
+              <div style={{
+                display: "flex", alignItems: "baseline", justifyContent: "space-between",
+                marginBottom: 16, paddingBottom: 14, borderBottom: `1px solid ${COLORS.surfaceTint}`,
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.textMuted }}>
+                  {mode === "expense" ? "Spending" : "Income"}
+                </span>
+                <span style={{ fontSize: 22, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums" }}>
+                  ${amtDisplay}
+                </span>
+              </div>
+
+              {mode === "expense" ? (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <span style={labelStyle}>What for?</span>
+                    <input
+                      type="text"
+                      placeholder="e.g. costco run, shell gas"
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      aria-label="Note"
+                      style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", padding: "12px 14px", fontWeight: 600 }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <span style={labelStyle}>
+                      Category{predicted && !category ? " · suggested" : ""}
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Search categories"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      aria-label="Search categories"
+                      style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", padding: "11px 14px", fontWeight: 600, marginBottom: 8 }}
+                    />
+                    <div style={{ display: "grid", gap: 4 }}>
+                      {shownCategories.length === 0 && (
+                        <span style={{ fontSize: 13, color: COLORS.textFaint, fontStyle: "italic", padding: "6px 2px" }}>
+                          No match. Add envelopes in the Envelopes tab.
+                        </span>
+                      )}
+                      {shownCategories.map((c) => {
+                        const sel = c.label === effectiveCategory;
+                        const count = usage[c.label.toLowerCase()] || 0;
+                        return (
+                          <button
+                            key={c.label}
+                            onClick={() => { setCategory(c.label); setErr(""); }}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 10, width: "100%",
+                              padding: "12px 14px", borderRadius: 12, cursor: "pointer", fontFamily: FONT,
+                              textAlign: "left",
+                              border: `1px solid ${sel ? COLORS.accent : COLORS.border}`,
+                              background: sel ? `${COLORS.accent}14` : COLORS.surface,
+                            }}
+                          >
+                            <span style={{
+                              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                              border: `2px solid ${sel ? COLORS.accent : COLORS.border}`,
+                              background: sel ? COLORS.accent : "transparent",
+                              display: "grid", placeItems: "center",
+                            }}>
+                              {sel && <Icon d="M20 6L9 17l-5-5" size={11} color="#fff" />}
+                            </span>
+                            <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: sel ? 700 : 600, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {c.label}
+                            </span>
+                            {count > 0 && (
+                              <span style={{ fontSize: 11, fontWeight: 600, color: COLORS.textFaint }}>
+                                {count}×
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    {dateOpen ? (
+                      <>
+                        <span style={labelStyle}>When</span>
+                        <input
+                          type="date"
+                          value={paidOn}
+                          onChange={(e) => setPaidOn(e.target.value || todayISO)}
+                          aria-label="Date"
+                          style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", padding: "11px 14px", fontWeight: 600 }}
+                        />
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setDateOpen(true)}
+                        style={{
+                          background: "transparent", border: "none", padding: 0, cursor: "pointer",
+                          fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: COLORS.textMuted,
+                          display: "inline-flex", alignItems: "center", gap: 6,
+                        }}
+                      >
+                        <Icon d={ICON.calendar} size={13} color={COLORS.textFaint} />
+                        {paidOn === todayISO ? "Today" : paidOn} · change date
+                      </button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <span style={labelStyle}>What is it?</span>
+                    <input
+                      type="text"
+                      placeholder="e.g. My paycheck, Side gig"
+                      value={incLabel}
+                      onChange={(e) => setIncLabel(e.target.value)}
+                      aria-label="Income label"
+                      style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", padding: "12px 14px", fontWeight: 600 }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <span style={labelStyle}>How often?</span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {[
+                        ["weekly", "Weekly"], ["biweekly", "Every 2 weeks"],
+                        ["semimonthly", "Twice a month"], ["monthly", "Monthly"], ["yearly", "Yearly"],
+                      ].map(([f, label]) => chip(incFreq === f, label, () => setIncFreq(f), f))}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={labelStyle}>Whose income?</span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {[
+                        ["harrison", "You"], ["wife", "Partner"], ["joint", "Joint"], ["other", "Other"],
+                      ].map(([o, label]) => chip(incOwner === o, label, () => setIncOwner(o), o))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div style={{ padding: "12px 16px max(12px, env(safe-area-inset-bottom))", borderTop: `1px solid ${COLORS.surfaceTint}` }}>
+              {err && (
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.red, marginBottom: 8, textAlign: "center" }}>{err}</div>
+              )}
+              <button
+                onClick={finish}
+                style={{ ...btn("primary"), width: "100%", justifyContent: "center", padding: "14px 0", fontSize: 15 }}
+              >
+                <Icon d={["M12 5v14", "M5 12h14"]} size={15} />
+                {mode === "expense" ? "Add expense" : "Add income"} · ${amtDisplay}
+              </button>
+            </div>
+          </>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -1317,25 +1538,37 @@ function MomLoanTile({ state, onClick, onLogPayment }) {
       />
     );
   }
-  const paid = loan.payments.reduce((s, p) => s + p.amount_cents, 0);
-  const remaining = loan.starting_balance_cents - paid;
-  const pct = loan.starting_balance_cents > 0 ? (paid / loan.starting_balance_cents) * 100 : 0;
+  // Net balance under the bidirectional model:
+  //   net = starting_balance + out − in
+  //   net > 0  → Mom owes you
+  //   net < 0  → you owe Mom
+  const moneyIn  = loan.payments.filter((p) => p.direction !== "out").reduce((s, p) => s + p.amount_cents, 0);
+  const moneyOut = loan.payments.filter((p) => p.direction === "out").reduce((s, p) => s + p.amount_cents, 0);
+  const net = loan.starting_balance_cents + moneyOut - moneyIn;
+  const owesYou = net > 0;
+  const youOwe = net < 0;
   return (
     <Tile
       title="Mom's Loan"
       icon={ICON.home}
       iconColor={COLORS.amber} iconBg={COLORS.amberBg}
-      primary={<AnimatedNumber value={remaining} format={(v) => fmtUsd(v, { compact: true })} />}
-      primaryColor={remaining > 0 ? COLORS.text : COLORS.green}
-      secondary={`${pct.toFixed(0)}% paid · ${loan.payments.length} payment${loan.payments.length === 1 ? "" : "s"}`}
-      footer={`${fmtUsd(loan.monthly_payment_cents, { compact: true })} / mo · due day ${loan.due_day ?? 1}`}
+      primary={<AnimatedNumber value={Math.abs(net)} format={(v) => fmtUsd(v, { compact: true })} />}
+      primaryColor={youOwe ? COLORS.amber : net === 0 ? COLORS.green : COLORS.text}
+      secondary={
+        net === 0
+          ? "settled up"
+          : owesYou
+          ? `Mom owes you · ${loan.payments.length} entr${loan.payments.length === 1 ? "y" : "ies"}`
+          : `you owe Mom · ${loan.payments.length} entr${loan.payments.length === 1 ? "y" : "ies"}`
+      }
+      footer={`in ${fmtUsd(moneyIn, { compact: true })} · out ${fmtUsd(moneyOut, { compact: true })}`}
       onClick={onClick}
-      action={remaining > 0 && (
+      action={
         <button
           onClick={(e) => { e.stopPropagation(); onLogPayment(); }}
           style={{
             padding: "5px 10px", borderRadius: 100,
-            background: COLORS.amber, color: "#fff",
+            background: COLORS.green, color: "#fff",
             border: "none", cursor: "pointer",
             fontSize: 11, fontWeight: 700, letterSpacing: "0.02em",
             fontFamily: FONT,
@@ -1344,9 +1577,9 @@ function MomLoanTile({ state, onClick, onLogPayment }) {
           onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
         >
-          Pay {fmtUsd(loan.monthly_payment_cents, { compact: true })}
+          + {fmtUsd(loan.monthly_payment_cents, { compact: true })} in
         </button>
-      )}
+      }
     />
   );
 }
@@ -1366,6 +1599,7 @@ function DrillSheet({ children, onClose }) {
   return (
     <div
       onClick={onClose}
+      className="bb-modal"
       style={{
         position: "fixed", inset: 0, zIndex: 50,
         background: "rgba(15,23,41,0.55)",
@@ -1379,6 +1613,7 @@ function DrillSheet({ children, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="bb-modal-card"
         style={{
           background: COLORS.surface,
           width: "100%",
@@ -1430,6 +1665,30 @@ function DrillSheet({ children, onClose }) {
 }
 
 // ── Drills (v1: read-only summaries with edit-on-next-iteration stubs) ─
+
+// Group header labels are SHARED between the Personal drill and the
+// Envelopes view — both render the same `categories`, just grouped, so
+// a rename in one place must show in the other. The override lives
+// under a canonical `group.<key>` slug. `envelopes.<key>` is the legacy
+// slug (Envelopes-only renames before this was unified) — still read as
+// a fallback so older renames survive; the next rename migrates it.
+function groupLabel(state, g) {
+  const sl = state?.settings?.section_labels || {};
+  return sl[`group.${g}`] ?? sl[`envelopes.${g}`] ?? GROUP_META[g]?.label ?? g;
+}
+
+function renameGroup(updateState, g, value) {
+  updateState((s) => {
+    const prev = s.settings.section_labels || {};
+    const next = { ...prev };
+    delete next[`envelopes.${g}`]; // retire the legacy Envelopes-only key
+    const fallback = GROUP_META[g]?.label || g;
+    const trimmed = (value || "").trim();
+    if (!trimmed || trimmed === fallback) delete next[`group.${g}`];
+    else next[`group.${g}`] = trimmed;
+    return { ...s, settings: { ...s.settings, section_labels: next } };
+  });
+}
 
 function PersonalDrill({ state, updateState }) {
   const grouped = useMemo(() => {
@@ -1529,6 +1788,8 @@ function PersonalEditor({ state, updateState, grouped }) {
         <CategoryGroup
           key={g}
           group={g}
+          title={groupLabel(state, g)}
+          onTitleChange={(v) => renameGroup(updateState, g, v)}
           items={grouped[g] || []}
           onChange={(id, patch) => updateState((s) => ({
             ...s,
@@ -1560,96 +1821,7 @@ function PersonalEditor({ state, updateState, grouped }) {
           }))}
         />
       ))}
-      <YearlyExpensesBlock state={state} updateState={updateState} />
     </div>
-  );
-}
-
-const YEARLY_CATEGORIES = [
-  { id: "insurance",    label: "insurance"    },
-  { id: "tax",          label: "tax"          },
-  { id: "subscription", label: "subscription" },
-  { id: "other",        label: "other"        },
-];
-
-const MONTH_OPTIONS = [
-  { id: "", label: "—" },
-  { id: 1, label: "Jan" }, { id: 2, label: "Feb" }, { id: 3, label: "Mar" },
-  { id: 4, label: "Apr" }, { id: 5, label: "May" }, { id: 6, label: "Jun" },
-  { id: 7, label: "Jul" }, { id: 8, label: "Aug" }, { id: 9, label: "Sep" },
-  { id: 10, label: "Oct" }, { id: 11, label: "Nov" }, { id: 12, label: "Dec" },
-];
-
-function YearlyExpensesBlock({ state, updateState }) {
-  const list = state.yearly_expenses || [];
-  const yearlyTotal = list.reduce((s, y) => s + y.yearly_amount_cents, 0);
-  const update = (idx, patch) => updateState((s) => ({
-    ...s,
-    yearly_expenses: s.yearly_expenses.map((y, i) => i === idx ? { ...y, ...patch } : y),
-  }));
-  return (
-    <BlockCard
-      title="Paid Yearly"
-      sub={`${fmtCompact(yearlyTotal)} / yr`}
-      accent={GROUP_META.yearly.accent}
-      icon={GROUP_META.yearly.icon}
-      count={`${list.length}`}
-    >
-      {list.length === 0 && (
-        <div style={{ fontSize: 13, color: COLORS.textFaint, padding: "6px 0", fontStyle: "italic" }}>
-          Big once-a-year bills — car insurance, property taxes, prime, the stuff that surprises you.
-        </div>
-      )}
-      {list.map((y, idx) => (
-        <div key={idx} className="bb-row" style={{
-          display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto auto 22px",
-          gap: 10, alignItems: "center", padding: "9px 4px",
-        }}>
-          <InlineText value={y.label} onChange={(v) => update(idx, { label: v })} />
-          <select
-            value={y.category || "other"}
-            onChange={(e) => update(idx, { category: e.target.value })}
-            aria-label="Category"
-            style={pillSelectStyle()}
-          >
-            {YEARLY_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-          </select>
-          <select
-            value={y.due_month ?? ""}
-            onChange={(e) => update(idx, { due_month: e.target.value === "" ? null : Number(e.target.value) })}
-            aria-label="Due month"
-            style={pillSelectStyle()}
-          >
-            {MONTH_OPTIONS.map((m) => <option key={String(m.id)} value={m.id}>{m.label}</option>)}
-          </select>
-          <InlineNumber value={y.yearly_amount_cents} onChange={(v) => update(idx, { yearly_amount_cents: v })} width={120} />
-          <button
-            onClick={() => updateState((s) => ({ ...s, yearly_expenses: s.yearly_expenses.filter((_, i) => i !== idx) }))}
-            aria-label="Delete yearly expense"
-            style={{
-              width: 22, height: 22, borderRadius: 6, border: "none", cursor: "pointer",
-              background: "transparent", color: COLORS.textFaint, opacity: 0.4,
-              display: "grid", placeItems: "center", transition: "all 0.12s ease",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; }}
-            onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.4; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = COLORS.textFaint; }}
-          >
-            <Icon d={ICON.x} size={12} />
-          </button>
-        </div>
-      ))}
-      <AddRowButton
-        label="Add yearly expense"
-        accent={GROUP_META.yearly.accent}
-        onClick={() => updateState((s) => ({
-          ...s,
-          yearly_expenses: [
-            ...(s.yearly_expenses || []),
-            { label: "New yearly item", yearly_amount_cents: 0, due_month: null, category: "other", sort_order: (s.yearly_expenses || []).length },
-          ],
-        }))}
-      />
-    </BlockCard>
   );
 }
 
@@ -1703,7 +1875,7 @@ function IncomeRow({ source, onChange, onDelete }) {
   const showDelete = hovered;
   return (
     <div
-      className="bb-row bb-row-income"
+      className="bb-row bb-row-income bb-income-row"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -1753,12 +1925,13 @@ function IncomeRow({ source, onChange, onDelete }) {
   );
 }
 
-function CategoryGroup({ group, items, onChange, onRename, onAdd, onDelete }) {
+function CategoryGroup({ group, items, title, onChange, onRename, onTitleChange, onAdd, onDelete }) {
   const meta = GROUP_META[group] || GROUP_META.other;
   const total = items.reduce((s, c) => s + categoryMonthly(c), 0);
   return (
     <BlockCard
-      title={meta.label}
+      title={title || meta.label}
+      onTitleChange={onTitleChange}
       sub={total > 0 ? fmtUsd(total, { compact: true }) : null}
       accent={meta.accent}
       icon={meta.icon}
@@ -1806,23 +1979,34 @@ function InlineText({ value, onChange }) {
     <button onClick={() => setEditing(true)} className="bb-edit-btn" style={textBtnStyle()}>{value}</button>
   );
 }
-function InlineNumber({ value, onChange, width = 110, min, max, allowNegative = true }) {
+// mode="currency" (default) treats `value` as cents and renders as USD.
+// mode="integer"  treats `value` as a raw int (years, units, count, …)
+//                 and renders it plain — bounds use the same int space.
+// `suffix` appends after the rendered value in view mode ("yr", "%", etc).
+function InlineNumber({ value, onChange, width = 110, min, max, allowNegative = true, mode = "currency", suffix }) {
+  const isInt = mode === "integer";
+  const fmtValue = isInt ? (v) => `${Math.round(v)}${suffix ? ` ${suffix}` : ""}` : (v) => fmtUsd(v);
+  const fmtDraft = isInt ? (v) => String(Math.round(v)) : (v) => String((v / 100).toFixed(2));
+  const parseDraft = isInt
+    ? (s) => parseInt(s, 10)
+    : (s) => Math.round(parseFloat(s) * 100);
+  const fmtBound = isInt ? (n) => String(n) : (n) => fmtUsd(n);
+
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String((value / 100).toFixed(2)));
+  const [draft, setDraft] = useState(fmtDraft(value));
   const [error, setError] = useState(null);
   const [wiggleKey, setWiggleKey] = useState(0);
-  useEffect(() => setDraft(String((value / 100).toFixed(2))), [value]);
+  useEffect(() => setDraft(fmtDraft(value)), [value, isInt]);
 
-  // Validate the draft as a cents amount against optional bounds.
-  // Returns either an error string or null.
+  // Validate the draft against optional bounds. Returns error string or null.
   const validate = (rawDraft) => {
-    const n = parseFloat(rawDraft);
     if (rawDraft === "" || rawDraft === "-" || rawDraft === ".") return "Enter a number";
+    const n = isInt ? parseInt(rawDraft, 10) : parseFloat(rawDraft);
     if (isNaN(n)) return "Not a number";
-    const cents = Math.round(n * 100);
-    if (!allowNegative && cents < 0) return "Must be 0 or more";
-    if (min != null && cents < min) return `Must be ≥ ${fmtUsd(min)}`;
-    if (max != null && cents > max) return `Must be ≤ ${fmtUsd(max)}`;
+    const normalized = isInt ? Math.round(n) : Math.round(n * 100);
+    if (!allowNegative && normalized < 0) return "Must be 0 or more";
+    if (min != null && normalized < min) return `Must be ≥ ${fmtBound(min)}`;
+    if (max != null && normalized > max) return `Must be ≤ ${fmtBound(max)}`;
     return null;
   };
 
@@ -1831,13 +2015,12 @@ function InlineNumber({ value, onChange, width = 110, min, max, allowNegative = 
     if (err) {
       setError(err);
       setWiggleKey((k) => k + 1);
-      // Stay in editing mode so the user can fix it.
       return;
     }
     setError(null);
     setEditing(false);
-    const n = parseFloat(draft);
-    if (!isNaN(n)) onChange(Math.round(n * 100));
+    const parsed = parseDraft(draft);
+    if (!isNaN(parsed)) onChange(parsed);
   };
 
   return editing ? (
@@ -1846,8 +2029,8 @@ function InlineNumber({ value, onChange, width = 110, min, max, allowNegative = 
         key={wiggleKey}
         autoFocus
         type="number"
-        step="0.01"
-        inputMode="decimal"
+        step={isInt ? "1" : "0.01"}
+        inputMode={isInt ? "numeric" : "decimal"}
         value={draft}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? "inline-num-err" : undefined}
@@ -1855,13 +2038,14 @@ function InlineNumber({ value, onChange, width = 110, min, max, allowNegative = 
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === "Enter") commit();
-          if (e.key === "Escape") { setDraft(String((value / 100).toFixed(2))); setError(null); setEditing(false); }
+          if (e.key === "Escape") { setDraft(fmtDraft(value)); setError(null); setEditing(false); }
         }}
         style={{
           ...inputStyle(),
           width: "100%",
           textAlign: "right",
           fontVariantNumeric: "tabular-nums",
+          fontWeight: 700,
           borderColor: error ? COLORS.red : undefined,
           animation: error ? "bb-wiggle 0.32s cubic-bezier(0.36, 0.07, 0.19, 0.97)" : undefined,
         }}
@@ -1873,8 +2057,20 @@ function InlineNumber({ value, onChange, width = 110, min, max, allowNegative = 
       ) : null}
     </div>
   ) : (
-    <button onClick={() => setEditing(true)} className="bb-edit-btn" style={{ ...textBtnStyle(), width, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700, color: value === 0 ? COLORS.textFaint : COLORS.text }}>
-      {fmtUsd(value)}
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="bb-edit-btn"
+      style={{
+        ...textBtnStyle(),
+        width,
+        justifyContent: "flex-end",
+        fontVariantNumeric: "tabular-nums",
+        fontWeight: 700,
+        color: value === 0 ? COLORS.textFaint : COLORS.text,
+      }}
+    >
+      {fmtValue(value)}
     </button>
   );
 }
@@ -1989,6 +2185,7 @@ function RentalsDrill({ state, updateState }) {
   const totalExp = operating.reduce((s, p) => s + propertyMonthlyExpenses(p, state.settings), 0);
   const totalNoi = totalGross - totalExp;
   const [compareOpen, setCompareOpen] = useState(false);
+  const [sellOpen, setSellOpen] = useState(false);
   const addProperty = () => updateState((s) => ({
     ...s,
     properties: [
@@ -2030,21 +2227,36 @@ function RentalsDrill({ state, updateState }) {
         heroLabel={`NOI / month · ${fmtUsd(totalGross, { compact: true })} gross`}
         heroColor={totalNoi >= 0 ? COLORS.green : COLORS.red}
       />
-      {state.properties.length >= 2 && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+      {state.properties.length >= 1 && (
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
           <button
-            onClick={() => setCompareOpen(true)}
+            onClick={() => setSellOpen(true)}
             style={{ ...btn("ghost") }}
           >
-            <Icon d={ICON.scales} size={14} />
-            Compare properties
+            <Icon d={["M3 3v18h18", "M7 16V9", "M12 16V6", "M17 16v-4"]} size={14} />
+            Sell analysis
           </button>
+          {state.properties.length >= 2 && (
+            <button
+              onClick={() => setCompareOpen(true)}
+              style={{ ...btn("ghost") }}
+            >
+              <Icon d={ICON.scales} size={14} />
+              Compare properties
+            </button>
+          )}
         </div>
       )}
       {compareOpen && (
         <PropertyComparisonSheet
           state={state}
           onClose={() => setCompareOpen(false)}
+        />
+      )}
+      {sellOpen && (
+        <SellAnalysisSheet
+          state={state}
+          onClose={() => setSellOpen(false)}
         />
       )}
       <div style={{ display: "grid", gap: 16, marginTop: 6 }}>
@@ -2190,9 +2402,17 @@ function BusinessExpensesBlock({ state, updateState }) {
 
 function PropertyCard({ property, settings, onChange, onRoomChange, onExpenseChange, onAddRoom, onAddExpense, onDeleteRoom, onDeleteExpense, onDeleteProperty }) {
   const gross = propertyMonthlyGross(property);
-  const exp = propertyMonthlyExpenses(property, settings);
+  const opex = propertyOperatingExpenses(property, settings);
+  const exp = propertyMonthlyExpenses(property, settings); // opex + HELOC
   const noi = gross - exp;
   const statusColor = property.status === "operating" ? COLORS.green : property.status === "pipeline" ? COLORS.amber : COLORS.textMuted;
+  // House-hack split: the owner-occupied share of fixed costs is shown
+  // as a credit row so the Expenses subtotal reconciles with the rows.
+  const personalBps = property.personal_use_bps || 0;
+  const fullFixed = (property.expenses || [])
+    .filter((e) => e.kind === "fixed")
+    .reduce((s, e) => s + e.monthly_cents, 0);
+  const ownerCredit = Math.round(fullFixed * (1 - propertyRentalShare(property)));
   const analytics = useMemo(() => computePropertyAnalytics(property, settings), [property, settings]);
   return (
     <div style={{ ...STYLES.card, padding: 18 }}>
@@ -2207,7 +2427,7 @@ function PropertyCard({ property, settings, onChange, onRoomChange, onExpenseCha
           <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.015em", display: "flex", alignItems: "center", gap: 8 }}>
             <InlineText value={property.label} onChange={(v) => onChange({ label: v })} />
           </div>
-          <div style={{ marginTop: 4 }}>
+          <div style={{ marginTop: 4, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <select
               value={property.status}
               onChange={(e) => onChange({ status: e.target.value })}
@@ -2232,6 +2452,15 @@ function PropertyCard({ property, settings, onChange, onRoomChange, onExpenseCha
               <option value="equity_only">equity only</option>
               <option value="sold">sold</option>
             </select>
+            {personalBps > 0 && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
+                color: COLORS.amber, background: COLORS.amberBg,
+                padding: "3px 9px", borderRadius: 100,
+              }}>
+                House hack · {Math.round(personalBps / 100)}% home
+              </span>
+            )}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -2290,7 +2519,7 @@ function PropertyCard({ property, settings, onChange, onRoomChange, onExpenseCha
           {onAddRoom && <AddRowButton label="Add room" onClick={onAddRoom} />}
         </div>
         <div style={{ minWidth: 0 }}>
-          <SectionLabel>Expenses · {fmtUsd(exp)}</SectionLabel>
+          <SectionLabel>Expenses · {fmtUsd(opex)}</SectionLabel>
           {property.expenses.map((e, ei) => (
             <EditableRow
               key={ei}
@@ -2301,12 +2530,205 @@ function PropertyCard({ property, settings, onChange, onRoomChange, onExpenseCha
               onDelete={onDeleteExpense ? () => onDeleteExpense(ei) : undefined}
             />
           ))}
+          {ownerCredit > 0 && (
+            <div className="bb-row" style={{
+              display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto",
+              alignItems: "center", padding: "10px 4px", gap: 8, minHeight: 40,
+            }}>
+              <div style={{ fontSize: 13.5, color: COLORS.textMuted, fontWeight: 500 }}>
+                Owner-occupied credit ({Math.round(personalBps / 100)}%)
+              </div>
+              <span style={{ fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: COLORS.green }}>
+                −{fmtUsd(ownerCredit)}
+              </span>
+            </div>
+          )}
           {onAddExpense && <AddRowButton label="Add expense" onClick={onAddExpense} />}
         </div>
       </div>
 
       <MortgageDetails property={property} onChange={onChange} />
+      <HelocDetails property={property} onChange={onChange} />
+      <OwnerOccupiedDetails property={property} onChange={onChange} />
       <MaintenanceLog property={property} onChange={onChange} />
+    </div>
+  );
+}
+
+// Sell analysis — ranks rentals by TOTAL return on current equity
+// (cash flow + appreciation + mortgage paydown), the metric that
+// actually answers "is this equity working hard enough to keep?".
+// House hacks are scored separately — they're not pure rentals.
+function SellAnalysisSheet({ state, onClose }) {
+  const [apprPct, setApprPct] = useState("3.0");
+  const apprRate = Math.max(0, parseFloat(apprPct) || 0) / 100;
+
+  const rows = useMemo(() => {
+    return state.properties
+      .filter((p) => p.status === "operating" || p.status === "pipeline")
+      .map((p) => {
+        const noi = propertyMonthlyGross(p) - propertyMonthlyExpenses(p, state.settings);
+        const equity = (p.market_value_cents || 0) - (p.mortgage_balance_cents || 0);
+        const annualCash = noi * 12;
+        const appreciation = Math.round((p.market_value_cents || 0) * apprRate);
+        const mp = p.mortgage_payment_cents || 0;
+        const mr = (p.mortgage_rate_bps || 0) / 10000;
+        const hasMortgageData = mp > 0 && mr > 0;
+        // First-year principal paydown ≈ annual payments − annual interest.
+        const paydown = hasMortgageData
+          ? Math.max(0, mp * 12 - Math.round((p.mortgage_balance_cents || 0) * mr))
+          : 0;
+        const totalReturn = annualCash + appreciation + paydown;
+        return {
+          p, noi, equity, annualCash, appreciation, paydown, totalReturn,
+          hasMortgageData,
+          totalRoe: equity > 0 ? totalReturn / equity : null,
+          cashRoe: equity > 0 ? annualCash / equity : null,
+          personal: p.personal_use_bps || 0,
+        };
+      });
+  }, [state.properties, state.settings, apprRate]);
+
+  const rentals = rows.filter((r) => !r.personal).sort((a, b) => (a.totalRoe ?? 9) - (b.totalRoe ?? 9));
+  const hacks = rows.filter((r) => r.personal);
+
+  const verdict = (r) => {
+    if (r.totalRoe == null) return { label: "No equity yet", color: COLORS.textMuted, bg: COLORS.surfaceTint };
+    const pct = r.totalRoe * 100;
+    if (pct >= 12) return { label: "Strong — keep", color: COLORS.green, bg: COLORS.greenBg };
+    if (pct >= 8) return { label: "Healthy", color: COLORS.green, bg: COLORS.greenBg };
+    if (pct >= 4) return { label: "Lagging", color: COLORS.amber, bg: COLORS.amberBg };
+    return { label: "Review — sell candidate", color: COLORS.red, bg: COLORS.redBg };
+  };
+  const pctText = (v) => (v == null ? "—" : `${(v * 100).toFixed(1)}%`);
+
+  return (
+    <div
+      onClick={onClose}
+      className="bb-modal"
+      style={{
+        position: "fixed", inset: 0, zIndex: 55,
+        background: "rgba(15,23,41,0.55)", backdropFilter: "blur(4px)",
+        display: "grid", placeItems: "center", padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bb-modal-card"
+        style={{
+          background: COLORS.surface, borderRadius: 24,
+          width: "100%", maxWidth: 640, maxHeight: "calc(100dvh - 40px)",
+          boxShadow: "0 24px 80px rgba(15,23,41,0.28)",
+          display: "flex", flexDirection: "column", overflow: "hidden",
+          fontFamily: FONT,
+        }}
+      >
+        <div style={{
+          position: "sticky", top: 0, zIndex: 1,
+          padding: "16px 20px 12px", borderBottom: `1px solid ${COLORS.surfaceTint}`,
+          background: COLORS.surface,
+          display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+        }}>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.02em" }}>Sell analysis</div>
+            <div style={{ marginTop: 4, fontSize: 12, color: COLORS.textMuted }}>
+              Ranked by total return on equity — worst first.
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{
+            width: 32, height: 32, borderRadius: 10, border: `1px solid ${COLORS.border}`,
+            background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer",
+            display: "grid", placeItems: "center",
+          }}>
+            <Icon d={ICON.x} size={14} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px 24px" }}>
+          <div className="bb-row" style={{
+            display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+            padding: "8px 10px", background: COLORS.surfaceTint, borderRadius: 10, marginBottom: 14,
+          }}>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.textMuted }}>Assumed yearly appreciation</span>
+            <input
+              type="number" step="0.5" inputMode="decimal"
+              value={apprPct}
+              onChange={(e) => setApprPct(e.target.value)}
+              aria-label="Assumed appreciation percent"
+              style={{ ...inputStyle(), width: 70, textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+            />
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: COLORS.textFaint }}>% / yr</span>
+          </div>
+
+          {rentals.length === 0 && (
+            <div style={{ fontSize: 13, color: COLORS.textFaint, fontStyle: "italic", padding: "8px 0" }}>
+              No pure rentals to rank yet.
+            </div>
+          )}
+
+          {rentals.map((r, i) => {
+            const v = verdict(r);
+            const seg = (cents) => (r.equity > 0 ? `${((cents / r.equity) * 100).toFixed(1)}%` : "—");
+            return (
+              <div key={r.p.label + i} style={{
+                border: `1px solid ${i === 0 ? v.color : COLORS.border}`,
+                borderRadius: 12, padding: "12px 14px", marginBottom: 10,
+                background: i === 0 ? v.bg : COLORS.surface,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+                  <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-0.01em", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.p.label}</span>
+                  <span style={{
+                    flexShrink: 0, fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em",
+                    color: v.color, background: v.bg, padding: "3px 9px", borderRadius: 100,
+                  }}>{v.label}</span>
+                </div>
+                <div style={{ marginTop: 8, display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ fontSize: 26, fontWeight: 800, color: v.color, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>
+                    {pctText(r.totalRoe)}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>total return on equity</span>
+                </div>
+                <div style={{ marginTop: 6, fontSize: 12, color: COLORS.textMuted, fontWeight: 600 }}>
+                  {fmtUsd(r.noi)}/mo cash flow · {fmtCompact(r.equity)} equity
+                </div>
+                <div style={{ marginTop: 6, fontSize: 11.5, color: COLORS.textFaint }}>
+                  cash {seg(r.annualCash)} + appreciation {seg(r.appreciation)} + paydown {r.hasMortgageData ? seg(r.paydown) : "n/a"}
+                  {!r.hasMortgageData && " — add mortgage rate & payment for paydown"}
+                </div>
+              </div>
+            );
+          })}
+
+          {hacks.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ ...TYPE.eyebrow, marginBottom: 6 }}>House hacks — judged separately</div>
+              {hacks.map((r, i) => (
+                <div key={r.p.label + i} style={{
+                  border: `1px solid ${COLORS.border}`, borderRadius: 12,
+                  padding: "12px 14px", marginBottom: 10, background: COLORS.surface,
+                }}>
+                  <div style={{ fontSize: 15, fontWeight: 800 }}>{r.p.label}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: COLORS.textMuted, fontWeight: 600 }}>
+                    {fmtUsd(r.noi)}/mo rental contribution · {Math.round(r.personal / 100)}% your home
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 11.5, color: COLORS.textFaint }}>
+                    A house hack isn&apos;t a pure rental — score it on how much of your housing the
+                    tenants cover, not on ROE. Don&apos;t rank it against the rentals above.
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ marginTop: 8, fontSize: 11.5, color: COLORS.textFaint, lineHeight: 1.5 }}>
+            <strong style={{ color: COLORS.textMuted }}>How to read it:</strong> total return on equity
+            = a year of cash flow + appreciation + loan paydown, divided by the equity you have
+            tied up today. Below ~4% means good money is sitting idle — sell only if you have a
+            better home for that equity. Tax, depreciation recapture and selling costs aren&apos;t
+            modeled — run a real net-of-sale number before you list anything.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2363,6 +2785,7 @@ function PropertyComparisonSheet({ state, onClose }) {
   return (
     <div
       onClick={onClose}
+      className="bb-modal"
       style={{
         position: "fixed", inset: 0, zIndex: 55,
         background: "rgba(15,23,41,0.55)", backdropFilter: "blur(4px)",
@@ -2371,6 +2794,7 @@ function PropertyComparisonSheet({ state, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="bb-modal-card"
         style={{
           background: COLORS.surface, borderRadius: 24,
           width: "100%", maxWidth: 760, maxHeight: "calc(100dvh - 40px)",
@@ -2719,6 +3143,154 @@ function MortgageDetails({ property, onChange }) {
   );
 }
 
+// Per-property HELOC. Balance, rate and credit limit are fully
+// editable. The monthly payment defaults to interest-only (balance ×
+// rate ÷ 12) and recomputes live; typing a number sets a custom
+// override. Whatever the effective payment is, it's folded into the
+// property's costs and NOI (see propertyHelocPayment in lib/calc.js).
+function HelocDetails({ property, onChange }) {
+  const [open, setOpen] = useState(false);
+  const balance = property.heloc_balance_cents || 0;
+  const rateBps = property.heloc_rate_bps ?? 0;
+  const limit = property.heloc_limit_cents || 0;
+  const override = property.heloc_payment_cents;
+  const isOverride = override != null && override > 0;
+  const autoPayment = balance > 0 && rateBps > 0 ? Math.round((balance * (rateBps / 10000)) / 12) : 0;
+  const payment = isOverride ? override : autoPayment;
+  const has = balance > 0 || rateBps > 0 || limit > 0 || isOverride;
+  const available = Math.max(0, limit - balance);
+  return (
+    <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${COLORS.surfaceAlt}` }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={{
+          background: "transparent", border: "none", cursor: "pointer",
+          padding: "4px 0", display: "flex", alignItems: "center", gap: 6,
+          fontSize: 11, fontWeight: 700, color: COLORS.textMuted,
+          textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: FONT,
+        }}
+      >
+        <Icon d={open ? ICON.chevD : ICON.chevR} size={10} />
+        HELOC{!has && " (none set)"}
+        {has && payment > 0 && (
+          <span style={{ color: COLORS.accent, textTransform: "none", letterSpacing: 0 }}>
+            · {fmtUsd(payment)}/mo
+          </span>
+        )}
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 10,
+          padding: "10px 12px",
+          background: COLORS.surfaceTint,
+          borderRadius: 10,
+        }}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: 8,
+          }}>
+            <InputRow label="HELOC balance" value={balance} onChange={(v) => onChange({ heloc_balance_cents: v })} />
+            <PctRow label="Interest rate" bps={property.heloc_rate_bps} onChange={(v) => onChange({ heloc_rate_bps: v })} />
+            <InputRow label="Credit limit" value={limit} onChange={(v) => onChange({ heloc_limit_cents: v })} />
+            <div className="bb-row" style={{
+              display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center",
+              padding: "8px 4px", minHeight: 40, gap: 12,
+            }}>
+              <div style={TYPE.label}>Monthly payment</div>
+              <InlineNumber
+                value={payment}
+                onChange={(v) => onChange({ heloc_payment_cents: v })}
+                width={140}
+                min={0}
+                allowNegative={false}
+              />
+            </div>
+          </div>
+          <div style={{
+            marginTop: 8, display: "flex", flexWrap: "wrap", gap: 8,
+            alignItems: "center", fontSize: 11.5, fontWeight: 600, color: COLORS.textFaint,
+          }}>
+            {isOverride ? (
+              <>
+                <span>Custom payment.</span>
+                <button
+                  onClick={() => onChange({ heloc_payment_cents: null })}
+                  style={{
+                    background: "transparent", border: "none", padding: 0, cursor: "pointer",
+                    fontFamily: FONT, fontSize: 11.5, fontWeight: 700, color: COLORS.accent,
+                  }}
+                >
+                  Use interest-only{autoPayment > 0 ? ` (${fmtUsd(autoPayment)})` : ""}
+                </button>
+              </>
+            ) : (
+              <span>Interest-only — balance × rate ÷ 12. Type a payment to set a custom amount.</span>
+            )}
+            {limit > 0 && <span>· {fmtUsd(available)} available to draw</span>}
+          </div>
+          <div style={{ marginTop: 6, fontSize: 11.5, color: COLORS.textFaint }}>
+            Included in this property&apos;s costs &amp; NOI.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Owner-occupied / house-hack share. When a property is partly the
+// owner's residence (a duplex you live in half of), only the rental
+// share of fixed building costs is a rental expense — see
+// propertyRentalShare / propertyOperatingExpenses in lib/calc.js.
+function OwnerOccupiedDetails({ property, onChange }) {
+  const [open, setOpen] = useState(false);
+  const bps = property.personal_use_bps || 0;
+  const has = bps > 0;
+  return (
+    <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${COLORS.surfaceAlt}` }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={{
+          background: "transparent", border: "none", cursor: "pointer",
+          padding: "4px 0", display: "flex", alignItems: "center", gap: 6,
+          fontSize: 11, fontWeight: 700, color: COLORS.textMuted,
+          textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: FONT,
+        }}
+      >
+        <Icon d={open ? ICON.chevD : ICON.chevR} size={10} />
+        Owner-occupied{!has && " (none)"}
+        {has && (
+          <span style={{ color: COLORS.amber, textTransform: "none", letterSpacing: 0 }}>
+            · {Math.round(bps / 100)}% your home
+          </span>
+        )}
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 10,
+          padding: "10px 12px",
+          background: COLORS.surfaceTint,
+          borderRadius: 10,
+        }}>
+          <PctRow
+            label="Your share of this property"
+            bps={property.personal_use_bps}
+            onChange={(v) => onChange({ personal_use_bps: Math.min(10000, Math.max(0, v)) })}
+          />
+          <div style={{ marginTop: 6, fontSize: 11.5, color: COLORS.textFaint }}>
+            Live in half a duplex? Enter 50%. The mortgage, taxes, insurance and other
+            building costs get split — only the rental share counts against this
+            property&apos;s cash flow. Vacancy &amp; CapEx aren&apos;t split (they already
+            scale with rental rent).
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Net Worth drill ──────────────────────────────────────────────────
 
 function NetWorthDrill({ state, updateState }) {
@@ -2726,6 +3298,20 @@ function NetWorthDrill({ state, updateState }) {
   const cash = state.assets.reduce((s, a) => s + a.balance_cents, 0);
   const debt = state.debts.reduce((s, d) => s + d.balance_cents, 0);
   const total = propEquity + cash - debt;
+
+  // Resolve section header overrides. Falls back to the default when no
+  // user override exists. Slugs are stable so renames travel with state.
+  const labelFor = (id, fallback) => state.settings.section_labels?.[id] || fallback;
+  const renameSection = (id, fallback, value) => {
+    updateState((s) => {
+      const prev = s.settings.section_labels || {};
+      const next = { ...prev };
+      const trimmed = (value || "").trim();
+      if (!trimmed || trimmed === fallback) delete next[id];
+      else next[id] = trimmed;
+      return { ...s, settings: { ...s.settings, section_labels: next } };
+    });
+  };
   return (
     <div>
       <DrillTitle
@@ -2745,13 +3331,20 @@ function NetWorthDrill({ state, updateState }) {
         <RetirementProjectionPanel state={state} updateState={updateState} />
         <FireCalculatorPanel state={state} updateState={updateState} />
 
-        <BlockCard title="Real Estate Equity" sub={fmtCompact(propEquity)} accent={COLORS.accent} icon={ICON.building} count={`${state.properties.length}`}>
+        <BlockCard
+          title={labelFor("networth.real-estate", "Real Estate Equity")}
+          onTitleChange={(v) => renameSection("networth.real-estate", "Real Estate Equity", v)}
+          sub={fmtCompact(propEquity)}
+          accent={COLORS.accent}
+          icon={ICON.building}
+          count={`${state.properties.length}`}
+        >
           <div style={{
             display: "grid",
             gridTemplateColumns: "minmax(0, 1.4fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(72px, 0.8fr)",
             gap: 10, padding: "6px 4px 8px",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: COLORS.textFaint,
             borderBottom: `1px solid ${COLORS.border}`,
+            ...TYPE.eyebrow,
           }}>
             <div>Property</div>
             <div style={{ textAlign: "right" }}>Market</div>
@@ -2767,7 +3360,12 @@ function NetWorthDrill({ state, updateState }) {
                 alignItems: "center", gap: 10, padding: "10px 4px",
                 minHeight: 40,
               }}>
-                <div style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.label}</div>
+                <div style={{ minWidth: 0, fontWeight: 600 }}>
+                  <InlineText
+                    value={p.label}
+                    onChange={(v) => updateState((s) => ({ ...s, properties: s.properties.map((pp, i) => i === idx ? { ...pp, label: v } : pp) }))}
+                  />
+                </div>
                 <InlineNumber
                   value={p.market_value_cents}
                   onChange={(v) => updateState((s) => ({ ...s, properties: s.properties.map((pp, i) => i === idx ? { ...pp, market_value_cents: v } : pp) }))}
@@ -2786,7 +3384,14 @@ function NetWorthDrill({ state, updateState }) {
           })}
         </BlockCard>
 
-        <BlockCard title="Cash & Investments" sub={fmtCompact(cash)} accent={COLORS.green} icon={ICON.trending} count={`${state.assets.length}`}>
+        <BlockCard
+          title={labelFor("networth.cash", "Cash & Investments")}
+          onTitleChange={(v) => renameSection("networth.cash", "Cash & Investments", v)}
+          sub={fmtCompact(cash)}
+          accent={COLORS.green}
+          icon={ICON.trending}
+          count={`${state.assets.length}`}
+        >
           {state.assets.map((a, idx) => (
             <AssetRow
               key={idx}
@@ -2805,7 +3410,14 @@ function NetWorthDrill({ state, updateState }) {
           />
         </BlockCard>
 
-        <BlockCard title="Liabilities" sub={fmtCompact(debt)} accent={COLORS.red} icon={ICON.arrowDn} count={`${state.debts.length}`}>
+        <BlockCard
+          title={labelFor("networth.liabilities", "Liabilities")}
+          onTitleChange={(v) => renameSection("networth.liabilities", "Liabilities", v)}
+          sub={fmtCompact(debt)}
+          accent={COLORS.red}
+          icon={ICON.arrowDn}
+          count={`${state.debts.length}`}
+        >
           {state.debts.map((d, idx) => (
             <DebtRow
               key={idx}
@@ -2824,7 +3436,12 @@ function NetWorthDrill({ state, updateState }) {
           />
         </BlockCard>
 
-        <RetirementContributionsBlock state={state} updateState={updateState} />
+        <RetirementContributionsBlock
+          state={state}
+          updateState={updateState}
+          title={labelFor("networth.retirement", "Retirement Contributions")}
+          onTitleChange={(v) => renameSection("networth.retirement", "Retirement Contributions", v)}
+        />
       </div>
     </div>
   );
@@ -2931,7 +3548,7 @@ function DebtRow({ debt, onChange, onDelete }) {
   );
 }
 
-function RetirementContributionsBlock({ state, updateState }) {
+function RetirementContributionsBlock({ state, updateState, title, onTitleChange }) {
   const contribs = state.retirement_contributions || [];
   const total = contribs.reduce((s, c) => s + c.amount_cents, 0);
   const addYear = () => {
@@ -2946,7 +3563,8 @@ function RetirementContributionsBlock({ state, updateState }) {
   };
   return (
     <BlockCard
-      title="Retirement Contributions"
+      title={title || "Retirement Contributions"}
+      onTitleChange={onTitleChange}
       sub={fmtCompact(total)}
       accent={COLORS.green}
       icon={ICON.award}
@@ -2980,10 +3598,13 @@ function RetirementContributionsBlock({ state, updateState }) {
                 }))}
               />
               <InlineNumber
-                value={c.year * 100}
+                mode="integer"
+                min={1970}
+                max={2200}
+                value={c.year}
                 onChange={(v) => updateState((s) => ({
                   ...s,
-                  retirement_contributions: s.retirement_contributions.map((x, i) => i === realIdx ? { ...x, year: Math.max(1970, Math.min(2200, Math.round(v / 100))) } : x),
+                  retirement_contributions: s.retirement_contributions.map((x, i) => i === realIdx ? { ...x, year: v } : x),
                 }))}
                 width={70}
               />
@@ -3183,8 +3804,8 @@ function RetirementProjectionPanel({ state, updateState }) {
           value={defaults.startingBalanceCents}
           onChange={() => {}}
         />
-        <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center", padding: "8px 4px" }}>
-          <div style={{ fontSize: 13.5, color: COLORS.textMuted, fontWeight: 500 }}>Annual contribution</div>
+        <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center", padding: "8px 4px", minHeight: 40, gap: 12 }}>
+          <div style={{ ...TYPE.label }}>Annual contribution</div>
           <InlineNumber
             value={annualContributionCents}
             onChange={(v) => setContribOverride(v)}
@@ -3192,11 +3813,16 @@ function RetirementProjectionPanel({ state, updateState }) {
           />
         </div>
         <PctRow label="Expected return" bps={defaults.annualReturnBps} onChange={(v) => setS({ retirement_return_bps: v })} />
-        <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center", padding: "8px 4px" }}>
-          <div style={{ fontSize: 13.5, color: COLORS.textMuted, fontWeight: 500 }}>Horizon (years)</div>
+        <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center", padding: "8px 4px", minHeight: 40, gap: 12 }}>
+          <div style={{ ...TYPE.label }}>Horizon (years)</div>
           <InlineNumber
-            value={defaults.horizonYears * 100}
-            onChange={(v) => setS({ retirement_horizon_years: Math.max(1, Math.min(80, Math.round(v / 100))) })}
+            mode="integer"
+            suffix="yr"
+            min={1}
+            max={80}
+            value={defaults.horizonYears}
+            onChange={(v) => setS({ retirement_horizon_years: v })}
+            allowNegative={false}
             width={80}
           />
         </div>
@@ -3223,37 +3849,37 @@ function FireCalculatorPanel({ state, updateState }) {
         size={120}
       />
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Financial Independence</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 14px", fontSize: 12.5 }}>
+        <div style={{ ...TYPE.titleSm, marginBottom: 10 }}>Financial Independence</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 18px" }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>FIRE number</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", marginTop: 2 }}>{fmtCompact(metrics.fireNumberCents)}</div>
-            <div style={{ fontSize: 10, color: COLORS.textFaint, marginTop: 1 }}>{fireMultiple}× annual expenses</div>
+            <div style={TYPE.eyebrow}>FIRE number</div>
+            <div style={{ ...TYPE.titleMd, marginTop: 4 }}>{fmtCompact(metrics.fireNumberCents)}</div>
+            <div style={{ ...TYPE.caption, marginTop: 2 }}>{fireMultiple}× annual expenses</div>
           </div>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>You have</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.green, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em", marginTop: 2 }}>{fmtCompact(metrics.liquidNetWorthCents)}</div>
-            <div style={{ fontSize: 10, color: COLORS.textFaint, marginTop: 1 }}>liquid (cash + retirement + invest)</div>
+            <div style={TYPE.eyebrow}>You have</div>
+            <div style={{ ...TYPE.titleMd, color: COLORS.green, marginTop: 4 }}>{fmtCompact(metrics.liquidNetWorthCents)}</div>
+            <div style={{ ...TYPE.caption, marginTop: 2 }}>liquid (cash + retirement + invest)</div>
           </div>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Yearly expenses</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>{fmtCompact(metrics.annualExpensesCents)}</div>
+            <div style={TYPE.eyebrow}>Yearly expenses</div>
+            <div style={{ ...TYPE.value, marginTop: 4 }}>{fmtCompact(metrics.annualExpensesCents)}</div>
           </div>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Years to FIRE</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: metrics.yearsToFire == null ? COLORS.textFaint : COLORS.text, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
+            <div style={TYPE.eyebrow}>Years to FIRE</div>
+            <div style={{ ...TYPE.value, color: metrics.yearsToFire == null ? COLORS.textFaint : COLORS.text, marginTop: 4 }}>
               {metrics.yearsToFire == null ? "—" : `${metrics.yearsToFire}`}
             </div>
-            <div style={{ fontSize: 10, color: COLORS.textFaint, marginTop: 1 }}>at {fmtCompact(metrics.annualContributionCents)} / yr saved</div>
+            <div style={{ ...TYPE.caption, marginTop: 2 }}>at {fmtCompact(metrics.annualContributionCents)} / yr saved</div>
           </div>
         </div>
-        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, paddingTop: 10, borderTop: `1px solid ${COLORS.surfaceTint}`, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Multiplier</span>
+        <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10, paddingTop: 12, borderTop: `1px solid ${COLORS.surfaceTint}`, flexWrap: "wrap" }}>
+          <span style={TYPE.eyebrow}>Multiplier</span>
           <select
             value={fireMultiple}
             onChange={(e) => updateState((s) => ({ ...s, settings: { ...s.settings, fire_multiple: Number(e.target.value) } }))}
             aria-label="FIRE multiple"
-            style={pillSelectStyle()}
+            style={selectStyle()}
           >
             <option value="20">20× (5% SWR — aggressive)</option>
             <option value="25">25× (4% SWR — Trinity)</option>
@@ -3509,7 +4135,7 @@ function MomLoanDrill({ state, updateState }) {
       <div>
         <DrillTitle
           title="Mom's Loan"
-          subtitle="Track a family loan with monthly payments and history"
+          subtitle="Bidirectional ledger — track money going to her and coming back."
           icon={ICON.home}
           iconColor={COLORS.amber}
           iconBg={COLORS.amberBg}
@@ -3526,72 +4152,255 @@ function MomLoanDrill({ state, updateState }) {
       </div>
     );
   }
-  const paid = loan.payments.reduce((s, p) => s + p.amount_cents, 0);
-  const remaining = loan.starting_balance_cents - paid;
-  const pctPaid = loan.starting_balance_cents > 0 ? Math.min(100, (paid / loan.starting_balance_cents) * 100) : 0;
+
+  // Legacy entries have no `direction` — treat as "in" (paying down the
+  // original appliance loan).
+  const entries = (loan.payments || []).map((p) => ({
+    ...p,
+    direction: p.direction === "out" ? "out" : "in",
+  }));
+  const moneyIn  = entries.filter((p) => p.direction === "in").reduce((s, p) => s + p.amount_cents, 0);
+  const moneyOut = entries.filter((p) => p.direction === "out").reduce((s, p) => s + p.amount_cents, 0);
+  // Positive net → Mom owes Harrison. Negative → Harrison owes Mom.
+  const net = loan.starting_balance_cents + moneyOut - moneyIn;
+  const sortedEntries = [...entries]
+    .map((p, originalIdx) => ({ ...p, originalIdx }))
+    .sort((a, b) => (a.paid_on < b.paid_on ? 1 : -1));
+
+  const addEntry = (direction, amount_cents, note) => {
+    if (!amount_cents || amount_cents <= 0) return;
+    const today = new Date().toISOString().slice(0, 10);
+    updateState((s) => ({
+      ...s,
+      mom_loans: [{
+        ...loan,
+        payments: [...loan.payments, { paid_on: today, amount_cents, direction, note: note || undefined }],
+      }],
+    }));
+    fireConfetti({ count: 30, originY: 0.45 });
+  };
+
+  const deleteEntry = (originalIdx) => {
+    updateState((s) => ({
+      ...s,
+      mom_loans: [{ ...loan, payments: loan.payments.filter((_, i) => i !== originalIdx) }],
+    }));
+  };
+
+  const heroLabel = net === 0
+    ? "settled up"
+    : net > 0
+    ? `Mom owes you · started at ${fmtUsd(loan.starting_balance_cents)}`
+    : `you owe Mom · started at ${fmtUsd(loan.starting_balance_cents)}`;
+  const heroColor = net > 0 ? COLORS.text : net < 0 ? COLORS.amber : COLORS.green;
+
   return (
     <div>
       <DrillTitle
         title={loan.label}
-        subtitle={`${loan.payments.length} payment${loan.payments.length === 1 ? "" : "s"} logged`}
+        subtitle={`${entries.length} entr${entries.length === 1 ? "y" : "ies"} · in ${fmtUsd(moneyIn, { compact: true })} · out ${fmtUsd(moneyOut, { compact: true })}`}
         icon={ICON.home}
         iconColor={COLORS.amber}
         iconBg={COLORS.amberBg}
-        heroValue={fmtUsd(remaining)}
-        heroLabel={`remaining of ${fmtUsd(loan.starting_balance_cents)}`}
-        heroColor={remaining > 0 ? COLORS.text : COLORS.green}
+        heroValue={fmtUsd(Math.abs(net))}
+        heroLabel={heroLabel}
+        heroColor={heroColor}
       />
+
+      {/* Quick log — two side-by-side inline forms */}
       <div style={{
-        ...STYLES.card, padding: 18, marginBottom: 14,
-        display: "flex", alignItems: "center", gap: 18, justifyContent: "space-between",
+        ...STYLES.card,
+        padding: 16,
+        marginBottom: 14,
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: 12,
       }}>
-        <ProgressRing
-          value={paid}
-          max={loan.starting_balance_cents || 1}
-          color={COLORS.amber}
-          label={`${pctPaid.toFixed(0)}%`}
-          sublabel="paid"
-          size={104}
+        <MomLoanQuickLog
+          direction="in"
+          accent={COLORS.green}
+          label="Money in"
+          hint="She paid you (appliance payback, etc.)"
+          defaultAmount={loan.monthly_payment_cents}
+          onSubmit={(amt, note) => addEntry("in", amt, note)}
         />
-        <div style={{ flex: 1, display: "grid", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>Paid so far</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: COLORS.green, fontVariantNumeric: "tabular-nums" }}>{fmtUsd(paid)}</div>
-          </div>
-          <button
-            onClick={() => updateState((s) => ({
-              ...s,
-              mom_loans: [{ ...loan, payments: [...loan.payments, { paid_on: new Date().toISOString().slice(0, 10), amount_cents: loan.monthly_payment_cents }] }],
-            }))}
-            style={{
-              ...btn("primary"),
-              background: COLORS.amber,
-              alignSelf: "flex-start",
-            }}
-          >
-            <Icon d={["M12 5v14", "M5 12h14"]} size={14} />
-            Log {fmtUsd(loan.monthly_payment_cents, { compact: true })} payment
-          </button>
-        </div>
+        <MomLoanQuickLog
+          direction="out"
+          accent={COLORS.amber}
+          label="Money out"
+          hint="You paid her (retirement support from cash flow)"
+          defaultAmount={loan.monthly_payment_cents}
+          onSubmit={(amt, note) => addEntry("out", amt, note)}
+        />
       </div>
-      <BlockCard title="Terms" sub="" accent={COLORS.amber} icon={ICON.edit} style={{ marginTop: 6 }}>
-        <InputRow label="Starting balance" value={loan.starting_balance_cents} onChange={(v) => updateState((s) => ({ ...s, mom_loans: [{ ...loan, starting_balance_cents: v }] }))} />
-        <InputRow label="Monthly payment" value={loan.monthly_payment_cents} onChange={(v) => updateState((s) => ({ ...s, mom_loans: [{ ...loan, monthly_payment_cents: v }] }))} />
+
+      <BlockCard
+        title="Terms"
+        accent={COLORS.amber}
+        icon={ICON.edit}
+        style={{ marginBottom: 14 }}
+      >
+        <InputRow
+          label="Starting balance owed (appliances)"
+          value={loan.starting_balance_cents}
+          onChange={(v) => updateState((s) => ({ ...s, mom_loans: [{ ...loan, starting_balance_cents: v }] }))}
+        />
+        <InputRow
+          label="Suggested payment amount"
+          value={loan.monthly_payment_cents}
+          onChange={(v) => updateState((s) => ({ ...s, mom_loans: [{ ...loan, monthly_payment_cents: v }] }))}
+        />
       </BlockCard>
-      <BlockCard title="Payment history" sub={fmtUsd(paid, { compact: true })} accent={COLORS.green} icon={ICON.arrowUp} count={`${loan.payments.length}`} style={{ marginTop: 14 }}>
-        {loan.payments.map((p, i) => (
-          <Row key={i} label={new Date(p.paid_on).toLocaleDateString()} value={fmtUsd(p.amount_cents)} sub={p.note} />
-        ))}
+
+      <BlockCard
+        title="Ledger"
+        sub={`net ${net >= 0 ? "" : "−"}${fmtUsd(Math.abs(net), { compact: true })}`}
+        accent={COLORS.accent}
+        icon={ICON.refresh}
+        count={`${entries.length}`}
+      >
+        {sortedEntries.length === 0 ? (
+          <div style={{ ...TYPE.caption, fontStyle: "italic", padding: "8px 4px" }}>
+            No entries yet. Tap a button above to log the first one.
+          </div>
+        ) : (
+          sortedEntries.map((p) => (
+            <MomLoanLedgerRow
+              key={p.originalIdx}
+              entry={p}
+              onDelete={() => deleteEntry(p.originalIdx)}
+            />
+          ))
+        )}
+      </BlockCard>
+    </div>
+  );
+}
+
+function MomLoanQuickLog({ direction, accent, label, hint, defaultAmount, onSubmit }) {
+  const [amount, setAmount] = useState(defaultAmount ? String((defaultAmount / 100).toFixed(2)) : "");
+  const [note, setNote] = useState("");
+  const commit = () => {
+    const n = parseFloat(amount);
+    if (isNaN(n) || n <= 0) return;
+    onSubmit(Math.round(n * 100), note.trim() || undefined);
+    setAmount(defaultAmount ? String((defaultAmount / 100).toFixed(2)) : "");
+    setNote("");
+  };
+  const arrow = direction === "in" ? ICON.arrowDn : ICON.arrowUp;
+  return (
+    <div style={{
+      padding: 12,
+      borderRadius: RADII.lg,
+      border: `1px solid ${accent}33`,
+      background: `${accent}0A`,
+      display: "grid",
+      gap: 8,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{
+          width: 22, height: 22, borderRadius: 7,
+          background: `${accent}1F`, color: accent,
+          display: "grid", placeItems: "center", flexShrink: 0,
+        }}>
+          <Icon d={arrow} size={12} />
+        </div>
+        <div style={{ ...TYPE.bodyBold, color: accent }}>{label}</div>
+      </div>
+      <div style={TYPE.caption}>{hint}</div>
+      <div style={{ display: "flex", gap: 6 }}>
+        <input
+          type="number"
+          step="0.01"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+          placeholder="0.00"
+          aria-label={`${label} amount`}
+          style={{ ...inputStyle(), width: 92, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}
+        />
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+          placeholder="note"
+          aria-label={`${label} note`}
+          style={{ ...inputStyle(), flex: 1, minWidth: 0 }}
+        />
         <button
-          onClick={() => updateState((s) => ({
-            ...s,
-            mom_loans: [{ ...loan, payments: [...loan.payments, { paid_on: new Date().toISOString().slice(0, 10), amount_cents: loan.monthly_payment_cents }] }],
-          }))}
-          style={{ ...btn("ghost"), marginTop: 12 }}
+          type="button"
+          onClick={commit}
+          aria-label={`Log ${label.toLowerCase()}`}
+          style={{
+            ...btn("primary"),
+            background: accent,
+            padding: "0 14px",
+            height: 32,
+            borderRadius: RADII.sm,
+          }}
         >
-          + Log {fmtUsd(loan.monthly_payment_cents)} payment today
+          Log
         </button>
-      </BlockCard>
+      </div>
+    </div>
+  );
+}
+
+function MomLoanLedgerRow({ entry, onDelete }) {
+  const isIn = entry.direction === "in";
+  const tone = isIn ? COLORS.green : COLORS.amber;
+  const sign = isIn ? "+" : "−";
+  const displayDate = (() => {
+    const d = new Date(entry.paid_on);
+    if (isNaN(d)) return entry.paid_on;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  })();
+  return (
+    <div className="bb-row" style={{
+      display: "grid",
+      gridTemplateColumns: "auto minmax(0, 1fr) auto 22px",
+      gap: 10,
+      alignItems: "center",
+      padding: "9px 4px",
+    }}>
+      <div style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "3px 8px",
+        borderRadius: RADII.pill,
+        background: `${tone}1A`,
+        color: tone,
+        ...TYPE.eyebrow,
+        fontSize: 9,
+      }}>
+        <Icon d={isIn ? ICON.arrowDn : ICON.arrowUp} size={10} />
+        {isIn ? "IN" : "OUT"}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ ...TYPE.body, color: COLORS.text }}>
+          {entry.note || (isIn ? "Payment from Mom" : "Sent to Mom")}
+        </div>
+        <div style={{ ...TYPE.caption, marginTop: 2 }}>{displayDate}</div>
+      </div>
+      <div style={{ ...TYPE.value, color: tone }}>
+        {sign}{fmtUsd(entry.amount_cents)}
+      </div>
+      <button
+        onClick={onDelete}
+        aria-label="Delete entry"
+        style={{
+          width: 22, height: 22, borderRadius: 6, border: "none", cursor: "pointer",
+          background: "transparent", color: COLORS.textFaint, opacity: 0.4,
+          display: "grid", placeItems: "center", transition: "all 0.12s ease",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.4; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = COLORS.textFaint; }}
+      >
+        <Icon d={ICON.x} size={12} />
+      </button>
     </div>
   );
 }
@@ -3667,7 +4476,7 @@ function DrillTitle({ title, subtitle, icon, iconColor, iconBg, heroValue, heroL
   );
 }
 
-function BlockCard({ title, sub, children, style, accent, icon, count }) {
+function BlockCard({ title, sub, children, style, accent, icon, count, onTitleChange }) {
   const accentColor = accent || COLORS.textMuted;
   return (
     <div style={{
@@ -3701,7 +4510,11 @@ function BlockCard({ title, sub, children, style, accent, icon, count }) {
             </div>
           )}
           <div style={{ minWidth: 0, display: "flex", alignItems: "baseline", gap: 8 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.005em" }}>{title}</div>
+            {onTitleChange ? (
+              <EditableHeader value={title} onChange={onTitleChange} />
+            ) : (
+              <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.005em" }}>{title}</div>
+            )}
             {count != null && (
               <div style={{ fontSize: 11, fontWeight: 600, color: COLORS.textFaint }}>{count}</div>
             )}
@@ -3717,6 +4530,69 @@ function BlockCard({ title, sub, children, style, accent, icon, count }) {
         {children}
       </div>
     </div>
+  );
+}
+
+// Same UX as InlineText but sized for section headers — bigger, bolder,
+// no padding shift on click. Click → input. Blur or Enter commits.
+function EditableHeader({ value, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+  const base = {
+    fontSize: 14,
+    fontWeight: 700,
+    color: COLORS.text,
+    letterSpacing: "-0.005em",
+    fontFamily: FONT,
+  };
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => { setEditing(false); const t = draft.trim(); if (t && t !== value) onChange(t); else setDraft(value); }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.target.blur();
+          if (e.key === "Escape") { setDraft(value); setEditing(false); }
+        }}
+        maxLength={60}
+        aria-label={`Rename ${value}`}
+        style={{
+          ...base,
+          background: COLORS.surfaceTint,
+          border: `1px solid ${COLORS.border}`,
+          outline: "none",
+          padding: "2px 8px",
+          borderRadius: 6,
+          minWidth: 120,
+          maxWidth: 280,
+        }}
+      />
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      title="Click to rename"
+      style={{
+        ...base,
+        background: "transparent",
+        border: "none",
+        padding: "2px 4px",
+        margin: "0 -4px",
+        borderRadius: 6,
+        cursor: "text",
+        textAlign: "left",
+        transition: "background 0.12s ease",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.surfaceTint; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+    >
+      {value}
+    </button>
   );
 }
 
@@ -3760,9 +4636,9 @@ function InputRow({ label, value, onChange }) {
   return (
     <div className="bb-row" style={{
       display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center",
-      padding: "10px 4px",
+      padding: "8px 4px", minHeight: 40, gap: 12,
     }}>
-      <div style={{ fontSize: 13.5, color: COLORS.textMuted, fontWeight: 500 }}>{label}</div>
+      <div style={TYPE.label}>{label}</div>
       <input
         type="number"
         step="0.01"
@@ -3770,7 +4646,7 @@ function InputRow({ label, value, onChange }) {
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => { const n = parseFloat(draft); if (!isNaN(n)) onChange(Math.round(n * 100)); }}
         onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
-        style={{ ...inputStyle(), width: 140, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
+        style={{ ...inputStyle(), width: 140, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}
       />
     </div>
   );
@@ -3782,9 +4658,9 @@ function PctRow({ label, bps, onChange }) {
   return (
     <div className="bb-row" style={{
       display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", alignItems: "center",
-      padding: "10px 4px",
+      padding: "8px 4px", minHeight: 40, gap: 12,
     }}>
-      <div style={{ fontSize: 13.5, color: COLORS.textMuted, fontWeight: 500 }}>{label}</div>
+      <div style={TYPE.label}>{label}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <input
           type="number"
@@ -3793,9 +4669,9 @@ function PctRow({ label, bps, onChange }) {
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => { const n = parseFloat(draft); if (!isNaN(n)) onChange(Math.round(n * 100)); }}
           onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }}
-          style={{ ...inputStyle(), width: 90, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
+          style={{ ...inputStyle(), width: 90, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}
         />
-        <span style={{ color: COLORS.textFaint, fontWeight: 600 }}>%</span>
+        <span style={{ ...TYPE.body, color: COLORS.textFaint, fontWeight: 700 }}>%</span>
       </div>
     </div>
   );
@@ -3808,7 +4684,6 @@ function ShortcutsHelp({ onClose }) {
       items: [
         ["g d", "Dashboard"],
         ["g e", "Envelopes"],
-        ["g b", "Bills"],
         ["g h", "Habits"],
         ["g o", "Goals"],
         ["g a", "Achievements"],
@@ -3918,7 +4793,150 @@ function Toast({ kind, message, onDismiss }) {
 
 // ── Section views (Envelopes / Habits / Goals / Achievements / Settings) ──
 
+// Inline panel for moving money from one envelope's balance into
+// another (recorded as an envelope transfer — see moveMoney). Pure UI:
+// validates, then hands a clean (from, to, cents, note) to onMove.
+function MoveMoneyPanel({ categories, balancesByLabel, onMove, onClose }) {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+  const [err, setErr] = useState("");
+  const amountRef = useRef(null);
+
+  const sorted = useMemo(
+    () => [...categories].sort((a, b) => a.label.localeCompare(b.label)),
+    [categories],
+  );
+  const fromBal = from ? balancesByLabel.get(from.toLowerCase()) : null;
+  const fromAvailable = fromBal ? fromBal.available : 0;
+
+  const labelStyle = {
+    display: "block", fontSize: 10.5, fontWeight: 700,
+    letterSpacing: "0.06em", textTransform: "uppercase",
+    color: COLORS.textFaint, marginBottom: 4,
+  };
+  const selStyle = { ...inputStyle(), width: "100%", cursor: "pointer", fontWeight: 600 };
+
+  function submit() {
+    const n = parseFloat(amount);
+    const cents = isNaN(n) ? 0 : Math.round(n * 100);
+    if (!from || !to) { setErr("Pick which envelope to move from and to."); return; }
+    if (from === to) { setErr("Pick two different envelopes."); return; }
+    if (cents <= 0) {
+      setErr("Enter an amount to move.");
+      if (amountRef.current) {
+        amountRef.current.style.animation = "none";
+        void amountRef.current.offsetWidth; // reflow so the wiggle re-fires
+        amountRef.current.style.animation = "bb-wiggle 0.4s ease";
+      }
+      return;
+    }
+    onMove(from, to, cents, note.trim() || undefined);
+  }
+
+  return (
+    <div style={{ ...STYLES.card, padding: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "-0.01em" }}>Move money between envelopes</div>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            width: 28, height: 28, borderRadius: 8, border: `1px solid ${COLORS.border}`,
+            background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer",
+            display: "grid", placeItems: "center",
+          }}
+        >
+          <Icon d={ICON.x} size={13} />
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+        <div>
+          <label style={labelStyle}>From</label>
+          <select
+            value={from}
+            onChange={(e) => { setFrom(e.target.value); if (err) setErr(""); }}
+            aria-label="Move money from"
+            style={selStyle}
+          >
+            <option value="">Select envelope…</option>
+            {sorted.map((c) => <option key={c.label} value={c.label}>{c.label}</option>)}
+          </select>
+          {from && (
+            <div style={{ marginTop: 5, fontSize: 11, color: COLORS.textFaint, fontWeight: 600 }}>
+              <span style={{ color: fromAvailable >= 0 ? COLORS.green : COLORS.red }}>{fmtUsd(fromAvailable)}</span> available ·{" "}
+              <button
+                onClick={() => { setAmount((Math.max(0, fromAvailable) / 100).toFixed(2)); if (err) setErr(""); }}
+                style={{
+                  background: "transparent", border: "none", padding: 0, cursor: "pointer",
+                  fontFamily: FONT, fontSize: 11, fontWeight: 700, color: COLORS.accent,
+                }}
+              >
+                Move all
+              </button>
+            </div>
+          )}
+        </div>
+        <div>
+          <label style={labelStyle}>To</label>
+          <select
+            value={to}
+            onChange={(e) => { setTo(e.target.value); if (err) setErr(""); }}
+            aria-label="Move money to"
+            style={selStyle}
+          >
+            <option value="">Select envelope…</option>
+            {sorted.map((c) => <option key={c.label} value={c.label} disabled={c.label === from}>{c.label}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 10 }}>
+        <div>
+          <label style={labelStyle}>Amount</label>
+          <input
+            ref={amountRef}
+            type="number"
+            step="0.01"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => { setAmount(e.target.value); if (err) setErr(""); }}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+            placeholder="0.00"
+            aria-label="Amount to move"
+            style={{ ...inputStyle(), width: "100%", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>Note (optional)</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+            placeholder="e.g. leftover groceries"
+            aria-label="Transfer note"
+            maxLength={80}
+            style={{ ...inputStyle(), width: "100%", fontWeight: 600 }}
+          />
+        </div>
+      </div>
+      {err && (
+        <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: COLORS.red }}>{err}</div>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <button onClick={submit} style={{ ...btn("primary") }}>
+          <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={13} />
+          Move money
+        </button>
+        <button onClick={onClose} style={{ ...btn("ghost") }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
+  const [moveOpen, setMoveOpen] = useState(false);
   const grouped = useMemo(() => {
     const g = {};
     for (const c of state.categories) {
@@ -3951,6 +4969,12 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
 
   const groupOrder = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
   const populated = groupOrder.filter((g) => (grouped[g] || []).length > 0);
+  // Always offer common groups so the user can drop a new envelope into
+  // Housing / Food / Personal even before any exists in them.
+  const emptyCommon = groupOrder.filter((g) =>
+    !(grouped[g] && grouped[g].length) && ["housing", "food", "personal"].includes(g),
+  );
+  const groupsToShow = [...populated, ...emptyCommon];
 
   // Always create a NEW entry per log (no merging). Each entry carries
   // its own id, paid_on, and optional note so it can be edited or
@@ -4002,6 +5026,101 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
     fireConfetti({ count: 60, originY: 0.45 });
   };
 
+  // ── Envelope transfers ──────────────────────────────────────────────
+  // Move money from one envelope's balance into another (e.g. month-end
+  // leftover Food → Vacation). Recorded in its own ledger so it never
+  // shows up as spending. Stamped with the month being viewed.
+  const moveMoney = (fromLabel, toLabel, cents, note) => {
+    if (!fromLabel || !toLabel || fromLabel === toLabel || !cents || cents <= 0) return;
+    const today = new Date();
+    const moved_on = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    updateState((s) => ({
+      ...s,
+      envelope_transfers: [
+        ...(s.envelope_transfers || []),
+        { id: genId(), from_label: fromLabel, to_label: toLabel, amount_cents: cents, month: activeMonth, moved_on, note: note || undefined },
+      ],
+    }));
+    fireConfetti({ count: 30, originY: 0.45 });
+  };
+
+  // Deleting a transfer fully reverses it — money returns to both
+  // envelopes — since every balance is derived from the ledger.
+  const deleteTransfer = (id) => updateState((s) => ({
+    ...s,
+    envelope_transfers: (s.envelope_transfers || []).filter((t) => t.id !== id),
+  }));
+
+  // Category CRUD — same shape as PersonalDrill so editing an envelope
+  // here writes back to the same `categories` array. Rename also
+  // cascades to monthly_actuals.category_label so existing entries stay
+  // linked to their envelope after a rename.
+  const renameCategory = (oldLabel, newLabel) => {
+    const trimmed = (newLabel || "").trim();
+    if (!trimmed || trimmed === oldLabel) return;
+    updateState((s) => {
+      // Prevent collisions: if another category already owns this label
+      // (case-insensitive), refuse silently rather than merging two.
+      const exists = s.categories.some((c) =>
+        c.label.toLowerCase() === trimmed.toLowerCase() && c.label !== oldLabel,
+      );
+      if (exists) return s;
+      return {
+        ...s,
+        categories: s.categories.map((c) => c.label === oldLabel ? { ...c, label: trimmed } : c),
+        monthly_actuals: (s.monthly_actuals || []).map((a) =>
+          a.category_label === oldLabel ? { ...a, category_label: trimmed } : a,
+        ),
+        // Keep transfers pointed at the renamed envelope.
+        envelope_transfers: (s.envelope_transfers || []).map((t) => ({
+          ...t,
+          from_label: t.from_label === oldLabel ? trimmed : t.from_label,
+          to_label: t.to_label === oldLabel ? trimmed : t.to_label,
+        })),
+      };
+    });
+  };
+
+  const deleteCategory = (label) => {
+    updateState((s) => ({
+      ...s,
+      categories: s.categories.filter((c) => c.label !== label),
+      monthly_actuals: (s.monthly_actuals || []).filter((a) => a.category_label !== label),
+      // Drop transfers touching the removed envelope — consistent with
+      // dropping its logged spending.
+      envelope_transfers: (s.envelope_transfers || []).filter(
+        (t) => t.from_label !== label && t.to_label !== label,
+      ),
+    }));
+  };
+
+  const addCategory = (groupKey) => {
+    updateState((s) => {
+      const existingInGroup = s.categories.filter((c) => (c.group_key || "other") === groupKey);
+      // Find a unique placeholder label so React keys stay stable and
+      // the rename collision check in renameCategory still works.
+      const base = `New ${GROUP_META[groupKey]?.label || groupKey} item`;
+      let label = base;
+      let i = 2;
+      const taken = new Set(s.categories.map((c) => c.label.toLowerCase()));
+      while (taken.has(label.toLowerCase())) { label = `${base} ${i++}`; }
+      return {
+        ...s,
+        categories: [
+          ...s.categories,
+          {
+            label,
+            group_key: groupKey,
+            default_monthly_cents: 0,
+            default_biweekly_cents: 0,
+            default_yearly_cents: 0,
+            sort_order: existingInGroup.length,
+          },
+        ],
+      };
+    });
+  };
+
   return (
     <div>
       <DrillTitle
@@ -4015,17 +5134,36 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
         heroColor={totalAvailable >= 0 ? COLORS.green : COLORS.red}
       />
       <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
+      <div style={{ marginTop: 12 }}>
+        {moveOpen ? (
+          <MoveMoneyPanel
+            categories={state.categories}
+            balancesByLabel={balancesByLabel}
+            onMove={(from, to, cents, note) => { moveMoney(from, to, cents, note); setMoveOpen(false); }}
+            onClose={() => setMoveOpen(false)}
+          />
+        ) : (
+          <button
+            onClick={() => setMoveOpen(true)}
+            style={{ ...btn("ghost") }}
+          >
+            <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={14} />
+            Move money
+          </button>
+        )}
+      </div>
       <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
-        {populated.map((g) => {
+        {groupsToShow.map((g) => {
           const meta = GROUP_META[g] || GROUP_META.other;
-          const items = grouped[g];
+          const items = grouped[g] || [];
           const groupAvailable = items.reduce(
             (s, c) => s + (balancesByLabel.get(c.label.toLowerCase())?.available ?? 0), 0,
           );
           return (
             <BlockCard
               key={g}
-              title={meta.label}
+              title={groupLabel(state, g)}
+              onTitleChange={(v) => renameGroup(updateState, g, v)}
               sub={`${fmtUsd(groupAvailable, { compact: true })} available`}
               accent={meta.accent}
               icon={meta.icon}
@@ -4059,10 +5197,12 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
                           balance={b}
                           accent={meta.accent}
                           state={state}
+                          activeMonth={activeMonth}
                           onLog={(amount, note) => logEntry(c.label, amount, note)}
                           onBulk={(parsed) => bulkLog(c.label, parsed)}
                           onUpdateEntry={updateEntry}
                           onDeleteEntry={deleteEntry}
+                          onDeleteTransfer={deleteTransfer}
                           onBudgetChange={(cents) => updateState((s) => ({
                             ...s,
                             categories: s.categories.map((cat) =>
@@ -4071,11 +5211,18 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
                                 : cat,
                             ),
                           }))}
+                          onRename={(newLabel) => renameCategory(c.label, newLabel)}
+                          onDeleteCategory={() => deleteCategory(c.label)}
                         />
                       </div>
                     </div>
                   );
                 }}
+              />
+              <AddRowButton
+                label={`Add ${meta.label.toLowerCase()} envelope`}
+                accent={meta.accent}
+                onClick={() => addCategory(g)}
               />
             </BlockCard>
           );
@@ -4085,11 +5232,23 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
   );
 }
 
-function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdateEntry, onDeleteEntry, onBudgetChange }) {
-  const { budget, carryover, thisMonthSpent, available, entries } = balance;
+function EnvelopeRow({ category, balance, accent, state, activeMonth, onLog, onBulk, onUpdateEntry, onDeleteEntry, onDeleteTransfer, onBudgetChange, onRename, onDeleteCategory }) {
+  const { budget, carryover, thisMonthSpent, available, entries, transferNet = 0 } = balance;
+  // Transfers touching this envelope in the month being viewed.
+  const transfers = useMemo(() => {
+    const lc = category.label.trim().toLowerCase();
+    return (state?.envelope_transfers || []).filter(
+      (t) => t.month === activeMonth
+        && ((t.from_label || "").trim().toLowerCase() === lc
+          || (t.to_label || "").trim().toLowerCase() === lc),
+    );
+  }, [state, category.label, activeMonth]);
   const [expanded, setExpanded] = useState(false);
   const [logging, setLogging] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(category.label);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  useEffect(() => { setRenameDraft(category.label); }, [category.label]);
   const trend = useMemo(
     () => (state ? buildEnvelopeTrend(state, category.label, 6) : []),
     [state, category.label],
@@ -4130,6 +5289,14 @@ function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdate
                 </span>
               </>
             )}
+            {transferNet !== 0 && (
+              <>
+                <span> · </span>
+                <span style={{ color: transferNet > 0 ? COLORS.green : COLORS.amber, fontVariantNumeric: "tabular-nums" }}>
+                  {transferNet > 0 ? "+" : "−"}{fmtUsd(Math.abs(transferNet))} moved
+                </span>
+              </>
+            )}
             <span> · </span>
             <span style={{ color: overspent ? COLORS.red : available > 0 ? COLORS.green : COLORS.textFaint, fontWeight: 700 }}>
               {overspent ? `${fmtUsd(Math.abs(available))} over` : `${fmtUsd(available)} available`}
@@ -4158,28 +5325,30 @@ function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdate
         >
           <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8" size={12} />
         </button>
-        {logging ? (
-          <QuickLog accent={accent} onCommit={(amt, note) => { onLog(amt, note); setLogging(false); }} onCancel={() => setLogging(false)} />
-        ) : (
-          <button
-            onClick={() => setLogging(true)}
-            style={{
-              padding: "5px 10px", borderRadius: 100,
-              background: `${accent}1A`, color: accent,
-              border: "none", cursor: "pointer",
-              fontSize: 11, fontWeight: 700, fontFamily: FONT,
-              display: "inline-flex", alignItems: "center", gap: 4,
-              whiteSpace: "nowrap",
-              transition: "all 0.12s ease",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = `${accent}26`; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = `${accent}1A`; }}
-          >
-            <Icon d={["M12 5v14", "M5 12h14"]} size={11} />
-            Log
-          </button>
-        )}
+        <button
+          onClick={() => setLogging((v) => !v)}
+          aria-expanded={logging}
+          style={{
+            padding: "7px 12px", borderRadius: 100,
+            background: logging ? `${accent}26` : `${accent}1A`, color: accent,
+            border: "none", cursor: "pointer",
+            fontSize: 11.5, fontWeight: 700, fontFamily: FONT,
+            display: "inline-flex", alignItems: "center", gap: 4,
+            whiteSpace: "nowrap", minHeight: 34,
+            transition: "all 0.12s ease",
+          }}
+        >
+          <Icon d={logging ? ICON.chevD : ["M12 5v14", "M5 12h14"]} size={11} />
+          Log
+        </button>
       </div>
+      {logging && (
+        <QuickLog
+          accent={accent}
+          onCommit={(amt, note) => { onLog(amt, note); setLogging(false); }}
+          onCancel={() => setLogging(false)}
+        />
+      )}
 
       {trendHasData ? (
         <div style={{ marginTop: 8, marginLeft: 18, display: "flex", alignItems: "flex-end", gap: 3, height: 18 }} aria-label="Last 6 months">
@@ -4213,6 +5382,32 @@ function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdate
 
       {expanded && (
         <div style={{ marginTop: 10, paddingLeft: 18, borderLeft: `2px solid ${accent}33` }}>
+          {onRename ? (
+            <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", padding: "8px 4px 10px" }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" }}>Envelope name</div>
+                <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textMuted, fontWeight: 500 }}>
+                  Rename without losing any logged spending.
+                </div>
+              </div>
+              <input
+                value={renameDraft}
+                onChange={(e) => setRenameDraft(e.target.value)}
+                onBlur={() => {
+                  const next = renameDraft.trim();
+                  if (next && next !== category.label) onRename(next);
+                  else setRenameDraft(category.label);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Escape") { setRenameDraft(category.label); e.currentTarget.blur(); }
+                }}
+                aria-label={`Rename ${category.label}`}
+                maxLength={48}
+                style={{ ...inputStyle(), width: 180, fontWeight: 600, fontSize: 13 }}
+              />
+            </div>
+          ) : null}
           {onBudgetChange ? (
             <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", padding: "8px 4px 10px" }}>
               <div>
@@ -4242,6 +5437,102 @@ function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdate
               onDelete={() => onDeleteEntry(e.id)}
             />
           ))}
+          {transfers.length > 0 && (
+            <div style={{ marginTop: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase", padding: "10px 4px 2px" }}>
+                Transfers this month
+              </div>
+              {transfers.map((t) => {
+                const isOut = (t.from_label || "").trim().toLowerCase() === category.label.trim().toLowerCase();
+                const other = isOut ? t.to_label : t.from_label;
+                return (
+                  <div key={t.id} className="bb-row" style={{
+                    display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto 22px",
+                    alignItems: "center", gap: 8, padding: "9px 4px",
+                  }}>
+                    <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: COLORS.textMuted }}>
+                      <Icon
+                        d={isOut ? ["M5 12h14", "M13 5l7 7-7 7"] : ["M19 12H5", "M11 19l-7-7 7-7"]}
+                        size={12}
+                        color={isOut ? COLORS.amber : COLORS.green}
+                      />
+                      <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {isOut ? "To " : "From "}
+                        <strong style={{ fontWeight: 700, color: COLORS.text }}>{other}</strong>
+                        {t.note ? ` · ${t.note}` : ""}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: isOut ? COLORS.amber : COLORS.green }}>
+                      {isOut ? "−" : "+"}{fmtUsd(t.amount_cents)}
+                    </span>
+                    {onDeleteTransfer ? (
+                      <button
+                        onClick={() => onDeleteTransfer(t.id)}
+                        aria-label="Undo transfer"
+                        className="bb-step-btn"
+                        style={{ ...stepBtnStyle(), opacity: 0.4 }}
+                        onMouseEnter={(ev) => { ev.currentTarget.style.opacity = 1; ev.currentTarget.style.background = COLORS.redBg; ev.currentTarget.style.color = COLORS.red; }}
+                        onMouseLeave={(ev) => { ev.currentTarget.style.opacity = 0.4; ev.currentTarget.style.background = "transparent"; ev.currentTarget.style.color = COLORS.textMuted; }}
+                      >
+                        <Icon d={ICON.x} size={12} />
+                      </button>
+                    ) : <span />}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {onDeleteCategory ? (
+            <div style={{ marginTop: 12, padding: "8px 4px", display: "flex", justifyContent: "flex-end", borderTop: `1px solid ${COLORS.border}` }}>
+              {confirmingDelete ? (
+                <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.textMuted }}>
+                    Delete {category.label} and {entries.length} logged {entries.length === 1 ? "entry" : "entries"}?
+                  </span>
+                  <button
+                    onClick={() => { onDeleteCategory(); setConfirmingDelete(false); }}
+                    style={{
+                      padding: "5px 12px", borderRadius: 100,
+                      background: "#c45c4a", color: "#fff",
+                      border: "none", cursor: "pointer",
+                      fontSize: 11, fontWeight: 700, fontFamily: FONT,
+                    }}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
+                    style={{
+                      padding: "5px 10px", borderRadius: 100,
+                      background: "transparent", color: COLORS.textMuted,
+                      border: `1px solid ${COLORS.border}`, cursor: "pointer",
+                      fontSize: 11, fontWeight: 600, fontFamily: FONT,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmingDelete(true)}
+                  aria-label={`Delete ${category.label}`}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    padding: "5px 10px", borderRadius: 8,
+                    background: "transparent", color: COLORS.textFaint,
+                    border: "none", cursor: "pointer",
+                    fontSize: 11, fontWeight: 600, fontFamily: FONT,
+                    transition: "color 0.12s ease, background 0.12s ease",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#c45c4a"; e.currentTarget.style.background = "rgba(196,92,74,0.08)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = COLORS.textFaint; e.currentTarget.style.background = "transparent"; }}
+                >
+                  <Icon d={ICON.x} size={11} />
+                  Delete envelope
+                </button>
+              )}
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -4258,6 +5549,9 @@ function EnvelopeRow({ category, balance, accent, state, onLog, onBulk, onUpdate
 }
 
 // Inline +/-amount/note entry. Tab into note, Enter commits, Esc cancels.
+// Inline expense logger — a full-width row that drops below the
+// envelope header (no longer crammed into a table cell). Note field
+// flexes; the amount + buttons stay comfortable tap targets.
 function QuickLog({ accent, onCommit, onCancel }) {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -4267,38 +5561,49 @@ function QuickLog({ accent, onCommit, onCancel }) {
     else onCancel();
   };
   return (
-    <div style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, marginLeft: 18 }}>
       <input
         autoFocus
-        type="number"
-        step="0.01"
+        type="text"
         inputMode="decimal"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") onCancel(); }}
-        placeholder="0.00"
+        placeholder="$0.00"
         aria-label="Amount"
-        style={{ ...inputStyle(), width: 76, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}
+        style={{ ...inputStyle(), width: 104, flexShrink: 0, textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "10px 12px" }}
       />
       <input
         type="text"
         value={note}
         onChange={(e) => setNote(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") onCancel(); }}
-        placeholder="note"
+        placeholder="note (optional)"
         aria-label="Note"
-        style={{ ...inputStyle(), width: 110, fontWeight: 600 }}
+        style={{ ...inputStyle(), flex: 1, minWidth: 0, fontWeight: 600, padding: "10px 12px" }}
       />
       <button
         onClick={commit}
         aria-label="Save entry"
         style={{
-          width: 26, height: 26, borderRadius: 8, border: "none",
+          width: 38, height: 38, flexShrink: 0, borderRadius: 10, border: "none",
           background: accent, color: "#fff", cursor: "pointer",
           display: "grid", placeItems: "center",
         }}
       >
-        <Icon d="M20 6L9 17l-5-5" size={12} />
+        <Icon d="M20 6L9 17l-5-5" size={15} />
+      </button>
+      <button
+        onClick={onCancel}
+        aria-label="Cancel"
+        style={{
+          width: 38, height: 38, flexShrink: 0, borderRadius: 10,
+          border: `1px solid ${COLORS.border}`,
+          background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer",
+          display: "grid", placeItems: "center",
+        }}
+      >
+        <Icon d={ICON.x} size={14} />
       </button>
     </div>
   );
@@ -4407,6 +5712,7 @@ function BulkPasteSheet({ accent, categoryLabel, onClose, onSubmit }) {
   return (
     <div
       onClick={onClose}
+      className="bb-modal"
       style={{
         position: "fixed", inset: 0, zIndex: 55,
         background: "rgba(15,23,41,0.45)", backdropFilter: "blur(4px)",
@@ -4415,6 +5721,7 @@ function BulkPasteSheet({ accent, categoryLabel, onClose, onSubmit }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
+        className="bb-modal-card"
         style={{
           background: COLORS.surface, borderRadius: 18,
           width: "100%", maxWidth: 480, maxHeight: "90vh",
@@ -4473,454 +5780,6 @@ function BulkPasteSheet({ accent, categoryLabel, onClose, onSubmit }) {
             </button>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Bills view (recurring obligations + calendar + audit) ────────────
-
-function BillsView({ state, updateState }) {
-  const bills = state.bills || [];
-  const [calMonth, setCalMonth] = useState(() => {
-    const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth() + 1 };
-  });
-
-  const monthly = useMemo(() => monthlyBillTotal(bills), [bills]);
-  const upcoming = useMemo(() => upcomingBills(bills, 7), [bills]);
-  const upcomingTotal = upcoming.reduce((s, b) => s + b.amount_cents, 0);
-  const audit = useMemo(() => subscriptionAudit(bills, 90), [bills]);
-  const calCells = useMemo(() => billCalendarGrid(bills, calMonth.year, calMonth.month), [bills, calMonth]);
-
-  const active = bills.filter((b) => !b.archived_at);
-  const archived = bills.filter((b) => !!b.archived_at);
-
-  const addBill = () => updateState((s) => ({
-    ...s,
-    bills: [
-      ...(s.bills || []),
-      {
-        id: genId(),
-        label: "New bill",
-        amount_cents: 0,
-        cadence: "monthly",
-        due_day: 1,
-        created_at: new Date().toISOString(),
-      },
-    ],
-  }));
-
-  const updateBill = (id, patch) => updateState((s) => ({
-    ...s,
-    bills: (s.bills || []).map((b) => b.id === id ? { ...b, ...patch } : b),
-  }));
-
-  const deleteBill = (id) => updateState((s) => ({
-    ...s,
-    bills: (s.bills || []).filter((b) => b.id !== id),
-  }));
-
-  const markPaid = (bill) => {
-    const today = new Date();
-    const paidISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const monthISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-    updateState((s) => {
-      // Stamp the bill as paid + log an actual if a category is linked.
-      const nextBills = (s.bills || []).map((b) => b.id === bill.id
-        ? { ...b, last_paid_at: paidISO, last_used_at: paidISO }
-        : b);
-      const nextActuals = bill.category_label
-        ? [
-            ...(s.monthly_actuals || []),
-            {
-              id: genId(),
-              category_label: bill.category_label,
-              month: monthISO,
-              paid_on: paidISO,
-              amount_cents: bill.amount_cents,
-              note: `${bill.label}${bill.vendor ? ` · ${bill.vendor}` : ""}`,
-            },
-          ]
-        : (s.monthly_actuals || []);
-      return { ...s, bills: nextBills, monthly_actuals: nextActuals };
-    });
-    fireConfetti({ count: 35, originY: 0.45 });
-  };
-
-  const stillUsing = (bill) => {
-    const today = new Date().toISOString().slice(0, 10);
-    updateBill(bill.id, { last_used_at: today });
-  };
-
-  const archive = (id) => updateBill(id, { archived_at: new Date().toISOString() });
-  const unarchive = (id) => updateBill(id, { archived_at: null });
-
-  const monthName = new Date(calMonth.year, calMonth.month - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" });
-
-  return (
-    <div>
-      <DrillTitle
-        title="Bills"
-        subtitle="Recurring obligations — log them once, see them coming, kill the ones you don't use."
-        icon={ICON.calendar}
-        iconColor="#0bafb0"
-        iconBg="rgba(11,175,176,0.10)"
-        heroValue={fmtCompact(monthly)}
-        heroLabel="/ month equivalent across all cadences"
-      />
-
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 14,
-      }}>
-        <BillStat label="Active bills" value={`${active.length}`} sub="recurring" color={COLORS.text} />
-        <BillStat label="Due in 7 days" value={fmtCompact(upcomingTotal)} sub={`${upcoming.length} bill${upcoming.length === 1 ? "" : "s"}`} color={upcomingTotal > 0 ? COLORS.amber : COLORS.textFaint} />
-        <BillStat label="Audit candidates" value={`${audit.length}`} sub="not tagged 'used' in 90 days" color={audit.length > 0 ? COLORS.red : COLORS.green} />
-        <BillStat label="Annualized" value={fmtCompact(monthly * 12)} sub="all bills × 12" color={COLORS.text} />
-      </div>
-
-      <div style={{ ...STYLES.card, padding: "14px 14px 10px", marginBottom: 14 }}>
-        <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "0 6px 10px",
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>{monthName}</div>
-          <div style={{ display: "flex", gap: 4 }}>
-            <button
-              onClick={() => setCalMonth(({ year, month }) => month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 })}
-              aria-label="Previous month"
-              style={calNavBtn()}
-            ><Icon d={ICON.chevL} size={14} /></button>
-            <button
-              onClick={() => {
-                const d = new Date();
-                setCalMonth({ year: d.getFullYear(), month: d.getMonth() + 1 });
-              }}
-              aria-label="Today"
-              style={{ ...calNavBtn(), padding: "0 10px", width: "auto", fontSize: 11, fontWeight: 700, fontFamily: FONT }}
-            >Today</button>
-            <button
-              onClick={() => setCalMonth(({ year, month }) => month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 })}
-              aria-label="Next month"
-              style={calNavBtn()}
-            ><Icon d={ICON.chevR} size={14} /></button>
-          </div>
-        </div>
-        <BillCalendar cells={calCells} />
-      </div>
-
-      {upcoming.length > 0 && (
-        <BlockCard title="Upcoming · next 7 days" sub={fmtCompact(upcomingTotal)} accent="#0bafb0" icon={ICON.bell} count={`${upcoming.length}`} style={{ marginBottom: 14 }}>
-          {upcoming.map((b) => (
-            <BillRow key={b.id} bill={b} state={state}
-              onUpdate={(patch) => updateBill(b.id, patch)}
-              onDelete={() => deleteBill(b.id)}
-              onMarkPaid={() => markPaid(b)}
-              onStillUsing={() => stillUsing(b)}
-              onArchive={() => archive(b.id)}
-              accent="#0bafb0"
-              showDaysAway
-            />
-          ))}
-        </BlockCard>
-      )}
-
-      {audit.length > 0 && (
-        <BlockCard title="Audit · review or cancel" sub={fmtCompact(audit.reduce((s, b) => s + (b.amount_cents || 0), 0))} accent={COLORS.red} icon={ICON.bell} count={`${audit.length}`} style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: COLORS.textMuted, padding: "4px 4px 10px", lineHeight: 1.5 }}>
-            You haven't tagged these as "still using" in the last 90 days. Tap "I still use this" to clear the flag — or archive the bill.
-          </div>
-          {audit.map((b) => (
-            <BillRow key={b.id} bill={b} state={state}
-              onUpdate={(patch) => updateBill(b.id, patch)}
-              onDelete={() => deleteBill(b.id)}
-              onMarkPaid={() => markPaid(b)}
-              onStillUsing={() => stillUsing(b)}
-              onArchive={() => archive(b.id)}
-              accent={COLORS.red}
-              showAuditNote
-            />
-          ))}
-        </BlockCard>
-      )}
-
-      <BlockCard title="All active bills" sub={`${active.length}`} accent="#0bafb0" icon={ICON.envelope}>
-        {active.length === 0 && (
-          <div style={{ fontSize: 13, color: COLORS.textFaint, padding: "8px 0", fontStyle: "italic" }}>
-            No bills yet. Add your first one.
-          </div>
-        )}
-        {active.map((b) => (
-          <BillRow key={b.id} bill={b} state={state}
-            onUpdate={(patch) => updateBill(b.id, patch)}
-            onDelete={() => deleteBill(b.id)}
-            onMarkPaid={() => markPaid(b)}
-            onStillUsing={() => stillUsing(b)}
-            onArchive={() => archive(b.id)}
-            accent="#0bafb0"
-          />
-        ))}
-        <AddRowButton label="Add bill" accent="#0bafb0" onClick={addBill} />
-      </BlockCard>
-
-      {archived.length > 0 && (
-        <BlockCard title="Archived" sub={`${archived.length}`} accent={COLORS.textMuted} icon={ICON.x} style={{ marginTop: 14 }}>
-          {archived.map((b) => (
-            <div key={b.id} className="bb-row" style={{
-              display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto",
-              gap: 10, alignItems: "center", padding: "9px 4px",
-              opacity: 0.7,
-            }}>
-              <div style={{ fontWeight: 600, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.label}</div>
-              <div style={{ fontSize: 11, color: COLORS.textFaint, fontVariantNumeric: "tabular-nums" }}>{fmtCompact(b.amount_cents)} / {b.cadence}</div>
-              <button
-                onClick={() => unarchive(b.id)}
-                style={{
-                  padding: "4px 10px", borderRadius: 100,
-                  background: COLORS.surfaceTint, color: COLORS.textMuted,
-                  border: `1px solid ${COLORS.border}`, cursor: "pointer",
-                  fontSize: 11, fontWeight: 700, fontFamily: FONT,
-                }}
-              >Restore</button>
-            </div>
-          ))}
-        </BlockCard>
-      )}
-    </div>
-  );
-}
-
-function calNavBtn() {
-  return {
-    width: 28, height: 28, borderRadius: 8,
-    background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-    color: COLORS.textMuted, cursor: "pointer",
-    display: "grid", placeItems: "center",
-  };
-}
-
-function BillStat({ label, value, sub, color }) {
-  return (
-    <div style={{
-      ...STYLES.card, padding: "12px 14px",
-    }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
-      <div style={{ marginTop: 4, fontSize: 18, fontWeight: 800, color, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{value}</div>
-      <div style={{ marginTop: 1, fontSize: 11, color: COLORS.textMuted, fontWeight: 600 }}>{sub}</div>
-    </div>
-  );
-}
-
-function BillCalendar({ cells }) {
-  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return (
-    <div>
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4,
-        fontSize: 9, fontWeight: 700, color: COLORS.textFaint,
-        textTransform: "uppercase", letterSpacing: "0.08em",
-        padding: "0 4px 6px",
-      }}>
-        {weekdays.map((d) => <div key={d} style={{ textAlign: "center" }}>{d}</div>)}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-        {cells.map((c, i) => (
-          <div key={i} style={{
-            minHeight: 64,
-            padding: "5px 6px",
-            borderRadius: 8,
-            border: c.isToday ? `1px solid #0bafb0` : `1px solid ${COLORS.surfaceTint}`,
-            background: c.inMonth ? COLORS.surface : COLORS.surfaceTint,
-            opacity: c.inMonth ? 1 : 0.45,
-            display: "flex", flexDirection: "column", gap: 3,
-            minWidth: 0,
-          }}>
-            <div style={{
-              fontSize: 11, fontWeight: c.isToday ? 800 : 600,
-              color: c.isToday ? "#0bafb0" : COLORS.textMuted,
-              fontVariantNumeric: "tabular-nums",
-            }}>{c.day}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, overflow: "hidden" }}>
-              {c.bills.slice(0, 3).map((b, bi) => (
-                <span key={bi} title={`${b.label} · ${fmtUsd(b.amount_cents)}`}
-                  style={{
-                    fontSize: 9.5, fontWeight: 700,
-                    padding: "1px 5px", borderRadius: 4,
-                    background: "rgba(11,175,176,0.16)", color: "#0a8b8c",
-                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                  }}>{b.label}</span>
-              ))}
-              {c.bills.length > 3 && (
-                <span style={{ fontSize: 9, color: COLORS.textFaint, fontWeight: 600 }}>+{c.bills.length - 3} more</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const BILL_CADENCES = [
-  { id: "weekly",    label: "weekly"    },
-  { id: "biweekly",  label: "biweekly"  },
-  { id: "monthly",   label: "monthly"   },
-  { id: "quarterly", label: "quarterly" },
-  { id: "yearly",    label: "yearly"    },
-];
-
-function BillRow({ bill, state, onUpdate, onDelete, onMarkPaid, onStillUsing, onArchive, accent, showDaysAway, showAuditNote }) {
-  const nextDue = bill.next_due || nextDueDate(bill, new Date());
-  const daysAway = bill.days_away ?? (nextDue ? Math.round((new Date(nextDue) - new Date(new Date().toDateString())) / 86400000) : null);
-  const lastPaid = bill.last_paid_at ? new Date(bill.last_paid_at) : null;
-  return (
-    <div className="bb-row" style={{ padding: "10px 4px" }}>
-      <div style={{
-        display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto auto",
-        gap: 10, alignItems: "center",
-      }}>
-        <div style={{ minWidth: 0 }}>
-          <InlineText value={bill.label} onChange={(v) => onUpdate({ label: v })} />
-          <div style={{ marginTop: 3, fontSize: 11, color: COLORS.textFaint, fontWeight: 600, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-            {nextDue && (
-              <span style={{ color: daysAway != null && daysAway <= 3 ? COLORS.amber : COLORS.textMuted, fontVariantNumeric: "tabular-nums" }}>
-                Due {new Date(nextDue).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                {showDaysAway && daysAway != null && ` · ${daysAway === 0 ? "today" : daysAway === 1 ? "tomorrow" : `${daysAway} days`}`}
-              </span>
-            )}
-            {lastPaid && (
-              <span style={{ color: COLORS.textFaint }}>
-                · last paid {lastPaid.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
-            )}
-            {showAuditNote && bill.days_since_used != null && (
-              <span style={{ color: COLORS.red }}>
-                · not used in {bill.days_since_used} days
-              </span>
-            )}
-            {showAuditNote && bill.days_since_used == null && (
-              <span style={{ color: COLORS.red }}>· never tagged used</span>
-            )}
-          </div>
-          <div style={{ marginTop: 5, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-            <select
-              value={bill.cadence}
-              onChange={(e) => onUpdate({ cadence: e.target.value })}
-              aria-label="Cadence"
-              style={pillSelectStyle()}
-            >
-              {BILL_CADENCES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-            <div className="bb-row" style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Day
-              <input
-                type="number"
-                min={1} max={31}
-                value={bill.due_day || 1}
-                onChange={(e) => onUpdate({ due_day: Math.max(1, Math.min(31, parseInt(e.target.value || "1", 10))) })}
-                aria-label="Due day"
-                style={{ ...inputStyle(), width: 56, padding: "2px 6px", fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
-              />
-            </div>
-            {bill.cadence === "yearly" && (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Month
-                <select
-                  value={bill.due_month || 1}
-                  onChange={(e) => onUpdate({ due_month: parseInt(e.target.value, 10) })}
-                  aria-label="Due month"
-                  style={pillSelectStyle()}
-                >
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <option key={i} value={i + 1}>{new Date(2026, i, 1).toLocaleString("en-US", { month: "short" })}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <select
-              value={bill.category_label || ""}
-              onChange={(e) => onUpdate({ category_label: e.target.value || undefined })}
-              aria-label="Category"
-              style={{ ...pillSelectStyle(), textTransform: "none", letterSpacing: 0, maxWidth: 160 }}
-            >
-              <option value="">no category</option>
-              {(state.categories || []).map((c) => <option key={c.label} value={c.label}>{c.label}</option>)}
-            </select>
-            <button
-              type="button"
-              onClick={() => onUpdate({ auto_post: !bill.auto_post })}
-              aria-pressed={!!bill.auto_post}
-              title={bill.auto_post ? "Auto-post is on — bill writes itself to monthly_actuals on due date" : "Auto-post is off"}
-              style={{
-                ...pillSelectStyle(),
-                padding: "2px 10px",
-                color: bill.auto_post ? "#fff" : COLORS.textMuted,
-                background: bill.auto_post ? COLORS.green : COLORS.surface,
-                borderColor: bill.auto_post ? COLORS.green : COLORS.border,
-                cursor: "pointer",
-              }}
-            >
-              {bill.auto_post ? "auto-post ON" : "auto-post off"}
-            </button>
-            {bill.auto_post && bill.last_auto_posted_period === billPeriodKey(bill) ? (
-              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.8, color: COLORS.green, padding: "2px 8px", borderRadius: 100, background: COLORS.greenBg }}>
-                POSTED
-              </span>
-            ) : null}
-            {bill.auto_post && bill.last_auto_skip_reason ? (
-              <span
-                title={bill.last_auto_skip_reason}
-                style={{
-                  fontSize: 10, fontWeight: 800, letterSpacing: 0.8,
-                  color: COLORS.red, padding: "2px 8px",
-                  borderRadius: 100, background: COLORS.redBg,
-                  cursor: "help",
-                }}
-              >
-                NEEDS ENVELOPE
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <InlineNumber value={bill.amount_cents} onChange={(v) => onUpdate({ amount_cents: v })} width={120} min={1} allowNegative={false} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <button
-            onClick={onMarkPaid}
-            style={{
-              padding: "5px 10px", borderRadius: 100,
-              background: accent, color: "#fff",
-              border: "none", cursor: "pointer",
-              fontSize: 11, fontWeight: 700, fontFamily: FONT,
-              whiteSpace: "nowrap",
-            }}
-          >Mark paid</button>
-          {showAuditNote && (
-            <button
-              onClick={onStillUsing}
-              style={{
-                padding: "4px 8px", borderRadius: 100,
-                background: COLORS.surfaceTint, color: COLORS.textMuted,
-                border: `1px solid ${COLORS.border}`, cursor: "pointer",
-                fontSize: 10, fontWeight: 700, fontFamily: FONT,
-                whiteSpace: "nowrap",
-              }}
-            >Still using</button>
-          )}
-        </div>
-        <button
-          onClick={onArchive}
-          aria-label="Archive bill"
-          title="Archive"
-          style={{
-            width: 22, height: 22, borderRadius: 6, border: "none", cursor: "pointer",
-            background: "transparent", color: COLORS.textFaint, opacity: 0.5,
-            display: "grid", placeItems: "center", transition: "all 0.12s ease",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.5; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = COLORS.textFaint; }}
-        >
-          <Icon d={ICON.x} size={12} />
-        </button>
       </div>
     </div>
   );
@@ -6548,80 +7407,232 @@ function FAB({ onClick, bottomOffset = 24 }) {
 // Bottom-tab navigation — primary nav on mobile. Same 6 sections as
 // the desktop sidebar, rendered as a fixed bar with safe-area-aware
 // padding so it sits above the iPhone home indicator.
-function MobileNav({ active, onChange, achievementsUnlocked, achievementsTotal, streak, isBasic }) {
-  const sections = isBasic
+// Bottom-bar tab set when the user hasn't customized it.
+const DEFAULT_MOBILE_NAV = ["dashboard", "envelopes", "goals", "settings"];
+
+// Section ids allowed in the bottom bar for this experience mode.
+function allowedNavSections(isBasic) {
+  return isBasic
     ? SIDEBAR_SECTIONS.filter((s) => !["habits", "achievements"].includes(s.id))
     : SIDEBAR_SECTIONS;
+}
+
+// The bottom bar always renders exactly 4 tabs (2 each side of the
+// center "+"): the user's pinned set, filtered to valid sections and
+// padded from the defaults so the bar is never short.
+function resolveMobileNav(settings, isBasic) {
+  const allowed = new Set(allowedNavSections(isBasic).map((s) => s.id));
+  const chosen = (settings?.mobile_nav || DEFAULT_MOBILE_NAV).filter((id) => allowed.has(id));
+  for (const id of [...DEFAULT_MOBILE_NAV, ...SIDEBAR_SECTIONS.map((s) => s.id)]) {
+    if (chosen.length >= 4) break;
+    if (allowed.has(id) && !chosen.includes(id)) chosen.push(id);
+  }
+  return chosen.slice(0, 4);
+}
+
+// The user's RAW pinned set (1–4, unpadded) — what the editor toggles
+// against. The bar pads this via resolveMobileNav; the editor must not.
+function rawMobileNav(settings, isBasic) {
+  const allowed = new Set(allowedNavSections(isBasic).map((s) => s.id));
+  return (settings?.mobile_nav && settings.mobile_nav.length
+    ? settings.mobile_nav
+    : DEFAULT_MOBILE_NAV
+  ).filter((id) => allowed.has(id));
+}
+
+function MobileNav({ active, onChange, onAdd, onEditNav, navIds, achievementsUnlocked, streak }) {
+  const pressTimer = useRef(null);
+  const longPressed = useRef(false);
+  const byId = Object.fromEntries(SIDEBAR_SECTIONS.map((s) => [s.id, s]));
+  const tabs = navIds.map((id) => byId[id]).filter(Boolean);
+
+  const startPress = () => {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => { longPressed.current = true; onEditNav(); }, 500);
+  };
+  const cancelPress = () => { if (pressTimer.current) clearTimeout(pressTimer.current); };
+  // Long-press fires onEditNav; the trailing tap must then be ignored.
+  const guardedTap = (fn) => () => {
+    if (longPressed.current) { longPressed.current = false; return; }
+    fn();
+  };
+
+  const renderTab = (s, key) => {
+    if (!s) return <span key={key} />;
+    const isActive = active === s.id;
+    const badge = s.id === "achievements" && achievementsUnlocked > 0 ? achievementsUnlocked
+      : s.id === "habits" && streak > 0 ? streak : null;
+    return (
+      <button
+        key={key}
+        onClick={guardedTap(() => onChange(s.id))}
+        aria-current={isActive ? "page" : undefined}
+        aria-label={s.label}
+        style={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+          padding: "6px 2px 4px", background: "transparent", border: "none", cursor: "pointer",
+          color: isActive ? s.accent : COLORS.textMuted, fontFamily: FONT, minWidth: 0,
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        <div style={{
+          width: 38, height: 28, borderRadius: 14,
+          background: isActive ? `${s.accent}1F` : "transparent",
+          display: "grid", placeItems: "center", position: "relative",
+          transition: "background 0.18s ease",
+        }}>
+          <Icon d={s.icon} size={18} />
+          {badge != null && (
+            <span style={{
+              position: "absolute", top: -2, right: -4,
+              background: s.accent, color: "#fff", fontSize: 9, fontWeight: 800,
+              padding: "1px 5px", borderRadius: 100, lineHeight: 1.2, fontVariantNumeric: "tabular-nums",
+            }}>{badge}</span>
+          )}
+        </div>
+        <span style={{
+          fontSize: 10, fontWeight: 700, letterSpacing: "0.01em",
+          maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>{s.label}</span>
+      </button>
+    );
+  };
+
   return (
     <nav
       aria-label="Sections"
+      onTouchStart={startPress}
+      onTouchEnd={cancelPress}
+      onTouchMove={cancelPress}
+      onContextMenu={(e) => { e.preventDefault(); onEditNav(); }}
       style={{
         position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 35,
-        background: "rgba(255,255,255,0.92)",
+        background: "rgba(255,255,255,0.94)",
         backdropFilter: "saturate(180%) blur(14px)",
         WebkitBackdropFilter: "saturate(180%) blur(14px)",
         borderTop: `1px solid ${COLORS.border}`,
-        padding: "6px 4px max(6px, env(safe-area-inset-bottom)) 4px",
-        display: "grid",
-        gridTemplateColumns: `repeat(${sections.length}, 1fr)`,
-        gap: 0,
-        fontFamily: FONT,
+        padding: "6px 6px max(6px, env(safe-area-inset-bottom)) 6px",
+        display: "grid", gridTemplateColumns: "1fr 1fr auto 1fr 1fr",
+        alignItems: "center", gap: 2, fontFamily: FONT,
       }}
     >
-      {sections.map((s) => {
-        const isActive = active === s.id;
-        return (
-          <button
-            key={s.id}
-            onClick={() => onChange(s.id)}
-            aria-current={isActive ? "page" : undefined}
-            aria-label={s.label}
-            style={{
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-              padding: "6px 2px 4px",
-              background: "transparent", border: "none", cursor: "pointer",
-              color: isActive ? s.accent : COLORS.textMuted,
-              fontFamily: FONT,
-              position: "relative",
-              WebkitTapHighlightColor: "transparent",
-            }}
-          >
-            <div style={{
-              width: 36, height: 28, borderRadius: 14,
-              background: isActive ? `${s.accent}1F` : "transparent",
-              display: "grid", placeItems: "center",
-              transition: "background 0.18s ease",
-              position: "relative",
-            }}>
-              <Icon d={s.icon} size={18} />
-              {s.id === "achievements" && achievementsUnlocked > 0 && (
-                <span style={{
-                  position: "absolute", top: -2, right: -4,
-                  background: s.accent, color: "#fff",
-                  fontSize: 9, fontWeight: 800,
-                  padding: "1px 5px", borderRadius: 100,
-                  lineHeight: 1.2, fontVariantNumeric: "tabular-nums",
-                }}>{achievementsUnlocked}</span>
-              )}
-              {s.id === "habits" && streak > 0 && (
-                <span style={{
-                  position: "absolute", top: -2, right: -4,
-                  background: s.accent, color: "#fff",
-                  fontSize: 9, fontWeight: 800,
-                  padding: "1px 5px", borderRadius: 100,
-                  lineHeight: 1.2, fontVariantNumeric: "tabular-nums",
-                }}>{streak}</span>
-              )}
-            </div>
-            <span style={{
-              fontSize: 10, fontWeight: 700,
-              letterSpacing: "0.01em",
-              maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>{s.label}</span>
-          </button>
-        );
-      })}
+      {renderTab(tabs[0], "t0")}
+      {renderTab(tabs[1], "t1")}
+      <button
+        onClick={guardedTap(onAdd)}
+        aria-label="Add expense or income"
+        style={{
+          width: 52, height: 52, borderRadius: "50%", marginTop: -24,
+          justifySelf: "center",
+          background: COLORS.text, color: "#fff",
+          border: `4px solid ${COLORS.surface}`, cursor: "pointer",
+          display: "grid", placeItems: "center",
+          boxShadow: "0 8px 22px rgba(13,20,36,0.34)",
+        }}
+      >
+        <Icon d={["M12 5v14", "M5 12h14"]} size={22} />
+      </button>
+      {renderTab(tabs[2], "t2")}
+      {renderTab(tabs[3], "t3")}
     </nav>
+  );
+}
+
+// Bottom-bar customizer — reached by long-pressing the bar. Lists every
+// section: tap a name to jump there, tap the pin to add/remove it from
+// the bottom bar (up to 4).
+function MobileNavEditor({ sections, pinned, active, onToggle, onNavigate, onClose }) {
+  const pinnedSet = new Set(pinned);
+  const full = pinnedSet.size >= 4;
+  return (
+    <div
+      onClick={onClose}
+      className="bb-modal"
+      style={{
+        position: "fixed", inset: 0, zIndex: 58,
+        background: "rgba(15,23,41,0.55)", backdropFilter: "blur(4px)",
+        display: "grid", placeItems: "center", padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bb-modal-card"
+        style={{
+          background: COLORS.surface, borderRadius: 24,
+          width: "100%", maxWidth: 440, maxHeight: "calc(100dvh - 40px)",
+          boxShadow: "0 24px 80px rgba(15,23,41,0.32)",
+          display: "flex", flexDirection: "column", overflow: "hidden", fontFamily: FONT,
+        }}
+      >
+        <div style={{
+          padding: "14px 16px 12px", borderBottom: `1px solid ${COLORS.surfaceTint}`,
+          display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
+        }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.02em" }}>Bottom bar</div>
+            <div style={{ marginTop: 3, fontSize: 11.5, color: COLORS.textMuted }}>
+              Tap a name to jump there · pin up to 4 tabs ({pinnedSet.size}/4)
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{
+            width: 36, height: 36, borderRadius: 10, border: `1px solid ${COLORS.border}`,
+            background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer",
+            display: "grid", placeItems: "center", flexShrink: 0,
+          }}>
+            <Icon d={ICON.x} size={15} />
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 8 }}>
+          {sections.map((s) => {
+            const isPinned = pinnedSet.has(s.id);
+            const isActive = active === s.id;
+            return (
+              <div key={s.id} className="bb-row" style={{
+                display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto",
+                alignItems: "center", gap: 10, padding: "4px 6px",
+              }}>
+                <button
+                  onClick={() => onNavigate(s.id)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, gridColumn: "1 / 3",
+                    background: "transparent", border: "none", cursor: "pointer",
+                    fontFamily: FONT, textAlign: "left", padding: "8px 0", minWidth: 0,
+                  }}
+                >
+                  <span style={{
+                    width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                    background: `${s.accent}1A`, color: s.accent,
+                    display: "grid", placeItems: "center",
+                  }}>
+                    <Icon d={s.icon} size={15} />
+                  </span>
+                  <span style={{
+                    fontSize: 14, fontWeight: isActive ? 800 : 600, color: COLORS.text,
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  }}>{s.label}</span>
+                </button>
+                <button
+                  onClick={() => onToggle(s.id)}
+                  disabled={!isPinned && full}
+                  aria-pressed={isPinned}
+                  aria-label={isPinned ? `Unpin ${s.label}` : `Pin ${s.label}`}
+                  style={{
+                    width: 30, height: 30, borderRadius: 8, cursor: (!isPinned && full) ? "default" : "pointer",
+                    border: `1px solid ${isPinned ? COLORS.accent : COLORS.border}`,
+                    background: isPinned ? COLORS.accent : COLORS.surface,
+                    color: isPinned ? "#fff" : COLORS.textFaint,
+                    opacity: (!isPinned && full) ? 0.4 : 1,
+                    display: "grid", placeItems: "center", flexShrink: 0,
+                  }}
+                >
+                  <Icon d={isPinned ? "M20 6L9 17l-5-5" : ["M12 5v14", "M5 12h14"]} size={14} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -6630,29 +7641,77 @@ function MobileNav({ active, onChange, achievementsUnlocked, achievementsTotal, 
 const SIDEBAR_SECTIONS = [
   { id: "dashboard",    label: "Dashboard",    icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10", accent: "#3b6fd1" },
   { id: "envelopes",    label: "Envelopes",    icon: "M21 8v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8 M1 5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v3H1V5z M10 12h4", accent: "#4a7c59" },
-  { id: "bills",        label: "Bills",        icon: "M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z", accent: "#0bafb0" },
   { id: "habits",       label: "Habits",       icon: "M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3", accent: "#d6448f" },
   { id: "goals",        label: "Goals",        icon: "M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6", accent: "#c88318" },
   { id: "achievements", label: "Achievements", icon: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2z", accent: "#8c5ad9" },
   { id: "settings",     label: "Settings",     icon: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", accent: "#5f6675" },
 ];
 
-function ProfileSwitcher({ profiles, activeId, onChange }) {
+// Budget switcher — the sidebar "VIEWING AS" control. Unlike a profile
+// tag, picking an entry here swaps the ENTIRE budget: its own
+// envelopes, bills, goals and net worth, fully isolated from every
+// other budget. "New budget" spins up a fresh blank-slate budget on
+// the spot and switches straight into it.
+function BudgetSwitcher({ registry, activeBudgetId, onSwitch, onCreate, switching }) {
   const [open, setOpen] = useState(false);
-  const active = profiles.find((p) => p.id === activeId) || profiles[0];
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [err, setErr] = useState("");
+  const inputRef = useRef(null);
+
+  const reg = registry || { primary_label: "Main budget", budgets: [], active_id: null };
+  // The primary budget is the implicit first entry (id null); secondary
+  // budgets follow in creation order.
+  const entries = [
+    { id: null, label: reg.primary_label || "Main budget", color: "#3b6fd1" },
+    ...(reg.budgets || []),
+  ];
+  const activeKey = activeBudgetId ?? null;
+  const active = entries.find((e) => (e.id ?? null) === activeKey) || entries[0];
+
+  useEffect(() => {
+    if (adding && inputRef.current) inputRef.current.focus();
+  }, [adding]);
+
   if (!active) return null;
+
+  function close() {
+    setOpen(false);
+    setAdding(false);
+    setName("");
+    setErr("");
+  }
+
+  function submitNew() {
+    const clean = name.trim();
+    if (!clean) {
+      // Validation: wiggle + red explanatory text, never a silent fail.
+      setErr("Give the budget a name.");
+      if (inputRef.current) {
+        inputRef.current.style.animation = "none";
+        void inputRef.current.offsetWidth; // force reflow so it re-fires
+        inputRef.current.style.animation = "bb-wiggle 0.4s ease";
+      }
+      return;
+    }
+    onCreate(clean);
+    close();
+  }
+
   return (
     <div style={{ position: "relative", marginTop: 12 }}>
       <button
         onClick={() => setOpen((o) => !o)}
+        disabled={switching}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label="Switch active profile"
+        aria-label="Switch budget"
         style={{
           display: "flex", alignItems: "center", gap: 8, width: "100%",
           padding: "8px 10px", borderRadius: 10,
           background: COLORS.surfaceTint, border: `1px solid ${COLORS.border}`,
-          cursor: "pointer", fontFamily: FONT, textAlign: "left",
+          cursor: switching ? "wait" : "pointer", fontFamily: FONT, textAlign: "left",
+          opacity: switching ? 0.6 : 1,
           transition: "border-color 0.12s ease",
         }}
         onMouseEnter={(e) => { e.currentTarget.style.borderColor = active.color; }}
@@ -6672,43 +7731,114 @@ function ProfileSwitcher({ profiles, activeId, onChange }) {
       </button>
       {open && (
         <>
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
-          <div role="listbox" style={{
+          <div onClick={close} style={{ position: "fixed", inset: 0, zIndex: 30 }} />
+          <div role="listbox" aria-label="Budgets" style={{
             position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 31,
             background: COLORS.surface, border: `1px solid ${COLORS.border}`,
             borderRadius: 12, padding: 4,
             boxShadow: "0 10px 28px rgba(13,20,36,0.18)",
           }}>
-            {profiles.map((p) => {
-              const isActive = p.id === activeId;
+            {entries.map((e) => {
+              const id = e.id ?? null;
+              const isActive = id === activeKey;
               return (
                 <button
-                  key={p.id}
+                  key={id ?? "__primary__"}
                   role="option"
                   aria-selected={isActive}
-                  onClick={() => { onChange(p.id); setOpen(false); }}
+                  onClick={() => { onSwitch(id); close(); }}
                   style={{
                     display: "flex", alignItems: "center", gap: 8, width: "100%",
                     padding: "8px 10px", borderRadius: 8,
-                    background: isActive ? `${p.color}1A` : "transparent",
+                    background: isActive ? `${e.color}1A` : "transparent",
                     border: "none", cursor: "pointer", fontFamily: FONT,
                     color: COLORS.text, textAlign: "left",
                     transition: "background 0.12s ease",
                   }}
-                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = COLORS.surfaceTint; }}
-                  onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                  onMouseEnter={(ev) => { if (!isActive) ev.currentTarget.style.background = COLORS.surfaceTint; }}
+                  onMouseLeave={(ev) => { if (!isActive) ev.currentTarget.style.background = "transparent"; }}
                 >
                   <span style={{
                     width: 22, height: 22, borderRadius: "50%",
-                    background: p.color, color: "#fff",
+                    background: e.color, color: "#fff",
                     display: "grid", placeItems: "center",
                     fontSize: 10, fontWeight: 800, flexShrink: 0,
-                  }}>{p.label.slice(0, 1).toUpperCase()}</span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: isActive ? 700 : 600 }}>{p.label}</span>
-                  {isActive && <Icon d="M20 6L9 17l-5-5" size={12} color={p.color} />}
+                  }}>{e.label.slice(0, 1).toUpperCase()}</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: isActive ? 700 : 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.label}</span>
+                  {isActive && <Icon d="M20 6L9 17l-5-5" size={12} color={e.color} />}
                 </button>
               );
             })}
+            <div style={{ height: 1, background: COLORS.surfaceTint, margin: "4px 6px" }} />
+            {!adding ? (
+              <button
+                onClick={() => setAdding(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, width: "100%",
+                  padding: "8px 10px", borderRadius: 8,
+                  background: "transparent", border: "none", cursor: "pointer",
+                  fontFamily: FONT, textAlign: "left",
+                  transition: "background 0.12s ease",
+                }}
+                onMouseEnter={(ev) => { ev.currentTarget.style.background = COLORS.surfaceTint; }}
+                onMouseLeave={(ev) => { ev.currentTarget.style.background = "transparent"; }}
+              >
+                <span style={{
+                  width: 22, height: 22, borderRadius: "50%",
+                  border: `1px dashed ${COLORS.borderStrong}`,
+                  display: "grid", placeItems: "center", flexShrink: 0,
+                }}>
+                  <Icon d="M12 5v14 M5 12h14" size={12} color={COLORS.accent} />
+                </span>
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: COLORS.accent }}>New budget</span>
+              </button>
+            ) : (
+              <div style={{ padding: "6px 8px 8px" }}>
+                <input
+                  ref={inputRef}
+                  value={name}
+                  onChange={(ev) => { setName(ev.target.value); if (err) setErr(""); }}
+                  onKeyDown={(ev) => {
+                    if (ev.key === "Enter") { ev.preventDefault(); submitNew(); }
+                    if (ev.key === "Escape") { ev.preventDefault(); setAdding(false); setName(""); setErr(""); }
+                  }}
+                  placeholder="e.g. Caitlin &amp; Michael"
+                  maxLength={60}
+                  aria-label="New budget name"
+                  aria-invalid={err ? "true" : "false"}
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    padding: "8px 10px", borderRadius: 8,
+                    border: `1px solid ${err ? COLORS.red : COLORS.border}`,
+                    background: COLORS.surface, color: COLORS.text,
+                    fontFamily: FONT, fontSize: 13, outline: "none",
+                  }}
+                />
+                {err && (
+                  <div style={{ marginTop: 5, fontSize: 11, fontWeight: 600, color: COLORS.red }}>{err}</div>
+                )}
+                <div style={{ display: "flex", gap: 6, marginTop: 7 }}>
+                  <button
+                    onClick={submitNew}
+                    style={{
+                      flex: 1, padding: "7px 10px", borderRadius: 8,
+                      border: "none", cursor: "pointer", fontFamily: FONT,
+                      fontSize: 12, fontWeight: 700,
+                      background: COLORS.accent, color: "#fff",
+                    }}
+                  >Create blank budget</button>
+                  <button
+                    onClick={() => { setAdding(false); setName(""); setErr(""); }}
+                    style={{
+                      padding: "7px 10px", borderRadius: 8,
+                      border: `1px solid ${COLORS.border}`, cursor: "pointer",
+                      fontFamily: FONT, fontSize: 12, fontWeight: 600,
+                      background: "transparent", color: COLORS.textMuted,
+                    }}
+                  >Cancel</button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -6716,7 +7846,7 @@ function ProfileSwitcher({ profiles, activeId, onChange }) {
   );
 }
 
-function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, streak, lastEdit, pending, profiles, activeProfileId, onProfileChange, isBasic }) {
+function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, streak, lastEdit, pending, registry, activeBudgetId, onSwitchBudget, onCreateBudget, switchingBudget, isBasic }) {
   const sections = isBasic
     ? SIDEBAR_SECTIONS.filter((s) => !["habits", "achievements"].includes(s.id))
     : SIDEBAR_SECTIONS;
@@ -6739,9 +7869,13 @@ function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, st
           <Icon d={ICON.chevL} size={12} /> Admin
         </a>
         <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, letterSpacing: "-0.025em" }}>Budget</div>
-        {profiles && profiles.length > 0 && (
-          <ProfileSwitcher profiles={profiles} activeId={activeProfileId} onChange={onProfileChange} />
-        )}
+        <BudgetSwitcher
+          registry={registry}
+          activeBudgetId={activeBudgetId}
+          onSwitch={onSwitchBudget}
+          onCreate={onCreateBudget}
+          switching={switchingBudget}
+        />
       </div>
 
       <nav style={{ padding: "12px 12px", flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -6976,13 +8110,11 @@ function YearInReviewStrip({ state }) {
 }
 
 // Basic-mode dashboard CTA strip — replaces the 5-tile drill grid
-// with three big buttons that route to the only sections that matter:
-// Envelopes (where your money goes), Bills (what auto-debits), Goals
-// (what you're saving toward).
-function BasicQuickActions({ onEnvelopes, onBills, onGoals }) {
+// with two big buttons that route to the sections that matter:
+// Envelopes (where your money goes) and Goals (what you're saving toward).
+function BasicQuickActions({ onEnvelopes, onGoals }) {
   const actions = [
     { label: "Edit my envelopes", sub: "Groceries, gas, rent — set what you can spend each month.", accent: COLORS.accent, icon: ICON.envelope, onClick: onEnvelopes },
-    { label: "Manage my bills",   sub: "The things that hit your account every month, automatically.", accent: COLORS.blue,   icon: ICON.calendar, onClick: onBills },
     { label: "Pick a goal",       sub: "Emergency fund, vacation, payoff. Make the math chase a target.", accent: COLORS.amber, icon: ICON.flag,     onClick: onGoals },
   ];
   return (
@@ -7037,7 +8169,6 @@ function OnboardingChecklist({ state, onJump, onDismiss }) {
   const SECTION_LABELS = {
     dashboard: "Dashboard tiles",
     envelopes: "Envelopes",
-    bills:     "Bills",
     habits:    "Habits",
     goals:     "Goals",
     settings:  "Settings",
@@ -7163,52 +8294,6 @@ function OnboardingChecklist({ state, onJump, onDismiss }) {
         </div>
       ) : null}
     </section>
-  );
-}
-
-function UpcomingBillsBanner({ state, onJump }) {
-  const upcoming = useMemo(() => upcomingBills(state.bills || [], 7), [state.bills]);
-  if (upcoming.length === 0) return null;
-  const total = upcoming.reduce((s, b) => s + (b.amount_cents || 0), 0);
-  const soonest = upcoming[0];
-  const daysAway = soonest.days_away;
-  const dayPhrase = daysAway === 0 ? "today" : daysAway === 1 ? "tomorrow" : `in ${daysAway} days`;
-  return (
-    <button
-      onClick={onJump}
-      aria-label={`${upcoming.length} bills due in the next 7 days — open bills`}
-      style={{
-        marginTop: 12, width: "100%", textAlign: "left",
-        background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-        borderRadius: 14, padding: "12px 14px",
-        cursor: "pointer", fontFamily: FONT,
-        display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto",
-        gap: 12, alignItems: "center",
-        transition: "border-color 0.12s ease",
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#0bafb0"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = COLORS.border; }}
-    >
-      <div style={{
-        width: 36, height: 36, borderRadius: 10,
-        background: "rgba(11,175,176,0.10)", color: "#0bafb0",
-        display: "grid", placeItems: "center", flexShrink: 0,
-      }}>
-        <Icon d={ICON.bell} size={18} />
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>
-          {fmtCompact(total)} due across {upcoming.length} bill{upcoming.length === 1 ? "" : "s"} in the next 7 days
-        </div>
-        <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textMuted, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          Next: <strong style={{ color: COLORS.text }}>{soonest.label}</strong> — {fmtUsd(soonest.amount_cents)} {dayPhrase}
-        </div>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: COLORS.textMuted, whiteSpace: "nowrap" }}>
-        Open bills
-        <Icon d={ICON.chevR} size={12} />
-      </div>
-    </button>
   );
 }
 
@@ -7694,5 +8779,590 @@ function OccupancyToggle({ occupied, onChange, size = "sm" }) {
         transition: "left 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)",
       }} />
     </button>
+  );
+}
+
+// ── Customizable dashboard layout ────────────────────────────────────
+// Each tile on the /admin/budget dashboard is a row in this registry.
+// Drag-to-reorder and rename happen via the "Edit layout" button.
+// Order + labels persist in state.settings.dashboard_layout.
+//
+//   { id, defaultLabel, basic, full, group? }
+//
+// `basic`/`full` gate the tile against state.settings.experience.
+// `group` causes consecutive same-group tiles to render together inside
+// a CSS grid wrapper in view mode (preserves the 4-column "Categories"
+// row on desktop). Edit mode always renders flat for clean reordering.
+// Dashboard glance — every envelope at a glance, toggleable between
+// Spent / Remaining / Budget. Sits at the top of the dashboard so it's
+// the first thing seen on login.
+function EnvelopesGlance({ state, activeMonth, onOpen }) {
+  const [view, setView] = useState("remaining"); // "spent" | "remaining" | "budget"
+  const startMonth = useMemo(() => envelopeStartMonth(state), [state]);
+  const rows = useMemo(() => {
+    const order = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
+    const gi = (c) => {
+      const i = order.indexOf(c.group_key || "other");
+      return i < 0 ? order.length : i;
+    };
+    return (state.categories || [])
+      .map((c) => {
+        const b = envelopeBalance(state, c, activeMonth, startMonth);
+        return {
+          label: c.label,
+          budget: b.budget,
+          spent: b.thisMonthSpent,
+          available: b.available,
+          g: gi(c),
+          so: c.sort_order ?? 0,
+        };
+      })
+      .sort((a, b) => (a.g !== b.g ? a.g - b.g : a.so - b.so));
+  }, [state, activeMonth, startMonth]);
+
+  if (rows.length === 0) return null;
+
+  const valueOf = (r) => (view === "spent" ? r.spent : view === "budget" ? r.budget : r.available);
+  const total = rows.reduce((s, r) => s + valueOf(r), 0);
+  const headerLabel = view === "spent" ? "Spent this month" : view === "budget" ? "Monthly budget" : "Left to spend";
+  const totalColor = view === "remaining" ? (total >= 0 ? COLORS.green : COLORS.red) : COLORS.text;
+  const rowColor = (r) => {
+    const v = valueOf(r);
+    if (view === "remaining") return v < 0 ? COLORS.red : v > 0 ? COLORS.green : COLORS.textFaint;
+    if (view === "spent") return r.available < 0 ? COLORS.red : v > 0 ? COLORS.text : COLORS.textFaint;
+    return v > 0 ? COLORS.text : COLORS.textFaint;
+  };
+
+  return (
+    <section style={{ ...STYLES.card, padding: 0, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 16px 0" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textFaint }}>
+            {headerLabel}
+          </div>
+          <div style={{
+            marginTop: 3, fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em",
+            color: totalColor, fontVariantNumeric: "tabular-nums",
+          }}>
+            {fmtUsd(total)}
+          </div>
+        </div>
+        <button
+          onClick={onOpen}
+          style={{
+            background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT,
+            fontSize: 12, fontWeight: 700, color: COLORS.textMuted, flexShrink: 0,
+            display: "inline-flex", alignItems: "center", gap: 2, padding: "4px 0",
+          }}
+        >
+          All envelopes
+          <Icon d={ICON.chevR} size={13} />
+        </button>
+      </div>
+      <div style={{
+        display: "flex", gap: 3, margin: "12px 16px 14px",
+        background: COLORS.surfaceTint, borderRadius: 10, padding: 3,
+      }}>
+        {[["spent", "Spent"], ["remaining", "Remaining"], ["budget", "Budget"]].map(([v, label]) => {
+          const on = view === v;
+          return (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              style={{
+                flex: 1, padding: "7px 0", borderRadius: 7, border: "none", cursor: "pointer",
+                fontFamily: FONT, fontSize: 12, fontWeight: 700,
+                background: on ? COLORS.surface : "transparent",
+                color: on ? COLORS.text : COLORS.textMuted,
+                boxShadow: on ? "0 1px 2px rgba(15,23,41,0.12)" : "none",
+                transition: "all 0.12s ease",
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ borderTop: `1px solid ${COLORS.surfaceTint}` }}>
+        {rows.map((r, i) => (
+          <div
+            key={r.label + i}
+            className="bb-row"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 12, padding: "10px 16px",
+            }}
+          >
+            <span style={{ fontSize: 13.5, fontWeight: 600, color: COLORS.text, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {r.label}
+            </span>
+            <span style={{
+              fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0,
+              color: rowColor(r),
+            }}>
+              {fmtUsd(valueOf(r))}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const DASHBOARD_TILE_DEFS = [
+  { id: "balances",     defaultLabel: "Envelope balances",  basic: true,  full: true  },
+  { id: "hero",         defaultLabel: "This month",         basic: true,  full: true  },
+  { id: "yir",          defaultLabel: "Year in review",     basic: false, full: true  },
+  { id: "insights",     defaultLabel: "What's happening",   basic: false, full: true  },
+  { id: "stats",        defaultLabel: "Stats",              basic: false, full: true  },
+  { id: "todays",       defaultLabel: "Today's habits",     basic: false, full: true  },
+  { id: "cashflow",     defaultLabel: "Cash flow",          basic: false, full: true  },
+  { id: "heatmap",      defaultLabel: "Spending heatmap",   basic: false, full: true  },
+  { id: "month",        defaultLabel: "Month picker",       basic: true,  full: true  },
+  { id: "actions",      defaultLabel: "Quick actions",      basic: true,  full: false },
+  { id: "personal",     defaultLabel: "Personal",           basic: false, full: true,  group: "category" },
+  { id: "rentals",      defaultLabel: "Rentals",            basic: false, full: true,  group: "category" },
+  { id: "networth",     defaultLabel: "Net Worth",          basic: false, full: true,  group: "category" },
+  { id: "heloc",        defaultLabel: "HELOC Velocity",     basic: false, full: true,  group: "category" },
+  { id: "mom",          defaultLabel: "Mom's Loan",         basic: false, full: true,  group: "category" },
+  { id: "achievements", defaultLabel: "Achievements",       basic: false, full: true  },
+];
+
+// Group consecutive same-group tiles into runs so they render inside
+// the same grid container in view mode.
+function groupTileRuns(tiles) {
+  const runs = [];
+  for (const tile of tiles) {
+    const last = runs[runs.length - 1];
+    if (tile.group && last && last.group === tile.group) last.items.push(tile);
+    else runs.push({ group: tile.group || null, items: [tile] });
+  }
+  return runs;
+}
+
+function DashboardLayout({
+  state,
+  updateState,
+  hero,
+  streaks,
+  achievements,
+  activeMonth,
+  setActiveMonth,
+  setActiveSection,
+  setDrill,
+  setToast,
+  isBasic,
+  pending,
+  editingLayout,
+  setEditingLayout,
+}) {
+  const tileRenderers = useMemo(() => ({
+    balances: <EnvelopesGlance state={state} activeMonth={activeMonth} onOpen={() => setActiveSection("envelopes")} />,
+    hero: (
+      <HeroNumber
+        hero={hero}
+        mode={state.settings.hero_mode}
+        state={state}
+        onModeChange={(mode) =>
+          updateState((s) => ({ ...s, settings: { ...s.settings, hero_mode: mode } }))
+        }
+      />
+    ),
+    yir:          <YearInReviewStrip state={state} />,
+    insights:     <InsightsPanel state={state} />,
+    stats: (
+      <HabitsStrip
+        streaks={streaks}
+        achievements={achievements}
+        netWorth={computeNetWorthCents(state)}
+        savingsThisMonth={hero.conservative}
+      />
+    ),
+    todays:       <TodaysHabitsBanner state={state} onJump={() => setActiveSection("habits")} />,
+    cashflow:     <CashFlowForecastPanel state={state} />,
+    heatmap:      <SpendingHeatmapPanel state={state} />,
+    month:        <MonthScrubber value={activeMonth} onChange={setActiveMonth} />,
+    actions: (
+      <BasicQuickActions
+        onEnvelopes={() => setActiveSection("envelopes")}
+        onGoals={() => setActiveSection("goals")}
+      />
+    ),
+    personal: <PersonalTile state={state} onClick={() => setDrill("personal")} />,
+    rentals:  <RentalsTile  state={state} onClick={() => setDrill("rentals")} />,
+    networth: <NetWorthTile state={state} onClick={() => setDrill("networth")} />,
+    heloc:    <HelocTile    state={state} onClick={() => setDrill("heloc")} />,
+    mom: (
+      <MomLoanTile
+        state={state}
+        onClick={() => setDrill("mom")}
+        onLogPayment={() => {
+          const loan = state.mom_loans[0];
+          if (!loan) return;
+          updateState((s) => ({
+            ...s,
+            mom_loans: [{
+              ...loan,
+              payments: [
+                ...loan.payments,
+                { paid_on: new Date().toISOString().slice(0, 10), amount_cents: loan.monthly_payment_cents, direction: "in" },
+              ],
+            }],
+          }));
+          setToast({ kind: "success", message: `Payment from Mom (${fmtUsd(loan.monthly_payment_cents)}) logged` });
+          fireConfetti({ originY: 0.4 });
+        }}
+      />
+    ),
+    achievements: <AchievementStrip achievements={achievements} />,
+  }), [state, hero, streaks, achievements, activeMonth, setActiveMonth, setActiveSection, setDrill, setToast, updateState]);
+
+  const { orderedTiles, hiddenTiles } = useMemo(() => {
+    const allowed = DASHBOARD_TILE_DEFS.filter((t) => (isBasic ? t.basic : t.full));
+    const allowedSet = new Set(allowed.map((t) => t.id));
+    const layout = state.settings.dashboard_layout || {};
+    const userOrder = layout.order || [];
+    const labels = layout.labels || {};
+    const hiddenSet = new Set(layout.hidden || []);
+    const seen = new Set();
+    const orderedIds = [];
+    for (const id of userOrder) {
+      if (allowedSet.has(id) && !seen.has(id)) { orderedIds.push(id); seen.add(id); }
+    }
+    // Tiles the user hasn't explicitly placed slot in at their canonical
+    // position from DASHBOARD_TILE_DEFS — so a new tile lands where it's
+    // meant to (e.g. first), not dumped at the end of a custom layout.
+    allowed.forEach((t, idx) => {
+      if (seen.has(t.id)) return;
+      let insertAt = 0;
+      for (let i = idx - 1; i >= 0; i--) {
+        const pos = orderedIds.indexOf(allowed[i].id);
+        if (pos >= 0) { insertAt = pos + 1; break; }
+      }
+      orderedIds.splice(insertAt, 0, t.id);
+      seen.add(t.id);
+    });
+    const decorate = (id) => {
+      const def = allowed.find((t) => t.id === id);
+      const customLabel = labels[id];
+      return {
+        id,
+        defaultLabel: def.defaultLabel,
+        group: def.group || null,
+        label: customLabel || def.defaultLabel,
+        customLabel: customLabel && customLabel !== def.defaultLabel ? customLabel : null,
+      };
+    };
+    return {
+      orderedTiles: orderedIds.filter((id) => !hiddenSet.has(id)).map(decorate),
+      hiddenTiles: orderedIds.filter((id) => hiddenSet.has(id)).map(decorate),
+    };
+  }, [state.settings.dashboard_layout, isBasic]);
+
+  const handleReorder = useCallback((next) => {
+    updateState((s) => ({
+      ...s,
+      settings: {
+        ...s.settings,
+        dashboard_layout: { ...(s.settings.dashboard_layout || {}), order: next.map((t) => t.id) },
+      },
+    }));
+  }, [updateState]);
+
+  const handleLabelChange = useCallback((id, value) => {
+    updateState((s) => {
+      const prev = s.settings.dashboard_layout || {};
+      const labels = { ...(prev.labels || {}) };
+      const def = DASHBOARD_TILE_DEFS.find((t) => t.id === id);
+      const trimmed = (value || "").slice(0, 60);
+      if (!trimmed || trimmed === def?.defaultLabel) delete labels[id];
+      else labels[id] = trimmed;
+      return { ...s, settings: { ...s.settings, dashboard_layout: { ...prev, labels } } };
+    });
+  }, [updateState]);
+
+  const handleRemoveTile = useCallback((id) => {
+    updateState((s) => {
+      const prev = s.settings.dashboard_layout || {};
+      const hidden = Array.from(new Set([...(prev.hidden || []), id]));
+      return { ...s, settings: { ...s.settings, dashboard_layout: { ...prev, hidden } } };
+    });
+  }, [updateState]);
+
+  const handleRestoreTile = useCallback((id) => {
+    updateState((s) => {
+      const prev = s.settings.dashboard_layout || {};
+      const hidden = (prev.hidden || []).filter((x) => x !== id);
+      return { ...s, settings: { ...s.settings, dashboard_layout: { ...prev, hidden } } };
+    });
+  }, [updateState]);
+
+  // View mode: render runs of same-group tiles inside a grid wrapper.
+  const runs = useMemo(() => groupTileRuns(orderedTiles), [orderedTiles]);
+
+  return (
+    <>
+      <style>{`
+        @keyframes bb-tile-wiggle {
+          0%, 100% { transform: rotate(-0.35deg); }
+          50%      { transform: rotate(0.35deg); }
+        }
+      `}</style>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 12,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setEditingLayout((v) => !v)}
+          aria-pressed={editingLayout}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 16px",
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: 0.1,
+            color: editingLayout ? "#fff" : COLORS.text,
+            background: editingLayout ? COLORS.accent : COLORS.surface,
+            border: `1px solid ${editingLayout ? COLORS.accent : COLORS.border}`,
+            borderRadius: 999,
+            cursor: "pointer",
+            fontFamily: FONT,
+            transition: "background 0.15s ease, color 0.15s ease, border-color 0.15s ease",
+          }}
+        >
+          <Icon d={editingLayout ? ICON.check : ICON.edit} size={13} />
+          {editingLayout ? "Done" : "Edit layout"}
+        </button>
+      </div>
+
+      {editingLayout ? (
+        <>
+          <SortableList
+            items={orderedTiles}
+            onReorder={handleReorder}
+            renderItem={(tile, handleProps, isDragging) => (
+              <DashboardTileFrame
+                tile={tile}
+                editing
+                isDragging={isDragging}
+                handleProps={handleProps}
+                onLabelChange={(v) => handleLabelChange(tile.id, v)}
+                onRemove={() => handleRemoveTile(tile.id)}
+              >
+                {tileRenderers[tile.id] || null}
+              </DashboardTileFrame>
+            )}
+          />
+          <HiddenTilesTray
+            tiles={hiddenTiles}
+            onRestore={handleRestoreTile}
+          />
+        </>
+      ) : (
+        runs.map((run, idx) => {
+          if (run.group === "category") {
+            return (
+              <div
+                key={`run-${idx}`}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 12,
+                  marginBottom: 14,
+                }}
+              >
+                {run.items.map((tile) => (
+                  <div key={tile.id}>{tileRenderers[tile.id] || null}</div>
+                ))}
+              </div>
+            );
+          }
+          return run.items.map((tile) => (
+            <div key={tile.id} style={{ marginBottom: 14 }}>
+              {tileRenderers[tile.id] || null}
+            </div>
+          ));
+        })
+      )}
+
+      <div style={{ marginTop: 28, color: COLORS.textFaint, fontSize: 12, textAlign: "center" }}>
+        {state.last_modified_at
+          ? `Last edit ${formatRelativeTime(state.last_modified_at)} · ${pending ? "saving…" : "all changes saved"}`
+          : (pending ? "saving…" : "all changes saved")}
+      </div>
+    </>
+  );
+}
+
+function DashboardTileFrame({ tile, editing, isDragging, handleProps, onLabelChange, onRemove, children }) {
+  // Local input state so typing doesn't re-render the whole dashboard
+  // on every keystroke. Commit to the persisted layout on blur or Enter.
+  const [draft, setDraft] = useState(tile.label);
+  const [focused, setFocused] = useState(false);
+  useEffect(() => { setDraft(tile.label); }, [tile.label]);
+
+  if (!editing) {
+    return <div style={{ marginBottom: 14 }}>{children}</div>;
+  }
+
+  // Per-tile random wiggle offset so they don't all sway in lockstep.
+  // Deterministic from the id so it doesn't reshuffle every render.
+  const seed = tile.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const delay = ((seed % 30) / 100).toFixed(2);
+
+  return (
+    <div
+      style={{
+        marginBottom: 14,
+        animation: isDragging ? "none" : `bb-tile-wiggle 1.4s ease-in-out ${delay}s infinite`,
+        transformOrigin: "center center",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "0 6px",
+          marginBottom: 6,
+          minHeight: 24,
+        }}
+      >
+        <DragHandle handleProps={handleProps} />
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => { setFocused(false); if (draft !== tile.label) onLabelChange(draft); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.currentTarget.blur(); }
+            if (e.key === "Escape") { setDraft(tile.label); e.currentTarget.blur(); }
+          }}
+          placeholder={tile.defaultLabel}
+          aria-label={`Rename ${tile.defaultLabel}`}
+          maxLength={60}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: -0.1,
+            color: COLORS.text,
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            padding: "2px 4px",
+            borderBottom: `1px solid ${focused ? COLORS.accent : "transparent"}`,
+            transition: "border-color 0.15s ease",
+            fontFamily: FONT,
+          }}
+        />
+        <Icon d={ICON.edit} size={12} color={COLORS.textFaint} />
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove ${tile.defaultLabel}`}
+          title="Remove from dashboard"
+          style={{
+            width: 22,
+            height: 22,
+            padding: 0,
+            border: "none",
+            borderRadius: "50%",
+            background: "transparent",
+            color: COLORS.textFaint,
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
+            transition: "background 0.12s ease, color 0.12s ease",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(196,92,74,0.12)"; e.currentTarget.style.color = "#c45c4a"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = COLORS.textFaint; }}
+        >
+          <Icon d={ICON.x} size={12} />
+        </button>
+      </div>
+
+      <div
+        style={{
+          pointerEvents: "none",
+          userSelect: "none",
+          borderRadius: 18,
+          boxShadow: isDragging
+            ? `0 12px 28px rgba(0,0,0,0.18), 0 0 0 1px ${COLORS.accent}66`
+            : `0 0 0 1px ${COLORS.accent}1F`,
+          transition: "box-shadow 0.15s ease",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function HiddenTilesTray({ tiles, onRestore }) {
+  if (!tiles || tiles.length === 0) return null;
+  return (
+    <div
+      style={{
+        marginTop: 18,
+        padding: "14px 16px 16px",
+        borderRadius: 14,
+        background: COLORS.surfaceTint,
+        border: `1px solid ${COLORS.border}`,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          textTransform: "uppercase",
+          color: COLORS.textMuted,
+          marginBottom: 10,
+        }}
+      >
+        Hidden tiles — tap to add back
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {tiles.map((tile) => (
+          <button
+            key={tile.id}
+            type="button"
+            onClick={() => onRestore(tile.id)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 12px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: COLORS.text,
+              background: COLORS.surface,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 999,
+              cursor: "pointer",
+              fontFamily: FONT,
+              transition: "border-color 0.12s ease, color 0.12s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLORS.accent; e.currentTarget.style.color = COLORS.accent; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.color = COLORS.text; }}
+          >
+            <Icon d={ICON.plus} size={12} />
+            {tile.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

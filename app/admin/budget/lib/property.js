@@ -1,7 +1,7 @@
 // Per-property real estate analytics. All inputs/outputs in cents
 // (money) and basis points (rates). Pure functions.
 
-import { propertyMonthlyGross, propertyMonthlyExpenses } from "./calc";
+import { propertyMonthlyGross, propertyMonthlyExpenses, propertyHelocPayment, propertyRentalShare } from "./calc";
 
 // IRS Schedule E depreciation: 27.5-year straight-line on the BUILDING
 // basis (land doesn't depreciate). We don't track a land allocation,
@@ -18,15 +18,21 @@ export function computePropertyAnalytics(property, settings) {
   const annualExpenses = monthlyExpenses * 12;
   const annualNoi = monthlyNoi * 12;
 
-  // Cap rate: annualized NOI / property market value. NOI used here
-  // excludes mortgage payment by convention (cap rate is unlevered).
-  // Our `monthlyExpenses` does include mortgage in this app, so we
-  // subtract it out to compute a true unlevered NOI.
-  const mortgagePayment = property.mortgage_payment_cents || 0;
-  const unleveredAnnualExpenses = annualExpenses - mortgagePayment * 12;
+  // Cap rate: annualized NOI / property market value. Cap rate is
+  // unlevered by convention — it excludes ALL debt service. Our
+  // `monthlyExpenses` includes both the mortgage payment and the
+  // per-property HELOC payment, so subtract both back out here.
+  // House hack: rental NOI and rental value are both measured at the
+  // rental share, so the cap rate reflects the rental unit, not the
+  // owner-occupied half.
+  const rentalShare = propertyRentalShare(property);
+  const mortgagePayment = (property.mortgage_payment_cents || 0) * rentalShare;
+  const helocPayment = propertyHelocPayment(property);
+  const unleveredAnnualExpenses = annualExpenses - (mortgagePayment + helocPayment) * 12;
   const unleveredAnnualNoi = annualGross - unleveredAnnualExpenses;
-  const capRateBps = property.market_value_cents > 0
-    ? Math.round((unleveredAnnualNoi / property.market_value_cents) * 10000)
+  const rentalValue = property.market_value_cents * rentalShare;
+  const capRateBps = rentalValue > 0
+    ? Math.round((unleveredAnnualNoi / rentalValue) * 10000)
     : 0;
 
   // Cash-on-cash return: levered annual cash flow / cash invested.

@@ -31,6 +31,22 @@ export interface BudgetSettingsState {
   // "full" is the original power-user surface. Default "full" so
   // existing budgets render unchanged when the field is absent.
   experience?: "basic" | "full";
+  // User-customized dashboard layout. `order` is the explicit tile
+  // sequence (any tile not listed appends in default order); `labels`
+  // overrides a tile's default header text; `hidden` removes a tile
+  // from the page (restorable from the edit-mode tray). Missing → defaults.
+  dashboard_layout?: {
+    order?: string[];
+    labels?: Record<string, string>;
+    hidden?: string[];
+  };
+  // Per-section header overrides for drill sheets. Keyed by a stable
+  // slug (e.g. "networth.real-estate"). When absent → defaults render.
+  section_labels?: Record<string, string>;
+  // Which section ids sit in the mobile bottom bar (flanking the
+  // center "+"). User-editable; when absent a sensible default set is
+  // used. See MobileNav / MobileNavEditor in BudgetClient.
+  mobile_nav?: string[];
 }
 
 // One-per-day snapshot of the key dashboard totals so sparklines + the
@@ -123,6 +139,65 @@ export interface BudgetBill {
   created_at?: string;
 }
 
+// An envelope-to-envelope transfer: money the user reallocates from
+// one category's balance into another (e.g. month-end leftover Food →
+// Vacation). NOT a spend and NOT income — a reclass between buckets,
+// so it lives in its own ledger and never pollutes spend analytics.
+export interface EnvelopeTransfer {
+  id: string;
+  from_label: string;    // category label money leaves
+  to_label: string;      // category label money enters
+  amount_cents: number;  // always positive
+  month: string;         // ISO YYYY-MM-01 — which month's books it belongs to
+  moved_on?: string;     // ISO YYYY-MM-DD the transfer was made
+  note?: string;
+}
+
+// New-construction home-build planner. Lives alongside the budget so
+// the build leans on the same workspace. Costs carry estimate + actual
+// for budget-vs-actual tracking; wishlist items are need/want/dream.
+export interface BuildCostLine {
+  id: string;
+  label: string;
+  group: string;
+  estimate_cents: number;
+  actual_cents: number;
+}
+export interface BuildWish {
+  id: string;
+  label: string;
+  priority: "need" | "want" | "dream";
+  done?: boolean;
+}
+export interface BuildMilestone {
+  id: string;
+  label: string;
+  target?: string | null; // ISO YYYY-MM-DD
+  done?: boolean;
+}
+export interface BuildSelection {
+  id: string;
+  label: string;
+  choice?: string;
+  status: "open" | "decided" | "ordered";
+}
+export interface BuildTeamMember {
+  id: string;
+  role: string;
+  name?: string;
+  contact?: string;
+}
+export interface BuildPlanState {
+  budget_cents: number;
+  sqft: number;
+  notes?: string;
+  costs: BuildCostLine[];
+  wishlist: BuildWish[];
+  milestones: BuildMilestone[];
+  selections: BuildSelection[];
+  team: BuildTeamMember[];
+}
+
 export interface BudgetState extends ImportPayload {
   settings: BudgetSettingsState;
   imported_at: string | null;
@@ -135,6 +210,8 @@ export interface BudgetState extends ImportPayload {
   bills?: BudgetBill[];
   profiles?: BudgetProfile[];
   active_profile_id?: string | null;
+  envelope_transfers?: EnvelopeTransfer[];
+  build_plan?: BuildPlanState;
 }
 
 const DEFAULT_SETTINGS: BudgetSettingsState = {
@@ -163,6 +240,7 @@ export function emptyBudgetState(): BudgetState {
     habits: [],
     goals: [],
     bills: [],
+    envelope_transfers: [],
     profiles: [
       { id: "harrison", label: "Harrison", color: "#3b6fd1", pay_frequency: "biweekly", created_at: new Date().toISOString() },
       { id: "carolina", label: "Carolina", color: "#d6448f", pay_frequency: "biweekly", created_at: new Date().toISOString() },
@@ -196,7 +274,9 @@ function headers(prefer = "return=representation"): Record<string, string> {
   };
 }
 
-async function loadAppData<T>(key: string, fallback: T): Promise<T> {
+// Exported so the budget-registry layer (`_registry.ts`) can read/write
+// its own `app_data` rows through the same Supabase code path.
+export async function loadAppData<T>(key: string, fallback: T): Promise<T> {
   if (!SUPA_URL || !SUPA_KEY) return fallback;
   try {
     const res = await fetch(
@@ -212,7 +292,7 @@ async function loadAppData<T>(key: string, fallback: T): Promise<T> {
   }
 }
 
-async function saveAppData(key: string, value: unknown): Promise<void> {
+export async function saveAppData(key: string, value: unknown): Promise<void> {
   if (!SUPA_URL || !SUPA_KEY) {
     throw new Error("Supabase env vars not configured.");
   }
@@ -259,11 +339,25 @@ function computeDailySnapshot(state: BudgetState): BudgetHistorySnapshot {
   );
   const rentalExp = operating.reduce((s, p) => {
     const gross = (p.rooms || []).filter((r) => r.occupied).reduce((ss, r) => ss + r.rent_cents, 0);
-    return s + (p.expenses || []).reduce((ss, e) => {
+    // Owner-occupied share: only the rental portion of fixed building
+    // costs counts. Mirrors propertyRentalShare in lib/calc.js.
+    const rentalShare = 1 - Math.min(10000, Math.max(0, p.personal_use_bps || 0)) / 10000;
+    const rows = (p.expenses || []).reduce((ss, e) => {
       if (e.kind === "vacancy_pct") return ss + Math.round((gross * (e.pct_bps ?? state.settings.default_vacancy_bps)) / 10000);
       if (e.kind === "capex_pct") return ss + Math.round((gross * (e.pct_bps ?? state.settings.default_capex_bps)) / 10000);
-      return ss + e.monthly_cents;
+      return ss + Math.round(e.monthly_cents * rentalShare);
     }, 0);
+    // Per-property HELOC debt service — manual override wins, else
+    // interest-only (balance × rate ÷ 12). Mirrors propertyHelocPayment
+    // in lib/calc.js (kept inline so the writer has no React-lib dep).
+    const helocOverride = p.heloc_payment_cents;
+    const heloc =
+      helocOverride != null && helocOverride > 0
+        ? helocOverride
+        : (p.heloc_balance_cents || 0) > 0 && (p.heloc_rate_bps ?? 0) > 0
+          ? Math.round(((p.heloc_balance_cents || 0) * ((p.heloc_rate_bps ?? 0) / 10000)) / 12)
+          : 0;
+    return s + rows + heloc;
   }, 0);
   const rentalNoi = rentalGross - rentalExp;
   const incomeMonthly = state.income_sources.reduce((s, i) => {

@@ -79,6 +79,55 @@ describe("envelopeBalance carryover math", () => {
   });
 });
 
+describe("envelopeBalance with transfers", () => {
+  const food = { label: "Food", default_monthly_cents: 50_000 };
+  const vacation = { label: "Vacation", default_monthly_cents: 0 };
+
+  it("a transfer OUT this month lowers available; IN raises it", () => {
+    const state = {
+      monthly_actuals: [],
+      envelope_transfers: [
+        { id: "t1", from_label: "Food", to_label: "Vacation", amount_cents: 20_000, month: "2026-05-01" },
+      ],
+    };
+    const f = envelopeBalance(state, food, "2026-05-01", "2026-05-01");
+    expect(f.transfersOut).toBe(20_000);
+    expect(f.transferNet).toBe(-20_000);
+    expect(f.available).toBe(50_000 - 20_000); // budget − moved out
+
+    const v = envelopeBalance(state, vacation, "2026-05-01", "2026-05-01");
+    expect(v.transfersIn).toBe(20_000);
+    expect(v.transferNet).toBe(20_000);
+    expect(v.available).toBe(20_000); // $0 budget + moved in
+  });
+
+  it("prior-month transfers fold into carryover", () => {
+    const state = {
+      monthly_actuals: [],
+      envelope_transfers: [
+        { id: "t1", from_label: "Food", to_label: "Vacation", amount_cents: 15_000, month: "2026-04-01" },
+      ],
+    };
+    // May, started April: 1 prior month of $0 budget for Vacation + $15k in.
+    const v = envelopeBalance(state, vacation, "2026-05-01", "2026-04-01");
+    expect(v.carryover).toBe(15_000);
+    expect(v.transfersIn).toBe(0); // not this month
+    expect(v.available).toBe(15_000);
+  });
+
+  it("conserves total money — out of one equals into another", () => {
+    const state = {
+      monthly_actuals: [],
+      envelope_transfers: [
+        { id: "t1", from_label: "Food", to_label: "Vacation", amount_cents: 12_345, month: "2026-05-01" },
+      ],
+    };
+    const f = envelopeBalance(state, food, "2026-05-01", "2026-05-01");
+    const v = envelopeBalance(state, vacation, "2026-05-01", "2026-05-01");
+    expect(f.transferNet + v.transferNet).toBe(0);
+  });
+});
+
 describe("parseBulkPaste", () => {
   it("extracts amount + note from common formats", () => {
     const out = parseBulkPaste(`

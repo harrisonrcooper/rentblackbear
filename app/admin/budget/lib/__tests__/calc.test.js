@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   propertyMonthlyGross,
   propertyMonthlyExpenses,
+  propertyOperatingExpenses,
+  propertyHelocPayment,
+  propertyRentalShare,
   propertyMonthlyNet,
   computeNetWorthCents,
 } from "../calc";
@@ -74,6 +77,81 @@ describe("propertyMonthlyNet", () => {
     };
     // gross 100k - fixed 30k - vacancy 10k = 60k
     expect(propertyMonthlyNet(p, settings)).toBe(60_000);
+  });
+});
+
+describe("propertyHelocPayment", () => {
+  it("is zero when no HELOC is configured", () => {
+    expect(propertyHelocPayment({ rooms: [], expenses: [] })).toBe(0);
+  });
+
+  it("auto-computes interest-only — balance x rate / 12", () => {
+    // $100,000 balance @ 9% → 100_000_00 * 0.09 / 12 = 75_000 cents
+    const p = { heloc_balance_cents: 100_000_00, heloc_rate_bps: 900 };
+    expect(propertyHelocPayment(p)).toBe(75_000);
+  });
+
+  it("returns zero when balance or rate is missing", () => {
+    expect(propertyHelocPayment({ heloc_balance_cents: 100_000_00 })).toBe(0);
+    expect(propertyHelocPayment({ heloc_rate_bps: 900 })).toBe(0);
+  });
+
+  it("a manual payment override wins over the interest-only calc", () => {
+    const p = { heloc_balance_cents: 100_000_00, heloc_rate_bps: 900, heloc_payment_cents: 120_000 };
+    expect(propertyHelocPayment(p)).toBe(120_000);
+  });
+});
+
+describe("propertyMonthlyExpenses with HELOC", () => {
+  it("folds the HELOC payment in on top of operating expenses", () => {
+    const p = {
+      rooms: [{ rent_cents: 100_000, occupied: true }],
+      expenses: [{ kind: "fixed", monthly_cents: 20_000 }],
+      heloc_balance_cents: 100_000_00,
+      heloc_rate_bps: 900, // interest-only = 75_000
+    };
+    expect(propertyOperatingExpenses(p, settings)).toBe(20_000);
+    expect(propertyMonthlyExpenses(p, settings)).toBe(20_000 + 75_000);
+    // NOI: gross 100k - opex 20k - HELOC 75k = 5k
+    expect(propertyMonthlyNet(p, settings)).toBe(5_000);
+  });
+});
+
+describe("propertyRentalShare (owner-occupied / house hack)", () => {
+  it("is 1 for a pure rental", () => {
+    expect(propertyRentalShare({})).toBe(1);
+    expect(propertyRentalShare({ personal_use_bps: 0 })).toBe(1);
+  });
+  it("is 0.5 for a 50/50 house hack", () => {
+    expect(propertyRentalShare({ personal_use_bps: 5000 })).toBe(0.5);
+  });
+  it("clamps out-of-range values", () => {
+    expect(propertyRentalShare({ personal_use_bps: -100 })).toBe(1);
+    expect(propertyRentalShare({ personal_use_bps: 20000 })).toBe(0);
+  });
+});
+
+describe("propertyOperatingExpenses with owner-occupied split", () => {
+  it("splits FIXED costs by rental share, leaves vacancy/capex whole", () => {
+    const p = {
+      personal_use_bps: 5000, // 50% owner-occupied duplex
+      rooms: [{ rent_cents: 100_000, occupied: true }],
+      expenses: [
+        { kind: "fixed", monthly_cents: 40_000 }, // → 20_000 at 50%
+        { kind: "vacancy_pct" },                  // 10% of 100k = 10_000, NOT split
+        { kind: "capex_pct" },                    // 5% of 100k = 5_000, NOT split
+      ],
+    };
+    expect(propertyOperatingExpenses(p, settings)).toBe(20_000 + 10_000 + 5_000);
+    // NOI: gross 100k − rental-share expenses 35k = 65k
+    expect(propertyMonthlyNet(p, settings)).toBe(65_000);
+  });
+  it("leaves a pure rental (no personal use) unchanged", () => {
+    const p = {
+      rooms: [{ rent_cents: 100_000, occupied: true }],
+      expenses: [{ kind: "fixed", monthly_cents: 40_000 }],
+    };
+    expect(propertyOperatingExpenses(p, settings)).toBe(40_000);
   });
 });
 
