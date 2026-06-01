@@ -500,6 +500,10 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
               <EmptyState onStart={handleSeed} seeding={seeding} />
             ) : activeSection === "envelopes" ? (
               <EnvelopesView state={state} updateState={updateState} activeMonth={activeMonth} setActiveMonth={setActiveMonth} />
+            ) : activeSection === "money" ? (
+              <MoneyView state={state} setDrill={setDrill} />
+            ) : activeSection === "more" ? (
+              <MoreMenu onNavigate={setActiveSection} isBasic={isBasic} />
             ) : activeSection === "habits" && !isBasic ? (
               <HabitsView state={state} updateState={updateState} />
             ) : activeSection === "goals" ? (
@@ -7441,7 +7445,7 @@ function FAB({ onClick, bottomOffset = 24 }) {
 // the desktop sidebar, rendered as a fixed bar with safe-area-aware
 // padding so it sits above the iPhone home indicator.
 // Bottom-bar tab set when the user hasn't customized it.
-const DEFAULT_MOBILE_NAV = ["dashboard", "envelopes", "goals", "settings"];
+const DEFAULT_MOBILE_NAV = ["dashboard", "money", "goals", "more"];
 
 // Section ids allowed in the bottom bar for this experience mode.
 function allowedNavSections(isBasic) {
@@ -7672,13 +7676,20 @@ function MobileNavEditor({ sections, pinned, active, onToggle, onNavigate, onClo
 // ── Sidebar ──────────────────────────────────────────────────────────
 
 const SIDEBAR_SECTIONS = [
-  { id: "dashboard",    label: "Dashboard",    icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10", accent: "#3b6fd1" },
+  { id: "dashboard",    label: "This Month",   icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10", accent: "#3b6fd1" },
   { id: "envelopes",    label: "Envelopes",    icon: "M21 8v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8 M1 5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v3H1V5z M10 12h4", accent: "#4a7c59" },
+  { id: "money",        label: "Money",        icon: "M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3", accent: "#1251AD" },
   { id: "habits",       label: "Habits",       icon: "M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3", accent: "#d6448f" },
   { id: "goals",        label: "Goals",        icon: "M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6", accent: "#c88318" },
   { id: "achievements", label: "Achievements", icon: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2z", accent: "#8c5ad9" },
   { id: "settings",     label: "Settings",     icon: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", accent: "#5f6675" },
+  { id: "more",         label: "More",         icon: "M5 12h.01 M12 12h.01 M19 12h.01", accent: "#5f6675" },
 ];
+
+// Sections that exist only as mobile bottom-nav destinations — kept out
+// of the desktop sidebar (which already shows the money tiles on the
+// dashboard and lists every real section).
+const MOBILE_ONLY_SECTIONS = new Set(["money", "more"]);
 
 // Budget switcher — the sidebar "VIEWING AS" control. Unlike a profile
 // tag, picking an entry here swaps the ENTIRE budget: its own
@@ -7880,9 +7891,8 @@ function BudgetSwitcher({ registry, activeBudgetId, onSwitch, onCreate, switchin
 }
 
 function Sidebar({ active, onChange, achievementsUnlocked, achievementsTotal, streak, lastEdit, pending, registry, activeBudgetId, onSwitchBudget, onCreateBudget, switchingBudget, isBasic }) {
-  const sections = isBasic
-    ? SIDEBAR_SECTIONS.filter((s) => !["habits", "achievements"].includes(s.id))
-    : SIDEBAR_SECTIONS;
+  const sections = SIDEBAR_SECTIONS.filter((s) =>
+    !MOBILE_ONLY_SECTIONS.has(s.id) && !(isBasic && ["habits", "achievements"].includes(s.id)));
   return (
     <aside style={{
       width: 240, flexShrink: 0,
@@ -9161,6 +9171,66 @@ function NeedsAttention({ state, activeMonth, onOpen }) {
         })}
       </div>
     </section>
+  );
+}
+
+// "Money" nav destination — the whole financial picture (net worth,
+// rentals, loans), each tapping into its drill sheet. Reuses the same
+// tiles the desktop dashboard shows.
+function MoneyView({ state, setDrill }) {
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div style={{ margin: "0 0 16px" }}>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: COLORS.text }}>Money</div>
+        <div style={{ marginTop: 3, fontSize: 13, color: COLORS.textMuted }}>Net worth, rentals and loans at a glance.</div>
+      </div>
+      <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+        <PersonalTile state={state} onClick={() => setDrill("personal")} />
+        <RentalsTile  state={state} onClick={() => setDrill("rentals")} />
+        <NetWorthTile state={state} onClick={() => setDrill("networth")} />
+        <HelocTile    state={state} onClick={() => setDrill("heloc")} />
+        <MomLoanTile  state={state} onClick={() => setDrill("mom")} onLogPayment={() => setDrill("mom")} />
+      </div>
+    </div>
+  );
+}
+
+// "More" nav destination — the sections that don't earn a bottom-bar
+// slot (Envelopes, Habits, Achievements, Settings).
+function MoreMenu({ onNavigate, isBasic }) {
+  const ids = ["envelopes", "habits", "achievements", "settings"].filter(
+    (id) => !(isBasic && (id === "habits" || id === "achievements")),
+  );
+  const byId = Object.fromEntries(SIDEBAR_SECTIONS.map((s) => [s.id, s]));
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div style={{ margin: "0 0 16px" }}>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: COLORS.text }}>More</div>
+      </div>
+      <div style={{ ...STYLES.card, overflow: "hidden" }}>
+        {ids.map((id, i) => {
+          const s = byId[id];
+          if (!s) return null;
+          return (
+            <button
+              key={id}
+              onClick={() => onNavigate(id)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 13, textAlign: "left",
+                padding: "15px 16px", cursor: "pointer", fontFamily: FONT, background: "transparent",
+                border: "none", borderTop: i === 0 ? "none" : `1px solid ${COLORS.surfaceTint}`,
+              }}
+            >
+              <span style={{ width: 34, height: 34, borderRadius: 11, flexShrink: 0, display: "grid", placeItems: "center", background: `${s.accent}1A`, color: s.accent }}>
+                <Icon d={s.icon} size={17} color={s.accent} />
+              </span>
+              <span style={{ flex: 1, fontSize: 15, fontWeight: 700, color: COLORS.text }}>{s.label}</span>
+              <Icon d={ICON.chevR} size={16} color={COLORS.textFaint} />
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

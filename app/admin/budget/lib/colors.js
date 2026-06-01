@@ -32,14 +32,14 @@ export function intensityColor(base, intensity) {
 // Personal-expense group palette + icons. Each group gets a soft
 // background tint and a full-saturation accent for the leading bar.
 export const GROUP_META = {
-  giving:     { label: "Giving",     accent: "#8c5ad9", bg: "rgba(140,90,217,0.08)",  icon: ICON.heart },
+  giving:     { label: "Giving",     accent: "#8c5ad9", bg: "rgba(140,90,217,0.08)",  icon: ICON.gift },
   housing:    { label: "Housing",    accent: "#3b6fd1", bg: "rgba(59,111,209,0.08)",  icon: ICON.home },
   transport:  { label: "Transport",  accent: "#c98a2b", bg: "rgba(201,138,43,0.08)",  icon: ICON.car },
   food:       { label: "Food",       accent: "#e85d4a", bg: "rgba(232,93,74,0.08)",   icon: ICON.utensils },
-  personal:   { label: "Personal",   accent: "#d6448f", bg: "rgba(214,68,143,0.08)",  icon: ICON.heart },
+  personal:   { label: "Personal",   accent: "#d6448f", bg: "rgba(214,68,143,0.08)",  icon: ICON.user },
   kids:       { label: "Kids",       accent: "#0bafb0", bg: "rgba(11,175,176,0.08)",  icon: ICON.family },
-  debt:       { label: "Debt",       accent: "#d64545", bg: "rgba(214,69,69,0.08)",   icon: ICON.database },
+  debt:       { label: "Debt",       accent: "#d64545", bg: "rgba(214,69,69,0.08)",   icon: ICON.creditCard },
   yearly:     { label: "Yearly",     accent: "#5f6675", bg: "rgba(95,102,117,0.08)",  icon: ICON.calendar },
-  retirement: { label: "Retirement", accent: "#138a60", bg: "rgba(19,138,96,0.08)",   icon: ICON.award },
+  retirement: { label: "Retirement", accent: "#138a60", bg: "rgba(19,138,96,0.08)",   icon: ICON.landmark },
   other:      { label: "Other",      accent: "#5f6675", bg: "rgba(95,102,117,0.08)",  icon: ICON.target },
 };
