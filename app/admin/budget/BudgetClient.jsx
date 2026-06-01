@@ -1608,67 +1608,56 @@ function DrillSheet({ children, onClose }) {
   }, [onClose]);
   return (
     <div
-      onClick={onClose}
       className="bb-modal"
       style={{
         position: "fixed", inset: 0, zIndex: 50,
-        background: "rgba(15,23,41,0.55)",
-        backdropFilter: "blur(4px)",
-        display: "grid", placeItems: "center",
-        // Smaller padding on mobile so the modal claims more of the
-        // viewport; the bottom inset honors the iPhone home indicator.
-        padding: "max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) 12px",
-        animation: "fadeIn 0.2s ease",
+        background: COLORS.surfaceAlt,
+        display: "flex", flexDirection: "column",
+        fontFamily: FONT, color: COLORS.text,
+        animation: "fadeIn 0.18s ease",
       }}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bb-modal-card"
-        style={{
-          background: COLORS.surface,
-          width: "100%",
-          maxWidth: 720,
-          maxHeight: "calc(100dvh - 24px)",
-          borderRadius: 24,
-          boxShadow: "0 24px 80px rgba(15,23,41,0.28)",
-          display: "flex", flexDirection: "column",
-          overflow: "hidden",
-          fontFamily: FONT,
-          color: COLORS.text,
-          animation: "slideUp 0.25s ease",
-        }}
-      >
-        <div style={{
-          position: "sticky", top: 0,
-          display: "flex", justifyContent: "flex-end",
-          padding: "14px 16px 0",
-          background: COLORS.surface,
-          zIndex: 1,
+      {/* Full-screen top bar — always says "Budget" so the screen is
+          self-explanatory, with a clear way back out. */}
+      <div style={{
+        flexShrink: 0,
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "max(12px, env(safe-area-inset-top)) 16px 12px",
+        background: COLORS.surface,
+        borderBottom: `1px solid ${COLORS.border}`,
+      }}>
+        <button onClick={onClose} aria-label="Back to budget" style={{
+          display: "inline-flex", alignItems: "center", gap: 4,
+          height: 36, padding: "0 12px 0 8px", borderRadius: 10,
+          border: `1px solid ${COLORS.border}`, cursor: "pointer",
+          background: COLORS.surface, color: COLORS.textMuted,
+          fontFamily: FONT, fontSize: 13.5, fontWeight: 700,
         }}>
-          <button onClick={onClose} aria-label="Close" style={{
-            width: 34, height: 34, borderRadius: 10, border: `1px solid ${COLORS.border}`, cursor: "pointer",
-            background: COLORS.surface, color: COLORS.textMuted, display: "grid", placeItems: "center",
-            transition: "all 0.12s ease",
-          }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.surfaceAlt; e.currentTarget.style.color = COLORS.text; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = COLORS.surface; e.currentTarget.style.color = COLORS.textMuted; }}
-          >
-            <Icon d={ICON.x} size={16} />
-          </button>
-        </div>
-        <div style={{
-          flex: 1,
-          overflowY: "auto",
-          overflowX: "hidden",
-          padding: "8px 24px 28px",
-          WebkitOverflowScrolling: "touch",
+          <Icon d={ICON.chevL || "M15 18l-6-6 6-6"} size={17} />
+          Back
+        </button>
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: COLORS.textFaint }}>Budget</span>
+        <button onClick={onClose} aria-label="Close" style={{
+          marginLeft: "auto",
+          width: 36, height: 36, borderRadius: 10, border: `1px solid ${COLORS.border}`, cursor: "pointer",
+          background: COLORS.surface, color: COLORS.textMuted, display: "grid", placeItems: "center",
         }}>
+          <Icon d={ICON.x} size={16} />
+        </button>
+      </div>
+      {/* Scrollable content — fills the window, content column capped for
+          readability on wide screens and centered. */}
+      <div style={{
+        flex: 1, overflowY: "auto", overflowX: "hidden",
+        WebkitOverflowScrolling: "touch",
+        padding: "20px 16px max(28px, env(safe-area-inset-bottom))",
+      }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
           {children}
         </div>
       </div>
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(12px) scale(0.98); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
       ` }} />
     </div>
   );
@@ -5138,7 +5127,7 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
     <div>
       <DrillTitle
         title="Envelopes"
-        subtitle="Ramsey-style budgeting. Each category is an envelope. Unspent money rolls into next month — overspent shows up red."
+        subtitle="Each category is a pot of money for the month. Leftover rolls into next month; overspent shows up red."
         icon="M21 8v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8 M1 5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v3H1V5z M10 12h4"
         iconColor={COLORS.accent}
         iconBg={COLORS.accentSoft}
@@ -9319,6 +9308,11 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
     // always matches the approved mockup's blue->pink look, regardless of
     // the theme selected elsewhere. Re-scopes every --bb-* var inside.
     <div data-bb-theme="daylight" style={{ display: "grid", gap: 16, marginTop: 4 }}>
+      {/* Clear orientation: this screen is your budget for the month. */}
+      <div style={{ margin: "0 2px" }}>
+        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: COLORS.text }}>Your budget</div>
+        <div style={{ marginTop: 2, fontSize: 13, color: COLORS.textMuted }}>What you can spend, where it's going, what needs a look.</div>
+      </div>
       <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
 
       {/* HERO — safe to spend */}

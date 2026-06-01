@@ -40,7 +40,7 @@ export const GROUP_META = {
   transport:  { label: "Transport",  accent: "#c98a2b", bg: "rgba(201,138,43,0.08)",  icon: ICON.car,        emoji: "🚗" },
   food:       { label: "Food",       accent: "#e85d4a", bg: "rgba(232,93,74,0.08)",   icon: ICON.utensils,   emoji: "🍽️" },
   personal:   { label: "Personal",   accent: "#d6448f", bg: "rgba(214,68,143,0.08)",  icon: ICON.user,       emoji: "🛍️" },
-  kids:       { label: "Kids",       accent: "#0bafb0", bg: "rgba(11,175,176,0.08)",  icon: ICON.family,     emoji: "👨‍👩‍👧" },
+  kids:       { label: "Kids",       accent: "#0bafb0", bg: "rgba(11,175,176,0.08)",  icon: ICON.family,     emoji: "🧒" },
   debt:       { label: "Debt",       accent: "#d64545", bg: "rgba(214,69,69,0.08)",   icon: ICON.creditCard, emoji: "💳" },
   yearly:     { label: "Yearly",     accent: "#5f6675", bg: "rgba(95,102,117,0.08)",  icon: ICON.calendar,   emoji: "📅" },
   retirement: { label: "Retirement", accent: "#138a60", bg: "rgba(19,138,96,0.08)",   icon: ICON.landmark,   emoji: "🏦" },
