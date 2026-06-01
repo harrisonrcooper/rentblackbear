@@ -1378,8 +1378,18 @@ function MonthScrubber({ value, onChange }) {
     return arr;
   }, [year, month]);
 
+  // Center the active month in the strip on load (and whenever it changes),
+  // so today is always front-and-center instead of off at an edge.
+  const scrollerRef = useRef(null);
+  const activeRef = useRef(null);
+  useEffect(() => {
+    const sc = scrollerRef.current, el = activeRef.current;
+    if (!sc || !el) return;
+    sc.scrollLeft = Math.max(0, el.offsetLeft - sc.clientWidth / 2 + el.clientWidth / 2);
+  }, [year, month]);
+
   return (
-    <div className="bb-hscroll" style={{
+    <div ref={scrollerRef} className="bb-hscroll" style={{
       marginTop: 16,
       display: "flex", gap: 4,
       overflowX: "auto",
@@ -1395,6 +1405,7 @@ function MonthScrubber({ value, onChange }) {
       {months.map((m) => (
         <button
           key={m.iso}
+          ref={m.current ? activeRef : null}
           onClick={() => onChange(m.iso)}
           style={{
             flex: "0 0 auto",
@@ -3276,8 +3287,8 @@ function NetWorthDrill({ state, updateState }) {
         >
           <div style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0, 1.4fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(72px, 0.8fr)",
-            gap: 10, padding: "6px 4px 8px",
+            gridTemplateColumns: "minmax(0, 1.05fr) minmax(78px, 1fr) minmax(78px, 1fr) minmax(58px, 0.66fr)",
+            gap: 7, padding: "6px 4px 8px",
             borderBottom: `1px solid ${COLORS.border}`,
             ...TYPE.eyebrow,
           }}>
@@ -3291,8 +3302,8 @@ function NetWorthDrill({ state, updateState }) {
             return (
               <div key={idx} className="bb-row" style={{
                 display: "grid",
-                gridTemplateColumns: "minmax(0, 1.4fr) minmax(80px, 1fr) minmax(80px, 1fr) minmax(72px, 0.8fr)",
-                alignItems: "center", gap: 10, padding: "10px 4px",
+                gridTemplateColumns: "minmax(0, 1.05fr) minmax(78px, 1fr) minmax(78px, 1fr) minmax(58px, 0.66fr)",
+                alignItems: "center", gap: 7, padding: "10px 4px",
                 minHeight: 40,
               }}>
                 <div style={{ minWidth: 0, fontWeight: 600 }}>
@@ -3317,6 +3328,31 @@ function NetWorthDrill({ state, updateState }) {
               </div>
             );
           })}
+          <AddRowButton
+            label="Add property"
+            accent={COLORS.accent}
+            onClick={() => updateState((s) => ({
+              ...s,
+              properties: [
+                ...s.properties,
+                {
+                  label: `Property ${s.properties.length + 1}`,
+                  address: null, status: "operating",
+                  market_value_cents: 0, mortgage_balance_cents: 0, mortgage_payment_cents: 0,
+                  mortgage_rate_bps: null, mortgage_term_years: null, mortgage_origin_date: null,
+                  vacancy_bps_override: null, capex_bps_override: null,
+                  sort_order: s.properties.length, notes: null,
+                  expenses: [
+                    { label: "Mortgage", kind: "fixed", monthly_cents: 0, pct_bps: null, sort_order: 0 },
+                    { label: "Utilities", kind: "fixed", monthly_cents: 0, pct_bps: null, sort_order: 1 },
+                    { label: "Vacancy reserve", kind: "vacancy_pct", monthly_cents: 0, pct_bps: 1000, sort_order: 2 },
+                    { label: "CapEx reserve", kind: "capex_pct", monthly_cents: 0, pct_bps: 500, sort_order: 3 },
+                  ],
+                  rooms: [{ label: "Bedroom 1", rent_cents: 0, occupied: false, sort_order: 0 }],
+                },
+              ],
+            }))}
+          />
         </BlockCard>
 
         <BlockCard
@@ -3399,35 +3435,58 @@ const DEBT_KINDS = [
   { id: "other",       label: "other" },
 ];
 
+// Bordered, normal-case select that "pops" (vs the flat uppercase pill) and
+// is width-capped so the mobile 16px anti-zoom bump can't balloon it over
+// the account name.
+function kindSelect() {
+  return {
+    ...selectStyle(),
+    height: 34,
+    maxWidth: 150,
+    border: `1.5px solid ${COLORS.borderStrong}`,
+    borderRadius: 10,
+    fontWeight: 700,
+    boxShadow: "0 1px 2px rgba(15,23,41,0.06)",
+  };
+}
+
+function moneyRowDelete(onDelete, label) {
+  return (
+    <button
+      onClick={onDelete}
+      aria-label={label}
+      style={{
+        width: 30, height: 30, borderRadius: 999, border: "none", cursor: "pointer", flexShrink: 0,
+        background: COLORS.surfaceTint, color: COLORS.textMuted,
+        display: "grid", placeItems: "center", transition: "background 0.12s ease, color 0.12s ease",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = COLORS.surfaceTint; e.currentTarget.style.color = COLORS.textMuted; }}
+    >
+      <Icon d={ICON.x} size={14} />
+    </button>
+  );
+}
+
 function AssetRow({ asset, onChange, onDelete }) {
   return (
     <div className="bb-row" style={{
-      display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto 22px",
-      gap: 10, alignItems: "center", padding: "9px 4px",
+      display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto auto",
+      gap: 8, alignItems: "center", padding: "10px 4px",
     }}>
-      <InlineText value={asset.label} onChange={(v) => onChange({ label: v })} />
+      <div style={{ minWidth: 0, overflow: "hidden" }}>
+        <InlineText value={asset.label} onChange={(v) => onChange({ label: v })} />
+      </div>
       <select
         value={asset.kind || "cash"}
         onChange={(e) => onChange({ kind: e.target.value })}
         aria-label="Asset kind"
-        style={pillSelectStyle()}
+        style={kindSelect()}
       >
         {ASSET_KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
       </select>
-      <InlineNumber value={asset.balance_cents} onChange={(v) => onChange({ balance_cents: v })} width={120} allowNegative={false} />
-      <button
-        onClick={onDelete}
-        aria-label="Delete account"
-        style={{
-          width: 22, height: 22, borderRadius: 6, border: "none", cursor: "pointer",
-          background: "transparent", color: COLORS.textFaint, opacity: 0.4,
-          display: "grid", placeItems: "center", transition: "all 0.12s ease",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; }}
-        onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.4; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = COLORS.textFaint; }}
-      >
-        <Icon d={ICON.x} size={12} />
-      </button>
+      <InlineNumber value={asset.balance_cents} onChange={(v) => onChange({ balance_cents: v })} width={104} allowNegative={false} />
+      {moneyRowDelete(onDelete, "Delete account")}
     </div>
   );
 }
@@ -3437,40 +3496,30 @@ function DebtRow({ debt, onChange, onDelete }) {
   return (
     <div className="bb-row" style={{ padding: "9px 4px" }}>
       <div style={{
-        display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto auto 22px",
-        gap: 10, alignItems: "center",
+        display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto auto auto",
+        gap: 8, alignItems: "center",
       }}>
         <button
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
           aria-label={expanded ? "Collapse" : "Expand"}
-          style={{ background: "transparent", border: "none", cursor: "pointer", color: COLORS.textFaint, padding: 0, display: "grid", placeItems: "center" }}
+          style={{ background: "transparent", border: "none", cursor: "pointer", color: COLORS.textFaint, padding: 0, display: "grid", placeItems: "center", flexShrink: 0 }}
         >
-          <Icon d={expanded ? ICON.chevD : ICON.chevR} size={12} />
+          <Icon d={expanded ? ICON.chevD : ICON.chevR} size={14} />
         </button>
-        <InlineText value={debt.label} onChange={(v) => onChange({ label: v })} />
+        <div style={{ minWidth: 0, overflow: "hidden" }}>
+          <InlineText value={debt.label} onChange={(v) => onChange({ label: v })} />
+        </div>
         <select
           value={debt.kind || "other"}
           onChange={(e) => onChange({ kind: e.target.value })}
           aria-label="Debt kind"
-          style={pillSelectStyle()}
+          style={kindSelect()}
         >
           {DEBT_KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
         </select>
-        <InlineNumber value={debt.balance_cents} onChange={(v) => onChange({ balance_cents: v })} width={120} allowNegative={false} />
-        <button
-          onClick={onDelete}
-          aria-label="Delete debt"
-          style={{
-            width: 22, height: 22, borderRadius: 6, border: "none", cursor: "pointer",
-            background: "transparent", color: COLORS.textFaint, opacity: 0.4,
-            display: "grid", placeItems: "center", transition: "all 0.12s ease",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = 1; e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = 0.4; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = COLORS.textFaint; }}
-        >
-          <Icon d={ICON.x} size={12} />
-        </button>
+        <InlineNumber value={debt.balance_cents} onChange={(v) => onChange({ balance_cents: v })} width={104} allowNegative={false} />
+        {moneyRowDelete(onDelete, "Delete debt")}
       </div>
       {expanded && (
         <div style={{ marginTop: 8, marginLeft: 24, padding: "8px 12px", background: COLORS.surfaceTint, borderRadius: 10 }}>
@@ -3814,7 +3863,7 @@ function FireCalculatorPanel({ state, updateState }) {
             value={fireMultiple}
             onChange={(e) => updateState((s) => ({ ...s, settings: { ...s.settings, fire_multiple: Number(e.target.value) } }))}
             aria-label="FIRE multiple"
-            style={selectStyle()}
+            style={{ ...selectStyle(), flex: 1, minWidth: 180 }}
           >
             <option value="20">20× (5% SWR — aggressive)</option>
             <option value="25">25× (4% SWR — Trinity)</option>
@@ -7960,7 +8009,9 @@ function MobileNav({ active, onChange, onAdd, onEditNav, navIds, achievementsUnl
         backdropFilter: "saturate(180%) blur(14px)",
         WebkitBackdropFilter: "saturate(180%) blur(14px)",
         borderTop: `1px solid ${COLORS.border}`,
-        padding: "6px 6px max(6px, env(safe-area-inset-bottom)) 6px",
+        // Sit flush to the bottom — keep only a small home-indicator clearance
+        // instead of the full safe-area inset, which left a big empty gap.
+        padding: "6px 6px max(6px, calc(env(safe-area-inset-bottom) - 16px)) 6px",
         display: "grid", gridTemplateColumns: "1fr 1fr auto 1fr 1fr",
         alignItems: "center", gap: 2, fontFamily: FONT,
       }}
