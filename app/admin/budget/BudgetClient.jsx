@@ -9288,7 +9288,7 @@ function ThisMonthMobile({ state, updateState, activeMonth, setActiveMonth, onLo
         ))}
         {/* Toggle what the row number means: Left · Spent · Budgeted. */}
         <div style={{ display: "flex", gap: 4, padding: 4, background: COLORS.surfaceTint, borderRadius: 12, marginBottom: 12 }}>
-          {[{ id: "left", label: "Left" }, { id: "spent", label: "Spent" }, { id: "budget", label: "Budgeted" }].map((m) => {
+          {[{ id: "left", label: "Remaining" }, { id: "spent", label: "Spent" }, { id: "budget", label: "Budgeted" }].map((m) => {
             const on = valueMode === m.id;
             return (
               <button key={m.id} onClick={() => setValueMode(m.id)} style={{
