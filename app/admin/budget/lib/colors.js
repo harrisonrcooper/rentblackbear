@@ -46,3 +46,54 @@ export const GROUP_META = {
   retirement: { label: "Retirement", accent: "#138a60", bg: "rgba(19,138,96,0.08)",   icon: ICON.landmark,   emoji: "🏦" },
   other:      { label: "Other",      accent: "#5f6675", bg: "rgba(95,102,117,0.08)",  icon: ICON.target,     emoji: "📦" },
 };
+
+// Per-envelope emoji: matches a label against keywords so each row gets a
+// fitting glyph (⚽ "Ollie Soccer", 🛒 "Walmart"), like the mockup — instead
+// of repeating the group icon. Falls back to the group emoji when nothing
+// matches. First match wins, so order most-specific patterns first.
+const LABEL_EMOJI = [
+  [/soccer|f[uú]tbol/i, "⚽"],
+  [/jiu|jitsu|\bbjj\b|karate|martial|judo|wrestl|taekwon/i, "🥋"],
+  [/basketball/i, "🏀"],
+  [/baseball|tee.?ball/i, "⚾"],
+  [/football/i, "🏈"],
+  [/dance|ballet/i, "🩰"],
+  [/swim/i, "🏊"],
+  [/piano|guitar|violin|music lesson/i, "🎹"],
+  [/\bbear\b|teddy|\btoy/i, "🧸"],
+  [/walmart|target|costco|\bstore\b/i, "🛒"],
+  [/amazon|prime\b/i, "📦"],
+  [/youtube|netflix|hulu|disney|spotify|stream|subscription/i, "📺"],
+  [/\bgas\b|fuel/i, "⛽"],
+  [/truck/i, "🚚"],
+  [/\bcar\b|auto|vehicle/i, "🚗"],
+  [/insurance/i, "🛡️"],
+  [/\btags?\b|registration|\bdmv\b|license/i, "🏷️"],
+  [/restaurant|dining|eat.?out|takeout/i, "🍴"],
+  [/grocer|\bfood\b/i, "🍽️"],
+  [/coffee|starbucks/i, "☕"],
+  [/medicine|medical|\bdrug|pharmacy|\bdrs?\b|doctor|dental|dentist|health/i, "💊"],
+  [/toiletr|cleaning|laundry|\bsoap\b/i, "🧼"],
+  [/pamper|\bspa\b|\bhair\b|\bnail|salon|beauty/i, "💆"],
+  [/tithe|giving|church|offering|charity|dona/i, "🙏"],
+  [/maintenance|repair|\boil\b|\bfix\b/i, "🔧"],
+  [/house|\bhome\b|\brent\b|mortgage/i, "🏠"],
+  [/\bloan\b|\bdebt\b|payoff|assistance/i, "🏦"],
+  [/phone|cell\b|mobile/i, "📱"],
+  [/internet|wi-?fi|cable\b/i, "🌐"],
+  [/electric|\bpower\b|\bwater\b|utility|utilities/i, "💡"],
+  [/\bgift/i, "🎁"],
+  [/travel|vacation|\btrip\b|flight|airfare/i, "✈️"],
+  [/\bpet\b|\bdog\b|\bcat\b|\bvet\b/i, "🐾"],
+  [/clothe|clothing|apparel|shoes/i, "👕"],
+  [/\bgym\b|fitness|workout/i, "🏋️"],
+  [/personal item|\bmisc\b/i, "🧾"],
+];
+
+export function categoryEmoji(label, groupKey) {
+  const text = String(label || "");
+  for (const [re, emoji] of LABEL_EMOJI) {
+    if (re.test(text)) return emoji;
+  }
+  return (GROUP_META[groupKey] || GROUP_META.other).emoji;
+}

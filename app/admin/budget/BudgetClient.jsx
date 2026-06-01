@@ -22,7 +22,7 @@ import { COLORS, FONT, STYLES, TYPE, SPACE, RADII, btnStyle as btn, inputStyle, 
 import { Icon, ICON } from "./lib/icons";
 import { fmtUsd, fmtCompact, biweeklyToMonthly, yearlyToMonthly, categoryMonthly, incomeMonthly } from "./lib/money";
 import { propertyMonthlyGross, propertyMonthlyExpenses, propertyOperatingExpenses, propertyHelocPayment, propertyRentalShare, propertyMonthlyNet, computeNetWorthCents, computeHero, genId, todayISODate } from "./lib/calc";
-import { GROUP_META, intensityColor, mixColors, hexToRgb } from "./lib/colors";
+import { GROUP_META, categoryEmoji, intensityColor, mixColors, hexToRgb } from "./lib/colors";
 import { computeHelocSeries, computeHelocPlan, computeStrategies, defaultStrategyInputs } from "./lib/heloc";
 import { DEFAULT_HABITS, HABIT_OWNERS, HABIT_STYLES, computeHabitStreak, buildHeatmap, buildGardenGrid, last7Days, longestStreak } from "./lib/habits";
 import { ACHIEVEMENT_DEFS, TIERS, TIER_COLOR, computeAchievements, computeStreaks, fireConfetti } from "./lib/achievements";
@@ -1944,7 +1944,7 @@ function CategoryGroup({ group, items, title, onChange, onRename, onTitleChange,
       onTitleChange={onTitleChange}
       sub={total > 0 ? fmtUsd(total, { compact: true }) : null}
       accent={meta.accent}
-      icon={meta.icon}
+      emoji={meta.emoji}
       count={items.length > 0 ? `${items.length}` : null}
     >
       {items.length === 0 && (
@@ -2910,7 +2910,6 @@ function PropertyPicker({ label, value, onChange, properties, accent }) {
     <div style={{
       background: COLORS.surfaceTint, borderRadius: 12,
       padding: "10px 12px", border: `1px solid ${COLORS.border}`,
-      borderLeft: `3px solid ${accent}`,
     }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
       <select
@@ -4486,37 +4485,41 @@ function DrillTitle({ title, subtitle, icon, iconColor, iconBg, heroValue, heroL
   );
 }
 
-function BlockCard({ title, sub, children, style, accent, icon, count, onTitleChange }) {
+function BlockCard({ title, sub, children, style, accent, icon, emoji, count, onTitleChange }) {
   const accentColor = accent || COLORS.textMuted;
   return (
     <div style={{
       background: COLORS.surface,
       border: `1px solid ${COLORS.border}`,
-      borderRadius: 16,
+      borderRadius: 18,
       overflow: "hidden",
       position: "relative",
+      boxShadow: COLORS.shadow,
       ...style,
     }}>
-      {accent && (
-        <div style={{
-          position: "absolute", left: 0, top: 0, bottom: 0,
-          width: 3, background: accentColor, borderTopLeftRadius: 16, borderBottomLeftRadius: 16,
-        }} />
-      )}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         gap: 10, padding: "14px 18px 10px",
         borderBottom: `1px solid ${COLORS.surfaceTint}`,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          {icon && (
+          {emoji ? (
             <div style={{
-              width: 26, height: 26, borderRadius: 8,
+              width: 30, height: 30, borderRadius: 10,
+              background: accent ? `${accentColor}1F` : COLORS.surfaceTint,
+              display: "grid", placeItems: "center", flexShrink: 0,
+              fontSize: 16, lineHeight: 1,
+            }}>
+              {emoji}
+            </div>
+          ) : icon && (
+            <div style={{
+              width: 30, height: 30, borderRadius: 10,
               background: accent ? `${accentColor}1F` : COLORS.surfaceTint,
               color: accentColor,
               display: "grid", placeItems: "center", flexShrink: 0,
             }}>
-              <Icon d={icon} size={14} />
+              <Icon d={icon} size={15} />
             </div>
           )}
           <div style={{ minWidth: 0, display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -5176,7 +5179,7 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
               onTitleChange={(v) => renameGroup(updateState, g, v)}
               sub={`${fmtUsd(groupAvailable, { compact: true })} available`}
               accent={meta.accent}
-              icon={meta.icon}
+              emoji={meta.emoji}
               count={`${items.length}`}
             >
               <SortableList
@@ -6085,7 +6088,6 @@ function HabitCardHeatmap({ habit, today, goals, onToggle, onLabelChange, onCade
   const heatmap = useMemo(() => buildHeatmap(habit.completions, 84), [habit.completions]);
   return (
     <div style={{ ...STYLES.card, padding: 18, position: "relative", overflow: "hidden" }}>
-      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />
       <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto auto", gap: 14, alignItems: "center" }}>
         <CheckButton done={done} color={color} onClick={onToggle} size={44} />
         <div style={{ minWidth: 0 }}>
@@ -6930,7 +6932,6 @@ function AchievementsGridView({ achievements }) {
           <div key={t.id} style={{
             background: COLORS.surface, border: `1px solid ${COLORS.border}`,
             borderRadius: 12, padding: "10px 12px",
-            borderLeft: `3px solid ${t.color}`,
           }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: t.color, textTransform: "uppercase", letterSpacing: "0.1em" }}>{t.label}</div>
             <div style={{ marginTop: 4, fontSize: 16, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums" }}>{t.got} / {t.total}</div>
@@ -9023,10 +9024,11 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
                 }}
               >
                 <span style={{
-                  width: isMobile ? 28 : 24, height: isMobile ? 28 : 24, borderRadius: 8, flexShrink: 0,
-                  display: "grid", placeItems: "center", background: g.meta.bg, color: g.meta.accent,
+                  width: isMobile ? 30 : 26, height: isMobile ? 30 : 26, borderRadius: 9, flexShrink: 0,
+                  display: "grid", placeItems: "center", background: g.meta.bg,
+                  fontSize: isMobile ? 16 : 14, lineHeight: 1,
                 }}>
-                  <Icon d={g.meta.icon} size={isMobile ? 16 : 14} color={g.meta.accent} />
+                  {g.meta.emoji}
                 </span>
                 <span style={{
                   fontSize: isMobile ? 12.5 : 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
@@ -9162,7 +9164,7 @@ function NeedsAttention({ state, activeMonth, onOpen }) {
                 width: 34, height: 34, borderRadius: 11, flexShrink: 0, display: "grid", placeItems: "center",
                 background: r.over ? COLORS.redBg : COLORS.amberBg, fontSize: 17, lineHeight: 1,
               }}>
-                {meta.emoji}
+                {categoryEmoji(r.label, r.gk)}
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
