@@ -8796,46 +8796,104 @@ function OccupancyToggle({ occupied, onChange, size = "sm" }) {
 // Dashboard glance — every envelope at a glance, toggleable between
 // Spent / Remaining / Budget. Sits at the top of the dashboard so it's
 // the first thing seen on login.
+// A single envelope row inside a group: name · spent-vs-budget bar ·
+// the toggle-driven value. The bar is the always-on health signal — it
+// reads spent/budget regardless of which value the toggle shows, so a
+// near-empty envelope looks full whether you're viewing Spent or Left.
+function GlanceRow({ r, view, accent }) {
+  const value = view === "spent" ? r.spent : view === "budget" ? r.budget : r.available;
+  const over = r.available < 0;
+  const pct = r.budget > 0 ? Math.min(100, Math.round((r.spent / r.budget) * 100)) : 0;
+  const near = !over && pct >= 85;
+  const barColor = over ? COLORS.red : near ? COLORS.amber : accent;
+  const valColor = view === "remaining"
+    ? (value < 0 ? COLORS.red : value > 0 ? COLORS.green : COLORS.textFaint)
+    : view === "spent"
+      ? (over ? COLORS.red : value > 0 ? COLORS.text : COLORS.textFaint)
+      : (value > 0 ? COLORS.text : COLORS.textFaint);
+  return (
+    <div
+      className="bb-row"
+      style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "8px 16px 8px 25px",
+        background: over ? COLORS.redBg : "transparent",
+      }}
+    >
+      <span style={{
+        fontSize: 13, fontWeight: 600, color: over ? COLORS.red : COLORS.text,
+        flex: "0 0 96px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
+        {r.label}
+      </span>
+      <span style={{ flex: 1, height: 6, borderRadius: 4, background: COLORS.surfaceTint, overflow: "hidden", minWidth: 0 }}>
+        <span style={{ display: "block", height: "100%", width: `${over ? 100 : pct}%`, borderRadius: 4, background: barColor, transition: "width 0.2s ease" }} />
+      </span>
+      <span style={{
+        fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums",
+        flex: "0 0 60px", textAlign: "right", color: valColor,
+      }}>
+        {fmtUsd(value)}
+      </span>
+    </div>
+  );
+}
+
 function EnvelopesGlance({ state, activeMonth, onOpen }) {
   const [view, setView] = useState("remaining"); // "spent" | "remaining" | "budget"
+  const [collapsed, setCollapsed] = useState(() => new Set());
   const startMonth = useMemo(() => envelopeStartMonth(state), [state]);
-  const rows = useMemo(() => {
+
+  // Group envelopes by category, preserving the canonical group order and
+  // each envelope's sort_order within its group.
+  const groups = useMemo(() => {
     const order = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
-    const gi = (c) => {
-      const i = order.indexOf(c.group_key || "other");
-      return i < 0 ? order.length : i;
-    };
-    return (state.categories || [])
-      .map((c) => {
-        const b = envelopeBalance(state, c, activeMonth, startMonth);
-        return {
-          label: c.label,
-          budget: b.budget,
-          spent: b.thisMonthSpent,
-          available: b.available,
-          g: gi(c),
-          so: c.sort_order ?? 0,
-        };
-      })
-      .sort((a, b) => (a.g !== b.g ? a.g - b.g : a.so - b.so));
+    const byKey = new Map();
+    for (const c of state.categories || []) {
+      const gk = c.group_key || "other";
+      const b = envelopeBalance(state, c, activeMonth, startMonth);
+      if (!byKey.has(gk)) byKey.set(gk, []);
+      byKey.get(gk).push({
+        label: c.label,
+        budget: b.budget,
+        spent: b.thisMonthSpent,
+        available: b.available,
+        so: c.sort_order ?? 0,
+      });
+    }
+    return order
+      .filter((gk) => byKey.has(gk))
+      .map((gk) => ({
+        key: gk,
+        meta: GROUP_META[gk] || GROUP_META.other,
+        rows: byKey.get(gk).sort((a, b) => a.so - b.so),
+      }));
   }, [state, activeMonth, startMonth]);
 
-  if (rows.length === 0) return null;
+  if (groups.length === 0) return null;
 
   const valueOf = (r) => (view === "spent" ? r.spent : view === "budget" ? r.budget : r.available);
-  const total = rows.reduce((s, r) => s + valueOf(r), 0);
+  const allRows = groups.flatMap((g) => g.rows);
+  const total = allRows.reduce((s, r) => s + valueOf(r), 0);
+  const totalSpent = allRows.reduce((s, r) => s + r.spent, 0);
+  const totalBudget = allRows.reduce((s, r) => s + r.budget, 0);
+  const usedPct = totalBudget > 0 ? Math.min(100, Math.round((totalSpent / totalBudget) * 100)) : 0;
+  const overBudget = totalSpent > totalBudget && totalBudget > 0;
+
   const headerLabel = view === "spent" ? "Spent this month" : view === "budget" ? "Monthly budget" : "Left to spend";
   const totalColor = view === "remaining" ? (total >= 0 ? COLORS.green : COLORS.red) : COLORS.text;
-  const rowColor = (r) => {
-    const v = valueOf(r);
-    if (view === "remaining") return v < 0 ? COLORS.red : v > 0 ? COLORS.green : COLORS.textFaint;
-    if (view === "spent") return r.available < 0 ? COLORS.red : v > 0 ? COLORS.text : COLORS.textFaint;
-    return v > 0 ? COLORS.text : COLORS.textFaint;
-  };
+  const subtotalColor = (sub) => (view === "remaining" ? (sub < 0 ? COLORS.red : COLORS.text) : COLORS.text);
+
+  const toggleGroup = (key) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
 
   return (
     <section style={{ ...STYLES.card, padding: 0, overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 16px 0" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "16px 16px 0" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textFaint }}>
             {headerLabel}
@@ -8859,8 +8917,22 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
           <Icon d={ICON.chevR} size={13} />
         </button>
       </div>
+
+      {/* Overall budget meter — spent vs budgeted across every envelope. */}
+      {totalBudget > 0 && (
+        <div style={{ margin: "12px 16px 0" }}>
+          <div style={{ height: 8, borderRadius: 6, background: COLORS.surfaceTint, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${usedPct}%`, borderRadius: 6, background: overBudget ? COLORS.red : COLORS.accent, transition: "width 0.2s ease" }} />
+          </div>
+          <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: COLORS.textFaint }}>
+            <span style={{ color: COLORS.textMuted }}>{fmtUsd(totalSpent, { compact: true })} spent</span>
+            {" of "}{fmtUsd(totalBudget, { compact: true })} budgeted · {usedPct}% used
+          </div>
+        </div>
+      )}
+
       <div style={{
-        display: "flex", gap: 3, margin: "12px 16px 14px",
+        display: "flex", gap: 3, margin: "12px 16px 8px",
         background: COLORS.surfaceTint, borderRadius: 10, padding: 3,
       }}>
         {[["spent", "Spent"], ["remaining", "Remaining"], ["budget", "Budget"]].map(([v, label]) => {
@@ -8883,27 +8955,60 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
           );
         })}
       </div>
-      <div style={{ borderTop: `1px solid ${COLORS.surfaceTint}` }}>
-        {rows.map((r, i) => (
-          <div
-            key={r.label + i}
-            className="bb-row"
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              gap: 12, padding: "10px 16px",
-            }}
-          >
-            <span style={{ fontSize: 13.5, fontWeight: 600, color: COLORS.text, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {r.label}
-            </span>
-            <span style={{
-              fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0,
-              color: rowColor(r),
-            }}>
-              {fmtUsd(valueOf(r))}
-            </span>
-          </div>
-        ))}
+
+      <div>
+        {groups.map((g) => {
+          const isCollapsed = collapsed.has(g.key);
+          const subtotal = g.rows.reduce((s, r) => s + valueOf(r), 0);
+          const hasOver = g.rows.some((r) => r.available < 0);
+          return (
+            <div key={g.key} style={{ borderTop: `1px solid ${COLORS.surfaceTint}` }}>
+              <button
+                onClick={() => toggleGroup(g.key)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 9,
+                  padding: "11px 16px 10px", border: "none", background: "transparent",
+                  cursor: "pointer", fontFamily: FONT, textAlign: "left",
+                }}
+              >
+                <span style={{
+                  width: 24, height: 24, borderRadius: 7, flexShrink: 0,
+                  display: "grid", placeItems: "center", background: g.meta.bg, color: g.meta.accent,
+                }}>
+                  <Icon d={g.meta.icon} size={14} color={g.meta.accent} />
+                </span>
+                <span style={{
+                  fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                  color: COLORS.textMuted,
+                }}>
+                  {groupLabel(state, g.key)}
+                </span>
+                {hasOver && (
+                  <span style={{ width: 6, height: 6, borderRadius: 999, background: COLORS.red, flexShrink: 0 }} />
+                )}
+                <span style={{
+                  marginLeft: "auto", fontSize: 13, fontWeight: 800, fontVariantNumeric: "tabular-nums",
+                  color: subtotalColor(subtotal),
+                }}>
+                  {fmtUsd(subtotal)}
+                </span>
+                <Icon
+                  d={ICON.chevD}
+                  size={15}
+                  color={COLORS.textFaint}
+                  style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s ease" }}
+                />
+              </button>
+              {!isCollapsed && (
+                <div style={{ paddingBottom: 4 }}>
+                  {g.rows.map((r, i) => (
+                    <GlanceRow key={r.label + i} r={r} view={view} accent={g.meta.accent} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
