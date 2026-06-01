@@ -66,6 +66,12 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
   });
   const [drill, setDrill] = useState(null); // 'rentals' | 'networth' | 'heloc' | 'mom' | null
   const [activeSection, setActiveSection] = useState("dashboard"); // 'dashboard' | 'envelopes' | 'habits' | 'goals' | 'achievements' | 'settings'
+  // Switching sections should land you at the top, not wherever the
+  // previous section was scrolled to.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+    document.getElementById("bb-main")?.scrollTo?.({ top: 0 });
+  }, [activeSection]);
   const [addOpen, setAddOpen] = useState(false);
   const [addPreset, setAddPreset] = useState(null); // envelope label to pre-fill the log keypad
   const openLog = useCallback((cat) => { setAddPreset(typeof cat === "string" ? cat : null); setAddOpen(true); }, []);
