@@ -24,6 +24,7 @@ export const COLORS = {
   textFaint:   "var(--bb-text-faint)",
   accent:      "var(--bb-accent)",
   accentSoft:  "var(--bb-accent-soft)",
+  onAccent:    "var(--bb-on-accent)",
   green:       "var(--bb-green)",
   greenBg:     "var(--bb-green-bg)",
   red:         "var(--bb-red)",
@@ -34,6 +35,15 @@ export const COLORS = {
   blueBg:      "var(--bb-blue-bg)",
   purple:      "var(--bb-purple)",
   purpleBg:    "var(--bb-purple-bg)",
+  // Elevation + hero treatment — theme-aware so dark mode doesn't get
+  // muddy drop shadows and the hero band picks up each theme's mood.
+  shadow:      "var(--bb-shadow)",
+  shadowLg:    "var(--bb-shadow-lg)",
+  heroBg:      "var(--bb-hero-bg)",
+  heroInk:     "var(--bb-hero-ink)",
+  heroInkSoft: "var(--bb-hero-ink-soft)",
+  heroTrack:   "var(--bb-hero-track)",
+  heroFill:    "var(--bb-hero-fill)",
 };
 
 // Actual hex values per named theme. Used to emit the CSS-vars
@@ -56,6 +66,7 @@ export const THEME_PALETTES = {
     "bb-text-faint":     "#9a9da3",
     "bb-accent":         "#16181d",
     "bb-accent-soft":    "rgba(22,24,29,0.07)",
+    "bb-on-accent":      "#ffffff",
     "bb-green":          "#1f8f5f",
     "bb-green-bg":       "rgba(31,143,95,0.10)",
     "bb-red":            "#c0392b",
@@ -66,6 +77,13 @@ export const THEME_PALETTES = {
     "bb-blue-bg":        "rgba(47,111,224,0.09)",
     "bb-purple":         "#7c4ddb",
     "bb-purple-bg":      "rgba(124,77,219,0.09)",
+    "bb-shadow":         "0 1px 2px rgba(16,18,29,0.04)",
+    "bb-shadow-lg":      "0 1px 2px rgba(16,18,29,0.05), 0 16px 30px -18px rgba(16,18,29,0.16)",
+    "bb-hero-bg":        "#ffffff",
+    "bb-hero-ink":       "#16181d",
+    "bb-hero-ink-soft":  "#9a9da3",
+    "bb-hero-track":     "#eeeeec",
+    "bb-hero-fill":      "#16181d",
   },
   midnight: {
     "bb-bg":             "#0a0d14",
@@ -79,6 +97,7 @@ export const THEME_PALETTES = {
     "bb-text-faint":     "#7c8699",
     "bb-accent":         "#36d49a",
     "bb-accent-soft":    "rgba(54,212,154,0.16)",
+    "bb-on-accent":      "#06231a",
     "bb-green":          "#36d49a",
     "bb-green-bg":       "rgba(54,212,154,0.16)",
     "bb-red":            "#ef6b6b",
@@ -89,6 +108,13 @@ export const THEME_PALETTES = {
     "bb-blue-bg":        "rgba(123,164,240,0.16)",
     "bb-purple":         "#b893f0",
     "bb-purple-bg":      "rgba(184,147,240,0.16)",
+    "bb-shadow":         "0 1px 2px rgba(0,0,0,0.35)",
+    "bb-shadow-lg":      "0 2px 4px rgba(0,0,0,0.4), 0 18px 40px -20px rgba(0,0,0,0.7)",
+    "bb-hero-bg":        "radial-gradient(130% 120% at 8% 0%, rgba(54,212,154,0.18), transparent 52%), #131a26",
+    "bb-hero-ink":       "#e7ebf3",
+    "bb-hero-ink-soft":  "#7c8699",
+    "bb-hero-track":     "#0c111a",
+    "bb-hero-fill":      "linear-gradient(90deg, #36d49a, #2bb886)",
   },
   aurora: {
     "bb-bg":             "#f4f1ec",
@@ -102,6 +128,7 @@ export const THEME_PALETTES = {
     "bb-text-faint":     "#a89d8e",
     "bb-accent":         "#2f6b4f",
     "bb-accent-soft":    "rgba(47,107,79,0.12)",
+    "bb-on-accent":      "#ffffff",
     "bb-green":          "#2f6b4f",
     "bb-green-bg":       "rgba(47,107,79,0.12)",
     "bb-red":            "#c0392b",
@@ -112,6 +139,13 @@ export const THEME_PALETTES = {
     "bb-blue-bg":        "rgba(59,111,209,0.10)",
     "bb-purple":         "#8c5ad9",
     "bb-purple-bg":      "rgba(140,90,217,0.10)",
+    "bb-shadow":         "0 2px 10px rgba(80,60,40,0.06)",
+    "bb-shadow-lg":      "0 3px 12px rgba(80,60,40,0.08), 0 16px 34px -18px rgba(80,60,40,0.16)",
+    "bb-hero-bg":        "linear-gradient(135deg, #2f6b4f, #3f8463)",
+    "bb-hero-ink":       "#ffffff",
+    "bb-hero-ink-soft":  "rgba(255,255,255,0.78)",
+    "bb-hero-track":     "rgba(255,255,255,0.22)",
+    "bb-hero-fill":      "#ffffff",
   },
 };
 
@@ -192,7 +226,7 @@ export const FONT = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sys
 
 // ── Spacing + radii tokens (use these instead of magic numbers) ──────
 export const SPACE = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 7: 32, 8: 40 };
-export const RADII = { sm: 8, md: 12, lg: 14, xl: 18, pill: 999 };
+export const RADII = { sm: 10, md: 14, lg: 18, xl: 24, pill: 999 };
 
 // ── Type scale ───────────────────────────────────────────────────────
 // One source of truth for every text role on the budget page. Use the
@@ -235,7 +269,14 @@ export const STYLES = {
     background: COLORS.surface,
     border: `1px solid ${COLORS.border}`,
     borderRadius: RADII.xl,
-    boxShadow: "0 1px 2px rgba(15,23,41,0.04)",
+    boxShadow: COLORS.shadow,
+  },
+  // Elevated variant — for hero / marquee surfaces that should float.
+  cardLg: {
+    background: COLORS.surface,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: RADII.xl,
+    boxShadow: COLORS.shadowLg,
   },
 };
 

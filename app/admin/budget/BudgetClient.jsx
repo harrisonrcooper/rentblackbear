@@ -1326,18 +1326,19 @@ function MonthScrubber({ value, onChange }) {
           onClick={() => onChange(m.iso)}
           style={{
             flex: "0 0 auto",
-            padding: "8px 14px",
-            borderRadius: 100,
-            border: m.current ? `1px solid ${COLORS.text}` : `1px solid ${COLORS.border}`,
-            background: m.current ? COLORS.text : COLORS.surface,
-            color: m.current ? "#fff" : COLORS.textMuted,
-            fontSize: 12, fontWeight: 700,
+            padding: "9px 15px",
+            borderRadius: 13,
+            border: "none",
+            background: m.current ? COLORS.accent : COLORS.surfaceTint,
+            color: m.current ? COLORS.onAccent : COLORS.textMuted,
+            fontSize: 12.5, fontWeight: 700,
             cursor: "pointer",
             scrollSnapAlign: "center",
             transition: "all 0.15s ease",
+            boxShadow: m.current ? COLORS.shadow : "none",
           }}
         >
-          {m.label} <span style={{ opacity: 0.7, fontWeight: 500 }}>{String(year).slice(2)}</span>
+          {m.label} <span style={{ opacity: 0.65, fontWeight: 500 }}>{String(year).slice(2)}</span>
         </button>
       ))}
     </div>
@@ -8924,47 +8925,50 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
     });
 
   return (
-    <section style={{ ...STYLES.card, padding: 0, overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "16px 16px 0" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: isMobile ? 11.5 : 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textFaint }}>
-            {headerLabel}
+    <section style={{ ...STYLES.cardLg, padding: 0, overflow: "hidden" }}>
+      {/* Hero band — themed gradient/glass treatment (see --bb-hero-*). */}
+      <div style={{ background: COLORS.heroBg, color: COLORS.heroInk, padding: isMobile ? "20px 18px 18px" : "22px 22px 20px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: isMobile ? 11.5 : 11, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>
+              {headerLabel}
+            </div>
+            <div style={{
+              marginTop: 4, fontSize: isMobile ? 38 : 34, fontWeight: 800, letterSpacing: "-0.03em",
+              color: COLORS.heroInk, fontVariantNumeric: "tabular-nums", lineHeight: 1,
+            }}>
+              {fmtUsd(total)}
+            </div>
           </div>
-          <div style={{
-            marginTop: 3, fontSize: isMobile ? 30 : 26, fontWeight: 800, letterSpacing: "-0.02em",
-            color: totalColor, fontVariantNumeric: "tabular-nums",
-          }}>
-            {fmtUsd(total)}
-          </div>
+          <button
+            onClick={onOpen}
+            style={{
+              background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT,
+              fontSize: isMobile ? 13 : 12, fontWeight: 700, color: COLORS.heroInkSoft, flexShrink: 0,
+              display: "inline-flex", alignItems: "center", gap: 2, padding: "4px 0",
+            }}
+          >
+            All envelopes
+            <Icon d={ICON.chevR} size={13} color={COLORS.heroInkSoft} />
+          </button>
         </div>
-        <button
-          onClick={onOpen}
-          style={{
-            background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT,
-            fontSize: isMobile ? 13 : 12, fontWeight: 700, color: COLORS.textMuted, flexShrink: 0,
-            display: "inline-flex", alignItems: "center", gap: 2, padding: "4px 0",
-          }}
-        >
-          All envelopes
-          <Icon d={ICON.chevR} size={13} />
-        </button>
+
+        {/* Overall budget meter — spent vs budgeted across every envelope. */}
+        {totalBudget > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ height: 8, borderRadius: 6, background: COLORS.heroTrack, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${usedPct}%`, borderRadius: 6, background: overBudget ? COLORS.red : COLORS.heroFill, transition: "width 0.2s ease" }} />
+            </div>
+            <div style={{ marginTop: 8, fontSize: isMobile ? 12 : 11, fontWeight: 600, color: COLORS.heroInkSoft }}>
+              <span style={{ color: COLORS.heroInk }}>{fmtUsd(totalSpent, { compact: true })} spent</span>
+              {" of "}{fmtUsd(totalBudget, { compact: true })} budgeted · {usedPct}% used
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Overall budget meter — spent vs budgeted across every envelope. */}
-      {totalBudget > 0 && (
-        <div style={{ margin: "12px 16px 0" }}>
-          <div style={{ height: 8, borderRadius: 6, background: COLORS.surfaceTint, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${usedPct}%`, borderRadius: 6, background: overBudget ? COLORS.red : COLORS.accent, transition: "width 0.2s ease" }} />
-          </div>
-          <div style={{ marginTop: 6, fontSize: isMobile ? 12.5 : 11, fontWeight: 600, color: COLORS.textFaint }}>
-            <span style={{ color: COLORS.textMuted }}>{fmtUsd(totalSpent, { compact: true })} spent</span>
-            {" of "}{fmtUsd(totalBudget, { compact: true })} budgeted · {usedPct}% used
-          </div>
-        </div>
-      )}
-
       <div style={{
-        display: "flex", gap: 3, margin: "12px 16px 8px",
+        display: "flex", gap: 3, margin: isMobile ? "12px 16px 8px" : "14px 16px 8px",
         background: COLORS.surfaceTint, borderRadius: 10, padding: 3,
       }}>
         {[["spent", "Spent"], ["remaining", "Remaining"], ["budget", "Budget"]].map(([v, label]) => {
