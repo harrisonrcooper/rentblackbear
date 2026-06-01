@@ -66,6 +66,9 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
   });
   const [drill, setDrill] = useState(null); // 'rentals' | 'networth' | 'heloc' | 'mom' | null
   const [activeSection, setActiveSection] = useState("dashboard"); // 'dashboard' | 'envelopes' | 'habits' | 'goals' | 'achievements' | 'settings'
+  // Set when "Move money" is launched from the More menu — Envelopes reads
+  // it once on mount and opens the transfer sheet straight away.
+  const [pendingMove, setPendingMove] = useState(false);
   // Switching sections should land you at the top, not wherever the
   // previous section was scrolled to.
   useEffect(() => {
@@ -387,6 +390,43 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
         .bb-row-income:hover { background: rgba(19,138,96,0.05); }
         .bb-row:hover .bb-step-btn { opacity: 1 !important; }
         .bb-step-btn:hover { background: ${COLORS.surfaceAlt} !important; color: ${COLORS.text} !important; }
+        /* ── Universal interactive affordance ──────────────────────────
+           Every button (and role="button") gets an intuitive hover + press
+           cue. We only animate properties that are NOT set inline — filter,
+           transform, and a background tint that lands solely on transparent
+           buttons — so this never overrides a button's own colors. The svg
+           scale guarantees icon-only buttons visibly respond regardless of
+           their background, which is the main ask. */
+        #bb-budget-root button:not(:disabled),
+        #bb-budget-root [role="button"]:not([aria-disabled="true"]) { cursor: pointer; }
+        #bb-budget-root button,
+        #bb-budget-root [role="button"] {
+          transition: filter 0.12s ease, background-color 0.12s ease, transform 0.1s ease, box-shadow 0.12s ease;
+        }
+        #bb-budget-root button svg,
+        #bb-budget-root [role="button"] svg { transition: transform 0.12s ease; }
+        #bb-budget-root button:not(:disabled):hover,
+        #bb-budget-root [role="button"]:not([aria-disabled="true"]):hover {
+          filter: brightness(0.96);
+          background-color: ${COLORS.surfaceTint};
+        }
+        #bb-budget-root button:not(:disabled):hover svg,
+        #bb-budget-root [role="button"]:not([aria-disabled="true"]):hover svg { transform: scale(1.1); }
+        #bb-budget-root button:not(:disabled):active,
+        #bb-budget-root [role="button"]:not([aria-disabled="true"]):active {
+          transform: scale(0.97); filter: brightness(0.92);
+        }
+        /* Content links (not the skip-to-content control) get a color cue. */
+        #bb-budget-root a:not(.bb-skip) { cursor: pointer; transition: filter 0.12s ease, color 0.12s ease; }
+        #bb-budget-root a:not(.bb-skip):hover { filter: brightness(0.96); color: ${COLORS.accent}; }
+        #bb-budget-root a:not(.bb-skip):hover svg { transform: scale(1.1); }
+        /* Touch devices: no hover, and the scale-on-tap can feel laggy. */
+        @media (hover: none) {
+          #bb-budget-root button:hover, #bb-budget-root [role="button"]:hover {
+            filter: none; background-color: initial;
+          }
+          #bb-budget-root button:hover svg, #bb-budget-root [role="button"]:hover svg { transform: none; }
+        }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
         }
@@ -412,8 +452,14 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
           -webkit-overflow-scrolling: touch;
         }
         /* Hidden scrollbar for horizontal pickers (Move-money selectors). */
-        .bb-hscroll { -webkit-overflow-scrolling: touch; }
-        .bb-hscroll::-webkit-scrollbar { display: none; }
+        .bb-hscroll { -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+        .bb-hscroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
+        /* The app must fit the phone width — never let the page scroll
+           sideways. Clip horizontal overflow (clip doesn't create a scroll
+           container, so vertical page scroll is untouched). Inner horizontal
+           scrollers (.bb-hscroll) still scroll within their own box. */
+        #bb-budget-root { overflow-x: clip; max-width: 100%; }
+        #bb-main { overflow-x: clip; }
         /* Move-money amount: white placeholder on the gradient hero. */
         .bb-move-amt::placeholder { color: rgba(255,255,255,0.78); opacity: 1; }
         .bb-move-amt::-webkit-input-placeholder { color: rgba(255,255,255,0.78); }
@@ -519,11 +565,11 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
             {!hasData ? (
               <EmptyState onStart={handleSeed} seeding={seeding} />
             ) : activeSection === "envelopes" ? (
-              <EnvelopesView state={state} updateState={updateState} activeMonth={activeMonth} setActiveMonth={setActiveMonth} />
+              <EnvelopesView state={state} updateState={updateState} activeMonth={activeMonth} setActiveMonth={setActiveMonth} autoOpenMove={pendingMove} onAutoOpenConsumed={() => setPendingMove(false)} />
             ) : activeSection === "money" ? (
               <MoneyView state={state} setDrill={setDrill} />
             ) : activeSection === "more" ? (
-              <MoreMenu onNavigate={setActiveSection} isBasic={isBasic} />
+              <MoreMenu onNavigate={setActiveSection} isBasic={isBasic} onMoveMoney={() => { setPendingMove(true); setActiveSection("envelopes"); }} />
             ) : activeSection === "habits" && !isBasic ? (
               <HabitsView state={state} updateState={updateState} />
             ) : activeSection === "goals" ? (
@@ -1333,13 +1379,18 @@ function MonthScrubber({ value, onChange }) {
   }, [year, month]);
 
   return (
-    <div style={{
+    <div className="bb-hscroll" style={{
       marginTop: 16,
       display: "flex", gap: 4,
       overflowX: "auto",
       WebkitOverflowScrolling: "touch",
       paddingBottom: 6,
       scrollSnapType: "x mandatory",
+      minWidth: 0,
+      // Option 2 — clean airy fade: chips dissolve into the background at
+      // both edges so it's obvious the strip scrolls past what's visible.
+      maskImage: "linear-gradient(to right, transparent 0, #000 34px, #000 calc(100% - 34px), transparent 100%)",
+      WebkitMaskImage: "linear-gradient(to right, transparent 0, #000 34px, #000 calc(100% - 34px), transparent 100%)",
     }}>
       {months.map((m) => (
         <button
@@ -1347,16 +1398,16 @@ function MonthScrubber({ value, onChange }) {
           onClick={() => onChange(m.iso)}
           style={{
             flex: "0 0 auto",
-            padding: "9px 15px",
+            padding: "8px 15px",
             borderRadius: 13,
-            border: "none",
-            background: m.current ? COLORS.accent : COLORS.surfaceTint,
-            color: m.current ? COLORS.onAccent : COLORS.textMuted,
+            border: `1.5px solid ${m.current ? COLORS.accent : COLORS.borderStrong}`,
+            background: m.current ? COLORS.accent : COLORS.surface,
+            color: m.current ? COLORS.onAccent : COLORS.text,
             fontSize: 12.5, fontWeight: 700,
             cursor: "pointer",
             scrollSnapAlign: "center",
             transition: "all 0.15s ease",
-            boxShadow: m.current ? COLORS.shadow : "none",
+            boxShadow: m.current ? "0 4px 12px rgba(18,81,173,0.30)" : "0 1px 2px rgba(15,23,41,0.05)",
           }}
         >
           {m.label} <span style={{ opacity: 0.65, fontWeight: 500 }}>{String(year).slice(2)}</span>
@@ -1684,62 +1735,119 @@ function renameGroup(updateState, g, value) {
 
 function IncomeSourcesBlock({ state, updateState }) {
   const total = state.income_sources.reduce((s, i) => s + incomeMonthly(i), 0);
+  // Collapsed by default into a single sleek row (icon · Income · count ·
+  // amount · Edit). The editor only appears when you tap Edit, keeping
+  // Envelopes focused on spending, not data entry.
+  const [open, setOpen] = useState(false);
+  const n = state.income_sources.length;
+
+  if (!open) {
+    return (
+      <div style={{
+        ...STYLES.card,
+        background: `linear-gradient(135deg, ${COLORS.accentSoft} 0%, ${COLORS.surface} 60%)`,
+        padding: "13px 14px", display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <span style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, display: "grid", placeItems: "center", background: COLORS.accentSoft, color: COLORS.accent }}>
+          <Icon d={ICON.arrowUp} size={16} />
+        </span>
+        <span style={{ fontSize: 14.5, fontWeight: 800, color: COLORS.text, flexShrink: 0 }}>Income</span>
+        {n > 0 && <span style={{ fontSize: 11.5, fontWeight: 600, color: COLORS.textFaint, flexShrink: 0 }}>{n} source{n === 1 ? "" : "s"}</span>}
+        <span style={{ marginLeft: "auto", fontSize: 14.5, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{fmtUsd(total, { compact: true })} / mo</span>
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5,
+            height: 30, padding: "0 12px", borderRadius: 100, cursor: "pointer", fontFamily: FONT,
+            fontSize: 12.5, fontWeight: 700, color: COLORS.accent,
+            background: COLORS.surface, border: `1px solid ${COLORS.accent}55`,
+          }}
+        >
+          <Icon d={ICON.edit} size={12} />
+          Edit
+        </button>
+      </div>
+    );
+  }
+
   return (
     <BlockCard
       title="Income"
       sub={`${fmtUsd(total, { compact: true })} / mo`}
-      accent={COLORS.green}
+      accent={COLORS.accent}
       icon={ICON.arrowUp}
-      count={state.income_sources.length > 0 ? `${state.income_sources.length} source${state.income_sources.length === 1 ? "" : "s"}` : null}
-      style={{ background: `linear-gradient(180deg, ${COLORS.greenBg} 0%, ${COLORS.surface} 60%)` }}
+      count={n > 0 ? `${n} source${n === 1 ? "" : "s"}` : null}
+      style={{ background: `linear-gradient(180deg, ${COLORS.accentSoft} 0%, ${COLORS.surface} 55%)` }}
     >
-      {state.income_sources.length === 0 && (
-        <div style={{ fontSize: 13, color: COLORS.textMuted, padding: "6px 0", fontStyle: "italic" }}>
-          Add your take-home pay to see what's left over.
-        </div>
+      {(
+        <>
+          {state.income_sources.length === 0 && (
+            <div style={{ fontSize: 13, color: COLORS.textMuted, padding: "6px 0", fontStyle: "italic" }}>
+              Add your take-home pay to see what's left over.
+            </div>
+          )}
+          {state.income_sources.map((i, idx) => (
+            <IncomeRow
+              key={idx}
+              source={i}
+              onChange={(patch) => updateState((s) => ({
+                ...s,
+                income_sources: s.income_sources.map((src, j) => j === idx ? { ...src, ...patch } : src),
+              }))}
+              onDelete={() => updateState((s) => ({
+                ...s,
+                income_sources: s.income_sources.filter((_, j) => j !== idx),
+              }))}
+            />
+          ))}
+          <AddRowButton
+            label="Add income"
+            accent={COLORS.accent}
+            onClick={() => updateState((s) => ({
+              ...s,
+              income_sources: [
+                ...s.income_sources,
+                { label: "New income", owner: "joint", source_type: "salary", frequency: "biweekly", net_amount_cents: 0 },
+              ],
+            }))}
+          />
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                height: 34, padding: "0 18px", borderRadius: 100, cursor: "pointer", fontFamily: FONT,
+                fontSize: 13, fontWeight: 800, color: "#fff", border: "none", background: COLORS.accent,
+              }}
+            >
+              <Icon d={ICON.check} size={14} />
+              Done
+            </button>
+          </div>
+        </>
       )}
-      {state.income_sources.map((i, idx) => (
-        <IncomeRow
-          key={idx}
-          source={i}
-          onChange={(patch) => updateState((s) => ({
-            ...s,
-            income_sources: s.income_sources.map((src, j) => j === idx ? { ...src, ...patch } : src),
-          }))}
-          onDelete={() => updateState((s) => ({
-            ...s,
-            income_sources: s.income_sources.filter((_, j) => j !== idx),
-          }))}
-        />
-      ))}
-      <AddRowButton
-        label="Add income"
-        accent={COLORS.green}
-        onClick={() => updateState((s) => ({
-          ...s,
-          income_sources: [
-            ...s.income_sources,
-            { label: "New income", owner: "joint", source_type: "salary", frequency: "biweekly", net_amount_cents: 0 },
-          ],
-        }))}
-      />
     </BlockCard>
   );
 }
 
 function IncomeRow({ source, onChange, onDelete }) {
-  const [hovered, setHovered] = useState(false);
-  const showDelete = hovered;
+  const monthly = incomeMonthly(source);
+  const cadence = {
+    weekly: "paid weekly · 52 checks/yr",
+    biweekly: "paid every 2 weeks · 26 checks/yr",
+    semimonthly: "paid twice a month · 24 checks/yr",
+    monthly: "paid monthly · 12 checks/yr",
+    yearly: "paid once a year",
+  }[source.frequency] || "";
   return (
-    <div
-      className="bb-row bb-row-income bb-income-row"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto auto auto",
-        gap: 8, alignItems: "center", padding: "10px 4px",
-      }}
-    >
+    <div className="bb-row" style={{ padding: "10px 4px" }}>
+      <div
+        className="bb-income-row"
+        style={{
+          display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto auto auto",
+          gap: 8, alignItems: "center",
+        }}
+      >
       <InlineText value={source.label} onChange={(v) => onChange({ label: v })} />
       <select
         value={source.owner || "joint"}
@@ -1769,15 +1877,22 @@ function IncomeRow({ source, onChange, onDelete }) {
         onClick={onDelete}
         aria-label="Delete income"
         style={{
-          width: 22, height: 22, borderRadius: 6, border: "none", cursor: "pointer",
-          background: showDelete ? COLORS.redBg : "transparent",
-          color: showDelete ? COLORS.red : "transparent",
+          width: 30, height: 30, borderRadius: 999, border: "none", cursor: "pointer", flexShrink: 0,
+          background: COLORS.surfaceTint, color: COLORS.textMuted,
           display: "grid", placeItems: "center",
-          transition: "all 0.12s ease",
+          transition: "background 0.12s ease, color 0.12s ease",
         }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = COLORS.surfaceTint; e.currentTarget.style.color = COLORS.textMuted; }}
       >
-        <Icon d={ICON.x} size={12} />
+        <Icon d={ICON.x} size={14} />
       </button>
+      </div>
+      {/* Make the cadence math transparent — biweekly is 26 checks a year,
+          so the monthly figure is more than a single check (≈2.17×). */}
+      <div style={{ marginTop: 5, fontSize: 11, color: COLORS.textFaint, fontWeight: 500 }}>
+        ≈ <span style={{ fontWeight: 700, color: COLORS.textMuted, fontVariantNumeric: "tabular-nums" }}>{fmtUsd(monthly)}</span>/mo{cadence ? ` · ${cadence}` : ""}
+      </div>
     </div>
   );
 }
@@ -4904,12 +5019,13 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
               />
             </label>
             {(from || to) && (() => {
-              // Two equal half-width slots (FROM on the left, TO on the
-              // right). An unselected side is an empty spacer, so a single
-              // pill keeps the exact size + position it'll have once both
-              // are chosen.
+              // Layout is fixed (two 50% slots) so nothing ever reflows.
+              // A lone pill is just translated to the center; when the other
+              // side is picked it slides back into its half (transform only =
+              // smooth, GPU-accelerated) while the new pill fades in.
+              const ease = "cubic-bezier(0.2, 0.75, 0.3, 1)";
               const pill = (label, after) => (
-                <div style={{ flex: 1, background: "rgba(255,255,255,0.16)", borderRadius: 14, padding: "11px 13px", minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.16)", borderRadius: 14, padding: "11px 13px", minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{categoryEmoji(label, groupOf(label))}</span>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label} after</div>
@@ -4917,10 +5033,25 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
                   </div>
                 </div>
               );
+              const both = !!from && !!to;
               return (
-                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  {from ? pill(from, fromAfter) : <div style={{ flex: 1 }} />}
-                  {to ? pill(to, toAfter) : <div style={{ flex: 1 }} />}
+                <div style={{ display: "flex", gap: 8, marginTop: 16, alignItems: "stretch" }}>
+                  {/* FROM (left half) — centered when it's the only pill. */}
+                  <div style={{ flex: 1, minWidth: 0, willChange: "transform, opacity",
+                    opacity: from ? 1 : 0,
+                    transform: from ? (both ? "none" : "translateX(calc(50% + 4px))") : "none",
+                    transition: `transform 0.4s ${ease}, opacity 0.3s ease`,
+                  }}>
+                    {from && pill(from, fromAfter)}
+                  </div>
+                  {/* INTO (right half) — centered when alone, slides right when FROM appears. */}
+                  <div style={{ flex: 1, minWidth: 0, willChange: "transform, opacity",
+                    opacity: to ? 1 : 0,
+                    transform: to ? (both ? "none" : "translateX(calc(-50% - 4px))") : "none",
+                    transition: `transform 0.4s ${ease}, opacity 0.3s ease`,
+                  }}>
+                    {to && pill(to, toAfter)}
+                  </div>
                 </div>
               );
             })()}
@@ -4968,9 +5099,16 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
   );
 }
 
-function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
+function EnvelopesView({ state, updateState, activeMonth, setActiveMonth, autoOpenMove, onAutoOpenConsumed }) {
   const isMobile = useIsMobile();
   const [moveOpen, setMoveOpen] = useState(false);
+  // Launched from More → "Move money": open the sheet once, then clear the flag.
+  useEffect(() => {
+    if (autoOpenMove) {
+      setMoveOpen(true);
+      onAutoOpenConsumed?.();
+    }
+  }, [autoOpenMove, onAutoOpenConsumed]);
   const grouped = useMemo(() => {
     const g = {};
     for (const c of state.categories) {
@@ -5007,7 +5145,10 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
   const breakdown = useMemo(() => {
     if (totalBudget === 0) return [];
     const order = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
-    return order
+    // Append any non-standard group keys so EVERY envelope is represented
+    // and the slices always sum to the full budget — no silent drops.
+    const keys = [...order, ...Object.keys(grouped).filter((g) => !order.includes(g))];
+    return keys
       .map((g) => {
         const items = grouped[g];
         if (!items || items.length === 0) return null;
@@ -5024,7 +5165,10 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
   }, [grouped, totalBudget, state]);
 
   const groupOrder = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
-  const populated = groupOrder.filter((g) => (grouped[g] || []).length > 0);
+  // Standard groups first, then any non-standard group keys, so no envelope
+  // is ever hidden from the list.
+  const allGroupKeys = [...groupOrder, ...Object.keys(grouped).filter((g) => !groupOrder.includes(g))];
+  const populated = allGroupKeys.filter((g) => (grouped[g] || []).length > 0);
   // Always offer common groups so the user can drop a new envelope into
   // Housing / Food / Personal even before any exists in them.
   const emptyCommon = groupOrder.filter((g) =>
@@ -5231,9 +5375,17 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
 
       <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
       <div style={{ marginTop: 12 }}>
-        <button onClick={() => setMoveOpen(true)} style={{ ...btn("ghost") }}>
-          <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={14} />
-          Move money
+        <button
+          onClick={() => setMoveOpen(true)}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
+            height: 52, borderRadius: 16, border: "none", cursor: "pointer", fontFamily: FONT,
+            fontSize: 15.5, fontWeight: 800, letterSpacing: "-0.01em", color: COLORS.heroInk,
+            background: COLORS.heroBg, boxShadow: "0 10px 26px rgba(18,81,173,0.32)",
+          }}
+        >
+          <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={19} />
+          Move money between envelopes
         </button>
       </div>
       {moveOpen && (
@@ -6461,19 +6613,44 @@ function GoalsView({ state, updateState }) {
   }));
 
   return (
-    <div>
-      <DrillTitle
-        title="Goals"
-        subtitle="Pin the big numbers you're working toward. Progress + ETA update automatically."
-        icon="M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6"
-        iconColor="#c88318"
-        iconBg="rgba(200,131,24,0.10)"
-        heroValue={`${active.length}`}
-        heroLabel={`active${achieved.length > 0 ? ` · ${achieved.length} achieved` : ""}`}
-      />
+    // Pinned to the "daylight" palette so Goals always carries the approved
+    // blue->pink flagship look, matching the This Month screen.
+    <div data-bb-theme="daylight">
+      <section style={{
+        borderRadius: RADII.xl, padding: "22px", marginBottom: 16,
+        color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg,
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 13, marginBottom: 16 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 13, flexShrink: 0,
+            background: "rgba(255,255,255,0.16)", display: "grid", placeItems: "center",
+          }}>
+            <Icon d="M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6" size={22} />
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h2 style={{ fontSize: 23, fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.15 }}>Goals</h2>
+            <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.45, color: COLORS.heroInkSoft }}>
+              Pin the big numbers you&apos;re working toward. Progress + ETA update automatically.
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 9 }}>
+          <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+            {active.length}
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: COLORS.heroInkSoft }}>
+            active{achieved.length > 0 ? ` · ${achieved.length} achieved` : ""}
+          </div>
+        </div>
+      </section>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-        <button onClick={() => setPickerOpen(true)} style={btn("primary")}>
+        <button onClick={() => setPickerOpen(true)} style={{
+          background: COLORS.accent, color: COLORS.onAccent, border: "none", borderRadius: 100,
+          padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
+          display: "inline-flex", alignItems: "center", gap: 8, fontFamily: FONT,
+          boxShadow: "0 6px 16px rgba(18,81,173,0.28)",
+        }}>
           <Icon d={["M12 5v14", "M5 12h14"]} size={14} />
           Add from template
         </button>
@@ -6487,6 +6664,7 @@ function GoalsView({ state, updateState }) {
         <GoalTemplatePicker
           state={state}
           onPick={(tpl) => { addFromTemplate(tpl); setPickerOpen(false); }}
+          onCustom={() => { addBlank(); setPickerOpen(false); }}
           onClose={() => setPickerOpen(false)}
         />
       )}
@@ -6605,7 +6783,12 @@ function GoalsView({ state, updateState }) {
 function GoalCard({ goal, state, monthlyRate, onChange, onDelete, onComplete }) {
   const g = goal;
   const prog = computeGoalProgress(g, state, monthlyRate);
-  const accent = "#c88318";
+  const meta = goalKindMeta(g.kind);
+  const emoji = g.emoji || meta.emoji;            // per-goal icon override
+  const accent = g.color || meta.accent;          // per-goal color override
+  const chipBg = g.color ? `${g.color}1A` : meta.bg;
+  const [customizing, setCustomizing] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
 
   // Milestone positions as percentages along the progress bar.
   const sortedMilestones = (g.milestones || []).slice().sort((a, b) => {
@@ -6626,7 +6809,29 @@ function GoalCard({ goal, state, monthlyRate, onChange, onDelete, onComplete }) 
           size={88}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <InlineText value={g.label} onChange={(v) => onChange({ label: v })} />
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                onClick={() => setEmojiOpen((o) => !o)}
+                aria-label="Change icon"
+                title="Change icon"
+                style={{
+                  width: 30, height: 30, borderRadius: 10, border: "none", cursor: "pointer", padding: 0,
+                  background: chipBg, display: "grid", placeItems: "center", fontSize: 16, lineHeight: 1,
+                }}
+              >{emoji}</button>
+              {emojiOpen && (
+                <EmojiGridPopover
+                  current={emoji}
+                  onPick={(e) => onChange({ emoji: e })}
+                  onClose={() => setEmojiOpen(false)}
+                />
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <InlineText value={g.label} onChange={(v) => onChange({ label: v })} />
+            </div>
+          </div>
           <div style={{ marginTop: 6, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 18, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums" }}>
               {prog.unit === "money" ? fmtCompact(prog.value) : prog.value}
@@ -6641,45 +6846,124 @@ function GoalCard({ goal, state, monthlyRate, onChange, onDelete, onComplete }) 
               ETA · {formatEta(prog.etaMonths)}
             </div>
           )}
-          <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-            <select
-              value={g.kind}
-              onChange={(e) => onChange({ kind: e.target.value })}
-              aria-label="Goal kind"
-              style={pillSelectStyle()}
+          <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={GOAL_FIELD_LABEL}>Type</span>
+              <select
+                value={g.kind}
+                onChange={(e) => onChange({ kind: e.target.value })}
+                aria-label="Goal kind"
+                style={{
+                  ...pillSelectStyle(),
+                  height: 34, fontSize: 11, padding: "0 26px 0 12px",
+                  backgroundColor: chipBg,
+                  color: accent,
+                  borderColor: `${accent}55`,
+                }}
+              >
+                <option value="net_worth">Net worth</option>
+                <option value="property_count">Property count</option>
+                <option value="rental_income">Rental income</option>
+                <option value="debt_payoff">Debt payoff</option>
+                <option value="savings">Savings</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+
+            {/* TARGET — clearly labeled + boxed with a pencil so it's obvious
+                this is the number the PM edits. */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={GOAL_FIELD_LABEL}>Target{g.kind === "property_count" ? " · properties" : ""}</span>
+              <div style={goalFieldBox(accent)}>
+                <Icon d={ICON.edit} size={12} color={accent} />
+                {g.kind === "property_count" ? (
+                  <InlineNumber
+                    value={g.target_count || 0}
+                    onChange={(v) => onChange({ target_count: Math.max(1, Math.round(v)) })}
+                    width={70}
+                    min={1}
+                    mode="integer"
+                    allowNegative={false}
+                  />
+                ) : (
+                  <InlineNumber
+                    value={g.target_cents}
+                    onChange={(v) => onChange({ target_cents: v })}
+                    width={116}
+                    min={1}
+                    allowNegative={false}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* CURRENT — only for kinds whose progress is entered by hand
+                (net worth / properties / rental income are auto-computed). */}
+            {(g.kind === "custom" || g.kind === "savings" || g.kind === "debt_payoff") && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={GOAL_FIELD_LABEL}>Current</span>
+                <div style={goalFieldBox(accent)}>
+                  <Icon d={ICON.edit} size={12} color={accent} />
+                  <InlineNumber
+                    value={g.current_value_cents || 0}
+                    onChange={(v) => onChange({ current_value_cents: v })}
+                    width={116}
+                    allowNegative={false}
+                  />
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => setCustomizing((c) => !c)}
+              style={{
+                height: 34, padding: "0 14px", borderRadius: 100, cursor: "pointer", fontFamily: FONT,
+                fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 6,
+                border: `1px solid ${customizing ? accent : COLORS.border}`,
+                background: customizing ? `${accent}14` : COLORS.surface,
+                color: customizing ? accent : COLORS.textMuted,
+                transition: "all 0.12s ease",
+              }}
             >
-              <option value="net_worth">Net worth</option>
-              <option value="property_count">Property count</option>
-              <option value="rental_income">Rental income</option>
-              <option value="debt_payoff">Debt payoff</option>
-              <option value="savings">Savings</option>
-              <option value="custom">Custom</option>
-            </select>
-            {g.kind === "property_count" ? (
-              <InlineNumber
-                value={(g.target_count || 0) * 100}
-                onChange={(v) => onChange({ target_count: Math.max(1, Math.round(v / 100)) })}
-                width={80}
-                min={100}
-                allowNegative={false}
-              />
-            ) : (
-              <InlineNumber
-                value={g.target_cents}
-                onChange={(v) => onChange({ target_cents: v })}
-                width={120}
-                min={1}
-                allowNegative={false}
-              />
-            )}
-            {g.kind === "custom" && (
-              <InlineNumber
-                value={g.current_value_cents || 0}
-                onChange={(v) => onChange({ current_value_cents: v })}
-                width={120}
-              />
-            )}
+              <Icon d={ICON.gear} size={13} />
+              Customize
+            </button>
           </div>
+
+          {customizing && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${COLORS.surfaceTint}` }}>
+              <span style={{ ...GOAL_FIELD_LABEL, display: "block", marginBottom: 8 }}>Color</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                {GOAL_COLOR_CHOICES.map((c) => {
+                  const on = accent === c;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => onChange({ color: c })}
+                      aria-label={`Set color ${c}`}
+                      style={{
+                        width: 26, height: 26, borderRadius: 999, cursor: "pointer", background: c,
+                        border: on ? `2px solid ${COLORS.text}` : "2px solid transparent",
+                        boxShadow: on ? "none" : "inset 0 0 0 1px rgba(0,0,0,0.06)",
+                        transition: "transform 0.1s ease",
+                      }}
+                    />
+                  );
+                })}
+                {(g.color || g.emoji) && (
+                  <button
+                    onClick={() => onChange({ color: null, emoji: null })}
+                    style={{ ...textBtnStyle(), width: "auto", fontSize: 11.5, fontWeight: 700, color: COLORS.textMuted }}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+              <div style={{ marginTop: 10, fontSize: 11.5, color: COLORS.textMuted, fontWeight: 500 }}>
+                Tap the icon next to the name to change the emoji.
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -6742,14 +7026,15 @@ function GoalCard({ goal, state, monthlyRate, onChange, onDelete, onComplete }) 
           onClick={onDelete}
           aria-label="Delete goal"
           style={{
-            width: 28, height: 28, borderRadius: 8, border: `1px solid ${COLORS.border}`,
-            background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer",
-            display: "grid", placeItems: "center",
+            width: 36, height: 36, borderRadius: 999, border: "none",
+            background: COLORS.surfaceTint, color: COLORS.textMuted, cursor: "pointer",
+            display: "grid", placeItems: "center", flexShrink: 0,
+            transition: "background 0.12s ease, color 0.12s ease",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLORS.red; e.currentTarget.style.color = COLORS.red; e.currentTarget.style.background = COLORS.redBg; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.color = COLORS.textMuted; e.currentTarget.style.background = COLORS.surface; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = COLORS.red; e.currentTarget.style.background = COLORS.redBg; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = COLORS.textMuted; e.currentTarget.style.background = COLORS.surfaceTint; }}
         >
-          <Icon d={ICON.x} size={14} />
+          <Icon d={ICON.x} size={16} />
         </button>
       </div>
     </div>
@@ -6820,7 +7105,71 @@ function GoalTrajectory({ goal, state, accent, target }) {
   );
 }
 
-function GoalTemplatePicker({ state, onPick, onClose }) {
+// Per-kind identity for the template picker. Emoji is intentional on this
+// budget surface (the documented emoji exception), giving each template a
+// glanceable chip instead of a wall of text rows.
+const GOAL_KIND_META = {
+  net_worth:      { emoji: "💰", label: "Net Worth",     bg: "rgba(18,81,173,0.10)",  accent: "#1251AD" },
+  property_count: { emoji: "🏠", label: "Properties",    bg: "rgba(255,73,152,0.12)", accent: "#FF4998" },
+  rental_income:  { emoji: "🏘️", label: "Rental Income", bg: "rgba(30,169,124,0.12)", accent: "#1ea97c" },
+  debt_payoff:    { emoji: "💳", label: "Debt Payoff",   bg: "rgba(214,69,69,0.10)",  accent: "#d64545" },
+  savings:        { emoji: "🛟", label: "Savings",       bg: "rgba(140,90,217,0.12)", accent: "#8c5ad9" },
+  custom:         { emoji: "🏝️", label: "Custom",        bg: "rgba(196,127,14,0.12)", accent: "#c47f0e" },
+};
+const goalKindMeta = (kind) => GOAL_KIND_META[kind] || { emoji: "⭐", label: kind, bg: "rgba(18,81,173,0.10)", accent: "#1251AD" };
+const GOAL_KIND_ORDER = ["net_worth", "property_count", "rental_income", "debt_payoff", "savings", "custom"];
+
+// Curated palettes for per-goal customization. Emoji is the documented
+// exception on this budget surface; colors are brand-leaning.
+const GOAL_EMOJI_CHOICES = [
+  "💰", "🏠", "🏘️", "🏢", "🏡", "💳", "🐷", "🛟", "📈", "📉",
+  "🚗", "✈️", "🏝️", "🏖️", "💍", "🎓", "👶", "🛠️", "💵", "🪙",
+  "🏆", "⭐", "🎯", "🔥", "💎", "⛵", "🚀", "🎁", "❤️", "📚",
+  "💼", "🌴", "🏥", "🧱", "🏍️", "🛥️", "🎄", "🍼", "🌟", "🪜",
+];
+const GOAL_COLOR_CHOICES = [
+  "#1251AD", "#1665D8", "#0ea5b7", "#1ea97c", "#0f9d58",
+  "#c47f0e", "#e0399a", "#FF4998", "#d64545", "#8c5ad9", "#4f46e5", "#475569",
+];
+
+// Shared styling for the labeled, obviously-editable Target/Current fields
+// on a goal card.
+const GOAL_FIELD_LABEL = { fontSize: 9, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--bb-text-faint)" };
+const goalFieldBox = (accent) => ({
+  display: "inline-flex", alignItems: "center", gap: 4,
+  border: `1px solid ${accent}40`, borderRadius: 10, padding: "1px 8px 1px 9px",
+  background: "var(--bb-surface)",
+});
+
+// Small anchored popover grid for picking a goal's emoji. Parent must be
+// position:relative. Click-away closes via the full-screen catcher.
+function EmojiGridPopover({ current, onPick, onClose }) {
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
+      <div style={{
+        position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 61,
+        background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 14,
+        boxShadow: COLORS.shadowLg, padding: 8, width: 248,
+        display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 2,
+      }}>
+        {GOAL_EMOJI_CHOICES.map((e) => (
+          <button
+            key={e}
+            onClick={() => { onPick(e); onClose(); }}
+            style={{
+              width: 27, height: 27, borderRadius: 8, border: "none", cursor: "pointer",
+              background: e === current ? COLORS.surfaceTint : "transparent",
+              fontSize: 16, lineHeight: 1, padding: 0,
+            }}
+          >{e}</button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function GoalTemplatePicker({ state, onPick, onClose, onCustom }) {
   return (
     <div
       onClick={onClose}
@@ -6830,7 +7179,9 @@ function GoalTemplatePicker({ state, onPick, onClose }) {
         display: "grid", placeItems: "center", padding: 20,
       }}
     >
+      {/* Daylight-pinned so the sheet carries the flagship blue->pink palette. */}
       <div
+        data-bb-theme="daylight"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: COLORS.surface, borderRadius: 24,
@@ -6840,62 +7191,113 @@ function GoalTemplatePicker({ state, onPick, onClose }) {
           fontFamily: FONT,
         }}
       >
+        {/* Gradient header band — ties the sheet to the Goals hero. */}
         <div style={{
-          padding: "18px 20px 14px", borderBottom: `1px solid ${COLORS.surfaceTint}`,
-          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "20px 20px 18px", color: COLORS.heroInk, background: COLORS.heroBg,
+          display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12,
         }}>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.02em" }}>Pick a goal template</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: COLORS.textMuted }}>You can edit anything after adding.</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+              background: "rgba(255,255,255,0.18)", display: "grid", placeItems: "center", fontSize: 20,
+            }}>🎯</div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.02em" }}>Pick a goal template</div>
+              <div style={{ marginTop: 3, fontSize: 12.5, color: COLORS.heroInkSoft }}>You can edit anything after adding.</div>
+            </div>
           </div>
           <button onClick={onClose} aria-label="Close" style={{
-            width: 32, height: 32, borderRadius: 10, border: `1px solid ${COLORS.border}`,
-            background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer",
+            width: 32, height: 32, borderRadius: 10, border: "none", flexShrink: 0,
+            background: "rgba(255,255,255,0.18)", color: COLORS.heroInk, cursor: "pointer",
             display: "grid", placeItems: "center",
           }}>
             <Icon d={ICON.x} size={14} />
           </button>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
-          <div style={{ display: "grid", gap: 8 }}>
-            {GOAL_TEMPLATES.map((tpl) => {
-              const resolved = templateToGoal(tpl, state);
-              const targetLabel = tpl.kind === "property_count"
-                ? `${resolved.target_count} properties`
-                : fmtCompact(resolved.target_cents);
-              const kindLabel = {
-                net_worth: "Net Worth",
-                property_count: "Properties",
-                rental_income: "Rental Income",
-                debt_payoff: "Debt Payoff",
-                savings: "Savings",
-                custom: "Custom",
-              }[tpl.kind] || tpl.kind;
-              return (
-                <button
-                  key={tpl.label}
-                  onClick={() => onPick(tpl)}
-                  style={{
-                    display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "center",
-                    padding: "12px 14px", borderRadius: 12,
-                    background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-                    cursor: "pointer", textAlign: "left", fontFamily: FONT,
-                    transition: "all 0.12s ease",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = COLORS.accent; e.currentTarget.style.background = COLORS.surfaceTint; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.background = COLORS.surface; }}
-                >
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>{tpl.label}</div>
-                    <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                      {kindLabel}{tpl.milestones?.length ? ` · ${tpl.milestones.length} milestones` : ""}
-                    </div>
+        <div style={{ flex: 1, overflowY: "auto", padding: 12, background: COLORS.surfaceTint }}>
+          {/* Templates grouped by kind so a long list stays scannable. */}
+          {GOAL_KIND_ORDER.map((kind) => {
+            const items = GOAL_TEMPLATES.filter((t) => t.kind === kind);
+            if (!items.length) return null;
+            const km = goalKindMeta(kind);
+            return (
+              <div key={kind} style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "2px 4px 8px" }}>
+                  <span style={{ fontSize: 15, lineHeight: 1 }}>{km.emoji}</span>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textMuted }}>{km.label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textFaint }}>· {items.length}</span>
+                </div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {items.map((tpl) => {
+                    const resolved = templateToGoal(tpl, state);
+                    const targetLabel = tpl.kind === "property_count"
+                      ? `${resolved.target_count} properties`
+                      : fmtCompact(resolved.target_cents);
+                    return (
+                      <button
+                        key={tpl.label}
+                        onClick={() => onPick(tpl)}
+                        style={{
+                          display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto auto", gap: 12, alignItems: "center",
+                          padding: "12px 14px", borderRadius: 14,
+                          background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+                          cursor: "pointer", textAlign: "left", fontFamily: FONT,
+                          boxShadow: COLORS.shadow, transition: "transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = km.accent; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = COLORS.shadowLg; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = COLORS.shadow; }}
+                      >
+                        <span style={{
+                          width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                          background: km.bg, display: "grid", placeItems: "center", fontSize: 19, lineHeight: 1,
+                        }}>{km.emoji}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tpl.label}</div>
+                          <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textFaint, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                            {km.label}{tpl.milestones?.length ? ` · ${tpl.milestones.length} milestones` : ""}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: km.accent, fontVariantNumeric: "tabular-nums" }}>{targetLabel}</div>
+                        <span style={{ fontSize: 18, lineHeight: 1, color: COLORS.textFaint }}>›</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Build-from-scratch escape hatch — sits below the presets so the
+              PM never feels boxed in by the templates. */}
+          {onCustom && (
+              <button
+                onClick={onCustom}
+                style={{
+                  display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 12, alignItems: "center",
+                  padding: "12px 14px", borderRadius: 14, marginTop: 4,
+                  background: COLORS.accentSoft, border: `1.5px dashed ${COLORS.accent}`,
+                  cursor: "pointer", textAlign: "left", fontFamily: FONT,
+                  transition: "transform 0.12s ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
+              >
+                <span style={{
+                  width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                  background: "rgba(255,255,255,0.75)", color: COLORS.accent,
+                  display: "grid", placeItems: "center",
+                }}>
+                  <Icon d={["M12 5v14", "M5 12h14"]} size={18} />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: COLORS.accent }}>Create your own</div>
+                  <div style={{ marginTop: 2, fontSize: 11.5, color: COLORS.textMuted, fontWeight: 600 }}>
+                    Start from a blank goal and set your own target
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums" }}>{targetLabel}</div>
-                </button>
-              );
-            })}
-          </div>
+                </div>
+                <span style={{ fontSize: 18, lineHeight: 1, color: COLORS.accent }}>›</span>
+              </button>
+            )}
         </div>
       </div>
     </div>
@@ -7694,7 +8096,7 @@ const SIDEBAR_SECTIONS = [
   { id: "goals",        label: "Goals",        icon: "M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6", accent: "#c88318", emoji: "🎯" },
   { id: "achievements", label: "Achievements", icon: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2z", accent: "#8c5ad9", emoji: "🏆" },
   { id: "settings",     label: "Settings",     icon: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", accent: "#5f6675", emoji: "⚙️" },
-  { id: "more",         label: "More",         icon: "M5 12h.01 M12 12h.01 M19 12h.01", accent: "#5f6675", emoji: "⋯" },
+  { id: "more",         label: "More",         icon: "M5 12h.01 M12 12h.01 M19 12h.01", accent: "#5f6675", emoji: "🧰" },
 ];
 
 // Sections that exist only as mobile bottom-nav destinations — kept out
@@ -9139,13 +9541,14 @@ function NeedsAttention({ state, activeMonth, onOpen }) {
   if (flagged.length === 0) return null;
 
   return (
-    <section>
-      <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "0 4px 10px" }}>
+    // Thin red frame binds the header and the flagged envelope(s) together
+    // as one "needs attention" group.
+    <section style={{ border: `1.5px solid ${COLORS.red}`, background: COLORS.redBg, borderRadius: 18, padding: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "2px 4px 10px" }}>
         <span style={{ fontSize: 13, lineHeight: 1 }}>⚠️</span>
         <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: COLORS.red }}>
-          Needs attention
+          {flagged.length} envelope{flagged.length === 1 ? "" : "s"} need{flagged.length === 1 ? "s" : ""} attention
         </span>
-        <span style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 800, color: COLORS.textFaint }}>{flagged.length}</span>
       </div>
       <div style={{ ...STYLES.card, overflow: "hidden" }}>
         {flagged.map((r, i) => {
@@ -9207,7 +9610,7 @@ function MoneyView({ state, setDrill }) {
 
 // "More" nav destination — the sections that don't earn a bottom-bar
 // slot (Envelopes, Habits, Achievements, Settings).
-function MoreMenu({ onNavigate, isBasic }) {
+function MoreMenu({ onNavigate, isBasic, onMoveMoney }) {
   const ids = ["envelopes", "habits", "achievements", "settings"].filter(
     (id) => !(isBasic && (id === "habits" || id === "achievements")),
   );
@@ -9217,6 +9620,25 @@ function MoreMenu({ onNavigate, isBasic }) {
       <div style={{ margin: "0 0 16px" }}>
         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: COLORS.text }}>More</div>
       </div>
+      {/* Quick action — move money between envelopes without leaving for the
+          Envelopes screen first. */}
+      {onMoveMoney && (
+        <button
+          onClick={onMoveMoney}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 13, textAlign: "left",
+            padding: "15px 16px", marginBottom: 12, cursor: "pointer", fontFamily: FONT,
+            borderRadius: RADII.xl, border: "none", color: COLORS.heroInk,
+            background: COLORS.heroBg, boxShadow: "0 8px 22px rgba(18,81,173,0.28)",
+          }}
+        >
+          <span style={{ width: 34, height: 34, borderRadius: 11, flexShrink: 0, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.20)" }}>
+            <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={17} />
+          </span>
+          <span style={{ flex: 1, fontSize: 15, fontWeight: 800 }}>Move money</span>
+          <Icon d={ICON.chevR} size={16} />
+        </button>
+      )}
       <div style={{ ...STYLES.card, overflow: "hidden" }}>
         {ids.map((id, i) => {
           const s = byId[id];
@@ -9357,9 +9779,6 @@ function ThisMonthMobile({ state, updateState, activeMonth, setActiveMonth, onLo
         )}
       </section>
 
-      {/* LOG / MOVE */}
-      <QuickActionsRow onLog={onLog} onMove={() => openMove()} />
-
       {/* NEEDS ATTENTION — tap an over/near envelope to cover it by moving
           money in (NOT to log more spending). */}
       <NeedsAttention state={state} activeMonth={activeMonth} onOpen={(label, overage) => openMove(label, overage)} />
@@ -9409,15 +9828,20 @@ function ThisMonthMobile({ state, updateState, activeMonth, setActiveMonth, onLo
                   const near = !o && pct >= 85;
                   const barColor = o ? COLORS.red : near ? COLORS.amber : g.meta.accent;
                   return (
-                    <div key={r.label + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px 8px 16px", borderTop: `1px solid ${COLORS.surfaceTint}`, background: o ? COLORS.redBg : "transparent" }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 600, color: o ? COLORS.red : COLORS.text, flex: "0 0 84px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
-                      <span style={{ flex: 1, height: 6, borderRadius: 4, background: COLORS.surfaceTint, overflow: "hidden", minWidth: 0 }}>
+                    // Name + amount + log on the top line (name takes the full
+                    // width it needs), progress bar full-width underneath — so
+                    // envelope names never truncate just to make room for the bar.
+                    <div key={r.label + i} style={{ padding: "9px 8px 9px 16px", borderTop: `1px solid ${COLORS.surfaceTint}`, background: o ? COLORS.redBg : "transparent" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: o ? COLORS.red : COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+                        <span style={{ flexShrink: 0, fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: valueMode !== "left" ? COLORS.text : o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(valueOf(r))}</span>
+                        <button onClick={() => onLog(r.label)} aria-label={`Log to ${r.label}`} style={{ flexShrink: 0, width: 36, height: 36, borderRadius: 999, display: "grid", placeItems: "center", background: COLORS.accentSoft, border: "none", cursor: "pointer", color: COLORS.accent, fontFamily: FONT, fontSize: 20, fontWeight: 800, lineHeight: 1 }}>
+                          ＋
+                        </button>
+                      </div>
+                      <span style={{ display: "block", marginTop: 8, height: 6, borderRadius: 4, background: COLORS.surfaceTint, overflow: "hidden" }}>
                         <span style={{ display: "block", height: "100%", width: `${o ? 100 : pct}%`, borderRadius: 4, background: barColor }} />
                       </span>
-                      <span style={{ flex: "0 0 62px", textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: valueMode !== "left" ? COLORS.text : o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(valueOf(r))}</span>
-                      <button onClick={() => onLog(r.label)} aria-label={`Log to ${r.label}`} style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 999, display: "grid", placeItems: "center", background: COLORS.accentSoft, border: "none", cursor: "pointer", color: COLORS.accent, fontFamily: FONT, fontSize: 22, fontWeight: 800, lineHeight: 1 }}>
-                        ＋
-                      </button>
                     </div>
                   );
                 })}

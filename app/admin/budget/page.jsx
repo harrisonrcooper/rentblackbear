@@ -17,6 +17,13 @@ import { ErrorBoundary } from "./primitives/ErrorBoundary";
 
 export const dynamic = "force-dynamic";
 
+// Route-specific PWA manifest so Chrome's "Add to Home screen" installs
+// Budget as its own standalone app that opens directly to /admin/budget
+// (not /admin). Overrides the root manifest via the Metadata API.
+export const metadata = {
+  manifest: "/budget.webmanifest",
+};
+
 export default async function BudgetPage() {
   const { userId } = await auth();
   if (!userId) notFound();

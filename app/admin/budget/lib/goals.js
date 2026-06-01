@@ -7,94 +7,86 @@ import { computeNetWorthCents, propertyMonthlyGross } from "./calc";
 // Each one fills in sensible defaults; the user can edit anything
 // post-add. `target_cents: null` flags a dynamic field the picker
 // resolves at add-time (e.g. emergency fund = 6× monthly expenses).
+// Sum of the user's recurring monthly expenses, normalizing biweekly /
+// yearly cadences to a monthly figure. Used by the dynamic savings goals.
+function monthlyExpenses(state) {
+  return (state.categories || []).reduce(
+    (s, c) => s + (c.default_monthly_cents
+      || (c.default_biweekly_cents ? Math.round(c.default_biweekly_cents * 26 / 12)
+      : Math.round((c.default_yearly_cents || 0) / 12))),
+    0,
+  );
+}
+
 export const GOAL_TEMPLATES = [
-  {
-    label: "Hit $500k net worth",
-    kind: "net_worth",
-    target_cents: 50_000_000,
-    milestones: [
-      { id: "nw-100", label: "$100k", target_cents: 10_000_000 },
-      { id: "nw-250", label: "$250k", target_cents: 25_000_000 },
-    ],
-  },
-  {
-    label: "Hit $1M net worth",
-    kind: "net_worth",
-    target_cents: 100_000_000,
-    milestones: [
-      { id: "nw-250", label: "$250k", target_cents: 25_000_000 },
-      { id: "nw-500", label: "$500k", target_cents: 50_000_000 },
-      { id: "nw-750", label: "$750k", target_cents: 75_000_000 },
-    ],
-  },
-  {
-    label: "Hit $2M net worth",
-    kind: "net_worth",
-    target_cents: 200_000_000,
-    milestones: [
-      { id: "nw-500", label: "$500k", target_cents: 50_000_000 },
-      { id: "nw-1m",  label: "$1M",   target_cents: 100_000_000 },
-      { id: "nw-15m", label: "$1.5M", target_cents: 150_000_000 },
-    ],
-  },
-  {
-    label: "Own 5 properties",
-    kind: "property_count",
-    target_count: 5,
-    target_cents: 0,
-    milestones: [
-      { id: "p-2", label: "2 properties", target_count: 2 },
-      { id: "p-3", label: "3 properties", target_count: 3 },
-    ],
-  },
-  {
-    label: "Own 10 properties",
-    kind: "property_count",
-    target_count: 10,
-    target_cents: 0,
-    milestones: [
-      { id: "p-5",  label: "5 properties",  target_count: 5 },
-      { id: "p-7",  label: "7 properties",  target_count: 7 },
-    ],
-  },
-  {
-    label: "Pay off HELOC",
-    kind: "debt_payoff",
-    target_cents: 0, // dynamic — resolved at add-time using state
+  // ── Net worth ───────────────────────────────────────────────────────
+  { label: "Hit $100k net worth", kind: "net_worth", target_cents: 10_000_000,
+    milestones: [ { id: "nw-25", label: "$25k", target_cents: 2_500_000 }, { id: "nw-50", label: "$50k", target_cents: 5_000_000 } ] },
+  { label: "Hit $250k net worth", kind: "net_worth", target_cents: 25_000_000,
+    milestones: [ { id: "nw-50", label: "$50k", target_cents: 5_000_000 }, { id: "nw-100", label: "$100k", target_cents: 10_000_000 } ] },
+  { label: "Hit $500k net worth", kind: "net_worth", target_cents: 50_000_000,
+    milestones: [ { id: "nw-100", label: "$100k", target_cents: 10_000_000 }, { id: "nw-250", label: "$250k", target_cents: 25_000_000 } ] },
+  { label: "Hit $1M net worth", kind: "net_worth", target_cents: 100_000_000,
+    milestones: [ { id: "nw-250", label: "$250k", target_cents: 25_000_000 }, { id: "nw-500", label: "$500k", target_cents: 50_000_000 }, { id: "nw-750", label: "$750k", target_cents: 75_000_000 } ] },
+  { label: "Hit $2M net worth", kind: "net_worth", target_cents: 200_000_000,
+    milestones: [ { id: "nw-500", label: "$500k", target_cents: 50_000_000 }, { id: "nw-1m", label: "$1M", target_cents: 100_000_000 }, { id: "nw-15m", label: "$1.5M", target_cents: 150_000_000 } ] },
+  { label: "Hit $5M net worth", kind: "net_worth", target_cents: 500_000_000,
+    milestones: [ { id: "nw-1m", label: "$1M", target_cents: 100_000_000 }, { id: "nw-25m", label: "$2.5M", target_cents: 250_000_000 } ] },
+  { label: "Hit $10M net worth", kind: "net_worth", target_cents: 1_000_000_000,
+    milestones: [ { id: "nw-25m", label: "$2.5M", target_cents: 250_000_000 }, { id: "nw-5m", label: "$5M", target_cents: 500_000_000 } ] },
+
+  // ── Properties ──────────────────────────────────────────────────────
+  { label: "Own 3 properties", kind: "property_count", target_count: 3, target_cents: 0,
+    milestones: [ { id: "p-1", label: "1 property", target_count: 1 }, { id: "p-2", label: "2 properties", target_count: 2 } ] },
+  { label: "Own 5 properties", kind: "property_count", target_count: 5, target_cents: 0,
+    milestones: [ { id: "p-2", label: "2 properties", target_count: 2 }, { id: "p-3", label: "3 properties", target_count: 3 } ] },
+  { label: "Own 10 properties", kind: "property_count", target_count: 10, target_cents: 0,
+    milestones: [ { id: "p-5", label: "5 properties", target_count: 5 }, { id: "p-7", label: "7 properties", target_count: 7 } ] },
+  { label: "Own 20 properties", kind: "property_count", target_count: 20, target_cents: 0,
+    milestones: [ { id: "p-10", label: "10 properties", target_count: 10 }, { id: "p-15", label: "15 properties", target_count: 15 } ] },
+  { label: "Own 50 properties", kind: "property_count", target_count: 50, target_cents: 0,
+    milestones: [ { id: "p-25", label: "25 properties", target_count: 25 }, { id: "p-40", label: "40 properties", target_count: 40 } ] },
+
+  // ── Rental income ───────────────────────────────────────────────────
+  { label: "Rental income $2k / month", kind: "rental_income", target_cents: 200_000 },
+  { label: "Rental income $5k / month", kind: "rental_income", target_cents: 500_000,
+    milestones: [ { id: "r-1", label: "$1k/mo", target_cents: 100_000 }, { id: "r-25", label: "$2.5k/mo", target_cents: 250_000 } ] },
+  { label: "Rental income $10k / month", kind: "rental_income", target_cents: 1_000_000,
+    milestones: [ { id: "r-2", label: "$2k/mo", target_cents: 200_000 }, { id: "r-5", label: "$5k/mo", target_cents: 500_000 }, { id: "r-7", label: "$7.5k/mo", target_cents: 750_000 } ] },
+  { label: "Rental income $25k / month", kind: "rental_income", target_cents: 2_500_000,
+    milestones: [ { id: "r-10", label: "$10k/mo", target_cents: 1_000_000 }, { id: "r-15", label: "$15k/mo", target_cents: 1_500_000 } ] },
+
+  // ── Debt payoff ─────────────────────────────────────────────────────
+  { label: "Pay off HELOC", kind: "debt_payoff", target_cents: 0,
     dynamic: (state) => {
-      // Goal: pay down the current HELOC balance to zero. Set the
-      // target = original_amount_cents when present, else current balance.
       const heloc = (state.debts || []).find((d) => (d.kind || "") === "heloc");
       return { target_cents: heloc?.original_amount_cents || heloc?.balance_cents || 0 };
-    },
-  },
-  {
-    label: "Emergency fund (6 months expenses)",
-    kind: "savings",
-    target_cents: 0, // dynamic
-    dynamic: (state) => {
-      const monthly = (state.categories || []).reduce(
-        (s, c) => s + (c.default_monthly_cents || (c.default_biweekly_cents ? Math.round(c.default_biweekly_cents * 26 / 12) : Math.round((c.default_yearly_cents || 0) / 12))),
-        0,
-      );
-      return { target_cents: monthly * 6 };
-    },
-  },
-  {
-    label: "Rental income $10k / month",
-    kind: "rental_income",
-    target_cents: 1_000_000,
-    milestones: [
-      { id: "r-2", label: "$2k/mo", target_cents: 200_000 },
-      { id: "r-5", label: "$5k/mo", target_cents: 500_000 },
-      { id: "r-7", label: "$7.5k/mo", target_cents: 750_000 },
-    ],
-  },
-  {
-    label: "Vacation fund ($5k)",
-    kind: "custom",
-    target_cents: 500_000,
-  },
+    } },
+  { label: "Pay off all debt", kind: "debt_payoff", target_cents: 0,
+    dynamic: (state) => ({ target_cents: (state.debts || []).reduce((s, d) => s + (d.original_amount_cents || d.balance_cents || 0), 0) }) },
+  { label: "Pay off the mortgage", kind: "debt_payoff", target_cents: 30_000_000 },
+  { label: "Pay off car loan", kind: "debt_payoff", target_cents: 3_500_000 },
+  { label: "Kill credit card debt", kind: "debt_payoff", target_cents: 1_000_000 },
+  { label: "Pay off student loans", kind: "debt_payoff", target_cents: 5_000_000 },
+
+  // ── Savings ─────────────────────────────────────────────────────────
+  { label: "Emergency fund (3 months)", kind: "savings", target_cents: 0,
+    dynamic: (state) => ({ target_cents: monthlyExpenses(state) * 3 }) },
+  { label: "Emergency fund (6 months)", kind: "savings", target_cents: 0,
+    dynamic: (state) => ({ target_cents: monthlyExpenses(state) * 6 }) },
+  { label: "$10k cash cushion", kind: "savings", target_cents: 1_000_000 },
+  { label: "$25k cash reserve", kind: "savings", target_cents: 2_500_000 },
+  { label: "$50k cash reserve", kind: "savings", target_cents: 5_000_000 },
+  { label: "Down payment fund ($60k)", kind: "savings", target_cents: 6_000_000 },
+
+  // ── Custom / life ───────────────────────────────────────────────────
+  { label: "Vacation fund ($5k)", kind: "custom", target_cents: 500_000 },
+  { label: "New car ($40k)", kind: "custom", target_cents: 4_000_000 },
+  { label: "Dream wedding ($30k)", kind: "custom", target_cents: 3_000_000 },
+  { label: "Home renovation ($25k)", kind: "custom", target_cents: 2_500_000 },
+  { label: "Dream home down payment ($100k)", kind: "custom", target_cents: 10_000_000 },
+  { label: "College fund ($100k)", kind: "custom", target_cents: 10_000_000 },
+  { label: "Retirement nest egg ($1M)", kind: "custom", target_cents: 100_000_000 },
 ];
 
 // Resolve a template into a concrete goal payload (with id + timestamp).

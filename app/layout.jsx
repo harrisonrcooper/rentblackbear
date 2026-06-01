@@ -28,6 +28,10 @@ const jetBrainsMono = JetBrains_Mono({
 export const metadata = {
   title: 'PropOS | Property Management', // TODO(saas): drive from settings.companyName
   description: 'Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities included.',
+  // Linked via the Metadata API (not a hardcoded <link>) so nested routes
+  // — e.g. /admin/budget — can override it with their own manifest and be
+  // installed as a standalone home-screen app that opens to the right URL.
+  manifest: '/manifest.json',
   openGraph: {
     title: 'PropOS | Property Management',
     description: 'Rent by the bedroom in fully furnished homes. WiFi, cleaning, parking, and utilities included.',
@@ -64,7 +68,6 @@ export default function RootLayout({ children }) {
               the existing admin; Inter / Source Serif 4 / JetBrains Mono
               are served self-hosted via next/font above. */}
           <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-          <link rel="manifest" href="/manifest.json" />
           <meta name="theme-color" content="#1a1714" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

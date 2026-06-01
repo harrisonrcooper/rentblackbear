@@ -1,33 +1,32 @@
-// ── PropOS — Service Worker ──
-const CACHE_NAME = "bb-portal-v1";
-const PRECACHE = ["/portal"];
-
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
-  );
+// ── Self-destructing service worker ──
+// A previous version of this worker cached the app shell and JS chunks,
+// which left stale assets in browsers (code changes wouldn't show up after
+// a reload). Nothing registers a service worker anymore, so this script
+// now exists only to unregister any lingering worker, wipe every cache it
+// created, and force open tabs to reload onto fresh assets.
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      // Delete every cache this origin created.
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+      // Unregister this worker so it never intercepts a fetch again.
+      await self.registration.unregister();
+      // Reload any open clients so they fetch fresh, uncached assets.
+      const clients = await self.clients.matchAll({ type: "window" });
+      for (const client of clients) {
+        client.navigate(client.url);
+      }
+    })(),
   );
-  self.clients.claim();
 });
 
-self.addEventListener("fetch", (e) => {
-  // Network-first for API calls, cache-first for static assets
-  if (e.request.url.includes("/api/")) return;
-  e.respondWith(
-    fetch(e.request)
-      .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-        return res;
-      })
-      .catch(() => caches.match(e.request))
-  );
+// While still alive for this final cycle, never serve from cache — always
+// go straight to the network.
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
 });
