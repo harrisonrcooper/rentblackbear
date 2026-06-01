@@ -9403,13 +9403,13 @@ function ThisMonthMobile({ state, updateState, activeMonth, setActiveMonth, onLo
                   const near = !o && pct >= 85;
                   const barColor = o ? COLORS.red : near ? COLORS.amber : g.meta.accent;
                   return (
-                    <div key={r.label + i} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 14px 10px 16px", borderTop: `1px solid ${COLORS.surfaceTint}`, background: o ? COLORS.redBg : "transparent" }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 600, color: o ? COLORS.red : COLORS.text, flex: "0 0 88px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+                    <div key={r.label + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 10px 8px 16px", borderTop: `1px solid ${COLORS.surfaceTint}`, background: o ? COLORS.redBg : "transparent" }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 600, color: o ? COLORS.red : COLORS.text, flex: "0 0 84px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
                       <span style={{ flex: 1, height: 6, borderRadius: 4, background: COLORS.surfaceTint, overflow: "hidden", minWidth: 0 }}>
                         <span style={{ display: "block", height: "100%", width: `${o ? 100 : pct}%`, borderRadius: 4, background: barColor }} />
                       </span>
-                      <span style={{ flex: "0 0 64px", textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: valueMode !== "left" ? COLORS.text : o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(valueOf(r))}</span>
-                      <button onClick={() => onLog(r.label)} aria-label={`Log to ${r.label}`} style={{ flex: "0 0 26px", display: "grid", placeItems: "center", background: "transparent", border: "none", cursor: "pointer", color: COLORS.accent, fontFamily: FONT, fontSize: 19, fontWeight: 800, lineHeight: 1 }}>
+                      <span style={{ flex: "0 0 62px", textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: valueMode !== "left" ? COLORS.text : o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(valueOf(r))}</span>
+                      <button onClick={() => onLog(r.label)} aria-label={`Log to ${r.label}`} style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 999, display: "grid", placeItems: "center", background: COLORS.accentSoft, border: "none", cursor: "pointer", color: COLORS.accent, fontFamily: FONT, fontSize: 22, fontWeight: 800, lineHeight: 1 }}>
                         ＋
                       </button>
                     </div>
