@@ -9303,7 +9303,10 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
   );
 
   return (
-    <div style={{ display: "grid", gap: 16, marginTop: 4 }}>
+    // Pinned to the "daylight" (RentCaddie Default) palette so this screen
+    // always matches the approved mockup's blue->pink look, regardless of
+    // the theme selected elsewhere. Re-scopes every --bb-* var inside.
+    <div data-bb-theme="daylight" style={{ display: "grid", gap: 16, marginTop: 4 }}>
       <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
 
       {/* HERO — safe to spend */}
