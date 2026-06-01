@@ -9302,6 +9302,17 @@ function DashboardLayout({
       orderedIds.splice(insertAt, 0, t.id);
       seen.add(t.id);
     });
+    // Pin the redesign spine: "Log & move" + "Needs attention" always
+    // sit directly under the hero (balances), no matter what's in a saved
+    // custom order. Insert attention first, then quickactions, so the
+    // final order reads balances -> quickactions -> attention.
+    ["attention", "quickactions"].forEach((id) => {
+      const from = orderedIds.indexOf(id);
+      if (from < 0) return;
+      orderedIds.splice(from, 1);
+      const anchor = orderedIds.indexOf("balances");
+      orderedIds.splice(anchor >= 0 ? anchor + 1 : 0, 0, id);
+    });
     const decorate = (id) => {
       const def = allowed.find((t) => t.id === id);
       const customLabel = labels[id];
