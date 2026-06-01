@@ -64,7 +64,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
   });
-  const [drill, setDrill] = useState(null); // 'personal' | 'rentals' | 'networth' | 'heloc' | 'mom' | null
+  const [drill, setDrill] = useState(null); // 'rentals' | 'networth' | 'heloc' | 'mom' | null
   const [activeSection, setActiveSection] = useState("dashboard"); // 'dashboard' | 'envelopes' | 'habits' | 'goals' | 'achievements' | 'settings'
   const [addOpen, setAddOpen] = useState(false);
   const [addPreset, setAddPreset] = useState(null); // envelope label to pre-fill the log keypad
@@ -144,11 +144,10 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
       if (e.key === "?") { e.preventDefault(); setShowShortcutsHelp((v) => !v); return; }
       if (e.key === "q") { e.preventDefault(); setFabOpen(true); return; }
       if (e.key === "+") { e.preventDefault(); setFabOpen(true); return; }
-      if (e.key === "1") setDrill("personal");
-      if (e.key === "2") setDrill("rentals");
-      if (e.key === "3") setDrill("networth");
-      if (e.key === "4") setDrill("heloc");
-      if (e.key === "5") setDrill("mom");
+      if (e.key === "1") setDrill("rentals");
+      if (e.key === "2") setDrill("networth");
+      if (e.key === "3") setDrill("heloc");
+      if (e.key === "4") setDrill("mom");
     };
     window.addEventListener("keydown", onKey);
     return () => {
@@ -541,7 +540,6 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
 
       {drill && (
         <DrillSheet onClose={() => setDrill(null)}>
-          {drill === "personal" && <PersonalDrill state={state} updateState={updateState} />}
           {drill === "rentals" && <RentalsDrill state={state} updateState={updateState} />}
           {drill === "networth" && <NetWorthDrill state={state} updateState={updateState} />}
           {drill === "heloc" && <HelocDrill state={state} updateState={updateState} />}
@@ -1440,26 +1438,6 @@ function Tile({ title, icon, iconColor, iconBg, primary, primaryColor, secondary
 
 // ── The five tiles ───────────────────────────────────────────────────
 
-function PersonalTile({ state, onClick }) {
-  const totalIn = state.income_sources.reduce((s, i) => s + incomeMonthly(i), 0);
-  const totalOut = state.categories.reduce((s, c) => s + categoryMonthly(c), 0);
-  const left = totalIn - totalOut;
-  const history = (state.history || []).slice(-30).map((h) => h.personal_monthly_cents);
-  return (
-    <Tile
-      title="Personal"
-      icon={ICON.family}
-      iconColor={COLORS.blue} iconBg={COLORS.blueBg}
-      primary={<AnimatedNumber value={left} format={(v) => fmtUsd(v, { compact: true })} />}
-      primaryColor={left >= 0 ? COLORS.text : COLORS.red}
-      secondary={`${fmtUsd(totalIn, { compact: true })} in · ${fmtUsd(totalOut, { compact: true })} out`}
-      footer={`${state.categories.length} categories`}
-      onClick={onClick}
-      sparkline={<Sparkline values={history} />}
-    />
-  );
-}
-
 function RentalsTile({ state, onClick }) {
   const ops = state.properties.filter((p) => p.status === "operating");
   const gross = ops.reduce((s, p) => s + propertyMonthlyGross(p), 0);
@@ -1691,141 +1669,6 @@ function renameGroup(updateState, g, value) {
   });
 }
 
-function PersonalDrill({ state, updateState }) {
-  const grouped = useMemo(() => {
-    const g = {};
-    for (const c of state.categories) {
-      const key = c.group_key || "other";
-      (g[key] = g[key] || []).push(c);
-    }
-    return g;
-  }, [state.categories]);
-  const total = state.categories.reduce((s, c) => s + categoryMonthly(c), 0);
-  const incomeMo = state.income_sources.reduce((s, i) => s + incomeMonthly(i), 0);
-  const left = incomeMo - total;
-
-  // Build a stacked breakdown of expense groups (in proportion of total).
-  const breakdown = useMemo(() => {
-    if (total === 0) return [];
-    const order = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
-    return order
-      .map((g) => {
-        const items = grouped[g];
-        if (!items || items.length === 0) return null;
-        const sum = items.reduce((s, c) => s + categoryMonthly(c), 0);
-        if (sum === 0) return null;
-        return {
-          label: GROUP_META[g]?.label || g,
-          color: GROUP_META[g]?.accent || COLORS.textMuted,
-          pct: (sum / total) * 100,
-          value: fmtCompact(sum),
-        };
-      })
-      .filter(Boolean);
-  }, [grouped, total]);
-
-  return (
-    <div>
-      <DrillTitle
-        title="Personal"
-        subtitle={`${state.categories.length} categories · ${incomeMo > 0 ? `${fmtUsd(left, { compact: true })} left after expenses` : "income not set"}`}
-        icon={ICON.family}
-        iconColor={COLORS.blue}
-        iconBg={COLORS.blueBg}
-        heroValue={fmtUsd(total)}
-        heroLabel="/ month"
-      />
-      {breakdown.length > 0 && (
-        <div style={{
-          ...STYLES.card,
-          padding: 18, marginBottom: 14,
-          display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)",
-          gap: 18, alignItems: "center",
-        }}>
-          <div style={{ position: "relative", width: 140, height: 140 }}>
-            <PieChart width={140} height={140}>
-              <Pie data={breakdown.map((b) => ({ name: b.label, value: b.pct }))} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={42} outerRadius={66} paddingAngle={2} strokeWidth={0}>
-                {breakdown.map((b, i) => <Cell key={i} fill={b.color} />)}
-              </Pie>
-              <RTooltip cursor={false} contentStyle={{ background: COLORS.text, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, padding: "6px 10px", fontFamily: FONT }}
-                formatter={(v, n) => [`${v.toFixed(0)}%`, n]} />
-            </PieChart>
-            <div style={{
-              position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", pointerEvents: "none",
-            }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: COLORS.text, letterSpacing: "-0.02em" }}>{fmtCompact(total)}</div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>/ mo</div>
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "6px 14px" }}>
-            {breakdown.map((b, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, minWidth: 0 }}>
-                <span style={{ width: 9, height: 9, borderRadius: 3, background: b.color, flexShrink: 0 }} />
-                <span style={{ color: COLORS.textMuted, fontWeight: 600, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.label}</span>
-                <span style={{ color: COLORS.text, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{b.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      <PersonalEditor state={state} updateState={updateState} grouped={grouped} />
-    </div>
-  );
-}
-
-function PersonalEditor({ state, updateState, grouped }) {
-  const groupOrder = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
-  // Show groups that have items first, then any "common" empty groups (so
-  // user can still add a Housing line if they don't have one yet) — but
-  // don't show empty groups for unusual categories like "other".
-  const populated = groupOrder.filter((g) => (grouped[g] || []).length > 0);
-  const emptyCommon = groupOrder.filter((g) => !(grouped[g] && grouped[g].length) && ["housing", "food", "personal"].includes(g));
-  const allToShow = [...populated, ...emptyCommon];
-  return (
-    <div style={{ display: "grid", gap: 14, marginTop: 6 }}>
-      <IncomeSourcesBlock state={state} updateState={updateState} />
-      {allToShow.map((g) => (
-        <CategoryGroup
-          key={g}
-          group={g}
-          title={groupLabel(state, g)}
-          onTitleChange={(v) => renameGroup(updateState, g, v)}
-          items={grouped[g] || []}
-          onChange={(id, patch) => updateState((s) => ({
-            ...s,
-            categories: s.categories.map((c) => c.label === id ? { ...c, ...patch } : c),
-          }))}
-          onRename={(oldLabel, newLabel) => updateState((s) => ({
-            ...s,
-            categories: s.categories.map((c) => c.label === oldLabel ? { ...c, label: newLabel } : c),
-            monthly_actuals: s.monthly_actuals.map((a) => a.category_label === oldLabel ? { ...a, category_label: newLabel } : a),
-          }))}
-          onAdd={() => updateState((s) => ({
-            ...s,
-            categories: [
-              ...s.categories,
-              {
-                label: `New ${GROUP_META[g]?.label || g} item`,
-                group_key: g,
-                default_monthly_cents: 0,
-                default_biweekly_cents: 0,
-                default_yearly_cents: 0,
-                sort_order: (grouped[g]?.length || 0),
-              },
-            ],
-          }))}
-          onDelete={(label) => updateState((s) => ({
-            ...s,
-            categories: s.categories.filter((c) => c.label !== label),
-            monthly_actuals: s.monthly_actuals.filter((a) => a.category_label !== label),
-          }))}
-        />
-      ))}
-    </div>
-  );
-}
-
 function IncomeSourcesBlock({ state, updateState }) {
   const total = state.income_sources.reduce((s, i) => s + incomeMonthly(i), 0);
   return (
@@ -1923,42 +1766,6 @@ function IncomeRow({ source, onChange, onDelete }) {
         <Icon d={ICON.x} size={12} />
       </button>
     </div>
-  );
-}
-
-function CategoryGroup({ group, items, title, onChange, onRename, onTitleChange, onAdd, onDelete }) {
-  const meta = GROUP_META[group] || GROUP_META.other;
-  const total = items.reduce((s, c) => s + categoryMonthly(c), 0);
-  return (
-    <BlockCard
-      title={title || meta.label}
-      onTitleChange={onTitleChange}
-      sub={total > 0 ? fmtUsd(total, { compact: true }) : null}
-      accent={meta.accent}
-      emoji={meta.emoji}
-      count={items.length > 0 ? `${items.length}` : null}
-    >
-      {items.length === 0 && (
-        <div style={{ fontSize: 13, color: COLORS.textFaint, padding: "6px 0", fontStyle: "italic" }}>
-          Nothing here yet.
-        </div>
-      )}
-      {items.map((c) => (
-        <EditableRow
-          key={c.label}
-          label={c.label}
-          monthly={categoryMonthly(c)}
-          onLabelChange={(next) => onRename(c.label, next)}
-          onMonthlyChange={(cents) => onChange(c.label, {
-            default_monthly_cents: cents,
-            default_biweekly_cents: 0,
-            default_yearly_cents: 0,
-          })}
-          onDelete={onDelete ? () => onDelete(c.label) : undefined}
-        />
-      ))}
-      {onAdd && <AddRowButton label="Add line" accent={meta.accent} onClick={onAdd} />}
-    </BlockCard>
   );
 }
 
@@ -4697,11 +4504,10 @@ function ShortcutsHelp({ onClose }) {
     {
       title: "Open a drill",
       items: [
-        ["1", "Personal"],
-        ["2", "Rentals"],
-        ["3", "Net worth"],
-        ["4", "HELOC"],
-        ["5", "Family loan"],
+        ["1", "Rentals"],
+        ["2", "Net worth"],
+        ["3", "HELOC"],
+        ["4", "Family loan"],
       ],
     },
     {
@@ -4971,6 +4777,28 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
   );
   const totalAvailable = totalCarryover + totalBudget - totalSpent;
 
+  // Spending-plan breakdown by group (folded in from the old Personal
+  // drill) — shows the shape of the monthly budget as a pie + legend.
+  const incomeMo = state.income_sources.reduce((s, i) => s + incomeMonthly(i), 0);
+  const breakdown = useMemo(() => {
+    if (totalBudget === 0) return [];
+    const order = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
+    return order
+      .map((g) => {
+        const items = grouped[g];
+        if (!items || items.length === 0) return null;
+        const sum = items.reduce((s, c) => s + categoryMonthly(c), 0);
+        if (sum === 0) return null;
+        return {
+          label: groupLabel(state, g),
+          color: GROUP_META[g]?.accent || COLORS.textMuted,
+          pct: (sum / totalBudget) * 100,
+          value: fmtCompact(sum),
+        };
+      })
+      .filter(Boolean);
+  }, [grouped, totalBudget, state]);
+
   const groupOrder = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
   const populated = groupOrder.filter((g) => (grouped[g] || []).length > 0);
   // Always offer common groups so the user can drop a new envelope into
@@ -5137,6 +4965,46 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
         heroLabel={`available · ${fmtUsd(totalCarryover, { compact: true })} carried in + ${fmtUsd(totalBudget, { compact: true })} budgeted − ${fmtUsd(totalSpent, { compact: true })} spent`}
         heroColor={totalAvailable >= 0 ? COLORS.green : COLORS.red}
       />
+
+      {/* Income (set your take-home) — folded in from the old Personal
+          drill so Envelopes is the one place to plan AND run the budget. */}
+      <div style={{ marginBottom: 14 }}>
+        <IncomeSourcesBlock state={state} updateState={updateState} />
+      </div>
+
+      {/* Where the monthly plan goes — pie of budgeted amounts by group. */}
+      {breakdown.length > 0 && (
+        <div className="bb-breakdown" style={{
+          ...STYLES.card,
+          padding: 18, marginBottom: 14,
+          display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)",
+          gap: 18, alignItems: "center",
+        }}>
+          <div style={{ position: "relative", width: 128, height: 128, justifySelf: "center" }}>
+            <PieChart width={128} height={128}>
+              <Pie data={breakdown.map((b) => ({ name: b.label, value: b.pct }))} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={62} paddingAngle={2} strokeWidth={0}>
+                {breakdown.map((b, i) => <Cell key={i} fill={b.color} />)}
+              </Pie>
+              <RTooltip cursor={false} contentStyle={{ background: COLORS.text, color: "#fff", border: "none", borderRadius: 8, fontSize: 12, padding: "6px 10px", fontFamily: FONT }}
+                formatter={(v, n) => [`${v.toFixed(0)}%`, n]} />
+            </PieChart>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: COLORS.text, letterSpacing: "-0.02em" }}>{fmtCompact(totalBudget)}</div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>/ mo</div>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "6px 14px" }}>
+            {breakdown.map((b, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, minWidth: 0 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 3, background: b.color, flexShrink: 0 }} />
+                <span style={{ color: COLORS.textMuted, fontWeight: 600, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.label}</span>
+                <span style={{ color: COLORS.text, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{b.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
       <div style={{ marginTop: 12 }}>
         {moveOpen ? (
@@ -9181,7 +9049,6 @@ function MoneyView({ state, setDrill }) {
         <div style={{ marginTop: 3, fontSize: 13, color: COLORS.textMuted }}>Net worth, rentals and loans at a glance.</div>
       </div>
       <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-        <PersonalTile state={state} onClick={() => setDrill("personal")} />
         <RentalsTile  state={state} onClick={() => setDrill("rentals")} />
         <NetWorthTile state={state} onClick={() => setDrill("networth")} />
         <HelocTile    state={state} onClick={() => setDrill("heloc")} />
@@ -9432,7 +9299,6 @@ const DASHBOARD_TILE_DEFS = [
   { id: "heatmap",      defaultLabel: "Spending heatmap",   basic: false, full: true  },
   { id: "month",        defaultLabel: "Month picker",       basic: true,  full: true  },
   { id: "actions",      defaultLabel: "Quick actions",      basic: true,  full: false },
-  { id: "personal",     defaultLabel: "Personal",           basic: false, full: true,  group: "category" },
   { id: "rentals",      defaultLabel: "Rentals",            basic: false, full: true,  group: "category" },
   { id: "networth",     defaultLabel: "Net Worth",          basic: false, full: true,  group: "category" },
   { id: "heloc",        defaultLabel: "HELOC Velocity",     basic: false, full: true,  group: "category" },
@@ -9504,7 +9370,6 @@ function DashboardLayout({
         onGoals={() => setActiveSection("goals")}
       />
     ),
-    personal: <PersonalTile state={state} onClick={() => setDrill("personal")} />,
     rentals:  <RentalsTile  state={state} onClick={() => setDrill("rentals")} />,
     networth: <NetWorthTile state={state} onClick={() => setDrill("networth")} />,
     heloc:    <HelocTile    state={state} onClick={() => setDrill("heloc")} />,
