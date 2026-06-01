@@ -1102,10 +1102,6 @@ function BudgetHeader({ pending }) {
       backdropFilter: "saturate(180%) blur(8px)",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <a href="/admin" style={{ color: COLORS.textMuted, fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-          <Icon d={ICON.chevL} size={14} /> Admin
-        </a>
-        <div style={{ width: 1, height: 18, background: COLORS.border }} />
         <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.01em" }}>Budget</div>
       </div>
 
@@ -4606,10 +4602,10 @@ function Toast({ kind, message, onDismiss }) {
 // Inline panel for moving money from one envelope's balance into
 // another (recorded as an envelope transfer — see moveMoney). Pure UI:
 // validates, then hands a clean (from, to, cents, note) to onMove.
-function MoveMoneyPanel({ categories, balancesByLabel, onMove, onClose }) {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [amount, setAmount] = useState("");
+function MoveMoneyPanel({ categories, balancesByLabel, onMove, onClose, initialTo = "", initialFrom = "", initialAmount = "" }) {
+  const [from, setFrom] = useState(initialFrom);
+  const [to, setTo] = useState(initialTo);
+  const [amount, setAmount] = useState(initialAmount);
   const [note, setNote] = useState("");
   const [err, setErr] = useState("");
   const amountRef = useRef(null);
@@ -4740,6 +4736,72 @@ function MoveMoneyPanel({ categories, balancesByLabel, onMove, onClose }) {
           Move money
         </button>
         <button onClick={onClose} style={{ ...btn("ghost") }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// Self-contained Move-money sheet — a centered modal usable anywhere
+// (This Month, Needs Attention) without threading a transfer handler
+// through props. Computes balances + writes the transfer itself.
+// `initialTo` pre-targets an envelope to cover; `initialAmount` (string,
+// dollars) pre-fills the amount (e.g. the exact overage from an alert).
+function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initialAmount = "", onClose, onMoved }) {
+  const startMonth = useMemo(() => envelopeStartMonth(state), [state]);
+  const balancesByLabel = useMemo(() => {
+    const map = new Map();
+    for (const c of state.categories || []) {
+      map.set(c.label.toLowerCase(), envelopeBalance(state, c, activeMonth, startMonth));
+    }
+    return map;
+  }, [state, activeMonth, startMonth]);
+
+  const move = (fromLabel, toLabel, cents, note) => {
+    if (!fromLabel || !toLabel || fromLabel === toLabel || !cents || cents <= 0) return;
+    const today = new Date();
+    const moved_on = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    updateState((s) => ({
+      ...s,
+      envelope_transfers: [
+        ...(s.envelope_transfers || []),
+        { id: genId(), from_label: fromLabel, to_label: toLabel, amount_cents: cents, month: activeMonth, moved_on, note: note || undefined },
+      ],
+    }));
+    fireConfetti({ count: 30, originY: 0.45 });
+    if (onMoved) onMoved(fromLabel, toLabel, cents);
+    onClose();
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 55,
+        background: "rgba(15,23,41,0.55)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        padding: "max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom))",
+        animation: "fadeIn 0.18s ease",
+      }}
+    >
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 560 }}>
+        {initialTo && (
+          <div style={{ ...STYLES.card, padding: "12px 16px", marginBottom: 10, background: COLORS.accentSoft, border: "none" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: COLORS.navy || COLORS.text }}>
+              Cover <b>{initialTo}</b>
+            </div>
+            <div style={{ fontSize: 12, color: COLORS.textMuted, marginTop: 2 }}>
+              Pick an envelope with room to spare and move money in.
+            </div>
+          </div>
+        )}
+        <MoveMoneyPanel
+          categories={state.categories}
+          balancesByLabel={balancesByLabel}
+          initialTo={initialTo}
+          initialAmount={initialAmount}
+          onMove={move}
+          onClose={onClose}
+        />
       </div>
     </div>
   );
@@ -9011,7 +9073,7 @@ function NeedsAttention({ state, activeMonth, onOpen }) {
           return (
             <button
               key={r.label + i}
-              onClick={() => onOpen(r.label)}
+              onClick={() => onOpen(r.label, r.over ? Math.abs(r.available) : 0)}
               style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 12, textAlign: "left",
                 padding: isMobile ? "13px 16px" : "12px 16px", cursor: "pointer", fontFamily: FONT,
@@ -9102,9 +9164,19 @@ function MoreMenu({ onNavigate, isBasic }) {
 // discrete cards (hero · log/move · attention · envelopes), instead of
 // the desktop's configurable tile grid. Shown whenever the viewport is
 // phone-width; desktop keeps DashboardLayout's tile system.
-function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, onOpenEnvelopes, setDrill }) {
+function ThisMonthMobile({ state, updateState, activeMonth, setActiveMonth, onLog, onOpenEnvelopes, setDrill }) {
   const startMonth = useMemo(() => envelopeStartMonth(state), [state]);
   const [collapsed, setCollapsed] = useState(() => new Set());
+  // Move-money sheet: null when closed, else { to?, amount? } presets.
+  const [moveSheet, setMoveSheet] = useState(null);
+  const openMove = (toLabel, overageCents) => setMoveSheet({
+    to: toLabel || "",
+    amount: overageCents ? (overageCents / 100).toFixed(2) : "",
+  });
+  // Which number the envelope rows show: what's Left, what's been Spent,
+  // or the Budgeted amount. The bar always shows spent-vs-budget progress.
+  const [valueMode, setValueMode] = useState("left");
+  const valueOf = (r) => valueMode === "budget" ? r.budget : valueMode === "spent" ? r.spent : r.available;
 
   const groups = useMemo(() => {
     const order = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
@@ -9201,22 +9273,39 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
       </section>
 
       {/* LOG / MOVE */}
-      <QuickActionsRow onLog={onLog} onMove={onMove} />
+      <QuickActionsRow onLog={onLog} onMove={() => openMove()} />
 
-      {/* NEEDS ATTENTION */}
-      <NeedsAttention state={state} activeMonth={activeMonth} onOpen={onLog} />
+      {/* NEEDS ATTENTION — tap an over/near envelope to cover it by moving
+          money in (NOT to log more spending). */}
+      <NeedsAttention state={state} activeMonth={activeMonth} onOpen={(label, overage) => openMove(label, overage)} />
 
       {/* ENVELOPES — one card per group */}
       <div>
         {secLabel("Envelopes", (
-          <button onClick={onOpenEnvelopes} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: COLORS.accent, display: "inline-flex", alignItems: "center", gap: 3 }}>
-            All <span style={{ fontSize: 15, lineHeight: 1 }}>›</span>
+          <button onClick={onOpenEnvelopes} style={{ cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800, color: COLORS.accent, background: COLORS.accentSoft, border: "none", borderRadius: 100, padding: "7px 14px", display: "inline-flex", alignItems: "center", gap: 4 }}>
+            All envelopes <span style={{ fontSize: 16, lineHeight: 1 }}>›</span>
           </button>
         ))}
+        {/* Toggle what the row number means: Left · Spent · Budgeted. */}
+        <div style={{ display: "flex", gap: 4, padding: 4, background: COLORS.surfaceTint, borderRadius: 12, marginBottom: 12 }}>
+          {[{ id: "left", label: "Left" }, { id: "spent", label: "Spent" }, { id: "budget", label: "Budgeted" }].map((m) => {
+            const on = valueMode === m.id;
+            return (
+              <button key={m.id} onClick={() => setValueMode(m.id)} style={{
+                flex: 1, padding: "8px 0", border: "none", cursor: "pointer", fontFamily: FONT,
+                fontSize: 12.5, fontWeight: 700, borderRadius: 9,
+                background: on ? COLORS.surface : "transparent",
+                color: on ? COLORS.text : COLORS.textMuted,
+                boxShadow: on ? COLORS.shadow : "none",
+              }}>{m.label}</button>
+            );
+          })}
+        </div>
         <div style={{ display: "grid", gap: 12 }}>
           {groups.map((g) => {
             const isCol = collapsed.has(g.key);
-            const subtotal = g.rows.reduce((s, r) => s + r.available, 0);
+            const subtotal = g.rows.reduce((s, r) => s + valueOf(r), 0);
+            const subOver = valueMode === "left" && subtotal < 0;
             const hasOver = g.rows.some((r) => r.available < 0);
             return (
               <div key={g.key} style={{ ...STYLES.card, overflow: "hidden" }}>
@@ -9226,7 +9315,7 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
                   </span>
                   <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: COLORS.textMuted }}>{groupLabel(state, g.key)}</span>
                   {hasOver && <span style={{ width: 6, height: 6, borderRadius: 999, background: COLORS.red, flexShrink: 0 }} />}
-                  <span style={{ marginLeft: "auto", fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: subtotal < 0 ? COLORS.red : COLORS.text }}>{fmtUsd(subtotal)}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: subOver ? COLORS.red : COLORS.text }}>{fmtUsd(subtotal)}</span>
                   <span style={{ fontSize: 17, lineHeight: 1, color: COLORS.textFaint, display: "inline-block", transform: isCol ? "none" : "rotate(90deg)", transition: "transform 0.2s ease" }}>›</span>
                 </button>
                 {!isCol && g.rows.map((r, i) => {
@@ -9240,7 +9329,7 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
                       <span style={{ flex: 1, height: 6, borderRadius: 4, background: COLORS.surfaceTint, overflow: "hidden", minWidth: 0 }}>
                         <span style={{ display: "block", height: "100%", width: `${o ? 100 : pct}%`, borderRadius: 4, background: barColor }} />
                       </span>
-                      <span style={{ flex: "0 0 56px", textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(r.available)}</span>
+                      <span style={{ flex: "0 0 64px", textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: valueMode !== "left" ? COLORS.text : o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(valueOf(r))}</span>
                       <button onClick={() => onLog(r.label)} aria-label={`Log to ${r.label}`} style={{ flex: "0 0 26px", display: "grid", placeItems: "center", background: "transparent", border: "none", cursor: "pointer", color: COLORS.accent, fontFamily: FONT, fontSize: 19, fontWeight: 800, lineHeight: 1 }}>
                         ＋
                       </button>
@@ -9281,6 +9370,17 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
             <div style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.text, lineHeight: 1.5 }}>{insight.text}</div>
           </div>
         </div>
+      )}
+
+      {moveSheet && (
+        <MoveMoneySheet
+          state={state}
+          updateState={updateState}
+          activeMonth={activeMonth}
+          initialTo={moveSheet.to}
+          initialAmount={moveSheet.amount}
+          onClose={() => setMoveSheet(null)}
+        />
       )}
     </div>
   );
@@ -9498,10 +9598,10 @@ function DashboardLayout({
     return (
       <ThisMonthMobile
         state={state}
+        updateState={updateState}
         activeMonth={activeMonth}
         setActiveMonth={setActiveMonth}
         onLog={onLog}
-        onMove={() => setActiveSection("envelopes")}
         onOpenEnvelopes={() => setActiveSection("envelopes")}
         setDrill={setDrill}
       />
