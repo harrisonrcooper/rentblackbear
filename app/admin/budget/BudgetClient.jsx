@@ -412,6 +412,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
         .bb-move-amt::placeholder { color: rgba(255,255,255,0.78); opacity: 1; }
         .bb-move-amt::-webkit-input-placeholder { color: rgba(255,255,255,0.78); }
         .bb-move-amt { caret-color: #fff; }
+        .bb-move-amt:focus, .bb-move-amt:focus-visible { outline: none !important; box-shadow: none !important; }
         @media (max-width: 899px) {
           /* Prevent iOS Safari's auto-zoom on input focus when font-size < 16px */
           input[type=number], input[type=text], input[type=date], input[type=email], textarea, select {
@@ -4875,7 +4876,10 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
         <button onClick={onClose} aria-label="Back" style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 36, padding: "0 12px 0 8px", borderRadius: 10, border: `1px solid ${COLORS.border}`, cursor: "pointer", background: COLORS.surface, color: COLORS.textMuted, fontFamily: FONT, fontSize: 13.5, fontWeight: 700 }}>
           <Icon d={ICON.chevL} size={17} /> Back
         </button>
-        <span style={{ marginLeft: "auto", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>Move money</span>
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: COLORS.textFaint }}>Move money</span>
+        <button onClick={onClose} aria-label="Close" style={{ marginLeft: "auto", width: 36, height: 36, borderRadius: 10, border: `1px solid ${COLORS.border}`, cursor: "pointer", background: COLORS.surface, color: COLORS.textMuted, display: "grid", placeItems: "center" }}>
+          <Icon d={ICON.x} size={16} />
+        </button>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "22px 16px 28px", WebkitOverflowScrolling: "touch" }}>
@@ -5220,23 +5224,19 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
 
       <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
       <div style={{ marginTop: 12 }}>
-        {moveOpen ? (
-          <MoveMoneyPanel
-            categories={state.categories}
-            balancesByLabel={balancesByLabel}
-            onMove={(from, to, cents, note) => { moveMoney(from, to, cents, note); setMoveOpen(false); }}
-            onClose={() => setMoveOpen(false)}
-          />
-        ) : (
-          <button
-            onClick={() => setMoveOpen(true)}
-            style={{ ...btn("ghost") }}
-          >
-            <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={14} />
-            Move money
-          </button>
-        )}
+        <button onClick={() => setMoveOpen(true)} style={{ ...btn("ghost") }}>
+          <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={14} />
+          Move money
+        </button>
       </div>
+      {moveOpen && (
+        <MoveMoneySheet
+          state={state}
+          updateState={updateState}
+          activeMonth={activeMonth}
+          onClose={() => setMoveOpen(false)}
+        />
+      )}
       <div style={{ display: "grid", gap: 14, marginTop: 14 }}>
         {groupsToShow.map((g) => {
           const meta = GROUP_META[g] || GROUP_META.other;
