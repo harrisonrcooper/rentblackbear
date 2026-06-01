@@ -4872,10 +4872,10 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 55, background: COLORS.surfaceAlt, display: "flex", flexDirection: "column", fontFamily: FONT, color: COLORS.text, animation: "fadeIn 0.18s ease" }}>
       <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 10, padding: "max(12px, env(safe-area-inset-top)) 16px 12px", background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
-        <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>Move money</span>
-        <button onClick={onClose} aria-label="Close" style={{ marginLeft: "auto", width: 36, height: 36, borderRadius: 10, border: `1px solid ${COLORS.border}`, cursor: "pointer", background: COLORS.surface, color: COLORS.textMuted, display: "grid", placeItems: "center" }}>
-          <Icon d={ICON.x} size={16} />
+        <button onClick={onClose} aria-label="Back" style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 36, padding: "0 12px 0 8px", borderRadius: 10, border: `1px solid ${COLORS.border}`, cursor: "pointer", background: COLORS.surface, color: COLORS.textMuted, fontFamily: FONT, fontSize: 13.5, fontWeight: 700 }}>
+          <Icon d={ICON.chevL} size={17} /> Back
         </button>
+        <span style={{ marginLeft: "auto", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>Move money</span>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "22px 16px 28px", WebkitOverflowScrolling: "touch" }}>
