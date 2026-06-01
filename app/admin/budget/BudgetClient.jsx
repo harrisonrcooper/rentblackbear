@@ -1610,7 +1610,7 @@ function DrillSheet({ children, onClose }) {
   }, [onClose]);
   return (
     <div
-      className="bb-modal"
+      className="bb-drill"
       style={{
         position: "fixed", inset: 0, zIndex: 50,
         background: COLORS.surfaceAlt,
