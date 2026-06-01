@@ -4818,7 +4818,7 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
           <input
             type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search envelopes…"
             aria-label="Search envelopes"
-            style={{ width: "100%", border: `1px solid ${COLORS.border}`, background: COLORS.surface, borderRadius: 12, padding: "10px 12px 10px 34px", fontFamily: FONT, fontSize: 13.5, fontWeight: 600, color: COLORS.text, outline: "none", boxShadow: COLORS.shadow }}
+            style={{ width: "100%", boxSizing: "border-box", border: `1px solid ${COLORS.border}`, background: COLORS.surface, borderRadius: 12, padding: "10px 12px 10px 34px", fontFamily: FONT, fontSize: 13.5, fontWeight: 600, color: COLORS.text, outline: "none", boxShadow: COLORS.shadow }}
           />
         </div>
         <div className="bb-hscroll" style={{ display: "flex", gap: 9, overflowX: "auto", padding: "2px 2px 8px", scrollbarWidth: "none" }}>
@@ -4872,8 +4872,8 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "18px 16px 24px", WebkitOverflowScrolling: "touch" }}>
-        <div style={{ maxWidth: 560, margin: "0 auto", display: "grid", gap: 18 }}>
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "18px 16px 24px", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", display: "grid", gap: 18, minWidth: 0 }}>
           {/* HERO — the amount (stated once, tap to edit) + after-transfer impact */}
           <div style={{ borderRadius: 22, padding: "18px 20px 16px", color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
