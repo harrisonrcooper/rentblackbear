@@ -4894,11 +4894,12 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
               />
             </label>
             {(from || to) && (() => {
-              const both = !!(from && to);
-              // Each pill fills half when both are chosen; otherwise it sits
-              // at its own size — FROM on the left, TO pushed to the right.
-              const pill = (k, label, after) => (
-                <div key={k} style={{ flex: both ? 1 : "0 1 auto", background: "rgba(255,255,255,0.16)", borderRadius: 14, padding: "11px 13px", minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
+              // Two equal half-width slots (FROM on the left, TO on the
+              // right). An unselected side is an empty spacer, so a single
+              // pill keeps the exact size + position it'll have once both
+              // are chosen.
+              const pill = (label, after) => (
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.16)", borderRadius: 14, padding: "11px 13px", minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{categoryEmoji(label, groupOf(label))}</span>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label} after</div>
@@ -4908,9 +4909,8 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
               );
               return (
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                  {from && pill("from", from, fromAfter)}
-                  {!from && to && <div style={{ flex: 1 }} />}
-                  {to && pill("to", to, toAfter)}
+                  {from ? pill(from, fromAfter) : <div style={{ flex: 1 }} />}
+                  {to ? pill(to, toAfter) : <div style={{ flex: 1 }} />}
                 </div>
               );
             })()}
