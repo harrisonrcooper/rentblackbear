@@ -9164,6 +9164,120 @@ function NeedsAttention({ state, activeMonth, onOpen }) {
   );
 }
 
+// ── Phone-first "This Month" screen ──────────────────────────────────
+// A purpose-built mobile dashboard that renders the redesigned flow as
+// discrete cards (hero · log/move · attention · envelopes), instead of
+// the desktop's configurable tile grid. Shown whenever the viewport is
+// phone-width; desktop keeps DashboardLayout's tile system.
+function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, onOpenEnvelopes }) {
+  const startMonth = useMemo(() => envelopeStartMonth(state), [state]);
+  const [collapsed, setCollapsed] = useState(() => new Set());
+
+  const groups = useMemo(() => {
+    const order = ["giving", "housing", "transport", "food", "personal", "kids", "debt", "yearly", "retirement", "other"];
+    const byKey = new Map();
+    for (const c of state.categories || []) {
+      const gk = c.group_key || "other";
+      const b = envelopeBalance(state, c, activeMonth, startMonth);
+      if (!byKey.has(gk)) byKey.set(gk, []);
+      byKey.get(gk).push({ label: c.label, budget: b.budget, spent: b.thisMonthSpent, available: b.available, so: c.sort_order ?? 0 });
+    }
+    return order.filter((gk) => byKey.has(gk)).map((gk) => ({
+      key: gk, meta: GROUP_META[gk] || GROUP_META.other, rows: byKey.get(gk).sort((a, b) => a.so - b.so),
+    }));
+  }, [state, activeMonth, startMonth]);
+
+  const allRows = groups.flatMap((g) => g.rows);
+  const totalAvail = allRows.reduce((s, r) => s + r.available, 0);
+  const totalSpent = allRows.reduce((s, r) => s + r.spent, 0);
+  const totalBudget = allRows.reduce((s, r) => s + r.budget, 0);
+  const usedPct = totalBudget > 0 ? Math.min(100, Math.round((totalSpent / totalBudget) * 100)) : 0;
+  const over = totalSpent > totalBudget && totalBudget > 0;
+
+  const toggle = (key) => setCollapsed((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  const secLabel = (txt, right) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "2px 4px 10px" }}>
+      <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: COLORS.textFaint }}>{txt}</span>
+      {right}
+    </div>
+  );
+
+  return (
+    <div style={{ display: "grid", gap: 16, marginTop: 4 }}>
+      <MonthScrubber value={activeMonth} onChange={setActiveMonth} />
+
+      {/* HERO — safe to spend */}
+      <section style={{ borderRadius: RADII.xl, padding: "22px", color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg }}>
+        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>Safe to spend</div>
+        <div style={{ marginTop: 5, fontSize: 44, fontWeight: 800, letterSpacing: "-0.035em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{fmtUsd(totalAvail)}</div>
+        {totalBudget > 0 && (
+          <>
+            <div style={{ height: 8, borderRadius: 6, background: COLORS.heroTrack, overflow: "hidden", marginTop: 16 }}>
+              <div style={{ height: "100%", width: `${usedPct}%`, borderRadius: 6, background: over ? COLORS.red : COLORS.heroFill }} />
+            </div>
+            <div style={{ marginTop: 9, fontSize: 12, fontWeight: 600, color: COLORS.heroInkSoft }}>
+              <span style={{ color: COLORS.heroInk }}>{fmtUsd(totalSpent, { compact: true })} spent</span>{" of "}{fmtUsd(totalBudget, { compact: true })} budgeted · {usedPct}% used
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* LOG / MOVE */}
+      <QuickActionsRow onLog={onLog} onMove={onMove} />
+
+      {/* NEEDS ATTENTION */}
+      <NeedsAttention state={state} activeMonth={activeMonth} onOpen={onLog} />
+
+      {/* ENVELOPES — one card per group */}
+      <div>
+        {secLabel("Envelopes", (
+          <button onClick={onOpenEnvelopes} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: COLORS.accent, display: "inline-flex", alignItems: "center", gap: 2 }}>
+            All <Icon d={ICON.chevR} size={13} color={COLORS.accent} />
+          </button>
+        ))}
+        <div style={{ display: "grid", gap: 12 }}>
+          {groups.map((g) => {
+            const isCol = collapsed.has(g.key);
+            const subtotal = g.rows.reduce((s, r) => s + r.available, 0);
+            const hasOver = g.rows.some((r) => r.available < 0);
+            return (
+              <div key={g.key} style={{ ...STYLES.card, overflow: "hidden" }}>
+                <button onClick={() => toggle(g.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "13px 15px", border: "none", background: "transparent", cursor: "pointer", fontFamily: FONT, textAlign: "left" }}>
+                  <span style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, display: "grid", placeItems: "center", background: g.meta.bg, color: g.meta.accent }}>
+                    <Icon d={g.meta.icon} size={16} color={g.meta.accent} />
+                  </span>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: COLORS.textMuted }}>{groupLabel(state, g.key)}</span>
+                  {hasOver && <span style={{ width: 6, height: 6, borderRadius: 999, background: COLORS.red, flexShrink: 0 }} />}
+                  <span style={{ marginLeft: "auto", fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: subtotal < 0 ? COLORS.red : COLORS.text }}>{fmtUsd(subtotal)}</span>
+                  <Icon d={ICON.chevD} size={16} color={COLORS.textFaint} style={{ transform: isCol ? "rotate(-90deg)" : "none", transition: "transform 0.15s ease" }} />
+                </button>
+                {!isCol && g.rows.map((r, i) => {
+                  const o = r.available < 0;
+                  const pct = r.budget > 0 ? Math.min(100, Math.round((r.spent / r.budget) * 100)) : 0;
+                  const near = !o && pct >= 85;
+                  const barColor = o ? COLORS.red : near ? COLORS.amber : g.meta.accent;
+                  return (
+                    <div key={r.label + i} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 14px 10px 16px", borderTop: `1px solid ${COLORS.surfaceTint}`, background: o ? COLORS.redBg : "transparent" }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 600, color: o ? COLORS.red : COLORS.text, flex: "0 0 88px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</span>
+                      <span style={{ flex: 1, height: 6, borderRadius: 4, background: COLORS.surfaceTint, overflow: "hidden", minWidth: 0 }}>
+                        <span style={{ display: "block", height: "100%", width: `${o ? 100 : pct}%`, borderRadius: 4, background: barColor }} />
+                      </span>
+                      <span style={{ flex: "0 0 56px", textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(r.available)}</span>
+                      <button onClick={() => onLog()} aria-label={`Log to ${r.label}`} style={{ flex: "0 0 26px", display: "grid", placeItems: "center", background: "transparent", border: "none", cursor: "pointer", color: COLORS.accent }}>
+                        <Icon d={["M12 5v14", "M5 12h14"]} size={17} color={COLORS.accent} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const DASHBOARD_TILE_DEFS = [
   { id: "balances",     defaultLabel: "Envelope balances",  basic: true,  full: true  },
   { id: "quickactions", defaultLabel: "Log & move",         basic: true,  full: true  },
@@ -9214,6 +9328,7 @@ function DashboardLayout({
   editingLayout,
   setEditingLayout,
 }) {
+  const isMobile = useIsMobile();
   const tileRenderers = useMemo(() => ({
     balances: <EnvelopesGlance state={state} activeMonth={activeMonth} onOpen={() => setActiveSection("envelopes")} />,
     quickactions: <QuickActionsRow onLog={onLog} onMove={() => setActiveSection("envelopes")} />,
@@ -9370,6 +9485,21 @@ function DashboardLayout({
 
   // View mode: render runs of same-group tiles inside a grid wrapper.
   const runs = useMemo(() => groupTileRuns(orderedTiles), [orderedTiles]);
+
+  // Phone width gets the purpose-built "This Month" screen, not the
+  // configurable desktop tile grid.
+  if (isMobile) {
+    return (
+      <ThisMonthMobile
+        state={state}
+        activeMonth={activeMonth}
+        setActiveMonth={setActiveMonth}
+        onLog={onLog}
+        onMove={() => setActiveSection("envelopes")}
+        onOpenEnvelopes={() => setActiveSection("envelopes")}
+      />
+    );
+  }
 
   return (
     <>
