@@ -36,56 +36,105 @@ export const COLORS = {
   purpleBg:    "var(--bb-purple-bg)",
 };
 
-// Actual hex values per theme. Used to emit the CSS-vars stylesheet
-// from BudgetClient. Keep the keys in sync with COLORS above.
+// Actual hex values per named theme. Used to emit the CSS-vars
+// stylesheet from BudgetClient. Keep the keys in sync with COLORS above.
+//
+// Three selectable looks, each a complete palette:
+//   daylight — editorial minimal light (ink-black accent, hairlines)
+//   midnight — dark fintech (glowing mint accent, deep navy surfaces)
+//   aurora   — warm cream + rich green brand
 export const THEME_PALETTES = {
-  light: {
-    "bb-bg":             "#f4f5f7",
+  daylight: {
+    "bb-bg":             "#fbfbfa",
     "bb-surface":        "#ffffff",
-    "bb-surface-alt":    "#f9fafb",
-    "bb-surface-tint":   "#f3f4f6",
-    "bb-border":         "#eaecef",
-    "bb-border-strong":  "#d6d9de",
-    "bb-text":           "#0d1424",
-    "bb-text-muted":     "#5f6675",
-    "bb-text-faint":     "#969ba8",
-    "bb-accent":         "#4a7c59",
-    "bb-accent-soft":    "rgba(74,124,89,0.10)",
-    "bb-green":          "#138a60",
-    "bb-green-bg":       "rgba(19,138,96,0.10)",
-    "bb-red":            "#d64545",
-    "bb-red-bg":         "rgba(214,69,69,0.10)",
-    "bb-amber":          "#c88318",
-    "bb-amber-bg":       "rgba(200,131,24,0.10)",
+    "bb-surface-alt":    "#fafafa",
+    "bb-surface-tint":   "#f1f1ef",
+    "bb-border":         "#ededeb",
+    "bb-border-strong":  "#dcdcd9",
+    "bb-text":           "#16181d",
+    "bb-text-muted":     "#5a5d64",
+    "bb-text-faint":     "#9a9da3",
+    "bb-accent":         "#16181d",
+    "bb-accent-soft":    "rgba(22,24,29,0.07)",
+    "bb-green":          "#1f8f5f",
+    "bb-green-bg":       "rgba(31,143,95,0.10)",
+    "bb-red":            "#c0392b",
+    "bb-red-bg":         "rgba(192,57,43,0.09)",
+    "bb-amber":          "#b9831b",
+    "bb-amber-bg":       "rgba(185,131,27,0.10)",
+    "bb-blue":           "#2f6fe0",
+    "bb-blue-bg":        "rgba(47,111,224,0.09)",
+    "bb-purple":         "#7c4ddb",
+    "bb-purple-bg":      "rgba(124,77,219,0.09)",
+  },
+  midnight: {
+    "bb-bg":             "#0a0d14",
+    "bb-surface":        "#131a26",
+    "bb-surface-alt":    "#0f141d",
+    "bb-surface-tint":   "#1b2230",
+    "bb-border":         "#1d2533",
+    "bb-border-strong":  "#2b3445",
+    "bb-text":           "#e7ebf3",
+    "bb-text-muted":     "#aeb6c5",
+    "bb-text-faint":     "#7c8699",
+    "bb-accent":         "#36d49a",
+    "bb-accent-soft":    "rgba(54,212,154,0.16)",
+    "bb-green":          "#36d49a",
+    "bb-green-bg":       "rgba(54,212,154,0.16)",
+    "bb-red":            "#ef6b6b",
+    "bb-red-bg":         "rgba(239,107,107,0.16)",
+    "bb-amber":          "#e8a85a",
+    "bb-amber-bg":       "rgba(232,168,90,0.16)",
+    "bb-blue":           "#7ba4f0",
+    "bb-blue-bg":        "rgba(123,164,240,0.16)",
+    "bb-purple":         "#b893f0",
+    "bb-purple-bg":      "rgba(184,147,240,0.16)",
+  },
+  aurora: {
+    "bb-bg":             "#f4f1ec",
+    "bb-surface":        "#ffffff",
+    "bb-surface-alt":    "#faf8f4",
+    "bb-surface-tint":   "#f0ece5",
+    "bb-border":         "#ece7df",
+    "bb-border-strong":  "#ddd5c9",
+    "bb-text":           "#221c16",
+    "bb-text-muted":     "#6f655a",
+    "bb-text-faint":     "#a89d8e",
+    "bb-accent":         "#2f6b4f",
+    "bb-accent-soft":    "rgba(47,107,79,0.12)",
+    "bb-green":          "#2f6b4f",
+    "bb-green-bg":       "rgba(47,107,79,0.12)",
+    "bb-red":            "#c0392b",
+    "bb-red-bg":         "rgba(192,57,43,0.10)",
+    "bb-amber":          "#c08a2b",
+    "bb-amber-bg":       "rgba(192,138,43,0.12)",
     "bb-blue":           "#3b6fd1",
     "bb-blue-bg":        "rgba(59,111,209,0.10)",
     "bb-purple":         "#8c5ad9",
     "bb-purple-bg":      "rgba(140,90,217,0.10)",
   },
-  dark: {
-    "bb-bg":             "#0a0d14",
-    "bb-surface":        "#131822",
-    "bb-surface-alt":    "#181d29",
-    "bb-surface-tint":   "#1f2532",
-    "bb-border":         "#252b39",
-    "bb-border-strong":  "#353c4d",
-    "bb-text":           "#e7ebf3",
-    "bb-text-muted":     "#a5acba",
-    "bb-text-faint":     "#6a7282",
-    "bb-accent":         "#7ec18d",
-    "bb-accent-soft":    "rgba(126,193,141,0.18)",
-    "bb-green":          "#36d49a",
-    "bb-green-bg":       "rgba(54,212,154,0.18)",
-    "bb-red":            "#ef6b6b",
-    "bb-red-bg":         "rgba(239,107,107,0.18)",
-    "bb-amber":          "#e8a85a",
-    "bb-amber-bg":       "rgba(232,168,90,0.18)",
-    "bb-blue":           "#7ba4f0",
-    "bb-blue-bg":        "rgba(123,164,240,0.18)",
-    "bb-purple":         "#b893f0",
-    "bb-purple-bg":      "rgba(184,147,240,0.18)",
-  },
 };
+
+// Theme registry — drives the Settings picker and the light/dark
+// resolution for "system". `scheme` sets the native color-scheme so
+// form controls + scrollbars match. `swatch` is the dot in the picker.
+export const THEMES = [
+  { id: "daylight", label: "Daylight", scheme: "light", swatch: "#ffffff", ring: "#dcdcd9", accent: "#16181d" },
+  { id: "midnight", label: "Midnight", scheme: "dark",  swatch: "#131a26", ring: "#2b3445", accent: "#36d49a" },
+  { id: "aurora",   label: "Aurora",   scheme: "light", swatch: "#2f6b4f", ring: "#2f6b4f", accent: "#ffffff" },
+];
+
+export const DEFAULT_THEME = "daylight";
+
+// Map any stored theme value (incl. legacy "light"/"dark"/"system") to a
+// concrete palette id. `prefersDark` resolves "system".
+export function resolveThemeId(stored, prefersDark) {
+  if (stored === "midnight" || stored === "daylight" || stored === "aurora") return stored;
+  if (stored === "dark") return "midnight";
+  if (stored === "light") return "daylight";
+  // "system" / undefined / anything else
+  return prefersDark ? "midnight" : "daylight";
+}
 
 // Render the entire <style> body for theming. Caller injects this
 // into a <style> tag — once per page is enough.
@@ -101,15 +150,17 @@ export function themeStylesheet() {
     Object.entries(vars)
       .map(([k, v]) => `  --${k}: ${v};`)
       .join("\n");
+  const scheme = Object.fromEntries(THEMES.map((t) => [t.id, t.scheme]));
+  const blocks = Object.entries(THEME_PALETTES).map(([id, vars]) =>
+    [
+      `[data-bb-theme="${id}"] {`,
+      declarations(vars),
+      `  color-scheme: ${scheme[id] || "light"};`,
+      "}",
+    ].join("\n"),
+  );
   return [
-    `[data-bb-theme="light"] {`,
-    declarations(THEME_PALETTES.light),
-    "  color-scheme: light;",
-    "}",
-    `[data-bb-theme="dark"] {`,
-    declarations(THEME_PALETTES.dark),
-    "  color-scheme: dark;",
-    "}",
+    ...blocks,
     // Universal focus ring for fields. Accent-tinted border + soft ring.
     // Scoped to [data-bb-theme] so it can't leak into the admin shell.
     "[data-bb-theme] input:focus,",

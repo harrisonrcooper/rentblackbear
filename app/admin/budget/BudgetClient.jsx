@@ -18,7 +18,7 @@ import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as R
 import { seedBudget } from "@/actions/budget/seed";
 import { saveBudgetStateAction, switchBudgetAction, createBudgetAction } from "@/actions/budget/state";
 
-import { COLORS, FONT, STYLES, TYPE, SPACE, RADII, btnStyle as btn, inputStyle, textBtnStyle, stepBtnStyle, pillSelectStyle, selectStyle, themeStylesheet } from "./lib/tokens";
+import { COLORS, FONT, STYLES, TYPE, SPACE, RADII, btnStyle as btn, inputStyle, textBtnStyle, stepBtnStyle, pillSelectStyle, selectStyle, themeStylesheet, THEMES, DEFAULT_THEME, resolveThemeId } from "./lib/tokens";
 import { Icon, ICON } from "./lib/icons";
 import { fmtUsd, fmtCompact, biweeklyToMonthly, yearlyToMonthly, categoryMonthly, incomeMonthly } from "./lib/money";
 import { propertyMonthlyGross, propertyMonthlyExpenses, propertyOperatingExpenses, propertyHelocPayment, propertyRentalShare, propertyMonthlyNet, computeNetWorthCents, computeHero, genId, todayISODate } from "./lib/calc";
@@ -343,21 +343,21 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.goals, state.properties, state.assets, state.debts, state.income_sources, state.categories]);
 
-  // Theme switcher — resolves "system" → "light" | "dark" via
-  // prefers-color-scheme, then writes the result to a scoped wrapper
-  // attribute. Stays off <html> so the rentblackbear shell's own
-  // data-theme system (in app/layout.jsx + app/globals.css) is
-  // untouched when the user is on this page.
-  const themeChoice = state.settings.theme || "system";
-  const [resolvedTheme, setResolvedTheme] = useState("light");
+  // Theme switcher — resolves the stored choice (daylight / midnight /
+  // aurora, or "system") to a concrete palette id, then writes it to a
+  // scoped wrapper attribute. Stays off <html> so the rentblackbear
+  // shell's own data-theme system (in app/layout.jsx + app/globals.css)
+  // is untouched when the user is on this page.
+  const themeChoice = state.settings.theme || DEFAULT_THEME;
+  const [resolvedTheme, setResolvedTheme] = useState(() => resolveThemeId(themeChoice, false));
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (themeChoice !== "system") {
-      setResolvedTheme(themeChoice);
+      setResolvedTheme(resolveThemeId(themeChoice, false));
       return;
     }
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const update = () => setResolvedTheme(mq.matches ? "dark" : "light");
+    const update = () => setResolvedTheme(resolveThemeId("system", mq.matches));
     update();
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
@@ -5716,7 +5716,7 @@ function BulkPasteSheet({ accent, categoryLabel, onClose, onSubmit }) {
   // re-declares [data-bb-theme] locally so the card's var(--bb-surface)
   // still resolves to an opaque color once it's outside the page tree.
   if (typeof document === "undefined") return null;
-  const theme = document.getElementById("bb-budget-root")?.getAttribute("data-bb-theme") || "light";
+  const theme = document.getElementById("bb-budget-root")?.getAttribute("data-bb-theme") || DEFAULT_THEME;
   return createPortal((
     <div
       data-bb-theme={theme}
@@ -7049,12 +7049,12 @@ function SettingsView({ state, updateState }) {
         </div>
         <PctRow label="Default vacancy %" bps={s.default_vacancy_bps} onChange={(v) => set({ default_vacancy_bps: v })} />
         <PctRow label="Default CapEx %" bps={s.default_capex_bps} onChange={(v) => set({ default_capex_bps: v })} />
-        <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", padding: "10px 4px" }}>
-          <div>
-            <div style={{ fontSize: 13.5, color: COLORS.textMuted, fontWeight: 500 }}>Appearance</div>
-            <div style={{ fontSize: 11, color: COLORS.textFaint, marginTop: 2 }}>System follows your phone&apos;s setting.</div>
+        <div className="bb-row" style={{ padding: "12px 4px" }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 13.5, color: COLORS.textMuted, fontWeight: 500 }}>Theme</div>
+            <div style={{ fontSize: 11, color: COLORS.textFaint, marginTop: 2 }}>Pick a look. System matches your phone&apos;s light/dark setting.</div>
           </div>
-          <ThemeToggle value={s.theme || "system"} onChange={(v) => set({ theme: v })} />
+          <ThemeToggle value={s.theme || DEFAULT_THEME} onChange={(v) => set({ theme: v })} />
         </div>
       </BlockCard>
     </div>
@@ -7062,13 +7062,19 @@ function SettingsView({ state, updateState }) {
 }
 
 function ThemeToggle({ value, onChange }) {
+  // Each named theme renders a live preview swatch (its real surface +
+  // accent), plus a "System" card that follows the OS. Selecting one
+  // re-themes the whole budget surface instantly.
   const opts = [
-    { id: "system", label: "System" },
-    { id: "light",  label: "Light" },
-    { id: "dark",   label: "Dark" },
+    ...THEMES,
+    { id: "system", label: "System", swatch: null, ring: COLORS.borderStrong, accent: COLORS.textMuted },
   ];
   return (
-    <div role="radiogroup" aria-label="Theme" style={{ display: "inline-flex", padding: 2, borderRadius: 100, background: COLORS.surfaceTint, border: `1px solid ${COLORS.border}` }}>
+    <div
+      role="radiogroup"
+      aria-label="Theme"
+      style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(78px, 1fr))", gap: 8 }}
+    >
       {opts.map((o) => {
         const active = value === o.id;
         return (
@@ -7079,21 +7085,37 @@ function ThemeToggle({ value, onChange }) {
             aria-checked={active}
             onClick={() => onChange(o.id)}
             style={{
-              padding: "6px 12px",
-              borderRadius: 100,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: 0.4,
-              fontFamily: FONT,
-              border: "none",
-              cursor: "pointer",
-              background: active ? COLORS.surface : "transparent",
-              color: active ? COLORS.text : COLORS.textMuted,
-              boxShadow: active ? "0 1px 2px rgba(15,23,41,0.06)" : "none",
-              transition: "all 0.12s ease",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+              padding: "12px 8px 10px",
+              borderRadius: RADII.lg,
+              border: `1.5px solid ${active ? COLORS.accent : COLORS.border}`,
+              background: active ? COLORS.accentSoft : COLORS.surface,
+              cursor: "pointer", fontFamily: FONT,
+              transition: "border-color 0.12s ease, background 0.12s ease",
             }}
           >
-            {o.label}
+            <span
+              aria-hidden="true"
+              style={{
+                width: 30, height: 30, borderRadius: "50%",
+                border: `2px solid ${o.ring}`,
+                background: o.swatch
+                  ? o.swatch
+                  : "conic-gradient(#ffffff 0 50%, #131a26 50% 100%)",
+                display: "grid", placeItems: "center",
+                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.12)",
+              }}
+            >
+              {o.swatch && (
+                <span style={{ width: 11, height: 11, borderRadius: "50%", background: o.accent }} />
+              )}
+            </span>
+            <span style={{
+              fontSize: 11.5, fontWeight: 700, letterSpacing: 0.2,
+              color: active ? COLORS.text : COLORS.textMuted,
+            }}>
+              {o.label}
+            </span>
           </button>
         );
       })}
