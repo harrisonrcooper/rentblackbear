@@ -411,6 +411,8 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
         /* Move-money amount: white placeholder on the gradient hero. */
         .bb-move-amt::placeholder { color: rgba(255,255,255,0.78); opacity: 1; }
         .bb-move-amt::-webkit-input-placeholder { color: rgba(255,255,255,0.78); }
+        .bb-move-amt { caret-color: #fff; }
+        @keyframes bb-amt-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
         @media (max-width: 899px) {
           /* Prevent iOS Safari's auto-zoom on input focus when font-size < 16px */
           input[type=number], input[type=text], input[type=date], input[type=email], textarea, select {
@@ -478,6 +480,9 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
+        /* Move-money hero amount stays large on mobile (override the
+           global 16px/30px input rules above). */
+        input.bb-move-amt { font-size: 62px !important; }
       ` }} />
       <a href="#bb-main" className="bb-skip">Skip to main content</a>
       <div role="status" aria-live="polite" aria-atomic="true" className="bb-sr-only">
@@ -4884,13 +4889,13 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
                 <Icon d={ICON.edit || ["M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7", "M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"]} size={12} color="#fff" /> Tap to type
               </span>
             </div>
-            <label style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 6, cursor: "text", borderBottom: "2px solid rgba(255,255,255,0.45)", paddingBottom: 4 }}>
-              <span style={{ fontSize: 44, fontWeight: 800, color: "rgba(255,255,255,0.7)" }}>$</span>
+            <label style={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "baseline", gap: 6, marginTop: 8, cursor: "text", animation: targetCents === 0 ? "bb-amt-blink 1.15s ease-in-out infinite" : "none" }}>
+              <span style={{ fontSize: 52, fontWeight: 800, color: "rgba(255,255,255,0.75)" }}>$</span>
               <input
                 type="number" step="0.01" inputMode="decimal" value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00" aria-label="Amount to move" className="bb-amount-input bb-move-amt"
-                style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", fontVariantNumeric: "tabular-nums" }}
+                placeholder="0.00" aria-label="Amount to move" className="bb-move-amt"
+                style={{ minWidth: 0, width: `${Math.max(4, (amount || "0.00").length + 0.5)}ch`, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontSize: 62, fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", fontVariantNumeric: "tabular-nums", textAlign: "left" }}
               />
             </label>
             {(from || to) && (
