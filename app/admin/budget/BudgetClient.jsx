@@ -4831,8 +4831,8 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
           const after = avail + afterSign * targetCents;
           return (
             <button key={label} onClick={() => onPick(label)} style={{
-              flex: "0 0 auto", minWidth: 104, cursor: "pointer", fontFamily: FONT, textAlign: "left",
-              borderRadius: 16, padding: "11px 13px",
+              flex: "0 0 auto", minWidth: 120, cursor: "pointer", fontFamily: FONT, textAlign: "left",
+              borderRadius: 16, padding: "14px 15px",
               border: on ? "none" : `1px solid ${COLORS.border}`,
               background: on ? COLORS.accent : COLORS.surface,
               color: on ? COLORS.onAccent : COLORS.text,
@@ -4872,10 +4872,10 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "18px 16px 24px", WebkitOverflowScrolling: "touch" }}>
-        <div style={{ maxWidth: 560, margin: "0 auto", display: "grid", gap: 18, minWidth: 0 }}>
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "22px 16px 28px", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", display: "grid", gap: 22, gridTemplateColumns: "minmax(0, 1fr)" }}>
           {/* HERO — the amount (stated once, tap to edit) + after-transfer impact */}
-          <div style={{ borderRadius: 22, padding: "18px 20px 16px", color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg }}>
+          <div style={{ borderRadius: 24, padding: "24px 22px 20px", color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>Moving</div>
               {!editingAmt && (
