@@ -364,7 +364,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
   }, [themeChoice]);
 
   return (
-    <div data-bb-theme={resolvedTheme} style={STYLES.page}>
+    <div id="bb-budget-root" data-bb-theme={resolvedTheme} style={STYLES.page}>
       <style dangerouslySetInnerHTML={{ __html: themeStylesheet() }} />
       <style dangerouslySetInnerHTML={{ __html: `
         .bb-edit-btn:hover { background: ${COLORS.surfaceAlt} !important; }
@@ -5711,11 +5711,15 @@ function BulkPasteSheet({ accent, categoryLabel, onClose, onSubmit }) {
   const parsed = useMemo(() => parseBulkPaste(text), [text]);
   const total = parsed.reduce((s, p) => s + p.amount_cents, 0);
   // Portal to <body> so the overlay escapes the per-row stacking context
-  // created by SortableRow (position:relative; z-index:1). Without this,
-  // later sibling envelope rows paint over the fixed sheet.
+  // created by SortableRow (position:relative; z-index:1) — without it,
+  // later sibling envelope rows paint over the fixed sheet. The wrapper
+  // re-declares [data-bb-theme] locally so the card's var(--bb-surface)
+  // still resolves to an opaque color once it's outside the page tree.
   if (typeof document === "undefined") return null;
+  const theme = document.getElementById("bb-budget-root")?.getAttribute("data-bb-theme") || "light";
   return createPortal((
     <div
+      data-bb-theme={theme}
       onClick={onClose}
       className="bb-modal"
       style={{
