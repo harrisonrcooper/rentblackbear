@@ -12,6 +12,7 @@
 // so the client can't be spoofed into writing without permission.
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RTooltip, ComposedChart, Bar, ReferenceLine, XAxis, YAxis, CartesianGrid } from "recharts";
 
 import { seedBudget } from "@/actions/budget/seed";
@@ -5709,7 +5710,11 @@ function BulkPasteSheet({ accent, categoryLabel, onClose, onSubmit }) {
   const [text, setText] = useState("");
   const parsed = useMemo(() => parseBulkPaste(text), [text]);
   const total = parsed.reduce((s, p) => s + p.amount_cents, 0);
-  return (
+  // Portal to <body> so the overlay escapes the per-row stacking context
+  // created by SortableRow (position:relative; z-index:1). Without this,
+  // later sibling envelope rows paint over the fixed sheet.
+  if (typeof document === "undefined") return null;
+  return createPortal((
     <div
       onClick={onClose}
       className="bb-modal"
@@ -5782,7 +5787,7 @@ function BulkPasteSheet({ accent, categoryLabel, onClose, onSubmit }) {
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }
 
 // ── Habits view — daily/weekly/monthly check-ins with streaks ────────
