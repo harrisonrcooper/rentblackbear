@@ -198,7 +198,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
   // Pin/unpin a section in the mobile bottom bar (cap of 4).
   const toggleMobileNavTab = useCallback((id) => {
     updateState((s) => {
-      const allowed = allowedNavSections(s.settings?.experience === "basic").map((x) => x.id);
+      const allowed = allowedNavSections(s.settings?.experience !== "full").map((x) => x.id);
       const raw = (s.settings.mobile_nav && s.settings.mobile_nav.length
         ? s.settings.mobile_nav
         : DEFAULT_MOBILE_NAV
@@ -281,9 +281,11 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
   const achievements = useMemo(() => computeAchievements(state), [state]);
   const achievementsUnlocked = achievements.filter((a) => a.unlocked).length;
   const isMobile = useIsMobile();
-  // Experience gate: "basic" hides advanced surfaces for financially-
-  // illiterate households. Default "full" preserves Harrison's view.
-  const isBasic = state.settings.experience === "basic";
+  // Experience gate: "basic" keeps the app to the money essentials and
+  // hides the gamified surfaces (Habits, Achievements). This is now the
+  // DEFAULT — a personal household budget shouldn't open onto a wall of
+  // features. Opt into the advanced view by setting experience === "full".
+  const isBasic = state.settings.experience !== "full";
 
   // Auto-activate the profile whose clerk_user_id matches the logged
   // in Clerk user. Runs once when state + userId first load — keeps
