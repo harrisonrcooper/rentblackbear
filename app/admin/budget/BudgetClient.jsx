@@ -412,7 +412,6 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
         .bb-move-amt::placeholder { color: rgba(255,255,255,0.78); opacity: 1; }
         .bb-move-amt::-webkit-input-placeholder { color: rgba(255,255,255,0.78); }
         .bb-move-amt { caret-color: #fff; }
-        @keyframes bb-amt-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
         @media (max-width: 899px) {
           /* Prevent iOS Safari's auto-zoom on input focus when font-size < 16px */
           input[type=number], input[type=text], input[type=date], input[type=email], textarea, select {
@@ -4883,19 +4882,15 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
         <div style={{ maxWidth: 600, margin: "0 auto", display: "grid", gap: 22, gridTemplateColumns: "minmax(0, 1fr)" }}>
           {/* HERO — the amount (stated once, tap to edit) + after-transfer impact */}
           <div style={{ borderRadius: 24, padding: "24px 22px 20px", color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>Moving</div>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.85)", background: "rgba(255,255,255,0.18)", borderRadius: 100, padding: "3px 10px" }}>
-                <Icon d={ICON.edit || ["M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7", "M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"]} size={12} color="#fff" /> Tap to type
-              </span>
-            </div>
-            <label style={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "baseline", gap: 6, marginTop: 8, cursor: "text", animation: targetCents === 0 ? "bb-amt-blink 1.15s ease-in-out infinite" : "none" }}>
-              <span style={{ fontSize: 52, fontWeight: 800, color: "rgba(255,255,255,0.75)" }}>$</span>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>Moving</div>
+            <label style={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "baseline", gap: 4, marginTop: 8, cursor: "text" }}>
+              <span style={{ fontSize: 62, fontWeight: 800, color: "rgba(255,255,255,0.75)" }}>$</span>
               <input
+                autoFocus
                 type="number" step="0.01" inputMode="decimal" value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00" aria-label="Amount to move" className="bb-move-amt"
-                style={{ minWidth: 0, width: `${Math.max(4, (amount || "0.00").length + 0.5)}ch`, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontSize: 62, fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", fontVariantNumeric: "tabular-nums", textAlign: "left" }}
+                style={{ minWidth: 0, width: `${Math.max(4, (amount || "0.00").length + 0.5)}ch`, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", fontVariantNumeric: "tabular-nums", textAlign: "center" }}
               />
             </label>
             {(from || to) && (
