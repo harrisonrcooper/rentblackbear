@@ -32,7 +32,7 @@ export function intensityColor(base, intensity) {
 // Personal-expense group palette + icons. Each group gets a soft
 // background tint and a full-saturation accent for the leading bar.
 export const GROUP_META = {
-  giving:     { label: "Giving",     accent: "#8c5ad9", bg: "rgba(140,90,217,0.08)",  icon: ICON.gift },
+  giving:     { label: "Giving",     accent: "#8c5ad9", bg: "rgba(140,90,217,0.08)",  icon: ICON.heart },
   housing:    { label: "Housing",    accent: "#3b6fd1", bg: "rgba(59,111,209,0.08)",  icon: ICON.home },
   transport:  { label: "Transport",  accent: "#c98a2b", bg: "rgba(201,138,43,0.08)",  icon: ICON.car },
   food:       { label: "Food",       accent: "#e85d4a", bg: "rgba(232,93,74,0.08)",   icon: ICON.utensils },

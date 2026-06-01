@@ -67,6 +67,8 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
   const [drill, setDrill] = useState(null); // 'personal' | 'rentals' | 'networth' | 'heloc' | 'mom' | null
   const [activeSection, setActiveSection] = useState("dashboard"); // 'dashboard' | 'envelopes' | 'habits' | 'goals' | 'achievements' | 'settings'
   const [addOpen, setAddOpen] = useState(false);
+  const [addPreset, setAddPreset] = useState(null); // envelope label to pre-fill the log keypad
+  const openLog = useCallback((cat) => { setAddPreset(typeof cat === "string" ? cat : null); setAddOpen(true); }, []);
   const [navEditorOpen, setNavEditorOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   // Toast queue. setToast(null) clears all; setToast({...}) appends.
@@ -524,7 +526,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
                 setActiveSection={setActiveSection}
                 setDrill={setDrill}
                 setToast={setToast}
-                onLog={() => setAddOpen(true)}
+                onLog={openLog}
                 isBasic={isBasic}
                 pending={pending}
                 editingLayout={editingLayout}
@@ -568,7 +570,8 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
       {addOpen && (
         <AddSheet
           state={state}
-          onClose={() => setAddOpen(false)}
+          initialCategory={addPreset}
+          onClose={() => { setAddOpen(false); setAddPreset(null); }}
           onAddExpense={(entry) => {
             updateState((s) => ({
               ...s,
@@ -594,7 +597,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
         <MobileNav
           active={activeSection}
           onChange={setActiveSection}
-          onAdd={() => setAddOpen(true)}
+          onAdd={() => openLog()}
           onEditNav={() => setNavEditorOpen(true)}
           navIds={resolveMobileNav(state.settings, isBasic)}
           achievementsUnlocked={achievementsUnlocked}
@@ -603,7 +606,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
       )}
 
       {hasData && !isMobile && (
-        <FAB onClick={() => setAddOpen(true)} bottomOffset={24} />
+        <FAB onClick={() => openLog()} bottomOffset={24} />
       )}
 
       {navEditorOpen && (
@@ -660,7 +663,7 @@ function Keypad({ onKey }) {
 // Step 2: category (expense, ranked by how often you use it) or the
 // source details (income). Theme-aware — uses the app's own surface
 // colors, so it's light/dark with the rest of the app.
-function AddSheet({ state, onClose, onAddExpense, onAddIncome }) {
+function AddSheet({ state, onClose, onAddExpense, onAddIncome, initialCategory }) {
   const today = new Date();
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
@@ -671,7 +674,7 @@ function AddSheet({ state, onClose, onAddExpense, onAddIncome }) {
 
   // Expense step 2
   const [note, setNote] = useState("");
-  const [category, setCategory] = useState(null);
+  const [category, setCategory] = useState(initialCategory ?? null);
   const [search, setSearch] = useState("");
   const [paidOn, setPaidOn] = useState(todayISO);
   const [dateOpen, setDateOpen] = useState(false);
@@ -9147,7 +9150,7 @@ function NeedsAttention({ state, activeMonth, onOpen }) {
           return (
             <button
               key={r.label + i}
-              onClick={onOpen}
+              onClick={() => onOpen(r.label)}
               style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 12, textAlign: "left",
                 padding: isMobile ? "13px 16px" : "12px 16px", cursor: "pointer", fontFamily: FONT,
@@ -9239,7 +9242,7 @@ function MoreMenu({ onNavigate, isBasic }) {
 // discrete cards (hero · log/move · attention · envelopes), instead of
 // the desktop's configurable tile grid. Shown whenever the viewport is
 // phone-width; desktop keeps DashboardLayout's tile system.
-function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, onOpenEnvelopes }) {
+function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, onOpenEnvelopes, setDrill }) {
   const startMonth = useMemo(() => envelopeStartMonth(state), [state]);
   const [collapsed, setCollapsed] = useState(() => new Set());
 
@@ -9263,6 +9266,33 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
   const totalBudget = allRows.reduce((s, r) => s + r.budget, 0);
   const usedPct = totalBudget > 0 ? Math.min(100, Math.round((totalSpent / totalBudget) * 100)) : 0;
   const over = totalSpent > totalBudget && totalBudget > 0;
+
+  // Compact money glance + a single pacing insight (matches the prototype).
+  const money = useMemo(() => {
+    const ops = (state.properties || []).filter((p) => p.status === "operating");
+    const noi = ops.reduce((s, p) => s + propertyMonthlyGross(p) - propertyMonthlyExpenses(p, state.settings), 0);
+    const loan = (state.mom_loans || [])[0];
+    const momNet = loan
+      ? loan.starting_balance_cents
+        + loan.payments.filter((p) => p.direction === "out").reduce((s, p) => s + p.amount_cents, 0)
+        - loan.payments.filter((p) => p.direction !== "out").reduce((s, p) => s + p.amount_cents, 0)
+      : null;
+    const heloc = state.heloc_model?.mortgage_balance_cents ?? null;
+    return { networth: computeNetWorthCents(state), noi, momNet, heloc };
+  }, [state]);
+  const insight = useMemo(() => {
+    if (totalBudget <= 0) return null;
+    const [, m] = activeMonth.split("-").map(Number);
+    const now = new Date();
+    const isCurrent = now.getMonth() + 1 === m;
+    const daysInMonth = new Date(now.getFullYear(), m, 0).getDate();
+    const dayOfMonth = isCurrent ? now.getDate() : daysInMonth;
+    const paceFrac = Math.max(0.001, dayOfMonth / daysInMonth);
+    const projected = totalSpent / paceFrac;
+    const leftover = totalBudget - projected;
+    if (leftover > 0) return { kind: "good", text: `You're pacing under budget — on track to finish with about ${fmtUsd(leftover, { compact: true })} left over.` };
+    return { kind: "warn", text: `At this pace you'll go about ${fmtUsd(Math.abs(leftover), { compact: true })} over budget this month.` };
+  }, [activeMonth, totalSpent, totalBudget]);
 
   const toggle = (key) => setCollapsed((p) => { const n = new Set(p); n.has(key) ? n.delete(key) : n.add(key); return n; });
   const secLabel = (txt, right) => (
@@ -9333,7 +9363,7 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
                         <span style={{ display: "block", height: "100%", width: `${o ? 100 : pct}%`, borderRadius: 4, background: barColor }} />
                       </span>
                       <span style={{ flex: "0 0 56px", textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(r.available)}</span>
-                      <button onClick={() => onLog()} aria-label={`Log to ${r.label}`} style={{ flex: "0 0 26px", display: "grid", placeItems: "center", background: "transparent", border: "none", cursor: "pointer", color: COLORS.accent }}>
+                      <button onClick={() => onLog(r.label)} aria-label={`Log to ${r.label}`} style={{ flex: "0 0 26px", display: "grid", placeItems: "center", background: "transparent", border: "none", cursor: "pointer", color: COLORS.accent }}>
                         <Icon d={["M12 5v14", "M5 12h14"]} size={17} color={COLORS.accent} />
                       </button>
                     </div>
@@ -9344,6 +9374,33 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
           })}
         </div>
       </div>
+
+      {/* MONEY AT A GLANCE */}
+      <div>
+        {secLabel("Money at a glance", null)}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {[
+            { l: "Net worth", n: fmtUsd(money.networth, { compact: true }), d: "Tap to drill", drill: "networth", c: COLORS.text },
+            { l: "Rentals NOI", n: fmtUsd(money.noi, { compact: true }), d: "per month", drill: "rentals", c: money.noi >= 0 ? COLORS.green : COLORS.red },
+            { l: "Mom's loan", n: money.momNet == null ? "—" : fmtUsd(Math.abs(money.momNet), { compact: true }), d: money.momNet == null ? "not tracked" : money.momNet > 0 ? "owed to you" : "you owe", drill: "mom", c: COLORS.text },
+            { l: "HELOC", n: money.heloc == null ? "—" : fmtUsd(money.heloc, { compact: true }), d: "balance", drill: "heloc", c: COLORS.purple },
+          ].map((m) => (
+            <button key={m.l} onClick={() => setDrill && setDrill(m.drill)} style={{ ...STYLES.card, padding: 14, textAlign: "left", cursor: "pointer", fontFamily: FONT }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: COLORS.textFaint }}>{m.l}</div>
+              <div style={{ marginTop: 4, fontSize: 21, fontWeight: 800, letterSpacing: "-0.02em", color: m.c, fontVariantNumeric: "tabular-nums" }}>{m.n}</div>
+              <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textMuted }}>{m.d}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* INSIGHT */}
+      {insight && (
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", borderRadius: RADII.lg, background: insight.kind === "good" ? COLORS.accentSoft : COLORS.amberBg, border: `1px solid ${insight.kind === "good" ? COLORS.accentSoft : COLORS.amberBg}` }}>
+          <Icon d={insight.kind === "good" ? ICON.trending : ["M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z", "M12 9v4", "M12 17h.01"]} size={17} color={insight.kind === "good" ? COLORS.accent : COLORS.amber} />
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.text, lineHeight: 1.5 }}>{insight.text}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -9567,6 +9624,7 @@ function DashboardLayout({
         onLog={onLog}
         onMove={() => setActiveSection("envelopes")}
         onOpenEnvelopes={() => setActiveSection("envelopes")}
+        setDrill={setDrill}
       />
     );
   }
