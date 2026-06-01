@@ -408,6 +408,9 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
         /* Hidden scrollbar for horizontal pickers (Move-money selectors). */
         .bb-hscroll { -webkit-overflow-scrolling: touch; }
         .bb-hscroll::-webkit-scrollbar { display: none; }
+        /* Move-money amount: white placeholder on the gradient hero. */
+        .bb-move-amt::placeholder { color: rgba(255,255,255,0.78); opacity: 1; }
+        .bb-move-amt::-webkit-input-placeholder { color: rgba(255,255,255,0.78); }
         @media (max-width: 899px) {
           /* Prevent iOS Safari's auto-zoom on input focus when font-size < 16px */
           input[type=number], input[type=text], input[type=date], input[type=email], textarea, select {
@@ -4772,7 +4775,6 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
   const [to, setTo] = useState(initialTo || _worst);
   const [amount, setAmount] = useState(initialAmount);
 
-  const [editingAmt, setEditingAmt] = useState(!initialAmount);
   const targetCents = (() => { const n = parseFloat(amount); return isNaN(n) ? 0 : Math.max(0, Math.round(n * 100)); })();
   const toDeficit = to ? Math.max(0, -availOf(to)) : 0;
   const fromAvail = from ? Math.max(0, availOf(from)) : 0;
@@ -4876,43 +4878,32 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
         <div style={{ maxWidth: 600, margin: "0 auto", display: "grid", gap: 22, gridTemplateColumns: "minmax(0, 1fr)" }}>
           {/* HERO — the amount (stated once, tap to edit) + after-transfer impact */}
           <div style={{ borderRadius: 24, padding: "24px 22px 20px", color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>Moving</div>
-              {!editingAmt && (
-                <button onClick={() => setEditingAmt(true)} style={{ marginLeft: "auto", fontFamily: FONT, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)", background: "transparent", border: "1px solid rgba(255,255,255,0.4)", borderRadius: 100, padding: "3px 12px", cursor: "pointer" }}>Edit</button>
-              )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>Moving</div>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.85)", background: "rgba(255,255,255,0.18)", borderRadius: 100, padding: "3px 10px" }}>
+                <Icon d={ICON.edit || ["M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7", "M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"]} size={12} color="#fff" /> Tap to type
+              </span>
             </div>
-            {editingAmt ? (
-              <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 4 }}>
-                <span style={{ fontSize: 38, fontWeight: 800, color: "rgba(255,255,255,0.7)" }}>$</span>
-                <input
-                  type="number" step="0.01" inputMode="decimal" value={amount} autoFocus
-                  onChange={(e) => setAmount(e.target.value)}
-                  onBlur={() => { if (targetCents > 0) setEditingAmt(false); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" && targetCents > 0) setEditingAmt(false); }}
-                  placeholder="0.00" aria-label="Amount to move" className="bb-amount-input"
-                  style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", fontVariantNumeric: "tabular-nums" }}
-                />
-              </div>
-            ) : (
-              <button onClick={() => setEditingAmt(true)} style={{ display: "block", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT, color: COLORS.heroInk, padding: 0, marginTop: 3, fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-                {fmtUsd(targetCents)}
-              </button>
-            )}
+            <label style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 6, cursor: "text", borderBottom: "2px solid rgba(255,255,255,0.45)", paddingBottom: 4 }}>
+              <span style={{ fontSize: 44, fontWeight: 800, color: "rgba(255,255,255,0.7)" }}>$</span>
+              <input
+                type="number" step="0.01" inputMode="decimal" value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00" aria-label="Amount to move" className="bb-amount-input bb-move-amt"
+                style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", fontVariantNumeric: "tabular-nums" }}
+              />
+            </label>
             {(from || to) && (
-              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                {from && (
-                  <div style={{ flex: 1, background: "rgba(255,255,255,0.16)", borderRadius: 12, padding: "9px 11px", minWidth: 0 }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{categoryEmoji(from, groupOf(from))} {from} after</div>
-                    <div style={{ fontSize: 15, fontWeight: 800, marginTop: 2 }}>{fmtUsd(fromAfter)} {targetCents > 0 && <s style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 12 }}>{fmtUsd(availOf(from))}</s>}</div>
+              <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                {[from && ["from", from, fromAfter], to && ["to", to, toAfter]].filter(Boolean).map(([k, label, after]) => (
+                  <div key={k} style={{ flex: 1, background: "rgba(255,255,255,0.16)", borderRadius: 14, padding: "11px 13px", minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{categoryEmoji(label, groupOf(label))}</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label} after</div>
+                      <div style={{ fontSize: 19, fontWeight: 800, marginTop: 2, letterSpacing: "-0.01em" }}>{fmtUsd(after)} {targetCents > 0 && <s style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 13 }}>{fmtUsd(label === from ? availOf(from) : availOf(to))}</s>}</div>
+                    </div>
                   </div>
-                )}
-                {to && (
-                  <div style={{ flex: 1, background: "rgba(255,255,255,0.16)", borderRadius: 12, padding: "9px 11px", minWidth: 0 }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{categoryEmoji(to, groupOf(to))} {to} after</div>
-                    <div style={{ fontSize: 15, fontWeight: 800, marginTop: 2 }}>{fmtUsd(toAfter)} {targetCents > 0 && <s style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 12 }}>{fmtUsd(availOf(to))}</s>}</div>
-                  </div>
-                )}
+                ))}
               </div>
             )}
           </div>
@@ -4933,12 +4924,12 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
           {(toDeficit > 0 || fromAvail > 0) && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {toDeficit > 0 && (
-                <button onClick={() => { setAmount((toDeficit / 100).toFixed(2)); setEditingAmt(false); }} style={{ background: COLORS.redBg, color: COLORS.red, border: "none", borderRadius: 100, padding: "9px 15px", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800 }}>
+                <button onClick={() => setAmount((toDeficit / 100).toFixed(2))} style={{ background: COLORS.redBg, color: COLORS.red, border: "none", borderRadius: 100, padding: "9px 15px", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800 }}>
                   Cover the deficit · {fmtUsd(toDeficit)}
                 </button>
               )}
               {fromAvail > 0 && (
-                <button onClick={() => { setAmount((fromAvail / 100).toFixed(2)); setEditingAmt(false); }} style={{ background: COLORS.accentSoft, color: COLORS.accent, border: "none", borderRadius: 100, padding: "9px 15px", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800 }}>
+                <button onClick={() => setAmount((fromAvail / 100).toFixed(2))} style={{ background: COLORS.accentSoft, color: COLORS.accent, border: "none", borderRadius: 100, padding: "9px 15px", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800 }}>
                   Move all · {fmtUsd(fromAvail)}
                 </button>
               )}
