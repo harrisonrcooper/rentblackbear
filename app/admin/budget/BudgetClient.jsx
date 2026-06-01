@@ -7521,7 +7521,7 @@ function MobileNav({ active, onChange, onAdd, onEditNav, navIds, achievementsUnl
           display: "grid", placeItems: "center", position: "relative",
           transition: "background 0.18s ease",
         }}>
-          <Icon d={s.icon} size={18} />
+          <span style={{ fontSize: 18, lineHeight: 1, filter: isActive ? "none" : "saturate(0.85)" }}>{s.emoji}</span>
           {badge != null && (
             <span style={{
               position: "absolute", top: -2, right: -4,
@@ -7562,15 +7562,16 @@ function MobileNav({ active, onChange, onAdd, onEditNav, navIds, achievementsUnl
         onClick={guardedTap(onAdd)}
         aria-label="Add expense or income"
         style={{
-          width: 52, height: 52, borderRadius: "50%", marginTop: -24,
+          width: 54, height: 54, borderRadius: "50%", marginTop: -24,
           justifySelf: "center",
-          background: COLORS.text, color: "#fff",
-          border: `4px solid ${COLORS.surface}`, cursor: "pointer",
+          background: "linear-gradient(135deg, #1665D8, #FF4998)", color: "#fff",
+          border: "none", cursor: "pointer",
           display: "grid", placeItems: "center",
-          boxShadow: "0 8px 22px rgba(13,20,36,0.34)",
+          fontSize: 26, fontWeight: 400, lineHeight: 1,
+          boxShadow: "0 8px 20px rgba(18,81,173,0.40)",
         }}
       >
-        <Icon d={["M12 5v14", "M5 12h14"]} size={22} />
+        ＋
       </button>
       {renderTab(tabs[2], "t2")}
       {renderTab(tabs[3], "t3")}
@@ -7679,14 +7680,14 @@ function MobileNavEditor({ sections, pinned, active, onToggle, onNavigate, onClo
 // ── Sidebar ──────────────────────────────────────────────────────────
 
 const SIDEBAR_SECTIONS = [
-  { id: "dashboard",    label: "This Month",   icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10", accent: "#3b6fd1" },
-  { id: "envelopes",    label: "Envelopes",    icon: "M21 8v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8 M1 5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v3H1V5z M10 12h4", accent: "#4a7c59" },
-  { id: "money",        label: "Money",        icon: "M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3", accent: "#1251AD" },
-  { id: "habits",       label: "Habits",       icon: "M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3", accent: "#d6448f" },
-  { id: "goals",        label: "Goals",        icon: "M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6", accent: "#c88318" },
-  { id: "achievements", label: "Achievements", icon: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2z", accent: "#8c5ad9" },
-  { id: "settings",     label: "Settings",     icon: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", accent: "#5f6675" },
-  { id: "more",         label: "More",         icon: "M5 12h.01 M12 12h.01 M19 12h.01", accent: "#5f6675" },
+  { id: "dashboard",    label: "This Month",   icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10", accent: "#3b6fd1", emoji: "🏠" },
+  { id: "envelopes",    label: "Envelopes",    icon: "M21 8v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8 M1 5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v3H1V5z M10 12h4", accent: "#4a7c59", emoji: "✉️" },
+  { id: "money",        label: "Money",        icon: "M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3", accent: "#1251AD", emoji: "📊" },
+  { id: "habits",       label: "Habits",       icon: "M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3", accent: "#d6448f", emoji: "🌱" },
+  { id: "goals",        label: "Goals",        icon: "M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6", accent: "#c88318", emoji: "🎯" },
+  { id: "achievements", label: "Achievements", icon: "M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2z", accent: "#8c5ad9", emoji: "🏆" },
+  { id: "settings",     label: "Settings",     icon: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", accent: "#5f6675", emoji: "⚙️" },
+  { id: "more",         label: "More",         icon: "M5 12h.01 M12 12h.01 M19 12h.01", accent: "#5f6675", emoji: "⋯" },
 ];
 
 // Sections that exist only as mobile bottom-nav destinations — kept out
@@ -9079,7 +9080,7 @@ function QuickActionsRow({ onLog, onMove }) {
           background: COLORS.accent, color: COLORS.onAccent, boxShadow: COLORS.shadow,
         }}
       >
-        <Icon d={["M12 5v14", "M5 12h14"]} size={17} color={COLORS.onAccent} />
+        <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 400 }}>＋</span>
         Log spending
       </button>
       <button
@@ -9091,7 +9092,6 @@ function QuickActionsRow({ onLog, onMove }) {
           background: COLORS.surface, color: COLORS.text, border: `1px solid ${COLORS.border}`, boxShadow: COLORS.shadow,
         }}
       >
-        <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={15} color={COLORS.textMuted} />
         Move money
       </button>
     </div>
@@ -9132,8 +9132,8 @@ function NeedsAttention({ state, activeMonth, onOpen }) {
 
   return (
     <section>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 4px 10px" }}>
-        <Icon d={["M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z", "M12 9v4", "M12 17h.01"]} size={15} color={COLORS.red} />
+      <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "0 4px 10px" }}>
+        <span style={{ fontSize: 13, lineHeight: 1 }}>⚠️</span>
         <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: COLORS.red }}>
           Needs attention
         </span>
@@ -9160,9 +9160,9 @@ function NeedsAttention({ state, activeMonth, onOpen }) {
             >
               <span style={{
                 width: 34, height: 34, borderRadius: 11, flexShrink: 0, display: "grid", placeItems: "center",
-                background: r.over ? COLORS.redBg : COLORS.amberBg, color: rightColor,
+                background: r.over ? COLORS.redBg : COLORS.amberBg, fontSize: 17, lineHeight: 1,
               }}>
-                <Icon d={meta.icon} size={16} color={rightColor} />
+                {meta.emoji}
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
@@ -9267,6 +9267,16 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
   const usedPct = totalBudget > 0 ? Math.min(100, Math.round((totalSpent / totalBudget) * 100)) : 0;
   const over = totalSpent > totalBudget && totalBudget > 0;
 
+  // Days remaining in the active month (0 for past months) — drives the
+  // hero caption, matching the mockup's "· 12 days left".
+  const daysLeft = useMemo(() => {
+    const [y, m] = activeMonth.split("-").map(Number);
+    const now = new Date();
+    const isCurrent = now.getFullYear() === y && now.getMonth() + 1 === m;
+    if (!isCurrent) return 0;
+    return Math.max(0, new Date(y, m, 0).getDate() - now.getDate());
+  }, [activeMonth]);
+
   // Compact money glance + a single pacing insight (matches the prototype).
   const money = useMemo(() => {
     const ops = (state.properties || []).filter((p) => p.status === "operating");
@@ -9278,7 +9288,7 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
         - loan.payments.filter((p) => p.direction !== "out").reduce((s, p) => s + p.amount_cents, 0)
       : null;
     const heloc = state.heloc_model?.mortgage_balance_cents ?? null;
-    return { networth: computeNetWorthCents(state), noi, momNet, heloc };
+    return { networth: computeNetWorthCents(state), noi, opsCount: ops.length, momNet, heloc };
   }, [state]);
   const insight = useMemo(() => {
     if (totalBudget <= 0) return null;
@@ -9319,7 +9329,7 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
               <div style={{ height: "100%", width: `${usedPct}%`, borderRadius: 6, background: over ? COLORS.red : COLORS.heroFill }} />
             </div>
             <div style={{ marginTop: 9, fontSize: 12, fontWeight: 600, color: COLORS.heroInkSoft }}>
-              <span style={{ color: COLORS.heroInk }}>{fmtUsd(totalSpent, { compact: true })} spent</span>{" of "}{fmtUsd(totalBudget, { compact: true })} budgeted · {usedPct}% used
+              <span style={{ color: COLORS.heroInk }}>{fmtUsd(totalSpent)} spent</span>{" of "}{fmtUsd(totalBudget)} budgeted{daysLeft > 0 ? ` · ${daysLeft} days left` : ""}
             </div>
           </>
         )}
@@ -9334,8 +9344,8 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
       {/* ENVELOPES — one card per group */}
       <div>
         {secLabel("Envelopes", (
-          <button onClick={onOpenEnvelopes} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: COLORS.accent, display: "inline-flex", alignItems: "center", gap: 2 }}>
-            All <Icon d={ICON.chevR} size={13} color={COLORS.accent} />
+          <button onClick={onOpenEnvelopes} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 700, color: COLORS.accent, display: "inline-flex", alignItems: "center", gap: 3 }}>
+            All <span style={{ fontSize: 15, lineHeight: 1 }}>›</span>
           </button>
         ))}
         <div style={{ display: "grid", gap: 12 }}>
@@ -9346,13 +9356,13 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
             return (
               <div key={g.key} style={{ ...STYLES.card, overflow: "hidden" }}>
                 <button onClick={() => toggle(g.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, padding: "13px 15px", border: "none", background: "transparent", cursor: "pointer", fontFamily: FONT, textAlign: "left" }}>
-                  <span style={{ width: 30, height: 30, borderRadius: 10, flexShrink: 0, display: "grid", placeItems: "center", background: g.meta.bg, color: g.meta.accent }}>
-                    <Icon d={g.meta.icon} size={16} color={g.meta.accent} />
+                  <span style={{ width: 34, height: 34, borderRadius: 11, flexShrink: 0, display: "grid", placeItems: "center", background: g.meta.bg, fontSize: 17, lineHeight: 1 }}>
+                    {g.meta.emoji}
                   </span>
                   <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: COLORS.textMuted }}>{groupLabel(state, g.key)}</span>
                   {hasOver && <span style={{ width: 6, height: 6, borderRadius: 999, background: COLORS.red, flexShrink: 0 }} />}
                   <span style={{ marginLeft: "auto", fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: subtotal < 0 ? COLORS.red : COLORS.text }}>{fmtUsd(subtotal)}</span>
-                  <Icon d={ICON.chevD} size={16} color={COLORS.textFaint} style={{ transform: isCol ? "rotate(-90deg)" : "none", transition: "transform 0.15s ease" }} />
+                  <span style={{ fontSize: 17, lineHeight: 1, color: COLORS.textFaint, display: "inline-block", transform: isCol ? "none" : "rotate(90deg)", transition: "transform 0.2s ease" }}>›</span>
                 </button>
                 {!isCol && g.rows.map((r, i) => {
                   const o = r.available < 0;
@@ -9366,8 +9376,8 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
                         <span style={{ display: "block", height: "100%", width: `${o ? 100 : pct}%`, borderRadius: 4, background: barColor }} />
                       </span>
                       <span style={{ flex: "0 0 56px", textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: o ? COLORS.red : r.available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(r.available)}</span>
-                      <button onClick={() => onLog(r.label)} aria-label={`Log to ${r.label}`} style={{ flex: "0 0 26px", display: "grid", placeItems: "center", background: "transparent", border: "none", cursor: "pointer", color: COLORS.accent }}>
-                        <Icon d={["M12 5v14", "M5 12h14"]} size={17} color={COLORS.accent} />
+                      <button onClick={() => onLog(r.label)} aria-label={`Log to ${r.label}`} style={{ flex: "0 0 26px", display: "grid", placeItems: "center", background: "transparent", border: "none", cursor: "pointer", color: COLORS.accent, fontFamily: FONT, fontSize: 19, fontWeight: 800, lineHeight: 1 }}>
+                        ＋
                       </button>
                     </div>
                   );
@@ -9384,7 +9394,7 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {[
             { l: "Net worth", n: fmtUsd(money.networth, { compact: true }), d: "Tap to drill", drill: "networth", c: COLORS.text },
-            { l: "Rentals NOI", n: fmtUsd(money.noi, { compact: true }), d: "per month", drill: "rentals", c: money.noi >= 0 ? COLORS.green : COLORS.red },
+            { l: "Rentals NOI", n: fmtUsd(money.noi, { compact: true }), d: money.opsCount === 1 ? "1 operating" : `${money.opsCount} operating`, drill: "rentals", c: money.noi >= 0 ? COLORS.green : COLORS.red },
             { l: "Mom's loan", n: money.momNet == null ? "—" : fmtUsd(Math.abs(money.momNet), { compact: true }), d: money.momNet == null ? "not tracked" : money.momNet > 0 ? "owed to you" : "you owe", drill: "mom", c: COLORS.text },
             { l: "HELOC", n: money.heloc == null ? "—" : fmtUsd(money.heloc, { compact: true }), d: "balance", drill: "heloc", c: COLORS.purple },
           ].map((m) => (
@@ -9399,9 +9409,12 @@ function ThisMonthMobile({ state, activeMonth, setActiveMonth, onLog, onMove, on
 
       {/* INSIGHT */}
       {insight && (
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", borderRadius: RADII.lg, background: insight.kind === "good" ? COLORS.accentSoft : COLORS.amberBg, border: `1px solid ${insight.kind === "good" ? COLORS.accentSoft : COLORS.amberBg}` }}>
-          <Icon d={insight.kind === "good" ? ICON.trending : ["M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z", "M12 9v4", "M12 17h.01"]} size={17} color={insight.kind === "good" ? COLORS.accent : COLORS.amber} />
-          <div style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.text, lineHeight: 1.5 }}>{insight.text}</div>
+        <div>
+          {secLabel("Heads up", null)}
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", borderRadius: RADII.lg, background: insight.kind === "good" ? COLORS.accentSoft : COLORS.amberBg, border: `1px solid ${insight.kind === "good" ? COLORS.accentSoft : COLORS.amberBg}` }}>
+            <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{insight.kind === "good" ? "💡" : "⚠️"}</span>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.text, lineHeight: 1.5 }}>{insight.text}</div>
+          </div>
         </div>
       )}
     </div>

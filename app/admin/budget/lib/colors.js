@@ -31,15 +31,18 @@ export function intensityColor(base, intensity) {
 
 // Personal-expense group palette + icons. Each group gets a soft
 // background tint and a full-saturation accent for the leading bar.
+// `emoji` is the mobile "This Month" glyph — the budget redesign uses
+// emojis on purpose (Harrison's call for this surface); `icon` stays the
+// Lucide path data used everywhere else.
 export const GROUP_META = {
-  giving:     { label: "Giving",     accent: "#8c5ad9", bg: "rgba(140,90,217,0.08)",  icon: ICON.heart },
-  housing:    { label: "Housing",    accent: "#3b6fd1", bg: "rgba(59,111,209,0.08)",  icon: ICON.home },
-  transport:  { label: "Transport",  accent: "#c98a2b", bg: "rgba(201,138,43,0.08)",  icon: ICON.car },
-  food:       { label: "Food",       accent: "#e85d4a", bg: "rgba(232,93,74,0.08)",   icon: ICON.utensils },
-  personal:   { label: "Personal",   accent: "#d6448f", bg: "rgba(214,68,143,0.08)",  icon: ICON.user },
-  kids:       { label: "Kids",       accent: "#0bafb0", bg: "rgba(11,175,176,0.08)",  icon: ICON.family },
-  debt:       { label: "Debt",       accent: "#d64545", bg: "rgba(214,69,69,0.08)",   icon: ICON.creditCard },
-  yearly:     { label: "Yearly",     accent: "#5f6675", bg: "rgba(95,102,117,0.08)",  icon: ICON.calendar },
-  retirement: { label: "Retirement", accent: "#138a60", bg: "rgba(19,138,96,0.08)",   icon: ICON.landmark },
-  other:      { label: "Other",      accent: "#5f6675", bg: "rgba(95,102,117,0.08)",  icon: ICON.target },
+  giving:     { label: "Giving",     accent: "#8c5ad9", bg: "rgba(140,90,217,0.08)",  icon: ICON.heart,      emoji: "💜" },
+  housing:    { label: "Housing",    accent: "#3b6fd1", bg: "rgba(59,111,209,0.08)",  icon: ICON.home,       emoji: "🏠" },
+  transport:  { label: "Transport",  accent: "#c98a2b", bg: "rgba(201,138,43,0.08)",  icon: ICON.car,        emoji: "🚗" },
+  food:       { label: "Food",       accent: "#e85d4a", bg: "rgba(232,93,74,0.08)",   icon: ICON.utensils,   emoji: "🍽️" },
+  personal:   { label: "Personal",   accent: "#d6448f", bg: "rgba(214,68,143,0.08)",  icon: ICON.user,       emoji: "🛍️" },
+  kids:       { label: "Kids",       accent: "#0bafb0", bg: "rgba(11,175,176,0.08)",  icon: ICON.family,     emoji: "👨‍👩‍👧" },
+  debt:       { label: "Debt",       accent: "#d64545", bg: "rgba(214,69,69,0.08)",   icon: ICON.creditCard, emoji: "💳" },
+  yearly:     { label: "Yearly",     accent: "#5f6675", bg: "rgba(95,102,117,0.08)",  icon: ICON.calendar,   emoji: "📅" },
+  retirement: { label: "Retirement", accent: "#138a60", bg: "rgba(19,138,96,0.08)",   icon: ICON.landmark,   emoji: "🏦" },
+  other:      { label: "Other",      accent: "#5f6675", bg: "rgba(95,102,117,0.08)",  icon: ICON.target,     emoji: "📦" },
 };
