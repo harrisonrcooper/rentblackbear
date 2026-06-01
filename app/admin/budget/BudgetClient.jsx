@@ -4761,14 +4761,25 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
   const availOf = (label) => label ? (balancesByLabel.get(label.toLowerCase())?.available ?? 0) : 0;
   const groupOf = (label) => (state.categories.find((c) => c.label.toLowerCase() === (label || "").toLowerCase())?.group_key) || "other";
 
+  // Default the destination to the worst over-budget envelope — that's
+  // almost always what you're here to fix.
+  let _worst = "", _wv = 0;
+  for (const c of (state.categories || [])) {
+    const a = balancesByLabel.get(c.label.toLowerCase())?.available ?? 0;
+    if (a < _wv) { _wv = a; _worst = c.label; }
+  }
   const [from, setFrom] = useState("");
-  const [to, setTo] = useState(initialTo);
+  const [to, setTo] = useState(initialTo || _worst);
   const [amount, setAmount] = useState(initialAmount);
 
+  const [editingAmt, setEditingAmt] = useState(!initialAmount);
   const targetCents = (() => { const n = parseFloat(amount); return isNaN(n) ? 0 : Math.max(0, Math.round(n * 100)); })();
   const toDeficit = to ? Math.max(0, -availOf(to)) : 0;
   const fromAvail = from ? Math.max(0, availOf(from)) : 0;
   const canMove = from && to && from !== to && targetCents > 0;
+  // After-transfer balances, so the impact is visible before confirming.
+  const fromAfter = from ? availOf(from) - targetCents : null;
+  const toAfter = to ? availOf(to) + targetCents : null;
 
   function confirm() {
     if (!canMove) return;
@@ -4788,16 +4799,36 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
 
   // Horizontal scroll-selector of envelopes. `exclude` hides the one
   // already chosen on the other side so you can't pick the same twice.
-  const Selector = ({ value, onPick, exclude }) => {
-    const labels = useMemo(
-      () => [...state.categories].map((c) => c.label).filter((l) => l !== exclude).sort((a, b) => a.localeCompare(b)),
-      [exclude],
-    );
+  const Selector = ({ value, onPick, exclude, afterSign = 0, sort = "name" }) => {
+    const [q, setQ] = useState("");
+    const labels = useMemo(() => {
+      const arr = state.categories.map((c) => c.label).filter((l) => l !== exclude);
+      if (sort === "deficit") arr.sort((a, b) => availOf(a) - availOf(b));      // most over-budget first
+      else if (sort === "rich") arr.sort((a, b) => availOf(b) - availOf(a));    // most available first
+      else arr.sort((a, b) => a.localeCompare(b));
+      return arr;
+    }, [exclude, sort]);
+    const filtered = q.trim() ? labels.filter((l) => l.toLowerCase().includes(q.trim().toLowerCase())) : labels;
     return (
-      <div className="bb-hscroll" style={{ display: "flex", gap: 9, overflowX: "auto", padding: "2px 2px 8px", scrollbarWidth: "none" }}>
-        {labels.map((label) => {
+      <>
+        <div style={{ position: "relative", marginBottom: 9 }}>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "grid", placeItems: "center", pointerEvents: "none" }}>
+            <Icon d={["M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z", "M21 21l-4.35-4.35"]} size={15} color={COLORS.textFaint} />
+          </span>
+          <input
+            type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search envelopes…"
+            aria-label="Search envelopes"
+            style={{ width: "100%", border: `1px solid ${COLORS.border}`, background: COLORS.surface, borderRadius: 12, padding: "10px 12px 10px 34px", fontFamily: FONT, fontSize: 13.5, fontWeight: 600, color: COLORS.text, outline: "none", boxShadow: COLORS.shadow }}
+          />
+        </div>
+        <div className="bb-hscroll" style={{ display: "flex", gap: 9, overflowX: "auto", padding: "2px 2px 8px", scrollbarWidth: "none" }}>
+        {filtered.map((label) => {
           const on = value === label;
           const avail = availOf(label);
+          // When picked, show the balance AFTER the transfer (with the
+          // original struck through) so the impact is clear on the chip.
+          const showAfter = on && targetCents > 0 && afterSign !== 0;
+          const after = avail + afterSign * targetCents;
           return (
             <button key={label} onClick={() => onPick(label)} style={{
               flex: "0 0 auto", minWidth: 104, cursor: "pointer", fontFamily: FONT, textAlign: "left",
@@ -4812,13 +4843,16 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
                 {categoryEmoji(label, groupOf(label))}
               </span>
               <span style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 130 }}>{label}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: on ? "rgba(255,255,255,0.85)" : avail < 0 ? COLORS.red : COLORS.green }}>
-                {avail < 0 ? `over ${fmtUsd(-avail)}` : `${fmtUsd(avail)} left`}
+              <span style={{ fontSize: 11, fontWeight: 700, color: on ? "rgba(255,255,255,0.9)" : avail < 0 ? COLORS.red : COLORS.green }}>
+                {showAfter
+                  ? <>{`${fmtUsd(after)} left `}<s style={{ opacity: 0.6, fontWeight: 600 }}>{fmtUsd(avail)}</s></>
+                  : avail < 0 ? `over ${fmtUsd(-avail)}` : `${fmtUsd(avail)} left`}
               </span>
             </button>
           );
         })}
-      </div>
+        </div>
+      </>
     );
   };
 
@@ -4828,7 +4862,6 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
       <span style={{ fontSize: 14, fontWeight: 700, color: COLORS.text }}>{text}</span>
     </div>
   );
-  const cardStyle = { background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 20, boxShadow: COLORS.shadow, padding: 16 };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 55, background: COLORS.surfaceAlt, display: "flex", flexDirection: "column", fontFamily: FONT, color: COLORS.text, animation: "fadeIn 0.18s ease" }}>
@@ -4841,54 +4874,76 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
 
       <div style={{ flex: 1, overflowY: "auto", padding: "18px 16px 24px", WebkitOverflowScrolling: "touch" }}>
         <div style={{ maxWidth: 560, margin: "0 auto", display: "grid", gap: 18 }}>
-          {/* Live gradient summary */}
-          <div style={{ borderRadius: 22, padding: "18px 20px", color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>Moving</div>
-            <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{fmtUsd(targetCents)}</div>
-            <div style={{ fontSize: 12.5, fontWeight: 600, marginTop: 8, color: COLORS.heroInkSoft }}>
-              {from || "—"} <span style={{ opacity: 0.8 }}>→</span> {to || "—"}
+          {/* HERO — the amount (stated once, tap to edit) + after-transfer impact */}
+          <div style={{ borderRadius: 22, padding: "18px 20px 16px", color: COLORS.heroInk, background: COLORS.heroBg, boxShadow: COLORS.shadowLg }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.09em", textTransform: "uppercase", color: COLORS.heroInkSoft }}>Moving</div>
+              {!editingAmt && (
+                <button onClick={() => setEditingAmt(true)} style={{ marginLeft: "auto", fontFamily: FONT, fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.85)", background: "transparent", border: "1px solid rgba(255,255,255,0.4)", borderRadius: 100, padding: "3px 12px", cursor: "pointer" }}>Edit</button>
+              )}
             </div>
-          </div>
-
-          {/* 1 — FROM */}
-          <div>
-            {stepLabel(1, "Take money from")}
-            <Selector value={from} onPick={setFrom} exclude={to} />
-          </div>
-
-          {/* 2 — TO */}
-          <div>
-            {stepLabel(2, "Put money into")}
-            <Selector value={to} onPick={setTo} exclude={from} />
-          </div>
-
-          {/* 3 — AMOUNT */}
-          <div>
-            {stepLabel(3, "How much?")}
-            <div style={cardStyle}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ fontSize: 30, fontWeight: 800, color: COLORS.textFaint }}>$</span>
+            {editingAmt ? (
+              <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 4 }}>
+                <span style={{ fontSize: 38, fontWeight: 800, color: "rgba(255,255,255,0.7)" }}>$</span>
                 <input
-                  type="number" step="0.01" inputMode="decimal" value={amount}
-                  onChange={(e) => setAmount(e.target.value)} placeholder="0.00" aria-label="Amount to move"
-                  className="bb-amount-input"
-                  style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontSize: 30, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums" }}
+                  type="number" step="0.01" inputMode="decimal" value={amount} autoFocus
+                  onChange={(e) => setAmount(e.target.value)}
+                  onBlur={() => { if (targetCents > 0) setEditingAmt(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && targetCents > 0) setEditingAmt(false); }}
+                  placeholder="0.00" aria-label="Amount to move" className="bb-amount-input"
+                  style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", fontVariantNumeric: "tabular-nums" }}
                 />
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                {toDeficit > 0 && (
-                  <button onClick={() => setAmount((toDeficit / 100).toFixed(2))} style={{ background: COLORS.redBg, color: COLORS.red, border: "none", borderRadius: 100, padding: "8px 14px", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800 }}>
-                    Cover the deficit · {fmtUsd(toDeficit)}
-                  </button>
+            ) : (
+              <button onClick={() => setEditingAmt(true)} style={{ display: "block", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT, color: COLORS.heroInk, padding: 0, marginTop: 3, fontSize: 42, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                {fmtUsd(targetCents)}
+              </button>
+            )}
+            {(from || to) && (
+              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                {from && (
+                  <div style={{ flex: 1, background: "rgba(255,255,255,0.16)", borderRadius: 12, padding: "9px 11px", minWidth: 0 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{categoryEmoji(from, groupOf(from))} {from} after</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, marginTop: 2 }}>{fmtUsd(fromAfter)} {targetCents > 0 && <s style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 12 }}>{fmtUsd(availOf(from))}</s>}</div>
+                  </div>
                 )}
-                {fromAvail > 0 && (
-                  <button onClick={() => setAmount((fromAvail / 100).toFixed(2))} style={{ background: COLORS.accentSoft, color: COLORS.accent, border: "none", borderRadius: 100, padding: "8px 14px", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800 }}>
-                    Move all · {fmtUsd(fromAvail)}
-                  </button>
+                {to && (
+                  <div style={{ flex: 1, background: "rgba(255,255,255,0.16)", borderRadius: 12, padding: "9px 11px", minWidth: 0 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{categoryEmoji(to, groupOf(to))} {to} after</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, marginTop: 2 }}>{fmtUsd(toAfter)} {targetCents > 0 && <s style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 12 }}>{fmtUsd(availOf(to))}</s>}</div>
+                  </div>
                 )}
               </div>
-            </div>
+            )}
           </div>
+
+          {/* 1 — FROM (richest first) */}
+          <div>
+            {stepLabel(1, "Take money from")}
+            <Selector value={from} onPick={setFrom} exclude={to} afterSign={-1} sort="rich" />
+          </div>
+
+          {/* 2 — TO (over-budget first) */}
+          <div>
+            {stepLabel(2, "Put money into")}
+            <Selector value={to} onPick={setTo} exclude={from} afterSign={1} sort="deficit" />
+          </div>
+
+          {/* SHORTCUTS */}
+          {(toDeficit > 0 || fromAvail > 0) && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {toDeficit > 0 && (
+                <button onClick={() => { setAmount((toDeficit / 100).toFixed(2)); setEditingAmt(false); }} style={{ background: COLORS.redBg, color: COLORS.red, border: "none", borderRadius: 100, padding: "9px 15px", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800 }}>
+                  Cover the deficit · {fmtUsd(toDeficit)}
+                </button>
+              )}
+              {fromAvail > 0 && (
+                <button onClick={() => { setAmount((fromAvail / 100).toFixed(2)); setEditingAmt(false); }} style={{ background: COLORS.accentSoft, color: COLORS.accent, border: "none", borderRadius: 100, padding: "9px 15px", cursor: "pointer", fontFamily: FONT, fontSize: 13, fontWeight: 800 }}>
+                  Move all · {fmtUsd(fromAvail)}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -4896,7 +4951,7 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <button onClick={confirm} disabled={!canMove}
             style={{ width: "100%", padding: 15, border: "none", borderRadius: 14, cursor: canMove ? "pointer" : "not-allowed", fontFamily: FONT, fontSize: 15.5, fontWeight: 800, background: canMove ? COLORS.accent : COLORS.surfaceTint, color: canMove ? COLORS.onAccent : COLORS.textFaint }}>
-            {canMove ? `Move ${fmtUsd(targetCents)}` : "Move money"}
+            {to ? `Move money → ${to}` : "Move money"}
           </button>
         </div>
       </div>
