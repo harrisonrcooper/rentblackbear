@@ -520,6 +520,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
                 setActiveSection={setActiveSection}
                 setDrill={setDrill}
                 setToast={setToast}
+                onLog={() => setAddOpen(true)}
                 isBasic={isBasic}
                 pending={pending}
                 editingLayout={editingLayout}
@@ -9050,8 +9051,123 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
   );
 }
 
+// The day-one action row. "Log spending" is the hero action (opens the
+// keypad AddSheet); "Move money" jumps to envelopes where transfers live.
+function QuickActionsRow({ onLog, onMove }) {
+  const isMobile = useIsMobile();
+  return (
+    <div style={{ display: "flex", gap: 10 }}>
+      <button
+        onClick={onLog}
+        style={{
+          flex: 1.6, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: isMobile ? "14px 0" : "13px 0", borderRadius: RADII.lg, border: "none", cursor: "pointer",
+          fontFamily: FONT, fontSize: isMobile ? 14.5 : 14, fontWeight: 800,
+          background: COLORS.accent, color: COLORS.onAccent, boxShadow: COLORS.shadow,
+        }}
+      >
+        <Icon d={["M12 5v14", "M5 12h14"]} size={17} color={COLORS.onAccent} />
+        Log spending
+      </button>
+      <button
+        onClick={onMove}
+        style={{
+          flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+          padding: isMobile ? "14px 0" : "13px 0", borderRadius: RADII.lg, cursor: "pointer",
+          fontFamily: FONT, fontSize: isMobile ? 14 : 13.5, fontWeight: 700,
+          background: COLORS.surface, color: COLORS.text, border: `1px solid ${COLORS.border}`, boxShadow: COLORS.shadow,
+        }}
+      >
+        <Icon d={["M8 3L4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]} size={15} color={COLORS.textMuted} />
+        Move money
+      </button>
+    </div>
+  );
+}
+
+// Attention-first: surfaces over-budget + nearly-spent envelopes so the
+// app points the user at what needs a decision. Hidden entirely when
+// everything is healthy (no empty-state noise).
+function NeedsAttention({ state, activeMonth, onOpen }) {
+  const isMobile = useIsMobile();
+  const startMonth = useMemo(() => envelopeStartMonth(state), [state]);
+  const flagged = useMemo(() => {
+    const rows = [];
+    for (const c of state.categories || []) {
+      const b = envelopeBalance(state, c, activeMonth, startMonth);
+      if (b.budget <= 0) continue;
+      const pct = Math.round((b.thisMonthSpent / b.budget) * 100);
+      const over = b.available < 0;
+      const near = !over && pct >= 85;
+      if (!over && !near) continue;
+      rows.push({
+        label: c.label,
+        gk: c.group_key || "other",
+        over, near, pct,
+        available: b.available,
+      });
+    }
+    // Over-budget first (worst overage first), then nearly-spent.
+    return rows.sort((a, b) => {
+      if (a.over !== b.over) return a.over ? -1 : 1;
+      if (a.over) return a.available - b.available;
+      return b.pct - a.pct;
+    }).slice(0, 4);
+  }, [state, activeMonth, startMonth]);
+
+  if (flagged.length === 0) return null;
+
+  return (
+    <section>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 4px 10px" }}>
+        <Icon d={["M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z", "M12 9v4", "M12 17h.01"]} size={15} color={COLORS.red} />
+        <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", color: COLORS.red }}>
+          Needs attention
+        </span>
+        <span style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 800, color: COLORS.textFaint }}>{flagged.length}</span>
+      </div>
+      <div style={{ ...STYLES.card, overflow: "hidden" }}>
+        {flagged.map((r, i) => {
+          const meta = GROUP_META[r.gk] || GROUP_META.other;
+          const right = r.over ? `−${fmtUsd(Math.abs(r.available))}` : `${fmtUsd(r.available)} left`;
+          const rightColor = r.over ? COLORS.red : COLORS.amber;
+          const sub = r.over
+            ? `${meta.label} · over by ${fmtUsd(Math.abs(r.available))}`
+            : `${meta.label} · ${r.pct}% spent`;
+          return (
+            <button
+              key={r.label + i}
+              onClick={onOpen}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 12, textAlign: "left",
+                padding: isMobile ? "13px 16px" : "12px 16px", cursor: "pointer", fontFamily: FONT,
+                background: "transparent", border: "none",
+                borderTop: i === 0 ? "none" : `1px solid ${COLORS.surfaceTint}`,
+              }}
+            >
+              <span style={{
+                width: 34, height: 34, borderRadius: 11, flexShrink: 0, display: "grid", placeItems: "center",
+                background: r.over ? COLORS.redBg : COLORS.amberBg, color: rightColor,
+              }}>
+                <Icon d={meta.icon} size={16} color={rightColor} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
+                <div style={{ fontSize: 11.5, color: COLORS.textMuted, marginTop: 1 }}>{sub}</div>
+              </div>
+              <span style={{ marginLeft: "auto", fontSize: 14, fontWeight: 800, color: rightColor, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{right}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 const DASHBOARD_TILE_DEFS = [
   { id: "balances",     defaultLabel: "Envelope balances",  basic: true,  full: true  },
+  { id: "quickactions", defaultLabel: "Log & move",         basic: true,  full: true  },
+  { id: "attention",    defaultLabel: "Needs attention",    basic: true,  full: true  },
   { id: "hero",         defaultLabel: "This month",         basic: true,  full: true  },
   { id: "yir",          defaultLabel: "Year in review",     basic: false, full: true  },
   { id: "insights",     defaultLabel: "What's happening",   basic: false, full: true  },
@@ -9092,6 +9208,7 @@ function DashboardLayout({
   setActiveSection,
   setDrill,
   setToast,
+  onLog,
   isBasic,
   pending,
   editingLayout,
@@ -9099,6 +9216,8 @@ function DashboardLayout({
 }) {
   const tileRenderers = useMemo(() => ({
     balances: <EnvelopesGlance state={state} activeMonth={activeMonth} onOpen={() => setActiveSection("envelopes")} />,
+    quickactions: <QuickActionsRow onLog={onLog} onMove={() => setActiveSection("envelopes")} />,
+    attention: <NeedsAttention state={state} activeMonth={activeMonth} onOpen={onLog} />,
     hero: (
       <HeroNumber
         hero={hero}
@@ -9156,7 +9275,7 @@ function DashboardLayout({
       />
     ),
     achievements: <AchievementStrip achievements={achievements} />,
-  }), [state, hero, streaks, achievements, activeMonth, setActiveMonth, setActiveSection, setDrill, setToast, updateState]);
+  }), [state, hero, streaks, achievements, activeMonth, setActiveMonth, setActiveSection, setDrill, setToast, updateState, onLog]);
 
   const { orderedTiles, hiddenTiles } = useMemo(() => {
     const allowed = DASHBOARD_TILE_DEFS.filter((t) => (isBasic ? t.basic : t.full));
