@@ -4963,6 +4963,7 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
 }
 
 function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
+  const isMobile = useIsMobile();
   const [moveOpen, setMoveOpen] = useState(false);
   const grouped = useMemo(() => {
     const g = {};
@@ -5274,8 +5275,8 @@ function EnvelopesView({ state, updateState, activeMonth, setActiveMonth }) {
                 renderItem={(c, handleProps) => {
                   const b = balancesByLabel.get(c.label.toLowerCase()) || envelopeBalance(state, c, activeMonth, startMonth);
                   return (
-                    <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", alignItems: "stretch" }}>
-                      <DragHandle handleProps={handleProps} style={{ alignSelf: "center" }} />
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "auto minmax(0, 1fr)", alignItems: "stretch" }}>
+                      {!isMobile && <DragHandle handleProps={handleProps} style={{ alignSelf: "center" }} />}
                       <div style={{ minWidth: 0 }}>
                         <EnvelopeRow
                           category={c}
@@ -5347,126 +5348,53 @@ function EnvelopeRow({ category, balance, accent, state, activeMonth, onLog, onB
 
   return (
     <div className="bb-row" style={{ padding: "12px 4px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto auto auto", alignItems: "center", gap: 12 }}>
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          aria-expanded={expanded}
-          aria-label={expanded ? "Collapse entries" : "Expand entries"}
-          style={{
-            minWidth: 0, textAlign: "left",
-            background: "transparent", border: "none", cursor: "pointer",
-            padding: 0, fontFamily: FONT, color: COLORS.text,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Icon d={expanded ? ICON.chevD : ICON.chevR} size={12} color={COLORS.textFaint} />
-            <span style={{ fontWeight: 600, fontSize: 13.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{category.label}</span>
-          </div>
-          <div style={{ marginTop: 2, marginLeft: 18, fontSize: 11, color: COLORS.textFaint, fontWeight: 600 }}>
-            <span style={{ fontVariantNumeric: "tabular-nums" }}>{fmtUsd(thisMonthSpent)}</span>
-            <span> of </span>
-            <span style={{ fontVariantNumeric: "tabular-nums" }}>{fmtUsd(budget)}</span>
-            {carryover !== 0 && (
-              <>
-                <span> · </span>
-                <span style={{ color: carryover >= 0 ? COLORS.green : COLORS.red, fontVariantNumeric: "tabular-nums" }}>
-                  {carryover >= 0 ? "+" : "−"}{fmtUsd(Math.abs(carryover))} carry
-                </span>
-              </>
-            )}
-            {transferNet !== 0 && (
-              <>
-                <span> · </span>
-                <span style={{ color: transferNet > 0 ? COLORS.green : COLORS.amber, fontVariantNumeric: "tabular-nums" }}>
-                  {transferNet > 0 ? "+" : "−"}{fmtUsd(Math.abs(transferNet))} moved
-                </span>
-              </>
-            )}
-            <span> · </span>
-            <span style={{ color: overspent ? COLORS.red : available > 0 ? COLORS.green : COLORS.textFaint, fontWeight: 700 }}>
-              {overspent ? `${fmtUsd(Math.abs(available))} over` : `${fmtUsd(available)} available`}
-            </span>
-          </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} aria-label={expanded ? "Collapse" : "Expand"} style={{ flex: 1, minWidth: 0, textAlign: "left", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: FONT, color: COLORS.text, display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon d={expanded ? ICON.chevD : ICON.chevR} size={13} color={COLORS.textFaint} style={{ flexShrink: 0 }} />
+          <span style={{ fontWeight: 600, fontSize: 14.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{category.label}</span>
         </button>
-        <div style={{ width: 96, height: 8, background: COLORS.surfaceTint, borderRadius: 100, overflow: "hidden", flexShrink: 0 }}>
-          <div style={{
-            width: `${Math.min(100, pct)}%`, height: "100%",
-            background: overspent ? COLORS.red : accent,
-            borderRadius: 100,
-            transition: "width 0.4s cubic-bezier(0.2, 0.6, 0.4, 1)",
-          }} />
-        </div>
-        <button
-          onClick={() => setBulkOpen(true)}
-          aria-label="Bulk paste"
-          title="Bulk paste"
-          style={{
-            width: 28, height: 28, borderRadius: 8, border: `1px solid ${COLORS.border}`,
-            background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer",
-            display: "grid", placeItems: "center",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = accent; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = COLORS.border; e.currentTarget.style.color = COLORS.textMuted; }}
-        >
-          <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8" size={12} />
-        </button>
-        <button
-          onClick={() => setLogging((v) => !v)}
-          aria-expanded={logging}
-          style={{
-            padding: "7px 12px", borderRadius: 100,
-            background: logging ? `${accent}26` : `${accent}1A`, color: accent,
-            border: "none", cursor: "pointer",
-            fontSize: 11.5, fontWeight: 700, fontFamily: FONT,
-            display: "inline-flex", alignItems: "center", gap: 4,
-            whiteSpace: "nowrap", minHeight: 34,
-            transition: "all 0.12s ease",
-          }}
-        >
-          <Icon d={logging ? ICON.chevD : ["M12 5v14", "M5 12h14"]} size={11} />
-          Log
+        <span style={{ fontSize: 14.5, fontWeight: 800, fontVariantNumeric: "tabular-nums", flexShrink: 0, color: overspent ? COLORS.red : available > 0 ? COLORS.green : COLORS.textFaint }}>{fmtUsd(available)}</span>
+        <button onClick={() => setLogging((v) => !v)} aria-expanded={logging} style={{ flexShrink: 0, padding: "8px 15px", borderRadius: 100, background: logging ? `${accent}26` : `${accent}1A`, color: accent, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 800, fontFamily: FONT, display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}>
+          <Icon d={logging ? ICON.chevD : ["M12 5v14", "M5 12h14"]} size={12} /> Log
         </button>
       </div>
+      <button onClick={() => setExpanded((v) => !v)} aria-hidden="true" tabIndex={-1} style={{ display: "block", width: "100%", marginTop: 9, height: 7, padding: 0, border: "none", background: COLORS.surfaceTint, borderRadius: 100, overflow: "hidden", cursor: "pointer" }}>
+        <span style={{ display: "block", width: `${Math.min(100, pct)}%`, height: "100%", background: overspent ? COLORS.red : accent, borderRadius: 100, transition: "width 0.4s cubic-bezier(0.2,0.6,0.4,1)" }} />
+      </button>
+      <div style={{ marginTop: 6, fontSize: 11.5, color: COLORS.textFaint, fontWeight: 600 }}>
+        <span style={{ fontVariantNumeric: "tabular-nums" }}>{fmtUsd(thisMonthSpent)}</span> of <span style={{ fontVariantNumeric: "tabular-nums" }}>{fmtUsd(budget)}</span>
+        {carryover !== 0 && <> · <span style={{ color: carryover >= 0 ? COLORS.green : COLORS.red }}>{carryover >= 0 ? "+" : "−"}{fmtUsd(Math.abs(carryover))} carry</span></>}
+      </div>
       {logging && (
-        <QuickLog
-          accent={accent}
-          onCommit={(amt, note) => { onLog(amt, note); setLogging(false); }}
-          onCancel={() => setLogging(false)}
-        />
+        <QuickLog accent={accent} onCommit={(amt, note) => { onLog(amt, note); setLogging(false); }} onCancel={() => setLogging(false)} />
       )}
-
-      {trendHasData ? (
-        <div style={{ marginTop: 8, marginLeft: 18, display: "flex", alignItems: "flex-end", gap: 3, height: 18 }} aria-label="Last 6 months">
-          {(() => {
-            const maxSpend = Math.max(budget || 1, ...trend.map((m) => m.spent));
-            const lastIdx = trend.length - 1;
-            return trend.map((m, i) => {
-              const heightPct = maxSpend > 0 ? Math.max(2, (m.spent / maxSpend) * 100) : 2;
-              const isCurrent = i === lastIdx;
-              const overBudget = budget > 0 && m.spent > budget;
-              return (
-                <div
-                  key={m.month}
-                  title={`${m.month}: ${fmtUsd(m.spent)}${budget > 0 ? ` of ${fmtUsd(budget)}` : ""}`}
-                  style={{
-                    width: 8,
-                    height: `${heightPct}%`,
-                    background: overBudget ? COLORS.red : isCurrent ? accent : `${accent}88`,
-                    borderRadius: 2,
-                    transition: "height 0.3s ease",
-                  }}
-                />
-              );
-            });
-          })()}
-          <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" }}>
-            6 mo
-          </span>
-        </div>
-      ) : null}
 
       {expanded && (
         <div style={{ marginTop: 10, paddingLeft: 18, borderLeft: `2px solid ${accent}33` }}>
+          {trendHasData && (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 18, padding: "4px 0 10px" }} aria-label="Last 6 months">
+              {(() => {
+                const maxSpend = Math.max(budget || 1, ...trend.map((m) => m.spent));
+                const lastIdx = trend.length - 1;
+                return trend.map((m, i) => {
+                  const heightPct = maxSpend > 0 ? Math.max(2, (m.spent / maxSpend) * 100) : 2;
+                  const overBudget = budget > 0 && m.spent > budget;
+                  return <div key={m.month} title={`${m.month}: ${fmtUsd(m.spent)}`} style={{ width: 8, height: `${heightPct}%`, background: overBudget ? COLORS.red : i === lastIdx ? accent : `${accent}88`, borderRadius: 2 }} />;
+                });
+              })()}
+              <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" }}>6 mo</span>
+              <button onClick={() => setBulkOpen(true)} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 100, background: COLORS.surfaceTint, color: COLORS.textMuted, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 11.5, fontWeight: 700 }}>
+                <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8" size={12} /> Paste many
+              </button>
+            </div>
+          )}
+          {!trendHasData && (
+            <div style={{ padding: "2px 0 8px" }}>
+              <button onClick={() => setBulkOpen(true)} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 100, background: COLORS.surfaceTint, color: COLORS.textMuted, border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 11.5, fontWeight: 700 }}>
+                <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8" size={12} /> Paste many
+              </button>
+            </div>
+          )}
           {onRename ? (
             <div className="bb-row" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", padding: "8px 4px 10px" }}>
               <div>
