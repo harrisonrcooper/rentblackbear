@@ -8800,7 +8800,7 @@ function OccupancyToggle({ occupied, onChange, size = "sm" }) {
 // the toggle-driven value. The bar is the always-on health signal — it
 // reads spent/budget regardless of which value the toggle shows, so a
 // near-empty envelope looks full whether you're viewing Spent or Left.
-function GlanceRow({ r, view, accent }) {
+function GlanceRow({ r, view, accent, isMobile }) {
   const value = view === "spent" ? r.spent : view === "budget" ? r.budget : r.available;
   const over = r.available < 0;
   const pct = r.budget > 0 ? Math.min(100, Math.round((r.spent / r.budget) * 100)) : 0;
@@ -8816,22 +8816,22 @@ function GlanceRow({ r, view, accent }) {
       className="bb-row"
       style={{
         display: "flex", alignItems: "center", gap: 10,
-        padding: "8px 16px 8px 25px",
+        padding: isMobile ? "11px 16px 11px 24px" : "8px 16px 8px 25px",
         background: over ? COLORS.redBg : "transparent",
       }}
     >
       <span style={{
-        fontSize: 13, fontWeight: 600, color: over ? COLORS.red : COLORS.text,
-        flex: "0 0 96px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        fontSize: isMobile ? 15 : 13, fontWeight: 600, color: over ? COLORS.red : COLORS.text,
+        flex: isMobile ? "0 0 104px" : "0 0 96px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
       }}>
         {r.label}
       </span>
-      <span style={{ flex: 1, height: 6, borderRadius: 4, background: COLORS.surfaceTint, overflow: "hidden", minWidth: 0 }}>
+      <span style={{ flex: 1, height: isMobile ? 7 : 6, borderRadius: 4, background: COLORS.surfaceTint, overflow: "hidden", minWidth: 0 }}>
         <span style={{ display: "block", height: "100%", width: `${over ? 100 : pct}%`, borderRadius: 4, background: barColor, transition: "width 0.2s ease" }} />
       </span>
       <span style={{
-        fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums",
-        flex: "0 0 60px", textAlign: "right", color: valColor,
+        fontSize: isMobile ? 15 : 13, fontWeight: 700, fontVariantNumeric: "tabular-nums",
+        flex: isMobile ? "0 0 66px" : "0 0 60px", textAlign: "right", color: valColor,
       }}>
         {fmtUsd(value)}
       </span>
@@ -8840,6 +8840,7 @@ function GlanceRow({ r, view, accent }) {
 }
 
 function EnvelopesGlance({ state, activeMonth, onOpen }) {
+  const isMobile = useIsMobile();
   const [view, setView] = useState("remaining"); // "spent" | "remaining" | "budget"
   const [collapsed, setCollapsed] = useState(() => new Set());
   const startMonth = useMemo(() => envelopeStartMonth(state), [state]);
@@ -8895,11 +8896,11 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
     <section style={{ ...STYLES.card, padding: 0, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "16px 16px 0" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textFaint }}>
+          <div style={{ fontSize: isMobile ? 11.5 : 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textFaint }}>
             {headerLabel}
           </div>
           <div style={{
-            marginTop: 3, fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em",
+            marginTop: 3, fontSize: isMobile ? 30 : 26, fontWeight: 800, letterSpacing: "-0.02em",
             color: totalColor, fontVariantNumeric: "tabular-nums",
           }}>
             {fmtUsd(total)}
@@ -8909,7 +8910,7 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
           onClick={onOpen}
           style={{
             background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT,
-            fontSize: 12, fontWeight: 700, color: COLORS.textMuted, flexShrink: 0,
+            fontSize: isMobile ? 13 : 12, fontWeight: 700, color: COLORS.textMuted, flexShrink: 0,
             display: "inline-flex", alignItems: "center", gap: 2, padding: "4px 0",
           }}
         >
@@ -8924,7 +8925,7 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
           <div style={{ height: 8, borderRadius: 6, background: COLORS.surfaceTint, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${usedPct}%`, borderRadius: 6, background: overBudget ? COLORS.red : COLORS.accent, transition: "width 0.2s ease" }} />
           </div>
-          <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: COLORS.textFaint }}>
+          <div style={{ marginTop: 6, fontSize: isMobile ? 12.5 : 11, fontWeight: 600, color: COLORS.textFaint }}>
             <span style={{ color: COLORS.textMuted }}>{fmtUsd(totalSpent, { compact: true })} spent</span>
             {" of "}{fmtUsd(totalBudget, { compact: true })} budgeted · {usedPct}% used
           </div>
@@ -8942,8 +8943,8 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
               key={v}
               onClick={() => setView(v)}
               style={{
-                flex: 1, padding: "7px 0", borderRadius: 7, border: "none", cursor: "pointer",
-                fontFamily: FONT, fontSize: 12, fontWeight: 700,
+                flex: 1, padding: isMobile ? "9px 0" : "7px 0", borderRadius: 7, border: "none", cursor: "pointer",
+                fontFamily: FONT, fontSize: isMobile ? 13.5 : 12, fontWeight: 700,
                 background: on ? COLORS.surface : "transparent",
                 color: on ? COLORS.text : COLORS.textMuted,
                 boxShadow: on ? "0 1px 2px rgba(15,23,41,0.12)" : "none",
@@ -8966,19 +8967,19 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
               <button
                 onClick={() => toggleGroup(g.key)}
                 style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 9,
-                  padding: "11px 16px 10px", border: "none", background: "transparent",
+                  width: "100%", display: "flex", alignItems: "center", gap: isMobile ? 10 : 9,
+                  padding: isMobile ? "13px 16px 12px" : "11px 16px 10px", border: "none", background: "transparent",
                   cursor: "pointer", fontFamily: FONT, textAlign: "left",
                 }}
               >
                 <span style={{
-                  width: 24, height: 24, borderRadius: 7, flexShrink: 0,
+                  width: isMobile ? 28 : 24, height: isMobile ? 28 : 24, borderRadius: 8, flexShrink: 0,
                   display: "grid", placeItems: "center", background: g.meta.bg, color: g.meta.accent,
                 }}>
-                  <Icon d={g.meta.icon} size={14} color={g.meta.accent} />
+                  <Icon d={g.meta.icon} size={isMobile ? 16 : 14} color={g.meta.accent} />
                 </span>
                 <span style={{
-                  fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                  fontSize: isMobile ? 12.5 : 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
                   color: COLORS.textMuted,
                 }}>
                   {groupLabel(state, g.key)}
@@ -8987,14 +8988,14 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
                   <span style={{ width: 6, height: 6, borderRadius: 999, background: COLORS.red, flexShrink: 0 }} />
                 )}
                 <span style={{
-                  marginLeft: "auto", fontSize: 13, fontWeight: 800, fontVariantNumeric: "tabular-nums",
+                  marginLeft: "auto", fontSize: isMobile ? 15 : 13, fontWeight: 800, fontVariantNumeric: "tabular-nums",
                   color: subtotalColor(subtotal),
                 }}>
                   {fmtUsd(subtotal)}
                 </span>
                 <Icon
                   d={ICON.chevD}
-                  size={15}
+                  size={isMobile ? 17 : 15}
                   color={COLORS.textFaint}
                   style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.15s ease" }}
                 />
@@ -9002,7 +9003,7 @@ function EnvelopesGlance({ state, activeMonth, onOpen }) {
               {!isCollapsed && (
                 <div style={{ paddingBottom: 4 }}>
                   {g.rows.map((r, i) => (
-                    <GlanceRow key={r.label + i} r={r} view={view} accent={g.meta.accent} />
+                    <GlanceRow key={r.label + i} r={r} view={view} accent={g.meta.accent} isMobile={isMobile} />
                   ))}
                 </div>
               )}
