@@ -4893,19 +4893,27 @@ function MoveMoneySheet({ state, updateState, activeMonth, initialTo = "", initi
                 style={{ minWidth: 0, width: `${Math.max(4, (amount || "0.00").length + 0.5)}ch`, border: "none", outline: "none", background: "transparent", fontFamily: FONT, fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", fontVariantNumeric: "tabular-nums", textAlign: "center" }}
               />
             </label>
-            {(from || to) && (
-              <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                {[from && ["from", from, fromAfter], to && ["to", to, toAfter]].filter(Boolean).map(([k, label, after]) => (
-                  <div key={k} style={{ flex: 1, background: "rgba(255,255,255,0.16)", borderRadius: 14, padding: "11px 13px", minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{categoryEmoji(label, groupOf(label))}</span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label} after</div>
-                      <div style={{ fontSize: 19, fontWeight: 800, marginTop: 2, letterSpacing: "-0.01em" }}>{fmtUsd(after)} {targetCents > 0 && <s style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 13 }}>{fmtUsd(label === from ? availOf(from) : availOf(to))}</s>}</div>
-                    </div>
+            {(from || to) && (() => {
+              const both = !!(from && to);
+              // Each pill fills half when both are chosen; otherwise it sits
+              // at its own size — FROM on the left, TO pushed to the right.
+              const pill = (k, label, after) => (
+                <div key={k} style={{ flex: both ? 1 : "0 1 auto", background: "rgba(255,255,255,0.16)", borderRadius: 14, padding: "11px 13px", minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 24, lineHeight: 1, flexShrink: 0 }}>{categoryEmoji(label, groupOf(label))}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.82)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label} after</div>
+                    <div style={{ fontSize: 19, fontWeight: 800, marginTop: 2, letterSpacing: "-0.01em" }}>{fmtUsd(after)} {targetCents > 0 && <s style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600, fontSize: 13 }}>{fmtUsd(label === from ? availOf(from) : availOf(to))}</s>}</div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              );
+              return (
+                <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                  {from && pill("from", from, fromAfter)}
+                  {!from && to && <div style={{ flex: 1 }} />}
+                  {to && pill("to", to, toAfter)}
+                </div>
+              );
+            })()}
           </div>
 
           {/* 1 — FROM (richest first) */}
@@ -9140,7 +9148,7 @@ function QuickActionsRow({ onLog, onMove }) {
       <button
         onClick={onLog}
         style={{
-          flex: 1.6, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+          flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
           padding: isMobile ? "14px 0" : "13px 0", borderRadius: RADII.lg, border: "none", cursor: "pointer",
           fontFamily: FONT, fontSize: isMobile ? 14.5 : 14, fontWeight: 800,
           background: COLORS.accent, color: COLORS.onAccent, boxShadow: COLORS.shadow,
