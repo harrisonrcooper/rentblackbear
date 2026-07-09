@@ -12,8 +12,12 @@ import { fmtUsd, fmtCompact } from "../budget/lib/money";
 import { genId } from "../budget/lib/calc";
 import { useIsMobile } from "../budget/lib/responsive";
 import { saveBuildStateAction } from "@/actions/build/state";
+import { createTask, listTasks } from "@/actions/build/engine";
 import { mergeBuildState } from "@/lib/build/merge";
 import { visibleState } from "@/lib/build/visible";
+import CommandPalette from "./CommandPalette";
+import QuickCapture from "./QuickCapture";
+import BackupPanel from "./BackupPanel";
 
 /** Best available human name for a row, used in the undo snackbar. */
 function rowLabel(row) {
@@ -1957,6 +1961,50 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
     return () => clearTimeout(t);
   }, [undo]);
 
+  // ── Cmd+K, quick capture, deep links ───────────────────────────────
+
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [tasks, setTasks] = useState([]);
+
+  const refreshTasks = useCallback(async () => {
+    const res = await listTasks();
+    if (res.ok) setTasks(res.tasks || []);
+  }, []);
+
+  useEffect(() => { refreshTasks(); }, [refreshTasks]);
+
+  // Sections are URL-addressable so Cmd+K results, and the browser's own back
+  // button, land where they say they will.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get("s");
+    if (s && SECTIONS.some((x) => x.id === s)) setSection(s);
+  }, []);
+
+  const jumpTo = useCallback((nextSection, itemId) => {
+    setSection(nextSection);
+    const q = new URLSearchParams({ s: nextSection });
+    if (itemId) q.set("item", itemId);
+    window.history.replaceState(null, "", `/admin/build?${q.toString()}`);
+
+    if (!itemId) return;
+    // The target section has to render before we can scroll to the row.
+    setTimeout(() => {
+      const el = document.querySelector(`[data-item-id="${itemId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  }, []);
+
+  const captureTask = useCallback(async ({ title, notes }) => {
+    const res = await createTask({ title, notes });
+    if (res.ok) await refreshTasks();
+    else setSaveError(res.message || "Could not add that task.");
+  }, [refreshTasks]);
+
+  const captureReference = useCallback(async ({ url, title, note }) => {
+    addRow("references", { url, title, tag: "Inbox", note });
+  }, [addRow]);
+
   // Sections render the live rows only; helpers still mutate the full state.
   const shown = useMemo(() => visibleState(state), [state]);
   const helpers = { state: shown, setField, addRow, updRow, delRow };
@@ -1981,9 +2029,14 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
       case "asbuilt": return <AsBuiltSection {...helpers} />;
       case "energy": return <EnergySection {...helpers} />;
       case "brief": return <BriefSection state={shown} />;
-      default: return <OverviewSection state={shown} setField={setField} onJump={setSection} />;
+      default: return (
+        <>
+          <QuickCapture onCaptureTask={captureTask} onCaptureReference={captureReference} />
+          <OverviewSection state={shown} setField={setField} onJump={setSection} />
+        </>
+      );
     }
-  }, [section, shown]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [section, shown, captureTask, captureReference]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div data-bb-theme="light" style={{ display: "flex", minHeight: "100vh", background: COLORS.bg, fontFamily: FONT }}>
@@ -2012,14 +2065,29 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
             <div style={{ marginTop: 2, fontSize: 11, color: saveError ? "#b3261e" : COLORS.textFaint, fontWeight: 600 }}>
               {saveError ? "Not saved" : saved ? "All changes saved" : "Saving…"}
             </div>
+            <button
+              onClick={() => setPaletteOpen(true)}
+              style={{
+                marginTop: 12, width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 10px", borderRadius: 9, cursor: "pointer", fontFamily: FONT,
+                border: `1px solid ${COLORS.border}`, background: COLORS.bg,
+                color: COLORS.textFaint, fontSize: 12.5, fontWeight: 600,
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.65" y2="16.65" />
+              </svg>
+              <span style={{ flex: 1, textAlign: "left" }}>Search</span>
+              <kbd style={{ fontSize: 10, fontWeight: 700, border: `1px solid ${COLORS.border}`, borderRadius: 4, padding: "1px 5px" }}>⌘K</kbd>
+            </button>
           </div>
-          <nav style={{ padding: 12, display: "flex", flexDirection: "column", gap: 2 }}>
+          <nav style={{ padding: 12, display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
             {SECTIONS.map((s) => {
               const on = section === s.id;
               return (
                 <button
                   key={s.id}
-                  onClick={() => setSection(s.id)}
+                  onClick={() => jumpTo(s.id)}
                   style={{
                     display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                     borderRadius: 10, border: "none", cursor: "pointer", textAlign: "left",
@@ -2034,6 +2102,7 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
               );
             })}
           </nav>
+          <BackupPanel />
         </aside>
       )}
 
@@ -2072,6 +2141,15 @@ export default function BuildClient({ initialState, initialVersion = 0 }) {
           {view}
         </div>
       </main>
+
+      <CommandPalette
+        open={paletteOpen}
+        onOpen={() => setPaletteOpen(true)}
+        onClose={() => setPaletteOpen(false)}
+        state={shown}
+        tasks={tasks}
+        onJump={jumpTo}
+      />
 
       <Snackbars
         undo={undo}
