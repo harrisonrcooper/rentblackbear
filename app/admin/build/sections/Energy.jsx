@@ -20,6 +20,9 @@
 import { useMemo, useState } from "react";
 
 import {
+  DEFAULT_AMENITIES, DEFAULT_LOAD, DEFAULT_SOLAR, estimateLoad, priceLoad, solarPayback,
+} from "@/lib/build/energy";
+import {
   COLORS, FONT, SERIF, ACCENT, Icon,
   Card, Field, AddBtn, DelBtn, Chip, SectionHead, StatStrip, ProgressRing,
   MoneyInput, txt, fmtUsd
@@ -150,73 +153,177 @@ function StandardPill({ spec, onClick }) {
   );
 }
 
-// ── Solar payback estimator — a live calculator, not a saved record ──────────
-// Every figure on screen traces to one of the four fields he fills. Money is in
-// cents throughout; the electricity rate is stored as cents-per-kilowatt-hour, so
-// production × rate lands in whole cents with no float drift.
-const LIFETIME_YEARS = 25;
+// ── The two calculators the brief asks for ───────────────────────────────────
+//
+// Load first, then solar — because "is solar worth it?" is unanswerable until
+// you know what the house will actually eat. The old estimator asked him for
+// annual production, a number nobody knows; this one derives it from a panel
+// count, which anyone can read off a quote.
+//
+// Every coefficient is a visible, editable assumption. Money is integer cents.
+// All arithmetic lives in lib/build/energy.ts, under test.
 
-function SolarEstimator() {
-  const [costCents, setCostCents] = useState(0);        // total installed cost
-  const [incentiveCents, setIncentiveCents] = useState(0); // one-time credits/rebates
-  const [rateCents, setRateCents] = useState(0);        // $ per kilowatt-hour, in cents
-  const [kwhYear, setKwhYear] = useState("");           // annual production, kilowatt-hours
+function NumField({ label, value, onChange, suffix, step = 1, min = 0 }) {
+  return (
+    <Field label={label}>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        type="number"
+        inputMode="decimal"
+        step={step}
+        min={min}
+        style={{ ...txt(), textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+      />
+      {suffix && (
+        <span style={{ display: "block", fontSize: 10.5, color: COLORS.textFaint, marginTop: 3, textAlign: "right" }}>
+          {suffix}
+        </span>
+      )}
+    </Field>
+  );
+}
 
-  const kwh = num(kwhYear) || 0;
-  const netCostCents = Math.max(0, costCents - incentiveCents);
-  const annualSavingsCents = Math.round(kwh * rateCents);
-  const ready = netCostCents > 0 && annualSavingsCents > 0;
-  const paybackYears = ready ? netCostCents / annualSavingsCents : null;
-  const lifetimeNetCents = ready ? annualSavingsCents * LIFETIME_YEARS - netCostCents : null;
+function AmenityToggle({ amenity, onToggle }) {
+  const on = amenity.enabled;
+  return (
+    <button
+      onClick={onToggle}
+      style={{
+        display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left",
+        padding: "8px 10px", borderRadius: 9, cursor: "pointer", fontFamily: FONT,
+        border: `1px solid ${on ? COLORS.accent : COLORS.border}`,
+        background: on ? COLORS.accentSoft : COLORS.surface,
+      }}
+    >
+      <span style={{
+        width: 15, height: 15, borderRadius: 4, flexShrink: 0, display: "grid", placeItems: "center",
+        border: `1.5px solid ${on ? COLORS.accent : COLORS.borderStrong}`,
+        background: on ? COLORS.accent : COLORS.surface,
+      }}>
+        {on && <Icon d="M20 6L9 17l-5-5" size={9} color="#fff" />}
+      </span>
+      <span style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: on ? COLORS.text : COLORS.textMuted }}>
+        {amenity.label}
+      </span>
+      <span style={{ fontSize: 11.5, color: COLORS.textFaint, fontVariantNumeric: "tabular-nums" }}>
+        {amenity.kwhPerYear.toLocaleString()} kWh
+      </span>
+    </button>
+  );
+}
+
+function EnergyCalculators({ sqft }) {
+  const [main, setMain] = useState(sqft || DEFAULT_LOAD.mainSqft);
+  const [carriage, setCarriage] = useState(DEFAULT_LOAD.carriageSqft);
+  const [basement, setBasement] = useState(DEFAULT_LOAD.basementSqft);
+  const [perSqft, setPerSqft] = useState(DEFAULT_LOAD.kwhPerSqft);
+  const [amenities, setAmenities] = useState(DEFAULT_AMENITIES);
+
+  const [panels, setPanels] = useState(DEFAULT_SOLAR.panelCount);
+  const [panelWatts, setPanelWatts] = useState(DEFAULT_SOLAR.panelWatts);
+  const [costPerWatt, setCostPerWatt] = useState(DEFAULT_SOLAR.costCentsPerWatt / 100);
+  const [rate, setRate] = useState(DEFAULT_SOLAR.rateCentsPerKwh);
+  const [inflation, setInflation] = useState(DEFAULT_SOLAR.rateInflation * 100);
+
+  const n = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+
+  const load = useMemo(
+    () => priceLoad(estimateLoad({
+      mainSqft: n(main), carriageSqft: n(carriage), basementSqft: n(basement),
+      kwhPerSqft: n(perSqft), amenities,
+    }), n(rate)),
+    [main, carriage, basement, perSqft, amenities, rate],
+  );
+
+  const solar = useMemo(
+    () => solarPayback({
+      ...DEFAULT_SOLAR,
+      panelCount: n(panels), panelWatts: n(panelWatts),
+      costCentsPerWatt: Math.round(n(costPerWatt) * 100),
+      rateCentsPerKwh: n(rate), rateInflation: n(inflation) / 100,
+      householdKwh: load.totalKwh,
+    }),
+    [panels, panelWatts, costPerWatt, rate, inflation, load.totalKwh],
+  );
+
+  const toggle = (id) =>
+    setAmenities((prev) => prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a)));
+
+  const offsetPct = Math.round(solar.offsetFraction * 100);
 
   return (
-    <Card title="Solar payback estimator" sub="A quick check — not saved">
-      <p style={{ fontSize: 12.5, color: COLORS.textMuted, lineHeight: 1.5, margin: "2px 2px 14px" }}>
-        Fill the four numbers and it works out when the array pays for itself. Nothing here is stored —
-        record the array itself as a metric above.
-      </p>
+    <>
+      <Card title="What this house will use" sub={`${load.totalKwh.toLocaleString()} kilowatt-hours a year`}>
+        <p style={{ fontSize: 12.5, color: COLORS.textMuted, lineHeight: 1.5, margin: "2px 2px 14px" }}>
+          An all-electric house of this size, plus whatever you switch on below. Change any
+          assumption and everything downstream moves — nothing here is hidden in a formula.
+        </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
-        <Field label="Installed cost">
-          <MoneyInput value={costCents} onChange={setCostCents} placeholder="$0" />
-        </Field>
-        <Field label="Rebates and tax credit">
-          <MoneyInput value={incentiveCents} onChange={setIncentiveCents} placeholder="$0" />
-        </Field>
-        <Field label="Production per year">
-          <input
-            value={kwhYear}
-            onChange={(e) => setKwhYear(e.target.value)}
-            inputMode="decimal"
-            placeholder="9000"
-            style={{ ...txt(), textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
-          />
-          <span style={{ display: "block", fontSize: 10.5, color: COLORS.textFaint, marginTop: 3, textAlign: "right" }}>kilowatt-hours</span>
-        </Field>
-        <Field label="Electricity rate">
-          <MoneyInput value={rateCents} onChange={setRateCents} placeholder="$0.14" />
-          <span style={{ display: "block", fontSize: 10.5, color: COLORS.textFaint, marginTop: 3, textAlign: "right" }}>per kilowatt-hour</span>
-        </Field>
-      </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))", gap: 12 }}>
+          <NumField label="Main house" value={main} onChange={setMain} suffix="square feet" step={50} />
+          <NumField label="Carriage apartment" value={carriage} onChange={setCarriage} suffix="square feet" step={50} />
+          <NumField label="Finished basement" value={basement} onChange={setBasement} suffix="square feet" step={50} />
+          <NumField label="Efficiency" value={perSqft} onChange={setPerSqft} suffix="kWh per square foot" step={0.5} />
+        </div>
+        <p style={{ fontSize: 11.5, color: COLORS.textFaint, lineHeight: 1.5, margin: "0 2px 12px" }}>
+          Twelve is a well-sealed heat-pump house. Code-minimum runs sixteen to eighteen; a
+          passive house runs six to eight.
+        </p>
 
-      {ready ? (
-        <div style={{ marginTop: 6 }}>
-          <StatStrip items={[
-            ["Pays for itself in", `${(+paybackYears.toFixed(1))} years`, paybackYears <= LIFETIME_YEARS ? COLORS.green : COLORS.red],
-            ["Saved each year", fmtUsd(annualSavingsCents), COLORS.text],
-            [`Net over ${LIFETIME_YEARS} years`, fmtUsd(lifetimeNetCents), lifetimeNetCents >= 0 ? COLORS.green : COLORS.red],
-          ]} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(228px, 1fr))", gap: 6, marginBottom: 12 }}>
+          {amenities.map((a) => <AmenityToggle key={a.id} amenity={a} onToggle={() => toggle(a.id)} />)}
         </div>
-      ) : (
-        <div style={{ marginTop: 6, padding: "12px 14px", borderRadius: 10, background: COLORS.surfaceTint, fontSize: 12.5, color: COLORS.textMuted }}>
-          Enter a cost, a production estimate, and an electricity rate to see the payback.
+
+        <StatStrip items={[
+          ["The house itself", `${load.envelopeKwh.toLocaleString()} kWh`, COLORS.text],
+          ["What you switched on", `${load.amenitiesKwh.toLocaleString()} kWh`, COLORS.text],
+          ["A year of power", fmtUsd(load.annualCostCents), COLORS.text],
+        ]} />
+      </Card>
+
+      <Card title="Is solar worth it?" sub={solar.paybackYears === null ? "Never pays back" : `Pays back in ${solar.paybackYears} years`}>
+        <p style={{ fontSize: 12.5, color: COLORS.textMuted, lineHeight: 1.5, margin: "2px 2px 14px" }}>
+          Read the panel count off the quote. Production, degradation and rising utility rates
+          are worked out for you. Nothing here is saved — the array itself belongs in the
+          scorecard above.
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))", gap: 12 }}>
+          <NumField label="Panels" value={panels} onChange={setPanels} suffix="on the pergola" />
+          <NumField label="Each panel" value={panelWatts} onChange={setPanelWatts} suffix="watts" step={10} />
+          <NumField label="Installed cost" value={costPerWatt} onChange={setCostPerWatt} suffix="dollars per watt" step={0.05} />
+          <NumField label="Electricity rate" value={rate} onChange={setRate} suffix="cents per kilowatt-hour" step={0.5} />
+          <NumField label="Rate rises" value={inflation} onChange={setInflation} suffix="percent a year" step={0.5} />
         </div>
-      )}
-    </Card>
+
+        <StatStrip items={[
+          ["Array", `${solar.systemKw} kW`, COLORS.text],
+          ["Covers", `${offsetPct}% of your power`, offsetPct >= 100 ? COLORS.green : COLORS.text],
+          ["Cost after the tax credit", fmtUsd(solar.netCostCents), COLORS.text],
+          ["Saved the first year", fmtUsd(solar.firstYearSavingsCents), COLORS.text],
+          [
+            "Pays for itself in",
+            solar.paybackYears === null ? "Never" : `${solar.paybackYears} years`,
+            solar.paybackYears === null ? COLORS.red : solar.paybackYears <= 25 ? COLORS.green : COLORS.amber,
+          ],
+          ["Net over 25 years", fmtUsd(solar.lifetimeSavingsCents), solar.lifetimeSavingsCents >= 0 ? COLORS.green : COLORS.red],
+        ]} />
+
+        <p style={{ fontSize: 11.5, color: COLORS.textFaint, lineHeight: 1.5, margin: "12px 2px 2px" }}>
+          You only save on power you would otherwise have bought, so an array covering more than
+          your use does not save more. Panels lose half a percent a year. Exported surplus is
+          worth nothing here, because what your utility pays for it is a tariff this does not know.
+        </p>
+      </Card>
+    </>
   );
 }
 
 export default function EnergySection({ state, addRow, updRow, delRow }) {
+  // The project's square footage, if he has set it, so the load calculator
+  // opens with his house rather than a stranger's.
+  const sqft = Number(state.sqft) || 0;
   const metrics = state.energy || [];
 
   const summary = useMemo(() => {
@@ -261,7 +368,7 @@ export default function EnergySection({ state, addRow, updRow, delRow }) {
             </div>
           </div>
         </Card>
-        <SolarEstimator />
+        <EnergyCalculators sqft={sqft} />
       </>
     );
   }
@@ -314,7 +421,7 @@ export default function EnergySection({ state, addRow, updRow, delRow }) {
         <AddBtn label="Add a different metric" onClick={addCustom} />
       </div>
 
-      <SolarEstimator />
+      <EnergyCalculators sqft={sqft} />
     </>
   );
 }

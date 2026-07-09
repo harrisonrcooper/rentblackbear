@@ -9,7 +9,7 @@
 // quiet chooser, because with ten documents nobody browses by category; they
 // scan for the gap.
 
-import { COLORS, FONT, Icon, ACCENT, ACCENT_SOFT, Card, txt, DelBtn, AddBtn, SelectPill, optionsFrom, Chip } from "../ui";
+import { COLORS, FONT, Icon, ICON, ACCENT, ACCENT_SOFT, Card, txt, DelBtn, AddBtn, SelectPill, optionsFrom, Chip, EmptyState, btn } from "../ui";
 import { EXTERNAL_ICON } from "./_common";
 
 const DOC_CATEGORY_ORDER = [
@@ -63,49 +63,6 @@ function DocumentRow({ doc, onChange, onDelete }) {
   );
 }
 
-function EmptyState({ onSetup, onAddOne }) {
-  return (
-    <div style={{ padding: "8px 4px 6px" }}>
-      <div style={{ fontSize: 14, fontWeight: 800, color: COLORS.text, letterSpacing: "-0.01em" }}>
-        Keep every plan, permit and contract in one place.
-      </div>
-      <div style={{ fontSize: 12.5, color: COLORS.textMuted, lineHeight: 1.55, marginTop: 6 }}>
-        Leave each file wherever it already lives — Drive, Dropbox, your builder&apos;s
-        portal — and paste the link here so it&apos;s one tap away and never lost.
-      </div>
-
-      <div style={{ marginTop: 16, marginBottom: 4, border: `1px solid ${COLORS.border}`, borderRadius: 12, overflow: "hidden" }}>
-        {STARTER_DOCS.map((d, i) => (
-          <div key={d.name} style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-            padding: "9px 12px", borderTop: i === 0 ? "none" : `1px solid ${COLORS.border}`,
-          }}>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.text }}>{d.name}</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: COLORS.textFaint, whiteSpace: "nowrap" }}>{d.category}</span>
-          </div>
-        ))}
-      </div>
-
-      <button
-        onClick={onSetup}
-        style={{
-          width: "100%", marginTop: 14, padding: "13px 16px", borderRadius: 12, cursor: "pointer",
-          fontFamily: FONT, fontSize: 14, fontWeight: 800, color: ACCENT,
-          background: ACCENT_SOFT, border: `1px solid ${ACCENT}`,
-          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-        }}
-      >
-        <Icon d={["M12 5v14", "M5 12h14"]} size={16} color={ACCENT} />
-        Start my document checklist
-      </button>
-
-      <div style={{ textAlign: "center", marginTop: 6 }}>
-        <AddBtn label="Or add one myself" onClick={onAddOne} />
-      </div>
-    </div>
-  );
-}
-
 export default function DocumentsSection({ state, addRow, delRow, updRow }) {
   const docs = state.documents || [];
   const withLink = docs.filter((d) => d.url).length;
@@ -125,7 +82,36 @@ export default function DocumentsSection({ state, addRow, delRow, updRow }) {
   return (
     <Card title="Documents" sub={total ? `${withLink} of ${total} on file` : null}>
       {total === 0 ? (
-        <EmptyState onSetup={setup} onAddOne={addOne} />
+        <EmptyState
+          icon={ICON.fileText}
+          title="Every plan, permit, contract and warranty, in one place."
+          action={(
+            <button onClick={setup} style={btn("primary")}>
+              <Icon d={ICON.plus} size={14} color="#fff" />
+              Start my document checklist
+            </button>
+          )}
+          secondary={<AddBtn label="Add just one" onClick={addOne} />}
+        >
+          Leave each file wherever it already lives — Drive, Dropbox, your
+          builder&apos;s portal, the county site — and keep a link here, so the paper
+          you need is one tap away instead of buried in an inbox.
+        
+          {/* The preview the unify pass dropped. Naming the ten documents the
+              button will create is what turns "Start my checklist" from a leap
+              into a decision. */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginTop: 14 }}>
+            {STARTER_DOCS.map((d) => (
+              <span key={d.name} style={{
+                border: `1px solid ${COLORS.border}`, borderRadius: 999,
+                padding: "3px 10px", fontSize: 11.5, fontWeight: 600,
+                color: COLORS.textMuted, background: COLORS.surface, whiteSpace: "nowrap",
+              }}>
+                {d.name}
+              </span>
+            ))}
+          </div>
+        </EmptyState>
       ) : (
         <>
           <div style={{ padding: "4px 2px 12px" }}>

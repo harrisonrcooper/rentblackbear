@@ -13,9 +13,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  COLORS, FONT, SERIF, ACCENT, inputStyle, btn, Icon, ICON, txt,
+  COLORS, FONT, ACCENT, inputStyle, btn, Icon, ICON, txt,
   DelBtn, AddBtn, Chip, SectionHead, fmtBuildDate, daysFromToday,
-  DateField} from "../ui";
+  DateField, EmptyState} from "../ui";
 import { EXTERNAL_ICON } from "./_common";
 
 // A warranty is "expiring soon" inside this window. Not a magic number in-line.
@@ -58,19 +58,6 @@ function Lbl({ children }) {
     <span style={{ display: "block", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: 5 }}>
       {children}
     </span>
-  );
-}
-
-function EmptyState({ icon, title, body, children }) {
-  return (
-    <div style={{ textAlign: "center", padding: "22px 16px 24px", maxWidth: 440, margin: "0 auto" }}>
-      <div style={{ width: 46, height: 46, margin: "0 auto 14px", borderRadius: 14, background: COLORS.accentSoft, display: "grid", placeItems: "center" }}>
-        <Icon d={icon} size={22} color={ACCENT} />
-      </div>
-      <h3 style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 600, margin: "0 0 6px" }}>{title}</h3>
-      <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 0 16px" }}>{body}</p>
-      {children}
-    </div>
   );
 }
 
@@ -243,15 +230,19 @@ export default function AsBuiltSection({ state, addRow, updRow, delRow }) {
           {ab.length === 0 ? (
             <EmptyState
               icon={ICON.fileText}
-              title="Write down what you'll forget"
-              body="Paint codes, filter sizes, the spot the water shuts off. Tap one to start, or add your own."
+              title="Write down the details you'll wish you'd kept"
+              action={<AddBtn label="Add the first detail" onClick={() => addDetail("")} />}
             >
-              {suggestions.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 14 }}>
-                  {suggestions.slice(0, 8).map((s) => <SuggestBtn key={s} label={s} onClick={() => addDetail(s)} />)}
-                </div>
-              )}
-              <AddBtn label="Add your own detail" onClick={() => addDetail("")} />
+              Paint colours, furnace filter sizes, the wall the water shuts off behind — the sort of thing you're sure you'll remember, right up until the day you need it. Jot it down now and future-you is covered.
+            
+              {/* One tap adds a named detail. Asking a man staring at a blank screen to
+                  invent the phrase "furnace filter size" is exactly the thinking this
+                  planner exists to remove. */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginTop: 16 }}>
+                {COMMON_DETAILS.slice(0, 8).map((label) => (
+                  <SuggestBtn key={label} label={label} onClick={() => addDetail(label)} />
+                ))}
+              </div>
             </EmptyState>
           ) : (
             <>
@@ -300,10 +291,10 @@ export default function AsBuiltSection({ state, addRow, updRow, delRow }) {
           {wrs.length === 0 ? (
             <EmptyState
               icon={SHIELD_ICON}
-              title="Never miss an expiry"
-              body="Add each warranty with its date and you'll be warned before it lapses — especially the builder's workmanship coverage."
+              title="Never let a warranty lapse without knowing"
+              action={<AddBtn label="Add the first warranty" onClick={addWarranty} />}
             >
-              <AddBtn label="Add your first warranty" onClick={addWarranty} />
+              Add each warranty with the day it runs out and this page will warn you before the window closes — the builder's workmanship coverage most of all, since that's the one worth real money if something goes wrong.
             </EmptyState>
           ) : (
             <>

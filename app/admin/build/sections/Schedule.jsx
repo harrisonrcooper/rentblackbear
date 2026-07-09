@@ -16,8 +16,8 @@
 import { useMemo, useRef, useState } from "react";
 
 import {
-  COLORS, FONT, SERIF, ACCENT, ACCENT_SOFT, Icon, inputStyle,
-  Field, txt, DelBtn, Check, AddBtn, SectionHead, Chip, StatStrip, fmtBuildDate, SelectPill
+  COLORS, FONT, ACCENT, ACCENT_SOFT, Icon, inputStyle,
+  Field, txt, DelBtn, Check, AddBtn, EmptyState, SectionHead, Chip, StatStrip, fmtBuildDate, SelectPill
 , DateField} from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import { useIsMobile } from "../../budget/lib/responsive";
@@ -175,7 +175,21 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
       <SectionHead title="Schedule" note="Lay out the build. Drag a bar to move it and anything waiting on it slides along too." />
 
       {tasks.length === 0 ? (
-        <EmptyState phases={phases} onAdd={() => addTask(false)} onAddMilestone={() => addTask(true)} />
+        <EmptyState
+          icon={ICON_CAL}
+          title="Lay out your build timeline"
+          action={<AddBtn label="Add your first task" onClick={() => addTask(false)} />}
+          secondary={
+            <button onClick={() => addTask(true)} style={outlineBtn()}>
+              <Icon d={ICON_FLAG} size={14} />
+              Add a milestone
+            </button>
+          }
+        >
+          Your {phases.length} construction phases are ready, from foundation through move-in. Add a task,
+          give it a start and end date, and say what has to finish first — the timeline draws the whole
+          build, flags anything scheduled too early, and shows which tasks set your finish date.
+        </EmptyState>
       ) : (
         <>
           <StatStrip
@@ -228,35 +242,6 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
         onClose={() => setEditId(null)}
         updRow={updRow} delRow={delRow}
       />
-    </div>
-  );
-}
-
-function EmptyState({ phases, onAdd, onAddMilestone }) {
-  return (
-    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.surface, padding: "40px 20px 44px", textAlign: "center", maxWidth: 500, margin: "8px auto 0" }}>
-      <div style={{ width: 48, height: 48, margin: "0 auto 16px", borderRadius: 14, background: ACCENT_SOFT, display: "grid", placeItems: "center" }}>
-        <Icon d={ICON_CAL} size={24} color={ACCENT} />
-      </div>
-      <h3 style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, margin: "0 0 7px" }}>Lay out your timeline</h3>
-      <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 auto 8px", maxWidth: 400 }}>
-        Your {phases.length} construction phases are ready — foundation through move-in. Add a task, give it a start
-        and end date, and it lands on the timeline.
-      </p>
-      <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 auto 22px", maxWidth: 400 }}>
-        Say what has to finish first and the timeline draws the whole build, flags anything scheduled too early,
-        and shows which tasks set your finish date.
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-        <button onClick={onAdd} style={primaryBtn()}>
-          <Icon d={["M12 5v14", "M5 12h14"]} size={15} />
-          Add your first task
-        </button>
-        <button onClick={onAddMilestone} style={outlineBtn()}>
-          <Icon d={ICON_FLAG} size={15} />
-          Add a milestone
-        </button>
-      </div>
     </div>
   );
 }

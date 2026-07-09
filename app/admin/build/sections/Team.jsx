@@ -151,32 +151,6 @@ function VendorCard({ vendor, onEdit }) {
   );
 }
 
-function EmptyState({ onAdd }) {
-  return (
-    <div style={{
-      border: `1px solid ${COLORS.border}`, borderRadius: 14, background: COLORS.surface,
-      padding: "34px 22px", textAlign: "center", maxWidth: 440, margin: "8px auto 0",
-    }}>
-      <div style={{
-        width: 46, height: 46, borderRadius: 12, margin: "0 auto 14px",
-        background: COLORS.accentSoft, display: "grid", placeItems: "center",
-      }}>
-        <Icon d={ICON.family} size={22} color={COLORS.accent} />
-      </div>
-      <div style={{ fontSize: 15.5, fontWeight: 800, letterSpacing: "-0.01em", color: COLORS.text }}>
-        Your build crew, one tap away
-      </div>
-      <p style={{ fontSize: 13, color: COLORS.textFaint, lineHeight: 1.55, margin: "8px auto 18px", maxWidth: 320 }}>
-        Add each contractor and supplier with their number. It turns into a Call,
-        Text, or WhatsApp button right on their card — even for overseas suppliers.
-      </p>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <AddBtn label="Add your first vendor" onClick={onAdd} />
-      </div>
-    </div>
-  );
-}
-
 function DrawerField({ label, children }) {
   return (
     <label style={{ display: "block", marginBottom: 15 }}>
@@ -222,7 +196,16 @@ export default function TeamSection({ state, addRow, updRow, delRow }) {
       <SectionHead title="Team & Vendors" note={`${state.team.length} ${state.team.length === 1 ? "contact" : "contacts"} · tap to call or message`} />
 
       {state.team.length === 0 ? (
-        <EmptyState onAdd={addVendor} />
+        <EmptyState
+          icon={ICON.family}
+          title="Everyone building this place, one tap from your thumb"
+          action={<AddBtn label="Add your first vendor" onClick={addVendor} />}
+        >
+          Your architect, your builder, every sub, and the suppliers overseas on
+          WhatsApp and WeChat — save each one with a number and their card turns
+          into a Call, Text, or WhatsApp button so you never dig for a contact
+          mid-build.
+        </EmptyState>
       ) : (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(258px, 1fr))", gap: 12 }}>

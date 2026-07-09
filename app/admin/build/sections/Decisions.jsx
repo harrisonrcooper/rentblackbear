@@ -12,8 +12,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   COLORS, FONT, SERIF, btn, Icon, ICON, txt, Chip, StatStrip, AddBtn,
-  AutoTextarea, fmtBuildDate, todayIso, EmptyState
-, DateField} from "../ui";
+  AutoTextarea, fmtBuildDate, todayIso, EmptyState, DateField,
+} from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import {
   groupByMonth, isComplete, searchDecisions,
@@ -89,7 +89,15 @@ export default function DecisionsSection({ state, addRow, updRow, delRow }) {
   if (rows.length === 0) {
     return (
       <>
-        <EmptyState onAdd={addDecision} />
+        <EmptyState
+          icon="M9 11l3 3 8-8 M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"
+          title="Every choice you make here, kept with the reason you made it"
+          action={<AddBtn label="Log your first decision" onClick={addDecision} />}
+        >
+          In eighteen months you won&rsquo;t remember why the roof went the way it
+          did, or what the other option even was. Write the reason down now, while
+          it&rsquo;s still obvious, and this is the page that hands it back to you.
+        </EmptyState>
         {drawer}
       </>
     );
@@ -324,31 +332,5 @@ function DrawerField({ label, children }) {
       </span>
       {children}
     </label>
-  );
-}
-
-function EmptyState({ onAdd }) {
-  return (
-    <div
-      style={{
-        textAlign: "center", padding: "56px 22px", maxWidth: 480, margin: "24px auto 0",
-        background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 16,
-      }}
-    >
-      <div style={{ width: 46, height: 46, borderRadius: 12, margin: "0 auto", display: "grid", placeItems: "center", background: COLORS.surfaceTint, color: COLORS.accent }}>
-        <Icon d="M9 11l3 3 8-8 M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9" size={22} />
-      </div>
-      <h2 style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, letterSpacing: "-0.015em", margin: "16px 0 0" }}>
-        The record of choices made
-      </h2>
-      <p style={{ margin: "9px auto 0", fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.6, maxWidth: 400 }}>
-        Every real choice — the roof, the range, the front door — logged with the
-        one thing that fades fastest: why you chose it. In eighteen months, this is
-        where you look to remember what the other options even were.
-      </p>
-      <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
-        <AddBtn label="Log your first decision" onClick={onAdd} />
-      </div>
-    </div>
   );
 }

@@ -346,7 +346,7 @@ export function AddBtn({ label, onClick }) {
         display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6,
         padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontFamily: FONT,
         fontSize: 12.5, fontWeight: 700, color: ACCENT,
-        background: ACCENT_SOFT, border: "none",
+        background: ACCENT_SOFT, border: `1px solid ${COLORS.accent}`,
       }}
     >
       <Icon d={["M12 5v14", "M5 12h14"]} size={13} />
@@ -560,12 +560,16 @@ export function EmptyState({ icon, title, children, action, secondary }) {
         </div>
       )}
       <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em" }}>{title}</div>
-      <p style={{
+      {/* A div, not a p: a section may want to preview what its primary action
+          will create, and a list inside a paragraph is invalid markup that
+          React silently reparents. Documents lost its ten-document preview to
+          exactly that. */}
+      <div style={{
         fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.6,
         margin: "8px auto 0", maxWidth: "46ch",
       }}>
         {children}
-      </p>
+      </div>
       {(action || secondary) && (
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
           {action}

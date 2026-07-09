@@ -6,18 +6,26 @@
 // The builder can't order a floor you haven't picked, so a decision that has
 // slipped past its date is the thing that stops the house. Those float to the
 // top and turn red; everything settled sinks to the bottom and goes quiet.
+//
+// A collapsed row is a single tap into the one shared drawer that edits every
+// field — the same idiom Rooms, Decisions and Quotes use. The urgency never
+// hides behind that tap: an overdue or due-soon selection shouts from the face
+// of the row in red, because that warning is the whole reason the screen exists.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
-  COLORS, FONT, inputStyle, btn, Icon, ICON, fmtUsd, fmtCompact, fmtBuildDate,
+  COLORS, FONT, btn, Icon, ICON, fmtUsd, fmtCompact, fmtBuildDate,
   daysFromToday, Card, txt, MoneyInput, AddBtn, AutoTextarea, SelectPill, Chip,
-  StatStrip, SELECTION_STATUSES,
+  StatStrip, EmptyState, SELECTION_STATUSES,
   DateField} from "../ui";
+import DetailDrawer from "../DetailDrawer";
+
+const ARRAY_KEY = "selections";
 
 const NEW_SELECTION = {
   label: "New selection", choice: "", status: "open", vendor: "",
-  allowance_cents: 0, actual_cents: 0, lead_time: "", deadline: null,
+  allowance_cents: 0, actual_cents: 0, lead_time: "", deadline: null, notes: "",
 };
 
 // How many days out we still call a decision "due soon" rather than just
@@ -25,12 +33,14 @@ const NEW_SELECTION = {
 const DUE_SOON_DAYS = 21;
 
 /**
- * The single chip a selection wears. It carries both status and urgency so the
- * user reads one signal, not two. Only OPEN selections can be overdue — once a
- * choice is decided or ordered, the clock is irrelevant.
+ * The urgency a selection carries: a tone, a human label, a sort weight (lower =
+ * more urgent = higher in the list, so list order and colour never disagree),
+ * and the raw day count. Only OPEN selections can be overdue — once a choice is
+ * decided or ordered, the clock is irrelevant.
  *
- * Also returns a sort weight (lower = more urgent = higher in the list) so the
- * list order and the chip colour never disagree.
+ * Note: `tone` here is the URGENCY tone, not the status tone. "Decided" returns
+ * amber only so the list can weight it; the collapsed row reads urgency off
+ * `days`, never off this tone, so a settled decision never shouts.
  */
 function urgencyOf(sel) {
   if (sel.status === "ordered") return { tone: "green", label: "Ordered", weight: 500, days: null };
@@ -49,119 +59,230 @@ function urgencyOf(sel) {
   return { tone: "neutral", label: `Due ${fmtBuildDate(sel.deadline)}`, weight: 200 + days, days };
 }
 
-function LabeledMoney({ label, value, onChange }) {
-  return (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <span style={{ display: "block", fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{label}</span>
-      <MoneyInput value={value || 0} onChange={onChange} />
-    </div>
-  );
+/** The plain status chip — Open, Decided, Ordered — independent of urgency. */
+function statusOf(sel) {
+  return SELECTION_STATUSES.find((s) => s.value === sel.status) || SELECTION_STATUSES[0];
 }
 
-function SelectionCard({ sel, onChange, onDelete }) {
-  const [open, setOpen] = useState(false);
-  const u = urgencyOf(sel);
-  const overdue = u.tone === "red";
-
-  // Budget variance — computed so the user never subtracts. Only shown once an
-  // actual price is in; before that there is nothing to compare against.
+/**
+ * Budget variance, computed so the user never subtracts. Null until an actual
+ * price is in — before that there is nothing to compare against.
+ */
+function varianceOf(sel) {
   const spent = sel.actual_cents || 0;
-  const allow = sel.allowance_cents || 0;
-  const diff = allow - spent;
-  const variance = spent > 0
-    ? (diff > 0
-      ? { tone: COLORS.green, text: `Under allowance by ${fmtUsd(diff)}` }
-      : diff < 0
-        ? { tone: COLORS.red, text: `Over allowance by ${fmtUsd(-diff)}` }
-        : { tone: COLORS.textMuted, text: "Right on allowance" })
-    : null;
+  if (spent <= 0) return null;
+  const diff = (sel.allowance_cents || 0) - spent;
+  if (diff > 0) return { tone: COLORS.green, text: `Under allowance by ${fmtUsd(diff)}` };
+  if (diff < 0) return { tone: COLORS.red, text: `Over allowance by ${fmtUsd(-diff)}` };
+  return { tone: COLORS.textMuted, text: "Right on allowance" };
+}
+
+// The whole collapsed row is one tap into the drawer. It shows what the builder
+// is waiting on — the label and the chosen option — with the status chip on the
+// right. When an OPEN selection is overdue or due soon, that urgency gets its
+// own loud line right where the eye already is: red for overdue, amber for due
+// soon. That warning is the reason this screen exists; it never waits for a tap.
+function SelectionCard({ sel, u, onOpen }) {
+  const overdue = u.tone === "red";
+  const st = statusOf(sel);
+  const warn = sel.status === "open" && u.days != null && (u.tone === "red" || u.tone === "amber");
 
   return (
-    <div style={{ border: `1px solid ${overdue ? COLORS.red : COLORS.border}`, borderRadius: 12, marginBottom: 10, overflow: "hidden", background: COLORS.surface }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT, textAlign: "left" }}
-      >
-        <Icon d={open ? ICON.chevD : ICON.chevR} size={13} color={COLORS.textFaint} />
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sel.label || "Selection"}</span>
-          <span style={{ display: "block", fontSize: 11.5, color: sel.choice ? COLORS.textMuted : COLORS.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {sel.choice || "No pick yet — tap to decide"}
-          </span>
+    <button
+      data-item-id={sel.id}
+      onClick={onOpen}
+      style={{
+        textAlign: "left", width: "100%", minWidth: 0, cursor: "pointer", fontFamily: FONT,
+        display: "flex", flexDirection: "column", gap: 6, marginBottom: 10,
+        background: COLORS.surface, borderRadius: 12, padding: "12px 13px",
+        border: `1px solid ${overdue ? COLORS.red : COLORS.border}`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, letterSpacing: "-0.01em", color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {sel.label?.trim() || "Selection"}
         </span>
-        {sel.notes && <Icon d={ICON.fileText} size={13} color={COLORS.textFaint} />}
-        <Chip tone={u.tone}>{u.label}</Chip>
-      </button>
+        {sel.notes?.trim() && <Icon d={ICON.fileText} size={13} color={COLORS.textFaint} />}
+        <Chip tone={st.tone}>{st.label}</Chip>
+      </div>
 
-      {open && (
-        <div style={{ padding: "2px 14px 14px", display: "grid", gap: 10 }}>
-          <input value={sel.label} onChange={(e) => onChange({ label: e.target.value })} placeholder="What is being chosen (flooring, tile, fixtures…)" style={{ ...txt(), fontWeight: 700 }} />
-          <input value={sel.choice} onChange={(e) => onChange({ choice: e.target.value })} placeholder="Your pick — make, model, colour" style={txt()} />
-          <input value={sel.vendor} onChange={(e) => onChange({ vendor: e.target.value })} placeholder="Where it comes from (vendor)" style={txt()} />
+      <span style={{ fontSize: 12.5, color: sel.choice?.trim() ? COLORS.textMuted : COLORS.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {sel.choice?.trim() || "No pick yet — tap to decide"}
+      </span>
 
-          <div style={{ display: "flex", gap: 8 }}>
-            <LabeledMoney label="Allowance" value={sel.allowance_cents} onChange={(v) => onChange({ allowance_cents: v })} />
-            <LabeledMoney label="Actual price" value={sel.actual_cents} onChange={(v) => onChange({ actual_cents: v })} />
-          </div>
-          {variance && (
-            <div style={{ fontSize: 12, fontWeight: 700, color: variance.tone, fontVariantNumeric: "tabular-nums" }}>{variance.text}</div>
-          )}
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input value={sel.lead_time} onChange={(e) => onChange({ lead_time: e.target.value })} placeholder="Lead time (for example, 8 weeks)" style={{ ...txt(), flex: 1, minWidth: 140 }} />
-            <div>
-              <DateField value={sel.deadline} onChange={(v) => onChange({ deadline: v })} ariaLabel="Decide by this date" width={150} />
-              {sel.deadline && sel.status === "open" && u.days != null && (
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: u.tone === "red" ? COLORS.red : u.tone === "amber" ? COLORS.amber : COLORS.textFaint, marginTop: 4, textAlign: "right" }}>
-                  {u.label}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <span style={{ display: "block", fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Spec notes</span>
-            <AutoTextarea
-              value={sel.notes}
-              onChange={(v) => onChange({ notes: v })}
-              minRows={4}
-              placeholder="The requirements behind this choice — what the plans call for."
-            />
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-            <SelectPill value={sel.status} options={SELECTION_STATUSES} onChange={(status) => onChange({ status })} ariaLabel="Decision status" minWidth={110} />
-            <button onClick={onDelete} style={btn("ghost")}><Icon d={ICON.x} size={13} /> Delete</button>
-          </div>
+      {warn && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 7, marginTop: 2,
+          padding: "6px 9px", borderRadius: 8,
+          background: overdue ? COLORS.redBg : COLORS.amberBg,
+          border: `1px solid ${overdue ? COLORS.red : COLORS.amber}`,
+        }}>
+          <Icon d={ICON.clock} size={14} color={overdue ? COLORS.red : COLORS.amber} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: overdue ? COLORS.red : COLORS.amber }}>
+            {overdue ? `${u.label} — the builder is waiting on you` : u.label}
+          </span>
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
-function EmptyState({ onAdd }) {
+function DrawerField({ label, children }) {
   return (
-    <Card title="Finish selections" sub="Nothing yet">
-      <div style={{ textAlign: "center", padding: "34px 20px 30px", display: "grid", gap: 12, justifyItems: "center" }}>
-        <div style={{ width: 46, height: 46, borderRadius: 12, background: COLORS.surfaceTint, display: "grid", placeItems: "center" }}>
-          <Icon d={ICON.edit} size={22} color={COLORS.textFaint} />
+    <label style={{ display: "block", marginBottom: 16 }}>
+      <span style={{ display: "block", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: 6 }}>
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+// Every field for one selection, in the shared slide-in drawer. Single pane —
+// no tabs — because a selection is a short record, not a file with sections.
+function SelectionDrawer({ sel, onClose, onChange, onDelete }) {
+  const u = urgencyOf(sel);
+  const variance = varianceOf(sel);
+  const showDeadlineNote = sel.status === "open" && sel.deadline && u.days != null;
+
+  return (
+    <DetailDrawer
+      open
+      onClose={onClose}
+      kind="Selection"
+      title={sel.label?.trim() || "New selection"}
+      tabs={[]}
+      footer={
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <SelectPill value={sel.status} options={SELECTION_STATUSES} onChange={(status) => onChange({ status })} ariaLabel="Decision status" minWidth={116} />
+          <button onClick={onDelete} style={btn("ghost")}>
+            <Icon d={ICON.x} size={13} /> Delete selection
+          </button>
         </div>
-        <div style={{ fontSize: 15, fontWeight: 800, color: COLORS.text }}>No finish selections yet</div>
-        <p style={{ fontSize: 13, lineHeight: 1.5, color: COLORS.textMuted, maxWidth: 340, margin: 0 }}>
-          These are the finishes the builder needs you to pick — flooring, tile, fixtures, paint. Add them here with a decide-by date so nothing gets chosen for you.
-        </p>
-        <AddBtn label="Add your first selection" onClick={onAdd} />
+      }
+    >
+      <DrawerField label="What is being chosen">
+        <input
+          value={sel.label || ""}
+          onChange={(e) => onChange({ label: e.target.value })}
+          placeholder="Flooring, tile, fixtures, paint…"
+          style={{ ...txt(), fontWeight: 700 }}
+        />
+      </DrawerField>
+
+      <DrawerField label="Your pick">
+        <input
+          value={sel.choice || ""}
+          onChange={(e) => onChange({ choice: e.target.value })}
+          placeholder="Make, model, colour"
+          style={txt()}
+        />
+      </DrawerField>
+
+      <DrawerField label="Vendor">
+        <input
+          value={sel.vendor || ""}
+          onChange={(e) => onChange({ vendor: e.target.value })}
+          placeholder="Where it comes from"
+          style={txt()}
+        />
+      </DrawerField>
+
+      <div style={{ display: "flex", gap: 10 }}>
+        <DrawerField label="Allowance">
+          <MoneyInput value={sel.allowance_cents || 0} onChange={(v) => onChange({ allowance_cents: v })} />
+        </DrawerField>
+        <DrawerField label="Actual price">
+          <MoneyInput value={sel.actual_cents || 0} onChange={(v) => onChange({ actual_cents: v })} />
+        </DrawerField>
       </div>
-    </Card>
+      {variance && (
+        <div style={{ marginTop: -6, marginBottom: 16, fontSize: 12.5, fontWeight: 700, color: variance.tone, fontVariantNumeric: "tabular-nums" }}>
+          {variance.text}
+        </div>
+      )}
+
+      <DrawerField label="Lead time">
+        <input
+          value={sel.lead_time || ""}
+          onChange={(e) => onChange({ lead_time: e.target.value })}
+          placeholder="For example, 8 weeks"
+          style={txt()}
+        />
+      </DrawerField>
+
+      <DrawerField label="Decide by this date">
+        <DateField value={sel.deadline} onChange={(v) => onChange({ deadline: v })} ariaLabel="Decide by this date" />
+        {showDeadlineNote && (
+          <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: u.tone === "red" ? COLORS.red : u.tone === "amber" ? COLORS.amber : COLORS.textFaint }}>
+            {u.label}
+          </div>
+        )}
+      </DrawerField>
+
+      <DrawerField label="Spec notes">
+        <AutoTextarea
+          value={sel.notes || ""}
+          onChange={(v) => onChange({ notes: v })}
+          minRows={4}
+          placeholder="The requirements behind this choice — what the plans call for."
+        />
+      </DrawerField>
+    </DetailDrawer>
   );
 }
 
 export default function SelectionsSection({ state, addRow, updRow, delRow }) {
-  const sels = state.selections;
-  const add = () => addRow("selections", { ...NEW_SELECTION });
+  const sels = state[ARRAY_KEY] || [];
+  const [editingId, setEditingId] = useState(null);
 
-  if (sels.length === 0) return <EmptyState onAdd={add} />;
+  // addRow generates the id internally, so it can't hand one back. Flag intent,
+  // then open the drawer on the row that lands last once state re-renders — the
+  // fresh selection, so its details get captured while the thought is fresh.
+  const openNewOnRender = useRef(false);
+  useEffect(() => {
+    if (openNewOnRender.current && sels.length) {
+      openNewOnRender.current = false;
+      setEditingId(sels[sels.length - 1].id);
+    }
+  }, [sels.length]);
+
+  function add() {
+    openNewOnRender.current = true;
+    addRow(ARRAY_KEY, { ...NEW_SELECTION });
+  }
+
+  const editing = editingId ? sels.find((s) => s.id === editingId) : null;
+  // A row deleted from under an open drawer must not strand it open.
+  useEffect(() => {
+    if (editingId && !sels.some((s) => s.id === editingId)) setEditingId(null);
+  }, [editingId, sels]);
+
+  const drawer = editing && (
+    <SelectionDrawer
+      sel={editing}
+      onClose={() => setEditingId(null)}
+      onChange={(patch) => updRow(ARRAY_KEY, editing.id, patch)}
+      onDelete={() => { delRow(ARRAY_KEY, editing.id); setEditingId(null); }}
+    />
+  );
+
+  if (sels.length === 0) {
+    return (
+      <>
+        <EmptyState
+          icon={ICON.edit}
+          title="Pick the finishes before the builder needs them"
+          action={<AddBtn label="Add your first selection" onClick={add} />}
+        >
+          These are the finishes the builder is waiting on — flooring, tile, fixtures, paint.
+          Give each one a decide-by date and the overdue ones rise to the top and turn red, so
+          nothing ever gets chosen for you.
+        </EmptyState>
+        {drawer}
+      </>
+    );
+  }
 
   const allowance = sels.reduce((s, x) => s + (x.allowance_cents || 0), 0);
   const actual = sels.reduce((s, x) => s + (x.actual_cents || 0), 0);
@@ -183,30 +304,29 @@ export default function SelectionsSection({ state, addRow, updRow, delRow }) {
       : null;
 
   return (
-    <Card title="Finish selections" sub={`${openCount} still open`}>
-      {banner && (
-        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 12px", marginBottom: 12, borderRadius: 10, background: banner.bg, border: `1px solid ${banner.tone}` }}>
-          <Icon d={ICON.clock} size={16} color={banner.tone} />
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: banner.tone }}>{banner.text}</span>
-        </div>
-      )}
+    <>
+      <Card title="Finish selections" sub={`${openCount} still open`}>
+        {banner && (
+          <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 12px", marginBottom: 12, borderRadius: 10, background: banner.bg, border: `1px solid ${banner.tone}` }}>
+            <Icon d={ICON.clock} size={16} color={banner.tone} />
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: banner.tone }}>{banner.text}</span>
+          </div>
+        )}
 
-      <StatStrip items={[
-        ["Allowances", fmtCompact(allowance), COLORS.text],
-        ["Actual so far", fmtCompact(actual), COLORS.text],
-        [balance >= 0 ? "Under allowance" : "Over allowance", fmtCompact(Math.abs(balance)), balance >= 0 ? COLORS.green : COLORS.red],
-      ]} />
+        <StatStrip items={[
+          ["Allowances", fmtCompact(allowance), COLORS.text],
+          ["Actual so far", fmtCompact(actual), COLORS.text],
+          [balance >= 0 ? "Under allowance" : "Over allowance", fmtCompact(Math.abs(balance)), balance >= 0 ? COLORS.green : COLORS.red],
+        ]} />
 
-      {rows.map(({ sel }) => (
-        <SelectionCard
-          key={sel.id}
-          sel={sel}
-          onChange={(patch) => updRow("selections", sel.id, patch)}
-          onDelete={() => delRow("selections", sel.id)}
-        />
-      ))}
+        {rows.map(({ sel, u }) => (
+          <SelectionCard key={sel.id} sel={sel} u={u} onOpen={() => setEditingId(sel.id)} />
+        ))}
 
-      <AddBtn label="Add selection" onClick={add} />
-    </Card>
+        <AddBtn label="Add selection" onClick={add} />
+      </Card>
+
+      {drawer}
+    </>
   );
 }

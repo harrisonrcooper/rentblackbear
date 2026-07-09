@@ -156,23 +156,6 @@ function ImpactPanel({ approvedNet, baseEst, revised, pendingCount, pendingNet }
   );
 }
 
-function EmptyState({ onAdd }) {
-  return (
-    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.surface, padding: "40px 24px 34px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <div style={{ width: 52, height: 52, borderRadius: 14, background: ACCENT_SOFT, display: "grid", placeItems: "center", marginBottom: 14 }}>
-        <Icon d={CO_GLYPH} size={26} color={ACCENT} />
-      </div>
-      <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.01em", color: COLORS.text }}>No change orders yet</div>
-      <p style={{ maxWidth: 360, margin: "8px 0 18px", fontSize: 13, color: COLORS.textMuted, lineHeight: 1.55 }}>
-        A change order is any change to your signed contract — an added window, a credit for a
-        finish you dropped. Log each one, decide it, and every approved change flows straight into
-        your Costs total.
-      </p>
-      <AddBtn label="Add your first change order" onClick={onAdd} />
-    </div>
-  );
-}
-
 export default function ChangeOrdersSection({ state, addRow, updRow, delRow }) {
   const cos = state.change_orders || [];
   const [editId, setEditId] = useState(null);
@@ -221,7 +204,15 @@ export default function ChangeOrdersSection({ state, addRow, updRow, delRow }) {
     return (
       <>
         <SectionHead title="Change orders" note="Changes to your contract after signing" />
-        <EmptyState onAdd={addNew} />
+        <EmptyState
+          icon={CO_GLYPH}
+          title="A change order is how the price moves after you sign."
+          action={<AddBtn label="Add your first change order" onClick={addNew} />}
+        >
+          Once the contract is signed, every added window or dropped finish is a change order. Log
+          each one, approve or reject it, and every change you approve flows straight into your
+          Costs total.
+        </EmptyState>
       </>
     );
   }

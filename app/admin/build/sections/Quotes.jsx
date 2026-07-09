@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
-  COLORS, FONT, SERIF, ACCENT, btn,
+  COLORS, FONT, btn,
   Icon, ICON, fmtUsd,
   Card, Field, txt, MoneyInput, DelBtn, AddBtn, AutoTextarea,
   SectionHead, Chip, StatStrip, fmtBuildDate, SelectPill,
@@ -199,27 +199,6 @@ export default function QuotesSection({ state, setField, addRow, updRow, delRow 
         onAccept={() => openQuote && accept(openQuote.id)}
       />
     </>
-  );
-}
-
-function EmptyState({ onAdd }) {
-  return (
-    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.surface, padding: "40px 20px 44px", textAlign: "center", maxWidth: 480, margin: "8px auto 0" }}>
-      <div style={{ width: 48, height: 48, margin: "0 auto 16px", borderRadius: 14, background: COLORS.accentSoft, display: "grid", placeItems: "center" }}>
-        <Icon d={ICON.scales} size={24} color={ACCENT} />
-      </div>
-      <h3 style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, margin: "0 0 7px" }}>Compare your bids</h3>
-      <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 auto 8px", maxWidth: 400 }}>
-        Add what each contractor bid for a job — framing, roofing, plumbing. Two or
-        more bids for the same job line up side by side, with the lowest marked and
-        the gap between them worked out for you.
-      </p>
-      <p style={{ fontSize: 12.5, color: COLORS.textFaint, lineHeight: 1.55, margin: "0 auto 20px", maxWidth: 400 }}>
-        Enter each bid&rsquo;s line items and we&rsquo;ll flag any whose numbers
-        don&rsquo;t add up to the total the builder wrote.
-      </p>
-      <AddBtn label="Add your first bid" onClick={onAdd} />
-    </div>
   );
 }
 
