@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 // Costs — budget lines by group, estimate vs actual, with the variance always
 // computed for the homeowner. He never subtracts one column from another in his
 // head: every line, every group, and the whole build show over/under in words
@@ -10,9 +12,23 @@
 // only, to roll the "cost to complete" picture together in one place.
 
 import {
-  COLORS, ACCENT, SERIF, Icon, ICON, inputStyle,
-  Card, txt, MoneyInput, DelBtn, Check, AddBtn, Chip, fmtCompact,
-  DateField} from "../ui";
+  COLORS,
+  ACCENT,
+  SERIF,
+  Icon,
+  ICON,
+  inputStyle,
+  Card,
+  txt,
+  MoneyInput,
+  DelBtn,
+  Check,
+  AddBtn,
+  Chip,
+  fmtCompact,
+  DateField,
+  FONT,
+} from "../ui";
 import {
   approvedChangeOrderCents, costBasisCents, leftToPayCents, perSquareFootCents, revisedCents,
 } from "@/lib/build/costs";
@@ -93,6 +109,19 @@ export default function CostsSection({ state, setField, addRow, updRow, delRow }
   const cellHead = { fontSize: 10, fontWeight: 700, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" };
   const GRID = "minmax(0,1fr) 84px 84px 26px";
 
+  // A group opens when it holds money. He can open any other; nothing is hidden,
+  // it is just not shouting.
+  const [openGroups, setOpenGroups] = useState(() => new Set());
+  const toggleGroup = (g) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(g)) next.delete(g);
+      else next.add(g);
+      return next;
+    });
+  const addLineTo = (group) =>
+    addRow("costs", { label: "", group, estimate_cents: 0, actual_cents: 0, in_basis: true });
+
   // ── Worksheet (the usual view — costs are seeded, so this is the norm) ──────
   const worksheet = (
     <>
@@ -120,53 +149,83 @@ export default function CostsSection({ state, setField, addRow, updRow, delRow }
         </div>
       </Card>
 
-      <Card title="Budget lines" sub={totalActual > 0 ? `${fmtCompact(totalActual)} spent of ${fmtCompact(totalEst)}` : `${fmtCompact(totalEst)} estimated`}>
-        <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, padding: "4px 4px 6px", ...cellHead }}>
-          <div>Line item</div>
-          <div style={{ textAlign: "right" }}>Estimate</div>
-          <div style={{ textAlign: "right" }}>Actual</div>
-          <div />
-        </div>
-
+      {/* Nine groups, not thirty-seven rows.
+          Thirty-six of the seeded lines are empty on day one, and a screen that
+          shows a homeowner thirty-six zeroes is not showing him his budget — it
+          is showing him the shape of a spreadsheet. A group opens when it holds
+          money, or when he opens it. */}
+      <Card title="Costs" sub={totalActual > 0 ? `${fmtCompact(totalActual)} spent of ${fmtCompact(totalEst)}` : `${fmtCompact(totalEst)} estimated`}>
         {groups.map((g) => {
           const lines = costs.filter((c) => c.group === g);
           const gEst = lines.reduce((s, c) => s + c.estimate_cents, 0);
+          const gAct = lines.reduce((s, c) => s + c.actual_cents, 0);
           const gv = rollupVariance(lines);
+          const filled = lines.filter((c) => c.estimate_cents || c.actual_cents).length;
+          const open = openGroups.has(g) || (gEst > 0 || gAct > 0);
+
           return (
-            <div key={g}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 4px 3px" }}>
-                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, color: ACCENT, textTransform: "uppercase", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  {gv && <VarChip v={gv} />}
-                  <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textFaint, fontVariantNumeric: "tabular-nums" }}>{fmtCompact(gEst)}</span>
+            <div key={g} style={{ borderBottom: `1px solid ${COLORS.surfaceTint}` }}>
+              <button
+                onClick={() => toggleGroup(g)}
+                aria-expanded={open}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10, width: "100%",
+                  padding: "11px 4px", background: "transparent", border: "none",
+                  cursor: "pointer", fontFamily: FONT, textAlign: "left",
+                }}
+              >
+                <Icon d={open ? ICON.chevD : ICON.chevR} size={13} color={COLORS.textFaint} />
+                <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {g}
                 </span>
-              </div>
-              {lines.map((c) => {
-                const v = variance(c.estimate_cents, c.actual_cents);
-                const untouched = !c.estimate_cents && !c.actual_cents;
-                return (
-                  <div key={c.id} style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, alignItems: "start", padding: "6px 4px", borderBottom: `1px solid ${COLORS.surfaceTint}` }}>
-                    <div style={{ minWidth: 0 }}>
-                      <input
-                        type="text"
-                        value={c.label}
-                        onChange={(e) => updRow("costs", c.id, { label: e.target.value })}
-                        aria-label="Line item name"
-                        style={{ ...txt(), fontWeight: 600, color: untouched ? COLORS.textMuted : COLORS.text }}
-                      />
-                      {v && (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, fontWeight: 700, color: v.tone === "red" ? COLORS.red : COLORS.green }}>
-                          <Icon d={v.icon} size={12} color="currentColor" />
-                          {v.label}
-                        </span>
-                      )}
-                    </div>
-                    <MoneyInput value={c.estimate_cents} onChange={(val) => updRow("costs", c.id, { estimate_cents: val })} />
-                    <MoneyInput value={c.actual_cents} onChange={(val) => updRow("costs", c.id, { actual_cents: val })} />
-                    <DelBtn onClick={() => delRow("costs", c.id)} />
+                {gv && <VarChip v={gv} />}
+                <span style={{ fontSize: 11.5, color: COLORS.textFaint, whiteSpace: "nowrap" }}>
+                  {filled > 0 ? `${filled} of ${lines.length}` : `${lines.length} lines`}
+                </span>
+                <span style={{ minWidth: 74, textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: gEst ? COLORS.text : COLORS.textFaint }}>
+                  {gEst ? fmtCompact(gEst) : "Not estimated"}
+                </span>
+              </button>
+
+              {open && (
+                <div style={{ paddingBottom: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, padding: "2px 4px 4px", ...cellHead }}>
+                    <div>Line item</div>
+                    <div style={{ textAlign: "right" }}>Estimate</div>
+                    <div style={{ textAlign: "right" }}>Actual</div>
+                    <div />
                   </div>
-                );
-              })}
+                  {lines.map((c) => {
+                    const v = variance(c.estimate_cents, c.actual_cents);
+                    const untouched = !c.estimate_cents && !c.actual_cents;
+                    return (
+                      <div key={c.id} style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, alignItems: "start", padding: "5px 4px" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <input
+                            type="text"
+                            value={c.label}
+                            onChange={(e) => updRow("costs", c.id, { label: e.target.value })}
+                            aria-label="Line item name"
+                            style={{ ...txt(), fontWeight: 600, color: untouched ? COLORS.textMuted : COLORS.text }}
+                          />
+                          {v && (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, fontWeight: 700, color: v.tone === "red" ? COLORS.red : COLORS.green }}>
+                              <Icon d={v.icon} size={12} color="currentColor" />
+                              {v.label}
+                            </span>
+                          )}
+                        </div>
+                        <MoneyInput value={c.estimate_cents} onChange={(val) => updRow("costs", c.id, { estimate_cents: val })} />
+                        <MoneyInput value={c.actual_cents} onChange={(val) => updRow("costs", c.id, { actual_cents: val })} />
+                        <DelBtn onClick={() => delRow("costs", c.id)} />
+                      </div>
+                    );
+                  })}
+                  <div style={{ paddingLeft: 4 }}>
+                    <AddBtn label={`Add a line to ${g}`} onClick={() => addLineTo(g)} />
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -181,8 +240,6 @@ export default function CostsSection({ state, setField, addRow, updRow, delRow }
           <span style={{ textAlign: "right", fontSize: 14, fontWeight: 800, color: totalActual > 0 ? COLORS.text : COLORS.textFaint, fontVariantNumeric: "tabular-nums" }}>{totalActual > 0 ? fmtCompact(totalActual) : "—"}</span>
           <span />
         </div>
-
-        <AddBtn label="Add cost line" onClick={addLine} />
       </Card>
 
       {/* Shown even with nothing recorded. The explanation IS the feature: most

@@ -281,23 +281,57 @@ export function AutoTextarea({ value, onChange, minRows = 3, style, ...rest }) {
   );
 }
 
+/**
+ * Money, shown the way money is written and edited the way numbers are typed.
+ *
+ * Two bugs lived here. It rendered `(cents/100).toString()`, so a hundred
+ * thousand dollars read `100000` — no comma, no dollar sign, indistinguishable
+ * from a phone extension. And `draft` was seeded once with useState, so when
+ * the value changed from anywhere else (accepting a quote rewrites a cost
+ * line) the field kept showing the old number for as long as the page stayed
+ * open.
+ *
+ * So: formatted when idle, raw digits when you're typing in it, and the draft
+ * follows the value whenever you are not the one holding the pen.
+ */
 export function MoneyInput({ value, onChange, placeholder }) {
-  const toStr = (c) => (c ? (c / 100).toString() : "");
-  const [draft, setDraft] = useState(() => toStr(value));
+  const cents = typeof value === "number" && Number.isFinite(value) ? value : 0;
+  const raw = (c) => (c ? String(c / 100) : "");
+  const pretty = (c) => (c ? fmtUsd(c) : "");
+
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState(() => raw(cents));
+
+  // Follow the value while the user is elsewhere; never yank the text they are
+  // mid-way through typing.
+  useEffect(() => {
+    if (!focused) setDraft(raw(cents));
+  }, [cents, focused]);
+
+  function commit() {
+    const n = parseFloat(draft.replace(/[^0-9.-]/g, ""));
+    const next = Number.isNaN(n) ? 0 : Math.round(n * 100);
+    setFocused(false);
+    if (next !== cents) onChange(next);
+    setDraft(raw(next));
+  }
+
   return (
     <input
       type="text"
       inputMode="decimal"
-      value={draft}
+      value={focused ? draft : pretty(cents)}
       onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => {
-        const n = parseFloat(draft);
-        const cents = isNaN(n) ? 0 : Math.round(n * 100);
-        onChange(cents);
-        setDraft(toStr(cents));
+      onFocus={(e) => { setFocused(true); setDraft(raw(cents)); requestAnimationFrame(() => e.target.select()); }}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+      placeholder={placeholder || "—"}
+      style={{
+        ...inputStyle(), width: "100%", boxSizing: "border-box", textAlign: "right",
+        fontWeight: cents ? 700 : 500,
+        color: cents ? COLORS.text : COLORS.textFaint,
+        fontVariantNumeric: "tabular-nums",
       }}
-      placeholder={placeholder || "$0"}
-      style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
     />
   );
 }
