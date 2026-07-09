@@ -43,18 +43,25 @@ interface Envelope<T> {
   items: T[];
 }
 
-// Each contended writer loses at most once per round of winners, so N
-// concurrent writers need ~N attempts in the worst case. Two humans is the
-// real workload; the headroom covers a batch import racing a human edit.
-const MAX_REPLAY_ATTEMPTS = 8;
+// Retry until a DEADLINE, not until an attempt count.
+//
+// A fixed cap is a bet on how fast the machine is. Each contended writer loses
+// at most once per round of winners, so N concurrent writers need ~N attempts
+// — but under CPU pressure or network latency the same N writers take longer
+// per round, and a cap of 8 starts throwing "too many concurrent writers" at a
+// user whose only crime was ticking a checkbox during a rebuild. A deadline
+// tracks the thing we actually care about: how long the user waits.
+const REPLAY_DEADLINE_MS = 15_000;
+const MAX_REPLAY_ATTEMPTS = 40; // runaway guard, not the real limit
 
 /**
- * Back off before replaying, with jitter. Without it, writers that collide
- * once tend to collide again on the retry, having been released from the
- * previous round at the same moment.
+ * Full-jitter exponential backoff. Without jitter, writers that collide once
+ * collide again on the retry, having been released from the previous round at
+ * the same instant. Sleeping a RANDOM slice of the window (rather than the
+ * whole window) spreads them out and converges faster under contention.
  */
 function backoff(attempt: number): Promise<void> {
-  const ceiling = Math.min(20 * 2 ** (attempt - 1), 250);
+  const ceiling = Math.min(20 * 2 ** (attempt - 1), 400);
   return new Promise((r) => setTimeout(r, Math.random() * ceiling));
 }
 
@@ -95,8 +102,12 @@ export async function mutate<T extends EngineRow>(
   mutate_: (items: T[]) => T[],
 ): Promise<T[]> {
   const key = collectionKey(workspaceId, name);
+  const deadline = Date.now() + REPLAY_DEADLINE_MS;
+  let attempt = 0;
 
-  for (let attempt = 1; attempt <= MAX_REPLAY_ATTEMPTS; attempt++) {
+  while (attempt < MAX_REPLAY_ATTEMPTS) {
+    attempt += 1;
+
     const { value, version } = await loadVersioned<Envelope<T>>(key, empty<T>());
     const items = Array.isArray(value.items) ? value.items : [];
     const next = mutate_(items);
@@ -108,10 +119,14 @@ export async function mutate<T extends EngineRow>(
       throw new Error(res.message || `Could not save ${name}.`);
     }
     // Conflict: back off, then replay the mutation against whatever is there now.
-    if (attempt < MAX_REPLAY_ATTEMPTS) await backoff(attempt);
+    if (Date.now() >= deadline) break;
+    await backoff(attempt);
   }
 
-  throw new Error(`Could not save ${name}: too many concurrent writers.`);
+  throw new Error(
+    `Could not save ${name}: another editor kept winning for ${REPLAY_DEADLINE_MS / 1000}s. ` +
+      `Nothing was lost — reload and try again.`,
+  );
 }
 
 /** Timestamp helper so every row stamps time the same way. */

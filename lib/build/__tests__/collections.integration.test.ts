@@ -92,7 +92,24 @@ d("collection store: operation replay under concurrency", () => {
     const rows = await mod.listAll<Row>(WS, "tasks");
     expect(rows.map((r) => r.title).sort()).toEqual([...titles].sort());
     expect(new Set(rows.map((r) => r.id)).size).toBe(10);
-  }, 30_000);
+  }, 60_000);
+
+  // The attempt cap used to be 8. Twenty writers exhausted it and threw
+  // "too many concurrent writers" — a save failing because the machine was
+  // busy, not because anything was wrong. Retry is deadline-bound now.
+  it("survives TWENTY concurrent appends, well past the old attempt cap", async () => {
+    const titles = Array.from({ length: 20 }, (_, i) => `x${i}`);
+    const results = await Promise.allSettled(
+      titles.map((t) => mod.mutate<Row>(WS, "tasks", append(t))),
+    );
+
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(rejected.map((r) => (r as PromiseRejectedResult).reason?.message)).toEqual([]);
+
+    const rows = await mod.listAll<Row>(WS, "tasks");
+    expect(rows.map((r) => r.title).sort()).toEqual([...titles].sort());
+    expect(new Set(rows.map((r) => r.id)).size).toBe(20);
+  }, 90_000);
 
   it("replays a status change against a concurrently-appended list", async () => {
     await mod.mutate<Row>(WS, "tasks", append("target"));
