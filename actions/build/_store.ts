@@ -68,6 +68,8 @@ export interface BuildSelection extends Archivable {
   id: string;
   label: string;
   choice: string;
+  /** Free-text spec notes — the requirements behind the choice. */
+  notes?: string;
   status: "open" | "decided" | "ordered";
   vendor: string;
   allowance_cents: number;   // budgeted allowance
@@ -80,6 +82,8 @@ export interface BuildTeamMember extends Archivable {
   role: string;
   name: string;
   contact: string;
+  /** Advice threads, quotes, anything said about this vendor. */
+  notes?: string;
 }
 export interface BuildBoardItem extends Archivable {
   id: string;

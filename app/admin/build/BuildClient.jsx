@@ -1174,6 +1174,9 @@ function SelectionCard({ sel, onChange, onDelete }) {
           <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: COLORS.text }}>{sel.label || "Selection"}</span>
           {sel.choice && <span style={{ display: "block", fontSize: 11.5, color: COLORS.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sel.choice}</span>}
         </span>
+        {sel.notes && (
+          <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8" size={12} color={COLORS.textFaint} />
+        )}
         <span style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: SEL_STATUS[sel.status], flexShrink: 0 }}>
           {sel.status}
         </span>
@@ -1196,6 +1199,16 @@ function SelectionCard({ sel, onChange, onDelete }) {
           <div style={{ display: "flex", gap: 8 }}>
             <input value={sel.lead_time} onChange={(e) => onChange({ lead_time: e.target.value })} placeholder="Lead time (e.g. 8 weeks)" style={{ ...txt(), flex: 1 }} />
             <input type="date" value={sel.deadline || ""} onChange={(e) => onChange({ deadline: e.target.value || null })} aria-label="Decide-by date" style={{ ...inputStyle(), width: 150 }} />
+          </div>
+          <div>
+            <span style={{ display: "block", fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", marginBottom: 4 }}>Spec notes</span>
+            <textarea
+              value={sel.notes || ""}
+              onChange={(e) => onChange({ notes: e.target.value })}
+              rows={3}
+              placeholder="The requirements behind this choice…"
+              style={{ ...txt(), resize: "vertical", lineHeight: 1.5 }}
+            />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <select value={sel.status} onChange={(e) => onChange({ status: e.target.value })} aria-label="Status" style={{ ...inputStyle(), fontWeight: 700, cursor: "pointer" }}>
@@ -1243,18 +1256,44 @@ function SelectionsSection({ state, addRow, updRow, delRow }) {
   );
 }
 
+function VendorNotes({ value, onChange }) {
+  const [open, setOpen] = useState(Boolean(value));
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{ marginTop: 4, background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 11.5, color: COLORS.textFaint, padding: 0 }}
+      >
+        + Add a note
+      </button>
+    );
+  }
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      rows={value.length > 160 ? 4 : 2}
+      placeholder="Advice, quotes, anything said about this vendor…"
+      style={{ ...txt(), marginTop: 6, resize: "vertical", lineHeight: 1.5, fontSize: 12.5 }}
+    />
+  );
+}
+
 function TeamSection({ state, addRow, updRow, delRow }) {
   return (
     <Card title="Team & vendors" sub={`${state.team.length} people`}>
       {state.team.map((t) => (
-        <div key={t.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 26px", gap: 8, alignItems: "center", padding: "6px 4px", borderBottom: `1px solid ${COLORS.surfaceTint}` }}>
-          <input type="text" value={t.role} onChange={(e) => updRow("team", t.id, { role: e.target.value })} style={{ ...txt(), fontWeight: 600 }} />
-          <input type="text" value={t.name} onChange={(e) => updRow("team", t.id, { name: e.target.value })} style={txt()} placeholder="name" />
-          <input type="text" value={t.contact} onChange={(e) => updRow("team", t.id, { contact: e.target.value })} style={txt()} placeholder="phone / email" />
-          <DelBtn onClick={() => delRow("team", t.id)} />
+        <div key={t.id} data-item-id={t.id} style={{ padding: "8px 4px", borderBottom: `1px solid ${COLORS.surfaceTint}` }}>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 26px", gap: 8, alignItems: "center" }}>
+            <input type="text" value={t.role} onChange={(e) => updRow("team", t.id, { role: e.target.value })} style={{ ...txt(), fontWeight: 600 }} />
+            <input type="text" value={t.name} onChange={(e) => updRow("team", t.id, { name: e.target.value })} style={txt()} placeholder="name" />
+            <input type="text" value={t.contact} onChange={(e) => updRow("team", t.id, { contact: e.target.value })} style={txt()} placeholder="phone / email" />
+            <DelBtn onClick={() => delRow("team", t.id)} />
+          </div>
+          <VendorNotes value={t.notes || ""} onChange={(v) => updRow("team", t.id, { notes: v })} />
         </div>
       ))}
-      <AddBtn label="Add team member" onClick={() => addRow("team", { role: "New role", name: "", contact: "" })} />
+      <AddBtn label="Add team member" onClick={() => addRow("team", { role: "New role", name: "", contact: "", notes: "" })} />
     </Card>
   );
 }
