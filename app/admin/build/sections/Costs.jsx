@@ -28,6 +28,7 @@ import {
   fmtCompact,
   DateField,
   FONT,
+  btn,
 } from "../ui";
 import {
   approvedChangeOrderCents, costBasisCents, leftToPayCents, perSquareFootCents, revisedCents,
@@ -73,6 +74,7 @@ const VarChip = ({ v }) => (
 
 export default function CostsSection({ state, setField, addRow, updRow, delRow }) {
   const costs = state.costs || [];
+  const budget = state.budget_cents || 0;
   const totalEst = costs.reduce((s, c) => s + c.estimate_cents, 0);
   const spentLines = costs.filter((c) => c.actual_cents > 0);
   const totalActual = spentLines.reduce((s, c) => s + c.actual_cents, 0);
@@ -109,136 +111,189 @@ export default function CostsSection({ state, setField, addRow, updRow, delRow }
   const cellHead = { fontSize: 10, fontWeight: 700, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" };
   const GRID = "minmax(0,1fr) 84px 84px 26px";
 
-  // A group opens when it holds money. He can open any other; nothing is hidden,
-  // it is just not shouting.
-  const [openGroups, setOpenGroups] = useState(() => new Set());
-  const toggleGroup = (g) =>
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(g)) next.delete(g);
-      else next.add(g);
-      return next;
-    });
-  const addLineTo = (group) =>
-    addRow("costs", { label: "", group, estimate_cents: 0, actual_cents: 0, in_basis: true });
+  // Only what he has actually entered, plus anything he has just tapped open.
+  // The other seeded categories are suggestions — a chip he can answer, not a
+  // field he must fill.
+  const [revealed, setRevealed] = useState(() => new Set());
+  const [showAll, setShowAll] = useState(false);
+  const [editingTarget, setEditingTarget] = useState(false);
+
+  const hasMoney = (c) => Boolean(c.estimate_cents || c.actual_cents);
+  const live = costs.filter((c) => hasMoney(c) || revealed.has(c.id));
+  const suggestions = costs.filter((c) => !hasMoney(c) && !revealed.has(c.id));
+
+  const reveal = (id) => setRevealed((prev) => new Set(prev).add(id));
+  const dismiss = (id) => setRevealed((prev) => { const n = new Set(prev); n.delete(id); return n; });
 
   // ── Worksheet (the usual view — costs are seeded, so this is the norm) ──────
   const worksheet = (
     <>
       {/* Cost to complete — every figure here is derived, nothing to fill in. */}
-      <Card title="Cost to complete">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(124px, 1fr))", gap: 8, paddingTop: 6 }}>
+      {/* THE HERO.
+          One number, because there is only one question: what will this house
+          cost. Everything else on this screen is subordinate to it. */}
+      <div style={{
+        border: `1px solid ${COLORS.border}`, borderRadius: 14, background: COLORS.surface,
+        padding: "22px 20px", marginBottom: 14,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: COLORS.textFaint }}>
+          What this build will cost
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginTop: 6 }}>
+          <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+            {fmtCompact(revised)}
+          </div>
+          {coNet !== 0 && (
+            <span style={{ fontSize: 12.5, color: COLORS.textMuted }}>
+              including {signedCompact(coNet)} of approved change orders
+            </span>
+          )}
+        </div>
+
+        {/* The target, set right here. A tile that reports "No target set" and
+            offers no way to set one is a sign, not a control. */}
+        {budget > 0 ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ height: 6, borderRadius: 3, background: COLORS.surfaceTint, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", borderRadius: 3,
+                width: `${Math.min(100, Math.round((revised / budget) * 100))}%`,
+                background: revised > budget ? COLORS.red : COLORS.green,
+              }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, fontSize: 12.5 }}>
+              <span style={{ color: revised > budget ? COLORS.red : COLORS.green, fontWeight: 600 }}>
+                {revised > budget
+                  ? `${fmtCompact(revised - budget)} over your target`
+                  : `${fmtCompact(budget - revised)} still under your target`}
+              </span>
+              <button
+                onClick={() => setEditingTarget(true)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12.5, color: COLORS.textFaint, padding: 0 }}
+              >
+                Target {fmtCompact(budget)}
+              </button>
+            </div>
+          </div>
+        ) : editingTarget ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16, maxWidth: 260 }}>
+            <MoneyInput value={budget} onChange={(v) => { setField("budget_cents", v); setEditingTarget(false); }} placeholder="$0" />
+            <span style={{ fontSize: 12, color: COLORS.textFaint, whiteSpace: "nowrap" }}>target budget</span>
+          </div>
+        ) : (
+          <button onClick={() => setEditingTarget(true)} style={{ ...btn("ghost"), marginTop: 16 }}>
+            <Icon d={ICON.plus} size={13} /> Set a target budget
+          </button>
+        )}
+
+        <div style={{ display: "flex", gap: 22, marginTop: 18, flexWrap: "wrap" }}>
           {[
-            ["Estimated", fmtCompact(totalEst), COLORS.text],
-            ["Change orders", coNet ? signedCompact(coNet) : "—", coNet < 0 ? COLORS.green : COLORS.text],
-            ["Revised cost", fmtCompact(revised), COLORS.text],
-            ["Paid to date", fmtCompact(totalPaid), COLORS.text],
-            ["Left to pay", fmtCompact(leftToPay), leftToPay < 0 ? COLORS.green : ACCENT],
-            [
-              state.budget_cents ? (state.budget_cents - revised >= 0 ? "Under target" : "Over target") : "No target set",
-              state.budget_cents ? fmtCompact(Math.abs(state.budget_cents - revised)) : "—",
-              !state.budget_cents ? COLORS.textFaint : state.budget_cents - revised >= 0 ? COLORS.green : COLORS.red,
-            ],
-            ["Cost per square foot", perSqft ? fmtCompact(perSqft) : "—", COLORS.text],
-          ].map(([l, v, c]) => (
-            <div key={l} style={{ background: COLORS.surfaceTint, borderRadius: 10, padding: "10px 12px" }}>
-              <div style={cellHead}>{l}</div>
-              <div style={{ marginTop: 3, fontSize: 16, fontWeight: 800, color: c, fontVariantNumeric: "tabular-nums" }}>{v}</div>
+            ["Paid so far", fmtCompact(totalPaid)],
+            ["Left to pay", fmtCompact(leftToPay)],
+            ...(perSqft ? [["Per square foot", fmtCompact(perSqft)]] : []),
+          ].map(([l, v]) => (
+            <div key={l}>
+              <div style={{ fontSize: 15, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{v}</div>
+              <div style={{ fontSize: 11.5, color: COLORS.textFaint }}>{l}</div>
             </div>
           ))}
         </div>
-      </Card>
+      </div>
 
-      {/* Nine groups, not thirty-seven rows.
-          Thirty-six of the seeded lines are empty on day one, and a screen that
-          shows a homeowner thirty-six zeroes is not showing him his budget — it
-          is showing him the shape of a spreadsheet. A group opens when it holds
-          money, or when he opens it. */}
-      <Card title="Costs" sub={totalActual > 0 ? `${fmtCompact(totalActual)} spent of ${fmtCompact(totalEst)}` : `${fmtCompact(totalEst)} estimated`}>
-        {groups.map((g) => {
-          const lines = costs.filter((c) => c.group === g);
-          const gEst = lines.reduce((s, c) => s + c.estimate_cents, 0);
-          const gAct = lines.reduce((s, c) => s + c.actual_cents, 0);
-          const gv = rollupVariance(lines);
-          const filled = lines.filter((c) => c.estimate_cents || c.actual_cents).length;
-          const open = openGroups.has(g) || (gEst > 0 || gAct > 0);
+      {/* WHERE THE MONEY GOES.
+          Only the costs he has actually entered. The other thirty-six seeded
+          categories are suggestions, not a form to fill in — a screen of empty
+          fields asks him to do data entry; a row of chips asks him one question
+          he can answer in a second. */}
+      <Card title="Where the money goes" sub={live.length ? `${live.length} of ${costs.length} categories` : "Nothing entered yet"}>
+        {live.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, padding: "2px 4px 4px", ...cellHead }}>
+            <div>Line item</div>
+            <div style={{ textAlign: "right" }}>Estimate</div>
+            <div style={{ textAlign: "right" }}>Actual</div>
+            <div />
+          </div>
+        )}
 
+        {live.map((c) => {
+          const v = variance(c.estimate_cents, c.actual_cents);
           return (
-            <div key={g} style={{ borderBottom: `1px solid ${COLORS.surfaceTint}` }}>
-              <button
-                onClick={() => toggleGroup(g)}
-                aria-expanded={open}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10, width: "100%",
-                  padding: "11px 4px", background: "transparent", border: "none",
-                  cursor: "pointer", fontFamily: FONT, textAlign: "left",
-                }}
-              >
-                <Icon d={open ? ICON.chevD : ICON.chevR} size={13} color={COLORS.textFaint} />
-                <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {g}
-                </span>
-                {gv && <VarChip v={gv} />}
-                <span style={{ fontSize: 11.5, color: COLORS.textFaint, whiteSpace: "nowrap" }}>
-                  {filled > 0 ? `${filled} of ${lines.length}` : `${lines.length} lines`}
-                </span>
-                <span style={{ minWidth: 74, textAlign: "right", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: gEst ? COLORS.text : COLORS.textFaint }}>
-                  {gEst ? fmtCompact(gEst) : "Not estimated"}
-                </span>
-              </button>
-
-              {open && (
-                <div style={{ paddingBottom: 8 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, padding: "2px 4px 4px", ...cellHead }}>
-                    <div>Line item</div>
-                    <div style={{ textAlign: "right" }}>Estimate</div>
-                    <div style={{ textAlign: "right" }}>Actual</div>
-                    <div />
-                  </div>
-                  {lines.map((c) => {
-                    const v = variance(c.estimate_cents, c.actual_cents);
-                    const untouched = !c.estimate_cents && !c.actual_cents;
-                    return (
-                      <div key={c.id} style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, alignItems: "start", padding: "5px 4px" }}>
-                        <div style={{ minWidth: 0 }}>
-                          <input
-                            type="text"
-                            value={c.label}
-                            onChange={(e) => updRow("costs", c.id, { label: e.target.value })}
-                            aria-label="Line item name"
-                            style={{ ...txt(), fontWeight: 600, color: untouched ? COLORS.textMuted : COLORS.text }}
-                          />
-                          {v && (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, fontWeight: 700, color: v.tone === "red" ? COLORS.red : COLORS.green }}>
-                              <Icon d={v.icon} size={12} color="currentColor" />
-                              {v.label}
-                            </span>
-                          )}
-                        </div>
-                        <MoneyInput value={c.estimate_cents} onChange={(val) => updRow("costs", c.id, { estimate_cents: val })} />
-                        <MoneyInput value={c.actual_cents} onChange={(val) => updRow("costs", c.id, { actual_cents: val })} />
-                        <DelBtn onClick={() => delRow("costs", c.id)} />
-                      </div>
-                    );
-                  })}
-                  <div style={{ paddingLeft: 4 }}>
-                    <AddBtn label={`Add a line to ${g}`} onClick={() => addLineTo(g)} />
-                  </div>
-                </div>
-              )}
+            <div key={c.id} style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, alignItems: "start", padding: "5px 4px", borderBottom: `1px solid ${COLORS.surfaceTint}` }}>
+              <div style={{ minWidth: 0 }}>
+                <input
+                  type="text"
+                  value={c.label}
+                  onChange={(e) => updRow("costs", c.id, { label: e.target.value })}
+                  aria-label="Line item name"
+                  placeholder="What is this?"
+                  autoFocus={!c.label}
+                  style={{ ...txt(), fontWeight: 600 }}
+                />
+                {v && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4, fontSize: 11, fontWeight: 700, color: v.tone === "red" ? COLORS.red : COLORS.green }}>
+                    <Icon d={v.icon} size={12} color="currentColor" />
+                    {v.label}
+                  </span>
+                )}
+              </div>
+              <MoneyInput value={c.estimate_cents} onChange={(val) => updRow("costs", c.id, { estimate_cents: val })} />
+              <MoneyInput value={c.actual_cents} onChange={(val) => updRow("costs", c.id, { actual_cents: val })} />
+              <DelBtn onClick={() => { dismiss(c.id); delRow("costs", c.id); }} />
             </div>
           );
         })}
 
-        {/* Whole-build totals — the last thing he'd otherwise add up by hand. */}
-        <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, alignItems: "center", padding: "12px 4px 4px", marginTop: 4, borderTop: `2px solid ${COLORS.border}` }}>
-          <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, minWidth: 0 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.4, color: COLORS.text }}>Total</span>
-            {totalVar && <VarChip v={totalVar} />}
-          </span>
-          <span style={{ textAlign: "right", fontSize: 14, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums" }}>{fmtCompact(totalEst)}</span>
-          <span style={{ textAlign: "right", fontSize: 14, fontWeight: 800, color: totalActual > 0 ? COLORS.text : COLORS.textFaint, fontVariantNumeric: "tabular-nums" }}>{totalActual > 0 ? fmtCompact(totalActual) : "—"}</span>
-          <span />
+        {live.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: GRID, gap: 8, alignItems: "center", padding: "12px 4px 4px", marginTop: 4, borderTop: `2px solid ${COLORS.border}` }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.4 }}>Total</span>
+              {totalVar && <VarChip v={totalVar} />}
+            </span>
+            <span style={{ textAlign: "right", fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{fmtCompact(totalEst)}</span>
+            <span style={{ textAlign: "right", fontSize: 14, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: totalActual > 0 ? COLORS.text : COLORS.textFaint }}>
+              {totalActual > 0 ? fmtCompact(totalActual) : "—"}
+            </span>
+            <span />
+          </div>
+        )}
+
+        {suggestions.length > 0 && (
+          <div style={{ marginTop: live.length ? 16 : 4 }}>
+            <div style={{ fontSize: 11.5, color: COLORS.textFaint, marginBottom: 8 }}>
+              {live.length ? "Add a cost you know" : "Tap what you already have a number for"}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {suggestions.slice(0, showAll ? suggestions.length : 10).map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => reveal(c.id)}
+                  style={{
+                    border: `1px solid ${COLORS.border}`, background: COLORS.surface,
+                    borderRadius: 999, padding: "5px 12px", cursor: "pointer",
+                    fontFamily: FONT, fontSize: 12, fontWeight: 600, color: COLORS.textMuted,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+              {!showAll && suggestions.length > 10 && (
+                <button
+                  onClick={() => setShowAll(true)}
+                  style={{
+                    border: "none", background: "none", cursor: "pointer", fontFamily: FONT,
+                    fontSize: 12, fontWeight: 600, color: COLORS.accent, padding: "5px 8px",
+                  }}
+                >
+                  {suggestions.length - 10} more
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginTop: 14 }}>
+          <AddBtn label="Add something else" onClick={addLine} />
         </div>
       </Card>
 
