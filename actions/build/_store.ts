@@ -195,6 +195,100 @@ export interface BuildEnergyMetric extends Archivable {
   target: string;      // the goal
 }
 
+
+// ── Modules added in the Phase 2–5 pass ──────────────────────────────
+
+export type MaterialStatus = "idea" | "researching" | "decided" | "ordered" | "received" | "installed";
+
+export interface BuildMaterial extends Archivable {
+  id: string;
+  name: string;
+  category: string;
+  room_ids: string[];        // rooms this goes into
+  spec: string;
+  vendor: string;
+  unit_price_cents: number;
+  quantity: number;
+  unit: string;              // "door", "sq ft", "each"
+  lead_time: string;
+  status: MaterialStatus;
+  url: string;
+  photo_url: string;
+  /** Rows sharing a compare_group are alternatives for ONE decision. */
+  compare_group: string;
+  is_chosen: boolean;
+  notes: string;
+}
+
+export interface BuildDecision extends Archivable {
+  id: string;
+  title: string;
+  decided_on: string | null;   // ISO YYYY-MM-DD
+  decision: string;            // what we chose
+  why: string;                 // why we chose it
+  alternatives: string;        // what we rejected, and why
+  url: string;
+}
+
+export interface BuildQuoteLine {
+  id: string;
+  description: string;
+  quantity: number;
+  unit_price_cents: number;
+}
+export type QuoteStatus = "requested" | "received" | "accepted" | "declined";
+export interface BuildQuote extends Archivable {
+  id: string;
+  vendor: string;
+  /** Quotes sharing a scope are compared side by side. */
+  scope: string;
+  date: string | null;
+  status: QuoteStatus;
+  total_cents: number;         // authoritative; lines are advisory detail
+  lines: BuildQuoteLine[];
+  doc_url: string;
+  notes: string;
+}
+
+export interface BuildPhase extends Archivable {
+  id: string;
+  name: string;
+  start: string | null;        // ISO YYYY-MM-DD
+  end: string | null;
+  percent: number;             // 0..100
+}
+export interface BuildScheduleTask extends Archivable {
+  id: string;
+  phase_id: string | null;
+  name: string;
+  start: string | null;
+  end: string | null;
+  percent: number;             // 0..100
+  /** Finish-to-start: this task cannot start until all of these finish. */
+  depends_on: string[];
+  is_milestone: boolean;
+}
+
+export type TripItemStatus = "todo" | "captured" | "ordered";
+export interface BuildTripItem extends Archivable {
+  id: string;
+  item: string;
+  vendor: string;
+  specs: string;
+  budget_cents: number;
+  status: TripItemStatus;
+  media_count: number;         // photos/videos captured on site
+  notes: string;
+}
+export interface BuildTrip extends Archivable {
+  id: string;
+  name: string;
+  start: string | null;
+  end: string | null;
+  notes: string;
+  items: BuildTripItem[];
+}
+
 export interface BuildState {
   project_name: string;
   style: string;   // architectural style / vibe
@@ -224,6 +318,12 @@ export interface BuildState {
   as_built: BuildAsBuilt[];
   warranties: BuildWarranty[];
   energy: BuildEnergyMetric[];
+  materials: BuildMaterial[];
+  decisions_log: BuildDecision[];
+  quotes: BuildQuote[];
+  phases: BuildPhase[];
+  schedule_tasks: BuildScheduleTask[];
+  trips: BuildTrip[];
   schema_version: number;
   last_modified_at: string | null;
 }
@@ -436,6 +536,16 @@ const ASBUILT_SEED: string[] = [
   "Well / water source location", "Septic tank & drain-field location", "Irrigation controller location",
 ];
 
+// The brief's standard construction phase template, pre-loaded so the Gantt
+// opens with a real skeleton rather than an empty grid.
+const PHASE_SEED: string[] = [
+  "Pre-construction & design", "Permits", "Site work", "Foundation & waterproofing",
+  "Framing", "Roofing", "Rough-ins (plumbing, electrical, HVAC)",
+  "Insulation & air sealing", "Drywall", "Interior finishes", "Cabinets & millwork",
+  "Flooring", "Fixtures", "Exterior, hardscape & pool", "Punch list",
+  "Final inspections", "Move-in",
+];
+
 const WARRANTY_SEED: string[] = [
   "Builder workmanship warranty", "Roof", "HVAC & ERV system", "Appliances",
   "Windows & exterior doors", "Water heater", "Foundation / structural",
@@ -512,6 +622,17 @@ export function emptyBuildState(): BuildState {
     energy: ENERGY_SEED.map(([label, target], i) => ({
       id: `en${i}`, label, value: "", target,
     })),
+    // New modules start empty. loadBuildState spreads the fallback first, so a
+    // stored blob written before these existed backfills to [] rather than
+    // undefined — no migration needed.
+    materials: [],
+    decisions_log: [],
+    quotes: [],
+    phases: PHASE_SEED.map((name, i) => ({
+      id: `ph${i}`, name, start: null, end: null, percent: 0,
+    })),
+    schedule_tasks: [],
+    trips: [],
     schema_version: BUILD_SCHEMA_VERSION,
     last_modified_at: null,
   };

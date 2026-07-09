@@ -38,6 +38,12 @@ const EXTRA_TEXT: Partial<Record<EntityType, string[]>> = {
   change_order: ["reason", "status"],
   inspection: ["inspector", "notes", "status"],
   task: ["notes", "assignee", "status"],
+  material: ["spec", "vendor", "category", "notes", "url", "status"],
+  decision: ["decision", "why", "alternatives"],
+  quote: ["vendor", "scope", "notes", "status"],
+  trip: ["notes"],
+  phase: [],
+  schedule_task: [],
 };
 
 const str = (v: unknown): string => (typeof v === "string" ? v : "");

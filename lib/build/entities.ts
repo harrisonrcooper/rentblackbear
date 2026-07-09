@@ -39,6 +39,12 @@ export const ENTITY_TYPES = [
   "warranty",
   "energy",
   "task",
+  "material",
+  "decision",
+  "quote",
+  "phase",
+  "schedule_task",
+  "trip",
 ] as const;
 
 export type EntityType = (typeof ENTITY_TYPES)[number];
@@ -107,6 +113,12 @@ export const ENTITY_REGISTRY: Record<EntityType, EntitySpec> = {
   warranty:      { label: "Warranty",       section: "asbuilt",      arrayKey: "warranties",    title: (r) => firstOf(r, "item"),   subtitle: (r) => firstOf(r, "provider", "expires") },
   energy:        { label: "Energy metric",  section: "energy",       arrayKey: "energy",        title: (r) => firstOf(r, "label"),  subtitle: (r) => firstOf(r, "target") },
   task:          { label: "Task",           section: "tasks",        arrayKey: null,            title: (r) => firstOf(r, "title"),  subtitle: (r) => firstOf(r, "status") },
+  material:      { label: "Material",       section: "materials",    arrayKey: "materials",     title: (r) => firstOf(r, "name"),   subtitle: (r) => firstOf(r, "vendor", "category", "status") },
+  decision:      { label: "Decision",       section: "decisionlog",  arrayKey: "decisions_log", title: (r) => firstOf(r, "title"),  subtitle: (r) => firstOf(r, "decision") },
+  quote:         { label: "Quote",          section: "quotes",       arrayKey: "quotes",        title: (r) => firstOf(r, "scope", "vendor"), subtitle: (r) => firstOf(r, "vendor", "status") },
+  phase:         { label: "Phase",          section: "schedule",     arrayKey: "phases",        title: (r) => firstOf(r, "name") },
+  schedule_task: { label: "Scheduled task", section: "schedule",     arrayKey: "schedule_tasks", title: (r) => firstOf(r, "name") },
+  trip:          { label: "Sourcing trip",  section: "trips",        arrayKey: "trips",         title: (r) => firstOf(r, "name"),   subtitle: (r) => firstOf(r, "start") },
 };
 
 export function isEntityType(v: string): v is EntityType {

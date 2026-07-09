@@ -11,6 +11,10 @@ import { Icon, ICON } from "../budget/lib/icons";
 import { fmtUsd, fmtCompact } from "../budget/lib/money";
 import { genId } from "../budget/lib/calc";
 import { useIsMobile } from "../budget/lib/responsive";
+import {
+  AddBtn, Card, Check, Chip, DelBtn, Field, MoneyInput, ProgressRing, SectionHead,
+  SERIF, StatStrip, StatTile, daysFromToday, fmtBuildDate, txt,
+} from "./ui";
 import { saveBuildStateAction } from "@/actions/build/state";
 import { createTask, listTasks, updateTask } from "@/actions/build/engine";
 import { mergeBuildState } from "@/lib/build/merge";
@@ -23,6 +27,11 @@ import CommandPalette from "./CommandPalette";
 import QuickCapture from "./QuickCapture";
 import BackupPanel from "./BackupPanel";
 import DetailDrawer from "./DetailDrawer";
+import MaterialsSection from "./sections/Materials";
+import DecisionsSection2 from "./sections/Decisions";
+import QuotesSection from "./sections/Quotes";
+import ScheduleSection from "./sections/Schedule";
+import TripsSection from "./sections/Trips";
 
 /** Best available human name for a row, used in the undo snackbar. */
 function rowLabel(row) {
@@ -35,9 +44,6 @@ function rowLabel(row) {
 
 const ACCENT = COLORS.accent;
 const ACCENT_SOFT = COLORS.accentSoft;
-// Loaded by app/layout.jsx via next/font. Used for the project and room
-// titles only — the editorial note that says "this is a house, not a CRM".
-const SERIF = "var(--font-source-serif), 'Source Serif 4', Georgia, serif";
 const DOC_ICON = "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8";
 const EXTERNAL_ICON = "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3";
 const CAMERA_ICON = "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z";
@@ -62,6 +68,8 @@ const SECTIONS = [
   { id: "overview",   group: "Plan",   label: "Overview",       icon: ICON.home },
   { id: "inspiration", group: "Plan",  label: "Inspiration",    icon: "M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M21 15l-5-5L5 21", count: "boards" },
   { id: "rooms",      group: "Plan",   label: "Rooms & Spaces", icon: ICON.building, count: "rooms" },
+  { id: "materials",  group: "Plan",   label: "Materials",      icon: "M20 7h-9 M14 17H5 M17 20a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M7 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", count: "materials" },
+  { id: "trips",      group: "Plan",   label: "Sourcing Trips", icon: "M2 12h20 M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z M12 2a10 10 0 0 0 0 20", count: "trips" },
   { id: "wants",      group: "Plan",   label: "Wants & Needs",  icon: ICON.flag, count: "wishlist" },
   { id: "references", group: "Plan",   label: "References",     icon: "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z", count: "references" },
   // Renamed: this section renders the `palette` array — colour swatches and
@@ -72,12 +80,15 @@ const SECTIONS = [
   // Renamed: this renders the `rfis` array — open questions awaiting an
   // answer, not a log of decisions made and why.
   { id: "decisions",  group: "Decide", label: "Open Questions", icon: RFI_ICON, count: "rfis" },
+  { id: "decisionlog", group: "Decide", label: "Decisions",     icon: "M9 11l3 3 8-8 M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9", count: "decisions_log" },
+  { id: "quotes",     group: "Decide", label: "Quotes & Bids",  icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M9 13h6 M9 17h3", count: "quotes" },
   { id: "team",       group: "Decide", label: "Team & Vendors", icon: ICON.family, count: "team" },
   { id: "brief",      group: "Decide", label: "Architect Brief", icon: DOC_ICON },
 
   { id: "costs",      group: "Track",  label: "Costs",          icon: ICON.envelope, count: "costs" },
   { id: "changeorders", group: "Track", label: "Change Orders", icon: CHANGE_ORDER_ICON, count: "change_orders" },
   { id: "payments",   group: "Track",  label: "Payments",       icon: PAYMENT_ICON, count: "payments" },
+  { id: "schedule",   group: "Track",  label: "Schedule",       icon: "M3 5h18v16H3z M3 10h18 M8 3v4 M16 3v4", count: "schedule_tasks" },
   { id: "milestones", group: "Track",  label: "Milestones",     icon: ICON.calendar, count: "milestones" },
   { id: "inspections", group: "Track", label: "Inspections",    icon: INSPECTION_ICON, count: "inspections" },
   { id: "punchlist",  group: "Track",  label: "Punch List",     icon: PUNCH_ICON, count: "punch_list" },
@@ -99,159 +110,9 @@ const COST_GROUP_ORDER = [
 
 // ── Shared bits ──────────────────────────────────────────────────────
 
-function Card({ title, sub, children }) {
-  return (
-    <section style={{ ...STYLES.card, padding: 0, overflow: "hidden", marginBottom: 14 }}>
-      <div style={{
-        display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10,
-        padding: "14px 16px 12px", borderBottom: `1px solid ${COLORS.surfaceTint}`,
-      }}>
-        <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: "-0.01em", color: COLORS.text }}>{title}</span>
-        {sub != null && <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.textFaint }}>{sub}</span>}
-      </div>
-      <div style={{ padding: "6px 12px 12px" }}>{children}</div>
-    </section>
-  );
-}
-
-function Field({ label, children }) {
-  return (
-    <label style={{ display: "block", marginBottom: 12 }}>
-      <span style={{ display: "block", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: 5 }}>
-        {label}
-      </span>
-      {children}
-    </label>
-  );
-}
-
-function txt() {
-  return { ...inputStyle(), width: "100%", boxSizing: "border-box", fontWeight: 600 };
-}
-
-function MoneyInput({ value, onChange, placeholder }) {
-  const toStr = (c) => (c ? (c / 100).toString() : "");
-  const [draft, setDraft] = useState(() => toStr(value));
-  return (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => {
-        const n = parseFloat(draft);
-        const cents = isNaN(n) ? 0 : Math.round(n * 100);
-        onChange(cents);
-        setDraft(toStr(cents));
-      }}
-      placeholder={placeholder || "$0"}
-      style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
-    />
-  );
-}
-
-function DelBtn({ onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label="Delete"
-      style={{
-        width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: "pointer",
-        border: `1px solid ${COLORS.border}`, background: COLORS.surface, color: COLORS.textFaint,
-        display: "grid", placeItems: "center",
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; e.currentTarget.style.borderColor = COLORS.red; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = COLORS.surface; e.currentTarget.style.color = COLORS.textFaint; e.currentTarget.style.borderColor = COLORS.border; }}
-    >
-      <Icon d={ICON.x} size={13} />
-    </button>
-  );
-}
-
-function Check({ done, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-pressed={done}
-      aria-label={done ? "Done" : "Not done"}
-      style={{
-        width: 24, height: 24, borderRadius: 7, flexShrink: 0, cursor: "pointer",
-        border: `1px solid ${done ? COLORS.green : COLORS.border}`,
-        background: done ? COLORS.green : "transparent",
-        display: "grid", placeItems: "center",
-      }}
-    >
-      {done && <Icon d="M20 6L9 17l-5-5" size={13} color="#fff" />}
-    </button>
-  );
-}
-
-function AddBtn({ label, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6,
-        padding: "9px 12px", borderRadius: 10, cursor: "pointer", fontFamily: FONT,
-        fontSize: 12.5, fontWeight: 700, color: ACCENT,
-        background: ACCENT_SOFT, border: "none",
-      }}
-    >
-      <Icon d={["M12 5v14", "M5 12h14"]} size={13} />
-      {label}
-    </button>
-  );
-}
-
 // ── Section views ────────────────────────────────────────────────────
 
 /** A ring, because the single most useful thing to know is "how far along". */
-function ProgressRing({ pct, size = 116, stroke = 9, caption }) {
-  const r = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * r;
-  const filled = circumference * (Math.min(100, Math.max(0, pct)) / 100);
-
-  return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={COLORS.surfaceTint} strokeWidth={stroke} />
-        <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none" stroke={ACCENT} strokeWidth={stroke}
-          strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference - filled}
-        />
-      </svg>
-      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>
-        <div>
-          <div style={{ fontSize: 25, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: COLORS.textFaint, marginTop: 3 }}>{caption}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatTile({ label, value, sub, accent, pct, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        textAlign: "left", background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-        borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: FONT,
-        display: "flex", flexDirection: "column", gap: 2, minWidth: 0,
-      }}
-    >
-      <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: COLORS.textFaint }}>{label}</span>
-      <span style={{ fontSize: 21, fontWeight: 700, letterSpacing: "-0.02em", color: accent || COLORS.text, fontVariantNumeric: "tabular-nums", marginTop: 4 }}>{value}</span>
-      <span style={{ fontSize: 11.5, color: COLORS.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</span>
-      {typeof pct === "number" && (
-        <span style={{ display: "block", height: 3, borderRadius: 2, background: COLORS.surfaceTint, marginTop: 10, overflow: "hidden" }}>
-          <span style={{ display: "block", height: "100%", width: `${Math.min(100, Math.max(0, pct))}%`, background: accent || ACCENT, borderRadius: 2 }} />
-        </span>
-      )}
-    </button>
-  );
-}
-
 function Dashboard({ state, onJump }) {
   const costs = state.costs || [];
   const totalEst = costs.reduce((s, c) => s + c.estimate_cents, 0);
@@ -393,15 +254,6 @@ function Dashboard({ state, onJump }) {
 }
 
 /** Shared section header: title, and a quiet note that explains it. */
-function SectionHead({ title, note }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 10, margin: "30px 0 11px" }}>
-      <h3 style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.01em", margin: 0 }}>{title}</h3>
-      {note && <span style={{ fontSize: 12, color: COLORS.textFaint }}>{note}</span>}
-    </div>
-  );
-}
-
 function OverviewSection({ state, setField, onJump }) {
   return (
     <>
@@ -499,26 +351,6 @@ function RoomField({ label, value, onChange, placeholder }) {
 }
 
 /** A pill. Tone carries meaning; the outline carries the affordance. */
-function Chip({ tone = "neutral", children }) {
-  const map = {
-    neutral: [COLORS.textMuted, COLORS.borderStrong, COLORS.surface],
-    accent:  [COLORS.accent, COLORS.accent, COLORS.accentSoft],
-    green:   [COLORS.green, COLORS.green, COLORS.greenBg],
-    amber:   [COLORS.amber, COLORS.amber, COLORS.amberBg],
-    red:     [COLORS.red, COLORS.red, COLORS.redBg],
-  };
-  const [fg, bd, bg] = map[tone] || map.neutral;
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5, border: `1px solid ${bd}`,
-      borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 600,
-      color: fg, background: bg, whiteSpace: "nowrap",
-    }}>
-      {children}
-    </span>
-  );
-}
-
 function RoomCard({ room, taskCount, onOpen }) {
   const p = roomProgress(room);
   const tone = p.total === 0 ? "neutral" : p.done === p.total ? "green" : p.done > 0 ? "accent" : "neutral";
@@ -902,19 +734,6 @@ function CostsSection({ state, setField, addRow, updRow, delRow }) {
 
 const CO_STATUS_COLOR = { pending: COLORS.amber, approved: COLORS.green, rejected: COLORS.textFaint };
 
-function StatStrip({ items }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, paddingBottom: 12 }}>
-      {items.map(([l, v, c]) => (
-        <div key={l} style={{ background: COLORS.surfaceTint, borderRadius: 10, padding: "9px 11px" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.4, color: COLORS.textFaint, textTransform: "uppercase" }}>{l}</div>
-          <div style={{ marginTop: 3, fontSize: 15, fontWeight: 800, color: c, fontVariantNumeric: "tabular-nums" }}>{v}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function ChangeOrderCard({ co, onChange, onDelete }) {
   const [open, setOpen] = useState(false);
   const credit = co.kind === "credit";
@@ -1073,18 +892,6 @@ function PaymentsSection({ state, addRow, updRow, delRow }) {
       <AddBtn label="Add payment" onClick={() => addRow("payments", { date: new Date().toISOString().slice(0, 10), vendor: "New payment", description: "", amount_cents: 0, method: "Check", lien_waiver: "pending" })} />
     </Card>
   );
-}
-
-function fmtBuildDate(iso) {
-  if (!iso) return "";
-  const d = new Date(iso + "T00:00:00");
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-function daysFromToday(iso) {
-  const d = new Date(iso + "T00:00:00");
-  const t = new Date(); t.setHours(0, 0, 0, 0);
-  return Math.round((d.getTime() - t.getTime()) / 86400000);
 }
 
 function MilestoneTimeline({ milestones }) {
@@ -2346,6 +2153,11 @@ export default function BuildClient({ initialState, initialVersion = 0, initialS
       case "punchlist": return <PunchListSection {...helpers} />;
       case "asbuilt": return <AsBuiltSection {...helpers} />;
       case "energy": return <EnergySection {...helpers} />;
+      case "materials": return <MaterialsSection {...helpers} />;
+      case "decisionlog": return <DecisionsSection2 {...helpers} />;
+      case "quotes": return <QuotesSection {...helpers} />;
+      case "schedule": return <ScheduleSection {...helpers} />;
+      case "trips": return <TripsSection {...helpers} tasks={tasks} />;
       case "brief": return <BriefSection state={shown} />;
       default: return (
         <>
