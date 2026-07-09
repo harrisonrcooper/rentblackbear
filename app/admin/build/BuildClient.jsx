@@ -12,8 +12,10 @@ import { fmtUsd, fmtCompact } from "../budget/lib/money";
 import { genId } from "../budget/lib/calc";
 import { useIsMobile } from "../budget/lib/responsive";
 import {
-  AddBtn, Card, Check, Chip, DelBtn, Field, MoneyInput, ProgressRing, SectionHead,
-  SERIF, StatStrip, StatTile, daysFromToday, fmtBuildDate, txt,
+  AddBtn, AutoTextarea, Card, CHANGE_ORDER_KINDS, CHANGE_ORDER_STATUSES, Check, Chip,
+  DelBtn, Field, INSPECTION_STATUSES, LIEN_WAIVERS, MoneyInput, ProgressRing,
+  QUESTION_STATUSES, SectionHead, SELECTION_STATUSES, SelectPill, SERIF, StatStrip,
+  StatTile, WISH_TIERS, daysFromToday, fmtBuildDate, optionsFrom, txt,
 } from "./ui";
 import { saveBuildStateAction } from "@/actions/build/state";
 import { createTask, listTasks, updateTask } from "@/actions/build/engine";
@@ -281,11 +283,10 @@ function OverviewSection({ state, setField, onJump }) {
           <input type="text" value={state.lot} onChange={(e) => setField("lot", e.target.value)} style={txt()} placeholder="Acreage, views, orientation, setbacks…" />
         </Field>
         <Field label="Vision & must-knows for the architect">
-          <textarea
+          <AutoTextarea
             value={state.notes}
-            onChange={(e) => setField("notes", e.target.value)}
-            rows={5}
-            style={{ ...txt(), resize: "vertical", lineHeight: 1.5 }}
+            onChange={(v) => setField("notes", v)}
+            minRows={8}
             placeholder="The big picture — how you want the home to feel and live, deal-breakers, inspiration…"
           />
         </Field>
@@ -296,6 +297,7 @@ function OverviewSection({ state, setField, onJump }) {
 }
 
 function WantsSection({ state, addRow, updRow, delRow }) {
+  // Tier order is deliberate: what the house cannot do without, first.
   const tiers = [["need", "Needs"], ["want", "Wants"], ["dream", "Dreams"]];
   return (
     <Card title="Wants & needs" sub={`${state.wishlist.length} items`}>
@@ -317,11 +319,12 @@ function WantsSection({ state, addRow, updRow, delRow }) {
                   onChange={(e) => updRow("wishlist", w.id, { label: e.target.value })}
                   style={{ ...txt(), flex: 1, minWidth: 0, textDecoration: w.done ? "line-through" : "none", opacity: w.done ? 0.55 : 1 }}
                 />
-                <select value={w.priority} onChange={(e) => updRow("wishlist", w.id, { priority: e.target.value })} aria-label="Priority" style={{ ...inputStyle(), fontWeight: 600, cursor: "pointer" }}>
-                  <option value="need">need</option>
-                  <option value="want">want</option>
-                  <option value="dream">dream</option>
-                </select>
+                <SelectPill
+                  value={w.priority}
+                  options={WISH_TIERS}
+                  onChange={(priority) => updRow("wishlist", w.id, { priority })}
+                  ariaLabel={`Priority for ${w.label}`}
+                />
                 <DelBtn onClick={() => delRow("wishlist", w.id)} />
               </div>
             ))}
@@ -339,12 +342,11 @@ function RoomField({ label, value, onChange, placeholder }) {
       <span style={{ display: "block", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: 5 }}>
         {label}
       </span>
-      <textarea
-        value={value || ""}
-        onChange={(e) => onChange(e.target.value)}
-        rows={2}
+      <AutoTextarea
+        value={value}
+        onChange={onChange}
+        minRows={4}
         placeholder={placeholder}
-        style={{ ...txt(), resize: "vertical", lineHeight: 1.5 }}
       />
     </div>
   );
@@ -754,19 +756,12 @@ function ChangeOrderCard({ co, onChange, onDelete }) {
           <input value={co.description} onChange={(e) => onChange({ description: e.target.value })} placeholder="What changed" style={{ ...txt(), fontWeight: 700 }} />
           <input value={co.reason} onChange={(e) => onChange({ reason: e.target.value })} placeholder="Why — reason for the change" style={txt()} />
           <div style={{ display: "flex", gap: 8 }}>
-            <select value={co.kind} onChange={(e) => onChange({ kind: e.target.value })} aria-label="Kind" style={{ ...inputStyle(), flex: 1, cursor: "pointer" }}>
-              <option value="add">Adds cost</option>
-              <option value="credit">Credit back</option>
-            </select>
+            <SelectPill value={co.kind} options={CHANGE_ORDER_KINDS} onChange={(kind) => onChange({ kind })} ariaLabel="Kind" minWidth={116} />
             <div style={{ flex: 1 }}><MoneyInput value={co.amount_cents} onChange={(v) => onChange({ amount_cents: v })} /></div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <input type="date" value={co.date || ""} onChange={(e) => onChange({ date: e.target.value || null })} aria-label="Date" style={{ ...inputStyle(), flex: 1 }} />
-            <select value={co.status} onChange={(e) => onChange({ status: e.target.value })} aria-label="Status" style={{ ...inputStyle(), flex: 1, fontWeight: 700, cursor: "pointer" }}>
-              <option value="pending">pending</option>
-              <option value="approved">approved</option>
-              <option value="rejected">rejected</option>
-            </select>
+            <SelectPill value={co.status} options={CHANGE_ORDER_STATUSES} onChange={(status) => onChange({ status })} ariaLabel="Status" minWidth={104} />
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button onClick={onDelete} style={{ ...btn("ghost") }}><Icon d={ICON.x} size={13} /> Delete</button>
@@ -838,14 +833,8 @@ function PaymentCard({ pay, onChange, onDelete }) {
             <input type="date" value={pay.date || ""} onChange={(e) => onChange({ date: e.target.value || null })} aria-label="Date" style={{ ...inputStyle(), flex: 1 }} />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <select value={pay.method} onChange={(e) => onChange({ method: e.target.value })} aria-label="Method" style={{ ...inputStyle(), flex: 1, cursor: "pointer" }}>
-              {PAY_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-            <select value={pay.lien_waiver} onChange={(e) => onChange({ lien_waiver: e.target.value })} aria-label="Lien waiver" style={{ ...inputStyle(), flex: 1.5, fontWeight: 700, cursor: "pointer" }}>
-              <option value="not_needed">Lien waiver — n/a</option>
-              <option value="pending">Lien waiver — pending</option>
-              <option value="received">Lien waiver — received</option>
-            </select>
+            <SelectPill value={pay.method} options={optionsFrom(PAY_METHODS)} onChange={(method) => onChange({ method })} ariaLabel="Method" minWidth={106} />
+            <SelectPill value={pay.lien_waiver} options={LIEN_WAIVERS} onChange={(lien_waiver) => onChange({ lien_waiver })} ariaLabel="Lien waiver" minWidth={128} />
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button onClick={onDelete} style={{ ...btn("ghost") }}><Icon d={ICON.x} size={13} /> Delete</button>
@@ -1009,20 +998,15 @@ function SelectionCard({ sel, onChange, onDelete }) {
           </div>
           <div>
             <span style={{ display: "block", fontSize: 10, fontWeight: 700, color: COLORS.textFaint, textTransform: "uppercase", marginBottom: 4 }}>Spec notes</span>
-            <textarea
-              value={sel.notes || ""}
-              onChange={(e) => onChange({ notes: e.target.value })}
-              rows={3}
+            <AutoTextarea
+              value={sel.notes}
+              onChange={(v) => onChange({ notes: v })}
+              minRows={4}
               placeholder="The requirements behind this choice…"
-              style={{ ...txt(), resize: "vertical", lineHeight: 1.5 }}
             />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <select value={sel.status} onChange={(e) => onChange({ status: e.target.value })} aria-label="Status" style={{ ...inputStyle(), fontWeight: 700, cursor: "pointer" }}>
-              <option value="open">open</option>
-              <option value="decided">decided</option>
-              <option value="ordered">ordered</option>
-            </select>
+            <SelectPill value={sel.status} options={SELECTION_STATUSES} onChange={(status) => onChange({ status })} ariaLabel="Status" minWidth={100} />
             <button onClick={onDelete} style={{ ...btn("ghost") }}><Icon d={ICON.x} size={13} /> Delete</button>
           </div>
         </div>
@@ -1076,12 +1060,12 @@ function VendorNotes({ value, onChange }) {
     );
   }
   return (
-    <textarea
+    <AutoTextarea
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      rows={value.length > 160 ? 4 : 2}
+      onChange={onChange}
+      minRows={3}
       placeholder="Advice, quotes, anything said about this vendor…"
-      style={{ ...txt(), marginTop: 6, resize: "vertical", lineHeight: 1.5, fontSize: 12.5 }}
+      style={{ marginTop: 6, fontSize: 12.5 }}
     />
   );
 }
@@ -1110,9 +1094,7 @@ function DocumentRow({ doc, onChange, onDelete }) {
     <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 12, marginBottom: 10, display: "grid", gap: 8 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input value={doc.name} onChange={(e) => onChange({ name: e.target.value })} placeholder="Document name" style={{ ...txt(), flex: 1, fontWeight: 700 }} />
-        <select value={doc.category} onChange={(e) => onChange({ category: e.target.value })} aria-label="Category" style={{ ...inputStyle(), width: 150, cursor: "pointer" }}>
-          {DOC_CATEGORY_ORDER.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <SelectPill value={doc.category} options={optionsFrom(DOC_CATEGORY_ORDER)} onChange={(category) => onChange({ category })} ariaLabel="Category" minWidth={150} />
         <DelBtn onClick={onDelete} />
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1220,9 +1202,7 @@ function PhotosSection({ state, addRow, updRow, delRow }) {
             <div style={{ padding: 12, display: "grid", gap: 8 }}>
               <div style={{ display: "flex", gap: 8 }}>
                 <input type="date" value={p.date || ""} onChange={(e) => updRow("photos", p.id, { date: e.target.value || null })} aria-label="Photo date" style={{ ...inputStyle(), flex: 1, minWidth: 0 }} />
-                <select value={p.phase} onChange={(e) => updRow("photos", p.id, { phase: e.target.value })} aria-label="Phase" style={{ ...inputStyle(), flex: 1, minWidth: 0, cursor: "pointer" }}>
-                  {PHOTO_PHASES.map((ph) => <option key={ph} value={ph}>{ph || "Phase…"}</option>)}
-                </select>
+                <SelectPill value={p.phase} options={optionsFrom(PHOTO_PHASES, { placeholder: "Phase…" })} onChange={(phase) => updRow("photos", p.id, { phase })} ariaLabel="Phase" minWidth={150} />
                 <DelBtn onClick={() => delRow("photos", p.id)} />
               </div>
               <input value={p.caption} onChange={(e) => updRow("photos", p.id, { caption: e.target.value })} placeholder="Caption — what's happening here…" style={txt()} />
@@ -1264,15 +1244,10 @@ function InspectionCard({ insp, onChange, onDelete }) {
           <input value={insp.name} onChange={(e) => onChange({ name: e.target.value })} placeholder="Inspection" style={{ ...txt(), fontWeight: 700 }} />
           <div style={{ display: "flex", gap: 8 }}>
             <input type="date" value={insp.date || ""} onChange={(e) => onChange({ date: e.target.value || null })} aria-label="Date" style={{ ...inputStyle(), flex: 1 }} />
-            <select value={insp.status} onChange={(e) => onChange({ status: e.target.value })} aria-label="Status" style={{ ...inputStyle(), flex: 1, fontWeight: 700, cursor: "pointer" }}>
-              <option value="not_scheduled">not scheduled</option>
-              <option value="scheduled">scheduled</option>
-              <option value="passed">passed</option>
-              <option value="failed">failed</option>
-            </select>
+            <SelectPill value={insp.status} options={INSPECTION_STATUSES} onChange={(status) => onChange({ status })} ariaLabel="Status" minWidth={128} />
           </div>
           <input value={insp.inspector} onChange={(e) => onChange({ inspector: e.target.value })} placeholder="Inspector / department" style={txt()} />
-          <textarea value={insp.notes} onChange={(e) => onChange({ notes: e.target.value })} rows={2} placeholder="Corrections, re-inspection notes…" style={{ ...txt(), resize: "vertical", lineHeight: 1.5 }} />
+          <AutoTextarea value={insp.notes} onChange={(v) => onChange({ notes: v })} minRows={3} placeholder="Corrections, re-inspection notes…" />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button onClick={onDelete} style={{ ...btn("ghost") }}><Icon d={ICON.x} size={13} /> Delete</button>
           </div>
@@ -1367,17 +1342,14 @@ function RfiCard({ rfi, onChange, onDelete }) {
       </button>
       {open && (
         <div style={{ padding: "2px 14px 14px", display: "grid", gap: 10 }}>
-          <textarea value={rfi.question} onChange={(e) => onChange({ question: e.target.value })} rows={2} placeholder="The question…" style={{ ...txt(), resize: "vertical", lineHeight: 1.5, fontWeight: 600 }} />
+          <AutoTextarea value={rfi.question} onChange={(v) => onChange({ question: v })} minRows={3} placeholder="The question…" style={{ fontWeight: 600 }} />
           <div style={{ display: "flex", gap: 8 }}>
             <input value={rfi.asked_of} onChange={(e) => onChange({ asked_of: e.target.value })} placeholder="Asked of — architect, builder…" style={{ ...txt(), flex: 1 }} />
             <input type="date" value={rfi.date || ""} onChange={(e) => onChange({ date: e.target.value || null })} aria-label="Date asked" style={{ ...inputStyle(), width: 150 }} />
           </div>
-          <textarea value={rfi.answer} onChange={(e) => onChange({ answer: e.target.value })} rows={2} placeholder="The answer, once you have it…" style={{ ...txt(), resize: "vertical", lineHeight: 1.5 }} />
+          <AutoTextarea value={rfi.answer} onChange={(v) => onChange({ answer: v })} minRows={3} placeholder="The answer, once you have it…" />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <select value={rfi.status} onChange={(e) => onChange({ status: e.target.value })} aria-label="Status" style={{ ...inputStyle(), fontWeight: 700, cursor: "pointer" }}>
-              <option value="open">open</option>
-              <option value="answered">answered</option>
-            </select>
+            <SelectPill value={rfi.status} options={QUESTION_STATUSES} onChange={(status) => onChange({ status })} ariaLabel="Status" minWidth={108} />
             <button onClick={onDelete} style={{ ...btn("ghost") }}><Icon d={ICON.x} size={13} /> Delete</button>
           </div>
         </div>
