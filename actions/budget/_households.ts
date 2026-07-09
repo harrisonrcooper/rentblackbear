@@ -1,7 +1,7 @@
 // Multi-household auth + workspace-key resolver.
 //
 // One Next deploy now supports MORE THAN ONE household. Each household
-// is a group of Clerk user IDs that share a single budget blob. Env
+// is a group of principal IDs that share a single budget blob. Env
 // config is a semicolon-delimited list of comma-delimited groups,
 // each optionally tagged with the experience flavor:
 //

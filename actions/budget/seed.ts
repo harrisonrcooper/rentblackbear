@@ -13,7 +13,7 @@
 // and every label is editable (see _seed-templates.ts). We never
 // overwrite an existing budget.
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 import { loadBudgetState, saveBudgetState } from "./_writer";
 import { isAuthorizedForBudget, experienceForUser } from "./_households";

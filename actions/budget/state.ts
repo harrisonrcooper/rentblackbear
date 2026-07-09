@@ -5,7 +5,7 @@
 // Multi-household: each user belongs to at most one household group
 // (see _households.ts). All members of a group share one workspace
 // blob in app_data. Users not in any group get their own private
-// workspace keyed on their Clerk user id.
+// workspace keyed on their admin principal id.
 //
 // Multi-budget: within a single workspace a user can own more than one
 // budget (their own + e.g. a household they're helping). The registry
@@ -13,7 +13,7 @@
 // Every read/write here routes through the registry so all budget
 // actions agree on which budget is live.
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 import {
   emptyBudgetState,

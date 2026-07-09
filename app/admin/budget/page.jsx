@@ -7,7 +7,7 @@
 // All editing happens through server actions in `@/actions/budget/*`
 // so the auth check is enforced on every write, not just initial load.
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 
 import { fetchBudgetState } from "@/actions/budget/state";

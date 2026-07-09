@@ -1,7 +1,7 @@
 // app/api/export-data/route.js
 // GDPR data export — downloads ALL PM data as a JSON file
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ const HQ_KEYS = [
 ];
 
 export async function GET() {
-  // Clerk admin gate
+  // Admin gate
   try {
     const { userId, orgId } = await auth();
     if (!userId) {

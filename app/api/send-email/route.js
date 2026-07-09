@@ -1,19 +1,19 @@
 // app/api/send-email/route.js
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const INBOUND_DOMAIN = "uirkeakaro.resend.app";
 
 export async function POST(request) {
-  // Clerk admin gate — this was an open email relay before
+  // Admin gate — this was an open email relay before
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
   } catch (e) {
-    console.error("[send-email] Clerk auth() failed:", e?.message || e);
+    console.error("[send-email] auth() failed:", e?.message || e);
     return NextResponse.json({ ok: false, error: "Auth check failed" }, { status: 500 });
   }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 // ── Runtime ──────────────────────────────────────────────────────────
 export const runtime = "nodejs";
@@ -313,14 +313,14 @@ function RentRollPDF({ properties, mortgages, companyName, dateStr }) {
 
 // ── API Route ────────────────────────────────────────────────────────
 export async function GET(request) {
-  // Clerk admin gate
+  // Admin gate
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   } catch (e) {
-    console.error("[generate-rent-roll] Clerk auth() failed:", e?.message || e);
+    console.error("[generate-rent-roll] auth() failed:", e?.message || e);
     return NextResponse.json({ error: "Auth check failed" }, { status: 500 });
   }
 

@@ -1,11 +1,11 @@
 // app/api/migrate-workspace/route.js
 // Migration helper: copies bare-key app_data rows to workspace-prefixed rows.
-// POST { workspaceId } — Clerk-gated.
+// POST { workspaceId } — admin-gated.
 //
 // This lets an existing single-tenant PM migrate their data into their
 // new workspace namespace without losing the originals.
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
 
 function getSupabase() {
@@ -16,12 +16,12 @@ function getSupabase() {
 }
 
 export async function POST(req) {
-  // Clerk admin gate
+  // Admin gate
   try {
     const { userId } = await auth();
     if (!userId) return Response.json({ error: "Unauthorized" }, { status: 401 });
   } catch (e) {
-    console.error("[migrate-workspace] Clerk auth() failed:", e?.message || e);
+    console.error("[migrate-workspace] auth() failed:", e?.message || e);
     return Response.json({ error: "Auth failed" }, { status: 401 });
   }
 

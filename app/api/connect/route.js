@@ -1,6 +1,6 @@
 // app/api/connect/route.js
 //
-// Stripe Connect onboarding and dashboard API (Clerk-gated).
+// Stripe Connect onboarding and dashboard API (admin-gated).
 //
 // GET  — return current Connect account status
 // POST { action: "onboard" } — create Express account + onboarding link
@@ -9,7 +9,7 @@
 // The PM's stripeConnectAccountId is persisted in hq-settings.
 
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { loadAppData, saveAppData } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";

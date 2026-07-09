@@ -1,6 +1,6 @@
 // app/api/subscription/route.js
 //
-// Subscription management API (Clerk-gated).
+// Subscription management API (admin-gated).
 //
 // GET  — return current subscription status (tier, active, period end, usage)
 // POST { action: "create", tier: "starter"|"growth"|"scale" }
@@ -19,7 +19,7 @@
 // STRIPE_PRICE_STARTER, STRIPE_PRICE_GROWTH, STRIPE_PRICE_SCALE env vars.
 
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { loadAppData } from "@/lib/supabase-server";
 import { checkTierLimit } from "@/lib/tierCheck";
 

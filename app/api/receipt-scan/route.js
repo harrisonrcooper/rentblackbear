@@ -3,7 +3,7 @@
 // returns extracted fields: date, amount, vendor, description, category
 // Hardened: retry logic, confidence scoring, input validation, duplicate detection
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -89,7 +89,7 @@ function checkDuplicate(expenses, fields) {
 }
 
 export async function POST(request) {
-  // Clerk admin gate
+  // Admin gate
   try {
     const { userId, orgId } = await auth();
     if (!userId) {
@@ -98,7 +98,7 @@ export async function POST(request) {
 
     var workspaceId = orgId || userId;
   } catch (e) {
-    console.error("[receipt-scan] Clerk auth() failed:", e?.message || e);
+    console.error("[receipt-scan] auth() failed:", e?.message || e);
     return Response.json({ ok: false, error: "Auth check failed", retryable: false }, { status: 500 });
   }
 

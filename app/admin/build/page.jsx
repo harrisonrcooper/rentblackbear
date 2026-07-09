@@ -3,7 +3,7 @@
 // Its own page, its own nav, its own app_data row — separate from the
 // budget tracker. Auth-gated the same way as the budget app.
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 
 import { fetchBuildState } from "@/actions/build/state";

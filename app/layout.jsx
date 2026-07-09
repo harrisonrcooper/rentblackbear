@@ -1,4 +1,3 @@
-import { ClerkProvider } from '@clerk/nextjs';
 import { Inter, Source_Serif_4, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import '../components/ui/flagship.css';
@@ -52,29 +51,27 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
-      <html lang="en" className={`${inter.variable} ${sourceSerif.variable} ${jetBrainsMono.variable}`}>
-        <head>
-          <script
-            // Runs before hydration so the chosen theme is applied without
-            // a flash. Safe to fail silently if localStorage is blocked.
-            dangerouslySetInnerHTML={{
-              __html: `try{var t=localStorage.getItem("blackbear-theme");if(t&&t!=="flagship"&&t!=="custom")document.documentElement.setAttribute("data-theme",t);}catch(e){}`,
-            }}
-          />
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          {/* Plus Jakarta Sans + DM Serif Display still load externally for
-              the existing admin; Inter / Source Serif 4 / JetBrains Mono
-              are served self-hosted via next/font above. */}
-          <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-          <meta name="theme-color" content="#1a1714" />
-          <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-          <meta name="apple-mobile-web-app-title" content="BB Portal" />
-        </head>
-        <body>{children}</body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" className={`${inter.variable} ${sourceSerif.variable} ${jetBrainsMono.variable}`}>
+      <head>
+        <script
+          // Runs before hydration so the chosen theme is applied without
+          // a flash. Safe to fail silently if localStorage is blocked.
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("blackbear-theme");if(t&&t!=="flagship"&&t!=="custom")document.documentElement.setAttribute("data-theme",t);}catch(e){}`,
+          }}
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Plus Jakarta Sans + DM Serif Display still load externally for
+            the existing admin; Inter / Source Serif 4 / JetBrains Mono
+            are served self-hosted via next/font above. */}
+        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+        <meta name="theme-color" content="#1a1714" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="BB Portal" />
+      </head>
+      <body>{children}</body>
+    </html>
   );
 }

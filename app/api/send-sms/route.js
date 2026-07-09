@@ -1,8 +1,8 @@
 // app/api/send-sms/route.js
 // Sends SMS via Twilio REST API (no SDK required)
-// Auth: Clerk session OR CRON_SECRET bearer token
+// Auth: admin session OR CRON_SECRET bearer token
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 async function sendSmsViaTwilio(to, body) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -42,7 +42,7 @@ async function sendSmsViaTwilio(to, body) {
 // lib/sms.js) and import from there.
 
 export async function POST(request) {
-  // Accept either Clerk auth or CRON_SECRET bearer token
+  // Accept either an admin session or a CRON_SECRET bearer token
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   let authorized = false;
@@ -54,7 +54,7 @@ export async function POST(request) {
       const { userId } = await auth();
       if (userId) authorized = true;
     } catch {
-      // Clerk auth failed
+      // No admin session — fall through to the cron-secret path
     }
   }
 

@@ -296,7 +296,7 @@ export default function BudgetClient({ initialState, userId, initialRegistry, in
   const isBasic = state.settings.experience !== "full";
 
   // Auto-activate the profile whose clerk_user_id matches the logged
-  // in Clerk user. Runs once when state + userId first load — keeps
+  // in signed-in principal. Runs once when state + userId first load — keeps
   // explicit `active_profile_id` overrides intact thereafter.
   const autoProfileAppliedRef = useRef(false);
   useEffect(() => {
@@ -7669,13 +7669,13 @@ function PeopleBlock({ state, updateState }) {
                 />
               </span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                clerk id
+                sign-in id
                 <input
                   type="text"
                   value={p.clerk_user_id || ""}
                   onChange={(e) => update(p.id, { clerk_user_id: e.target.value || undefined })}
                   placeholder="user_…"
-                  aria-label="Clerk user id"
+                  aria-label="Sign-in user id"
                   style={{ ...inputStyle(), width: 130, padding: "2px 8px", fontSize: 11, fontWeight: 600, fontFamily: "'JetBrains Mono', ui-monospace, monospace" }}
                 />
               </span>

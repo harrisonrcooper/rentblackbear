@@ -4,7 +4,7 @@
 // re-derived on every call (same gate as the budget app); the planner
 // is keyed on the household workspace, so it's one build per household.
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 import { resolveHousehold, isAuthorizedForBudget } from "../budget/_households";
 import { emptyBuildState, loadBuildState, saveBuildState } from "./_store";

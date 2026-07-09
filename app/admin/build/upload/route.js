@@ -4,7 +4,7 @@
 // image bodies aren't capped.
 
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 
 import { isAuthorizedForBudget } from "@/actions/budget/_households";
 

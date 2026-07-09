@@ -102,7 +102,8 @@ export interface BudgetProfile {
   id: string;            // stable slug ("harrison", "carolina", or any custom)
   label: string;         // display name
   color: string;         // accent color used in chips/labels/owner pills
-  clerk_user_id?: string; // optional Clerk subject — when set, this profile auto-activates for that login
+  clerk_user_id?: string; // optional principal id — when set, this profile auto-activates for that login
+  // NOTE: column name is historical (Clerk is gone); it now holds ADMIN_USER_ID.
   pay_day?: number;      // day-of-month their paycheck hits (1-31)
   pay_frequency?: "weekly" | "biweekly" | "semimonthly" | "monthly";
   notes?: string;

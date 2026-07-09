@@ -2,7 +2,7 @@
 // Sends a portal invite to a tenant via Resend
 // Creates an invite record in Supabase with a unique token
 
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { getSettings, emailWrap, fromAddress } from "@/lib/getSettings";
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,14 +30,14 @@ async function supaQuery(table, query) {
 }
 
 export async function POST(request) {
-  // Clerk admin gate
+  // Admin gate
   try {
     const { userId } = await auth();
     if (!userId) {
       return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
   } catch (e) {
-    console.error("[portal-invite] Clerk auth() failed:", e?.message || e);
+    console.error("[portal-invite] auth() failed:", e?.message || e);
     return Response.json({ ok: false, error: "Auth check failed" }, { status: 500 });
   }
 

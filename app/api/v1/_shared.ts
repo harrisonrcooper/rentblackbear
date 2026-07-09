@@ -1,7 +1,7 @@
 // Shared helpers for the /api/v1 resource scaffolds.
 //
 // Every v1 route expects proxy.ts to have stamped x-workspace-id
-// onto the request and Clerk's middleware.ts to have gated auth.
+// onto the request and middleware.ts to have gated auth.
 // Until the Supabase instance exists, the handlers all short-
 // circuit to 501 via notImplemented() rather than half-answering.
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Document, Page, Text, View, StyleSheet, renderToBuffer, Image } from "@react-pdf/renderer";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
 import { getSettings } from "@/lib/getSettings";
 
@@ -287,7 +287,7 @@ function LeasePDF({ lease, template, vars, company, landlordName, templateName }
 
 // ── API Route ─────────────────────────────────────────────────────────
 //
-// Auth: Clerk for admin callers, Supabase session for portal (tenant) callers.
+// Auth: admin session for admin callers, Supabase session for portal (tenant) callers.
 // Portal tenants send an Authorization: Bearer <supabase_access_token> header.
 // If the caller is a portal user we also verify they own the requested lease
 // (portal_users.tenant_id must appear on the lease_instances row).
@@ -296,13 +296,13 @@ export async function GET(request) {
   const leaseId = searchParams.get("id");
   if (!leaseId) return NextResponse.json({ error: "Missing lease id" }, { status: 400 });
 
-  // --- Try Clerk first (admin callers) ---
+  // --- Try the admin session first (admin callers) ---
   let isAdmin = false;
   try {
     const { userId } = await auth();
     if (userId) isAdmin = true;
   } catch (_) {
-    // Clerk not available or no session — fall through to Supabase check
+    // No admin session — fall through to the Supabase portal check
   }
 
   // --- If not admin, try Supabase session (portal callers) ---

@@ -3,7 +3,7 @@
 // File name note:
 //   Next.js 16 renamed middleware.ts -> proxy.ts for routing-layer
 //   logic. This repo is still on Next 14.2, where proxy.ts is NOT
-//   auto-detected — middleware.ts (the Clerk auth file) is what
+//   auto-detected — middleware.ts (the admin password gate) is what
 //   actually runs today. When the repo upgrades to Next 16, this
 //   file becomes the canonical routing middleware; until then it
 //   documents the intended host routing + workspace resolution so
@@ -25,9 +25,9 @@
 //        custom     -> identical to portal but the workspace was
 //                      matched via its custom domain record.
 //
-// When merging this with Clerk's middleware.ts, run this logic
-// FIRST (workspace resolution), then hand off to clerkMiddleware
-// for /admin auth checks.
+// When merging this with middleware.ts, run this logic FIRST
+// (workspace resolution), then hand off to the admin gate for
+// /admin session checks.
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
