@@ -12,6 +12,17 @@ import { fmtUsd, fmtCompact } from "../budget/lib/money";
 import { genId } from "../budget/lib/calc";
 import { useIsMobile } from "../budget/lib/responsive";
 import { saveBuildStateAction } from "@/actions/build/state";
+import { mergeBuildState } from "@/lib/build/merge";
+import { visibleState } from "@/lib/build/visible";
+
+/** Best available human name for a row, used in the undo snackbar. */
+function rowLabel(row) {
+  if (!row) return "item";
+  for (const k of ["name", "label", "title", "item", "question", "description", "room", "caption"]) {
+    if (typeof row[k] === "string" && row[k].trim()) return row[k].trim().slice(0, 40);
+  }
+  return "item";
+}
 
 const ACCENT = "#0bafb0";
 const ACCENT_SOFT = "rgba(11,175,176,0.12)";
@@ -1853,24 +1864,63 @@ function PaletteSection({ state, addRow, updRow, delRow }) {
 
 // ── Shell ────────────────────────────────────────────────────────────
 
-export default function BuildClient({ initialState }) {
+const MAX_SAVE_ATTEMPTS = 3;
+
+export default function BuildClient({ initialState, initialVersion = 0 }) {
   const [state, setState] = useState(initialState);
   const [section, setSection] = useState("overview");
   const [, startTransition] = useTransition();
   const [saved, setSaved] = useState(true);
+  const [saveError, setSaveError] = useState("");
+  const [mergeNote, setMergeNote] = useState(null); // { conflicts, resurrected }
+  const [undo, setUndo] = useState(null);           // { key, id, label }
   const isMobile = useIsMobile();
   const saveTimer = useRef(null);
+
+  // The version we last read from the server, and the state the server is
+  // known to hold at that version. Both are refs: a save in flight must see
+  // the latest values, not the ones captured when it was scheduled.
+  const version = useRef(initialVersion);
+  const base = useRef(initialState);
+
+  // Compare-and-swap save. If someone else wrote first, three-way merge our
+  // edits into theirs and retry — never blindly overwrite their work.
+  const commit = useCallback(async (next, attempt = 1) => {
+    const res = await saveBuildStateAction(next, version.current);
+
+    if (res.ok) {
+      version.current = res.version;
+      base.current = next;
+      setSaved(true);
+      setSaveError("");
+      return;
+    }
+
+    if (res.conflict) {
+      if (attempt >= MAX_SAVE_ATTEMPTS) {
+        setSaved(false);
+        setSaveError("Another session keeps saving over this one. Reload to continue.");
+        return;
+      }
+      const { merged, report } = mergeBuildState(base.current, next, res.state);
+      version.current = res.version;
+      setState(merged);
+      if (report.conflicts.length || report.resurrected.length) setMergeNote(report);
+      await commit(merged, attempt + 1);
+      return;
+    }
+
+    setSaved(false);
+    setSaveError(res.message || "Could not save.");
+  }, []);
 
   const persist = useCallback((next) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaved(false);
     saveTimer.current = setTimeout(() => {
-      startTransition(async () => {
-        const res = await saveBuildStateAction(next);
-        setSaved(!!res.ok);
-      });
+      startTransition(() => { commit(next); });
     }, 500);
-  }, []);
+  }, [commit]);
 
   const update = useCallback((updater) => {
     setState((prev) => {
@@ -1883,9 +1933,33 @@ export default function BuildClient({ initialState }) {
   const setField = useCallback((k, v) => update((s) => ({ ...s, [k]: v })), [update]);
   const addRow = useCallback((k, item) => update((s) => ({ ...s, [k]: [...s[k], { id: genId(), ...item }] })), [update]);
   const updRow = useCallback((k, id, patch) => update((s) => ({ ...s, [k]: s[k].map((x) => (x.id === id ? { ...x, ...patch } : x)) })), [update]);
-  const delRow = useCallback((k, id) => update((s) => ({ ...s, [k]: s[k].filter((x) => x.id !== id) })), [update]);
 
-  const helpers = { state, setField, addRow, updRow, delRow };
+  // Soft delete: archive the row rather than drop it, so nothing that
+  // references it by id is orphaned and the delete stays undoable.
+  const delRow = useCallback((k, id) => {
+    update((s) => {
+      const row = s[k].find((x) => x.id === id);
+      setUndo({ key: k, id, label: rowLabel(row) });
+      return { ...s, [k]: s[k].map((x) => (x.id === id ? { ...x, archived: true } : x)) };
+    });
+  }, [update]);
+
+  const undoDelete = useCallback(() => {
+    if (!undo) return;
+    const { key, id } = undo;
+    setUndo(null);
+    update((s) => ({ ...s, [key]: s[key].map((x) => (x.id === id ? { ...x, archived: false } : x)) }));
+  }, [undo, update]);
+
+  useEffect(() => {
+    if (!undo) return undefined;
+    const t = setTimeout(() => setUndo(null), 8000);
+    return () => clearTimeout(t);
+  }, [undo]);
+
+  // Sections render the live rows only; helpers still mutate the full state.
+  const shown = useMemo(() => visibleState(state), [state]);
+  const helpers = { state: shown, setField, addRow, updRow, delRow };
   const view = useMemo(() => {
     switch (section) {
       case "inspiration": return <InspirationSection {...helpers} />;
@@ -1906,10 +1980,10 @@ export default function BuildClient({ initialState }) {
       case "punchlist": return <PunchListSection {...helpers} />;
       case "asbuilt": return <AsBuiltSection {...helpers} />;
       case "energy": return <EnergySection {...helpers} />;
-      case "brief": return <BriefSection state={state} />;
-      default: return <OverviewSection state={state} setField={setField} onJump={setSection} />;
+      case "brief": return <BriefSection state={shown} />;
+      default: return <OverviewSection state={shown} setField={setField} onJump={setSection} />;
     }
-  }, [section, state]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [section, shown]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div data-bb-theme="light" style={{ display: "flex", minHeight: "100vh", background: COLORS.bg, fontFamily: FONT }}>
@@ -1935,8 +2009,8 @@ export default function BuildClient({ initialState }) {
               <Icon d={ICON.chevL} size={12} /> Admin
             </a>
             <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, letterSpacing: "-0.025em" }}>Build</div>
-            <div style={{ marginTop: 2, fontSize: 11, color: COLORS.textFaint, fontWeight: 600 }}>
-              {saved ? "All changes saved" : "Saving…"}
+            <div style={{ marginTop: 2, fontSize: 11, color: saveError ? "#b3261e" : COLORS.textFaint, fontWeight: 600 }}>
+              {saveError ? "Not saved" : saved ? "All changes saved" : "Saving…"}
             </div>
           </div>
           <nav style={{ padding: 12, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1998,6 +2072,91 @@ export default function BuildClient({ initialState }) {
           {view}
         </div>
       </main>
+
+      <Snackbars
+        undo={undo}
+        onUndo={undoDelete}
+        onDismissUndo={() => setUndo(null)}
+        mergeNote={mergeNote}
+        onDismissMerge={() => setMergeNote(null)}
+        saveError={saveError}
+      />
+    </div>
+  );
+}
+
+// ── Snackbars ────────────────────────────────────────────────────────
+// Bottom-anchored, non-blocking. Never a native alert/confirm.
+
+function Snack({ tone = "dark", children }) {
+  const bg = tone === "danger" ? "#b3261e" : tone === "warn" ? "#7a5a00" : "#1f2430";
+  return (
+    <div style={{
+      background: bg, color: "#fff", borderRadius: 12, padding: "12px 14px",
+      boxShadow: "0 12px 32px rgba(0,0,0,0.28)", fontSize: 13.5, fontWeight: 600,
+      display: "flex", alignItems: "center", gap: 14, pointerEvents: "auto",
+      maxWidth: 520,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function SnackButton({ onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.28)",
+        color: "#fff", borderRadius: 8, padding: "6px 12px", cursor: "pointer",
+        fontFamily: FONT, fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Snackbars({ undo, onUndo, onDismissUndo, mergeNote, onDismissMerge, saveError }) {
+  if (!undo && !mergeNote && !saveError) return null;
+
+  const merged = mergeNote
+    ? [...(mergeNote.conflicts || []), ...(mergeNote.resurrected || [])]
+    : [];
+
+  return (
+    <div style={{
+      position: "fixed", left: 0, right: 0, bottom: 18, zIndex: 400,
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+      padding: "0 12px", pointerEvents: "none", fontFamily: FONT,
+    }}>
+      {saveError && (
+        <Snack tone="danger">
+          <span style={{ flex: 1 }}>{saveError}</span>
+          <SnackButton onClick={() => window.location.reload()}>Reload</SnackButton>
+        </Snack>
+      )}
+
+      {mergeNote && (
+        <Snack tone="warn">
+          <div style={{ flex: 1 }}>
+            <div>Someone else was editing. Both sets of changes were kept.</div>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontWeight: 500, opacity: 0.92 }}>
+              {merged.slice(0, 3).map((line) => <li key={line}>{line}</li>)}
+              {merged.length > 3 && <li>and {merged.length - 3} more</li>}
+            </ul>
+          </div>
+          <SnackButton onClick={onDismissMerge}>Got it</SnackButton>
+        </Snack>
+      )}
+
+      {undo && (
+        <Snack>
+          <span style={{ flex: 1 }}>Deleted “{undo.label}”</span>
+          <SnackButton onClick={onUndo}>Undo</SnackButton>
+          <SnackButton onClick={onDismissUndo}>Dismiss</SnackButton>
+        </Snack>
+      )}
     </div>
   );
 }

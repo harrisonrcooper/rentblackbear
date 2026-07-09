@@ -9,9 +9,22 @@
 // finish selections and China-sourcing vendor list (from the
 // "DREAMING HOME BUILD" workbook) so the planner opens fully populated.
 
-import { loadAppData, saveAppData } from "../budget/_writer";
+import { loadVersioned, saveCas } from "@/lib/app-data";
+import type { CasResult, Versioned } from "@/lib/app-data";
 
-export interface BuildRoom {
+/**
+ * Soft-delete marker, on every row the UI can delete.
+ *
+ * Deletes are archived rather than dropped: tasks, comments, tags and links
+ * will reference these rows by id, and a hard delete would silently orphan
+ * them. Archived rows are filtered out of every section but remain in the
+ * blob, so a delete is always recoverable.
+ */
+export interface Archivable {
+  archived?: boolean;
+}
+
+export interface BuildRoom extends Archivable {
   id: string;
   name: string;
   level: string;       // Main / Upstairs / Basement …
@@ -20,7 +33,7 @@ export interface BuildRoom {
   lighting: string;    // lighting & electrical plan notes
   details: string;     // any other notes for the room
 }
-export interface BuildCostLine {
+export interface BuildCostLine extends Archivable {
   id: string;
   label: string;
   group: string;
@@ -28,19 +41,19 @@ export interface BuildCostLine {
   actual_cents: number;
   in_basis: boolean;   // counts toward the home's tax cost basis
 }
-export interface BuildWish {
+export interface BuildWish extends Archivable {
   id: string;
   label: string;
   priority: "need" | "want" | "dream";
   done: boolean;
 }
-export interface BuildMilestone {
+export interface BuildMilestone extends Archivable {
   id: string;
   label: string;
   target: string | null; // ISO YYYY-MM-DD
   done: boolean;
 }
-export interface BuildSelection {
+export interface BuildSelection extends Archivable {
   id: string;
   label: string;
   choice: string;
@@ -51,32 +64,32 @@ export interface BuildSelection {
   lead_time: string;         // free text, e.g. "8 weeks"
   deadline: string | null;   // ISO YYYY-MM-DD — decide-by date
 }
-export interface BuildTeamMember {
+export interface BuildTeamMember extends Archivable {
   id: string;
   role: string;
   name: string;
   contact: string;
 }
-export interface BuildBoardItem {
+export interface BuildBoardItem extends Archivable {
   id: string;
   kind: "image" | "link";
   url: string;   // a Supabase Storage image URL, or any pasted link
   note: string;
 }
-export interface BuildBoard {
+export interface BuildBoard extends Archivable {
   id: string;
   name: string;
   pinterest_url: string;       // a public Pinterest board URL — embedded live
   items: BuildBoardItem[];     // uploaded images + pasted links
 }
-export interface BuildReference {
+export interface BuildReference extends Archivable {
   id: string;
   url: string;
   title: string;
   tag: string;   // free-text category (House plans, Products, Videos…)
   note: string;
 }
-export interface BuildSwatch {
+export interface BuildSwatch extends Archivable {
   id: string;
   name: string;
   color: string;     // hex
@@ -84,7 +97,7 @@ export interface BuildSwatch {
   note: string;      // where it's used
 }
 
-export interface BuildDraw {
+export interface BuildDraw extends Archivable {
   id: string;
   label: string;
   date: string | null;
@@ -94,20 +107,20 @@ export interface BuildLoan {
   amount_cents: number;
   rate_bps: number;   // construction-loan rate, basis points
 }
-export interface BuildDocument {
+export interface BuildDocument extends Archivable {
   id: string;
   name: string;
   category: string;
   url: string;        // link to where the doc lives (Drive, Dropbox, portal…)
 }
-export interface BuildPhoto {
+export interface BuildPhoto extends Archivable {
   id: string;
   url: string;        // Supabase Storage image URL
   caption: string;
   date: string | null; // ISO YYYY-MM-DD the photo was taken
   phase: string;       // construction phase
 }
-export interface BuildChangeOrder {
+export interface BuildChangeOrder extends Archivable {
   id: string;
   date: string | null;
   description: string;       // what changed
@@ -116,7 +129,7 @@ export interface BuildChangeOrder {
   kind: "add" | "credit";    // adds cost vs. returns money
   status: "pending" | "approved" | "rejected";
 }
-export interface BuildPayment {
+export interface BuildPayment extends Archivable {
   id: string;
   date: string | null;
   vendor: string;
@@ -125,7 +138,7 @@ export interface BuildPayment {
   method: string;            // Check / ACH / Wire / Card / Cash / Loan draw
   lien_waiver: "not_needed" | "pending" | "received";
 }
-export interface BuildInspection {
+export interface BuildInspection extends Archivable {
   id: string;
   name: string;
   date: string | null;
@@ -133,14 +146,14 @@ export interface BuildInspection {
   inspector: string;
   notes: string;
 }
-export interface BuildPunchItem {
+export interface BuildPunchItem extends Archivable {
   id: string;
   room: string;
   description: string;
   trade: string;       // who fixes it
   done: boolean;
 }
-export interface BuildRfi {
+export interface BuildRfi extends Archivable {
   id: string;
   question: string;
   asked_of: string;    // Architect / Builder / Engineer…
@@ -148,19 +161,19 @@ export interface BuildRfi {
   status: "open" | "answered";
   date: string | null;
 }
-export interface BuildAsBuilt {
+export interface BuildAsBuilt extends Archivable {
   id: string;
   label: string;
   value: string;
 }
-export interface BuildWarranty {
+export interface BuildWarranty extends Archivable {
   id: string;
   item: string;
   provider: string;
   expires: string | null;
   url: string;
 }
-export interface BuildEnergyMetric {
+export interface BuildEnergyMetric extends Archivable {
   id: string;
   label: string;
   value: string;       // measured / commissioned result
@@ -489,17 +502,32 @@ export function emptyBuildState(): BuildState {
   };
 }
 
-export async function loadBuildState(workspaceId: string): Promise<BuildState> {
+export async function loadBuildState(workspaceId: string): Promise<Versioned<BuildState>> {
   const fallback = emptyBuildState();
-  const loaded = await loadAppData<BuildState>(buildKey(workspaceId), fallback);
+  const { value, version } = await loadVersioned<BuildState>(buildKey(workspaceId), fallback);
   // Forward-compat: backfill any field a stored partial record lacks.
-  return { ...fallback, ...loaded, schema_version: BUILD_SCHEMA_VERSION };
+  return { value: { ...fallback, ...value, schema_version: BUILD_SCHEMA_VERSION }, version };
 }
 
-export async function saveBuildState(workspaceId: string, state: BuildState): Promise<void> {
-  await saveAppData(buildKey(workspaceId), {
-    ...state,
-    schema_version: BUILD_SCHEMA_VERSION,
-    last_modified_at: new Date().toISOString(),
-  });
+/**
+ * Compare-and-swap write. `expectedVersion` is the version the caller last
+ * read; if the stored blob has moved past it the write is refused and the
+ * current server state comes back to be merged (see lib/build/merge.ts).
+ * Nothing is ever blindly overwritten.
+ */
+export async function saveBuildState(
+  workspaceId: string,
+  state: BuildState,
+  expectedVersion: number,
+): Promise<CasResult<BuildState>> {
+  return saveCas<BuildState>(
+    buildKey(workspaceId),
+    {
+      ...state,
+      schema_version: BUILD_SCHEMA_VERSION,
+      last_modified_at: new Date().toISOString(),
+    },
+    expectedVersion,
+    emptyBuildState(),
+  );
 }

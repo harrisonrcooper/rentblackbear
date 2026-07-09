@@ -33,5 +33,5 @@ export default async function BuildPage() {
     );
   }
 
-  return <BuildClient initialState={result.state} userId={userId} />;
+  return <BuildClient initialState={result.state} initialVersion={result.version} userId={userId} />;
 }
