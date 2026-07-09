@@ -1,8 +1,15 @@
 "use client";
 
 // Documents section.
+//
+// The only question this screen answers: which papers are on file, and which
+// still need a link. So the list is sorted with the missing ones on top — the
+// next thing to do is always the first thing he sees — and the header carries a
+// single honest count. Category is kept (it feeds search) but demoted to a
+// quiet chooser, because with ten documents nobody browses by category; they
+// scan for the gap.
 
-import { COLORS, FONT, Icon, ACCENT, Card, txt, DelBtn, AddBtn, SelectPill, optionsFrom } from "../ui";
+import { COLORS, FONT, Icon, ACCENT, ACCENT_SOFT, Card, txt, DelBtn, AddBtn, SelectPill, optionsFrom, Chip } from "../ui";
 import { EXTERNAL_ICON } from "./_common";
 
 const DOC_CATEGORY_ORDER = [
@@ -10,58 +17,135 @@ const DOC_CATEGORY_ORDER = [
   "Contracts & bids", "Financing", "Insurance & warranty", "Other",
 ];
 
+// The papers every custom-home build ends up needing. One tap lays the whole
+// checklist down so he never has to invent a name — he just pastes links.
+const STARTER_DOCS = [
+  { name: "Architectural plans & drawings", category: "Plans & drawings" },
+  { name: "Structural & engineering plans", category: "Plans & drawings" },
+  { name: "Land survey & plat", category: "Survey & site" },
+  { name: "Building permit", category: "Permits & approvals" },
+  { name: "Certificate of occupancy", category: "Permits & approvals" },
+  { name: "Builder contract", category: "Contracts & bids" },
+  { name: "Construction loan documents", category: "Financing" },
+  { name: "Builder's risk insurance policy", category: "Insurance & warranty" },
+  { name: "Homeowner warranty", category: "Insurance & warranty" },
+  { name: "Final lien waivers", category: "Contracts & bids" },
+];
+
+const CATEGORY_OPTIONS = optionsFrom(DOC_CATEGORY_ORDER);
+
 function DocumentRow({ doc, onChange, onDelete }) {
+  const onFile = Boolean(doc.url);
   return (
-    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 12, marginBottom: 10, display: "grid", gap: 8 }}>
+    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: 12, marginBottom: 10, display: "grid", gap: 10 }}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input value={doc.name} onChange={(e) => onChange({ name: e.target.value })} placeholder="Document name" style={{ ...txt(), flex: 1, fontWeight: 700 }} />
-        <SelectPill value={doc.category} options={optionsFrom(DOC_CATEGORY_ORDER)} onChange={(category) => onChange({ category })} ariaLabel="Category" minWidth={150} />
         <DelBtn onClick={onDelete} />
       </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input value={doc.url} onChange={(e) => onChange({ url: e.target.value })} placeholder="Paste a link — Drive, Dropbox, builder portal, county site…" style={{ ...txt(), flex: 1 }} />
-        {doc.url ? (
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <input value={doc.url} onChange={(e) => onChange({ url: e.target.value })} placeholder="Paste a link — Drive, Dropbox, builder portal, county site…" style={{ ...txt(), flex: 1, minWidth: 180 }} />
+        {onFile && (
           <a href={doc.url} target="_blank" rel="noopener noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#fff", background: ACCENT, padding: "8px 12px", borderRadius: 9, textDecoration: "none", fontFamily: FONT }}>
-            Open <Icon d={EXTERNAL_ICON} size={12} color="#fff" />
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0, fontSize: 12, fontWeight: 700, color: ACCENT, background: ACCENT_SOFT, border: `1px solid ${ACCENT}`, padding: "7px 12px", borderRadius: 9, textDecoration: "none", fontFamily: FONT }}>
+            Open <Icon d={EXTERNAL_ICON} size={12} color={ACCENT} />
           </a>
-        ) : (
-          <span style={{ fontSize: 11, color: COLORS.textFaint, flexShrink: 0, fontWeight: 600 }}>No link yet</span>
         )}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+        {onFile
+          ? <Chip tone="green"><Icon d="M20 6L9 17l-5-5" size={12} color={COLORS.green} /> On file</Chip>
+          : <Chip tone="neutral">No link yet</Chip>}
+        <SelectPill value={doc.category} options={CATEGORY_OPTIONS} onChange={(category) => onChange({ category })} ariaLabel="Filed under" minWidth={150} />
       </div>
     </div>
   );
 }
 
-export default function DocumentsSection({ state, addRow, updRow, delRow }) {
+function EmptyState({ onSetup, onAddOne }) {
+  return (
+    <div style={{ padding: "8px 4px 6px" }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: COLORS.text, letterSpacing: "-0.01em" }}>
+        Keep every plan, permit and contract in one place.
+      </div>
+      <div style={{ fontSize: 12.5, color: COLORS.textMuted, lineHeight: 1.55, marginTop: 6 }}>
+        Leave each file wherever it already lives — Drive, Dropbox, your builder&apos;s
+        portal — and paste the link here so it&apos;s one tap away and never lost.
+      </div>
+
+      <div style={{ marginTop: 16, marginBottom: 4, border: `1px solid ${COLORS.border}`, borderRadius: 12, overflow: "hidden" }}>
+        {STARTER_DOCS.map((d, i) => (
+          <div key={d.name} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+            padding: "9px 12px", borderTop: i === 0 ? "none" : `1px solid ${COLORS.border}`,
+          }}>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.text }}>{d.name}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: COLORS.textFaint, whiteSpace: "nowrap" }}>{d.category}</span>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={onSetup}
+        style={{
+          width: "100%", marginTop: 14, padding: "13px 16px", borderRadius: 12, cursor: "pointer",
+          fontFamily: FONT, fontSize: 14, fontWeight: 800, color: ACCENT,
+          background: ACCENT_SOFT, border: `1px solid ${ACCENT}`,
+          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+        }}
+      >
+        <Icon d={["M12 5v14", "M5 12h14"]} size={16} color={ACCENT} />
+        Start my document checklist
+      </button>
+
+      <div style={{ textAlign: "center", marginTop: 6 }}>
+        <AddBtn label="Or add one myself" onClick={onAddOne} />
+      </div>
+    </div>
+  );
+}
+
+export default function DocumentsSection({ state, addRow, delRow, updRow }) {
   const docs = state.documents || [];
   const withLink = docs.filter((d) => d.url).length;
-  const cats = [...new Set(docs.map((d) => d.category))]
-    .sort((a, b) => DOC_CATEGORY_ORDER.indexOf(a) - DOC_CATEGORY_ORDER.indexOf(b));
+  const total = docs.length;
+  const pct = total ? Math.round((withLink / total) * 100) : 0;
+
+  const setup = () => STARTER_DOCS.forEach((d) => addRow("documents", { name: d.name, category: d.category, url: "" }));
+  const addOne = () => addRow("documents", { name: "New document", category: "Other", url: "" });
+
+  // Missing links float to the top: the next paper to chase is always first.
+  // A copy keeps the original order stable underneath the status sort.
+  const ordered = docs
+    .map((d, i) => ({ d, i }))
+    .sort((a, b) => (Boolean(a.d.url) - Boolean(b.d.url)) || (a.i - b.i))
+    .map((x) => x.d);
+
   return (
-    <Card title="Document vault" sub={`${withLink}/${docs.length} linked`}>
-      <div style={{ fontSize: 12, color: COLORS.textMuted, padding: "4px 2px 12px", lineHeight: 1.5 }}>
-        One home for every plan, permit, contract and warranty. Keep the file wherever it
-        lives — Drive, Dropbox, your builder's portal — and paste the link here so it&apos;s never lost.
-      </div>
-      {cats.map((cat) => {
-        const rows = docs.filter((d) => d.category === cat);
-        const linked = rows.filter((d) => d.url).length;
-        return (
-          <div key={cat}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 4px 6px" }}>
-              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.4, color: ACCENT, textTransform: "uppercase" }}>{cat}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.textFaint }}>{linked}/{rows.length}</span>
+    <Card title="Documents" sub={total ? `${withLink} of ${total} on file` : null}>
+      {total === 0 ? (
+        <EmptyState onSetup={setup} onAddOne={addOne} />
+      ) : (
+        <>
+          <div style={{ padding: "4px 2px 12px" }}>
+            <div style={{ height: 6, borderRadius: 3, background: COLORS.surfaceTint, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: ACCENT, borderRadius: 3 }} />
             </div>
-            {rows.map((d) => (
-              <DocumentRow key={d.id} doc={d}
-                onChange={(patch) => updRow("documents", d.id, patch)}
-                onDelete={() => delRow("documents", d.id)} />
-            ))}
+            <div style={{ fontSize: 11.5, color: COLORS.textFaint, fontWeight: 600, marginTop: 6 }}>
+              {withLink === total ? "Every document is linked and on file." : `${total - withLink} still need a link.`}
+            </div>
           </div>
-        );
-      })}
-      <AddBtn label="Add document" onClick={() => addRow("documents", { name: "New document", category: "Other", url: "" })} />
+
+          {ordered.map((d) => (
+            <DocumentRow key={d.id} doc={d}
+              onChange={(patch) => updRow("documents", d.id, patch)}
+              onDelete={() => delRow("documents", d.id)} />
+          ))}
+
+          <AddBtn label="Add document" onClick={addOne} />
+        </>
+      )}
     </Card>
   );
 }

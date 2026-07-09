@@ -2,8 +2,10 @@
 
 // Materials & Products — the catalogue of everything going into the house
 // (brief §6.5). The load-bearing feature is side-by-side comparison: rows that
-// share a compare_group are alternatives for ONE decision, laid out in a table
-// with the cheapest option flagged and one click to crown a winner.
+// share a compare_group are alternatives for ONE decision, laid out so the
+// cheapest option is flagged and one tap crowns a winner. On a phone that
+// comparison becomes a stack of option cards — never a table you have to
+// scroll sideways to read.
 //
 // All arithmetic lives in lib/build/materials.ts and is unit-tested there; this
 // file is presentation and wiring only. State is mutated exclusively through the
@@ -12,10 +14,11 @@
 import { useMemo, useState } from "react";
 
 import {
-  COLORS, FONT, SERIF, ACCENT, inputStyle, btn, Icon, ICON, fmtUsd,
-  Card, Field, txt, MoneyInput, AddBtn, Chip, SectionHead, StatStrip, SelectPill
+  COLORS, FONT, SERIF, ACCENT, btn, Icon, ICON, fmtUsd,
+  Card, Field, txt, MoneyInput, AddBtn, Chip, SectionHead, StatStrip, SelectPill, AutoTextarea,
 } from "../ui";
 import DetailDrawer from "../DetailDrawer";
+import { useIsMobile } from "../../budget/lib/responsive";
 import {
   STATUS_ORDER, STATUS_LABEL, statusTone, extendedCents, groupsOf,
   chosenIn, cheapestIn, chooseWinner, totalCents,
@@ -41,6 +44,16 @@ function newMaterial(category) {
     room_ids: [], spec: "", vendor: "", unit_price_cents: 0, quantity: 1, unit: "each",
     lead_time: "", status: "idea", url: "", photo_url: "", compare_group: "", is_chosen: false, notes: "",
   };
+}
+
+// "12 each × $40.00" — spelled out so the total on the right is never a number
+// the user has to trust blindly. Hidden when the quantity is one (nothing to
+// multiply) so it doesn't add noise to the common case.
+function qtyNote(m) {
+  const qty = Number(m.quantity) || 0;
+  if (qty === 1) return null;
+  const unit = (m.unit || "each").trim() || "each";
+  return `${qty} ${unit} × ${fmtUsd(Number(m.unit_price_cents) || 0)}`;
 }
 
 // A filter is a dropdown; SelectPill is the planner's dropdown.
@@ -80,7 +93,8 @@ function StatusPicker({ value, onChange }) {
   );
 }
 
-// A catalogue line — click to open the full editor. Extended price on the right.
+// A catalogue line — click to open the full editor. The item's own total on the
+// right.
 function MaterialCard({ m, roomNames, onOpen }) {
   const meta = [m.vendor, `${m.quantity} ${m.unit || ""}`.trim()].filter(Boolean).join(" · ");
   const rooms = (m.room_ids || []).map((id) => roomNames.get(id)).filter(Boolean);
@@ -111,69 +125,131 @@ function MaterialCard({ m, roomNames, onOpen }) {
   );
 }
 
-// The comparison table for one decision. All alternatives, cheapest flagged,
-// one click to choose a winner.
-function CompareCard({ group, cheapestId, onOpen, onChoose }) {
+// One option inside a comparison, as a card — the phone-friendly row. Big total,
+// cheapest flagged, one full-width tap to pick it.
+function CompareOption({ m, cheapest, multiple, onOpen, onChoose }) {
+  const win = m.is_chosen;
+  const note = qtyNote(m);
+  const details = [["Vendor", m.vendor], ["Spec", m.spec], ["Lead time", m.lead_time]]
+    .filter(([, v]) => v && String(v).trim());
+  return (
+    <div style={{
+      border: `1px solid ${win ? ACCENT : COLORS.border}`, background: win ? COLORS.accentSoft : COLORS.surface,
+      borderRadius: 12, padding: 13, display: "flex", flexDirection: "column", gap: 9,
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+        <button
+          onClick={() => onOpen(m.id)}
+          style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", fontFamily: FONT, textAlign: "left", color: COLORS.text, fontSize: 14, fontWeight: 700, minWidth: 0 }}
+        >
+          {m.name || "Option"}
+        </button>
+        {win && <Chip tone="accent">Chosen</Chip>}
+      </div>
+
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <span style={{ fontSize: 21, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: cheapest && multiple ? COLORS.green : COLORS.text }}>{fmtUsd(extendedCents(m))}</span>
+        {cheapest && multiple && <Chip tone="green">Cheapest</Chip>}
+      </div>
+      {note && <div style={{ fontSize: 11.5, color: COLORS.textFaint, marginTop: -4 }}>{note}</div>}
+
+      {details.map(([l, v]) => (
+        <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5 }}>
+          <span style={{ color: COLORS.textFaint, fontWeight: 600, flexShrink: 0 }}>{l}</span>
+          <span style={{ color: COLORS.textMuted, textAlign: "right", minWidth: 0 }}>{v}</span>
+        </div>
+      ))}
+
+      {win ? (
+        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 2, padding: "8px 12px", borderRadius: 10, border: `1px solid ${COLORS.green}`, background: COLORS.greenBg, color: COLORS.green, fontSize: 12.5, fontWeight: 700 }}>
+          <Icon d={ICON.check} size={14} color={COLORS.green} /> Winner
+        </span>
+      ) : (
+        <button onClick={() => onChoose(m.id)} style={{ ...btn("ghost"), marginTop: 2, justifyContent: "center", width: "100%" }}>Choose this</button>
+      )}
+    </div>
+  );
+}
+
+// The comparison for one decision. Alternatives side by side (a table on a wide
+// screen, a stack of option cards on a phone), cheapest flagged, one tap to
+// choose a winner.
+function CompareCard({ group, cheapestId, stacked, onOpen, onChoose }) {
   const chosen = chosenIn(group);
   const key = (group[0].compare_group || "").trim();
+  const overpay = chosen && cheapestId && chosen.id !== cheapestId
+    ? extendedCents(chosen) - extendedCents(group.find((m) => m.id === cheapestId))
+    : 0;
+
   return (
-    <Card title={key || "Comparison"} sub={chosen ? "Winner picked" : `${group.length} options · undecided`}>
-      <div style={{ overflowX: "auto", margin: "0 -12px", padding: "0 12px" }}>
-        <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontFamily: FONT }}>
-          <thead>
-            <tr>
-              {["Option", "Vendor", "Spec", "Lead time", "Extended price", ""].map((h, i) => (
-                <th key={h || "act"} style={{
-                  textAlign: i === 4 ? "right" : "left", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
-                  textTransform: "uppercase", color: COLORS.textFaint, padding: "4px 10px 8px", whiteSpace: "nowrap",
-                }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {group.map((m) => {
-              const win = m.is_chosen;
-              const cheap = m.id === cheapestId;
-              return (
-                <tr key={m.id} style={{ background: win ? COLORS.accentSoft : "transparent", borderTop: `1px solid ${COLORS.border}` }}>
-                  <td style={{ padding: "9px 10px" }}>
-                    <button
-                      onClick={() => onOpen(m.id)}
-                      style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", fontFamily: FONT, textAlign: "left", color: COLORS.text, fontSize: 13, fontWeight: 700 }}
-                    >
-                      {m.name || "Option"}
-                    </button>
-                    {win && <span style={{ marginLeft: 8, verticalAlign: "middle" }}><Chip tone="accent">Chosen</Chip></span>}
-                  </td>
-                  <td style={{ padding: "9px 10px", fontSize: 12.5, color: COLORS.textMuted, whiteSpace: "nowrap" }}>{m.vendor || "—"}</td>
-                  <td style={{ padding: "9px 10px", fontSize: 12.5, color: COLORS.textMuted, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.spec || "—"}</td>
-                  <td style={{ padding: "9px 10px", fontSize: 12.5, color: COLORS.textMuted, whiteSpace: "nowrap" }}>{m.lead_time || "—"}</td>
-                  <td style={{ padding: "9px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: cheap ? COLORS.green : COLORS.text }}>{fmtUsd(extendedCents(m))}</span>
-                    {cheap && group.length > 1 && (
-                      <span style={{ display: "block", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: COLORS.green }}>Lowest</span>
-                    )}
-                  </td>
-                  <td style={{ padding: "9px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
-                    {win ? (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: COLORS.green }}>
-                        <Icon d={ICON.check} size={14} color={COLORS.green} /> Winner
-                      </span>
-                    ) : (
-                      <button onClick={() => onChoose(m.id)} style={{ ...btn("ghost"), padding: "6px 12px" }}>Choose</button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      {chosen && cheapestId && chosen.id !== cheapestId && (
+    <Card title={key || "Comparison"} sub={chosen ? "Winner picked" : `${group.length} options · pick one`}>
+      {stacked ? (
+        <div style={{ display: "grid", gap: 10, paddingTop: 4 }}>
+          {group.map((m) => (
+            <CompareOption key={m.id} m={m} cheapest={m.id === cheapestId} multiple={group.length > 1} onOpen={onOpen} onChoose={onChoose} />
+          ))}
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto", margin: "0 -12px", padding: "0 12px" }}>
+          <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontFamily: FONT }}>
+            <thead>
+              <tr>
+                {["Option", "Vendor", "Spec", "Lead time", "Total", ""].map((h, i) => (
+                  <th key={h || "act"} style={{
+                    textAlign: i === 4 ? "right" : "left", fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
+                    textTransform: "uppercase", color: COLORS.textFaint, padding: "4px 10px 8px", whiteSpace: "nowrap",
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {group.map((m) => {
+                const win = m.is_chosen;
+                const cheap = m.id === cheapestId;
+                const note = qtyNote(m);
+                return (
+                  <tr key={m.id} style={{ background: win ? COLORS.accentSoft : "transparent", borderTop: `1px solid ${COLORS.border}` }}>
+                    <td style={{ padding: "9px 10px" }}>
+                      <button
+                        onClick={() => onOpen(m.id)}
+                        style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", fontFamily: FONT, textAlign: "left", color: COLORS.text, fontSize: 13, fontWeight: 700 }}
+                      >
+                        {m.name || "Option"}
+                      </button>
+                      {win && <span style={{ marginLeft: 8, verticalAlign: "middle" }}><Chip tone="accent">Chosen</Chip></span>}
+                    </td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5, color: COLORS.textMuted, whiteSpace: "nowrap" }}>{m.vendor || "—"}</td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5, color: COLORS.textMuted, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.spec || "—"}</td>
+                    <td style={{ padding: "9px 10px", fontSize: 12.5, color: COLORS.textMuted, whiteSpace: "nowrap" }}>{m.lead_time || "—"}</td>
+                    <td style={{ padding: "9px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: cheap && group.length > 1 ? COLORS.green : COLORS.text }}>{fmtUsd(extendedCents(m))}</span>
+                      {cheap && group.length > 1 && (
+                        <span style={{ display: "block", fontSize: 9.5, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: COLORS.green }}>Cheapest</span>
+                      )}
+                      {note && <span style={{ display: "block", fontSize: 10.5, color: COLORS.textFaint, marginTop: 2 }}>{note}</span>}
+                    </td>
+                    <td style={{ padding: "9px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
+                      {win ? (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: COLORS.green }}>
+                          <Icon d={ICON.check} size={14} color={COLORS.green} /> Winner
+                        </span>
+                      ) : (
+                        <button onClick={() => onChoose(m.id)} style={{ ...btn("ghost"), padding: "6px 12px" }}>Choose</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {overpay > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, padding: "8px 11px", background: COLORS.amberBg, borderRadius: 10 }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: COLORS.amber, flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: COLORS.text }}>
-            Your pick isn&apos;t the cheapest — {fmtUsd(extendedCents(chosen) - extendedCents(group.find((m) => m.id === cheapestId)))} more than the lowest option.
+            The option you picked costs {fmtUsd(overpay)} more than the cheapest one. That&apos;s fine — just so you know.
           </span>
         </div>
       )}
@@ -183,7 +259,6 @@ function CompareCard({ group, cheapestId, onOpen, onChoose }) {
 
 // The full editor for one material, hosted in the shared DetailDrawer.
 function MaterialEditor({ m, rooms, categories, groupNames, patch, onDelete }) {
-  const roomName = new Map(rooms.map((r) => [r.id, r.name]));
   return (
     <div style={{ display: "grid", gap: 2 }}>
       <Field label="Name">
@@ -195,13 +270,13 @@ function MaterialEditor({ m, rooms, categories, groupNames, patch, onDelete }) {
           <input value={m.category} list="material-categories" onChange={(e) => patch({ category: e.target.value })} style={txt()} placeholder="Cabinets" />
         </Field>
         <Field label="Vendor">
-          <input value={m.vendor} onChange={(e) => patch({ vendor: e.target.value })} style={txt()} placeholder="Sjumbo" />
+          <input value={m.vendor} onChange={(e) => patch({ vendor: e.target.value })} style={txt()} placeholder="Where you'd buy it" />
         </Field>
       </div>
       <datalist id="material-categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>
 
       <Field label="Spec">
-        <textarea value={m.spec} onChange={(e) => patch({ spec: e.target.value })} rows={2} style={{ ...txt(), resize: "vertical", lineHeight: 1.5 }} placeholder="Finish, dimensions, model number…" />
+        <AutoTextarea value={m.spec} onChange={(v) => patch({ spec: v })} minRows={2} placeholder="Finish, dimensions, model number…" />
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 84px 84px", gap: 10, alignItems: "end" }}>
@@ -219,7 +294,7 @@ function MaterialEditor({ m, rooms, categories, groupNames, patch, onDelete }) {
         </Field>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "-4px 2px 14px", fontSize: 12 }}>
-        <span style={{ color: COLORS.textFaint, fontWeight: 600 }}>Extended</span>
+        <span style={{ color: COLORS.textFaint, fontWeight: 600 }}>Total{qtyNote(m) ? ` · ${qtyNote(m)}` : ""}</span>
         <span style={{ fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums" }}>{fmtUsd(extendedCents(m))}</span>
       </div>
 
@@ -288,7 +363,7 @@ function MaterialEditor({ m, rooms, categories, groupNames, patch, onDelete }) {
       )}
 
       <Field label="Notes">
-        <textarea value={m.notes} onChange={(e) => patch({ notes: e.target.value })} rows={3} style={{ ...txt(), resize: "vertical", lineHeight: 1.5 }} placeholder="Quotes, caveats, follow-ups…" />
+        <AutoTextarea value={m.notes} onChange={(v) => patch({ notes: v })} minRows={3} placeholder="Quotes, caveats, follow-ups…" />
       </Field>
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
@@ -302,6 +377,7 @@ export default function MaterialsSection({ state, addRow, updRow, delRow }) {
   const materials = state.materials || [];
   const rooms = state.rooms || [];
   const roomNames = useMemo(() => new Map(rooms.map((r) => [r.id, r.name])), [rooms]);
+  const stacked = useIsMobile();
 
   const [openId, setOpenId] = useState(null);
   const [q, setQ] = useState("");
@@ -378,7 +454,7 @@ export default function MaterialsSection({ state, addRow, updRow, delRow }) {
   const statusOptions = [{ value: "all", label: "All statuses" }, ...STATUS_ORDER.map((s) => ({ value: s, label: STATUS_LABEL[s] }))];
   const roomOptions = [{ value: "all", label: "All rooms" }, ...rooms.map((r) => ({ value: r.id, label: r.name || "Room" }))];
 
-  // ── Empty state — designed, not blank ──────────────────────────────────
+  // ── Empty state — the first (and often only) screen he'll see here ─────────
   if (materials.length === 0) {
     return (
       <>
@@ -391,7 +467,7 @@ export default function MaterialsSection({ state, addRow, updRow, delRow }) {
             <h3 style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 600, margin: "0 0 6px" }}>Catalogue every product</h3>
             <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 0 18px" }}>
               List each material with its price, vendor, lead time and the rooms it goes in. Give two or
-              more the same comparison group and they line up side by side — cheapest flagged, one click
+              more the same comparison group and they line up side by side — cheapest flagged, one tap
               to pick the winner.
             </p>
             <AddBtn label="Add your first material" onClick={add} />
@@ -401,16 +477,25 @@ export default function MaterialsSection({ state, addRow, updRow, delRow }) {
     );
   }
 
+  const itemWord = materials.length === 1 ? "item" : "items";
+
   return (
     <>
-      <SectionHead title="Materials" note={`${materials.length} in the catalogue · ${fmtUsd(totalCents(materials))} committed`} />
+      <SectionHead title="Materials" note={`${materials.length} ${itemWord} · ${fmtUsd(totalCents(materials))} committed`} />
 
       <StatStrip items={[
-        ["Catalogue total", fmtUsd(totalCents(materials)), COLORS.text],
+        ["Committed so far", fmtUsd(totalCents(materials)), COLORS.text],
         ["Items", String(materials.length), COLORS.text],
         ["Comparisons", String(multiGroups.length), COLORS.text],
-        ["Still undecided", String(undecided), undecided ? COLORS.amber : COLORS.green],
+        ["Still to decide", String(undecided), undecided ? COLORS.amber : COLORS.green],
       ]} />
+
+      {multiGroups.length > 0 && (
+        <p style={{ fontSize: 12, color: COLORS.textFaint, lineHeight: 1.5, margin: "-2px 2px 14px" }}>
+          <strong style={{ color: COLORS.textMuted }}>Committed so far</strong> adds up each item once. Inside a comparison,
+          only the option you picked counts — the alternatives, and any comparison you haven&apos;t decided, aren&apos;t in this number yet.
+        </p>
+      )}
 
       {/* Filter bar */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end", margin: "4px 0 8px" }}>
@@ -430,7 +515,7 @@ export default function MaterialsSection({ state, addRow, updRow, delRow }) {
 
       {!anyShown && (
         <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, padding: "22px 16px", textAlign: "center", color: COLORS.textMuted, fontSize: 13.5 }}>
-          {filtersActive ? "No materials match these filters." : "No materials yet."}
+          {filtersActive ? "Nothing matches these filters." : "No materials yet."}
         </div>
       )}
 
@@ -442,6 +527,7 @@ export default function MaterialsSection({ state, addRow, updRow, delRow }) {
               key={key}
               group={g}
               cheapestId={cheapestIn(g)?.id || null}
+              stacked={stacked}
               onOpen={(id) => setOpenId(id)}
               onChoose={choose}
             />

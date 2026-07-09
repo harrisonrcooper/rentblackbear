@@ -48,6 +48,24 @@ const EXTRA_TEXT: Partial<Record<EntityType, string[]>> = {
 
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
 
+/** Text buried in a row's child rows: a room's checklist, a trip's items. */
+function nestedText(row: Record<string, unknown>): string {
+  const out: string[] = [];
+  for (const key of ["must_have_items", "items", "lines"]) {
+    const arr = row[key];
+    if (!Array.isArray(arr)) continue;
+    for (const child of arr) {
+      if (!child || typeof child !== "object") continue;
+      const c = child as Record<string, unknown>;
+      for (const f of ["text", "item", "description", "name", "note", "specs"]) {
+        const v = str(c[f]).trim();
+        if (v) out.push(v);
+      }
+    }
+  }
+  return out.join(" ");
+}
+
 /**
  * Build the searchable index. `extra` supplies rows not held in the blob —
  * currently tasks, keyed by entity type.
@@ -82,6 +100,10 @@ export function buildSearchIndex(
       const title = spec.title(row);
       const subtitle = spec.subtitle ? spec.subtitle(row) : "";
       const extras = (EXTRA_TEXT[type] || []).map((k) => str(row[k])).join(" ");
+      // A room's requirements live in its checklist once the user starts ticking
+      // them off; `must_haves` freezes at the seed text. Index both, or the item
+      // he typed yesterday is unfindable today.
+      const nested = nestedText(row);
 
       docs.push({
         type,
@@ -91,7 +113,7 @@ export function buildSearchIndex(
         section: spec.section,
         url: entityUrl(spec.section, str(row.id)),
         kindLabel: spec.label,
-        haystack: `${title} ${subtitle} ${extras}`.toLowerCase(),
+        haystack: `${title} ${subtitle} ${extras} ${nested}`.toLowerCase(),
       });
     }
   }

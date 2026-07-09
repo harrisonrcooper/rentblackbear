@@ -1,75 +1,162 @@
 "use client";
 
 // Milestones section.
+//
+// One screen, one job: 22 construction phases in build order — foundation
+// before framing before roof — that he checks off over two years and hangs
+// target dates on. The phases arrive pre-filled and in the right sequence, so
+// this is never a blank canvas: he taps a circle to mark a phase done and taps
+// its date to schedule it. Nothing to set up, nothing to arrange.
 
-import { COLORS, inputStyle, ACCENT, Card, txt, DelBtn, Check, AddBtn, fmtBuildDate, daysFromToday } from "../ui";
+import { COLORS, FONT, ACCENT, Card, DelBtn, AddBtn, Chip, Icon, ICON, inputStyle, daysFromToday } from "../ui";
 
-function MilestoneTimeline({ milestones }) {
-  if (!milestones.length) return null;
-  const dated = milestones.filter((m) => m.target).slice().sort((a, b) => (a.target < b.target ? -1 : 1));
-  const undated = milestones.filter((m) => !m.target);
-  const rows = [...dated, ...undated];
-  const doneCount = milestones.filter((m) => m.done).length;
-  const pct = Math.round((doneCount / milestones.length) * 100);
-  const nextUp = dated.find((m) => !m.done);
+// "In 1 day", not "In 1 days". Spell the unit out — never "1d".
+const dayLabel = (n) => `${n} ${n === 1 ? "day" : "days"}`;
+
+// The single source of truth for one row's state. Everything visible on the
+// row — dot colour, chip tone, chip text — comes from here, so a milestone
+// can never look done in one place and pending in another.
+function statusOf(m) {
+  if (m.done) return { tone: "green", dot: COLORS.green, chip: "Done" };
+  if (!m.target) return { tone: "neutral", dot: COLORS.borderStrong, chip: null };
+  const d = daysFromToday(m.target);
+  if (d < 0) return { tone: "red", dot: COLORS.red, chip: `${dayLabel(-d)} overdue` };
+  if (d === 0) return { tone: "amber", dot: COLORS.amber, chip: "Due today" };
+  return { tone: "neutral", dot: COLORS.borderStrong, chip: `In ${dayLabel(d)}` };
+}
+
+// The circle IS the checkbox. It doubles as the timeline node, so marking a
+// phase done and reading where it sits in the sequence are the same glance —
+// no separate checkbox to hunt for.
+function MilestoneDot({ done, color, onToggle, label }) {
   return (
-    <Card title="Timeline" sub={nextUp ? `Next: ${nextUp.label}` : `${doneCount}/${milestones.length} complete`}>
-      <div style={{ padding: "4px 2px 16px" }}>
-        <div style={{ height: 7, borderRadius: 99, background: COLORS.surfaceTint, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: ACCENT, borderRadius: 99, transition: "width .3s ease" }} />
-        </div>
-        <div style={{ marginTop: 5, fontSize: 11, fontWeight: 700, color: COLORS.textFaint }}>{pct}% complete</div>
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={done}
+      aria-label={done ? `Mark "${label}" not done` : `Mark "${label}" done`}
+      style={{
+        width: 22, height: 22, borderRadius: "50%", flexShrink: 0, marginTop: 1, padding: 0,
+        cursor: "pointer", display: "grid", placeItems: "center",
+        background: done ? color : COLORS.surface, border: `2px solid ${color}`,
+      }}
+    >
+      {done && <Icon d={ICON.check} size={12} color="#fff" />}
+    </button>
+  );
+}
+
+function MilestoneRow({ m, isNext, isLast, onToggle, onPatch, onDelete }) {
+  const s = statusOf(m);
+  const color = isNext && !m.done ? ACCENT : s.dot;
+  return (
+    <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 22 }}>
+        <MilestoneDot done={m.done} color={color} onToggle={onToggle} label={m.label || "Milestone"} />
+        {!isLast && <div style={{ flex: 1, width: 2, background: COLORS.border, margin: "4px 0" }} />}
       </div>
-      {rows.map((m, i) => {
-        const last = i === rows.length - 1;
-        const overdue = m.target && !m.done && daysFromToday(m.target) < 0;
-        const color = m.done ? COLORS.green : overdue ? COLORS.red : ACCENT;
-        let chip = "no date";
-        if (m.done) chip = "done";
-        else if (m.target) {
-          const d = daysFromToday(m.target);
-          chip = d < 0 ? `${-d}d overdue` : d === 0 ? "today" : `in ${d}d`;
-        }
-        return (
-          <div key={m.id} style={{ display: "flex", gap: 12 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 16 }}>
-              <div style={{ width: 14, height: 14, borderRadius: "50%", flexShrink: 0, marginTop: 2, background: m.done ? color : "#fff", border: `2.5px solid ${color}` }} />
-              {!last && <div style={{ flex: 1, width: 2, background: COLORS.border, margin: "3px 0" }} />}
-            </div>
-            <div style={{ flex: 1, minWidth: 0, paddingBottom: last ? 2 : 16 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: m.done ? COLORS.textMuted : COLORS.text, textDecoration: m.done ? "line-through" : "none" }}>{m.label || "Milestone"}</div>
-              <div style={{ marginTop: 2, fontSize: 11.5, fontWeight: 600, color: COLORS.textFaint }}>
-                {m.target ? fmtBuildDate(m.target) : "No date set"}
-                <span style={{ marginLeft: 8, color, fontWeight: 800 }}>{chip}</span>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </Card>
+
+      <div style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 2 : 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            type="text"
+            value={m.label}
+            onChange={(e) => onPatch({ label: e.target.value })}
+            placeholder="Milestone name"
+            aria-label="Milestone name"
+            style={{
+              flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+              fontFamily: FONT, fontSize: 14, fontWeight: 700, padding: 0,
+              color: m.done ? COLORS.textFaint : COLORS.text,
+              textDecoration: m.done ? "line-through" : "none",
+            }}
+          />
+          {isNext && !m.done && <Chip tone="accent">Next up</Chip>}
+          <DelBtn onClick={onDelete} />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+          <input
+            type="date"
+            value={m.target || ""}
+            onChange={(e) => onPatch({ target: e.target.value || null })}
+            aria-label={`Target date for ${m.label || "milestone"}`}
+            style={{ ...inputStyle(), width: 150, fontWeight: 600, color: m.target ? COLORS.text : COLORS.textFaint }}
+          />
+          {s.chip && <Chip tone={s.tone}>{s.chip}</Chip>}
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function MilestonesSection({ state, addRow, updRow, delRow }) {
-  const done = state.milestones.filter((m) => m.done).length;
-  return (
-    <>
-    <MilestoneTimeline milestones={state.milestones} />
-    <Card title="Milestones" sub={`${done}/${state.milestones.length} done`}>
-      {state.milestones.map((m) => (
-        <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 4px", borderBottom: `1px solid ${COLORS.surfaceTint}` }}>
-          <Check done={m.done} onClick={() => updRow("milestones", m.id, { done: !m.done })} />
-          <input
-            type="text" value={m.label}
-            onChange={(e) => updRow("milestones", m.id, { label: e.target.value })}
-            style={{ ...txt(), flex: 1, minWidth: 0, textDecoration: m.done ? "line-through" : "none", opacity: m.done ? 0.55 : 1 }}
-          />
-          <input type="date" value={m.target || ""} onChange={(e) => updRow("milestones", m.id, { target: e.target.value || null })} style={{ ...inputStyle(), width: 142 }} aria-label="Target date" />
-          <DelBtn onClick={() => delRow("milestones", m.id)} />
+  const milestones = state.milestones;
+  const ordered = [...milestones].sort((a, b) => {
+    if (!a.target && !b.target) return 0;
+    if (!a.target) return 1;
+    if (!b.target) return -1;
+    return a.target < b.target ? -1 : a.target > b.target ? 1 : 0;
+  });
+  const total = milestones.length;
+  const doneCount = milestones.filter((m) => m.done).length;
+  const pct = total ? Math.round((doneCount / total) * 100) : 0;
+  const overdue = milestones.filter((m) => m.target && !m.done && daysFromToday(m.target) < 0).length;
+  const next = milestones.find((m) => !m.done) || null;
+
+  const add = () => addRow("milestones", { label: "New milestone", target: null, done: false });
+
+  if (total === 0) {
+    return (
+      <Card title="Milestones" sub="Nothing scheduled yet">
+        <div style={{ textAlign: "center", padding: "26px 16px 30px" }}>
+          <div style={{ width: 46, height: 46, borderRadius: "50%", margin: "0 auto 14px", display: "grid", placeItems: "center", background: COLORS.surfaceTint }}>
+            <Icon d={ICON.flag} size={22} color={COLORS.textFaint} />
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.text }}>Track the big moments</div>
+          <p style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5, maxWidth: 300, margin: "6px auto 18px" }}>
+            Groundbreaking, roof dried-in, move in — the phases that mark real progress. Add one and hang a target date on it.
+          </p>
+          <AddBtn label="Add your first milestone" onClick={add} />
         </div>
-      ))}
-      <AddBtn label="Add milestone" onClick={() => addRow("milestones", { label: "New milestone", target: null, done: false })} />
+      </Card>
+    );
+  }
+
+  return (
+    <Card title="Milestones" sub={`${doneCount} of ${total} done`}>
+      <div style={{ padding: "4px 2px 14px" }}>
+        <div style={{ height: 8, borderRadius: 99, background: COLORS.surfaceTint, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: ACCENT, borderRadius: 99, transition: "width .3s ease" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.textMuted }}>
+            {next
+              ? <>Next: <span style={{ color: COLORS.text }}>{next.label || "Milestone"}</span></>
+              : "Every milestone complete"}
+          </span>
+          {overdue > 0 && <Chip tone="red">{overdue} overdue</Chip>}
+        </div>
+      </div>
+
+      <div style={{ borderTop: `1px solid ${COLORS.surfaceTint}`, paddingTop: 14 }}>
+        {/* Chronological, because a schedule read in entry order is not a
+            schedule. Dated milestones ascend by target; undated sink to the
+            bottom, where the next thing to do is to give them a date. */}
+        {ordered.map((m, i) => (
+          <MilestoneRow
+            key={m.id}
+            m={m}
+            isNext={next?.id === m.id}
+            isLast={i === milestones.length - 1}
+            onToggle={() => updRow("milestones", m.id, { done: !m.done })}
+            onPatch={(patch) => updRow("milestones", m.id, patch)}
+            onDelete={() => delRow("milestones", m.id)}
+          />
+        ))}
+      </div>
+
+      <AddBtn label="Add milestone" onClick={add} />
     </Card>
-    </>
   );
 }

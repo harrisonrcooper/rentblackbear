@@ -1,10 +1,17 @@
 "use client";
 
-// Rooms section.
+// Rooms & Spaces — one card per room, one drawer to edit it.
+//
+// A room's requirements live as a CHECKLIST, not a paragraph: that is what
+// gives each room a done/total and lets the card show what's still open at a
+// glance. The checklist is derived from the room's original free-text on first
+// read and materialized the moment a box is ticked (see lib/build/rooms.ts) —
+// so the card, the drawer, and the progress chip all read from one source and
+// can never drift out of sync.
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
-import { COLORS, FONT, btn, Icon, ICON, ACCENT, txt, DelBtn, Check, AddBtn, SectionHead, Chip, AutoTextarea } from "../ui";
+import { COLORS, FONT, SERIF, btn, Icon, ICON, ACCENT, txt, DelBtn, AddBtn, SectionHead, Chip, AutoTextarea } from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import { tasksFor } from "@/lib/build/tasks";
 import { addMustHave, checklistFor, editMustHave, removeMustHave, roomProgress, toggleMustHave } from "@/lib/build/rooms";
@@ -27,6 +34,8 @@ function RoomField({ label, value, onChange, placeholder }) {
 
 function RoomCard({ room, taskCount, onOpen }) {
   const p = roomProgress(room);
+  const open = checklistFor(room).filter((i) => !i.done);
+  // Green = settled, accent = actively in progress, neutral = nothing started.
   const tone = p.total === 0 ? "neutral" : p.done === p.total ? "green" : p.done > 0 ? "accent" : "neutral";
 
   return (
@@ -42,23 +51,25 @@ function RoomCard({ room, taskCount, onOpen }) {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 14.5, fontWeight: 600, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {room.name || "Room"}
+            {room.name || "Untitled room"}
           </div>
           <div style={{ fontSize: 11.5, color: COLORS.textFaint, marginTop: 1 }}>
-            {[room.level, room.size].filter(Boolean).join(" · ") || "—"}
+            {[room.level, room.size].filter(Boolean).join(" · ") || "No level or size yet"}
           </div>
         </div>
         {p.total > 0 && <Chip tone={tone}>{p.done} / {p.total}</Chip>}
       </div>
 
-      {room.must_haves && (
-        <p style={{
-          fontSize: 12.5, color: COLORS.textMuted, margin: "9px 0 0", lineHeight: 1.5,
-          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-        }}>
-          {room.must_haves}
-        </p>
-      )}
+      {/* Preview reads from the live checklist, never the frozen seed text, so it
+          can never contradict the drawer. */}
+      <p style={{ fontSize: 12.5, color: open.length ? COLORS.textMuted : COLORS.green, margin: "9px 0 0", lineHeight: 1.5,
+        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+        {p.total === 0
+          ? "No must-haves yet — open to add what this room needs."
+          : open.length === 0
+            ? "Every must-have checked."
+            : `${open.slice(0, 2).map((i) => i.text).join(" · ")}${open.length > 2 ? ` · +${open.length - 2} more` : ""}`}
+      </p>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
         {taskCount > 0
@@ -82,6 +93,22 @@ export default function RoomsSection({ state, addRow, updRow, delRow, tasks, onA
   );
   const countFor = useCallback((id) => tasksFor(tasks, "room", id).length, [tasks]);
 
+  // Add a room and land the user straight inside it to name it — no hunting for
+  // a "New room" card in a grid. addRow appends, so the newest visible row is
+  // last; open it once React has committed the new state.
+  const wantNewest = useRef(false);
+  useEffect(() => {
+    if (!wantNewest.current) return;
+    wantNewest.current = false;
+    const last = state.rooms[state.rooms.length - 1];
+    if (last) { setOpenId(last.id); setTab("overview"); }
+  }, [state.rooms]);
+
+  function addRoom() {
+    wantNewest.current = true;
+    addRow("rooms", { name: "", level: "Main", size: "", must_haves: "", lighting: "", details: "" });
+  }
+
   const patch = (p) => updRow("rooms", room.id, p);
   const setChecklist = (items) => patch({ must_have_items: items });
 
@@ -90,9 +117,29 @@ export default function RoomsSection({ state, addRow, updRow, delRow, tasks, onA
 
   function close() { setOpenId(null); setTab("overview"); setNewTask(""); setNewItem(""); }
 
+  // ── Empty state — the first (and often only) screen he'll see here ─────────
+  if (state.rooms.length === 0) {
+    return (
+      <>
+        <SectionHead title="Rooms & Spaces" note="Every room in the house — what the architect designs from" />
+        <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.surface, padding: "40px 20px 44px", textAlign: "center", maxWidth: 480, margin: "8px auto 0" }}>
+          <div style={{ width: 48, height: 48, margin: "0 auto 16px", borderRadius: 14, background: COLORS.accentSoft, display: "grid", placeItems: "center" }}>
+            <Icon d={ICON.home} size={24} color={ACCENT} />
+          </div>
+          <h3 style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, margin: "0 0 7px" }}>List your rooms</h3>
+          <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 auto 20px", maxWidth: 380 }}>
+            Add each room — kitchen, primary suite, garage — then jot down its must-haves.
+            Each one turns into a checklist you can tick off as the build comes together.
+          </p>
+          <AddBtn label="Add your first room" onClick={addRoom} />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      <SectionHead title="Rooms & Spaces" note={`${state.rooms.length} rooms · what the architect designs from`} />
+      <SectionHead title="Rooms & Spaces" note={`${state.rooms.length} ${state.rooms.length === 1 ? "room" : "rooms"} · what the architect designs from`} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(228px, 1fr))", gap: 12 }}>
         {state.rooms.map((r) => (
@@ -101,17 +148,14 @@ export default function RoomsSection({ state, addRow, updRow, delRow, tasks, onA
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <AddBtn
-          label="Add room"
-          onClick={() => addRow("rooms", { name: "New room", level: "Main", size: "", must_haves: "", lighting: "", details: "" })}
-        />
+        <AddBtn label="Add room" onClick={addRoom} />
       </div>
 
       <DetailDrawer
         open={Boolean(room)}
         onClose={close}
         kind={room ? `Room${room.level ? ` · ${room.level}` : ""}` : ""}
-        title={room?.name || ""}
+        title={room?.name || "Untitled room"}
         activeTab={tab}
         onTab={setTab}
         tabs={[
@@ -123,12 +167,12 @@ export default function RoomsSection({ state, addRow, updRow, delRow, tasks, onA
         {room && tab === "overview" && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-              <input value={room.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Room name" style={{ ...txt(), flex: 2, fontWeight: 600 }} />
+              <input autoFocus={!room.name} value={room.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Room name" style={{ ...txt(), flex: 2, fontWeight: 600 }} />
               <input value={room.level} onChange={(e) => patch({ level: e.target.value })} placeholder="Level" style={{ ...txt(), flex: 1, minWidth: 0 }} />
               <input value={room.size} onChange={(e) => patch({ size: e.target.value })} placeholder="Size" style={{ ...txt(), flex: 1, minWidth: 0 }} />
             </div>
 
-            <SectionHead title="Must-haves" note={p.total ? `${p.done} of ${p.total}` : "None yet"} />
+            <SectionHead title="Must-haves" note={p.total ? `${p.done} of ${p.total} checked` : "None yet"} />
             {p.total > 0 && (
               <div style={{ height: 3, borderRadius: 2, background: COLORS.surfaceTint, marginBottom: 10, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${p.bps / 100}%`, background: ACCENT, borderRadius: 2 }} />
@@ -173,7 +217,7 @@ export default function RoomsSection({ state, addRow, updRow, delRow, tasks, onA
               <input
                 value={newItem}
                 onChange={(e) => setNewItem(e.target.value)}
-                placeholder="Add a must-have…"
+                placeholder="Add a must-have, then press enter…"
                 style={{ ...txt(), fontSize: 13 }}
               />
             </form>
@@ -195,7 +239,7 @@ export default function RoomsSection({ state, addRow, updRow, delRow, tasks, onA
               <input
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
-                placeholder="Add a task for this room…"
+                placeholder="Add a task for this room, then press enter…"
                 style={{ ...txt(), fontSize: 13 }}
               />
             </form>
@@ -238,13 +282,8 @@ export default function RoomsSection({ state, addRow, updRow, delRow, tasks, onA
 
         {room && tab === "notes" && (
           <div style={{ display: "grid", gap: 14 }}>
-            <RoomField label="Lighting & electrical" value={room.lighting} onChange={(v) => patch({ lighting: v })} placeholder="Fixtures, switches, outlets, smart-home…" />
+            <RoomField label="Lighting and electrical" value={room.lighting} onChange={(v) => patch({ lighting: v })} placeholder="Fixtures, switches, outlets, smart-home…" />
             <RoomField label="Other notes" value={room.details} onChange={(v) => patch({ details: v })} placeholder="Anything else for this room…" />
-            <RoomField label="Original must-haves text" value={room.must_haves} onChange={(v) => patch({ must_haves: v })} placeholder="What this room needs…" />
-            <p style={{ fontSize: 11.5, color: COLORS.textFaint, lineHeight: 1.5, margin: 0 }}>
-              The checklist on the Overview tab was derived from this text and is now tracked separately.
-              Editing here won&apos;t change the checklist.
-            </p>
           </div>
         )}
       </DetailDrawer>

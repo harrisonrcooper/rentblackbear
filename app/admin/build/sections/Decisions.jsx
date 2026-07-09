@@ -3,41 +3,40 @@
 // The decisions LOG — choices already made, kept as a timeline so that in
 // eighteen months anyone can still answer "why did we do it that way?".
 //
-// A sibling section (id "decisions", "Open Questions") tracks the questions
-// still open. This one is the opposite end: the answers, dated, with the
-// reasoning that will otherwise evaporate. That is why a row missing its `why`
-// is flagged in amber — a log without reasons is just a list.
+// The point of the log is the WHY, so the why is shown on the face of every
+// card, not hidden behind a toggle. A card is a single tap into the one drawer
+// that edits everything (same idiom as Rooms). An entry with no reason is
+// flagged amber, because a log without reasons is just a list.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  COLORS, FONT, SERIF, Icon, ICON, txt, Chip, StatStrip, AddBtn, DelBtn,
+  COLORS, FONT, SERIF, btn, Icon, ICON, txt, Chip, StatStrip, AddBtn,
+  AutoTextarea, fmtBuildDate, todayIso
 } from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import {
-  groupByMonth, incompleteCount, isComplete, searchDecisions,
+  groupByMonth, isComplete, searchDecisions,
 } from "@/lib/build/decisions";
 
 const ARRAY_KEY = "decisions_log";
 
-// A fresh row: everything blank, undated. The drawer opens on it immediately so
-// the log entry is filled in while the decision is still fresh in memory.
+// The log gets a search box only once it's long enough to hunt through. Below
+// this, every entry is already on screen — a search box would be pure clutter.
+const SEARCH_THRESHOLD = 6;
+
+// Today, in the user's own local day, as ISO YYYY-MM-DD. A decision logged now
+// was almost certainly decided today, so we pre-fill it and he never has to
+// think about the date — he only changes it for an older decision.
+
+// A fresh row: dated today, everything else blank. The drawer opens on it
+// immediately so the reasoning is captured while the decision is still fresh.
 function blankDecision() {
-  return { title: "", decided_on: null, decision: "", why: "", alternatives: "", url: "" };
+  return { title: "", decided_on: todayIso(), decision: "", why: "", alternatives: "", url: "" };
 }
 
 function hasReason(d) {
   return typeof d.why === "string" && d.why.trim() !== "";
-}
-
-// Render a stored ISO day as mm/dd/yyyy. Purely lexical — no Date parsing — so
-// the day is never shifted across a boundary by the viewer's timezone (the
-// shared fmtBuildDate emits short-month "Jul 4, 2026", which the house style
-// forbids). Non-ISO input falls through unchanged rather than crashing.
-function fmtDecisionDate(iso) {
-  if (typeof iso !== "string") return "";
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  return m ? `${m[2]}/${m[3]}/${m[1]}` : iso;
 }
 
 export default function DecisionsSection({ state, addRow, updRow, delRow }) {
@@ -45,7 +44,6 @@ export default function DecisionsSection({ state, addRow, updRow, delRow }) {
 
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState(null);
-  const [expanded, setExpanded] = useState(() => new Set());
 
   // addRow generates the id internally, so it can't hand one back. Flag intent,
   // then open the drawer on the row that lands last once state re-renders.
@@ -62,21 +60,16 @@ export default function DecisionsSection({ state, addRow, updRow, delRow }) {
     addRow(ARRAY_KEY, blankDecision());
   }
 
-  function toggleExpand(id) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
-
-  const filtered = useMemo(() => searchDecisions(rows, query), [rows, query]);
+  const showSearch = rows.length >= SEARCH_THRESHOLD;
+  const filtered = useMemo(
+    () => (showSearch ? searchDecisions(rows, query) : rows),
+    [rows, query, showSearch],
+  );
   const groups = useMemo(() => groupByMonth(filtered), [filtered]);
   const missingReasons = useMemo(
     () => rows.filter((d) => !hasReason(d)).length,
     [rows],
   );
-  const incomplete = useMemo(() => incompleteCount(rows), [rows]);
 
   const editing = editingId ? rows.find((d) => d.id === editingId) : null;
   // A row deleted from under an open drawer must not strand it open.
@@ -84,17 +77,20 @@ export default function DecisionsSection({ state, addRow, updRow, delRow }) {
     if (editingId && !rows.some((d) => d.id === editingId)) setEditingId(null);
   }, [editingId, rows]);
 
+  const drawer = editing && (
+    <DecisionDrawer
+      decision={editing}
+      onClose={() => setEditingId(null)}
+      onChange={(patch) => updRow(ARRAY_KEY, editing.id, patch)}
+      onDelete={() => { delRow(ARRAY_KEY, editing.id); setEditingId(null); }}
+    />
+  );
+
   if (rows.length === 0) {
     return (
       <>
         <EmptyState onAdd={addDecision} />
-        {editing && (
-          <DecisionDrawer
-            decision={editing}
-            onClose={() => setEditingId(null)}
-            onChange={(patch) => updRow(ARRAY_KEY, editing.id, patch)}
-          />
-        )}
+        {drawer}
       </>
     );
   }
@@ -116,22 +112,23 @@ export default function DecisionsSection({ state, addRow, updRow, delRow }) {
       <StatStrip
         items={[
           ["Logged", String(rows.length)],
-          ["Missing a reason", String(missingReasons), missingReasons > 0 ? COLORS.amber : COLORS.green],
-          ["Incomplete", String(incomplete), incomplete > 0 ? COLORS.amber : COLORS.green],
+          ["Needs a reason", String(missingReasons), missingReasons > 0 ? COLORS.amber : COLORS.green],
         ]}
       />
 
-      <div style={{ position: "relative", marginBottom: 4 }}>
-        <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: COLORS.textFaint, lineHeight: 0 }}>
-          <Icon d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35" size={15} />
-        </span>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search decisions, reasons, alternatives"
-          style={{ ...txt(), paddingLeft: 34 }}
-        />
-      </div>
+      {showSearch && (
+        <div style={{ position: "relative", marginBottom: 4 }}>
+          <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: COLORS.textFaint, lineHeight: 0 }}>
+            <Icon d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35" size={15} />
+          </span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search decisions, reasons, alternatives"
+            style={{ ...txt(), paddingLeft: 34 }}
+          />
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <div style={{ padding: "34px 16px", textAlign: "center", color: COLORS.textMuted, fontSize: 13 }}>
@@ -156,10 +153,7 @@ export default function DecisionsSection({ state, addRow, updRow, delRow }) {
                   <DecisionCard
                     key={d.id}
                     decision={d}
-                    open={expanded.has(d.id)}
-                    onToggle={() => toggleExpand(d.id)}
-                    onEdit={() => setEditingId(d.id)}
-                    onDelete={() => delRow(ARRAY_KEY, d.id)}
+                    onOpen={() => setEditingId(d.id)}
                   />
                 ))}
               </div>
@@ -168,155 +162,74 @@ export default function DecisionsSection({ state, addRow, updRow, delRow }) {
         </div>
       )}
 
-      {editing && (
-        <DecisionDrawer
-          decision={editing}
-          onClose={() => setEditingId(null)}
-          onChange={(patch) => updRow(ARRAY_KEY, editing.id, patch)}
-        />
-      )}
+      {drawer}
     </>
   );
 }
 
-function DecisionCard({ decision, open, onToggle, onEdit, onDelete }) {
-  const complete = isComplete(decision);
+// The whole card is one tap into the drawer. It shows what he actually reads
+// the log for: the choice, and the reason underneath it — or, if the reason is
+// still missing, an amber prompt to add it right where his eye already is.
+function DecisionCard({ decision, onOpen }) {
   const reasoned = hasReason(decision);
   const title = decision.title?.trim() || "Untitled decision";
   const choice = decision.decision?.trim();
+  const why = decision.why?.trim();
 
-  return (
-    <div
-      data-item-id={decision.id}
-      style={{
-        background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-        borderRadius: 12, padding: "13px 14px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.01em", color: COLORS.text }}>
-              {title}
-            </span>
-            {decision.decided_on ? (
-              <Chip tone="neutral">
-                <Icon d={ICON.calendar} size={12} />
-                {fmtDecisionDate(decision.decided_on)}
-              </Chip>
-            ) : (
-              <Chip tone="neutral">No date</Chip>
-            )}
-            {!reasoned && <Chip tone="amber">No reason recorded</Chip>}
-          </div>
-
-          {choice ? (
-            <p style={{ margin: "7px 0 0", fontSize: 13, color: COLORS.text, lineHeight: 1.5 }}>
-              {choice}
-            </p>
-          ) : (
-            <p style={{ margin: "7px 0 0", fontSize: 13, color: COLORS.textFaint, fontStyle: "italic" }}>
-              No choice recorded yet.
-            </p>
-          )}
-        </div>
-
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <IconBtn label="Edit" onClick={onEdit} d={ICON.edit} />
-          <DelBtn onClick={onDelete} />
-        </div>
-      </div>
-
-      <button
-        onClick={onToggle}
-        aria-expanded={open}
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10,
-          padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontFamily: FONT,
-          fontSize: 12, fontWeight: 600, color: COLORS.textMuted,
-          background: COLORS.surfaceTint, border: `1px solid ${COLORS.border}`,
-        }}
-      >
-        <Icon
-          d={ICON.chevR}
-          size={13}
-          style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 0.14s ease" }}
-        />
-        Why we chose this &amp; what we rejected
-      </button>
-
-      {open && (
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
-          <Detail label="Why we chose this">
-            {reasoned ? (
-              <span>{decision.why.trim()}</span>
-            ) : (
-              <span style={{ color: COLORS.amber }}>
-                No reason recorded. In eighteen months, this choice will be a mystery — add the why.
-              </span>
-            )}
-          </Detail>
-          <Detail label="What we rejected">
-            {decision.alternatives?.trim() ? (
-              <span>{decision.alternatives.trim()}</span>
-            ) : (
-              <span style={{ color: COLORS.textFaint, fontStyle: "italic" }}>Nothing recorded.</span>
-            )}
-          </Detail>
-          {decision.url?.trim() && (
-            <a
-              href={decision.url.trim()}
-              target="_blank"
-              rel="noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: COLORS.accent, textDecoration: "none", width: "fit-content" }}
-            >
-              <Icon d={ICON.link2} size={13} />
-              Reference link
-            </a>
-          )}
-          {!complete && (
-            <span style={{ fontSize: 11.5, color: COLORS.textFaint }}>
-              An incomplete entry records the choice but not the reasoning behind it.
-            </span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Detail({ label, children }) {
-  return (
-    <div>
-      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: 4 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 13, color: COLORS.text, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function IconBtn({ label, onClick, d }) {
   return (
     <button
-      onClick={onClick}
-      aria-label={label}
+      data-item-id={decision.id}
+      onClick={onOpen}
       style={{
-        width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: "pointer",
-        border: `1px solid ${COLORS.border}`, background: COLORS.surface, color: COLORS.textMuted,
-        display: "grid", placeItems: "center",
+        textAlign: "left", background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+        borderRadius: 12, padding: "13px 14px", cursor: "pointer", fontFamily: FONT,
+        display: "flex", flexDirection: "column", width: "100%", minWidth: 0,
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.surfaceTint; e.currentTarget.style.color = COLORS.text; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = COLORS.surface; e.currentTarget.style.color = COLORS.textMuted; }}
     >
-      <Icon d={d} size={13} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, letterSpacing: "-0.01em", color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {title}
+        </span>
+        {decision.decided_on && (
+          <Chip tone="neutral">
+            <Icon d={ICON.calendar} size={12} />
+            {fmtBuildDate(decision.decided_on)}
+          </Chip>
+        )}
+        {!reasoned && <Chip tone="amber">Needs a reason</Chip>}
+      </div>
+
+      {choice ? (
+        <p style={{ margin: "8px 0 0", fontSize: 13, color: COLORS.text, lineHeight: 1.5,
+          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          {choice}
+        </p>
+      ) : (
+        <p style={{ margin: "8px 0 0", fontSize: 13, color: COLORS.textFaint, fontStyle: "italic" }}>
+          No choice recorded yet.
+        </p>
+      )}
+
+      {reasoned ? (
+        <div style={{ display: "flex", gap: 7, marginTop: 8, alignItems: "baseline" }}>
+          <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: COLORS.textFaint }}>
+            Why
+          </span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, color: COLORS.textMuted, lineHeight: 1.5,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {why}
+          </span>
+        </div>
+      ) : (
+        <span style={{ marginTop: 8, fontSize: 12.5, color: COLORS.amber, lineHeight: 1.5 }}>
+          No reason recorded — tap to add the why while you still remember it.
+        </span>
+      )}
     </button>
   );
 }
 
-function DecisionDrawer({ decision, onClose, onChange }) {
+function DecisionDrawer({ decision, onClose, onChange, onDelete }) {
   const complete = isComplete(decision);
   return (
     <DetailDrawer
@@ -351,32 +264,29 @@ function DecisionDrawer({ decision, onClose, onChange }) {
       </DrawerField>
 
       <DrawerField label="The choice">
-        <textarea
+        <AutoTextarea
           value={decision.decision || ""}
-          onChange={(e) => onChange({ decision: e.target.value })}
+          onChange={(v) => onChange({ decision: v })}
           placeholder="What we went with"
-          rows={2}
-          style={{ ...txt(), resize: "vertical", minHeight: 56 }}
+          minRows={2}
         />
       </DrawerField>
 
       <DrawerField label="Why we chose this">
-        <textarea
+        <AutoTextarea
           value={decision.why || ""}
-          onChange={(e) => onChange({ why: e.target.value })}
+          onChange={(v) => onChange({ why: v })}
           placeholder="The reason — the one thing you'll want back later"
-          rows={3}
-          style={{ ...txt(), resize: "vertical", minHeight: 76 }}
+          minRows={3}
         />
       </DrawerField>
 
       <DrawerField label="What we rejected, and why">
-        <textarea
+        <AutoTextarea
           value={decision.alternatives || ""}
-          onChange={(e) => onChange({ alternatives: e.target.value })}
+          onChange={(v) => onChange({ alternatives: v })}
           placeholder="The options considered and passed over"
-          rows={3}
-          style={{ ...txt(), resize: "vertical", minHeight: 76 }}
+          minRows={3}
         />
       </DrawerField>
 
@@ -389,6 +299,24 @@ function DecisionDrawer({ decision, onClose, onChange }) {
           style={txt()}
         />
       </DrawerField>
+
+      {decision.url?.trim() && (
+        <a
+          href={decision.url.trim()}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: -6, fontSize: 12.5, fontWeight: 600, color: COLORS.accent, textDecoration: "none" }}
+        >
+          <Icon d={ICON.link2} size={13} />
+          Open reference link
+        </a>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 26 }}>
+        <button onClick={onDelete} style={{ ...btn("ghost") }}>
+          <Icon d={ICON.x} size={13} /> Delete decision
+        </button>
+      </div>
     </DetailDrawer>
   );
 }
@@ -419,10 +347,9 @@ function EmptyState({ onAdd }) {
         The record of choices made
       </h2>
       <p style={{ margin: "9px auto 0", fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.6, maxWidth: 400 }}>
-        Open questions live in the questions log. This is the other end: the
-        answers, dated, with the reasoning behind them. A decision without its
-        why is worth little in eighteen months, when nobody remembers what the
-        other options even were.
+        Every real choice — the roof, the range, the front door — logged with the
+        one thing that fades fastest: why you chose it. In eighteen months, this is
+        where you look to remember what the other options even were.
       </p>
       <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
         <AddBtn label="Log your first decision" onClick={onAdd} />

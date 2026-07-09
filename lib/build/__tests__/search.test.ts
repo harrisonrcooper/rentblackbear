@@ -126,3 +126,38 @@ describe("search", () => {
     expect(search(index, "dream home")[0].type).toBe("project");
   });
 });
+
+describe("nested rows are searchable", () => {
+  // A room's requirements move from `must_haves` (frozen seed text) into
+  // `must_have_items` the moment the user ticks one. Indexing only the former
+  // made every item he added afterwards unfindable.
+  it("finds a checklist item the user added after materialization", () => {
+    const withChecklist = {
+      ...state,
+      rooms: [{
+        id: "r9", name: "Pantry", level: "Main", must_haves: "shelving",
+        must_have_items: [
+          { id: "a", text: "shelving", done: true },
+          { id: "b", text: "glass rinser at the prep sink", done: false },
+        ],
+      }],
+    } as unknown as BuildState;
+
+    const idx = buildSearchIndex(withChecklist, {});
+    expect(search(idx, "rinser").map((d) => d.id)).toEqual(["r9"]);
+    expect(search(idx, "shelving").map((d) => d.id)).toEqual(["r9"]);
+  });
+
+  it("finds a sourcing trip by one of its item names", () => {
+    const withTrip = {
+      ...state,
+      trips: [{
+        id: "trip1", name: "Guangzhou, October", start: null, end: null, notes: "",
+        items: [{ id: "i1", item: "Water-vapor fireplace", vendor: "", specs: "", budget_cents: 0, status: "todo", media_count: 0, notes: "" }],
+      }],
+    } as unknown as BuildState;
+
+    const idx = buildSearchIndex(withTrip, {});
+    expect(search(idx, "vapor").map((d) => d.type)).toContain("trip");
+  });
+});

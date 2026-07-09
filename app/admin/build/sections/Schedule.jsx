@@ -31,6 +31,10 @@ const ICON_GANTT = ["M8 6h10", "M6 12h8", "M10 18h8", "M3 4v16"];
 const ICON_LINK = ["M9 17H7A5 5 0 0 1 7 7h2", "M15 7h2a5 5 0 1 1 0 10h-2", "M8 12h8"];
 const ICON_FLAG = "M4 22V4a2 2 0 0 1 2-2h12l-3 4 3 4H6 M4 22h6";
 const ICON_ALERT = ["M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z", "M12 9v4", "M12 17h.01"];
+const ICON_CAL = ["M8 2v4", "M16 2v4", "M3 10h18", "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"];
+
+// Full month names — spelled out, never "Jul". Indexed by getUTCMonth().
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const DAY_W = { day: 26, week: 8 };   // px per calendar day at each zoom
 const ROW_H = 36;
@@ -160,7 +164,7 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
 
   return (
     <div style={{ userSelect: drag ? "none" : "auto" }}>
-      <SectionHead title="Schedule" note="Sequence the build. Drag a bar to reschedule — dependents that would start too early move with it." />
+      <SectionHead title="Schedule" note="Lay out the build. Drag a bar to move it and anything waiting on it slides along too." />
 
       {tasks.length === 0 ? (
         <EmptyState phases={phases} onAdd={() => addTask(false)} onAddMilestone={() => addTask(true)} />
@@ -170,9 +174,9 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
             items={[
               ["Starts", bounds.start ? fmtBuildDate(bounds.start) : "—", COLORS.text],
               ["Finishes", bounds.end ? fmtBuildDate(bounds.end) : "—", COLORS.text],
-              ["Span", bounds.start && bounds.end ? `${daysBetween(bounds.start, bounds.end) + 1} days` : "—", COLORS.text],
+              ["Length", bounds.start && bounds.end ? `${daysBetween(bounds.start, bounds.end) + 1} days` : "—", COLORS.text],
               ["Complete", `${pct}%`, pct >= 100 ? COLORS.green : COLORS.text],
-              ["Late tasks", String(violSet.size), violSet.size ? COLORS.red : COLORS.green],
+              ["Too early", String(violSet.size), violSet.size ? COLORS.red : COLORS.green],
             ]}
           />
 
@@ -180,7 +184,7 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "2px 0 12px", padding: "9px 12px", borderRadius: 10, background: COLORS.redBg, border: `1px solid ${COLORS.red}` }}>
               <Icon d={ICON_ALERT} size={15} color={COLORS.red} />
               <span style={{ fontSize: 12.5, fontWeight: 700, color: COLORS.red }}>
-                Circular dependency: {cycle.map((id) => byId.get(id)?.name).filter(Boolean).join(" -> ")}. These tasks won&apos;t schedule until you break the loop.
+                These tasks wait on each other in a loop: {cycle.map((id) => byId.get(id)?.name).filter(Boolean).join(", then ")}. Remove one link so they can be scheduled.
               </span>
             </div>
           )}
@@ -192,12 +196,15 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
           />
 
           {effectiveView === "gantt" ? (
-            <Gantt
-              rows={rows} height={height} timelineW={timelineW} totalDays={totalDays} dw={dw} scale={scale}
-              origin={origin} xFor={xFor} posById={posById} critical={critical} violSet={violSet}
-              scrollRef={scrollRef} drag={drag} setDrag={setDrag} commitDrag={commitDrag}
-              onOpen={setEditId}
-            />
+            <>
+              <Gantt
+                rows={rows} height={height} timelineW={timelineW} totalDays={totalDays} dw={dw} scale={scale}
+                origin={origin} xFor={xFor} posById={posById} critical={critical} violSet={violSet}
+                scrollRef={scrollRef} drag={drag} setDrag={setDrag} commitDrag={commitDrag}
+                onOpen={setEditId}
+              />
+              <GanttLegend />
+            </>
           ) : (
             <ListView
               rows={rows} phases={phases} critical={critical} violSet={violSet}
@@ -218,28 +225,54 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
 
 function EmptyState({ phases, onAdd, onAddMilestone }) {
   return (
-    <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 20, maxWidth: 560 }}>
-      <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em", color: COLORS.text, marginBottom: 8 }}>
-        Build a timeline
+    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.surface, padding: "40px 20px 44px", textAlign: "center", maxWidth: 500, margin: "8px auto 0" }}>
+      <div style={{ width: 48, height: 48, margin: "0 auto 16px", borderRadius: 14, background: ACCENT_SOFT, display: "grid", placeItems: "center" }}>
+        <Icon d={ICON_CAL} size={24} color={ACCENT} />
       </div>
-      <p style={{ fontSize: 13.5, lineHeight: 1.6, color: COLORS.textMuted, margin: "0 0 6px" }}>
-        Your {phases.length} construction phases are ready — foundation through move-in. Add tasks under them and
-        link each one to what has to finish first. The Gantt then draws the whole build, flags anything scheduled
-        too early, and highlights the critical path that sets your finish date.
+      <h3 style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, margin: "0 0 7px" }}>Lay out your timeline</h3>
+      <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 auto 8px", maxWidth: 400 }}>
+        Your {phases.length} construction phases are ready — foundation through move-in. Add a task, give it a start
+        and end date, and it lands on the timeline.
       </p>
-      <p style={{ fontSize: 13.5, lineHeight: 1.6, color: COLORS.textMuted, margin: "0 0 16px" }}>
-        Drag any bar to move it; every dependent that would start too soon slides along automatically.
+      <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 auto 22px", maxWidth: 400 }}>
+        Say what has to finish first and the timeline draws the whole build, flags anything scheduled too early,
+        and shows which tasks set your finish date.
       </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
         <button onClick={onAdd} style={primaryBtn()}>
           <Icon d={["M12 5v14", "M5 12h14"]} size={15} />
-          Add the first task
+          Add your first task
         </button>
         <button onClick={onAddMilestone} style={outlineBtn()}>
           <Icon d={ICON_FLAG} size={15} />
           Add a milestone
         </button>
       </div>
+    </div>
+  );
+}
+
+// A key for the timeline: the four marks a first-time reader can't guess, each
+// tone carrying the same meaning it does on the bars themselves.
+function GanttLegend() {
+  const items = [
+    { swatch: <span style={{ width: 14, height: 2, background: ACCENT, opacity: 0.5, borderRadius: 2, display: "inline-block" }} />, label: "Today" },
+    { swatch: (
+      <span style={{ width: 14, height: 14, display: "inline-grid", placeItems: "center" }}>
+        <span style={{ width: 10, height: 10, background: ACCENT, transform: "rotate(45deg)", borderRadius: 2 }} />
+      </span>
+    ), label: "Milestone" },
+    { swatch: <span style={{ width: 16, height: 10, border: `2px solid ${ACCENT}`, borderRadius: 3, boxSizing: "border-box", display: "inline-block" }} />, label: "Sets your finish date" },
+    { swatch: <span style={{ width: 16, height: 10, background: COLORS.green, borderRadius: 3, display: "inline-block" }} />, label: "Done" },
+    { swatch: <span style={{ width: 16, height: 10, border: `2px solid ${COLORS.red}`, borderRadius: 3, boxSizing: "border-box", display: "inline-block" }} />, label: "Starts too early" },
+  ];
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", alignItems: "center", margin: "10px 2px 0", fontSize: 11, fontWeight: 600, color: COLORS.textFaint }}>
+      {items.map((it) => (
+        <span key={it.label} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          {it.swatch}{it.label}
+        </span>
+      ))}
     </div>
   );
 }
@@ -460,7 +493,7 @@ function Ruler({ totalDays, dw, scale, origin, height }) {
     const isMonthStart = d.getUTCDate() === 1;
 
     if (month !== prevMonth) {
-      monthMarks.push({ x: i * dw, label: d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" }) });
+      monthMarks.push({ x: i * dw, label: `${MONTHS[month]} ${d.getUTCFullYear()}` });
       prevMonth = month;
     }
     // Gridline weekly (Mondays) and at month starts, to keep the DOM light.
@@ -469,7 +502,7 @@ function Ruler({ totalDays, dw, scale, origin, height }) {
     if (scale === "day" && dw >= 20) {
       labels.push({ x: i * dw, w: dw, text: String(d.getUTCDate()), muted: dow === 0 || dow === 6 });
     } else if (scale === "week" && dow === 1) {
-      labels.push({ x: i * dw, w: dw * 7, text: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`, muted: false });
+      labels.push({ x: i * dw, w: dw * 7, text: `${String(d.getUTCMonth() + 1).padStart(2, "0")}/${String(d.getUTCDate()).padStart(2, "0")}`, muted: false });
     }
   }
 
@@ -542,7 +575,7 @@ function ListRow({ task, isCritical, isViolation, onOpen, onPatch }) {
         </label>
         <Chip tone="neutral">{dur} day{dur === 1 ? "" : "s"}</Chip>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: COLORS.textFaint }}>
-          %
+          Percent done
           <input
             type="number" min={0} max={100} value={task.percent || 0}
             onChange={(e) => onPatch({ percent: clampPct(e.target.value) })}
@@ -550,7 +583,7 @@ function ListRow({ task, isCritical, isViolation, onOpen, onPatch }) {
           />
         </label>
         {isViolation && <Chip tone="red">Starts too early</Chip>}
-        {isCritical && !isViolation && <Chip tone="accent">Critical path</Chip>}
+        {isCritical && !isViolation && <Chip tone="accent">Sets finish date</Chip>}
         {(task.depends_on?.length || 0) > 0 && (
           <Chip tone="neutral">
             <Icon d={ICON_LINK} size={11} />
@@ -641,14 +674,14 @@ function TaskDrawer({ task, tasks, phases, byId, onClose, updRow, delRow }) {
 
           <label style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0 16px", cursor: "pointer" }}>
             <Check done={!!task.is_milestone} onClick={() => patch({ is_milestone: !task.is_milestone })} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.text }}>This is a milestone (a marker, not a span)</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.text }}>This is a milestone — a single key date, not a range of days</span>
           </label>
 
           <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: 8 }}>
-            Depends on (finish-to-start)
+            What has to finish first
           </div>
           {dependable.length === 0 ? (
-            <p style={{ fontSize: 12.5, color: COLORS.textFaint, margin: "0 0 8px" }}>Add more tasks to link this one to what must finish first.</p>
+            <p style={{ fontSize: 12.5, color: COLORS.textFaint, margin: "0 0 8px" }}>Add more tasks, then check the ones that must finish before this can start.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {dependable.map((d) => {
@@ -659,7 +692,7 @@ function TaskDrawer({ task, tasks, phases, byId, onClose, updRow, delRow }) {
                     key={d.id}
                     onClick={() => !blocked && toggleDep(d.id)}
                     disabled={blocked}
-                    title={blocked ? "Would create a circular dependency" : undefined}
+                    title={blocked ? "Can't link — this would make the two tasks wait on each other in a loop" : undefined}
                     style={{
                       display: "flex", alignItems: "center", gap: 9, textAlign: "left", width: "100%",
                       padding: "8px 10px", borderRadius: 9, cursor: blocked ? "not-allowed" : "pointer",

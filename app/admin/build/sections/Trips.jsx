@@ -9,12 +9,12 @@
 // install) — a trip that ignores it is useless, so we surface it two ways: the
 // "start from my tasks" seed, and the matched-tasks panel in each trip.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 
 import {
   COLORS, FONT, SERIF, ACCENT, ACCENT_SOFT, Icon, fmtUsd,
-  Card, Field, txt, MoneyInput, DelBtn, AddBtn, SectionHead, Chip, StatStrip,
-  fmtBuildDate,
+  Field, txt, MoneyInput, DelBtn, AddBtn, SectionHead, Chip, StatStrip,
+  fmtBuildDate, AutoTextarea,
 } from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import {
@@ -31,7 +31,6 @@ const STATUSES = [
   { id: "captured", label: "Captured", tone: "accent" },
   { id: "ordered", label: "Ordered", tone: "green" },
 ];
-const STATUS_META = Object.fromEntries(STATUSES.map((s) => [s.id, s]));
 
 const uid = () => `it_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36)}`;
 
@@ -84,8 +83,7 @@ function StatusSeg({ value, onChange }) {
 
 // The captured / still-needed bar. Two segments that sum to the total.
 function ProgressBar({ trip }) {
-  const bps = tripProgressBps(trip);
-  const pct = bps / 100;
+  const pct = tripProgressBps(trip) / 100;
   return (
     <span style={{ display: "block", height: 6, borderRadius: 3, background: COLORS.surfaceTint, overflow: "hidden" }}>
       <span style={{ display: "block", height: "100%", width: `${pct}%`, background: ACCENT, borderRadius: 3, transition: "width .2s ease" }} />
@@ -128,13 +126,17 @@ function TripCard({ trip, onOpen }) {
         )}
       </div>
 
-      <div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, color: COLORS.textMuted, marginBottom: 6 }}>
-          <span>{captured} of {total} captured</span>
-          <span style={{ color: needed ? COLORS.textMuted : COLORS.green }}>{needed ? `${needed} still needed` : "All sourced"}</span>
+      {total === 0 ? (
+        <div style={{ fontSize: 12.5, color: COLORS.textFaint }}>Nothing on the list yet — open to add what you&apos;re sourcing.</div>
+      ) : (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, color: COLORS.textMuted, marginBottom: 6 }}>
+            <span>{captured} of {total} captured</span>
+            <span style={{ color: needed ? COLORS.textMuted : COLORS.green }}>{needed ? `${needed} still needed` : "All sourced"}</span>
+          </div>
+          <ProgressBar trip={trip} />
         </div>
-        <ProgressBar trip={trip} />
-      </div>
+      )}
 
       {missing > 0 && (
         <Chip tone="amber">
@@ -143,6 +145,29 @@ function TripCard({ trip, onOpen }) {
         </Chip>
       )}
     </button>
+  );
+}
+
+// A count of photos brought back, stepped up and down. Zero is the signal that
+// matters — an item marked captured with zero photos earns the amber flag — so
+// the control keeps a running count while staying one tap from proving it.
+function MediaStepper({ count, onChange }) {
+  const n = count || 0;
+  const stepBtn = {
+    width: 32, height: 32, borderRadius: 8, border: `1px solid ${COLORS.border}`,
+    background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer", flexShrink: 0,
+    display: "grid", placeItems: "center",
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <button onClick={() => onChange(Math.max(0, n - 1))} aria-label="One fewer photo" disabled={n === 0} style={{ ...stepBtn, opacity: n === 0 ? 0.4 : 1 }}>
+        <Icon d="M5 12h14" size={14} />
+      </button>
+      <span style={{ minWidth: 22, textAlign: "center", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{n}</span>
+      <button onClick={() => onChange(n + 1)} aria-label="One more photo" style={stepBtn}>
+        <Icon d={["M12 5v14", "M5 12h14"]} size={14} />
+      </button>
+    </div>
   );
 }
 
@@ -176,35 +201,18 @@ function ItemRow({ item, onPatch, onDelete }) {
           <MoneyInput value={item.budget_cents} onChange={(budget_cents) => onPatch({ budget_cents })} />
         </label>
         <label style={{ display: "block" }}>
-          {label("Photos / videos")}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button
-              onClick={() => onPatch({ media_count: Math.max(0, (item.media_count || 0) - 1) })}
-              aria-label="One fewer"
-              style={{ width: 30, height: 32, borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer", flexShrink: 0 }}
-            >
-              <Icon d="M5 12h14" size={13} />
-            </button>
-            <span style={{ minWidth: 22, textAlign: "center", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{item.media_count || 0}</span>
-            <button
-              onClick={() => onPatch({ media_count: (item.media_count || 0) + 1 })}
-              aria-label="One more"
-              style={{ width: 30, height: 32, borderRadius: 8, border: `1px solid ${COLORS.border}`, background: COLORS.surface, color: COLORS.textMuted, cursor: "pointer", flexShrink: 0 }}
-            >
-              <Icon d={["M12 5v14", "M5 12h14"]} size={13} />
-            </button>
-          </div>
+          {label("Photos and videos")}
+          <MediaStepper count={item.media_count} onChange={(media_count) => onPatch({ media_count })} />
         </label>
       </div>
 
       <label style={{ display: "block", marginTop: 10 }}>
         {label("Specs")}
-        <textarea
+        <AutoTextarea
           value={item.specs}
-          onChange={(e) => onPatch({ specs: e.target.value })}
+          onChange={(specs) => onPatch({ specs })}
+          minRows={2}
           placeholder="Dimensions, finish, materials to confirm on site"
-          rows={2}
-          style={{ ...txt(), height: "auto", padding: "8px 10px", resize: "vertical", lineHeight: 1.4 }}
         />
       </label>
 
@@ -242,7 +250,20 @@ export default function TripsSection({ state, addRow, updRow, delRow, tasks = []
     patchItems(trip, trip.items.map((it) => (it.id === itemId ? { ...it, archived: true } : it)));
   const addItem = (trip) => patchItems(trip, [...trip.items, blankItem()]);
 
+  // After creating a trip, land the owner straight inside it — no hunting the
+  // grid for a card he just made. addRow appends, so the newest visible row is
+  // last; open it (on the tab that matters) once React has committed the state.
+  const wantOpen = useRef(null);
+  useEffect(() => {
+    if (!wantOpen.current) return;
+    const goTab = wantOpen.current;
+    wantOpen.current = null;
+    const last = trips[trips.length - 1];
+    if (last) { setOpenId(last.id); setTab(goTab); }
+  }, [trips]);
+
   const startFromTasks = () => {
+    wantOpen.current = "checklist";
     addRow("trips", {
       name: "China sourcing trip",
       start: null, end: null,
@@ -250,7 +271,10 @@ export default function TripsSection({ state, addRow, updRow, delRow, tasks = []
       items: suggestItemsFromTasks(tasks),
     });
   };
-  const addBlankTrip = () => addRow("trips", { name: "New sourcing trip", start: null, end: null, notes: "", items: [] });
+  const addBlankTrip = () => {
+    wantOpen.current = "itinerary";
+    addRow("trips", { name: "New sourcing trip", start: null, end: null, notes: "", items: [] });
+  };
 
   const openDrawer = (id) => { setOpenId(id); setTab("itinerary"); };
 
@@ -266,73 +290,49 @@ export default function TripsSection({ state, addRow, updRow, delRow, tasks = []
     return { needed, budget, missing, items };
   }, [trips]);
 
-  return (
-    <div>
-      <SectionHead title="Sourcing trips" note="Plan each China factory visit — the shopping list, the budget, and the photos you bring home." />
+  // ── Empty state — the first (and often only) screen he'll see here ─────────
+  if (trips.length === 0) {
+    return (
+      <>
+        <SectionHead title="Sourcing trips" note="Plan each China factory visit — the shopping list, the budget, and the photos you bring home." />
+        <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.surface, padding: "40px 20px 44px", textAlign: "center", maxWidth: 480, margin: "8px auto 0" }}>
+          <div style={{ width: 48, height: 48, margin: "0 auto 16px", borderRadius: 14, background: ACCENT_SOFT, display: "grid", placeItems: "center" }}>
+            <Icon d={MAP_PIN} size={24} color={ACCENT} />
+          </div>
+          <h3 style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, margin: "0 0 7px" }}>Plan your China sourcing trip</h3>
+          <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 auto 20px", maxWidth: 400 }}>
+            Windows, doors, cabinets, stairs and lighting are being made at factories in China. A trip turns
+            that into a checklist you can work: what to buy, the budget for each, and — the whole reason to fly
+            there — the photos and videos you bring home.
+          </p>
 
-      {trips.length === 0 ? (
-        <Card title="No trips planned yet">
-          <div style={{ padding: "6px 4px 4px", maxWidth: 520 }}>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: COLORS.textMuted, margin: "0 0 4px" }}>
-              Windows, doors, cabinets, stairs and lighting are being sourced at factories in China. A trip
-              turns that into a checklist you can work: what to buy, who the vendor is, the budget per item,
-              and — the whole reason to fly there — the photos and videos you capture on site.
-            </p>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, color: COLORS.textMuted, margin: "0 0 16px" }}>
-              You already wrote the checklist as sourcing tasks. Start a trip pre-filled with all of them,
-              instructions and all, or build one from scratch.
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {suggested.length > 0 && (
+          {suggested.length > 0 ? (
+            <>
+              <AddBtn label={`Start my trip from ${suggested.length} sourcing tasks`} onClick={startFromTasks} />
+              <div style={{ marginTop: 12 }}>
                 <button
-                  onClick={startFromTasks}
+                  onClick={addBlankTrip}
                   style={{
-                    display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", fontFamily: FONT,
-                    padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-                    color: ACCENT, background: ACCENT_SOFT, border: `1px solid ${ACCENT}`,
+                    display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: FONT,
+                    padding: "7px 12px", borderRadius: 9, fontSize: 12, fontWeight: 700,
+                    color: COLORS.textMuted, background: COLORS.surface, border: `1px solid ${COLORS.border}`,
                   }}
                 >
-                  <Icon d={CLIPBOARD} size={15} />
-                  Start a trip from my {suggested.length} sourcing tasks
+                  Start an empty trip instead
                 </button>
-              )}
-              <button
-                onClick={addBlankTrip}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: FONT,
-                  padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 700,
-                  color: COLORS.text, background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-                }}
-              >
-                <Icon d={["M12 5v14", "M5 12h14"]} size={15} />
-                Add a blank trip
-              </button>
-            </div>
-          </div>
-        </Card>
-      ) : (
-        <>
-          {totals.items > 0 && (
-            <StatStrip
-              items={[
-                ["Trips", String(trips.length), COLORS.text],
-                ["Still to source", String(totals.needed), totals.needed ? COLORS.amber : COLORS.green],
-                ["Total budget", fmtUsd(totals.budget), COLORS.text],
-                ["Missing photos", String(totals.missing), totals.missing ? COLORS.amber : COLORS.green],
-              ]}
-            />
+              </div>
+            </>
+          ) : (
+            <AddBtn label="Plan your first trip" onClick={addBlankTrip} />
           )}
+        </div>
+        {renderDrawer()}
+      </>
+    );
+  }
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, marginTop: 4 }}>
-            {trips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} onOpen={() => openDrawer(trip.id)} />
-            ))}
-          </div>
-
-          <AddBtn label="Add a trip" onClick={addBlankTrip} />
-        </>
-      )}
-
+  function renderDrawer() {
+    return (
       <DetailDrawer
         open={!!openTrip}
         onClose={() => setOpenId(null)}
@@ -372,6 +372,33 @@ export default function TripsSection({ state, addRow, updRow, delRow, tasks = []
           />
         )}
       </DetailDrawer>
+    );
+  }
+
+  return (
+    <div>
+      <SectionHead title="Sourcing trips" note="Plan each China factory visit — the shopping list, the budget, and the photos you bring home." />
+
+      {totals.items > 0 && (
+        <StatStrip
+          items={[
+            ["Trips", String(trips.length), COLORS.text],
+            ["Still to source", String(totals.needed), totals.needed ? COLORS.amber : COLORS.green],
+            ["Total budget", fmtUsd(totals.budget), COLORS.text],
+            ["Missing photos", String(totals.missing), totals.missing ? COLORS.amber : COLORS.green],
+          ]}
+        />
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, marginTop: 4 }}>
+        {trips.map((trip) => (
+          <TripCard key={trip.id} trip={trip} onOpen={() => openDrawer(trip.id)} />
+        ))}
+      </div>
+
+      <AddBtn label="Add a trip" onClick={addBlankTrip} />
+
+      {renderDrawer()}
     </div>
   );
 }
@@ -397,12 +424,11 @@ function ItineraryTab({ trip, tasks, onField }) {
         </div>
       )}
       <Field label="Notes">
-        <textarea
+        <AutoTextarea
           value={trip.notes}
-          onChange={(e) => onField({ notes: e.target.value })}
+          onChange={(notes) => onField({ notes })}
+          minRows={3}
           placeholder="Flights, hotels, translator, factory addresses…"
-          rows={4}
-          style={{ ...txt(), height: "auto", padding: "8px 10px", resize: "vertical", lineHeight: 1.5 }}
         />
       </Field>
 
@@ -437,21 +463,23 @@ function ChecklistTab({ trip, onAdd, onPatch, onDelete }) {
 
   return (
     <div>
-      <div style={{ background: COLORS.surfaceTint, borderRadius: 12, padding: 14, marginBottom: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, color: COLORS.textMuted, marginBottom: 8 }}>
-          <span>{captured} of {total} captured</span>
-          <span>{fmtUsd(budgetCents(trip))} budgeted</span>
-        </div>
-        <ProgressBar trip={trip} />
-        {missing.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-            <Chip tone="amber">
-              <Icon d={CAMERA} size={12} />
-              {missing.length} item{missing.length === 1 ? "" : "s"} marked done with no photos
-            </Chip>
+      {total > 0 && (
+        <div style={{ background: COLORS.surfaceTint, borderRadius: 12, padding: 14, marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700, color: COLORS.textMuted, marginBottom: 8 }}>
+            <span>{captured} of {total} captured</span>
+            <span>{fmtUsd(budgetCents(trip))} budgeted</span>
           </div>
-        )}
-      </div>
+          <ProgressBar trip={trip} />
+          {missing.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <Chip tone="amber">
+                <Icon d={CAMERA} size={12} />
+                {missing.length} item{missing.length === 1 ? "" : "s"} marked done with no photos
+              </Chip>
+            </div>
+          )}
+        </div>
+      )}
 
       {items.length === 0 ? (
         <p style={{ fontSize: 13, color: COLORS.textFaint, lineHeight: 1.6, margin: "4px 0 12px" }}>

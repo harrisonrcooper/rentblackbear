@@ -1,30 +1,111 @@
 "use client";
 
-// Inspiration section.
+// Inspiration — one card per Pinterest board, plus your own photos.
+//
+// The whole point: he pastes a link and SEES the thing. A Pinterest board link
+// mirrors the live board; a single pin renders as that pin's live embed; an
+// image URL or a dropped photo shows as a tile. There is exactly one place to
+// paste on each board and the card figures out what he gave it — he never has
+// to know the difference between "a board" and "a pin" and "a picture".
 
 import { useState, useEffect, useRef } from "react";
 
-import { COLORS, STYLES, inputStyle, btn, Icon, ICON, DelBtn, AddBtn } from "../ui";
+import { COLORS, STYLES, SERIF, inputStyle, btn, Icon, ICON, SectionHead, AddBtn } from "../ui";
 import { genId } from "../../budget/lib/calc";
 
-const PIN_RE = /^https?:\/\/([a-z0-9-]+\.)?pinterest\.[a-z.]+\//i;
+// Inline stroke icons (house rule: no emoji, no external SVG files).
+const GALLERY_ICON = "M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M21 15l-5-5L5 21";
+const UPLOAD_ICON = "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12";
+const LINK_ICON = "M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1 M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1";
+const PIN_ICON = "M12 21s-6-5.686-6-10a6 6 0 1 1 12 0c0 4.314-6 10-6 10z M12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z";
 
-function PinterestEmbed({ url }) {
+const PIN_SCRIPT_ID = "pinit-js";
+const PIN_SCRIPT_SRC = "https://assets.pinterest.com/js/pinit.js";
+
+// ── URL classification ─────────────────────────────────────────────────────
+// A tired person on a phone pastes whatever the Pinterest share sheet gives
+// them: a full board link, a full pin link, a pin.it short link, or a plain
+// image address. Each has to land in the right place with zero thought.
+
+const isImagePath = (p) => /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(p);
+const isPinterestHost = (h) => /(^|\.)pinterest\.[a-z.]+$/i.test(h);
+
+function parseUrl(raw) {
+  const t = (raw || "").trim();
+  if (!t) return null;
+  try { return new URL(t); } catch { /* fall through — maybe he left off https */ }
+  try { return new URL(`https://${t}`); } catch { return null; }
+}
+const segsOf = (u) => u.pathname.split("/").filter(Boolean);
+
+function isPinUrl(raw) {
+  const u = parseUrl(raw);
+  if (!u || !isPinterestHost(u.hostname)) return false;
+  const s = segsOf(u);
+  return s[0] === "pin" && Boolean(s[1]);
+}
+function isBoardUrl(raw) {
+  const u = parseUrl(raw);
+  if (!u || !isPinterestHost(u.hostname)) return false;
+  const s = segsOf(u);
+  return s[0] !== "pin" && s.length >= 2;
+}
+function hostLabel(raw) {
+  const u = parseUrl(raw);
+  return u ? u.hostname.replace(/^www\./, "") : "link";
+}
+
+/** Returns { type, url }. type ∈ empty | invalid | board | pin | image | link. */
+function classifyPaste(raw) {
+  const t = (raw || "").trim();
+  if (!t) return { type: "empty" };
+  const u = parseUrl(t);
+  // A real address has a dotted host. "kitchen ideas" is not a link.
+  if (!u || !u.hostname.includes(".")) return { type: "invalid" };
+  const url = u.href;
+  if (isPinterestHost(u.hostname)) {
+    const s = segsOf(u);
+    if (s[0] === "pin" && s[1]) return { type: "pin", url };   // stored as a link, rendered as a live pin
+    if (s.length >= 2) return { type: "board", url };           // mirrors the whole board
+    return { type: "link", url };                               // a Pinterest profile is just a link
+  }
+  if (isImagePath(u.pathname)) return { type: "image", url };
+  return { type: "link", url };                                 // includes pin.it short links
+}
+
+// ── Image upload ───────────────────────────────────────────────────────────
+// Sends the file to the build upload route (Supabase Storage) and returns its
+// public URL. Kept here because the route is the only way to persist a binary —
+// state props carry data, not files.
+async function uploadImage(file) {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch("/admin/build/upload", { method: "POST", body });
+  let data = {};
+  try { data = await res.json(); } catch { /* non-JSON error body */ }
+  if (!res.ok) throw new Error(data?.error || `Upload failed (${res.status}).`);
+  return data.url;
+}
+
+// ── Pinterest live embed (board or single pin) ─────────────────────────────
+function PinterestEmbed({ url, type }) {
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
-    if (!el || !PIN_RE.test(url || "")) return;
+    if (!el) return;
+    const doAttr = type === "pin" ? "embedPin" : "embedBoard";
+    const boardAttrs = type === "board"
+      ? `data-pin-board-width="540" data-pin-scale-height="320" data-pin-scale-width="110" `
+      : "";
     el.innerHTML =
-      `<a data-pin-do="embedBoard" data-pin-board-width="540" ` +
-      `data-pin-scale-height="320" data-pin-scale-width="110" ` +
-      `href="${(url || "").replace(/"/g, "")}"> </a>`;
-    const build = () => { try { if (window.PinUtils) window.PinUtils.build(el); } catch { /* ignore */ } };
+      `<a data-pin-do="${doAttr}" ${boardAttrs}href="${(url || "").replace(/"/g, "")}"> </a>`;
+    const build = () => { try { if (window.PinUtils) window.PinUtils.build(el); } catch { /* widget not ready */ } };
     if (window.PinUtils) { build(); return; }
-    let s = document.getElementById("pinit-js");
+    let s = document.getElementById(PIN_SCRIPT_ID);
     if (!s) {
       s = document.createElement("script");
-      s.id = "pinit-js";
-      s.src = "https://assets.pinterest.com/js/pinit.js";
+      s.id = PIN_SCRIPT_ID;
+      s.src = PIN_SCRIPT_SRC;
       s.async = true;
       s.onload = build;
       document.body.appendChild(s);
@@ -32,24 +113,173 @@ function PinterestEmbed({ url }) {
       s.addEventListener("load", build);
       build();
     }
-  }, [url]);
-  if (!PIN_RE.test(url || "")) return null;
-  return <div ref={ref} style={{ overflowX: "auto", margin: "12px 0 4px", WebkitOverflowScrolling: "touch" }} />;
+  }, [url, type]);
+  return <div ref={ref} style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }} />;
 }
 
+// A close control that sits on top of imagery, where an outlined light button
+// would vanish — so it carries its own hairline instead.
+function OverlayClose({ onClick, label }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        position: "absolute", top: 6, right: 6, width: 24, height: 24, borderRadius: 7,
+        border: "1px solid rgba(255,255,255,0.35)", cursor: "pointer",
+        background: "rgba(15,23,41,0.62)", color: "#fff", display: "grid", placeItems: "center",
+      }}
+    >
+      <Icon d={ICON.x} size={12} />
+    </button>
+  );
+}
+
+// ── The single paste-and-add control ───────────────────────────────────────
+// Always visible, never behind a toggle. One box routes everything; a photo
+// button covers his own pictures. Invalid text wiggles and says why.
+function Adder({ onSetBoard, onAddItem, onFiles, uploading, hint }) {
+  const [draft, setDraft] = useState("");
+  const [err, setErr] = useState("");
+  const inputRef = useRef(null);
+  const fileRef = useRef(null);
+
+  const shake = () => {
+    const el = inputRef.current;
+    if (el && el.animate) {
+      el.animate(
+        [
+          { transform: "translateX(0)" }, { transform: "translateX(-5px)" },
+          { transform: "translateX(5px)" }, { transform: "translateX(-3px)" },
+          { transform: "translateX(0)" },
+        ],
+        { duration: 260, easing: "ease-in-out" },
+      );
+    }
+  };
+
+  const submit = () => {
+    const c = classifyPaste(draft);
+    if (c.type === "empty") return;
+    if (c.type === "invalid") {
+      setErr("That doesn't look like a link. Paste a web address that starts with http.");
+      shake();
+      return;
+    }
+    setErr("");
+    if (c.type === "board") onSetBoard(c.url);
+    else if (c.type === "image") onAddItem({ id: genId(), kind: "image", url: c.url, note: "" });
+    else onAddItem({ id: genId(), kind: "link", url: c.url, note: "" }); // pin + pin.it + link all store as link
+    setDraft("");
+  };
+
+  return (
+    <div>
+      {hint && (
+        <div style={{ fontSize: 12.5, color: COLORS.textMuted, lineHeight: 1.5, marginBottom: 9 }}>
+          {hint}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="url"
+          value={draft}
+          onChange={(e) => { setDraft(e.target.value); if (err) setErr(""); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
+          placeholder="Paste a Pinterest link, pin, or image URL"
+          aria-label="Paste a Pinterest link, pin, or image URL"
+          aria-invalid={Boolean(err)}
+          style={{ ...inputStyle(), flex: 1, minWidth: 160, fontWeight: 600, borderColor: err ? COLORS.red : COLORS.border }}
+        />
+        <button onClick={submit} style={{ ...btn("primary") }}>Add</button>
+        <button onClick={() => fileRef.current && fileRef.current.click()} style={{ ...btn("ghost") }}>
+          <Icon d={UPLOAD_ICON} size={14} />
+          Add photo
+        </button>
+      </div>
+      {err && (
+        <div style={{ marginTop: 6, fontSize: 12, fontWeight: 600, color: COLORS.red }}>{err}</div>
+      )}
+      {uploading > 0 && (
+        <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: COLORS.accent }}>
+          Adding {uploading} {uploading === 1 ? "photo" : "photos"}…
+        </div>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: "none" }}
+        onChange={(e) => { onFiles(e.target.files); e.target.value = ""; }}
+      />
+    </div>
+  );
+}
+
+// ── A single tile in a board's gallery ─────────────────────────────────────
+function BoardItem({ item, onDelete }) {
+  // A pinned pin renders live — not a bare blue link.
+  if (item.kind === "link" && isPinUrl(item.url)) {
+    return (
+      <div style={{ position: "relative", flex: "0 0 auto" }}>
+        <PinterestEmbed url={item.url} type="pin" />
+        <OverlayClose onClick={onDelete} label="Remove pin" />
+      </div>
+    );
+  }
+
+  if (item.kind === "image") {
+    return (
+      <div style={{ position: "relative", width: 140, height: 140, borderRadius: 10, overflow: "hidden", border: `1px solid ${COLORS.border}`, background: COLORS.surfaceTint }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={item.url} alt={item.note || "Inspiration image"} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <OverlayClose onClick={onDelete} label="Remove image" />
+      </div>
+    );
+  }
+
+  // Any other link — including a pin.it short link, which can't be embedded
+  // client-side. Show a tappable card that carries where it goes.
+  const pinnish = /(^|\.)pin\.it$/i.test(hostLabel(item.url)) || isPinterestHost(parseUrl(item.url)?.hostname || "");
+  return (
+    <div style={{ position: "relative", width: 140, height: 140 }}>
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          display: "flex", flexDirection: "column", gap: 7, alignItems: "center", justifyContent: "center",
+          width: "100%", height: "100%", padding: 10, borderRadius: 10, textDecoration: "none",
+          border: `1px solid ${COLORS.border}`, background: COLORS.surface, color: COLORS.textMuted,
+        }}
+      >
+        <Icon d={pinnish ? PIN_ICON : LINK_ICON} size={20} color={pinnish ? COLORS.accent : COLORS.textMuted} />
+        <span style={{ fontSize: 11, fontWeight: 700, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+          {pinnish ? "Pinterest pin" : hostLabel(item.url)}
+        </span>
+      </a>
+      <OverlayClose onClick={onDelete} label="Remove link" />
+    </div>
+  );
+}
+
+// ── One board card ─────────────────────────────────────────────────────────
 function Board({ board, onChange, onDelete }) {
-  const [adding, setAdding] = useState(false);
-  const [urlDraft, setUrlDraft] = useState("");
   const [uploading, setUploading] = useState(0);
   const [dragOver, setDragOver] = useState(false);
-  const [err, setErr] = useState("");
-  const fileRef = useRef(null);
-  const pinValid = PIN_RE.test(board.pinterest_url || "");
+  const [uploadErr, setUploadErr] = useState("");
+
+  const items = board.items || [];
+  const hasMirror = Boolean(board.pinterest_url) && isBoardUrl(board.pinterest_url);
+  const isEmpty = !hasMirror && items.length === 0;
 
   const handleFiles = async (files) => {
-    const list = [...files].filter((f) => f.type.startsWith("image/"));
+    const list = [...(files || [])].filter((f) => f.type.startsWith("image/"));
     if (list.length === 0) return;
-    setErr("");
+    setUploadErr("");
     setUploading((n) => n + list.length);
     const added = [];
     for (const f of list) {
@@ -57,23 +287,17 @@ function Board({ board, onChange, onDelete }) {
         const url = await uploadImage(f);
         added.push({ id: genId(), kind: "image", url, note: "" });
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "Upload failed.");
+        setUploadErr(e instanceof Error ? e.message : "Upload failed.");
       } finally {
         setUploading((n) => n - 1);
       }
     }
-    if (added.length) onChange({ items: [...board.items, ...added] });
+    if (added.length) onChange({ items: [...items, ...added] });
   };
 
-  const addUrl = () => {
-    const u = urlDraft.trim();
-    if (!u) return;
-    const isImg = /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(u);
-    onChange({ items: [...board.items, { id: genId(), kind: isImg ? "image" : "link", url: u, note: "" }] });
-    setUrlDraft("");
-    setAdding(false);
-  };
-  const delItem = (id) => onChange({ items: board.items.filter((x) => x.id !== id) });
+  const addItem = (item) => onChange({ items: [...items, item] });
+  // Soft delete: flag archived; visibleState hides it, the blob keeps it.
+  const delItem = (id) => onChange({ items: items.map((x) => (x.id === id ? { ...x, archived: true } : x)) });
 
   return (
     <section
@@ -88,89 +312,50 @@ function Board({ board, onChange, onDelete }) {
           value={board.name}
           onChange={(e) => onChange({ name: e.target.value })}
           placeholder="Board name"
-          style={{ ...inputStyle(), flex: 1, fontWeight: 800, fontSize: 14 }}
+          aria-label="Board name"
+          style={{ ...inputStyle(), flex: 1, fontWeight: 800, fontSize: 14, border: "none", background: "transparent", paddingLeft: 0 }}
         />
-        <DelBtn onClick={onDelete} />
+        <button
+          onClick={onDelete}
+          aria-label="Delete board"
+          style={{
+            width: 26, height: 26, borderRadius: 7, flexShrink: 0, cursor: "pointer",
+            border: `1px solid ${COLORS.border}`, background: COLORS.surface, color: COLORS.textFaint,
+            display: "grid", placeItems: "center",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.redBg; e.currentTarget.style.color = COLORS.red; e.currentTarget.style.borderColor = COLORS.red; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = COLORS.surface; e.currentTarget.style.color = COLORS.textFaint; e.currentTarget.style.borderColor = COLORS.border; }}
+        >
+          <Icon d={ICON.x} size={13} />
+        </button>
       </div>
-      <div style={{ padding: "10px 14px 14px" }}>
-        <input
-          type="text"
-          value={board.pinterest_url}
-          onChange={(e) => onChange({ pinterest_url: e.target.value })}
-          placeholder="Paste a public Pinterest board link to mirror it…"
-          style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", fontWeight: 600 }}
-        />
-        {board.pinterest_url && !pinValid && (
-          <div style={{ marginTop: 5, fontSize: 11.5, color: COLORS.textFaint }}>
-            That doesn&apos;t look like a Pinterest board URL (pinterest.com/you/board/).
+
+      <div style={{ padding: "12px 14px 14px" }}>
+        {hasMirror && (
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <PinterestEmbed url={board.pinterest_url} type="board" />
+            <OverlayClose onClick={() => onChange({ pinterest_url: "" })} label="Remove board preview" />
           </div>
         )}
-        {pinValid && <PinterestEmbed url={board.pinterest_url} />}
 
-        {board.items.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8, marginTop: 12 }}>
-            {board.items.map((it) => (
-              <div key={it.id} style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${COLORS.border}`, aspectRatio: "1 / 1", background: COLORS.surfaceTint }}>
-                {it.kind === "image" ? (
-                  <img src={it.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                ) : (
-                  <a
-                    href={it.url} target="_blank" rel="noreferrer"
-                    style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "center", justifyContent: "center", height: "100%", padding: 8, textDecoration: "none", color: COLORS.textMuted }}
-                  >
-                    <Icon d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1 M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" size={18} />
-                    <span style={{ fontSize: 10.5, fontWeight: 600, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
-                      {(() => { try { return new URL(it.url).hostname.replace("www.", ""); } catch { return "link"; } })()}
-                    </span>
-                  </a>
-                )}
-                <button
-                  onClick={() => delItem(it.id)}
-                  aria-label="Remove"
-                  style={{ position: "absolute", top: 4, right: 4, width: 22, height: 22, borderRadius: 6, border: "none", cursor: "pointer", background: "rgba(15,23,41,0.62)", color: "#fff", display: "grid", placeItems: "center" }}
-                >
-                  <Icon d={ICON.x} size={11} />
-                </button>
-              </div>
+        {items.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+            {items.map((it) => (
+              <BoardItem key={it.id} item={it} onDelete={() => delItem(it.id)} />
             ))}
           </div>
         )}
 
-        {uploading > 0 && (
-          <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: COLORS.accent }}>Uploading {uploading}…</div>
+        {uploadErr && (
+          <div style={{ marginBottom: 10, fontSize: 12, fontWeight: 600, color: COLORS.red }}>{uploadErr}</div>
         )}
-        {err && <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: COLORS.red }}>{err}</div>}
 
-        {adding ? (
-          <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-            <button onClick={() => fileRef.current && fileRef.current.click()} style={{ ...btn("ghost") }}>
-              <Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12" size={14} />
-              Upload images
-            </button>
-            <input
-              type="text"
-              value={urlDraft}
-              onChange={(e) => setUrlDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") addUrl(); }}
-              placeholder="…or paste an image / link URL"
-              style={{ ...inputStyle(), flex: 1, minWidth: 150, fontWeight: 600 }}
-            />
-            <button onClick={addUrl} style={{ ...btn("primary") }}>Add</button>
-            <button onClick={() => { setAdding(false); setUrlDraft(""); }} style={{ ...btn("ghost") }}>Cancel</button>
-          </div>
-        ) : (
-          <button onClick={() => setAdding(true)} style={{ ...btn("ghost"), marginTop: 10 }}>
-            <Icon d={["M12 5v14", "M5 12h14"]} size={13} />
-            Add images or links
-          </button>
-        )}
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          multiple
-          style={{ display: "none" }}
-          onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
+        <Adder
+          onSetBoard={(url) => onChange({ pinterest_url: url })}
+          onAddItem={addItem}
+          onFiles={handleFiles}
+          uploading={uploading}
+          hint={isEmpty ? "Paste your Pinterest board or a single pin and it shows up right here — live. Or drop in your own photos." : null}
         />
       </div>
     </section>
@@ -178,13 +363,31 @@ function Board({ board, onChange, onDelete }) {
 }
 
 export default function InspirationSection({ state, addRow, updRow, delRow }) {
+  const boards = state.boards || [];
+
+  if (boards.length === 0) {
+    return (
+      <>
+        <SectionHead title="Inspiration" note="Pinterest boards and your own photos, room by room" />
+        <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 16, background: COLORS.surface, padding: "40px 20px 44px", textAlign: "center", maxWidth: 480, margin: "8px auto 0" }}>
+          <div style={{ width: 48, height: 48, margin: "0 auto 16px", borderRadius: 14, background: COLORS.accentSoft, display: "grid", placeItems: "center" }}>
+            <Icon d={GALLERY_ICON} size={24} color={COLORS.accent} />
+          </div>
+          <h3 style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, margin: "0 0 7px" }}>Start a board</h3>
+          <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 auto 20px", maxWidth: 380 }}>
+            Give it a name — Kitchen, Master suite, Exterior — then paste a Pinterest link
+            or drop in photos. Everything you paste shows up live.
+          </p>
+          <AddBtn label="Add your first board" onClick={() => addRow("boards", { name: "New board", pinterest_url: "", items: [] })} />
+        </div>
+      </>
+    );
+  }
+
   return (
-    <div>
-      <div style={{ fontSize: 12.5, color: COLORS.textMuted, padding: "2px 2px 12px", lineHeight: 1.5 }}>
-        Paste a public Pinterest board link to mirror it live, drag in your own screenshots and
-        photos, or paste image / link URLs. Organize by room or theme.
-      </div>
-      {state.boards.map((b) => (
+    <>
+      <SectionHead title="Inspiration" note={`${boards.length} ${boards.length === 1 ? "board" : "boards"} · paste a link and see it live`} />
+      {boards.map((b) => (
         <Board
           key={b.id}
           board={b}
@@ -193,6 +396,6 @@ export default function InspirationSection({ state, addRow, updRow, delRow }) {
         />
       ))}
       <AddBtn label="Add a board" onClick={() => addRow("boards", { name: "New board", pinterest_url: "", items: [] })} />
-    </div>
+    </>
   );
 }

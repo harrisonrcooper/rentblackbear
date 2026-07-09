@@ -1,21 +1,33 @@
 "use client";
 
-// Overview section.
+// Overview section — the build's home base and the first screen he sees.
+//
+// The initial state is seeded (rooms, selections, milestones, inspections) but
+// carries no dollar figures, so on day one this screen is a field of zeros. The
+// caveman job here is to make that first look READABLE: surface the one input
+// that unlocks money tracking (the target budget), say plainly what "Needs
+// attention" is for, and never render a number he can't trace to something he
+// entered.
 
 import { COLORS, FONT, Icon, ICON, fmtCompact, SERIF, Card, Field, txt, MoneyInput, ProgressRing, StatTile, SectionHead, daysFromToday, AutoTextarea } from "../ui";
+import {
+  approvedChangeOrderCents, estimateCents, leftToPayCents, revisedCents,
+} from "@/lib/build/costs";
 
 function Dashboard({ state, onJump }) {
   const costs = state.costs || [];
-  const totalEst = costs.reduce((s, c) => s + c.estimate_cents, 0);
   const budget = state.budget_cents || 0;
+  const totalEst = estimateCents(costs);
   const cos = state.change_orders || [];
-  const coNet = cos.filter((o) => o.status === "approved")
-    .reduce((s, o) => s + (o.kind === "credit" ? -1 : 1) * (o.amount_cents || 0), 0);
+  const coNet = approvedChangeOrderCents(cos);
   const coPending = cos.filter((o) => o.status === "pending");
-  const revised = totalEst + coNet;
+  // Same rollup as the Costs screen. These two printed the same label over two
+  // different numbers before lib/build/costs.ts existed.
+  const revised = revisedCents(costs, cos);
   const overBudget = budget > 0 && revised > budget;
   const pays = state.payments || [];
   const totalPaid = pays.reduce((s, p) => s + (p.amount_cents || 0), 0);
+  const leftToPay = leftToPayCents(revised, totalPaid);
   const waiverDue = pays.filter((p) => p.lien_waiver === "pending");
 
   const ms = state.milestones || [];
@@ -35,6 +47,7 @@ function Dashboard({ state, onJump }) {
 
   const wishes = state.wishlist || [];
   const wishDone = wishes.filter((w) => w.done).length;
+  const needCount = wishes.filter((w) => w.priority === "need").length;
   const docs = state.documents || [];
   const docLinked = docs.filter((d) => d.url).length;
   const photos = state.photos || [];
@@ -48,7 +61,7 @@ function Dashboard({ state, onJump }) {
   const alerts = [];
   if (overBudget) alerts.push({ tone: COLORS.red, text: `Revised cost is ${fmtCompact(revised - budget)} over your target budget`, to: "costs" });
   if (overdueMs.length) alerts.push({ tone: COLORS.red, text: `${overdueMs.length} milestone${overdueMs.length > 1 ? "s" : ""} past due`, to: "milestones" });
-  if (inspFailed.length) alerts.push({ tone: COLORS.red, text: `${inspFailed.length} inspection${inspFailed.length > 1 ? "s" : ""} failed — needs correction & re-inspection`, to: "inspections" });
+  if (inspFailed.length) alerts.push({ tone: COLORS.red, text: `${inspFailed.length} inspection${inspFailed.length > 1 ? "s" : ""} failed — needs correction and re-inspection`, to: "inspections" });
   if (overDrawn) alerts.push({ tone: COLORS.red, text: `Construction loan is over-drawn by ${fmtCompact(drawn - loan.amount_cents)}`, to: "costs" });
   if (waiverDue.length) alerts.push({ tone: COLORS.red, text: `${waiverDue.length} payment${waiverDue.length > 1 ? "s" : ""} missing a signed lien waiver`, to: "payments" });
   if (coPending.length) alerts.push({ tone: COLORS.amber, text: `${coPending.length} change order${coPending.length > 1 ? "s" : ""} awaiting your approval`, to: "changeorders" });
@@ -56,10 +69,13 @@ function Dashboard({ state, onJump }) {
   if (openRfis.length) alerts.push({ tone: COLORS.amber, text: `${openRfis.length} open question${openRfis.length > 1 ? "s" : ""} for your architect or builder`, to: "decisions" });
   if (punchOpen.length) alerts.push({ tone: COLORS.amber, text: `${punchOpen.length} punch-list item${punchOpen.length > 1 ? "s" : ""} still open`, to: "punchlist" });
 
+  // A vital reads amber when it's blank AND it unlocks something downstream. The
+  // budget gates every money tile and the over/under alert, so an unset budget
+  // is a "please fill me", not inert grey.
   const vitals = [
-    ["Budget", budget ? fmtCompact(budget) : "—"],
-    ["Sq ft", state.sqft ? state.sqft.toLocaleString() : "—"],
-    ["Stories", state.stories || "—"],
+    { label: "Budget", value: budget ? fmtCompact(budget) : "Not set yet", needs: !budget },
+    { label: "Square feet", value: state.sqft ? state.sqft.toLocaleString() : "Not set", needs: false },
+    { label: "Stories", value: state.stories || "Not set", needs: false },
   ];
 
   const selDecided = sels.length - openSel.length;
@@ -75,37 +91,42 @@ function Dashboard({ state, onJump }) {
   const overallPct = overallTotal ? Math.round((overallDone / overallTotal) * 100) : 0;
 
   const tiles = [
-    ["Revised cost", fmtCompact(revised), budget ? `of ${fmtCompact(budget)} target` : coNet ? "incl. change orders" : "estimated · no target", overBudget ? COLORS.red : COLORS.text, undefined, "costs"],
-    ["Paid to date", fmtCompact(totalPaid), revised ? `${fmtCompact(Math.max(0, revised - totalPaid))} left to pay` : `${pays.length} payments`, COLORS.text, undefined, "payments"],
-    ["Milestones", `${msDone} / ${ms.length}`, nextMs ? `Next: ${nextMs.label}` : msDone ? "on track" : "none complete yet", COLORS.text, msPct, "milestones"],
-    ["Selections", `${selDecided} / ${sels.length}`, openSel.length ? `${openSel.length} still open` : "all decided", openSel.length ? COLORS.amber : COLORS.green, selPct, "selections"],
-    ["Inspections", `${inspPassed} / ${insps.length}`, inspFailed.length ? `${inspFailed.length} failed` : insps.length ? "passed" : "none scheduled", inspFailed.length ? COLORS.red : COLORS.text, inspPct, "inspections"],
-    ["Wants", `${wishDone} / ${wishes.length}`, `${wishes.filter((w) => w.priority === "need").length} are must-haves`, COLORS.text, wishPct, "wants"],
+    ["Revised cost", fmtCompact(revised), budget ? `of ${fmtCompact(budget)} target` : totalEst ? "from your estimates" : "add estimates and a target", overBudget ? COLORS.red : COLORS.text, undefined, "costs"],
+    ["Paid to date", fmtCompact(totalPaid), pays.length ? (revised ? `${fmtCompact(leftToPay)} still to pay` : `across ${pays.length} payment${pays.length > 1 ? "s" : ""}`) : "Nothing paid yet", COLORS.text, undefined, "payments"],
+    ["Milestones", `${msDone} / ${ms.length}`, nextMs ? `Next: ${nextMs.label}` : msDone ? "on track" : "none reached yet", COLORS.text, msPct, "milestones"],
+    ["Selections", `${selDecided} / ${sels.length}`, openSel.length ? `${openSel.length} still to decide` : "all decided", openSel.length ? COLORS.amber : COLORS.green, selPct, "selections"],
+    ["Inspections", `${inspPassed} / ${insps.length}`, inspFailed.length ? `${inspFailed.length} failed` : inspPassed ? "passing" : insps.length ? "none passed yet" : "none scheduled", inspFailed.length ? COLORS.red : COLORS.text, inspPct, "inspections"],
+    ["Wants", `${wishDone} / ${wishes.length}`, `${needCount} ${needCount === 1 ? "is a must-have" : "are must-haves"}`, COLORS.text, wishPct, "wants"],
     ["Loan drawn", fmtCompact(drawn), loan.amount_cents ? `of ${fmtCompact(loan.amount_cents)} facility` : "no loan set", overDrawn ? COLORS.red : COLORS.text, undefined, "costs"],
-    ["Rooms", `${rooms.length}`, "spaces planned", COLORS.text, undefined, "rooms"],
-    ["Photos", `${photos.length}`, "progress photos logged", COLORS.text, undefined, "photos"],
-    ["Documents", `${docLinked} / ${docs.length}`, "linked and on file", COLORS.text, undefined, "documents"],
+    ["Rooms", `${rooms.length}`, rooms.length ? "spaces planned" : "add your first room", COLORS.text, undefined, "rooms"],
+    ["Photos", `${photos.length}`, photos.length ? "progress photos logged" : "no photos yet", COLORS.text, undefined, "photos"],
+    ["Documents", `${docLinked} / ${docs.length}`, docs.length ? "have a link on file" : "none on file yet", COLORS.text, undefined, "documents"],
   ];
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 26, marginBottom: 26 }}>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 22, rowGap: 16, marginBottom: 26 }}>
         <ProgressRing pct={overallPct} caption="Complete" />
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0, flex: "1 1 220px" }}>
           <h2 style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.15, margin: 0 }}>
             {state.project_name || "Our Dream Home"}
           </h2>
           {state.style && (
             <p style={{ fontSize: 13.5, color: COLORS.textMuted, margin: "6px 0 0", maxWidth: "52ch", lineHeight: 1.5 }}>{state.style}</p>
           )}
-          <div style={{ display: "flex", gap: 20, marginTop: 14 }}>
-            {vitals.map(([l, v]) => (
-              <div key={l}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: v === "—" ? COLORS.textFaint : COLORS.text }}>{v === "—" ? "Not set" : v}</div>
-                <div style={{ fontSize: 11.5, color: COLORS.textFaint }}>{l}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 18, rowGap: 10, marginTop: 14 }}>
+            {vitals.map((v) => (
+              <div key={v.label}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: v.needs ? COLORS.amber : v.value.toString().startsWith("Not set") ? COLORS.textFaint : COLORS.text }}>{v.value}</div>
+                <div style={{ fontSize: 11.5, color: COLORS.textFaint }}>{v.label}</div>
               </div>
             ))}
           </div>
+          {!budget && (
+            <p style={{ fontSize: 12.5, color: COLORS.amber, margin: "12px 0 0", lineHeight: 1.5 }}>
+              Add your target budget below and every cost, payment, and change order gets tracked against it automatically.
+            </p>
+          )}
         </div>
       </div>
 
@@ -123,18 +144,18 @@ function Dashboard({ state, onJump }) {
             }}
           >
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: a.tone, flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: COLORS.text }}>{a.text}</span>
+            <span style={{ flex: 1, fontSize: 13.5, fontWeight: 500, color: COLORS.text, lineHeight: 1.4 }}>{a.text}</span>
             <Icon d={ICON.chevR} size={13} color={COLORS.textFaint} />
           </button>
         )) : (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px" }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS.green, flexShrink: 0 }} />
-            <span style={{ fontSize: 13.5, color: COLORS.textMuted }}>Everything&apos;s on track — no overdue dates, no budget overruns.</span>
+            <span style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.45 }}>Nothing needs you right now. As you set target dates and a budget, anything running late or over shows up here on its own.</span>
           </div>
         )}
       </div>
 
-      <SectionHead title="At a glance" note="Every tile opens its section" />
+      <SectionHead title="At a glance" note="Tap any tile to open it" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(158px, 1fr))", gap: 10 }}>
         {tiles.map(([label, value, sub, accent, pct, to]) => (
           <StatTile key={label} label={label} value={value} sub={sub} accent={accent} pct={pct} onClick={() => onJump(to)} />
@@ -153,6 +174,16 @@ export default function OverviewSection({ state, setField, onJump }) {
         <Field label="Project name">
           <input type="text" value={state.project_name} onChange={(e) => setField("project_name", e.target.value)} style={txt()} placeholder="Our New Home" />
         </Field>
+        {/* Vision is the most-read field in the app — it sits high, right under the
+            name, so opening basics lands on it instead of burying it below the numbers. */}
+        <Field label="Vision and must-knows for the architect">
+          <AutoTextarea
+            value={state.notes}
+            onChange={(v) => setField("notes", v)}
+            minRows={8}
+            placeholder="The big picture — how you want the home to feel and live, deal-breakers, inspiration…"
+          />
+        </Field>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
           <Field label="Target budget">
             <MoneyInput value={state.budget_cents} onChange={(v) => setField("budget_cents", v)} />
@@ -164,19 +195,11 @@ export default function OverviewSection({ state, setField, onJump }) {
             <input type="number" value={state.stories || ""} onChange={(e) => setField("stories", Math.max(1, Math.round(Number(e.target.value) || 1)))} style={{ ...txt(), textAlign: "right" }} placeholder="1" />
           </Field>
         </div>
-        <Field label="Style / vibe">
-          <input type="text" value={state.style} onChange={(e) => setField("style", e.target.value)} style={txt()} placeholder="e.g. modern farmhouse, single-story, board & batten" />
+        <Field label="Style and vibe">
+          <input type="text" value={state.style} onChange={(e) => setField("style", e.target.value)} style={txt()} placeholder="Such as modern farmhouse, single-story, board and batten" />
         </Field>
-        <Field label="Lot / location">
+        <Field label="Lot and location">
           <input type="text" value={state.lot} onChange={(e) => setField("lot", e.target.value)} style={txt()} placeholder="Acreage, views, orientation, setbacks…" />
-        </Field>
-        <Field label="Vision & must-knows for the architect">
-          <AutoTextarea
-            value={state.notes}
-            onChange={(v) => setField("notes", v)}
-            minRows={8}
-            placeholder="The big picture — how you want the home to feel and live, deal-breakers, inspiration…"
-          />
         </Field>
       </div>
     </Card>

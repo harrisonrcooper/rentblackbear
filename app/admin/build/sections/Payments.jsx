@@ -1,92 +1,307 @@
 "use client";
 
-// Payments section.
+// Payments — every dollar out the door, and the lien waiver that protects it.
+//
+// The load-bearing idea of this screen is legal, not financial: a payment with
+// no signed lien waiver is money you've spent that a sub or supplier can still
+// put a lien against. So a missing waiver is drawn as a RISK (red), not as a
+// neutral status, and the running dollar figure of unprotected payments is the
+// number the banner leads with.
+//
+// State is mutated only through addRow / updRow / delRow. Editing happens in the
+// shared DetailDrawer (full-screen on mobile), matching Rooms and Materials.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { COLORS, FONT, inputStyle, btn, Icon, ICON, fmtCompact, Card, txt, MoneyInput, Check, AddBtn, StatStrip, fmtBuildDate, SelectPill, optionsFrom, LIEN_WAIVERS } from "../ui";
+import {
+  COLORS, FONT, SERIF, ACCENT, inputStyle, btn, Icon, ICON, fmtUsd, fmtCompact,
+  Card, Field, txt, MoneyInput, AddBtn, Chip, SectionHead, StatStrip, SelectPill,
+  optionsFrom, fmtBuildDate, todayIso
+} from "../ui";
+import DetailDrawer from "../DetailDrawer";
 
 const PAY_METHODS = ["Check", "ACH", "Wire", "Card", "Cash", "Loan draw"];
 
-const WAIVER_META = {
-  not_needed: ["n/a", COLORS.textFaint],
-  pending: ["waiver due", COLORS.amber],
-  received: ["waiver in", COLORS.green],
+// The lien-waiver options for the in-drawer picker. Stored values are unchanged
+// (not_needed / pending / received); only the labels and tones are chosen to
+// speak plainly and to make an unsigned waiver read as the risk it is.
+const WAIVER_OPTIONS = [
+  { value: "not_needed", label: "Not needed", tone: "neutral" },
+  { value: "pending", label: "Not signed yet", tone: "red" },
+  { value: "received", label: "Signed & received", tone: "green" },
+];
+
+// How each waiver state reads on a payment card.
+const WAIVER_CHIP = {
+  not_needed: { label: "No waiver needed", tone: "neutral" },
+  pending: { label: "Waiver missing", tone: "red" },
+  received: { label: "Waiver signed", tone: "green" },
 };
 
-function PaymentCard({ pay, onChange, onDelete }) {
-  const [open, setOpen] = useState(false);
-  const [wLabel, wColor] = WAIVER_META[pay.lien_waiver] || WAIVER_META.not_needed;
+// Fill colours for an active picker pill — [text, border, background].
+const TONE = {
+  neutral: [COLORS.textMuted, COLORS.borderStrong, COLORS.surface],
+  red: [COLORS.red, COLORS.red, COLORS.redBg],
+  green: [COLORS.green, COLORS.green, COLORS.greenBg],
+};
+
+function newPayment() {
+  return {
+    date: todayIso(),
+    vendor: "New payment",
+    description: "",
+    amount_cents: 0,
+    method: "Check",
+    lien_waiver: "pending",
+  };
+}
+
+// A row of tappable pills — the one legal decision on this screen, set in one
+// touch rather than hidden behind a dropdown.
+function WaiverPicker({ value, onChange }) {
   return (
-    <div style={{ border: `1px solid ${COLORS.border}`, borderRadius: 12, marginBottom: 10, overflow: "hidden" }}>
-      <button onClick={() => setOpen((o) => !o)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT, textAlign: "left" }}>
-        <Icon d={open ? ICON.chevD : ICON.chevR} size={13} color={COLORS.textFaint} />
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: COLORS.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pay.vendor || "Payment"}</span>
-          <span style={{ display: "block", fontSize: 11.5, fontWeight: 600, color: COLORS.textMuted }}>
-            {fmtCompact(pay.amount_cents || 0)}{pay.date ? ` · ${fmtBuildDate(pay.date)}` : ""}
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      {WAIVER_OPTIONS.map((o) => {
+        const on = o.value === value;
+        const [fg, bd, bg] = on ? TONE[o.tone] : [COLORS.textMuted, COLORS.border, COLORS.surface];
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onChange(o.value)}
+            aria-pressed={on}
+            style={{
+              border: `1px solid ${bd}`, background: bg, color: fg, borderRadius: 999,
+              padding: "7px 13px", fontSize: 12.5, fontWeight: on ? 700 : 600, cursor: "pointer",
+              fontFamily: FONT,
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// One payment in the ledger. Click to open the full editor.
+function PaymentCard({ pay, onOpen }) {
+  const chip = WAIVER_CHIP[pay.lien_waiver] || WAIVER_CHIP.not_needed;
+  const meta = [pay.method, pay.date ? fmtBuildDate(pay.date) : null].filter(Boolean).join(" · ");
+  return (
+    <button
+      data-item-id={pay.id}
+      onClick={onOpen}
+      style={{
+        textAlign: "left", background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+        borderRadius: 12, padding: 14, cursor: "pointer", fontFamily: FONT,
+        display: "flex", flexDirection: "column", gap: 8, minWidth: 0,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 14, fontWeight: 700, letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {pay.vendor || "Payment"}
           </span>
+          {pay.description && (
+            <span style={{ display: "block", fontSize: 11.5, color: COLORS.textFaint, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {pay.description}
+            </span>
+          )}
         </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: wColor }} />
-          <span style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: wColor }}>{wLabel}</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: COLORS.text, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+          {fmtUsd(pay.amount_cents || 0)}
         </span>
-      </button>
-      {open && (
-        <div style={{ padding: "2px 14px 14px", display: "grid", gap: 10 }}>
-          <input value={pay.vendor} onChange={(e) => onChange({ vendor: e.target.value })} placeholder="Vendor — who you paid" style={{ ...txt(), fontWeight: 700 }} />
-          <input value={pay.description} onChange={(e) => onChange({ description: e.target.value })} placeholder="What it was for" style={txt()} />
-          <div style={{ display: "flex", gap: 8 }}>
-            <div style={{ flex: 1 }}><MoneyInput value={pay.amount_cents} onChange={(v) => onChange({ amount_cents: v })} /></div>
-            <input type="date" value={pay.date || ""} onChange={(e) => onChange({ date: e.target.value || null })} aria-label="Date" style={{ ...inputStyle(), flex: 1 }} />
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <SelectPill value={pay.method} options={optionsFrom(PAY_METHODS)} onChange={(method) => onChange({ method })} ariaLabel="Method" minWidth={106} />
-            <SelectPill value={pay.lien_waiver} options={LIEN_WAIVERS} onChange={(lien_waiver) => onChange({ lien_waiver })} ariaLabel="Lien waiver" minWidth={128} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={onDelete} style={{ ...btn("ghost") }}><Icon d={ICON.x} size={13} /> Delete</button>
-          </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+        <Chip tone={chip.tone}>{chip.label}</Chip>
+        {meta && <Chip>{meta}</Chip>}
+      </div>
+    </button>
+  );
+}
+
+// The full editor for one payment, hosted in the shared DetailDrawer.
+function PaymentEditor({ pay, patch, onDelete }) {
+  return (
+    <div style={{ display: "grid", gap: 2 }}>
+      <Field label="Who you paid">
+        <input value={pay.vendor} onChange={(e) => patch({ vendor: e.target.value })} style={txt()} placeholder="e.g. Coastal Framing" />
+      </Field>
+
+      <Field label="What it was for">
+        <input value={pay.description} onChange={(e) => patch({ description: e.target.value })} style={txt()} placeholder="e.g. Framing draw 2" />
+      </Field>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Amount">
+          <MoneyInput value={pay.amount_cents} onChange={(v) => patch({ amount_cents: v })} />
+        </Field>
+        <Field label="Date paid">
+          <input
+            type="date"
+            value={pay.date || ""}
+            onChange={(e) => patch({ date: e.target.value || null })}
+            aria-label="Date paid"
+            style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", fontWeight: 600 }}
+          />
+        </Field>
+      </div>
+
+      <Field label="How you paid">
+        <SelectPill value={pay.method} options={optionsFrom(PAY_METHODS)} onChange={(method) => patch({ method })} ariaLabel="How you paid" minWidth={140} />
+      </Field>
+
+      <div style={{ marginBottom: 14 }}>
+        <span style={{ display: "block", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: 6 }}>
+          Lien waiver
+        </span>
+        <WaiverPicker value={pay.lien_waiver} onChange={(lien_waiver) => patch({ lien_waiver })} />
+        <p style={{ fontSize: 11.5, color: COLORS.textFaint, lineHeight: 1.5, margin: "9px 2px 0" }}>
+          A lien waiver is the sub or supplier&apos;s signed receipt. Without one, someone
+          you&apos;ve already paid can still file a lien against your finished home. Mark it
+          &quot;Signed &amp; received&quot; only once the paper is in your hands.
+        </p>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+        <button onClick={onDelete} style={{ ...btn("ghost") }}>
+          <Icon d={ICON.x} size={13} /> Delete payment
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// The red legal-risk banner — dollars unprotected, in plain words, up top.
+function RiskBanner({ unprotected, count }) {
+  return (
+    <div style={{
+      display: "flex", gap: 11, alignItems: "flex-start",
+      background: COLORS.redBg, border: `1px solid ${COLORS.red}`,
+      borderRadius: 12, padding: "12px 14px", marginBottom: 12,
+    }}>
+      <span style={{ flexShrink: 0, marginTop: 1 }}>
+        <Icon d={ICON.flag} size={18} color={COLORS.red} />
+      </span>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: COLORS.red, marginBottom: 3 }}>
+          Legal risk — {count} {count === 1 ? "payment" : "payments"} unprotected
         </div>
-      )}
+        <div style={{ fontSize: 12.5, color: COLORS.text, lineHeight: 1.5 }}>
+          You&apos;ve paid {fmtUsd(unprotected)} with no signed lien waiver. Until each sub or
+          supplier signs one, they can still put a lien on your finished home. Open each payment
+          below and mark its waiver signed once you have the paper.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// The quiet green all-clear — shown only when there's real coverage to confirm.
+function SafeBanner() {
+  return (
+    <div style={{
+      display: "flex", gap: 8, alignItems: "center",
+      background: COLORS.greenBg, borderRadius: 10, padding: "9px 12px", marginBottom: 12,
+    }}>
+      <Icon d={ICON.check} size={15} color={COLORS.green} />
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: COLORS.text }}>
+        Every payment has its lien waiver on file. You&apos;re covered.
+      </span>
     </div>
   );
 }
 
 export default function PaymentsSection({ state, addRow, updRow, delRow }) {
   const pays = state.payments || [];
+  const [openId, setOpenId] = useState(null);
+
   const total = pays.reduce((s, p) => s + (p.amount_cents || 0), 0);
   const waiverDue = pays.filter((p) => p.lien_waiver === "pending");
-  const sorted = pays.slice().sort((a, b) => {
-    if (!a.date) return 1;
-    if (!b.date) return -1;
-    return a.date < b.date ? 1 : -1;
-  });
+  const unprotected = waiverDue.reduce((s, p) => s + (p.amount_cents || 0), 0);
+  const protectedCount = pays.filter((p) => p.lien_waiver === "received").length;
+
+  const sorted = useMemo(
+    () => pays.slice().sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date < b.date ? 1 : -1;
+    }),
+    [pays],
+  );
+
+  const open = pays.find((p) => p.id === openId) || null;
+  const patch = (p) => open && updRow("payments", open.id, p);
+  const add = () => addRow("payments", newPayment());
+
+  // ── Empty state — the main screen until the first payment lands ──────────
+  if (pays.length === 0) {
+    return (
+      <>
+        <SectionHead title="Payments" note="Every dollar out the door — with the lien waiver that protects it" />
+        <Card title="Record your first payment">
+          <div style={{ textAlign: "center", padding: "22px 16px 26px", maxWidth: 460, margin: "0 auto" }}>
+            <div style={{ width: 46, height: 46, margin: "0 auto 14px", borderRadius: 14, background: COLORS.accentSoft, display: "grid", placeItems: "center" }}>
+              <Icon d={ICON.fileText} size={22} color={ACCENT} />
+            </div>
+            <h3 style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 600, margin: "0 0 6px" }}>
+              Log what you pay, protect what you build
+            </h3>
+            <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.55, margin: "0 0 18px" }}>
+              Write down every payment to a sub, supplier or contractor. For each one, collect a
+              signed lien waiver — their receipt that they&apos;ve been paid and won&apos;t put a
+              lien on your home. This screen keeps a running total and flags any payment still
+              missing its waiver.
+            </p>
+            <AddBtn label="Add your first payment" onClick={add} />
+          </div>
+        </Card>
+      </>
+    );
+  }
+
   return (
-    <Card title="Payments" sub={`${fmtCompact(total)} paid`}>
-      <div style={{ fontSize: 12, color: COLORS.textMuted, padding: "4px 2px 12px", lineHeight: 1.5 }}>
-        Every dollar out the door. Collect a signed lien waiver with each payment — without one,
-        a paid sub or supplier can still put a lien on your finished home.
-      </div>
+    <>
+      <SectionHead title="Payments" note={`${pays.length} ${pays.length === 1 ? "payment" : "payments"} · ${fmtUsd(total)} paid`} />
+
       <StatStrip items={[
-        ["Total paid", fmtCompact(total), COLORS.text],
+        ["Paid to date", fmtCompact(total), COLORS.text],
         ["Payments", String(pays.length), COLORS.text],
         ["Waivers due", String(waiverDue.length), waiverDue.length ? COLORS.red : COLORS.green],
       ]} />
-      {waiverDue.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(220,38,38,0.08)", borderRadius: 10, padding: "9px 11px", marginBottom: 12 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS.red, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.text }}>
-            {waiverDue.length} payment{waiverDue.length > 1 ? "s" : ""} still waiting on a signed lien waiver — chase these down.
-          </span>
-        </div>
-      )}
-      {sorted.map((pay) => (
-        <PaymentCard key={pay.id} pay={pay}
-          onChange={(p) => updRow("payments", pay.id, p)}
-          onDelete={() => delRow("payments", pay.id)} />
-      ))}
-      <AddBtn label="Add payment" onClick={() => addRow("payments", { date: new Date().toISOString().slice(0, 10), vendor: "New payment", description: "", amount_cents: 0, method: "Check", lien_waiver: "pending" })} />
-    </Card>
+
+      {waiverDue.length > 0
+        ? <RiskBanner unprotected={unprotected} count={waiverDue.length} />
+        : protectedCount > 0
+          ? <SafeBanner />
+          : null}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
+        {sorted.map((pay) => (
+          <PaymentCard key={pay.id} pay={pay} onOpen={() => setOpenId(pay.id)} />
+        ))}
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <AddBtn label="Add payment" onClick={add} />
+      </div>
+
+      <DetailDrawer
+        open={Boolean(open)}
+        onClose={() => setOpenId(null)}
+        kind="Payment"
+        title={open?.vendor || "Payment"}
+      >
+        {open && (
+          <PaymentEditor
+            key={open.id}
+            pay={open}
+            patch={patch}
+            onDelete={() => { delRow("payments", open.id); setOpenId(null); }}
+          />
+        )}
+      </DetailDrawer>
+    </>
   );
 }

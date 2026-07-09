@@ -444,6 +444,62 @@ export function StatStrip({ items }) {
 }
 
 /**
+ * Today, as a yyyy-mm-dd calendar date on the USER'S clock.
+ *
+ * `new Date().toISOString().slice(0, 10)` is the obvious version and it is
+ * wrong: it yields the UTC date, so anything stamped after ~5pm Pacific is
+ * dated tomorrow. A photo taken at dusk, a payment entered after dinner, a
+ * change order logged in the evening — all a day ahead of the day they
+ * happened. Four sections had each hand-rolled their own fix and two had the
+ * bug; it belongs in exactly one place.
+ */
+export function todayIso() {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+/**
+ * The screen a section shows before it holds anything.
+ *
+ * Most of this planner is empty on day one, so for several sections this IS
+ * the screen — not a fallback. It gets a title that says what the section is
+ * for, a sentence that says why it matters, and exactly ONE primary action.
+ * A second action, if it exists, is quiet.
+ */
+export function EmptyState({ icon, title, children, action, secondary }) {
+  return (
+    <div style={{
+      border: `1px solid ${COLORS.border}`, borderRadius: 14, background: COLORS.surface,
+      padding: "38px 28px", textAlign: "center", fontFamily: FONT,
+    }}>
+      {icon && (
+        <div style={{
+          width: 42, height: 42, margin: "0 auto 14px", borderRadius: 11,
+          background: COLORS.accentSoft, display: "grid", placeItems: "center",
+        }}>
+          <Icon d={icon} size={20} color={COLORS.accent} />
+        </div>
+      )}
+      <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em" }}>{title}</div>
+      <p style={{
+        fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.6,
+        margin: "8px auto 0", maxWidth: "46ch",
+      }}>
+        {children}
+      </p>
+      {(action || secondary) && (
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
+          {action}
+          {secondary}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Render an ISO date as mm/dd/yyyy. Never "Jul 9, 2026", never the ISO string.
  *
  * Parsed as UTC, not local: `new Date("2026-07-09")` is midnight UTC, which in
