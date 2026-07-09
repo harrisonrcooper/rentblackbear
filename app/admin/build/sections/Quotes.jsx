@@ -22,7 +22,7 @@ import {
   Icon, ICON, fmtUsd,
   Card, Field, txt, MoneyInput, DelBtn, AddBtn, AutoTextarea,
   SectionHead, Chip, StatStrip, fmtBuildDate, SelectPill,
-} from "../ui";
+  DateField} from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import { useIsMobile } from "../../budget/lib/responsive";
 import {
@@ -484,7 +484,7 @@ function QuoteDrawer({ quote, isMobile, onClose, onChange, onDelete, onAccept })
               <input type="text" value={quote.scope} onChange={(e) => onChange({ scope: e.target.value })} style={txt()} placeholder="Framing, roofing, plumbing…" />
             </Field>
             <Field label="Date of bid">
-              <input type="date" value={quote.date || ""} onChange={(e) => onChange({ date: e.target.value || null })} style={txt()} aria-label="Date of bid" />
+              <DateField value={quote.date} onChange={(v) => onChange({ date: v })} ariaLabel="Date of bid" />
             </Field>
             <Field label="Status">
               <SelectPill value={quote.status} options={STATUS_ORDER.map((v) => ({ value: v, label: STATUS_LABEL[v], tone: STATUS_TONE[v] || "neutral" }))} onChange={(status) => onChange({ status })} ariaLabel="Status" minWidth={132} />

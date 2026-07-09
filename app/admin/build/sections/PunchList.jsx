@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   COLORS, FONT, SERIF, STYLES, ACCENT, Icon,
   Card, txt, DelBtn, Check, AddBtn, SelectPill, optionsFrom,
-  AutoTextarea, ProgressRing, SectionHead,
+  AutoTextarea, ProgressRing, SectionHead
 } from "../ui";
 import { CAMERA_ICON } from "./_common";
 

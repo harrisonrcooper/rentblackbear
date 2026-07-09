@@ -12,7 +12,7 @@
 import {
   COLORS, ACCENT, SERIF, Icon, ICON, inputStyle,
   Card, txt, MoneyInput, DelBtn, Check, AddBtn, Chip, fmtCompact,
-} from "../ui";
+  DateField} from "../ui";
 import {
   approvedChangeOrderCents, costBasisCents, leftToPayCents, perSquareFootCents, revisedCents,
 } from "@/lib/build/costs";
@@ -271,7 +271,7 @@ export default function CostsSection({ state, setField, addRow, updRow, delRow }
         {draws.map((d) => (
           <div key={d.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 120px 92px 26px", gap: 8, alignItems: "center", padding: "6px 4px", borderBottom: `1px solid ${COLORS.surfaceTint}` }}>
             <input type="text" value={d.label} onChange={(e) => updRow("draws", d.id, { label: e.target.value })} style={{ ...txt(), fontWeight: 600 }} placeholder="Foundation draw" aria-label="Draw name" />
-            <input type="date" value={d.date || ""} onChange={(e) => updRow("draws", d.id, { date: e.target.value || null })} aria-label="Draw date" style={inputStyle()} />
+            <DateField value={d.date} onChange={(v) => updRow("draws", d.id, { date: v })} ariaLabel="Draw date" />
             <MoneyInput value={d.amount_cents} onChange={(v) => updRow("draws", d.id, { amount_cents: v })} />
             <DelBtn onClick={() => delRow("draws", d.id)} />
           </div>

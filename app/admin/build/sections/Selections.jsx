@@ -13,7 +13,7 @@ import {
   COLORS, FONT, inputStyle, btn, Icon, ICON, fmtUsd, fmtCompact, fmtBuildDate,
   daysFromToday, Card, txt, MoneyInput, AddBtn, AutoTextarea, SelectPill, Chip,
   StatStrip, SELECTION_STATUSES,
-} from "../ui";
+  DateField} from "../ui";
 
 const NEW_SELECTION = {
   label: "New selection", choice: "", status: "open", vendor: "",
@@ -111,7 +111,7 @@ function SelectionCard({ sel, onChange, onDelete }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <input value={sel.lead_time} onChange={(e) => onChange({ lead_time: e.target.value })} placeholder="Lead time (for example, 8 weeks)" style={{ ...txt(), flex: 1, minWidth: 140 }} />
             <div>
-              <input type="date" value={sel.deadline || ""} onChange={(e) => onChange({ deadline: e.target.value || null })} aria-label="Decide by this date" style={{ ...inputStyle(), width: 150 }} />
+              <DateField value={sel.deadline} onChange={(v) => onChange({ deadline: v })} ariaLabel="Decide by this date" width={150} />
               {sel.deadline && sel.status === "open" && u.days != null && (
                 <div style={{ fontSize: 10.5, fontWeight: 700, color: u.tone === "red" ? COLORS.red : u.tone === "amber" ? COLORS.amber : COLORS.textFaint, marginTop: 4, textAlign: "right" }}>
                   {u.label}

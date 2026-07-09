@@ -16,7 +16,7 @@ import {
   COLORS, FONT, SERIF, btn, Icon, ICON, ACCENT,
   txt, Card, Chip, AddBtn, StatStrip, DelBtn, AutoTextarea, SelectPill,
   fmtBuildDate, INSPECTION_STATUSES,
-} from "../ui";
+  DateField} from "../ui";
 
 // One source of truth for label + tone, keyed by value.
 const STATUS = Object.fromEntries(INSPECTION_STATUSES.map((o) => [o.value, o]));
@@ -118,13 +118,7 @@ function InspectionCard({ insp, onChange, onDelete, onCreatePunchItem }) {
           />
 
           <div style={{ display: "flex", gap: 8 }}>
-            <input
-              type="date"
-              value={insp.date || ""}
-              onChange={(e) => onDate(e.target.value || null)}
-              aria-label="Inspection date"
-              style={{ ...txt(), flex: 1, minWidth: 0 }}
-            />
+            <DateField value={insp.date} onChange={(v) => onDate(v)} ariaLabel="Inspection date" />
             <SelectPill value={insp.status} options={INSPECTION_STATUSES} onChange={(status) => onChange({ status })} ariaLabel="Status" minWidth={128} />
           </div>
 

@@ -5,7 +5,7 @@
 // function is re-declared and the SOURCE is asserted to still match. Ugly, but
 // it catches the two real bugs: short-month output, and local-time parsing.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, it, expect } from "vitest";
@@ -77,5 +77,54 @@ describe("the shared helper still matches this contract", () => {
   it("the planner contains no native select elements", () => {
     const BUILD_CLIENT = readFileSync(resolve(__dirname, "../../../app/admin/build/BuildClient.jsx"), "utf8");
     expect(BUILD_CLIENT).not.toMatch(/<select[\s>]/);
+  });
+});
+
+describe("structural rules the whole planner must keep", () => {
+  const SECTIONS = resolve(__dirname, "../../../app/admin/build/sections");
+  const read = (f: string) => readFileSync(resolve(SECTIONS, f), "utf8");
+  const all = () =>
+    readdirSync(SECTIONS).filter((f) => f.endsWith(".jsx")).map((f) => [f, read(f)] as const);
+
+  it("no section renders a native <select>", () => {
+    for (const [f, src] of all()) expect(src, f).not.toMatch(/<select[\s>]/);
+  });
+
+  it("no section renders a raw <textarea>", () => {
+    for (const [f, src] of all()) expect(src, f).not.toMatch(/<textarea[\s>]/);
+  });
+
+  it("no section renders a native date input — dates must read mm/dd/yyyy", () => {
+    for (const [f, src] of all()) expect(src, f).not.toMatch(/type="date"/);
+  });
+
+  it("no section uses a native dialog", () => {
+    for (const [f, src] of all()) {
+      expect(src, f).not.toMatch(/\balert\(/);
+      expect(src, f).not.toMatch(/\bwindow\.confirm\(/);
+      expect(src, f).not.toMatch(/\bprompt\(/);
+    }
+  });
+
+  it("no section draws a left-border accent bar", () => {
+    for (const [f, src] of all()) expect(src, f).not.toMatch(/borderLeft:/);
+  });
+
+  it("no section derives a calendar date from toISOString", () => {
+    for (const [f, src] of all()) {
+      const code = src.split("\n").filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*")).join("\n");
+      expect(code, f).not.toMatch(/toISOString\(\)\.slice/);
+    }
+  });
+
+  it("no section carries a TODO", () => {
+    for (const [f, src] of all()) expect(src, f).not.toMatch(/\bTODO\b/);
+  });
+
+  // A milestone is modeled once. Schedule may RENDER is_milestone rows that a
+  // previous version wrote, but it must never create another one.
+  it("only the milestones array creates a milestone", () => {
+    expect(read("Schedule.jsx")).not.toMatch(/is_milestone:\s*!!/);
+    expect(read("Schedule.jsx")).toMatch(/addRow\("milestones"/);
   });
 });

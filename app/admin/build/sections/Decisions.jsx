@@ -13,7 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   COLORS, FONT, SERIF, btn, Icon, ICON, txt, Chip, StatStrip, AddBtn,
   AutoTextarea, fmtBuildDate, todayIso
-} from "../ui";
+, DateField} from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import {
   groupByMonth, isComplete, searchDecisions,
@@ -255,12 +255,7 @@ function DecisionDrawer({ decision, onClose, onChange, onDelete }) {
       </DrawerField>
 
       <DrawerField label="Date decided">
-        <input
-          type="date"
-          value={decision.decided_on || ""}
-          onChange={(e) => onChange({ decided_on: e.target.value || null })}
-          style={txt()}
-        />
+        <DateField value={decision.decided_on} onChange={(v) => onChange({ decided_on: v })} />
       </DrawerField>
 
       <DrawerField label="The choice">

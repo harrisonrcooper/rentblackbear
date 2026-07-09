@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 
 import {
   COLORS, FONT, SERIF, ACCENT, btn, Icon, ICON, fmtUsd,
-  Card, Field, txt, MoneyInput, AddBtn, Chip, SectionHead, StatStrip, SelectPill, AutoTextarea,
+  Card, Field, txt, MoneyInput, AddBtn, Chip, SectionHead, StatStrip, SelectPill, AutoTextarea
 } from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import { useIsMobile } from "../../budget/lib/responsive";

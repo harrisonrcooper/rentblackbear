@@ -13,7 +13,7 @@ import {
   COLORS, FONT, Icon, ICON, ACCENT, ACCENT_SOFT, txt, MoneyInput, AddBtn, Chip,
   SectionHead, AutoTextarea, SelectPill, fmtCompact, fmtBuildDate,
   CHANGE_ORDER_KINDS, CHANGE_ORDER_STATUSES, todayIso
-} from "../ui";
+, DateField} from "../ui";
 
 // Same glyph the sidebar uses for this tab, so the empty state reads as
 // "this is that screen" rather than a generic placeholder.
@@ -97,13 +97,7 @@ function ChangeOrderCard({ co, editing, onToggleEdit, onChange, onDelete }) {
             <SelectPill value={co.kind} options={CHANGE_ORDER_KINDS} onChange={(kind) => onChange({ kind })} ariaLabel="Cost or credit" minWidth={124} />
             <div style={{ flex: 1, minWidth: 0 }}><MoneyInput value={co.amount_cents} onChange={(v) => onChange({ amount_cents: v })} /></div>
           </div>
-          <input
-            type="date"
-            value={co.date || ""}
-            onChange={(e) => onChange({ date: e.target.value || null })}
-            aria-label="Date of the change"
-            style={{ ...txt() }}
-          />
+          <DateField value={co.date} onChange={(v) => onChange({ date: v })} ariaLabel="Date of the change" />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button
               onClick={onDelete}

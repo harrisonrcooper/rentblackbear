@@ -8,7 +8,7 @@
 // this is never a blank canvas: he taps a circle to mark a phase done and taps
 // its date to schedule it. Nothing to set up, nothing to arrange.
 
-import { COLORS, FONT, ACCENT, Card, DelBtn, AddBtn, Chip, Icon, ICON, inputStyle, daysFromToday } from "../ui";
+import { COLORS, FONT, ACCENT, Card, DelBtn, AddBtn, Chip, Icon, ICON, inputStyle, daysFromToday , DateField} from "../ui";
 
 // "In 1 day", not "In 1 days". Spell the unit out — never "1d".
 const dayLabel = (n) => `${n} ${n === 1 ? "day" : "days"}`;
@@ -76,13 +76,7 @@ function MilestoneRow({ m, isNext, isLast, onToggle, onPatch, onDelete }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
-          <input
-            type="date"
-            value={m.target || ""}
-            onChange={(e) => onPatch({ target: e.target.value || null })}
-            aria-label={`Target date for ${m.label || "milestone"}`}
-            style={{ ...inputStyle(), width: 150, fontWeight: 600, color: m.target ? COLORS.text : COLORS.textFaint }}
-          />
+          <DateField value={m.target} onChange={(v) => onPatch({ target: v })} ariaLabel={`Target date for ${m.label || "milestone"}`} width={150} />
           {s.chip && <Chip tone={s.tone}>{s.chip}</Chip>}
         </div>
       </div>

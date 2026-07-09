@@ -444,6 +444,83 @@ export function StatStrip({ items }) {
 }
 
 /**
+ * A date field that reads mm/dd/yyyy and picks with the platform's own picker.
+ *
+ * A bare `<input type="date">` renders its value in the operating system's
+ * locale, so the same build shows 09/07/2026 to one person and 07/09/2026 to
+ * another — and the house rule is mm/dd/yyyy, always. Hand-rolling a calendar
+ * would throw away the one thing the native control is genuinely better at:
+ * the iOS wheel, which is the picker this planner is actually used with.
+ *
+ * So: our button paints the value through fmtBuildDate, and a transparent
+ * native input sits on top of it purely to summon the picker. `showPicker()`
+ * where it exists (Chrome, Edge), a plain click everywhere else (Safari, iOS).
+ */
+export function DateField({ value, onChange, placeholder = "Pick a date", ariaLabel, width, clearable = true }) {
+  const ref = useRef(null);
+
+  function summon() {
+    const el = ref.current;
+    if (!el) return;
+    // showPicker throws if it wasn't called from a user gesture; we always are,
+    // but a browser that disagrees should still fall through to a focus.
+    try {
+      if (typeof el.showPicker === "function") { el.showPicker(); return; }
+    } catch { /* fall through */ }
+    el.focus();
+  }
+
+  return (
+    <div style={{ position: "relative", width: width || "100%", minWidth: 132 }}>
+      <div
+        aria-hidden="true"
+        style={{
+          display: "flex", alignItems: "center", gap: 7, height: 32,
+          padding: "0 8px 0 10px", borderRadius: 8,
+          border: `1px solid ${COLORS.border}`, background: COLORS.surface,
+          fontFamily: FONT, fontSize: 13, fontWeight: 600,
+          color: value ? COLORS.text : COLORS.textFaint,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <Icon d={ICON.calendar} size={13} color={COLORS.textFaint} />
+        <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {value ? fmtBuildDate(value) : placeholder}
+        </span>
+      </div>
+
+      <input
+        ref={ref}
+        type="date"
+        value={value || ""}
+        aria-label={ariaLabel || placeholder}
+        onChange={(e) => onChange(e.target.value || null)}
+        onClick={summon}
+        style={{
+          position: "absolute", inset: 0, width: "100%", height: "100%",
+          opacity: 0, cursor: "pointer", border: "none", background: "transparent",
+        }}
+      />
+
+      {clearable && value && (
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          aria-label="Clear the date"
+          style={{
+            position: "absolute", right: 4, top: 4, zIndex: 2, width: 24, height: 24,
+            borderRadius: 6, border: "none", background: "transparent",
+            cursor: "pointer", display: "grid", placeItems: "center", lineHeight: 0,
+          }}
+        >
+          <Icon d="M18 6L6 18M6 6l12 12" size={12} color={COLORS.textFaint} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
  * Today, as a yyyy-mm-dd calendar date on the USER'S clock.
  *
  * `new Date().toISOString().slice(0, 10)` is the obvious version and it is

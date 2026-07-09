@@ -17,7 +17,7 @@ import {
   COLORS, FONT, SERIF, ACCENT, inputStyle, btn, Icon, ICON, fmtUsd, fmtCompact,
   Card, Field, txt, MoneyInput, AddBtn, Chip, SectionHead, StatStrip, SelectPill,
   optionsFrom, fmtBuildDate, todayIso
-} from "../ui";
+, DateField} from "../ui";
 import DetailDrawer from "../DetailDrawer";
 
 const PAY_METHODS = ["Check", "ACH", "Wire", "Card", "Cash", "Loan draw"];
@@ -138,13 +138,7 @@ function PaymentEditor({ pay, patch, onDelete }) {
           <MoneyInput value={pay.amount_cents} onChange={(v) => patch({ amount_cents: v })} />
         </Field>
         <Field label="Date paid">
-          <input
-            type="date"
-            value={pay.date || ""}
-            onChange={(e) => patch({ date: e.target.value || null })}
-            aria-label="Date paid"
-            style={{ ...inputStyle(), width: "100%", boxSizing: "border-box", fontWeight: 600 }}
-          />
+          <DateField value={pay.date} onChange={(v) => patch({ date: v })} ariaLabel="Date paid" />
         </Field>
       </div>
 

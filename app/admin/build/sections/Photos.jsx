@@ -10,7 +10,7 @@
 
 import { useRef, useState } from "react";
 
-import { COLORS, FONT, SERIF, Icon, ICON, ACCENT, ACCENT_SOFT, txt, DelBtn, SelectPill, optionsFrom, fmtBuildDate } from "../ui";
+import { COLORS, FONT, SERIF, Icon, ICON, ACCENT, ACCENT_SOFT, txt, DelBtn, SelectPill, optionsFrom, fmtBuildDate , DateField} from "../ui";
 import { CAMERA_ICON } from "./_common";
 
 // The build pipeline, in the order it actually happens on site. Empty first so a
@@ -47,34 +47,6 @@ async function uploadImage(file) {
   return data.url;
 }
 
-/**
- * A date shown as mm/dd/yyyy that opens the phone's native date wheel on tap.
- *
- * The native <input type="date"> is the right mobile picker, but its own
- * chrome can render an ISO-looking value; so it sits invisible over the chip
- * and the chip shows fmtBuildDate. He sees mm/dd/yyyy, taps, gets the wheel.
- */
-function DateChip({ value, onChange }) {
-  return (
-    <label style={{
-      position: "relative", display: "inline-flex", alignItems: "center", gap: 5,
-      height: 28, padding: "0 10px", borderRadius: 999, cursor: "pointer",
-      border: `1px solid ${COLORS.borderStrong}`, background: COLORS.surface,
-      fontSize: 11.5, fontWeight: 700, color: COLORS.textMuted, whiteSpace: "nowrap",
-      fontVariantNumeric: "tabular-nums",
-    }}>
-      <Icon d={ICON.calendar} size={13} color={COLORS.textFaint} />
-      {value ? fmtBuildDate(value) : "Set date"}
-      <input
-        type="date"
-        value={value || ""}
-        onChange={(e) => onChange(e.target.value || null)}
-        aria-label="Photo date"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, border: "none", cursor: "pointer" }}
-      />
-    </label>
-  );
-}
 
 /**
  * The one action on this screen. No `capture` attribute on purpose: on iOS
@@ -126,7 +98,7 @@ function PhotoCard({ photo, updRow, delRow }) {
       </a>
       <div style={{ padding: 12, display: "grid", gap: 9 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <DateChip value={photo.date} onChange={(date) => updRow("photos", photo.id, { date })} />
+          <DateField value={photo.date} onChange={(date) => updRow("photos", photo.id, { date })} ariaLabel="Photo date" width={150} />
           <SelectPill
             value={photo.phase}
             options={optionsFrom(PHOTO_PHASES, { placeholder: "Add a phase" })}

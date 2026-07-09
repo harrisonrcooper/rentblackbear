@@ -15,7 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   COLORS, FONT, SERIF, ACCENT, inputStyle, btn, Icon, ICON, txt,
   DelBtn, AddBtn, Chip, SectionHead, fmtBuildDate, daysFromToday,
-} from "../ui";
+  DateField} from "../ui";
 import { EXTERNAL_ICON } from "./_common";
 
 // A warranty is "expiring soon" inside this window. Not a magic number in-line.
@@ -130,13 +130,7 @@ function WarrantyCard({ wr, st, open, onToggle, onChange, onDelete }) {
             </div>
             <div style={{ flex: "1 1 150px", minWidth: 0 }}>
               <Lbl>Expiration date</Lbl>
-              <input
-                type="date"
-                value={wr.expires || ""}
-                onChange={(e) => onChange({ expires: e.target.value || null })}
-                aria-label="Expiration date"
-                style={{ ...inputStyle(), width: "100%", boxSizing: "border-box" }}
-              />
+              <DateField value={wr.expires} onChange={(v) => onChange({ expires: v })} ariaLabel="Expiration date" />
             </div>
           </div>
 

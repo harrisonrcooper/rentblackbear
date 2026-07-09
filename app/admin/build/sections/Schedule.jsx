@@ -18,7 +18,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   COLORS, FONT, SERIF, ACCENT, ACCENT_SOFT, Icon, inputStyle,
   Field, txt, DelBtn, Check, AddBtn, SectionHead, Chip, StatStrip, fmtBuildDate, SelectPill
-} from "../ui";
+, DateField} from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import { useIsMobile } from "../../budget/lib/responsive";
 import {
@@ -88,6 +88,7 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
   const isMobile = useIsMobile();
   const tasks = state.schedule_tasks || [];
   const phases = state.phases || [];
+  const milestones = state.milestones || [];
 
   const [view, setView] = useState("gantt");   // "gantt" | "list"
   const [scale, setScale] = useState("week");   // "day" | "week"
@@ -150,13 +151,20 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
     setDrag(null);
   }
 
+  // A milestone is modeled in exactly one place: the `milestones` array, which
+  // the Milestones section owns and the dashboard counts. The Gantt draws them
+  // and can create them, but keeps no second copy — schedule_tasks.is_milestone
+  // was a parallel model with its own completion rule, and two answers to
+  // "which milestones are done" is worse than none.
   const addTask = (milestone) => {
-    const start = TODAY;
-    const end = milestone ? TODAY : addDays(TODAY, 4);
+    if (milestone) {
+      addRow("milestones", { label: "New milestone", target: TODAY, done: false });
+      return;
+    }
     addRow("schedule_tasks", {
       phase_id: phases[0]?.id ?? null,
-      name: milestone ? "New milestone" : "New task",
-      start, end, percent: 0, depends_on: [], is_milestone: !!milestone,
+      name: "New task",
+      start: TODAY, end: addDays(TODAY, 4), percent: 0, depends_on: [], is_milestone: false,
     });
   };
 
@@ -200,6 +208,7 @@ export default function ScheduleSection({ state, addRow, updRow, delRow }) {
               <Gantt
                 rows={rows} height={height} timelineW={timelineW} totalDays={totalDays} dw={dw} scale={scale}
                 origin={origin} xFor={xFor} posById={posById} critical={critical} violSet={violSet}
+                milestones={milestones} updRow={updRow}
                 scrollRef={scrollRef} drag={drag} setDrag={setDrag} commitDrag={commitDrag}
                 onOpen={setEditId}
               />
@@ -336,7 +345,7 @@ function Segmented({ value, onChange, options }) {
   );
 }
 
-function Gantt({ rows, height, timelineW, totalDays, dw, scale, origin, xFor, posById, critical, violSet, scrollRef, drag, setDrag, commitDrag, onOpen }) {
+function Gantt({ rows, height, timelineW, totalDays, dw, scale, origin, xFor, posById, critical, violSet, scrollRef, drag, setDrag, commitDrag, onOpen, milestones = [], updRow }) {
   const nameW = 176;
 
   return (
@@ -379,6 +388,29 @@ function Gantt({ rows, height, timelineW, totalDays, dw, scale, origin, xFor, po
           {daysBetween(origin, TODAY) >= 0 && daysBetween(origin, TODAY) < totalDays && (
             <div style={{ position: "absolute", top: 0, bottom: 0, left: xFor(TODAY), width: 2, background: ACCENT, opacity: 0.5 }} />
           )}
+
+          {/* Milestones, drawn from the one array that owns them. Click a
+              diamond to mark it reached. An undated milestone has nowhere to
+              sit on a calendar and lives only in the Milestones section. */}
+          {milestones.filter((m) => m.target).map((m) => {
+            const x = xFor(m.target);
+            if (x < 0 || x > timelineW) return null;
+            return (
+              <button
+                key={m.id}
+                onClick={() => updRow?.("milestones", m.id, { done: !m.done })}
+                title={`${m.label} · ${fmtBuildDate(m.target)}${m.done ? " · reached" : ""}`}
+                aria-label={`${m.label}, ${m.done ? "reached" : "not reached"}`}
+                style={{
+                  position: "absolute", top: RULER_H - 13, left: x - 6,
+                  width: 12, height: 12, padding: 0, cursor: "pointer",
+                  transform: "rotate(45deg)", borderRadius: 2,
+                  border: `1.5px solid ${m.done ? COLORS.green : ACCENT}`,
+                  background: m.done ? COLORS.green : COLORS.surface,
+                }}
+              />
+            );
+          })}
 
           {/* Phase bands. */}
           {rows.filter((r) => r.kind === "phase").map((r) => (
@@ -567,11 +599,11 @@ function ListRow({ task, isCritical, isViolation, onOpen, onPatch }) {
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: COLORS.textFaint }}>
           Start
-          <input type="date" value={task.start || ""} onChange={(e) => onPatch({ start: e.target.value || null })} style={{ ...inputStyle(), width: 148 }} />
+          <DateField value={task.start} onChange={(v) => onPatch({ start: v })} width={148} />
         </label>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: COLORS.textFaint }}>
           End
-          <input type="date" value={task.end || ""} onChange={(e) => onPatch({ end: e.target.value || null })} style={{ ...inputStyle(), width: 148 }} />
+          <DateField value={task.end} onChange={(v) => onPatch({ end: v })} width={148} />
         </label>
         <Chip tone="neutral">{dur} day{dur === 1 ? "" : "s"}</Chip>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: COLORS.textFaint }}>
@@ -652,10 +684,10 @@ function TaskDrawer({ task, tasks, phases, byId, onClose, updRow, delRow }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <Field label="Start">
-              <input type="date" value={task.start || ""} onChange={(e) => patch({ start: e.target.value || null })} style={txt()} />
+              <DateField value={task.start} onChange={(v) => patch({ start: v })} />
             </Field>
             <Field label="End">
-              <input type="date" value={task.end || ""} onChange={(e) => patch({ end: e.target.value || null })} style={txt()} />
+              <DateField value={task.end} onChange={(v) => patch({ end: v })} />
             </Field>
           </div>
           {task.start && task.end && (

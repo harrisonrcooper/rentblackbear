@@ -15,7 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   COLORS, FONT, SERIF, ACCENT, btn, Icon, txt, DelBtn, AddBtn,
-  Chip, SectionHead, AutoTextarea,
+  Chip, SectionHead, AutoTextarea
 } from "../ui";
 import DetailDrawer from "../DetailDrawer";
 

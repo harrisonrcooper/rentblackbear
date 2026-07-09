@@ -22,7 +22,7 @@ import { useMemo, useState } from "react";
 import {
   COLORS, FONT, SERIF, ACCENT, Icon,
   Card, Field, AddBtn, DelBtn, Chip, SectionHead, StatStrip, ProgressRing,
-  MoneyInput, txt, fmtUsd,
+  MoneyInput, txt, fmtUsd
 } from "../ui";
 
 const BOLT = "M13 2L3 14h9l-1 8 10-12h-9l1-8z";

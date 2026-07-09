@@ -15,7 +15,7 @@ import {
   COLORS, FONT, SERIF, ACCENT, ACCENT_SOFT, Icon, fmtUsd,
   Field, txt, MoneyInput, DelBtn, AddBtn, SectionHead, Chip, StatStrip,
   fmtBuildDate, AutoTextarea,
-} from "../ui";
+  DateField} from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import {
   capturedCount, totalCount, tripProgressBps, budgetCents, stillNeeded,
@@ -412,10 +412,10 @@ function ItineraryTab({ trip, tasks, onField }) {
       </Field>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <Field label="Start">
-          <input type="date" value={trip.start || ""} onChange={(e) => onField({ start: e.target.value || null })} style={txt()} />
+          <DateField value={trip.start} onChange={(v) => onField({ start: v })} />
         </Field>
         <Field label="End">
-          <input type="date" value={trip.end || ""} onChange={(e) => onField({ end: e.target.value || null })} style={txt()} />
+          <DateField value={trip.end} onChange={(v) => onField({ end: v })} />
         </Field>
       </div>
       {(trip.start || trip.end) && (
