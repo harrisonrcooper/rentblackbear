@@ -22,12 +22,20 @@ import {
   Icon, ICON, fmtUsd,
   Card, Field, txt, MoneyInput, DelBtn, AddBtn, AutoTextarea,
   SectionHead, Chip, StatStrip, fmtBuildDate, SelectPill,
-  DateField} from "../ui";
+  EmptyState, DateField} from "../ui";
 import DetailDrawer from "../DetailDrawer";
 import { useIsMobile } from "../../budget/lib/responsive";
 import {
-  byScope, effectiveTotalCents, linesTotalCents, hasLineMismatch,
-  lowestIn, spreadCents, acceptedIn, acceptQuote, budgetLineFor,
+  byScope,
+  effectiveTotalCents,
+  linesTotalCents,
+  hasLineMismatch,
+  lowestIn,
+  spreadCents,
+  acceptedIn,
+  acceptQuote,
+  budgetLineFor,
+  budgetSyncFor,
 } from "@/lib/build/quotes";
 
 const STATUS_LABEL = {
@@ -65,36 +73,53 @@ export default function QuotesSection({ state, setField, addRow, updRow, delRow 
     if (last) setOpenId(last.id);
   }, [quotes]);
 
+  // Reconcile the whole scope's budget after ANY status change. Appending a
+  // cost line on accept made the budget a history of decisions rather than a
+  // statement of the current one: accept A, accept cheaper B, decline B, and
+  // three clicks later the budget still carried A.
+  function syncBudget(scope, nextQuotes) {
+    if (!scope) return;
+    const plan = budgetSyncFor(nextQuotes, state.costs || [], scope);
+    if (plan.action === "upsert") {
+      const patch = { label: plan.label, estimate_cents: plan.estimate_cents };
+      if (plan.costId) updRow("costs", plan.costId, patch);
+      else addRow("costs", { group: "Bids", in_basis: true, actual_cents: 0, ...patch });
+    } else if (plan.action === "remove") {
+      delRow("costs", plan.costId);
+    }
+  }
+
+  function setStatus(id, status) {
+    const quote = quotes.find((q) => q.id === id);
+    if (!quote) return;
+    const next = status === "accepted"
+      ? acceptQuote(quotes, id)
+      : quotes.map((q) => (q.id === id ? { ...q, status } : q));
+    setField("quotes", next);
+    syncBudget(quote.scope, next);
+  }
+
   function accept(id) {
     const accepted = quotes.find((q) => q.id === id);
     if (!accepted) return;
+    setStatus(id, "accepted");
 
-    // acceptQuote returns the whole array with the target accepted and its
-    // same-job siblings declined; write it back atomically as one field set so
-    // no intermediate render shows two accepted bids in a job.
-    setField("quotes", acceptQuote(quotes, id));
-
-    const line = budgetLineFor(accepted);
-
-    // One budget line per scope, not one per click. Accepting bid A and then a
-    // cheaper bid B for the same scope used to leave A's line behind, so the
-    // budget silently counted the job twice.
-    const existing = (state.costs || []).find(
-      (c) => c.group === "Bids" && c.label.startsWith(`${accepted.scope} — `),
-    );
-    if (existing) updRow("costs", existing.id, line);
-    else addRow("costs", { group: "Bids", in_basis: true, actual_cents: 0, ...line });
-
-    // The winning contractor is someone you will call. Don't make him retype the
-    // name he just chose.
+    // The winning contractor is someone you will call. Don't make him retype
+    // the name he just chose.
     const name = (accepted.vendor || "").trim();
     const known = (state.team || []).some(
       (t) => (t.name || "").trim().toLowerCase() === name.toLowerCase(),
     );
     if (name && !known) {
-      addRow("team", { role: accepted.scope || "Contractor", name, contact: "", notes: `Won the ${accepted.scope || "bid"} on ${fmtBuildDate(accepted.date) || "an unrecorded date"}.` });
+      addRow("team", {
+        role: accepted.scope || "Contractor",
+        name,
+        contact: "",
+        notes: `Won the ${accepted.scope || "bid"} on ${fmtBuildDate(accepted.date) || "an unrecorded date"}.`,
+      });
     }
   }
+
 
   function addBid(scope) {
     wantNewest.current = true;
@@ -112,9 +137,18 @@ export default function QuotesSection({ state, setField, addRow, updRow, delRow 
     return (
       <>
         <SectionHead title="Quotes & Bids" note="Gather bids for each job and compare them side by side" />
-        <EmptyState onAdd={() => addBid("")} />
+        <EmptyState
+          icon={ICON.scales}
+          title="Line up every contractor's bid and pick the winner"
+          action={<AddBtn label="Add your first bid" onClick={() => addBid("")} />}
+        >
+          Add what each builder quoted for a job and their bids sit side by side, with the
+          lowest one marked and the gap between them worked out for you. Accept a bid and it
+          drops straight onto your budget and saves the contractor to your team.
+        </EmptyState>
         <QuoteDrawer
-          quote={openQuote}
+            onStatus={(st) => openQuote && setStatus(openQuote.id, st)}
+                    quote={openQuote}
           isMobile={isMobile}
           onClose={() => setOpenId(null)}
           onChange={(patch) => openQuote && updRow("quotes", openQuote.id, patch)}
@@ -156,6 +190,7 @@ export default function QuotesSection({ state, setField, addRow, updRow, delRow 
       </div>
 
       <QuoteDrawer
+            onStatus={(st) => openQuote && setStatus(openQuote.id, st)}
         quote={openQuote}
         isMobile={isMobile}
         onClose={() => setOpenId(null)}
@@ -441,7 +476,7 @@ function BidCard({ quote, lowest, isLowestLive, onOpen, onAccept }) {
   );
 }
 
-function QuoteDrawer({ quote, isMobile, onClose, onChange, onDelete, onAccept }) {
+function QuoteDrawer({ quote, isMobile, onClose, onChange, onDelete, onAccept, onStatus }) {
   const lineTotal = quote ? linesTotalCents(quote) : 0;
   const mismatch = quote ? hasLineMismatch(quote) : false;
 
@@ -487,7 +522,7 @@ function QuoteDrawer({ quote, isMobile, onClose, onChange, onDelete, onAccept })
               <DateField value={quote.date} onChange={(v) => onChange({ date: v })} ariaLabel="Date of bid" />
             </Field>
             <Field label="Status">
-              <SelectPill value={quote.status} options={STATUS_ORDER.map((v) => ({ value: v, label: STATUS_LABEL[v], tone: STATUS_TONE[v] || "neutral" }))} onChange={(status) => onChange({ status })} ariaLabel="Status" minWidth={132} />
+              <SelectPill value={quote.status} options={STATUS_ORDER.map((v) => ({ value: v, label: STATUS_LABEL[v], tone: STATUS_TONE[v] || "neutral" }))} onChange={(status) => onStatus(status)} ariaLabel="Status" minWidth={132} />
             </Field>
           </div>
 

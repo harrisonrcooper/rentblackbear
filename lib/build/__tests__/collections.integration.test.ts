@@ -29,7 +29,27 @@ loadEnvLocal();
 const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 const d = configured ? describe : describe.skip;
 
-const WS = "__it_workspace";
+// Each test gets its OWN workspace key.
+//
+// They used to share one, with beforeEach deleting the row. That is safe only
+// if every writer has stopped — and it hadn't: vitest's 5-second default
+// timeout is shorter than mutate()'s 15-second retry deadline, so a contended
+// writer from a timed-out test kept retrying, landed AFTER the delete, and
+// resurrected its row inside the next test. The symptom was
+// `expected ['keep','x'] to equal ['keep']`, two runs in three.
+//
+// Isolation removes the class of bug; the generous timeouts below remove the
+// timeout that caused it.
+let wsCounter = 0;
+const workspaces: string[] = [];
+function freshWorkspace(): string {
+  const ws = `__it_workspace_${++wsCounter}`;
+  workspaces.push(ws);
+  return ws;
+}
+
+// A whole retry deadline, plus room for the round trips either side.
+const CONCURRENCY_TIMEOUT_MS = 60_000;
 
 interface Row {
   id: string;
@@ -50,14 +70,15 @@ async function rawDelete(key: string) {
 
 d("collection store: operation replay under concurrency", () => {
   let mod: typeof import("../collections");
+  let WS: string;
 
   beforeEach(async () => {
     mod = await import("../collections");
-    await rawDelete(mod.collectionKey(WS, "tasks"));
+    WS = freshWorkspace();
   });
   afterAll(async () => {
     const m = await import("../collections");
-    await rawDelete(m.collectionKey(WS, "tasks"));
+    for (const ws of workspaces) await rawDelete(m.collectionKey(ws, "tasks"));
   });
 
   const append = (title: string) => (rows: Row[]) => [
@@ -81,7 +102,7 @@ d("collection store: operation replay under concurrency", () => {
     expect(rows.map((r) => r.title).sort()).toEqual(titles);
     // Every row got a distinct id despite being minted in parallel.
     expect(new Set(rows.map((r) => r.id)).size).toBe(5);
-  });
+  }, CONCURRENCY_TIMEOUT_MS);
 
   // Ten writers exceeds any plausible human workload; if replay + backoff hold
   // here, two spouses editing will never see a dropped task.
@@ -92,7 +113,7 @@ d("collection store: operation replay under concurrency", () => {
     const rows = await mod.listAll<Row>(WS, "tasks");
     expect(rows.map((r) => r.title).sort()).toEqual([...titles].sort());
     expect(new Set(rows.map((r) => r.id)).size).toBe(10);
-  }, 60_000);
+  }, CONCURRENCY_TIMEOUT_MS);
 
   // The attempt cap used to be 8. Twenty writers exhausted it and threw
   // "too many concurrent writers" — a save failing because the machine was
@@ -109,7 +130,7 @@ d("collection store: operation replay under concurrency", () => {
     const rows = await mod.listAll<Row>(WS, "tasks");
     expect(rows.map((r) => r.title).sort()).toEqual([...titles].sort());
     expect(new Set(rows.map((r) => r.id)).size).toBe(20);
-  }, 90_000);
+  }, CONCURRENCY_TIMEOUT_MS + 30_000);
 
   it("replays a status change against a concurrently-appended list", async () => {
     await mod.mutate<Row>(WS, "tasks", append("target"));
@@ -128,7 +149,7 @@ d("collection store: operation replay under concurrency", () => {
     expect(rows).toHaveLength(4);
     expect(rows.find((r) => r.id === target.id)?.title).toBe("renamed");
     expect(rows.map((r) => r.title).sort()).toEqual(["renamed", "x", "y", "z"]);
-  });
+  }, CONCURRENCY_TIMEOUT_MS);
 
   it("listLive hides archived rows, listAll keeps them", async () => {
     await mod.mutate<Row>(WS, "tasks", append("keep"));

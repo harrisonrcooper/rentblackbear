@@ -10,6 +10,7 @@ import {
   acceptedIn,
   acceptQuote,
   budgetLineFor,
+  budgetSyncFor,
 } from "../quotes";
 import type { BuildQuote, BuildQuoteLine, QuoteStatus } from "@/actions/build/_store";
 
@@ -300,5 +301,66 @@ describe("budgetLineFor", () => {
       lines: [line({ quantity: 3, unit_price_cents: 1_000_00 })],
     });
     expect(budgetLineFor(q).estimate_cents).toBe(3_000_00);
+  });
+});
+
+describe("budgetSyncFor — the budget follows the decision, not its history", () => {
+  const q = (over: Partial<BuildQuote>): BuildQuote => ({
+    id: "q", vendor: "Acme", scope: "Framing", date: null, status: "received",
+    total_cents: 0, lines: [], doc_url: "", notes: "", ...over,
+  });
+  const cost = (id: string, label: string, archived = false) => ({ id, group: "Bids", label, archived });
+
+  it("adds a line when a bid is accepted and none exists", () => {
+    const r = budgetSyncFor([q({ id: "a", status: "accepted", total_cents: 50_000_00 })], [], "Framing");
+    expect(r).toEqual({ action: "upsert", costId: null, label: "Framing — Acme", estimate_cents: 50_000_00 });
+  });
+
+  // The bug: accepting a second bid for the same scope appended a SECOND line,
+  // so the budget counted the job twice.
+  it("updates the existing line rather than adding another", () => {
+    const quotes = [
+      q({ id: "a", vendor: "Acme", status: "declined", total_cents: 50_000_00 }),
+      q({ id: "b", vendor: "Best", status: "accepted", total_cents: 45_000_00 }),
+    ];
+    const r = budgetSyncFor(quotes, [cost("c1", "Framing — Acme")], "Framing");
+    expect(r).toEqual({ action: "upsert", costId: "c1", label: "Framing — Best", estimate_cents: 45_000_00 });
+  });
+
+  // The other half: un-accepting has to take the money back out.
+  it("removes the line when the accepted bid is declined again", () => {
+    expect(budgetSyncFor([q({ id: "a", status: "declined" })], [cost("c1", "Framing — Acme")], "Framing"))
+      .toEqual({ action: "remove", costId: "c1" });
+  });
+
+  it("removes the line when the accepted bid is deleted outright", () => {
+    expect(budgetSyncFor([], [cost("c1", "Framing — Acme")], "Framing"))
+      .toEqual({ action: "remove", costId: "c1" });
+  });
+
+  it("does nothing when there is no accepted bid and no line", () => {
+    expect(budgetSyncFor([q({ status: "requested" })], [], "Framing")).toEqual({ action: "none" });
+  });
+
+  it("ignores an archived line and an archived quote", () => {
+    const quotes = [q({ id: "a", status: "accepted", archived: true, total_cents: 9_00 })];
+    expect(budgetSyncFor(quotes, [cost("c1", "Framing — Acme", true)], "Framing")).toEqual({ action: "none" });
+  });
+
+  it("never touches another scope's line", () => {
+    expect(budgetSyncFor([], [cost("c1", "Roofing — Other")], "Framing")).toEqual({ action: "none" });
+  });
+
+  it("falls back to a readable label when the winning bid has no vendor", () => {
+    const r = budgetSyncFor([q({ id: "a", vendor: "", status: "accepted", total_cents: 1_00 })], [], "Framing");
+    expect(r).toMatchObject({ label: "Framing — vendor to be named" });
+  });
+
+  it("uses the line-item total when the stated total is zero", () => {
+    const quotes = [q({
+      id: "a", status: "accepted", total_cents: 0,
+      lines: [{ id: "l1", description: "x", quantity: 2, unit_price_cents: 1_500_00 }],
+    })];
+    expect(budgetSyncFor(quotes, [], "Framing")).toMatchObject({ estimate_cents: 3_000_00 });
   });
 });

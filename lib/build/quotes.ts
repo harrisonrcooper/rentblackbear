@@ -94,6 +94,59 @@ export function acceptQuote(quotes: BuildQuote[], id: string): BuildQuote[] {
   });
 }
 
+/** The label a scope's budget line always carries, so it can be found again. */
+export function budgetLabelPrefix(scope: string): string {
+  return `${scope} — `;
+}
+
+export interface CostRowLike {
+  id: string;
+  group?: string;
+  label?: string;
+  archived?: boolean;
+}
+
+export type BudgetSync =
+  | { action: "none" }
+  | { action: "upsert"; costId: string | null; label: string; estimate_cents: number }
+  | { action: "remove"; costId: string };
+
+/**
+ * What the budget should look like for one scope, given the bids as they now
+ * stand. Called after ANY status change, not just an accept.
+ *
+ * Accepting bid A for "Framing" wrote a cost line. Accepting cheaper bid B for
+ * the same scope wrote a second one, and later declining B left both behind.
+ * The budget silently counted the job two or three times. Reconciling the whole
+ * scope after every change — rather than appending on accept — makes the money
+ * follow the decision instead of accumulating a history of it.
+ */
+export function budgetSyncFor(
+  quotes: BuildQuote[],
+  costs: CostRowLike[],
+  scope: string,
+): BudgetSync {
+  const prefix = budgetLabelPrefix(scope);
+  const existing = costs.find(
+    (c) => !c.archived && c.group === "Bids" && (c.label || "").startsWith(prefix),
+  );
+
+  const accepted = quotes.find(
+    (q) => !q.archived && q.scope === scope && q.status === "accepted",
+  );
+
+  if (!accepted) {
+    return existing ? { action: "remove", costId: existing.id } : { action: "none" };
+  }
+
+  return {
+    action: "upsert",
+    costId: existing ? existing.id : null,
+    label: `${prefix}${accepted.vendor || "vendor to be named"}`,
+    estimate_cents: effectiveTotalCents(accepted),
+  };
+}
+
 /**
  * The costs-array row an accepted quote becomes. The caller passes this to
  * addRow("costs", …); the returned estimate is the quote's effective total so
