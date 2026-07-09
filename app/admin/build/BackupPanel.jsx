@@ -1,42 +1,31 @@
 "use client";
 
-// One-click backup, and a restore that makes you look before you leap.
+// Your data — a quiet door, not a shouting button.
 //
-// Restore replaces every room, vendor and reference the household has, so it
-// runs a server-side dry run first and shows exactly what would come back.
-// Only then does the confirm button arm. No native confirm() — the dialog is
-// the app's own, so it can show the summary and the warnings.
+// This used to be the only filled accent button in the whole navigation: the
+// loudest thing on the page, for a chore you do twice a year. Worse, "Restore…"
+// sat permanently one tap from replacing every room, vendor and reference in the
+// house. Navigation answers "where do I go", and neither of those is a place.
+//
+// So the nav gets one muted row. Behind it, a drawer that says the true thing
+// first — everything you type is already saved — and then offers the export,
+// with restore kept quiet beneath it.
+//
+// Restore still dry-runs on the server before it writes, and still archives the
+// current data first. See app/api/build/restore/route.js.
 
 import { useRef, useState } from "react";
 
-import { COLORS, FONT } from "../budget/lib/tokens";
+import { COLORS, FONT, SERIF, Icon, btn } from "./ui";
+import DetailDrawer from "./DetailDrawer";
 
-const ACCENT = COLORS.accent;
 const DANGER = COLORS.red;
-
-function Btn({ onClick, tone = "ghost", disabled, children }) {
-  const bg = tone === "danger" ? DANGER : tone === "solid" ? ACCENT : COLORS.surface;
-  const fg = tone === "ghost" ? COLORS.textMuted : "#fff";
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        border: `1px solid ${tone === "ghost" ? COLORS.border : bg}`,
-        background: disabled ? COLORS.surfaceTint : bg,
-        color: disabled ? COLORS.textFaint : fg,
-        borderRadius: 9, padding: "8px 14px", fontSize: 12.5, fontWeight: 700,
-        cursor: disabled ? "not-allowed" : "pointer", fontFamily: FONT,
-      }}
-    >
-      {children}
-    </button>
-  );
-}
+const SHIELD = "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z";
 
 export default function BackupPanel() {
   const fileRef = useRef(null);
-  const [preview, setPreview] = useState(null); // { bundle, willRestore, warnings, differentWorkspace }
+  const [open, setOpen] = useState(false);
+  const [preview, setPreview] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState("");
@@ -109,30 +98,59 @@ export default function BackupPanel() {
   }
 
   return (
-    <div style={{ padding: "14px 16px", borderTop: `1px solid ${COLORS.surfaceTint}`, fontFamily: FONT }}>
-      <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: COLORS.textFaint, marginBottom: 10 }}>
-        Your data
-      </div>
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          display: "flex", alignItems: "center", gap: 8, width: "100%",
+          padding: "9px 10px", borderRadius: 8, cursor: "pointer", fontFamily: FONT,
+          border: `1px solid ${COLORS.border}`, background: "transparent",
+          color: COLORS.textFaint, fontSize: 12.5, fontWeight: 600,
+        }}
+      >
+        <Icon d={SHIELD} size={13} />
+        <span style={{ flex: 1, textAlign: "left" }}>Your data</span>
+        <Icon d="M9 18l6-6-6-6" size={12} />
+      </button>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Btn onClick={download} tone="solid">Back up everything</Btn>
-        <Btn onClick={() => fileRef.current?.click()} disabled={busy}>Restore…</Btn>
-      </div>
+      <input ref={fileRef} type="file" accept="application/json,.json" onChange={onPick} style={{ display: "none" }} />
 
-      <input
-        ref={fileRef}
-        type="file"
-        accept="application/json,.json"
-        onChange={onPick}
-        style={{ display: "none" }}
-      />
+      <DetailDrawer
+        open={open}
+        onClose={() => { setOpen(false); setError(""); setDone(""); }}
+        kind="Your data"
+        title="Everything is already saved"
+      >
+        <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.6, margin: 0 }}>
+          Every word you type here saves the moment you stop typing, and it lives on a
+          server that is backed up whether you think about it or not. You do not need to
+          do anything.
+        </p>
+        <p style={{ fontSize: 13.5, color: COLORS.textMuted, lineHeight: 1.6, margin: "12px 0 0" }}>
+          A copy on your own machine is still worth having — before a big change, or once a
+          season. It is a single file holding every room, vendor, selection and task.
+        </p>
 
-      {error && (
-        <div style={{ marginTop: 10, fontSize: 12, color: DANGER, fontWeight: 600, lineHeight: 1.45 }}>{error}</div>
-      )}
-      {done && (
-        <div style={{ marginTop: 10, fontSize: 12, color: ACCENT, fontWeight: 700 }}>{done}</div>
-      )}
+        <button onClick={download} style={{ ...btn("primary"), marginTop: 20 }}>
+          <Icon d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3" size={14} color="#fff" />
+          Back up everything
+        </button>
+
+        <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${COLORS.border}` }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: COLORS.text }}>Restore from a backup</div>
+          <p style={{ fontSize: 12.5, color: COLORS.textFaint, lineHeight: 1.55, margin: "5px 0 12px" }}>
+            Replaces everything you have now with the contents of a backup file. Your current
+            data is archived first, so this can be undone. You will see exactly what it holds
+            before anything is written.
+          </p>
+          <button onClick={() => fileRef.current?.click()} disabled={busy} style={btn("ghost")}>
+            Choose a backup file…
+          </button>
+        </div>
+
+        {error && <div style={{ marginTop: 14, fontSize: 12.5, color: DANGER, fontWeight: 600, lineHeight: 1.5 }}>{error}</div>}
+        {done && <div style={{ marginTop: 14, fontSize: 12.5, color: COLORS.green, fontWeight: 700 }}>{done}</div>}
+      </DetailDrawer>
 
       {preview && (
         <div
@@ -140,12 +158,12 @@ export default function BackupPanel() {
           aria-modal="true"
           aria-label="Confirm restore"
           style={{
-            position: "fixed", inset: 0, zIndex: 501, background: "rgba(15,20,30,0.48)",
+            position: "fixed", inset: 0, zIndex: 501, background: "rgba(28,27,26,0.48)",
             backdropFilter: "blur(3px)", display: "grid", placeItems: "center", padding: 16,
           }}
         >
-          <div style={{ width: "100%", maxWidth: 440, background: "#fff", borderRadius: 20, padding: 24, boxShadow: "0 24px 70px rgba(15,20,30,0.34)" }}>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em" }}>
+          <div style={{ width: "100%", maxWidth: 440, background: COLORS.surface, borderRadius: 20, padding: 24, boxShadow: COLORS.shadowLg, fontFamily: FONT }}>
+            <h3 style={{ fontFamily: SERIF, margin: 0, fontSize: 20, fontWeight: 600, letterSpacing: "-0.01em" }}>
               Replace everything with this backup?
             </h3>
 
@@ -153,7 +171,6 @@ export default function BackupPanel() {
               This overwrites your current rooms, vendors, references and tasks with{" "}
               <strong style={{ color: COLORS.text }}>{preview.willRestore}</strong>.
             </p>
-
             <p style={{ margin: "10px 0 0", fontSize: 12.5, color: COLORS.textFaint, lineHeight: 1.55 }}>
               Your current data is archived first, so this is undoable.
             </p>
@@ -171,14 +188,18 @@ export default function BackupPanel() {
             )}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
-              <Btn onClick={() => setPreview(null)} disabled={busy}>Cancel</Btn>
-              <Btn onClick={confirmRestore} tone="danger" disabled={busy}>
+              <button onClick={() => setPreview(null)} disabled={busy} style={btn("ghost")}>Cancel</button>
+              <button
+                onClick={confirmRestore}
+                disabled={busy}
+                style={{ ...btn("primary"), background: DANGER, borderColor: DANGER }}
+              >
                 {busy ? "Restoring…" : "Replace my data"}
-              </Btn>
+              </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

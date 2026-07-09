@@ -452,7 +452,11 @@ export default function BuildClient({ initialState, initialVersion = 0, initialS
               </div>
             ))}
           </nav>
-          <BackupPanel />
+          {/* A quiet door at the bottom of the nav. Backing up is a chore you do
+              twice a year; it does not get the only filled button on the page. */}
+          <div style={{ padding: "10px 12px 14px", borderTop: `1px solid ${COLORS.surfaceTint}` }}>
+            <BackupPanel />
+          </div>
         </aside>
       )}
 
@@ -464,7 +468,12 @@ export default function BuildClient({ initialState, initialVersion = 0, initialS
                 <Icon d={ICON.chevL} size={13} /> Admin
               </a>
               <span style={{ fontSize: 16, fontWeight: 800 }}>Build</span>
-              <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint }}>{saved ? "Saved" : "Saving…"}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.textFaint }}>{saved ? "Saved" : "Saving…"}</span>
+                {/* Backup lived only in the desktop sidebar, so on a phone — the
+                    device this planner is actually used on — there was none. */}
+                <span style={{ width: 104, flexShrink: 0 }}><BackupPanel /></span>
+              </span>
             </div>
             <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "0 12px 10px", WebkitOverflowScrolling: "touch" }}>
               {SECTIONS.map((s) => {
